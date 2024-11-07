@@ -13,6 +13,11 @@ on:
         type: boolean
         default: true
         description: "Fail the workflow if any of the jobs fail."
+      platform:
+        required: true
+        type: string
+        default: "."
+        description: "The platform where to run the project."
       project-directory:
         required: true
         type: string
@@ -38,7 +43,7 @@ jobs:
   test-go-project:
     name: "test: ${{ inputs.project-directory }}/${{ inputs.go-version }}"
     # Modulegen can run the tests on all platforms
-    runs-on: ${{ inputs.project-directory == 'modulegen' && fromJSON('[ubuntu-latest, macos-latest, windows-latest]') || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.platform }}
     continue-on-error: ${{ !inputs.fail-fast }}
     env:
       TESTCONTAINERS_RYUK_DISABLED: "${{ inputs.ryuk-disabled }}"
