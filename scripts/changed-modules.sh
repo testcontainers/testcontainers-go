@@ -28,9 +28,6 @@
 # There is room for improvement in this script. For example, it could detect if the changes applied to the docs or the .github dirs, and then do not include any module in the list.
 # But then we would need to verify the CI scripts to ensure that the job receives the correct modules to build.
 
-# ROOT_DIR is the root directory of the repository.
-readonly ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-
 # Get the list of modified files
 readonly modified_files=${ALL_CHANGED_FILES[@]}
 
@@ -46,15 +43,15 @@ for file in $modified_files; do
     if [[ $file == modules/* ]]; then
         module_name=$(echo $file | cut -d'/' -f2)
         if [[ ! " ${modified_modules[@]} " =~ " ${module_name} " ]]; then
-            modified_modules+=("\"${ROOT_DIR}/modules/$module_name\"")
+            modified_modules+=("\"modules/$module_name\"")
         fi
     elif [[ $file == examples/* ]]; then
         example_name=$(echo $file | cut -d'/' -f2)
         if [[ ! " ${modified_modules[@]} " =~ " ${example_name} " ]]; then
-            modified_modules+=("\"${ROOT_DIR}/examples/$example_name\"")
+            modified_modules+=("\"examples/$example_name\"")
         fi
     elif [[ $file == modulegen/* ]]; then
-        modified_modules+=("\"${ROOT_DIR}/modulegen\"")
+        modified_modules+=("\"modulegen\"")
     else
         # a file from the core module is modified, so include all modules in the list and stop the loop
         modified_modules=${ALL_AVAILABLE_MODULES[@]}

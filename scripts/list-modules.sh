@@ -10,12 +10,12 @@ modules=()
 
 # capture modules
 for modFile in $(find "${ROOT_DIR}/modules" -name "go.mod" -not -path "${ROOT_DIR}/**/testdata/*"); do
-    modules+=("\"${ROOT_DIR}/modules/$(basename "$(dirname "${modFile}")")\"")
+    modules+=("\"modules/$(basename "$(dirname "${modFile}")")\"")
 done
 
 # capture examples
 for modFile in $(find "${ROOT_DIR}/examples" -name "go.mod" -not -path "${ROOT_DIR}/**/testdata/*"); do
-    modules+=("\"${ROOT_DIR}/examples/$(basename "$(dirname "${modFile}")")\"")
+    modules+=("\"examples/$(basename "$(dirname "${modFile}")")\"")
 done
 
 # sort modules array
@@ -23,10 +23,10 @@ IFS=$'\n' modules=($(sort <<<"${modules[*]}"))
 unset IFS
 
 # capture the root module
-rootModule="\"${ROOT_DIR}\""
+rootModule="\"\""
 
 # capture the modulegen module
-modulegenModule="\"${ROOT_DIR}/modulegen\""
+modulegenModule="\"modulegen\""
 
 # merge all modules and examples into a single array
 readonly allModules=("${rootModule}" "${modulegenModule}" "${modules[@]}")
