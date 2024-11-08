@@ -48,6 +48,7 @@ jobs:
 
   test:
     needs:
+      - detect-modules
       - lint
     strategy:
       matrix:
@@ -66,8 +67,10 @@ jobs:
   # It's executed in the first stage to avoid concurrency issues.
   test-reaper-off:
     # the core module is identified by the empty string (the root path)
-    if: ${{ contains(needs.detect-modules.outputs.modules, '') }}
-    needs: lint
+    if: ${{ contains(fromJSON(needs.detect-modules.outputs.modules), '') }}
+    needs:
+      - detect-modules
+      - lint
     name: "Test with reaper off"
     strategy:
       matrix:
@@ -85,8 +88,10 @@ jobs:
   # It's executed in the first stage to avoid concurrency issues.
   test-rootless-docker:
     # the core module is identified by the empty string (the root path)
-    if: ${{ contains(needs.detect-modules.outputs.modules, '') }}
-    needs: lint
+    if: ${{ contains(fromJSON(needs.detect-modules.outputs.modules), '') }}
+    needs:
+      - detect-modules
+      - lint
     name: "Test with Rootless Docker"
     strategy:
       matrix:
