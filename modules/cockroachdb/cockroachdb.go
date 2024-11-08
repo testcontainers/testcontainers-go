@@ -4,11 +4,9 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	_ "embed"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"net/url"
 
@@ -79,70 +77,10 @@ type CockroachDBContainer struct {
 
 // options represents the options for the CockroachDBContainer type.
 type options struct {
-	// Settings.
-	database string
-	user     string
-	password string
-	insecure bool
-
-	// Client certificate.
-	clientCert []byte
-	clientKey  []byte
-	certPool   *x509.CertPool
-	tlsConfig  *tls.Config
-}
-
-// WaitUntilReady implements the [wait.Strategy] interface.
-// If TLS is enabled, it waits for the CA, client cert and key for the configured user to be
-// available in the container and uses them to setup the TLS config, otherwise it does nothing.
-//
-// This is defined on the options as it needs to know the customised values to operate correctly.
-func (o *options) WaitUntilReady(ctx context.Context, target wait.StrategyTarget) error {
-	if o.insecure {
-		return nil
-	}
-
-	return wait.ForAll(
-		wait.ForFile(fileCACert).WithMatcher(func(r io.Reader) error {
-			buf, err := io.ReadAll(r)
-			if err != nil {
-				return fmt.Errorf("read CA cert: %w", err)
-			}
-
-			if !o.certPool.AppendCertsFromPEM(buf) {
-				return errors.New("invalid CA cert")
-			}
-
-			return nil
-		}),
-		wait.ForFile(certsDir+"/client."+o.user+".crt").WithMatcher(func(r io.Reader) error {
-			var err error
-			if o.clientCert, err = io.ReadAll(r); err != nil {
-				return fmt.Errorf("read client cert: %w", err)
-			}
-
-			return nil
-		}),
-		wait.ForFile(certsDir+"/client."+o.user+".key").WithMatcher(func(r io.Reader) error {
-			var err error
-			if o.clientKey, err = io.ReadAll(r); err != nil {
-				return fmt.Errorf("read client key: %w", err)
-			}
-
-			cert, err := tls.X509KeyPair(o.clientCert, o.clientKey)
-			if err != nil {
-				return fmt.Errorf("x509 key pair: %w", err)
-			}
-
-			o.tlsConfig = &tls.Config{
-				RootCAs:      o.certPool,
-				Certificates: []tls.Certificate{cert},
-				ServerName:   "127.0.0.1",
-			}
-
-			return nil
-		}),
-	).WaitUntilReady(ctx, target)
+	database    string
+	user        string
+	password    string
+	tlsStrategy *wait.TLSStrategy
 }
 
 // MustConnectionString returns a connection string to open a new connection to CockroachDB
@@ -191,11 +129,12 @@ func (c *CockroachDBContainer) ConnectionConfig(ctx context.Context) (*pgx.ConnC
 // Deprecated: use [CockroachDBContainer.ConnectionConfig] or
 // [CockroachDBContainer.ConnectionConfig] instead.
 func (c *CockroachDBContainer) TLSConfig() (*tls.Config, error) {
-	if c.tlsConfig == nil {
-		return nil, ErrTLSNotEnabled
+	if cfg := c.tlsStrategy.TLSConfig(); cfg != nil {
+		return cfg, nil
+
 	}
 
-	return c.tlsConfig, nil
+	return nil, ErrTLSNotEnabled
 }
 
 // connString returns a connection string for the given host, port and options.
@@ -218,7 +157,8 @@ func (c *CockroachDBContainer) connConfig(host string, port nat.Port) (*pgx.Conn
 	}
 
 	sslMode := "disable"
-	if c.tlsConfig != nil {
+	tlsConfig := c.tlsStrategy.TLSConfig()
+	if tlsConfig != nil {
 		sslMode = "verify-full"
 	}
 	params := url.Values{
@@ -238,22 +178,46 @@ func (c *CockroachDBContainer) connConfig(host string, port nat.Port) (*pgx.Conn
 		return nil, fmt.Errorf("parse config: %w", err)
 	}
 
-	cfg.TLSConfig = c.tlsConfig
+	cfg.TLSConfig = tlsConfig
 
 	return cfg, nil
 }
 
 // setOptions sets the CockroachDBContainer options from a request.
-func (c *CockroachDBContainer) setOptions(req *testcontainers.GenericContainerRequest) {
+func (c *CockroachDBContainer) setOptions(req *testcontainers.GenericContainerRequest) error {
 	c.database = req.Env[envDatabase]
 	c.user = req.Env[envUser]
 	c.password = req.Env[envPassword]
+
+	var insecure bool
 	for _, arg := range req.Cmd {
 		if arg == insecureFlag {
-			c.insecure = true
+			insecure = true
 			break
 		}
 	}
+
+	if err := wait.Walk(&req.WaitingFor, func(strategy wait.Strategy) error {
+		if cert, ok := strategy.(*wait.TLSStrategy); ok {
+			if insecure {
+				// If insecure mode is enabled, the certificate strategy is removed.
+				return errors.Join(wait.VisitRemove, wait.VisitStop)
+			}
+
+			// Update the client certificate files to match the user which may have changed.
+			cert.WithCert(certsDir+"/client."+c.user+".crt", certsDir+"/client."+c.user+".key")
+
+			c.tlsStrategy = cert
+
+			// Stop the walk as the certificate strategy has been found.
+			return wait.VisitStop
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("walk strategies: %w", err)
+	}
+
+	return nil
 }
 
 // Deprecated: use Run instead.
@@ -281,7 +245,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			database: defaultDatabase,
 			user:     defaultUser,
 			password: defaultPassword,
-			certPool: x509.NewCertPool(),
 		},
 	}
 	req := testcontainers.GenericContainerRequest{
@@ -308,7 +271,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			WaitingFor: wait.ForAll(
 				wait.ForFile(cockroachDir+"/init_success"),
 				wait.ForHTTP("/health").WithPort(defaultAdminPort),
-				ctr, // Wait for the TLS files to be available if needed.
+				wait.ForTLSCert(
+					certsDir+"/client."+defaultUser+".crt",
+					certsDir+"/client."+defaultUser+".key",
+				).WithRootCAs(fileCACert).WithServerName("127.0.0.1"),
 				wait.ForSQL(defaultSQLPort, "pgx/v5", func(host string, port nat.Port) string {
 					connStr, err := ctr.connString(host, port)
 					if err != nil {

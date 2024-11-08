@@ -113,7 +113,7 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithInsecure enables insecure mode and disables TLS.
+// WithInsecure enables insecure mode which disables TLS.
 func WithInsecure() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		if req.Env[envPassword] != "" {

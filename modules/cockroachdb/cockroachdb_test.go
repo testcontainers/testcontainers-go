@@ -30,19 +30,26 @@ func TestRun_WithAllOptions(t *testing.T) {
 	)
 }
 
-func TestRun_WithInsecureAndPassword(t *testing.T) {
-	_, err := cockroachdb.Run(context.Background(), testImage,
-		cockroachdb.WithPassword("testPassword"),
-		cockroachdb.WithInsecure(),
-	)
-	require.Error(t, err)
+func TestRun_WithInsecure(t *testing.T) {
+	t.Run("valid", func(t *testing.T) {
+		testContainer(t, cockroachdb.WithInsecure())
+	})
 
-	// Check order does not matter.
-	_, err = cockroachdb.Run(context.Background(), testImage,
-		cockroachdb.WithInsecure(),
-		cockroachdb.WithPassword("testPassword"),
-	)
-	require.Error(t, err)
+	t.Run("invalid-password-insecure", func(t *testing.T) {
+		_, err := cockroachdb.Run(context.Background(), testImage,
+			cockroachdb.WithPassword("testPassword"),
+			cockroachdb.WithInsecure(),
+		)
+		require.Error(t, err)
+	})
+
+	t.Run("invalid-insecure-password", func(t *testing.T) {
+		_, err := cockroachdb.Run(context.Background(), testImage,
+			cockroachdb.WithInsecure(),
+			cockroachdb.WithPassword("testPassword"),
+		)
+		require.Error(t, err)
+	})
 }
 
 // testContainer runs a CockroachDB container and validates its functionality.
