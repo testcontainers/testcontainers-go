@@ -1,48 +1,56 @@
 package cockroachdb
 
 import (
-	"fmt"
+	"errors"
 	"path/filepath"
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
 )
 
+// errInsecureWithPassword is returned when trying to use insecure mode with a password.
+var errInsecureWithPassword = errors.New("insecure mode cannot be used with a password")
+
 // customizer is an interface for customizing a CockroachDB container.
 type customizer interface {
 	customize(*CockroachDBContainer) error
 }
 
-// WithDatabase sets the name of the database to use.
-// This will be ignored if data exists in the `/cockroach/cockroach-data` directory within the container.
+// WithDatabase sets the name of the database to create and use.
+// This will be converted to lowercase as CockroachDB forces the database to be lowercase.
+// The database creation will be skipped if data exists in the `/cockroach/cockroach-data` directory within the container.
 func WithDatabase(database string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
+		// CockroachDB forces the database to be lowercase.
+		database = strings.ToLower(database)
 		req.Env[envDatabase] = database
 		return nil
 	}
 }
 
-// WithUser creates & sets the user to connect as.
-// This will be ignored if data exists in the `/cockroach/cockroach-data` directory within the container.
+// WithUser sets the name of the user to create and connect as.
+// This will be converted to lowercase as CockroachDB forces the user to be lowercase.
+// The user creation will be skipped if data exists in the `/cockroach/cockroach-data` directory within the container.
 func WithUser(user string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		if user != defaultUser && req.Env[envOptionTLS] == "true" {
-			return fmt.Errorf("unsupported user %q with TLS, use %q", user, defaultUser)
-		}
-
+		// CockroachDB forces the user to be lowercase.
+		user = strings.ToLower(user)
 		req.Env[envUser] = user
 		return nil
 	}
 }
 
-// WithPassword sets the password when using password authentication.
-// This will be ignored if data exists in the `/cockroach/cockroach-data` directory within the container.
+// WithPassword sets the password of the user to create and connect as.
+// The user creation will be skipped if data exists in the `/cockroach/cockroach-data` directory within the container.
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env[envPassword] = password
-		if password != "" {
-			req.Cmd = append(req.Cmd, "--accept-sql-without-tls")
+		for _, arg := range req.Cmd {
+			if arg == insecureFlag {
+				return errInsecureWithPassword
+			}
 		}
+
+		req.Env[envPassword] = password
 
 		return nil
 	}
@@ -95,11 +103,24 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 		for i, script := range scripts {
 			files[i] = testcontainers.ContainerFile{
 				HostFilePath:      script,
-				ContainerFilePath: initDBPath + filepath.Base(script),
+				ContainerFilePath: initDBPath + "/" + filepath.Base(script),
 				FileMode:          0o644,
 			}
 		}
 		req.Files = append(req.Files, files...)
+
+		return nil
+	}
+}
+
+// WithInsecure enables insecure mode and disables TLS.
+func WithInsecure() testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		if req.Env[envPassword] != "" {
+			return errInsecureWithPassword
+		}
+
+		req.Cmd = append(req.Cmd, insecureFlag)
 
 		return nil
 	}

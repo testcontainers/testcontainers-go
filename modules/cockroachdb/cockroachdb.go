@@ -35,20 +35,25 @@ const (
 	// initDBPath is the path where the init scripts are placed in the container.
 	initDBPath = "/docker-entrypoint-initdb.d"
 
+	// cockroachDir is the path where the CockroachDB files are placed in the container.
+	cockroachDir = "/cockroach"
+
 	// clusterDefaultsContainerFile is the path to the default cluster settings script in the container.
 	clusterDefaultsContainerFile = initDBPath + "/__cluster_defaults.sql"
 
 	// memStorageFlag is the flag to use in the start command to use an in-memory store.
 	memStorageFlag = "--store=type=mem,size="
 
+	// insecureFlag is the flag to use in the start command to disable TLS.
+	insecureFlag = "--insecure"
+
 	// env vars.
-	envUser      = "COCKROACH_USER"
-	envPassword  = "COCKROACH_PASSWORD"
-	envDatabase  = "COCKROACH_DATABASE"
-	envOptionTLS = "__OPTION_TLS"
+	envUser     = "COCKROACH_USER"
+	envPassword = "COCKROACH_PASSWORD"
+	envDatabase = "COCKROACH_DATABASE"
 
 	// cert files.
-	certsDir       = "/cockroach/certs"
+	certsDir       = cockroachDir + "/certs"
 	fileCACert     = certsDir + "/ca.crt"
 	fileNodeCert   = certsDir + "/node.crt"
 	fileNodeKey    = certsDir + "/node.key"
@@ -73,17 +78,75 @@ func newDefaultsReader(data []byte) *defaultsReader {
 // CockroachDBContainer represents the CockroachDB container type used in the module
 type CockroachDBContainer struct {
 	testcontainers.Container
+	options
+}
 
+// options represents the options for the CockroachDBContainer type.
+type options struct {
 	// Settings.
 	database string
 	user     string
 	password string
+	insecure bool
 
 	// Client certificate.
 	clientCert []byte
 	clientKey  []byte
 	certPool   *x509.CertPool
 	tlsConfig  *tls.Config
+}
+
+// WaitUntilReady implements the [wait.Strategy] interface.
+// If TLS is enabled, it waits for the CA, client cert and key for the configured user to be
+// available in the container and uses them to setup the TLS config, otherwise it does nothing.
+//
+// This is defined on the options as it needs to know the customised values to operate correctly.
+func (o *options) WaitUntilReady(ctx context.Context, target wait.StrategyTarget) error {
+	if o.insecure {
+		return nil
+	}
+
+	return wait.ForAll(
+		wait.ForFile(fileCACert).WithMatcher(func(r io.Reader) error {
+			buf, err := io.ReadAll(r)
+			if err != nil {
+				return fmt.Errorf("read CA cert: %w", err)
+			}
+
+			if !o.certPool.AppendCertsFromPEM(buf) {
+				return errors.New("invalid CA cert")
+			}
+
+			return nil
+		}),
+		wait.ForFile(certsDir+"/client."+o.user+".crt").WithMatcher(func(r io.Reader) error {
+			var err error
+			if o.clientCert, err = io.ReadAll(r); err != nil {
+				return fmt.Errorf("read client cert: %w", err)
+			}
+
+			return nil
+		}),
+		wait.ForFile(certsDir+"/client."+o.user+".key").WithMatcher(func(r io.Reader) error {
+			var err error
+			if o.clientKey, err = io.ReadAll(r); err != nil {
+				return fmt.Errorf("read client key: %w", err)
+			}
+
+			cert, err := tls.X509KeyPair(o.clientCert, o.clientKey)
+			if err != nil {
+				return fmt.Errorf("x509 key pair: %w", err)
+			}
+
+			o.tlsConfig = &tls.Config{
+				RootCAs:      o.certPool,
+				Certificates: []tls.Certificate{cert},
+				ServerName:   "127.0.0.1",
+			}
+
+			return nil
+		}),
+	).WaitUntilReady(ctx, target)
 }
 
 // MustConnectionString returns a connection string to open a new connection to CockroachDB
@@ -159,7 +222,7 @@ func (c *CockroachDBContainer) connConfig(host string, port nat.Port) (*pgx.Conn
 
 	sslMode := "disable"
 	if c.tlsConfig != nil {
-		sslMode = "require" // We can't use "verify-full" as it might be a self signed cert.
+		sslMode = "verify-full"
 	}
 	params := url.Values{
 		"sslmode": []string{sslMode},
@@ -183,58 +246,17 @@ func (c *CockroachDBContainer) connConfig(host string, port nat.Port) (*pgx.Conn
 	return cfg, nil
 }
 
-// options sets the CockroachDBContainer options from a request.
-func (c *CockroachDBContainer) options(req *testcontainers.GenericContainerRequest) {
+// setOptions sets the CockroachDBContainer options from a request.
+func (c *CockroachDBContainer) setOptions(req *testcontainers.GenericContainerRequest) {
 	c.database = req.Env[envDatabase]
 	c.user = req.Env[envUser]
 	c.password = req.Env[envPassword]
-}
-
-// WaitUntilReady implements the [wait.Strategy] interface for the CockroachDBContainer type.
-// It waits for the CA, client cert and key for the configured user to be available in the container.
-// This is defined on the container as it needs to know the user to wait for the correct client cert.
-func (c *CockroachDBContainer) WaitUntilReady(ctx context.Context, target wait.StrategyTarget) error {
-	return wait.ForAll(
-		wait.ForFile(fileCACert).WithMatcher(func(r io.Reader) error {
-			buf, err := io.ReadAll(r)
-			if err != nil {
-				return fmt.Errorf("read CA cert: %w", err)
-			}
-
-			if !c.certPool.AppendCertsFromPEM(buf) {
-				return errors.New("invalid CA cert")
-			}
-
-			return nil
-		}),
-		wait.ForFile(certsDir+"/client."+c.user+".crt").WithMatcher(func(r io.Reader) error {
-			var err error
-			if c.clientCert, err = io.ReadAll(r); err != nil {
-				return fmt.Errorf("read client cert: %w", err)
-			}
-
-			return nil
-		}),
-		wait.ForFile(certsDir+"/client."+c.user+".key").WithMatcher(func(r io.Reader) error {
-			var err error
-			if c.clientKey, err = io.ReadAll(r); err != nil {
-				return fmt.Errorf("read client key: %w", err)
-			}
-
-			cert, err := tls.X509KeyPair(c.clientCert, c.clientKey)
-			if err != nil {
-				return fmt.Errorf("x509 key pair: %w", err)
-			}
-
-			c.tlsConfig = &tls.Config{
-				RootCAs:      c.certPool,
-				Certificates: []tls.Certificate{cert},
-				ServerName:   "127.0.0.1",
-			}
-
-			return nil
-		}),
-	).WaitUntilReady(ctx, target)
+	for _, arg := range req.Cmd {
+		if arg == insecureFlag {
+			c.insecure = true
+			break
+		}
+	}
 }
 
 // Deprecated: use Run instead.
@@ -258,10 +280,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 // [local cluster in docker]: https://www.cockroachlabs.com/docs/stable/start-a-local-cluster-in-docker-linux
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*CockroachDBContainer, error) {
 	ctr := &CockroachDBContainer{
-		database: defaultDatabase,
-		user:     defaultUser,
-		password: defaultPassword,
-		certPool: x509.NewCertPool(),
+		options: options{
+			database: defaultDatabase,
+			user:     defaultUser,
+			password: defaultPassword,
+			certPool: x509.NewCertPool(),
+		},
 	}
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
@@ -285,10 +309,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				memStorageFlag + defaultStoreSize,
 			},
 			WaitingFor: wait.ForAll(
-				// TODO: check this works without any init files.
-				wait.ForLog("end running init files from /docker-entrypoint-initdb.d"),
+				wait.ForFile(cockroachDir+"/init_success"),
 				wait.ForHTTP("/health").WithPort(defaultAdminPort),
-				ctr,
+				ctr, // Wait for the TLS files to be available if needed.
 				wait.ForSQL(defaultSQLPort, "pgx/v5", func(host string, port nat.Port) string {
 					connStr, err := ctr.connString(host, port)
 					if err != nil {
@@ -312,8 +335,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	// Extract the options from the request.
-	ctr.options(&req)
+	// Extract the options from the request so they can used by wait strategies and connection methods.
+	ctr.setOptions(&req)
 
 	var err error
 	ctr.Container, err = testcontainers.GenericContainer(ctx, req)

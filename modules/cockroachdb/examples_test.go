@@ -62,7 +62,7 @@ func ExampleRun() {
 	// true
 }
 
-func ExampleRun_withOptions() {
+func ExampleRun_withInitOptions() {
 	ctx := context.Background()
 
 	cockroachdbContainer, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1",
@@ -126,6 +126,6 @@ func ExampleRun_withOptions() {
 	// Output:
 	// true
 	// 00:00:05
-	// 01:00:01
+	// 00:00:50
 	// true
 }
