@@ -47,6 +47,8 @@ func TestRun_WithInsecureAndPassword(t *testing.T) {
 
 // testContainer runs a CockroachDB container and validates its functionality.
 func testContainer(t *testing.T, opts ...testcontainers.ContainerCustomizer) {
+	t.Helper()
+
 	ctx := context.Background()
 	ctr, err := cockroachdb.Run(ctx, testImage, opts...)
 	testcontainers.CleanupContainer(t, ctr)
