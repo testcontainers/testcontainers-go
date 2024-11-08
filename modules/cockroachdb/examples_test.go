@@ -62,10 +62,13 @@ func ExampleRun() {
 	// true
 }
 
-func ExampleRun_withCustomStatements() {
+func ExampleRun_withOptions() {
 	ctx := context.Background()
 
-	cockroachdbContainer, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", cockroachdb.WithStatements(cockroachdb.DefaultStatements...))
+	cockroachdbContainer, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1",
+		cockroachdb.WithNoClusterDefaults(),
+		cockroachdb.WithInitScripts("testdata/__init.sql"),
+	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(cockroachdbContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -100,12 +103,18 @@ func ExampleRun_withCustomStatements() {
 		}
 	}()
 
-	var queueInterval string
-	if err := db.QueryRow("SHOW CLUSTER SETTING kv.range_merge.queue_interval").Scan(&queueInterval); err != nil {
+	var interval string
+	if err := db.QueryRow("SHOW CLUSTER SETTING kv.range_merge.queue_interval").Scan(&interval); err != nil {
 		log.Printf("failed to scan row: %s", err)
 		return
 	}
-	fmt.Println(queueInterval)
+	fmt.Println(interval)
+
+	if err := db.QueryRow("SHOW CLUSTER SETTING jobs.registry.interval.gc").Scan(&interval); err != nil {
+		log.Printf("failed to scan row: %s", err)
+		return
+	}
+	fmt.Println(interval)
 
 	var statsCollectionEnabled bool
 	if err := db.QueryRow("SHOW CLUSTER SETTING sql.stats.automatic_collection.enabled").Scan(&statsCollectionEnabled); err != nil {
@@ -116,6 +125,7 @@ func ExampleRun_withCustomStatements() {
 
 	// Output:
 	// true
-	// 00:00:00.05
-	// false
+	// 00:00:05
+	// 01:00:01
+	// true
 }

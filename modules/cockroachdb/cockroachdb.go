@@ -1,16 +1,20 @@
 package cockroachdb
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
-	"database/sql"
-	"encoding/pem"
+	"crypto/x509"
+	_ "embed"
 	"errors"
 	"fmt"
-	"path/filepath"
+	"io"
+	"net"
+	"net/url"
 
 	"github.com/docker/go-connections/nat"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -20,8 +24,6 @@ import (
 var ErrTLSNotEnabled = errors.New("tls not enabled")
 
 const (
-	certsDir = "/tmp"
-
 	defaultSQLPort   = "26257/tcp"
 	defaultAdminPort = "8080/tcp"
 
@@ -29,12 +31,59 @@ const (
 	defaultPassword  = ""
 	defaultDatabase  = "defaultdb"
 	defaultStoreSize = "100%"
+
+	// initDBPath is the path where the init scripts are placed in the container.
+	initDBPath = "/docker-entrypoint-initdb.d"
+
+	// clusterDefaultsContainerFile is the path to the default cluster settings script in the container.
+	clusterDefaultsContainerFile = initDBPath + "/__cluster_defaults.sql"
+
+	// memStorageFlag is the flag to use in the start command to use an in-memory store.
+	memStorageFlag = "--store=type=mem,size="
+
+	// env vars.
+	envUser      = "COCKROACH_USER"
+	envPassword  = "COCKROACH_PASSWORD"
+	envDatabase  = "COCKROACH_DATABASE"
+	envOptionTLS = "__OPTION_TLS"
+
+	// cert files.
+	certsDir       = "/cockroach/certs"
+	fileCACert     = certsDir + "/ca.crt"
+	fileNodeCert   = certsDir + "/node.crt"
+	fileNodeKey    = certsDir + "/node.key"
+	fileClientCert = certsDir + "/client.root.crt"
+	fileClientKey  = certsDir + "/client.root.key"
 )
+
+//go:embed data/cluster_defaults.sql
+var clusterDefaults []byte
+
+// defaultsReader is a reader for the default settings scripts
+// so that they can be identified and removed from the request.
+type defaultsReader struct {
+	*bytes.Reader
+}
+
+// newDefaultsReader creates a new reader for the default cluster settings script.
+func newDefaultsReader(data []byte) *defaultsReader {
+	return &defaultsReader{Reader: bytes.NewReader(data)}
+}
 
 // CockroachDBContainer represents the CockroachDB container type used in the module
 type CockroachDBContainer struct {
 	testcontainers.Container
-	opts options
+
+	// Settings.
+	database string
+	user     string
+	password string
+
+	// Client certificate.
+	clientCert []byte
+	clientKey  []byte
+	certPool   *x509.CertPool
+	tlsConfig  *tls.Config
 }
 
 // MustConnectionString returns a connection string to open a new connection to CockroachDB
@@ -53,13 +102,28 @@ func (c *CockroachDBContainer) MustConnectionString(ctx context.Context) string 
 // [pgx.ParseConfig], so if you want to call [pgx.ConnectConfig] use the
 // [CockroachDBContainer.ConnectionConfig] method instead.
 func (c *CockroachDBContainer) ConnectionString(ctx context.Context) (string, error) {
-	return c.opts.containerConnString(ctx, c.Container)
+	cfg, err := c.ConnectionConfig(ctx)
+	if err != nil {
+		return "", fmt.Errorf("connection config: %w", err)
+	}
+
+	return stdlib.RegisterConnConfig(cfg), nil
 }
 
 // ConnectionConfig returns a [pgx.ConnConfig] for the CockroachDB container.
 // This can be passed to [pgx.ConnectConfig] to open a new connection.
 func (c *CockroachDBContainer) ConnectionConfig(ctx context.Context) (*pgx.ConnConfig, error) {
-	return c.opts.containerConnConfig(ctx, c.Container)
+	port, err := c.MappedPort(ctx, defaultSQLPort)
+	if err != nil {
+		return nil, fmt.Errorf("mapped port: %w", err)
+	}
+
+	host, err := c.Host(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("host: %w", err)
+	}
+
+	return c.connConfig(host, port)
 }
 
 // TLSConfig returns config necessary to connect to CockroachDB over TLS.
@@ -67,11 +131,110 @@ func (c *CockroachDBContainer) ConnectionConfig(ctx context.Context) (*pgx.ConnC
 // Deprecated: use [CockroachDBContainer.ConnectionConfig] or
 // [CockroachDBContainer.ConnectionConfig] instead.
 func (c *CockroachDBContainer) TLSConfig() (*tls.Config, error) {
-	if c.opts.TLS == nil {
+	if c.tlsConfig == nil {
 		return nil, ErrTLSNotEnabled
 	}
 
-	return c.opts.TLS.tlsConfig()
+	return c.tlsConfig, nil
+}
+
+// connString returns a connection string for the given host, port and options.
+func (c *CockroachDBContainer) connString(host string, port nat.Port) (string, error) {
+	cfg, err := c.connConfig(host, port)
+	if err != nil {
+		return "", fmt.Errorf("connection config: %w", err)
+	}
+
+	return stdlib.RegisterConnConfig(cfg), nil
+}
+
+// connConfig returns a [pgx.ConnConfig] for the given host, port and options.
+func (c *CockroachDBContainer) connConfig(host string, port nat.Port) (*pgx.ConnConfig, error) {
+	var user *url.Userinfo
+	if c.password != "" {
+		user = url.UserPassword(c.user, c.password)
+	} else {
+		user = url.User(c.user)
+	}
+
+	sslMode := "disable"
+	if c.tlsConfig != nil {
+		sslMode = "require" // We can't use "verify-full" as it might be a self signed cert.
+	}
+	params := url.Values{
+		"sslmode": []string{sslMode},
+	}
+
+	u := url.URL{
+		Scheme:   "postgres",
+		User:     user,
+		Host:     net.JoinHostPort(host, port.Port()),
+		Path:     c.database,
+		RawQuery: params.Encode(),
+	}
+
+	cfg, err := pgx.ParseConfig(u.String())
+	if err != nil {
+		return nil, fmt.Errorf("parse config: %w", err)
+	}
+
+	cfg.TLSConfig = c.tlsConfig
+
+	return cfg, nil
+}
+
+// options sets the CockroachDBContainer options from a request.
+func (c *CockroachDBContainer) options(req *testcontainers.GenericContainerRequest) {
+	c.database = req.Env[envDatabase]
+	c.user = req.Env[envUser]
+	c.password = req.Env[envPassword]
+}
+
+// WaitUntilReady implements the [wait.Strategy] interface for the CockroachDBContainer type.
+// It waits for the CA, client cert and key for the configured user to be available in the container.
+// This is defined on the container as it needs to know the user to wait for the correct client cert.
+func (c *CockroachDBContainer) WaitUntilReady(ctx context.Context, target wait.StrategyTarget) error {
+	return wait.ForAll(
+		wait.ForFile(fileCACert).WithMatcher(func(r io.Reader) error {
+			buf, err := io.ReadAll(r)
+			if err != nil {
+				return fmt.Errorf("read CA cert: %w", err)
+			}
+
+			if !c.certPool.AppendCertsFromPEM(buf) {
+				return errors.New("invalid CA cert")
+			}
+
+			return nil
+		}),
+		wait.ForFile(certsDir+"/client."+c.user+".crt").WithMatcher(func(r io.Reader) error {
+			var err error
+			if c.clientCert, err = io.ReadAll(r); err != nil {
+				return fmt.Errorf("read client cert: %w", err)
+			}
+
+			return nil
+		}),
+		wait.ForFile(certsDir+"/client."+c.user+".key").WithMatcher(func(r io.Reader) error {
+			var err error
+			if c.clientKey, err = io.ReadAll(r); err != nil {
+				return fmt.Errorf("read client key: %w", err)
+			}
+
+			cert, err := tls.X509KeyPair(c.clientCert, c.clientKey)
+			if err != nil {
+				return fmt.Errorf("x509 key pair: %w", err)
+			}
+
+			c.tlsConfig = &tls.Config{
+				RootCAs:      c.certPool,
+				Certificates: []tls.Certificate{cert},
+				ServerName:   "127.0.0.1",
+			}
+
+			return nil
+		}),
+	).WaitUntilReady(ctx, target)
 }
 
 // Deprecated: use Run instead.
@@ -80,9 +243,26 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	return Run(ctx, "cockroachdb/cockroach:latest-v23.1", opts...)
 }
 
-// Run creates an instance of the CockroachDB container type
+// Run start an instance of the CockroachDB container type using the given image and options.
+//
+// By default, the container will:
+//   - Cluster: Single node
+//   - Storage: 100% in-memory
+//   - User: root
+//   - Password: ""
+//   - Database: defaultdb
+//   - Exposed ports: 26257/tcp (SQL), 8080/tcp (Admin UI)
+//
+// For more information see starting a [local cluster in docker].
+//
+// [local cluster in docker]: https://www.cockroachlabs.com/docs/stable/start-a-local-cluster-in-docker-linux
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*CockroachDBContainer, error) {
-	o := defaultOptions()
+	ctr := &CockroachDBContainer{
+		database: defaultDatabase,
+		user:     defaultUser,
+		password: defaultPassword,
+		certPool: x509.NewCertPool(),
+	}
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: img,
@@ -90,171 +270,56 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				defaultSQLPort,
 				defaultAdminPort,
 			},
-			LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
-				{
-					PreStarts: []testcontainers.ContainerHook{
-						func(ctx context.Context, container testcontainers.Container) error {
-							return addTLS(ctx, container, o)
-						},
-					},
-					PostReadies: []testcontainers.ContainerHook{
-						func(ctx context.Context, container testcontainers.Container) error {
-							return runStatements(ctx, container, o)
-						},
-					},
-				},
+			Env: map[string]string{
+				"COCKROACH_DATABASE": defaultDatabase,
+				"COCKROACH_USER":     defaultUser,
+				"COCKROACH_PASSWORD": defaultPassword,
 			},
+			Files: []testcontainers.ContainerFile{{
+				Reader:            newDefaultsReader(clusterDefaults),
+				ContainerFilePath: clusterDefaultsContainerFile,
+				FileMode:          0o644,
+			}},
+			Cmd: []string{
+				"start-single-node",
+				memStorageFlag + defaultStoreSize,
+			},
+			WaitingFor: wait.ForAll(
+				// TODO: check this works without any init files.
+				wait.ForLog("end running init files from /docker-entrypoint-initdb.d"),
+				wait.ForHTTP("/health").WithPort(defaultAdminPort),
+				ctr,
+				wait.ForSQL(defaultSQLPort, "pgx/v5", func(host string, port nat.Port) string {
+					connStr, err := ctr.connString(host, port)
+					if err != nil {
+						panic(err)
+					}
+					return connStr
+				}),
+			),
 		},
 		Started: true,
 	}
 
-	// apply options
 	for _, opt := range opts {
-		if apply, ok := opt.(Option); ok {
-			apply(&o)
+		if fn, ok := opt.(customizer); ok {
+			if err := fn.customize(ctr); err != nil {
+				return nil, fmt.Errorf("customize container: %w", err)
+			}
 		}
 		if err := opt.Customize(&req); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("customize request: %w", err)
 		}
 	}
 
-	// modify request
-	for _, fn := range []modiferFunc{
-		addEnvs,
-		addCmd,
-		addWaitingFor,
-	} {
-		if err := fn(&req, o); err != nil {
-			return nil, err
-		}
-	}
+	// Extract the options from the request.
+	ctr.options(&req)
 
-	container, err := testcontainers.GenericContainer(ctx, req)
-	var c *CockroachDBContainer
-	if container != nil {
-		c = &CockroachDBContainer{Container: container, opts: o}
-	}
-
+	var err error
+	ctr.Container, err = testcontainers.GenericContainer(ctx, req)
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return ctr, fmt.Errorf("generic container: %w", err)
 	}
 
-	return c, nil
-}
-
-type modiferFunc func(*testcontainers.GenericContainerRequest, options) error
-
-func addCmd(req *testcontainers.GenericContainerRequest, opts options) error {
-	req.Cmd = []string{
-		"start-single-node",
-		"--store=type=mem,size=" + opts.StoreSize,
-	}
-
-	// authN
-	if opts.TLS != nil {
-		if opts.User != defaultUser {
-			return fmt.Errorf("unsupported user %s with TLS, use %s", opts.User, defaultUser)
-		}
-		if opts.Password != "" {
-			return errors.New("cannot use password authentication with TLS")
-		}
-	}
-
-	switch {
-	case opts.TLS != nil:
-		req.Cmd = append(req.Cmd, "--certs-dir="+certsDir)
-	case opts.Password != "":
-		req.Cmd = append(req.Cmd, "--accept-sql-without-tls")
-	default:
-		req.Cmd = append(req.Cmd, "--insecure")
-	}
-	return nil
-}
-
-func addEnvs(req *testcontainers.GenericContainerRequest, opts options) error {
-	if req.Env == nil {
-		req.Env = make(map[string]string)
-	}
-
-	req.Env["COCKROACH_DATABASE"] = opts.Database
-	req.Env["COCKROACH_USER"] = opts.User
-	req.Env["COCKROACH_PASSWORD"] = opts.Password
-	return nil
-}
-
-func addWaitingFor(req *testcontainers.GenericContainerRequest, opts options) error {
-	sqlWait := wait.ForSQL(defaultSQLPort, "pgx/v5", func(host string, port nat.Port) string {
-		connStr, err := opts.connString(host, port)
-		if err != nil {
-			panic(err)
-		}
-		return connStr
-	})
-	defaultStrategy := wait.ForAll(
-		wait.ForHTTP("/health").WithPort(defaultAdminPort),
-		sqlWait,
-	)
-
-	if req.WaitingFor == nil {
-		req.WaitingFor = defaultStrategy
-	} else {
-		req.WaitingFor = wait.ForAll(req.WaitingFor, defaultStrategy)
-	}
-
-	return nil
-}
-
-func addTLS(ctx context.Context, container testcontainers.Container, opts options) error {
-	if opts.TLS == nil {
-		return nil
-	}
-
-	caBytes := pem.EncodeToMemory(&pem.Block{
-		Type:  "CERTIFICATE",
-		Bytes: opts.TLS.CACert.Raw,
-	})
-	files := map[string][]byte{
-		"ca.crt":          caBytes,
-		"node.crt":        opts.TLS.NodeCert,
-		"node.key":        opts.TLS.NodeKey,
-		"client.root.crt": opts.TLS.ClientCert,
-		"client.root.key": opts.TLS.ClientKey,
-	}
-	for filename, contents := range files {
-		if err := container.CopyToContainer(ctx, contents, filepath.Join(certsDir, filename), 0o600); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// runStatements runs the configured statements against the CockroachDB container.
-func runStatements(ctx context.Context, container testcontainers.Container, opts options) (err error) {
-	if len(opts.Statements) == 0 {
-		return nil
-	}
-
-	connStr, err := opts.containerConnString(ctx, container)
-	if err != nil {
-		return fmt.Errorf("connection string: %w", err)
-	}
-
-	db, err := sql.Open("pgx/v5", connStr)
-	if err != nil {
-		return fmt.Errorf("sql.Open: %w", err)
-	}
-	defer func() {
-		cerr := db.Close()
-		if err == nil {
-			err = cerr
-		}
-	}()
-
-	for _, stmt := range opts.Statements {
-		if _, err = db.Exec(stmt); err != nil {
-			return fmt.Errorf("db.Exec: %w", err)
-		}
-	}
-
-	return nil
+	return ctr, nil
 }

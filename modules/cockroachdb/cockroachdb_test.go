@@ -22,9 +22,6 @@ func TestCockroach_NotRoot(t *testing.T) {
 	suite.Run(t, &AuthNSuite{
 		opts: []testcontainers.ContainerCustomizer{
 			cockroachdb.WithUser("test"),
-			// Do not run the default statements as the user used on this test is
-			// lacking the needed MODIFYCLUSTERSETTING privilege to run them.
-			cockroachdb.WithStatements(),
 		},
 	})
 }
@@ -34,9 +31,6 @@ func TestCockroach_Password(t *testing.T) {
 		opts: []testcontainers.ContainerCustomizer{
 			cockroachdb.WithUser("foo"),
 			cockroachdb.WithPassword("bar"),
-			// Do not run the default statements as the user used on this test is
-			// lacking the needed MODIFYCLUSTERSETTING privilege to run them.
-			cockroachdb.WithStatements(),
 		},
 	})
 }
@@ -47,18 +41,35 @@ func TestCockroach_TLS(t *testing.T) {
 
 	suite.Run(t, &AuthNSuite{
 		opts: []testcontainers.ContainerCustomizer{
-			cockroachdb.WithTLS(tlsCfg),
+			tlsCfg,
 		},
 	})
 }
 
+// TODO: remove this tests, its just a simple example for speed up the development.
 func TestTLS(t *testing.T) {
 	tlsCfg, err := cockroachdb.NewTLSConfig()
 	require.NoError(t, err)
 
 	ctx := context.Background()
 
-	ctr, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", cockroachdb.WithTLS(tlsCfg))
+	ctr, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", tlsCfg)
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+	require.NotNil(t, ctr)
+}
+
+func TestNoTLS(t *testing.T) {
+	ctx := context.Background()
+	ctr, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1")
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+	require.NotNil(t, ctr)
+}
+
+func TestUser(t *testing.T) {
+	ctx := context.Background()
+	ctr, err := cockroachdb.Run(ctx, "cockroachdb/cockroach:latest-v23.1", cockroachdb.WithUser("test"))
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 	require.NotNil(t, ctr)
