@@ -45,7 +45,7 @@ jobs:
       RYUK_RECONNECTION_TIMEOUT: "${{ inputs.project-directory == 'modules/compose' && '30s' || '10s' }}"
     strategy:
       matrix:
-        platform: ${{ fromJSON(inputs.project-directory == 'modulegen' && '[ubuntu-latest, macos-latest, windows-latest]' || '[ubuntu-latest]') }}
+        platform: ${{ inputs.project-directory == 'modulegen' && '[ubuntu-latest, macos-latest, windows-latest]' || '[ubuntu-latest]' }}
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Setup rootless Docker
