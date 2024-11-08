@@ -13,11 +13,6 @@ on:
         type: boolean
         default: true
         description: "Fail the workflow if any of the jobs fail."
-      platform:
-        required: true
-        type: string
-        default: "[ubuntu-latest]"
-        description: "The platform where to run the project."
       project-directory:
         required: true
         type: string
@@ -43,12 +38,13 @@ jobs:
   test-go-project:
     name: "test: ${{ inputs.project-directory }}/${{ inputs.go-version }}"
     # Modulegen can run the tests on all platforms
-    runs-on: ${{ fromJson(inputs.platform) }}
     continue-on-error: ${{ !inputs.fail-fast }}
     env:
       TESTCONTAINERS_RYUK_DISABLED: "${{ inputs.ryuk-disabled }}"
       RYUK_CONNECTION_TIMEOUT: "${{ inputs.project-directory == 'modules/compose' && '5m' || '60s' }}"
       RYUK_RECONNECTION_TIMEOUT: "${{ inputs.project-directory == 'modules/compose' && '30s' || '10s' }}"
+      PLATFORM: ${{ inputs.project-directory == 'modulegen' && '[ubuntu-latest, macos-latest, windows-latest]' || '[ubuntu-latest]' }}
+    runs-on: ${{ fromJson(env.PLATFORM) }}
     steps:
       - name: Setup rootless Docker
         if: ${{ inputs.rootless-docker }}
