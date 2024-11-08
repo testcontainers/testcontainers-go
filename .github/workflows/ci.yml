@@ -116,8 +116,10 @@ jobs:
     permissions:
       contents: read  # for actions/checkout to fetch code
       pull-requests: read  # for sonarsource/sonarcloud-github-action to determine which PR to decorate
-    if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' }}
-    needs: test
+    if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && needs.detect-modules.outputs.modulesCount > 0 }}
+    needs:
+      - detect-modules
+      - test
     runs-on: ubuntu-latest 
     steps:
       - name: Check out code into the Go module directory
