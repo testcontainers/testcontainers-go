@@ -43,8 +43,10 @@ jobs:
       TESTCONTAINERS_RYUK_DISABLED: "${{ inputs.ryuk-disabled }}"
       RYUK_CONNECTION_TIMEOUT: "${{ inputs.project-directory == 'modules/compose' && '5m' || '60s' }}"
       RYUK_RECONNECTION_TIMEOUT: "${{ inputs.project-directory == 'modules/compose' && '30s' || '10s' }}"
-      PLATFORM: ${{ inputs.project-directory == 'modulegen' && '[ubuntu-latest, macos-latest, windows-latest]' || '[ubuntu-latest]' }}
-    runs-on: ${{ fromJson($PLATFORM) }}
+    strategy:
+      matrix:
+        platform: ${{ fromJSON(inputs.project-directory == 'modulegen' && '[ubuntu-latest, macos-latest, windows-latest]' || '[ubuntu-latest]') }}
+    runs-on: ${{ matrix.platform }}
     steps:
       - name: Setup rootless Docker
         if: ${{ inputs.rootless-docker }}
