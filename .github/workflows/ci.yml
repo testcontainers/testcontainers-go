@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       modules: ${{ steps.set-modified-modules.outputs.modules }}
+      modulesCount: ${{ steps.set-modified-modules.outputs.modulesCount }}
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
@@ -29,14 +30,16 @@ jobs:
         name: Set all modified modules
         env:
           ALL_CHANGED_FILES: "${{ steps.changed-files.outputs.all_changed_files }}"
-        run: echo "modules=$(./scripts/changed-modules.sh)" >> $GITHUB_OUTPUT
+        run: |
+          echo "modules=$(./scripts/changed-modules.sh)" >> $GITHUB_OUTPUT
+          echo "modulesCount=$(echo $modules | jq '. | length')" >> GITHUB_OUTPUT
 
       - name: Print out the modules to be used
         run: echo "${{ steps.set-modified-modules.outputs.modules }}"
 
   lint:
     # only run if there are modules to lint
-    if: ${{ needs.detect-modules.outputs.modules[0] != null }}
+    if: ${{ needs.detect-modules.outputs.modulesCount > 0 }}
     needs: detect-modules
     strategy:
       matrix:
@@ -50,7 +53,7 @@ jobs:
 
   test:
     # only run if there are modules to test
-    if: ${{ needs.detect-modules.outputs.modules[0] != null }}
+    if: ${{ needs.detect-modules.outputs.modulesCount > 0  }}
     needs:
       - detect-modules
       - lint
