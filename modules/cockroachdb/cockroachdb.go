@@ -53,12 +53,8 @@ const (
 	envDatabase = "COCKROACH_DATABASE"
 
 	// cert files.
-	certsDir       = cockroachDir + "/certs"
-	fileCACert     = certsDir + "/ca.crt"
-	fileNodeCert   = certsDir + "/node.crt"
-	fileNodeKey    = certsDir + "/node.key"
-	fileClientCert = certsDir + "/client.root.crt"
-	fileClientKey  = certsDir + "/client.root.key"
+	certsDir   = cockroachDir + "/certs"
+	fileCACert = certsDir + "/ca.crt"
 )
 
 //go:embed data/cluster_defaults.sql
