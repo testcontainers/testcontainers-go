@@ -186,6 +186,7 @@ func (c *CockroachDBContainer) ConnectionConfig(ctx context.Context) (*pgx.ConnC
 }
 
 // TLSConfig returns config necessary to connect to CockroachDB over TLS.
+// Returns [ErrTLSNotEnabled] if TLS is not enabled.
 //
 // Deprecated: use [CockroachDBContainer.ConnectionConfig] or
 // [CockroachDBContainer.ConnectionConfig] instead.
