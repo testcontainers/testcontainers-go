@@ -35,7 +35,18 @@ permissions:
   # pull-requests: read
 
 jobs:
+  set-runners:
+    outputs:
+      runners: ${{ steps.set-runners.outputs.runners }}
+    runs-on: 'ubuntu-latest'
+    steps:
+      - id: set-runners
+        name: "Set runners for ${{ inputs.project-directory }}"
+        run: echo "runners=${{ inputs.project-directory == 'modulegen' && [ubuntu-latest, macos-latest, windows-latest] || [ubuntu-latest] }}" >> $GITHUB_OUTPUT
+
   test-go-project:
+    needs:
+      - set-runners
     name: "test: ${{ inputs.project-directory }}/${{ inputs.go-version }}"
     # Modulegen can run the tests on all platforms
     continue-on-error: ${{ !inputs.fail-fast }}
@@ -43,8 +54,7 @@ jobs:
       TESTCONTAINERS_RYUK_DISABLED: "${{ inputs.ryuk-disabled }}"
       RYUK_CONNECTION_TIMEOUT: "${{ inputs.project-directory == 'modules/compose' && '5m' || '60s' }}"
       RYUK_RECONNECTION_TIMEOUT: "${{ inputs.project-directory == 'modules/compose' && '30s' || '10s' }}"
-      PLATFORM: ${{ inputs.project-directory == 'modulegen' && '[ubuntu-latest, macos-latest, windows-latest]' || '[ubuntu-latest]' }}
-    runs-on: ${{ fromJson($PLATFORM) }}
+    runs-on: ${{ fromJSON(needs.set-runners.outputs.runners) }}
     steps:
       - name: Setup rootless Docker
         if: ${{ inputs.rootless-docker }}
