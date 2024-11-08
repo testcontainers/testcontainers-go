@@ -32,7 +32,7 @@ jobs:
         run: echo "modules=$(./scripts/changed-modules.sh)" >> $GITHUB_OUTPUT
 
       - name: Print out the modules to be used
-        run: echo "${{ steps.set-modified-modules.outputs.modules }}[*]"
+        run: echo "${{ steps.set-modified-modules.outputs.modules }}"
 
   lint:
     needs: detect-modules
