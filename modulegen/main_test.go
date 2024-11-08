@@ -247,13 +247,10 @@ func TestGenerate(t *testing.T) {
 	tmpCtx := context.New(t.TempDir())
 	examplesTmp := filepath.Join(tmpCtx.RootDir, "examples")
 	examplesDocTmp := filepath.Join(tmpCtx.DocsDir(), "examples")
-	githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
 
 	err := os.MkdirAll(examplesTmp, 0o777)
 	require.NoError(t, err)
 	err = os.MkdirAll(examplesDocTmp, 0o777)
-	require.NoError(t, err)
-	err = os.MkdirAll(githubWorkflowsTmp, 0o777)
 	require.NoError(t, err)
 
 	err = copyInitialMkdocsConfig(t, tmpCtx)
@@ -283,12 +280,7 @@ func TestGenerate(t *testing.T) {
 	_, err = os.Stat(moduleDocFile)
 	require.NoError(t, err) // error nil implies the file exist
 
-	mainWorkflowFile := filepath.Join(githubWorkflowsTmp, "ci.yml")
-	_, err = os.Stat(mainWorkflowFile)
-	require.NoError(t, err) // error nil implies the file exist
-
 	assertModuleDocContent(t, module, moduleDocFile)
-	assertModuleGithubWorkflowContent(t, mainWorkflowFile)
 
 	generatedTemplatesDir := filepath.Join(examplesTmp, moduleNameLower)
 	// do not generate examples_test.go for examples
@@ -303,13 +295,10 @@ func TestGenerateModule(t *testing.T) {
 	tmpCtx := context.New(t.TempDir())
 	modulesTmp := filepath.Join(tmpCtx.RootDir, "modules")
 	modulesDocTmp := filepath.Join(tmpCtx.DocsDir(), "modules")
-	githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
 
 	err := os.MkdirAll(modulesTmp, 0o777)
 	require.NoError(t, err)
 	err = os.MkdirAll(modulesDocTmp, 0o777)
-	require.NoError(t, err)
-	err = os.MkdirAll(githubWorkflowsTmp, 0o777)
 	require.NoError(t, err)
 
 	err = copyInitialMkdocsConfig(t, tmpCtx)
@@ -339,12 +328,7 @@ func TestGenerateModule(t *testing.T) {
 	_, err = os.Stat(moduleDocFile)
 	require.NoError(t, err) // error nil implies the file exist
 
-	mainWorkflowFile := filepath.Join(githubWorkflowsTmp, "ci.yml")
-	_, err = os.Stat(mainWorkflowFile)
-	require.NoError(t, err) // error nil implies the file exist
-
 	assertModuleDocContent(t, module, moduleDocFile)
-	assertModuleGithubWorkflowContent(t, mainWorkflowFile)
 
 	generatedTemplatesDir := filepath.Join(modulesTmp, moduleNameLower)
 	assertExamplesTestContent(t, module, filepath.Join(generatedTemplatesDir, "examples_test.go"))
@@ -437,24 +421,6 @@ func assertModuleContent(t *testing.T, module context.TestcontainersModule, exam
 	require.Equal(t, "\tvar c *"+containerName, data[32])
 	require.Equal(t, "\t\tc = &"+containerName+"{Container: container}", data[34])
 	require.Equal(t, "\treturn c, nil", data[41])
-}
-
-// assert content GitHub workflow for the module
-func assertModuleGithubWorkflowContent(t *testing.T, moduleWorkflowFile string) {
-	t.Helper()
-	content, err := os.ReadFile(moduleWorkflowFile)
-	require.NoError(t, err)
-
-	data := sanitiseContent(content)
-	ctx := getTestRootContext(t)
-
-	modulesList, err := ctx.GetModules()
-	require.NoError(t, err)
-	assert.Equal(t, "        module: ["+strings.Join(modulesList, ", ")+"]", data[96])
-
-	examplesList, err := ctx.GetExamples()
-	require.NoError(t, err)
-	assert.Equal(t, "        module: ["+strings.Join(examplesList, ", ")+"]", data[111])
 }
 
 // assert content go.mod
