@@ -42,13 +42,13 @@ jobs:
     steps:
       - id: set-runners
         name: "Set runners for ${{ inputs.project-directory }}"
-        run: echo "runners=${{ inputs.project-directory == 'modulegen' && [ubuntu-latest, macos-latest, windows-latest] || [ubuntu-latest] }}" >> $GITHUB_OUTPUT
+        # Modulegen can run the tests on all platforms
+        run: echo "runners=[${{ inputs.project-directory == 'modulegen' && 'ubuntu-latest, macos-latest, windows-latest' || 'ubuntu-latest' }}]" >> $GITHUB_OUTPUT
 
   test-go-project:
     needs:
       - set-runners
     name: "test: ${{ inputs.project-directory }}/${{ inputs.go-version }}"
-    # Modulegen can run the tests on all platforms
     continue-on-error: ${{ !inputs.fail-fast }}
     env:
       TESTCONTAINERS_RYUK_DISABLED: "${{ inputs.ryuk-disabled }}"
