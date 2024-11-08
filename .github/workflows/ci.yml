@@ -76,7 +76,7 @@ jobs:
     with:
       go-version: ${{ matrix.go-version }}
       fail-fast: false
-      platform: 'ubuntu-latest'
+      platform: '[ubuntu-latest]'
       project-directory: "."
       rootless-docker: false
       ryuk-disabled: true
@@ -91,12 +91,11 @@ jobs:
     strategy:
       matrix:
         go-version: [1.22.x, 1.x]
-        platform: [ubuntu-latest]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
       fail-fast: false
-      platform: 'ubuntu-latest'
+      platform: '[ubuntu-latest]'
       project-directory: "."
       rootless-docker: true
       ryuk-disabled: false
