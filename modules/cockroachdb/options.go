@@ -11,11 +11,6 @@ import (
 // errInsecureWithPassword is returned when trying to use insecure mode with a password.
 var errInsecureWithPassword = errors.New("insecure mode cannot be used with a password")
 
-// customizer is an interface for customizing a CockroachDB container.
-type customizer interface {
-	customize(*CockroachDBContainer) error
-}
-
 // WithDatabase sets the name of the database to create and use.
 // This will be converted to lowercase as CockroachDB forces the database to be lowercase.
 // The database creation will be skipped if data exists in the `/cockroach/cockroach-data` directory within the container.

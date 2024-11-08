@@ -288,11 +288,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	for _, opt := range opts {
-		if fn, ok := opt.(customizer); ok {
-			if err := fn.customize(ctr); err != nil {
-				return nil, fmt.Errorf("customize container: %w", err)
-			}
-		}
 		if err := opt.Customize(&req); err != nil {
 			return nil, fmt.Errorf("customize request: %w", err)
 		}
