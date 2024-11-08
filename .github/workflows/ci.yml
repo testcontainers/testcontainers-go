@@ -35,6 +35,8 @@ jobs:
         run: echo "${{ steps.set-modified-modules.outputs.modules }}"
 
   lint:
+    # only run if there are modules to lint
+    if: ${{ needs.detect-modules.outputs.modules[0] != null }}
     needs: detect-modules
     strategy:
       matrix:
@@ -47,6 +49,8 @@ jobs:
       ryuk-disabled: false
 
   test:
+    # only run if there are modules to test
+    if: ${{ needs.detect-modules.outputs.modules[0] != null }}
     needs:
       - detect-modules
       - lint

@@ -18,18 +18,25 @@
 #    The output should be: just the modulegen module.
 #
 # 5. A non-Go file from the core dir is modified:
-#    ALL_CHANGED_FILES="docs/README.md" ./scripts/changed-modules.sh
+#    ALL_CHANGED_FILES="README.md" ./scripts/changed-modules.sh
 #    The output should be: all modules.
 #
 # 6. A file from two modules in the modules dir are modified:
 #    ALL_CHANGED_FILES="modules/nginx/go.mod modules/localstack/go.mod" ./scripts/changed-modules.sh
 #    The output should be: the modules/nginx and modules/localstack modules.
 #
+# 7. Files from the excluded dirs are modified:
+#    ALL_CHANGED_FILES="docs/a.md .vscode/a.json .devcontainer/a.json scripts/a.sh" ./scripts/changed-modules.sh
+#    The output should be: no modules.
+#
 # There is room for improvement in this script. For example, it could detect if the changes applied to the docs or the .github dirs, and then do not include any module in the list.
 # But then we would need to verify the CI scripts to ensure that the job receives the correct modules to build.
 
 # ROOT_DIR is the root directory of the repository.
 readonly ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+
+# define an array of modules that won't be included in the list
+readonly excluded_modules=(".devcontainer" ".vscode" "docs" "scripts")
 
 # modules is an array that will store the paths of all the modules in the repository.
 modules=()
@@ -86,6 +93,15 @@ for file in $modified_files; do
         modified_modules+=("\"modulegen\"")
     else
         # a file from the core module is modified, so include all modules in the list and stop the loop
+        # check if the file is in one of the excluded modules
+        for exclude_module in ${excluded_modules[@]}; do
+            if [[ $file == $exclude_module/* ]]; then
+                # continue skips to the next iteration of an enclosing for, select, until, or while loop in a shell script.
+                # Execution continues at the loop control of the nth enclosing loop, in this case two levels up.
+                continue 2
+            fi
+        done
+
         modified_modules=${allModules[@]}
         break
     fi
