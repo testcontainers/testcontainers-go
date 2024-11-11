@@ -294,7 +294,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	// Extract the options from the request so they can used by wait strategies and connection methods.
-	ctr.setOptions(&req)
+	if err := ctr.setOptions(&req); err != nil {
+		return nil, fmt.Errorf("set options: %w", err)
+	}
 
 	var err error
 	ctr.Container, err = testcontainers.GenericContainer(ctx, req)
