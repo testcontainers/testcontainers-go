@@ -131,7 +131,6 @@ func (c *CockroachDBContainer) ConnectionConfig(ctx context.Context) (*pgx.ConnC
 func (c *CockroachDBContainer) TLSConfig() (*tls.Config, error) {
 	if cfg := c.tlsStrategy.TLSConfig(); cfg != nil {
 		return cfg, nil
-
 	}
 
 	return nil, ErrTLSNotEnabled
