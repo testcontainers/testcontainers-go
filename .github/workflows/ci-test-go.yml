@@ -1,5 +1,5 @@
 name: Run tests for a Go project
-run-name: "${{ inputs.project-directory }} ${{ inputs.go-version }}"
+run-name: "${{ inputs.project-directory }} ${{ inputs.go-version }} ${{ inputs.platforms }}"
 
 on:
   workflow_call:
@@ -74,7 +74,7 @@ jobs:
         run: |
           make generate
           git --no-pager diff && [[ 0 -eq $(git status --porcelain | wc -l) ]]
-    
+
       - name: modVerify
         working-directory: ./${{ inputs.project-directory }}
         run: go mod verify
