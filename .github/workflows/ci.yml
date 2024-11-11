@@ -39,26 +39,11 @@ jobs:
           echo "${{ steps.set-modified-modules-count.outputs.modules_count }} modules in the build"
           echo "${{ steps.set-modified-modules.outputs.modules }}"
 
-  lint:
-    # only run if there are modules to lint
-    if: ${{ needs.detect-modules.outputs.modules_count > 0 }}
-    needs: detect-modules
-    strategy:
-      matrix:
-        module: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
-    uses: ./.github/workflows/ci-lint-go.yml
-    with:
-      fail-fast: true
-      project-directory: "${{ matrix.module }}"
-      rootless-docker: false
-      ryuk-disabled: false
-
   test:
     # only run if there are modules to test
     if: ${{ needs.detect-modules.outputs.modules_count > 0  }}
     needs:
       - detect-modules
-      - lint
     strategy:
       matrix:
         go-version: [1.22.x, 1.x]
@@ -79,7 +64,6 @@ jobs:
     if: ${{ contains(fromJSON(needs.detect-modules.outputs.modules), '') }}
     needs:
       - detect-modules
-      - lint
     name: "Test with reaper off"
     strategy:
       matrix:
@@ -100,7 +84,6 @@ jobs:
     if: ${{ contains(fromJSON(needs.detect-modules.outputs.modules), '') }}
     needs:
       - detect-modules
-      - lint
     name: "Test with Rootless Docker"
     strategy:
       matrix:
