@@ -128,7 +128,7 @@ jobs:
         run: make test-unit
 
       - name: Upload SonarCloud files
-        if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && matrix.platform == 'ubuntu-latest' && !inputs.rootless-docker }}
+        if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && matrix.platform == 'ubuntu-latest' && !inputs.rootless-docker && !inputs.ryuk-disabled }}
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: sonarcloud-${{ inputs.project-directory }}-${{ inputs.go-version }}-${{ matrix.platform }}
