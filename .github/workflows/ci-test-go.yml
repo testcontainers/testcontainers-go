@@ -119,11 +119,18 @@ jobs:
         timeout-minutes: 30
         run: make test-unit
 
+      - name: Set sonar artifact name
+        # For the core library, where the project directory is '.', we'll use "core" as artifact name.
+        # For the modules, we'll remove the slashes, keeping the name of the module
+        if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && inputs.run-tests && !inputs.rootless-docker && !inputs.ryuk-disabled }}
+        run: |
+          echo "ARTIFACT_NAME=$(basename ${{ inputs.project-directory == '.' && 'core' || inputs.project-directory }})-${{ inputs.go-version }}-${{ inputs.platform }}" >> $GITHUB_ENV
+
       - name: Upload SonarCloud files
         if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && inputs.run-tests && !inputs.rootless-docker && !inputs.ryuk-disabled }}
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
-          name: sonarcloud-${{ inputs.project-directory }}-${{ inputs.go-version }}-${{ inputs.platform }}
+          name: sonarcloud-${{ env.ARTIFACT_NAME }}
           path: |
             ./sonar-project.properties
             ${{ inputs.project-directory }}/TEST-unit.xml
