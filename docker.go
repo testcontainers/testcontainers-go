@@ -44,6 +44,7 @@ var _ Container = (*DockerContainer)(nil)
 
 const (
 	Bridge        = "bridge"         // Deprecated, it will removed in the next major release. Bridge network driver and name
+	Podman        = "podman"         // Deprecated: Podman is supported through the current Docker context
 	ReaperDefault = "reaper_default" // Deprecated: it will removed in the next major release. Default network name when bridge is not available
 	packagePath   = "github.com/testcontainers/testcontainers-go"
 )

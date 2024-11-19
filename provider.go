@@ -12,6 +12,7 @@ import (
 const (
 	ProviderDefault ProviderType = iota // default will auto-detect provider from DOCKER_HOST environment variable
 	ProviderDocker
+	ProviderPodman // Deprecated: Podman is supported through the current Docker context
 )
 
 type (
