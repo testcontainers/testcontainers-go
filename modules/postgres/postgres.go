@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -262,7 +263,7 @@ func (c *PostgresContainer) checkSnapshotConfig(opts []SnapshotOption) (string, 
 	}
 
 	if c.dbName == "postgres" {
-		return "", fmt.Errorf("cannot restore the postgres system database as it cannot be dropped to be restored")
+		return "", errors.New("cannot restore the postgres system database as it cannot be dropped to be restored")
 	}
 	return snapshotName, nil
 }

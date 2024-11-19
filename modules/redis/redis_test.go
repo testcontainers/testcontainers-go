@@ -120,9 +120,7 @@ func assertSetsGets(t *testing.T, ctx context.Context, redisContainer *tcredis.R
 
 	t.Log("received response from redis")
 
-	if pong != "PONG" {
-		t.Fatalf("received unexpected response from redis: %s", pong)
-	}
+	require.Equalf(t, "PONG", pong, "received unexpected response from redis: %s", pong)
 
 	for i := 0; i < keyCount; i++ {
 		// Set data
@@ -137,9 +135,7 @@ func assertSetsGets(t *testing.T, ctx context.Context, redisContainer *tcredis.R
 		savedValue, err := client.Get(ctx, key).Result()
 		require.NoError(t, err)
 
-		if savedValue != value {
-			t.Fatalf("Expected value %s. Got %s.", savedValue, value)
-		}
+		require.Equal(t, savedValue, value)
 	}
 }
 

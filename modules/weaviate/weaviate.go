@@ -2,6 +2,7 @@ package weaviate
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -76,7 +77,7 @@ func (c *WeaviateContainer) HttpHostAddress(ctx context.Context) (string, string
 
 	host, err := c.Host(ctx)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get container host")
+		return "", "", errors.New("failed to get container host")
 	}
 
 	return "http", fmt.Sprintf("%s:%s", host, port.Port()), nil
@@ -92,7 +93,7 @@ func (c *WeaviateContainer) GrpcHostAddress(ctx context.Context) (string, error)
 
 	host, err := c.Host(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to get container host")
+		return "", errors.New("failed to get container host")
 	}
 
 	return fmt.Sprintf("%s:%s", host, port.Port()), nil

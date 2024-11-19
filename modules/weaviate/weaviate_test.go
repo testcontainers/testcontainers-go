@@ -48,17 +48,11 @@ func TestWeaviate(t *testing.T) {
 
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		conn, err := grpc.NewClient(host, opts...)
-		if err != nil {
-			tt.Fatalf("failed to dial connection: %v", err)
-		}
+		require.NoErrorf(t, err, "failed to dial connection")
 		client := grpc_health_v1.NewHealthClient(conn)
 		check, err := client.Check(context.TODO(), &grpc_health_v1.HealthCheckRequest{})
-		if err != nil {
-			tt.Fatalf("failed to get a health check: %v", err)
-		}
-		if grpc_health_v1.HealthCheckResponse_SERVING.Enum().Number() != check.Status.Number() {
-			tt.Fatalf("unexpected status code: %d", check.Status.Number())
-		}
+		require.NoErrorf(t, err, "failed to get a health check")
+		require.Equalf(t, grpc_health_v1.HealthCheckResponse_SERVING.Enum().Number(), check.Status.Number(), "unexpected status code: %d", check.Status.Number())
 	})
 
 	t.Run("Weaviate client", func(tt *testing.T) {
@@ -72,8 +66,7 @@ func TestWeaviate(t *testing.T) {
 		meta, err := client.Misc().MetaGetter().Do(ctx)
 		require.NoError(tt, err)
 
-		if meta == nil || meta.Version == "" {
-			tt.Fatal("failed to get /v1/meta response")
-		}
+		require.NotNilf(tt, meta, "failed to get /v1/meta response")
+		require.NotEmptyf(tt, meta.Version, "failed to get /v1/meta response")
 	})
 }

@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -121,14 +123,10 @@ func getFreePort(t *testing.T) int {
 	t.Helper()
 
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	if err != nil {
-		t.Fatalf("failed to resolve TCP address: %v", err)
-	}
+	require.NoErrorf(t, err, "failed to resolve TCP address")
 
 	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		t.Fatalf("failed to listen on TCP address: %v", err)
-	}
+	require.NoErrorf(t, err, "failed to listen on TCP address")
 	defer l.Close()
 
 	return l.Addr().(*net.TCPAddr).Port
@@ -146,9 +144,7 @@ func writeTemplateWithSrvType(t *testing.T, templateFile string, srvType string,
 	composeFile := filepath.Join(tmpDir, "docker-compose.yml")
 
 	tmpl, err := template.ParseFiles(filepath.Join(testdataPackage, templateFile))
-	if err != nil {
-		t.Fatalf("parsing template file: %s", err)
-	}
+	require.NoErrorf(t, err, "parsing template file")
 
 	values := map[string]interface{}{}
 	for i, p := range port {
@@ -158,19 +154,17 @@ func writeTemplateWithSrvType(t *testing.T, templateFile string, srvType string,
 	values["ServiceType"] = srvType
 
 	output, err := os.Create(composeFile)
-	if err != nil {
-		t.Fatalf("creating output file: %s", err)
-	}
-	defer output.Close()
+	require.NoErrorf(t, err, "creating output file")
+	defer func() {
+		require.NoError(t, output.Close())
+	}()
 
 	executeTemplateFile := func(templateFile *template.Template, wr io.Writer, data any) error {
 		return templateFile.Execute(wr, data)
 	}
 
 	err = executeTemplateFile(tmpl, output, values)
-	if err != nil {
-		t.Fatalf("executing template file: %s", err)
-	}
+	require.NoErrorf(t, err, "executing template file")
 
 	return composeFile
 }

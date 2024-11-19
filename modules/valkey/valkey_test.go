@@ -109,9 +109,7 @@ func assertSetsGets(t *testing.T, ctx context.Context, valkeyContainer *tcvalkey
 	msg, err := res.ToString()
 	require.NoError(t, err)
 
-	if msg != "PONG" {
-		t.Fatalf("received unexpected response from valkey: %s", res.String())
-	}
+	require.Equalf(t, "PONG", msg, "received unexpected response from valkey: %s", res.String())
 
 	for i := 0; i < keyCount; i++ {
 		// Set data
@@ -132,9 +130,7 @@ func assertSetsGets(t *testing.T, ctx context.Context, valkeyContainer *tcvalkey
 
 		retVal, err := resp.ToString()
 		require.NoError(t, err)
-		if retVal != value {
-			t.Fatalf("Expected value %s. Got %s.", value, retVal)
-		}
+		require.Equal(t, retVal, value)
 	}
 }
 

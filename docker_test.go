@@ -74,20 +74,11 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 	CleanupContainer(t, nginxC)
 	require.NoError(t, err)
 
-	// host, err := nginxC.Host(ctx)
-	// if err != nil {
-	//	t.Errorf("Expected host %s. Got '%d'.", host, err)
-	// }
-	//
 	endpoint, err := nginxC.PortEndpoint(ctx, nginxHighPort, "http")
-	if err != nil {
-		t.Errorf("Expected server endpoint. Got '%v'.", err)
-	}
+	require.NoErrorf(t, err, "Expected server endpoint")
 
 	_, err = http.Get(endpoint)
-	if err != nil {
-		t.Errorf("Expected OK response. Got '%d'.", err)
-	}
+	require.NoErrorf(t, err, "Expected OK response")
 }
 
 func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testing.T) {
@@ -106,17 +97,13 @@ func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testi
 	require.NoError(t, err)
 
 	endpoint, err := nginxC.Endpoint(ctx, "http")
-	if err != nil {
-		t.Errorf("Expected server endpoint. Got '%v'.", err)
-	}
+	require.NoErrorf(t, err, "Expected server endpoint")
 
 	resp, err := http.Get(endpoint)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
-	}
+	require.Equalf(t, http.StatusOK, resp.StatusCode, "Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 }
 
 func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
@@ -181,25 +168,17 @@ func TestContainerWithHostNetwork(t *testing.T) {
 	require.NoError(t, err)
 
 	portEndpoint, err := nginxC.PortEndpoint(ctx, nginxHighPort, "http")
-	if err != nil {
-		t.Errorf("Expected port endpoint %s. Got '%d'.", portEndpoint, err)
-	}
+	require.NoErrorf(t, err, "Expected port endpoint %s", portEndpoint)
 	t.Log(portEndpoint)
 
 	_, err = http.Get(portEndpoint)
-	if err != nil {
-		t.Errorf("Expected OK response. Got '%v'.", err)
-	}
+	require.NoErrorf(t, err, "Expected OK response")
 
 	host, err := nginxC.Host(ctx)
-	if err != nil {
-		t.Errorf("Expected host %s. Got '%d'.", host, err)
-	}
+	require.NoErrorf(t, err, "Expected host %s", host)
 
 	_, err = http.Get("http://" + host + ":8080")
-	if err != nil {
-		t.Errorf("Expected OK response. Got '%v'.", err)
-	}
+	assert.NoErrorf(t, err, "Expected OK response")
 }
 
 func TestContainerReturnItsContainerID(t *testing.T) {
@@ -215,9 +194,7 @@ func TestContainerReturnItsContainerID(t *testing.T) {
 	CleanupContainer(t, nginxA)
 	require.NoError(t, err)
 
-	if nginxA.GetContainerID() == "" {
-		t.Errorf("expected a containerID but we got an empty string.")
-	}
+	assert.NotEmptyf(t, nginxA.GetContainerID(), "expected a containerID but we got an empty string.")
 }
 
 // testLogConsumer is a simple implementation of LogConsumer that logs to the test output.
@@ -331,9 +308,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 		require.NoError(t, err)
 
 		_, _, err = dockerClient.ImageInspectWithRaw(ctx, nginxAlpineImage)
-		if err != nil {
-			t.Fatal("nginx image should not have been removed")
-		}
+		require.NoErrorf(t, err, "nginx image should not have been removed")
 	})
 
 	t.Run("if built from Dockerfile", func(t *testing.T) {
@@ -364,9 +339,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 		require.NoError(t, err)
 
 		_, _, err = dockerClient.ImageInspectWithRaw(ctx, imageID)
-		if err == nil {
-			t.Fatal("custom built image should have been removed", err)
-		}
+		require.Errorf(t, err, "custom built image should have been removed")
 	})
 }
 
@@ -405,9 +378,7 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
-	}
+	require.Equalf(t, http.StatusOK, resp.StatusCode, "Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 
 	endpointB, err := nginxB.PortEndpoint(ctx, nginxDefaultPort, "http")
 	require.NoError(t, err)
@@ -416,9 +387,7 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
-	}
+	require.Equalf(t, http.StatusOK, resp.StatusCode, "Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 }
 
 func TestContainerCreation(t *testing.T) {
@@ -444,24 +413,15 @@ func TestContainerCreation(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
-	}
+	require.Equalf(t, http.StatusOK, resp.StatusCode, "Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	networkIP, err := nginxC.ContainerIP(ctx)
 	require.NoError(t, err)
-	if len(networkIP) == 0 {
-		t.Errorf("Expected an IP address, got %v", networkIP)
-	}
+	require.NotEmptyf(t, networkIP, "Expected an IP address, got %v", networkIP)
 	networkAliases, err := nginxC.NetworkAliases(ctx)
 	require.NoError(t, err)
-	if len(networkAliases) != 1 {
-		fmt.Printf("%v", networkAliases)
-		t.Errorf("Expected number of connected networks %d. Got %d.", 0, len(networkAliases))
-	}
-
-	if len(networkAliases["bridge"]) != 0 {
-		t.Errorf("Expected number of aliases for 'bridge' network %d. Got %d.", 0, len(networkAliases["bridge"]))
-	}
+	require.Lenf(t, networkAliases, 1, "Expected number of connected networks %d. Got %d.", 0, len(networkAliases))
+	require.Contains(t, networkAliases, "bridge")
+	assert.Emptyf(t, networkAliases["bridge"], "Expected number of aliases for 'bridge' network %d. Got %d.", 0, len(networkAliases["bridge"]))
 }
 
 func TestContainerCreationWithName(t *testing.T) {
@@ -491,14 +451,12 @@ func TestContainerCreationWithName(t *testing.T) {
 	require.NoError(t, err)
 
 	name := inspect.Name
-	if name != expectedName {
-		t.Errorf("Expected container name '%s'. Got '%s'.", expectedName, name)
-	}
+	assert.Equalf(t, expectedName, name, "Expected container name '%s'. Got '%s'.", expectedName, name)
 	networks, err := nginxC.Networks(ctx)
 	require.NoError(t, err)
-	if len(networks) != 1 {
-		t.Errorf("Expected networks 1, the default bridge network. Got '%d'.", len(networks))
-	}
+	require.Lenf(t, networks, 1, "Expected networks 1. Got '%d'.", len(networks))
+	network := networks[0]
+	assert.Equalf(t, Bridge, network, "Expected network name '%s'. Got '%s'.", Bridge, network)
 
 	endpoint, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
 	require.NoError(t, err)
@@ -507,9 +465,7 @@ func TestContainerCreationWithName(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
-	}
+	require.Equalf(t, http.StatusOK, resp.StatusCode, "Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 }
 
 func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
@@ -535,9 +491,7 @@ func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
-	}
+	require.Equalf(t, http.StatusOK, resp.StatusCode, "Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 }
 
 func TestContainerCreationTimesOut(t *testing.T) {
@@ -555,9 +509,7 @@ func TestContainerCreationTimesOut(t *testing.T) {
 	})
 	CleanupContainer(t, nginxC)
 
-	if err == nil {
-		t.Error("Expected timeout")
-	}
+	assert.Errorf(t, err, "Expected timeout")
 }
 
 func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
@@ -582,9 +534,7 @@ func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
-	}
+	require.Equalf(t, http.StatusOK, resp.StatusCode, "Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 }
 
 func TestContainerCreationTimesOutWithHttp(t *testing.T) {
@@ -620,9 +570,7 @@ func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
 		Started:          true,
 	})
 	CleanupContainer(t, c)
-	if err == nil {
-		t.Error("Expected timeout")
-	}
+	assert.Errorf(t, err, "Expected timeout")
 }
 
 func TestContainerCreationWaitsForLog(t *testing.T) {
@@ -722,10 +670,8 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 	require.NoError(t, err)
 
 	temp := strings.Split(string(out), "\n")
-
-	if !regexp.MustCompile(`^(?i:Step)\s*1/\d+\s*:\s*FROM alpine$`).MatchString(temp[0]) {
-		t.Errorf("Expected stdout first line to be %s. Got '%s'.", "Step 1/* : FROM alpine", temp[0])
-	}
+	require.NotEmpty(t, temp)
+	assert.Regexpf(t, `^(?i:Step)\s*1/\d+\s*:\s*FROM alpine$`, temp[0], "Expected stdout first line to be %s. Got '%s'.", "Step 1/* : FROM alpine", temp[0])
 }
 
 func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
@@ -747,9 +693,7 @@ func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 		Started:          true,
 	})
 	CleanupContainer(t, c)
-	if err == nil {
-		t.Fatal("Expected timeout")
-	}
+	require.Errorf(t, err, "Expected timeout")
 }
 
 func TestContainerCreationWaitingForHostPort(t *testing.T) {
@@ -1094,9 +1038,7 @@ func TestContainerWithTmpFs(t *testing.T) {
 	// exec_reader_example {
 	c, reader, err := ctr.Exec(ctx, []string{"ls", path})
 	require.NoError(t, err)
-	if c != 1 {
-		t.Fatalf("File %s should not have existed, expected return code 1, got %v", path, c)
-	}
+	require.Equalf(t, 1, c, "File %s should not have existed, expected return code 1, got %v", path, c)
 
 	buf := new(strings.Builder)
 	_, err = io.Copy(buf, reader)
@@ -1109,16 +1051,12 @@ func TestContainerWithTmpFs(t *testing.T) {
 	// exec_example {
 	c, _, err = ctr.Exec(ctx, []string{"touch", path})
 	require.NoError(t, err)
-	if c != 0 {
-		t.Fatalf("File %s should have been created successfully, expected return code 0, got %v", path, c)
-	}
+	require.Zerof(t, c, "File %s should have been created successfully, expected return code 0, got %v", path, c)
 	// }
 
 	c, _, err = ctr.Exec(ctx, []string{"ls", path})
 	require.NoError(t, err)
-	if c != 0 {
-		t.Fatalf("File %s should exist, expected return code 0, got %v", path, c)
-	}
+	require.Zerof(t, c, "File %s should exist, expected return code 0, got %v", path, c)
 }
 
 func TestContainerNonExistentImage(t *testing.T) {
@@ -1132,9 +1070,7 @@ func TestContainerNonExistentImage(t *testing.T) {
 		CleanupContainer(t, ctr)
 
 		var nf errdefs.ErrNotFound
-		if !errors.As(err, &nf) {
-			t.Fatalf("the error should have been an errdefs.ErrNotFound: %v", err)
-		}
+		require.ErrorAsf(t, err, &nf, "the error should have been an errdefs.ErrNotFound: %v", err)
 	})
 
 	t.Run("the context cancellation is propagated to container creation", func(t *testing.T) {
@@ -1148,9 +1084,7 @@ func TestContainerNonExistentImage(t *testing.T) {
 			Started: true,
 		})
 		CleanupContainer(t, c)
-		if !errors.Is(err, ctx.Err()) {
-			t.Fatalf("err should be a ctx cancelled error %v", err)
-		}
+		require.ErrorIsf(t, err, ctx.Err(), "err should be a ctx cancelled error %v", err)
 	})
 }
 
@@ -1215,9 +1149,8 @@ func TestContainerWithCustomHostname(t *testing.T) {
 	CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	if actualHostname := readHostname(t, ctr.GetContainerID()); actualHostname != hostname {
-		t.Fatalf("expected hostname %s, got %s", hostname, actualHostname)
-	}
+	actualHostname := readHostname(t, ctr.GetContainerID())
+	require.Equalf(t, actualHostname, hostname, "expected hostname %s, got %s", hostname, actualHostname)
 }
 
 func TestContainerInspect_RawInspectIsCleanedOnStop(t *testing.T) {
@@ -1241,15 +1174,11 @@ func TestContainerInspect_RawInspectIsCleanedOnStop(t *testing.T) {
 func readHostname(tb testing.TB, containerId string) string {
 	tb.Helper()
 	containerClient, err := NewDockerClientWithOpts(context.Background())
-	if err != nil {
-		tb.Fatalf("Failed to create Docker client: %v", err)
-	}
+	require.NoErrorf(tb, err, "Failed to create Docker client")
 	defer containerClient.Close()
 
 	containerDetails, err := containerClient.ContainerInspect(context.Background(), containerId)
-	if err != nil {
-		tb.Fatalf("Failed to inspect container: %v", err)
-	}
+	require.NoErrorf(tb, err, "Failed to inspect container")
 
 	return containerDetails.Config.Hostname
 }
@@ -1287,9 +1216,7 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 			_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "hello.sh"), tc.copiedFileName, 700)
 			c, _, err := nginxC.Exec(ctx, []string{"bash", tc.copiedFileName})
 			require.NoError(t, err)
-			if c != 0 {
-				t.Fatalf("File %s should exist, expected return code 0, got %v", tc.copiedFileName, c)
-			}
+			require.Zerof(t, c, "File %s should exist, expected return code 0, got %v", tc.copiedFileName, c)
 		})
 	}
 }
@@ -1496,9 +1423,7 @@ func TestDockerContainerCopyToContainer(t *testing.T) {
 			require.NoError(t, err)
 			c, _, err := nginxC.Exec(ctx, []string{"bash", tc.copiedFileName})
 			require.NoError(t, err)
-			if c != 0 {
-				t.Fatalf("File %s should exist, expected return code 0, got %v", tc.copiedFileName, c)
-			}
+			require.Zerof(t, c, "File %s should exist, expected return code 0, got %v", tc.copiedFileName, c)
 		})
 	}
 }
@@ -1523,9 +1448,7 @@ func TestDockerContainerCopyFileFromContainer(t *testing.T) {
 	_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "hello.sh"), "/"+copiedFileName, 700)
 	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
 	require.NoError(t, err)
-	if c != 0 {
-		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFileName, c)
-	}
+	require.Zerof(t, c, "File %s should exist, expected return code 0, got %v", copiedFileName, c)
 
 	reader, err := nginxC.CopyFileFromContainer(ctx, "/"+copiedFileName)
 	require.NoError(t, err)
@@ -1554,9 +1477,7 @@ func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
 	_ = nginxC.CopyFileToContainer(ctx, filepath.Join(".", "testdata", "empty.sh"), "/"+copiedFileName, 700)
 	c, _, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
 	require.NoError(t, err)
-	if c != 0 {
-		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFileName, c)
-	}
+	require.Zerof(t, c, "File %s should exist, expected return code 0, got %v", copiedFileName, c)
 
 	reader, err := nginxC.CopyFileFromContainer(ctx, "/"+copiedFileName)
 	require.NoError(t, err)
@@ -1722,11 +1643,14 @@ func TestGetGatewayIP(t *testing.T) {
 	require.NoError(t, err)
 	defer provider.Close()
 
-	ip, err := provider.(*DockerProvider).GetGatewayIP(context.Background())
-	require.NoError(t, err)
-	if ip == "" {
-		t.Fatal("could not get gateway ip")
+	dockerProvider, ok := provider.(*DockerProvider)
+	if !ok {
+		t.Skip("provider is not a DockerProvider")
 	}
+
+	ip, err := dockerProvider.GetGatewayIP(context.Background())
+	require.NoError(t, err)
+	require.NotEmpty(t, ip)
 }
 
 func TestNetworkModeWithContainerReference(t *testing.T) {

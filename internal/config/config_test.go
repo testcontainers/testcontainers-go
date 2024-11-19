@@ -24,10 +24,9 @@ func resetTestEnv(t *testing.T) {
 	t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", "")
 	t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "")
 	t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "")
-	t.Setenv("TESTCONTAINERS_RYUK_VERBOSE", "")
-	t.Setenv("TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT", "")
-	t.Setenv("TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT", "")
-	t.Setenv("TESTCONTAINERS_BRIDGE_NAME", "")
+	t.Setenv("RYUK_VERBOSE", "")
+	t.Setenv("RYUK_RECONNECTION_TIMEOUT", "")
+	t.Setenv("RYUK_CONNECTION_TIMEOUT", "")
 }
 
 func TestReadConfig(t *testing.T) {
@@ -79,8 +78,8 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 		t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", defaultHubPrefix)
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
-		t.Setenv("TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT", "13s")
-		t.Setenv("TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT", "12s")
+		t.Setenv("RYUK_RECONNECTION_TIMEOUT", "13s")
+		t.Setenv("RYUK_CONNECTION_TIMEOUT", "12s")
 
 		config := read()
 
@@ -127,9 +126,9 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 		t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", defaultHubPrefix)
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
-		t.Setenv("TESTCONTAINERS_RYUK_VERBOSE", "true")
-		t.Setenv("TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT", "13s")
-		t.Setenv("TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT", "12s")
+		t.Setenv("RYUK_VERBOSE", "true")
+		t.Setenv("RYUK_RECONNECTION_TIMEOUT", "13s")
+		t.Setenv("RYUK_CONNECTION_TIMEOUT", "12s")
 
 		config := read()
 		expected := Config{
@@ -261,8 +260,8 @@ func TestReadTCConfig(t *testing.T) {
 				"With Ryuk container timeouts configured using env vars",
 				``,
 				map[string]string{
-					"TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT": "13s",
-					"TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT":   "12s",
+					"RYUK_RECONNECTION_TIMEOUT": "13s",
+					"RYUK_CONNECTION_TIMEOUT":   "12s",
 				},
 				Config{
 					RyukReconnectionTimeout: 13 * time.Second,
@@ -274,8 +273,8 @@ func TestReadTCConfig(t *testing.T) {
 				`ryuk.connection.timeout=22s
 	ryuk.reconnection.timeout=23s`,
 				map[string]string{
-					"TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT": "13s",
-					"TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT":   "12s",
+					"RYUK_RECONNECTION_TIMEOUT": "13s",
+					"RYUK_CONNECTION_TIMEOUT":   "12s",
 				},
 				Config{
 					RyukReconnectionTimeout: 13 * time.Second,
@@ -350,7 +349,7 @@ func TestReadTCConfig(t *testing.T) {
 				"With Ryuk verbose using an env var and properties. Env var wins (0)",
 				`ryuk.verbose=true`,
 				map[string]string{
-					"TESTCONTAINERS_RYUK_VERBOSE": "true",
+					"RYUK_VERBOSE": "true",
 				},
 				Config{
 					RyukVerbose: true,
@@ -360,7 +359,7 @@ func TestReadTCConfig(t *testing.T) {
 				"With Ryuk verbose using an env var and properties. Env var wins (1)",
 				`ryuk.verbose=false`,
 				map[string]string{
-					"TESTCONTAINERS_RYUK_VERBOSE": "true",
+					"RYUK_VERBOSE": "true",
 				},
 				Config{
 					RyukVerbose: true,
@@ -370,7 +369,7 @@ func TestReadTCConfig(t *testing.T) {
 				"With Ryuk verbose using an env var and properties. Env var wins (2)",
 				`ryuk.verbose=true`,
 				map[string]string{
-					"TESTCONTAINERS_RYUK_VERBOSE": "false",
+					"RYUK_VERBOSE": "false",
 				},
 				defaultCfg,
 			},
@@ -378,7 +377,7 @@ func TestReadTCConfig(t *testing.T) {
 				"With Ryuk verbose using an env var and properties. Env var wins (3)",
 				`ryuk.verbose=false`,
 				map[string]string{
-					"TESTCONTAINERS_RYUK_VERBOSE": "false",
+					"RYUK_VERBOSE": "false",
 				},
 				defaultCfg,
 			},
@@ -484,10 +483,8 @@ func TestReadTCConfig(t *testing.T) {
 				for k, v := range tt.env {
 					t.Setenv(k, v)
 				}
-				if err := os.WriteFile(filepath.Join(tmpDir, ".testcontainers.properties"), []byte(tt.content), 0o600); err != nil {
-					t.Errorf("Failed to create the file: %v", err)
-					return
-				}
+				err := os.WriteFile(filepath.Join(tmpDir, ".testcontainers.properties"), []byte(tt.content), 0o600)
+				require.NoErrorf(t, err, "Failed to create the file")
 
 				//
 				config := read()
@@ -497,7 +494,7 @@ func TestReadTCConfig(t *testing.T) {
 				// In the case of decoding errors in the properties file, the read config
 				// needs to be merged with the default config to avoid setting the fields
 				// that are not set in the properties file.
-				err := mergo.Merge(&config, defaultCfg)
+				err = mergo.Merge(&config, defaultCfg)
 				require.NoError(t, err)
 
 				err = mergo.Merge(&tt.expected, defaultCfg)

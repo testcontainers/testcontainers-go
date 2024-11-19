@@ -275,9 +275,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		time.Sleep(10 * time.Millisecond)
 		t.Log("retrying get endpoint")
 	}
-	if err != nil {
-		t.Fatal("get endpoint:", err)
-	}
+	require.NoErrorf(t, err, "get endpoint")
 
 	opts := []client.Opt{client.WithHost(remoteDocker), client.WithAPIVersionNegotiation()}
 
@@ -322,17 +320,14 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 
 	hitNginx := func() {
 		i, _, err := dind.Exec(ctx, []string{"wget", "--spider", "localhost:" + port.Port()})
-		if err != nil || i > 0 {
-			t.Fatalf("Can't make request to nginx container from dind container")
-		}
+		require.NoError(t, err, "Can't make request to nginx container from dind container")
+		require.Zerof(t, i, "Can't make request to nginx container from dind container")
 	}
 
 	hitNginx()
 	time.Sleep(time.Second * 1)
 	msgs := consumer.Msgs()
-	if len(msgs)-existingLogs != 1 {
-		t.Fatalf("logConsumer should have 1 new log message, instead has: %v", msgs[existingLogs:])
-	}
+	require.Equalf(t, 1, len(msgs)-existingLogs, "logConsumer should have 1 new log message, instead has: %v", msgs[existingLogs:])
 	existingLogs = len(consumer.Msgs())
 
 	iptableArgs := []string{
@@ -341,25 +336,21 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	}
 	// Simulate a transient closed connection to the docker daemon
 	i, _, err := dind.Exec(ctx, append([]string{"iptables", "-A"}, iptableArgs...))
-	if err != nil || i > 0 {
-		t.Fatalf("Failed to close connection to dind daemon: i(%d), err %v", i, err)
-	}
+	require.NoErrorf(t, err, "Failed to close connection to dind daemon: i(%d), err %v", i, err)
+	require.Zerof(t, i, "Failed to close connection to dind daemon: i(%d), err %v", i, err)
 	i, _, err = dind.Exec(ctx, append([]string{"iptables", "-D"}, iptableArgs...))
-	if err != nil || i > 0 {
-		t.Fatalf("Failed to re-open connection to dind daemon: i(%d), err %v", i, err)
-	}
+	require.NoErrorf(t, err, "Failed to re-open connection to dind daemon: i(%d), err %v", i, err)
+	require.Zerof(t, i, "Failed to re-open connection to dind daemon: i(%d), err %v", i, err)
 	time.Sleep(time.Second * 3)
 
 	hitNginx()
 	hitNginx()
 	time.Sleep(time.Second * 1)
 	msgs = consumer.Msgs()
-	if len(msgs)-existingLogs != 2 {
-		t.Fatalf(
-			"LogConsumer should have 2 new log messages after detecting closed connection and"+
-				" re-requesting logs. Instead has:\n%s", msgs[existingLogs:],
-		)
-	}
+	require.Equalf(t, 2, len(msgs)-existingLogs,
+		"LogConsumer should have 2 new log messages after detecting closed connection and"+
+			" re-requesting logs. Instead has:\n%s", msgs[existingLogs:],
+	)
 }
 
 func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
@@ -506,12 +497,24 @@ func Test_StartLogProductionStillStartsWithTooHighTimeout(t *testing.T) {
 
 // bufLogger is a Logging implementation that writes to a bytes.Buffer.
 type bufLogger struct {
-	bytes.Buffer
+	mtx sync.Mutex
+	buf bytes.Buffer
 }
 
 // Printf implements Logging.
 func (l *bufLogger) Printf(format string, v ...any) {
-	fmt.Fprintf(l, format, v...)
+	l.mtx.Lock()
+	defer l.mtx.Unlock()
+
+	fmt.Fprintf(&l.buf, format, v...)
+}
+
+// String returns the contents of the buffer as a string.
+func (l *bufLogger) String() string {
+	l.mtx.Lock()
+	defer l.mtx.Unlock()
+
+	return l.buf.String()
 }
 
 func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {

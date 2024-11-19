@@ -21,7 +21,7 @@ type (
 	// GenericProviderOptions defines options applicable to all providers
 	GenericProviderOptions struct {
 		Logger         Logging
-		DefaultNetwork string // Deprecated: it will be removed in the next major version
+		defaultNetwork string
 	}
 
 	// GenericProviderOption defines a common interface to modify GenericProviderOptions

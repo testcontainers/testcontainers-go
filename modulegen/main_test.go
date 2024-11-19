@@ -494,7 +494,7 @@ func assertMkdocsNavItems(t *testing.T, module context.TestcontainersModule, ori
 		expectedEntries = originalConfig.Nav[3].Modules
 	}
 
-	assert.Len(t, navItems, len(expectedEntries)+1)
+	require.Len(t, navItems, len(expectedEntries)+1)
 
 	// the module should be in the nav
 	found := false

@@ -5,22 +5,20 @@ import (
 	"os/exec"
 	"regexp"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestSessionID(t *testing.T) {
 	t.Run("SessionID() returns a non-empty string", func(t *testing.T) {
 		sessionID := SessionID()
-		if sessionID == "" {
-			t.Error("SessionID() returned an empty string")
-		}
+		require.NotEmptyf(t, sessionID, "SessionID() returned an empty string")
 	})
 
 	t.Run("Multiple calls to SessionID() return the same value", func(t *testing.T) {
 		sessionID1 := SessionID()
 		sessionID2 := SessionID()
-		if sessionID1 != sessionID2 {
-			t.Errorf("SessionID() returned different values: %s != %s", sessionID1, sessionID2)
-		}
+		require.Equalf(t, sessionID1, sessionID2, "SessionID() returned different values: %s != %s", sessionID1, sessionID2)
 	})
 
 	t.Run("Multiple calls to SessionID() in multiple goroutines return the same value", func(t *testing.T) {
@@ -41,9 +39,7 @@ func TestSessionID(t *testing.T) {
 		<-done
 		<-done
 
-		if sessionID1 != sessionID2 {
-			t.Errorf("SessionID() returned different values: %s != %s", sessionID1, sessionID2)
-		}
+		require.Equalf(t, sessionID1, sessionID2, "SessionID() returned different values: %s != %s", sessionID1, sessionID2)
 	})
 
 	t.Run("SessionID() from different child processes returns the same value", func(t *testing.T) {
@@ -55,22 +51,16 @@ func TestSessionID(t *testing.T) {
 		cmd1 := exec.Command("go", args...)
 		cmd1.Env = env
 		stdoutStderr1, err := cmd1.CombinedOutput()
-		if err != nil {
-			t.Errorf("cmd1.Run() failed with %s", err)
-		}
+		require.NoErrorf(t, err, "cmd1.Run() failed with %s", err)
 		sessionID1 := re.FindString(string(stdoutStderr1))
 
 		cmd2 := exec.Command("go", args...)
 		cmd2.Env = env
 		stdoutStderr2, err := cmd2.CombinedOutput()
-		if err != nil {
-			t.Errorf("cmd2.Run() failed with %s", err)
-		}
+		require.NoErrorf(t, err, "cmd2.Run() failed with %s", err)
 		sessionID2 := re.FindString(string(stdoutStderr2))
 
-		if sessionID1 != sessionID2 {
-			t.Errorf("SessionID() returned different values: %s != %s", sessionID1, sessionID2)
-		}
+		require.Equalf(t, sessionID1, sessionID2, "SessionID() returned different values: %s != %s", sessionID1, sessionID2)
 	})
 }
 
