@@ -30,7 +30,7 @@ Please just be sure to:
 * make commits atomic and easy to merge.
 * use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) for the PR title. This will help us to understand the nature of the changes, and to generate the changelog after all the commits in the PR are squashed.
 * use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) for your commit messages, as it improves the readability of the commit history, and the review process.
-* unless necessary, please try to **avoid pushing--force** to the branch you submitted a PR from, as it makes it harder to review the changes from a given previous state.
+* unless necessary, please try to **avoid pushing --force** to the branch you submitted a PR from, as it makes it harder to review the changes from a given previous state.
 * verify all tests are passing. Build and test the project with `make test-all` to do this.
     * For a given module or example, go to the module or example directory and run `make test`.
 * when updating the `go.mod` file, please run `make tidy-all` to ensure all modules are updated.
