@@ -1,7 +1,7 @@
 include ./commons-test.mk
 
 .PHONY: lint-all
-tidy-all:
+lint-all:
 	$(MAKE) lint
 	$(MAKE) -C modulegen lint
 	$(MAKE) -C examples lint-examples
