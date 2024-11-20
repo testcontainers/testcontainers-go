@@ -31,13 +31,13 @@ Please just be sure to:
 * use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) for the PR title. This will help us to understand the nature of the changes, and to generate the changelog after all the commits in the PR are squashed.
 * use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) for your commit messages, as it improves the readability of the commit history, and the review process.
 * unless necessary, please try to **avoid pushing --force** to the published branch you submitted a PR from, as it makes it harder to review the changes from a given previous state.
-* verify all tests are passing. Build and test the project with `make test-all` to do this.
-    * For a given module or example, go to the module or example directory and run `make test`.
-* when updating the `go.mod` file, please run `make tidy-all` to ensure all modules are updated.
 * apply format running `make lint-all`. It will run `golangci-lint` for the core and modules with the configuration set in the root directory of the project. Please be aware that the lint stage on CI could fail if this is not done.
     * For linting just the modules: `make -C modules lint-modules`
     * For linting just the examples: `make -C examples lint-examples`
     * For linting just the modulegen: `make -C modulegen lint`
+* verify all tests are passing. Build and test the project with `make test-all` to do this.
+    * For a given module or example, go to the module or example directory and run `make test`.
+* when updating the `go.mod` file, please run `make tidy-all` to ensure all modules are updated.
 
 ## Documentation contributions
 
