@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -220,10 +221,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			// convenient for testing
 			"REGISTRY_STORAGE_DELETE_ENABLED": "true",
 		},
-		WaitingFor: wait.ForAll(
-			wait.ForExposedPort(),
-			wait.ForLog("listening on [::]:5000").WithStartupTimeout(10*time.Second),
-		),
+		WaitingFor: wait.ForHTTP("/").
+			WithPort(registryPort).
+			WithStartupTimeout(10 * time.Second),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
@@ -238,15 +238,17 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *RegistryContainer
+	if container != nil {
+		c = &RegistryContainer{Container: container}
 	}
-
-	c := &RegistryContainer{Container: container}
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
 
 	address, err := c.Address(ctx)
 	if err != nil {
-		return c, err
+		return c, fmt.Errorf("address: %w", err)
 	}
 
 	c.RegistryName = strings.TrimPrefix(address, "http://")
@@ -285,7 +287,7 @@ func SetDockerAuthConfig(host, username, password string, additional ...string) 
 // triples to add more auth configurations.
 func DockerAuthConfig(host, username, password string, additional ...string) (map[string]dockercfg.AuthConfig, error) {
 	if len(additional)%3 != 0 {
-		return nil, fmt.Errorf("additional must be a multiple of 3")
+		return nil, errors.New("additional must be a multiple of 3")
 	}
 
 	additional = append(additional, host, username, password)

@@ -3,6 +3,7 @@ package dolt
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -84,19 +85,24 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	if len(password) == 0 && password == "" && !strings.EqualFold(rootUser, username) {
-		return nil, fmt.Errorf("empty password can be used only with the root user")
+		return nil, errors.New("empty password can be used only with the root user")
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	var dc *DoltContainer
+	if container != nil {
+		dc = &DoltContainer{Container: container, username: username, password: password, database: database}
+	}
 	if err != nil {
-		return nil, err
+		return dc, err
 	}
 
-	dc := &DoltContainer{container, username, password, database}
-
 	// dolthub/dolt-sql-server does not create user or database, so we do so here
-	err = dc.initialize(ctx, createUser)
-	return dc, err
+	if err = dc.initialize(ctx, createUser); err != nil {
+		return dc, fmt.Errorf("initialize: %w", err)
+	}
+
+	return dc, nil
 }
 
 func (c *DoltContainer) initialize(ctx context.Context, createUser bool) error {

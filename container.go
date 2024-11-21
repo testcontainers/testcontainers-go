@@ -37,17 +37,17 @@ type DeprecatedContainer interface {
 
 // Container allows getting info about and controlling a single container instance
 type Container interface {
-	GetContainerID() string                                         // get the container id from the provider
-	Endpoint(context.Context, string) (string, error)               // get proto://ip:port string for the lowest exposed port
-	PortEndpoint(context.Context, nat.Port, string) (string, error) // get proto://ip:port string for the given exposed port
-	Host(context.Context) (string, error)                           // get host where the container port is exposed
-	Inspect(context.Context) (*types.ContainerJSON, error)          // get container info
-	MappedPort(context.Context, nat.Port) (nat.Port, error)         // get externally mapped port for a container port
-	Ports(context.Context) (nat.PortMap, error)                     // Deprecated: Use c.Inspect(ctx).NetworkSettings.Ports instead
-	SessionID() string                                              // get session id
-	IsRunning() bool                                                // IsRunning returns true if the container is running, false otherwise.
-	Start(context.Context) error                                    // start the container
-	Stop(context.Context, *time.Duration) error                     // stop the container
+	GetContainerID() string                                                        // get the container id from the provider
+	Endpoint(context.Context, string) (string, error)                              // get proto://ip:port string for the lowest exposed port
+	PortEndpoint(ctx context.Context, port nat.Port, proto string) (string, error) // get proto://ip:port string for the given exposed port
+	Host(context.Context) (string, error)                                          // get host where the container port is exposed
+	Inspect(context.Context) (*types.ContainerJSON, error)                         // get container info
+	MappedPort(context.Context, nat.Port) (nat.Port, error)                        // get externally mapped port for a container port
+	Ports(context.Context) (nat.PortMap, error)                                    // Deprecated: Use c.Inspect(ctx).NetworkSettings.Ports instead
+	SessionID() string                                                             // get session id
+	IsRunning() bool                                                               // IsRunning returns true if the container is running, false otherwise.
+	Start(context.Context) error                                                   // start the container
+	Stop(context.Context, *time.Duration) error                                    // stop the container
 
 	// Terminate stops and removes the container and its image if it was built and not flagged as kept.
 	Terminate(ctx context.Context) error
@@ -74,7 +74,7 @@ type Container interface {
 type ImageBuildInfo interface {
 	BuildOptions() (types.ImageBuildOptions, error) // converts the ImageBuildInfo to a types.ImageBuildOptions
 	GetContext() (io.Reader, error)                 // the path to the build context
-	GetDockerfile() string                          // the relative path to the Dockerfile, including the fileitself
+	GetDockerfile() string                          // the relative path to the Dockerfile, including the file itself
 	GetRepo() string                                // get repo label for image
 	GetTag() string                                 // get tag label for image
 	ShouldPrintBuildLog() bool                      // allow build log to be printed to stdout
@@ -165,6 +165,15 @@ type ContainerRequest struct {
 	EnpointSettingsModifier func(map[string]*network.EndpointSettings) // Modifier for the network settings before container creation
 	LifecycleHooks          []ContainerLifecycleHooks                  // define hooks to be executed during container lifecycle
 	LogConsumerCfg          *LogConsumerConfig                         // define the configuration for the log producer and its log consumers to follow the logs
+}
+
+// sessionID returns the session ID for the container request.
+func (c *ContainerRequest) sessionID() string {
+	if sessionID := c.Labels[core.LabelSessionID]; sessionID != "" {
+		return sessionID
+	}
+
+	return core.SessionID()
 }
 
 // containerOptions functional options for a container
@@ -277,34 +286,34 @@ func (c *ContainerRequest) GetBuildArgs() map[string]*string {
 	return c.FromDockerfile.BuildArgs
 }
 
-// GetDockerfile returns the Dockerfile from the ContainerRequest, defaults to "Dockerfile"
+// GetDockerfile returns the Dockerfile from the ContainerRequest, defaults to "Dockerfile".
+// Sets FromDockerfile.Dockerfile to the default if blank.
 func (c *ContainerRequest) GetDockerfile() string {
-	f := c.FromDockerfile.Dockerfile
-	if f == "" {
-		return "Dockerfile"
+	if c.FromDockerfile.Dockerfile == "" {
+		c.FromDockerfile.Dockerfile = "Dockerfile"
 	}
 
-	return f
+	return c.FromDockerfile.Dockerfile
 }
 
-// GetRepo returns the Repo label for image from the ContainerRequest, defaults to UUID
+// GetRepo returns the Repo label for image from the ContainerRequest, defaults to UUID.
+// Sets FromDockerfile.Repo to the default value if blank.
 func (c *ContainerRequest) GetRepo() string {
-	r := c.FromDockerfile.Repo
-	if r == "" {
-		return uuid.NewString()
+	if c.FromDockerfile.Repo == "" {
+		c.FromDockerfile.Repo = uuid.NewString()
 	}
 
-	return strings.ToLower(r)
+	return strings.ToLower(c.FromDockerfile.Repo)
 }
 
-// GetTag returns the Tag label for image from the ContainerRequest, defaults to UUID
+// GetTag returns the Tag label for image from the ContainerRequest, defaults to UUID.
+// Sets FromDockerfile.Tag to the default value if blank.
 func (c *ContainerRequest) GetTag() string {
-	t := c.FromDockerfile.Tag
-	if t == "" {
-		return uuid.NewString()
+	if c.FromDockerfile.Tag == "" {
+		c.FromDockerfile.Tag = uuid.NewString()
 	}
 
-	return strings.ToLower(t)
+	return strings.ToLower(c.FromDockerfile.Tag)
 }
 
 // Deprecated: Testcontainers will detect registry credentials automatically, and it will be removed in the next major release.
@@ -460,7 +469,14 @@ func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 	}
 
 	if !c.ShouldKeepBuiltImage() {
-		buildOptions.Labels = core.DefaultLabels(core.SessionID())
+		dst := GenericLabels()
+		if err = core.MergeCustomLabels(dst, c.Labels); err != nil {
+			return types.ImageBuildOptions{}, err
+		}
+		if err = core.MergeCustomLabels(dst, buildOptions.Labels); err != nil {
+			return types.ImageBuildOptions{}, err
+		}
+		buildOptions.Labels = dst
 	}
 
 	// Do this as late as possible to ensure we don't leak the context on error/panic.
@@ -513,7 +529,7 @@ func (c *ContainerRequest) validateMounts() error {
 
 	c.HostConfigModifier(&hostConfig)
 
-	if hostConfig.Binds != nil && len(hostConfig.Binds) > 0 {
+	if len(hostConfig.Binds) > 0 {
 		for _, bind := range hostConfig.Binds {
 			parts := strings.Split(bind, ":")
 			if len(parts) != 2 {

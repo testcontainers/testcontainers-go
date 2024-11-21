@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/gcloud"
 )
 
@@ -25,16 +26,15 @@ func ExampleRunBigQueryContainer() {
 		"ghcr.io/goccy/bigquery-emulator:0.4.3",
 		gcloud.WithProjectID("bigquery-project"),
 	)
-	if err != nil {
-		log.Fatalf("failed to run container: %v", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := bigQueryContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %v", err)
+		if err := testcontainers.TerminateContainer(bigQueryContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to run container: %v", err)
+		return
+	}
 	// }
 
 	// bigQueryClient {
@@ -49,7 +49,8 @@ func ExampleRunBigQueryContainer() {
 
 	client, err := bigquery.NewClient(ctx, projectID, opts...)
 	if err != nil {
-		log.Fatalf("failed to create bigquery client: %v", err) // nolint:gocritic
+		log.Printf("failed to create bigquery client: %v", err)
+		return
 	}
 	defer client.Close()
 	// }
@@ -57,13 +58,15 @@ func ExampleRunBigQueryContainer() {
 	createFnQuery := client.Query("CREATE FUNCTION testr(arr ARRAY<STRUCT<name STRING, val INT64>>) AS ((SELECT SUM(IF(elem.name = \"foo\",elem.val,null)) FROM UNNEST(arr) AS elem))")
 	_, err = createFnQuery.Read(ctx)
 	if err != nil {
-		log.Fatalf("failed to create function: %v", err)
+		log.Printf("failed to create function: %v", err)
+		return
 	}
 
 	selectQuery := client.Query("SELECT testr([STRUCT<name STRING, val INT64>(\"foo\", 10), STRUCT<name STRING, val INT64>(\"bar\", 40), STRUCT<name STRING, val INT64>(\"foo\", 20)])")
 	it, err := selectQuery.Read(ctx)
 	if err != nil {
-		log.Fatalf("failed to read query: %v", err)
+		log.Printf("failed to read query: %v", err)
+		return
 	}
 
 	var val []bigquery.Value
@@ -73,7 +76,8 @@ func ExampleRunBigQueryContainer() {
 			break
 		}
 		if err != nil {
-			log.Fatalf("failed to iterate: %v", err)
+			log.Printf("failed to iterate: %v", err)
+			return
 		}
 	}
 

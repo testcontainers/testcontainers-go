@@ -74,8 +74,11 @@ nav:
         - modules/cockroachdb.md
         - modules/consul.md
         - modules/couchbase.md
+        - modules/databend.md
         - modules/dolt.md
+        - modules/dynamodb.md
         - modules/elasticsearch.md
+        - modules/etcd.md
         - modules/gcloud.md
         - modules/grafana-lgtm.md
         - modules/inbucket.md
@@ -85,6 +88,7 @@ nav:
         - modules/kafka.md
         - modules/localstack.md
         - modules/mariadb.md
+        - modules/meilisearch.md
         - modules/milvus.md
         - modules/minio.md
         - modules/mockserver.md
@@ -109,6 +113,7 @@ nav:
         - modules/vault.md
         - modules/vearch.md
         - modules/weaviate.md
+        - modules/yugabytedb.md
     - Examples:
         - examples/index.md
         - examples/nginx.md
@@ -135,4 +140,4 @@ nav:
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: v0.33.0
+    latest_version: v0.34.0

@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"net"
 	"net/url"
@@ -18,7 +19,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var ErrTLSNotEnabled = fmt.Errorf("tls not enabled")
+var ErrTLSNotEnabled = errors.New("tls not enabled")
 
 const (
 	certsDir = "/tmp"
@@ -118,10 +119,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, req)
-	if err != nil {
-		return nil, err
+	var c *CockroachDBContainer
+	if container != nil {
+		c = &CockroachDBContainer{Container: container, opts: o}
 	}
-	return &CockroachDBContainer{Container: container, opts: o}, nil
+
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }
 
 type modiferFunc func(*testcontainers.GenericContainerRequest, options) error
@@ -138,7 +145,7 @@ func addCmd(req *testcontainers.GenericContainerRequest, opts options) error {
 			return fmt.Errorf("unsupported user %s with TLS, use %s", opts.User, defaultUser)
 		}
 		if opts.Password != "" {
-			return fmt.Errorf("cannot use password authentication with TLS")
+			return errors.New("cannot use password authentication with TLS")
 		}
 	}
 

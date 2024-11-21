@@ -16,7 +16,6 @@ type Options struct {
 
 func defaultOptions() *Options {
 	return &Options{
-		CACert:   nil,
 		Username: defaultUsername,
 	}
 }

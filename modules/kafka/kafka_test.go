@@ -22,37 +22,24 @@ func TestKafka_Basic(t *testing.T) {
 	ctx := context.Background()
 
 	kafkaContainer, err := kafka.Run(ctx, "confluentinc/confluent-local:7.5.0", kafka.WithClusterID("kraftCluster"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := kafkaContainer.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	testcontainers.CleanupContainer(t, kafkaContainer)
+	require.NoError(t, err)
 
 	assertAdvertisedListeners(t, kafkaContainer)
 
-	if !strings.EqualFold(kafkaContainer.ClusterID, "kraftCluster") {
-		t.Fatalf("expected clusterID to be %s, got %s", "kraftCluster", kafkaContainer.ClusterID)
-	}
+	require.Truef(t, strings.EqualFold(kafkaContainer.ClusterID, "kraftCluster"), "expected clusterID to be %s, got %s", "kraftCluster", kafkaContainer.ClusterID)
 
 	// getBrokers {
 	brokers, err := kafkaContainer.Brokers(ctx)
 	// }
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	config := sarama.NewConfig()
 	client, err := sarama.NewConsumerGroup(brokers, "groupName", config)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	consumer, ready, done, cancel := NewTestKafkaConsumer(t)
+	defer cancel()
 	go func() {
 		if err := client.Consume(context.Background(), []string{topic}, consumer); err != nil {
 			cancel()
@@ -68,37 +55,27 @@ func TestKafka_Basic(t *testing.T) {
 	config.Producer.Return.Successes = true
 
 	producer, err := sarama.NewSyncProducer(brokers, config)
-	if err != nil {
-		cancel()
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	if _, _, err := producer.SendMessage(&sarama.ProducerMessage{
+	_, _, err = producer.SendMessage(&sarama.ProducerMessage{
 		Topic: topic,
 		Key:   sarama.StringEncoder("key"),
 		Value: sarama.StringEncoder("value"),
-	}); err != nil {
-		cancel()
-		t.Fatal(err)
-	}
+	})
+	require.NoError(t, err)
 
 	<-done
 
-	if !strings.EqualFold(string(consumer.message.Key), "key") {
-		t.Fatalf("expected key to be %s, got %s", "key", string(consumer.message.Key))
-	}
-	if !strings.EqualFold(string(consumer.message.Value), "value") {
-		t.Fatalf("expected value to be %s, got %s", "value", string(consumer.message.Value))
-	}
+	require.Truef(t, strings.EqualFold(string(consumer.message.Key), "key"), "expected key to be %s, got %s", "key", string(consumer.message.Key))
+	require.Truef(t, strings.EqualFold(string(consumer.message.Value), "value"), "expected value to be %s, got %s", "value", string(consumer.message.Value))
 }
 
 func TestKafka_invalidVersion(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := kafka.Run(ctx, "confluentinc/confluent-local:6.3.3", kafka.WithClusterID("kraftCluster"))
-	if err == nil {
-		t.Fatal(err)
-	}
+	ctr, err := kafka.Run(ctx, "confluentinc/confluent-local:6.3.3", kafka.WithClusterID("kraftCluster"))
+	testcontainers.CleanupContainer(t, ctr)
+	require.Error(t, err)
 }
 
 func TestKafka_networkConnectivity(t *testing.T) {
@@ -445,27 +422,15 @@ func createTopics(brokers []string, topics []string) error {
 // assertAdvertisedListeners checks that the advertised listeners are set correctly:
 // - The BROKER:// protocol is using the hostname of the Kafka container
 func assertAdvertisedListeners(t *testing.T, container testcontainers.Container) {
+	t.Helper()
 	inspect, err := container.Inspect(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	hostname := inspect.Config.Hostname
+	require.NoError(t, err)
 
-	code, r, err := container.Exec(context.Background(), []string{"cat", "/usr/sbin/testcontainers_start.sh"})
-	if err != nil {
-		t.Fatal(err)
-	}
+	brokerURL := "BROKER://" + inspect.Config.Hostname + ":9092"
 
-	if code != 0 {
-		t.Fatalf("expected exit code to be 0, got %d", code)
-	}
+	ctx := context.Background()
 
-	bs, err := io.ReadAll(r)
-	if err != nil {
-		t.Fatal(err)
-	}
+	bs := testcontainers.RequireContainerExec(ctx, t, container, []string{"cat", "/usr/sbin/testcontainers_start.sh"})
 
-	if !strings.Contains(string(bs), "BROKER://"+hostname+":9092") {
-		t.Fatalf("expected advertised listeners to contain %s, got %s", "BROKER://"+hostname+":9092", string(bs))
-	}
+	require.Containsf(t, bs, brokerURL, "expected advertised listeners to contain %s, got %s", brokerURL, bs)
 }

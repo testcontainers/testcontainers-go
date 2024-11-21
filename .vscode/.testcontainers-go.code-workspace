@@ -50,12 +50,24 @@
             "path": "../modules/couchbase"
         },
         {
+            "name": "module / databend",
+            "path": "../modules/databend"
+        },
+        {
             "name": "module / dolt",
             "path": "../modules/dolt"
         },
         {
+            "name": "module / dynamodb",
+            "path": "../modules/dynamodb"
+        },
+        {
             "name": "module / elasticsearch",
             "path": "../modules/elasticsearch"
+        },
+        {
+            "name": "module / etcd",
+            "path": "../modules/etcd"
         },
         {
             "name": "module / gcloud",
@@ -92,6 +104,10 @@
         {
             "name": "module / mariadb",
             "path": "../modules/mariadb"
+        },
+        {
+            "name": "module / meilisearch",
+            "path": "../modules/meilisearch"
         },
         {
             "name": "module / milvus",
@@ -188,6 +204,10 @@
         {
             "name": "module / weaviate",
             "path": "../modules/weaviate"
+        },
+        {
+            "name": "module / yugabytedb",
+            "path": "../modules/yugabytedb"
         },
         {
             "name": "modulegen",

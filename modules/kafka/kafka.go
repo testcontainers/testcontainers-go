@@ -2,8 +2,10 @@ package kafka
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 
 	"github.com/docker/go-connections/nat"
@@ -65,7 +67,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"KAFKA_OFFSETS_TOPIC_NUM_PARTITIONS":             "1",
 			"KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR": "1",
 			"KAFKA_TRANSACTION_STATE_LOG_MIN_ISR":            "1",
-			"KAFKA_LOG_FLUSH_INTERVAL_MESSAGES":              fmt.Sprintf("%d", math.MaxInt),
+			"KAFKA_LOG_FLUSH_INTERVAL_MESSAGES":              strconv.Itoa(math.MaxInt),
 			"KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS":         "0",
 			"KAFKA_NODE_ID":                                  "1",
 			"KAFKA_PROCESS_ROLES":                            "broker,controller",
@@ -126,16 +128,19 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return nil, err
 	}
 
-	clusterID := genericContainerReq.Env["CLUSTER_ID"]
-
 	configureControllerQuorumVoters(&genericContainerReq)
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *KafkaContainer
+	if container != nil {
+		c = &KafkaContainer{Container: container, ClusterID: genericContainerReq.Env["CLUSTER_ID"]}
 	}
 
-	return &KafkaContainer{Container: container, ClusterID: clusterID}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }
 
 func trimValidateListeners(listeners []KafkaListener) error {
@@ -291,7 +296,7 @@ func configureControllerQuorumVoters(req *testcontainers.GenericContainerRequest
 // which is available since version 7.0.0.
 func validateKRaftVersion(fqName string) error {
 	if fqName == "" {
-		return fmt.Errorf("image cannot be empty")
+		return errors.New("image cannot be empty")
 	}
 
 	image := fqName[:strings.LastIndex(fqName, ":")]
@@ -306,7 +311,7 @@ func validateKRaftVersion(fqName string) error {
 
 	// semver requires the version to start with a "v"
 	if !strings.HasPrefix(version, "v") {
-		version = fmt.Sprintf("v%s", version)
+		version = "v" + version
 	}
 
 	if semver.Compare(version, "v7.4.0") < 0 { // version < v7.4.0

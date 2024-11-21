@@ -9,7 +9,7 @@ Please read the [system requirements](../system_requirements/) page before you s
 
 ## 2. Install _Testcontainers for Go_
 
-We use [gomod](https://blog.golang.org/using-go-modules) and you can get it installed via:
+We use [go mod](https://blog.golang.org/using-go-modules) and you can get it installed via:
 
 ```
 go get github.com/testcontainers/testcontainers-go
@@ -21,6 +21,8 @@ go get github.com/testcontainers/testcontainers-go
 import (
 	"context"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -37,14 +39,8 @@ func TestWithRedis(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	if err != nil {
-		t.Fatalf("Could not start redis: %s", err)
-	}
-	defer func() {
-		if err := redisC.Terminate(ctx); err != nil {
-			t.Fatalf("Could not stop redis: %s", err)
-		}
-	}()
+	testcontainers.CleanupContainer(t, redisC)
+	require.NoError(t, err)
 }
 ```
 
@@ -75,7 +71,8 @@ start, leaving to you the decision about when to start it.
 
 All the containers must be removed at some point, otherwise they will run until
 the host is overloaded. One of the ways we have to clean up is by deferring the
-terminated function: `defer redisC.Terminate(ctx)`.
+terminated function: `defer testcontainers.TerminateContainer(redisC)` which
+automatically handles nil container so is safe to use even in the error case.
 
 !!!tip
 

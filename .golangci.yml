@@ -1,15 +1,21 @@
 linters:
   enable:
+    - errcheck
     - errorlint
     - gci
     - gocritic
     - gofumpt
     - misspell
-    - nonamedreturns
+    - nolintlint
+    - nakedret
+    - perfsprint
     - testifylint
-    - errcheck
+    - thelper
+    - usestdlibvars
 
 linters-settings:
+  nakedret:
+    max-func-lines: 0
   errorlint:
     # Check whether fmt.Errorf uses the %w verb for formatting errors.
     # See the https://github.com/polyfloyd/go-errorlint for caveats.
@@ -29,16 +35,6 @@ linters-settings:
     disable:
       - float-compare
       - go-require
-    enable:
-      - bool-compare
-      - compares
-      - empty
-      - error-is-as
-      - error-nil
-      - expected-actual
-      - len
-      - require-error
-      - suite-dont-use-pkg
-      - suite-extra-assert-call
+    enable-all: true
 run:
   timeout: 5m

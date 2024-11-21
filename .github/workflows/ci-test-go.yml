@@ -73,10 +73,10 @@ jobs:
 
       - name: golangci-lint
         if: ${{ inputs.platform == 'ubuntu-latest' }}
-        uses: golangci/golangci-lint-action@9d1e0624a798bb64f6c3cea93db47765312263dc # v5
+        uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
         with:
           # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
-          version: v1.59.1
+          version: v1.61.0
           # Optional: working directory, useful for monorepos
           working-directory: ${{ inputs.project-directory }}
           # Optional: golangci-lint command line arguments.
@@ -85,13 +85,25 @@ jobs:
           #           takes precedence over all other caching options.
           skip-cache: true
 
+      - name: generate
+        if: ${{ inputs.platform == 'ubuntu-latest' }}
+        working-directory: ./${{ inputs.project-directory }}
+        shell: bash
+        run: |
+          make generate
+          git --no-pager diff && [[ 0 -eq $(git status --porcelain | wc -l) ]]
+
       - name: modVerify
         working-directory: ./${{ inputs.project-directory }}
         run: go mod verify
 
       - name: modTidy
+        if: ${{ inputs.platform == 'ubuntu-latest' }}
         working-directory: ./${{ inputs.project-directory }}
-        run: make tidy
+        shell: bash
+        run: |
+          make tidy
+          git --no-pager diff && [[ 0 -eq $(git status --porcelain | wc -l) ]]
 
       - name: ensure compilation
         working-directory: ./${{ inputs.project-directory }}
@@ -107,11 +119,18 @@ jobs:
         timeout-minutes: 30
         run: make test-unit
 
+      - name: Set sonar artifact name
+        # For the core library, where the project directory is '.', we'll use "core" as artifact name.
+        # For the modules, we'll remove the slashes, keeping the name of the module
+        if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && inputs.platform == 'ubuntu-latest' && inputs.run-tests && !inputs.rootless-docker && !inputs.ryuk-disabled }}
+        run: |
+          echo "ARTIFACT_NAME=$(basename ${{ inputs.project-directory == '.' && 'core' || inputs.project-directory }})-${{ inputs.go-version }}-${{ inputs.platform }}" >> $GITHUB_ENV
+
       - name: Upload SonarCloud files
-        if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && inputs.run-tests && !inputs.rootless-docker }}
-        uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3
+        if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && inputs.platform == 'ubuntu-latest' && inputs.run-tests && !inputs.rootless-docker && !inputs.ryuk-disabled }}
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
-          name: sonarcloud
+          name: sonarcloud-${{ env.ARTIFACT_NAME }}
           path: |
             ./sonar-project.properties
             ${{ inputs.project-directory }}/TEST-unit.xml

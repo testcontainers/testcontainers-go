@@ -70,7 +70,8 @@ useful context instead of appearing out of band.
 ```golang
 func TestHandler(t *testing.T) {
     logger := TestLogger(t)
-    _, err := postgresModule.Run(ctx, "postgres:15-alpine", testcontainers.WithLogger(logger))
+    ctr, err := postgresModule.Run(ctx, "postgres:15-alpine", testcontainers.WithLogger(logger))
+    CleanupContainer(t, ctr)
     require.NoError(t, err)
     // Do something with container.
 }

@@ -153,22 +153,13 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 		return nil, fmt.Errorf("initialize docker client: %w", err)
 	}
 
-	reaperProvider, err := testcontainers.NewDockerProvider()
+	provider, err := testcontainers.NewDockerProvider(testcontainers.WithLogger(composeOptions.Logger))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create reaper provider for compose: %w", err)
+		return nil, fmt.Errorf("new docker provider: %w", err)
 	}
 
-	var composeReaper *testcontainers.Reaper
-	if !reaperProvider.Config().Config.RyukDisabled {
-		// NewReaper is deprecated: we need to find a way to create the reaper for compose
-		// bypassing the deprecation.
-		r, err := testcontainers.NewReaper(context.Background(), testcontainers.SessionID(), reaperProvider, "")
-		if err != nil {
-			return nil, fmt.Errorf("failed to create reaper for compose: %w", err)
-		}
-
-		composeReaper = r
-	}
+	dockerClient := dockerCli.Client()
+	provider.SetClient(dockerClient)
 
 	composeAPI := &dockerCompose{
 		name:             composeOptions.Identifier,
@@ -177,12 +168,12 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 		logger:           composeOptions.Logger,
 		projectProfiles:  composeOptions.Profiles,
 		composeService:   compose.NewComposeService(dockerCli),
-		dockerClient:     dockerCli.Client(),
+		dockerClient:     dockerClient,
 		waitStrategies:   make(map[string]wait.Strategy),
 		containers:       make(map[string]*testcontainers.DockerContainer),
 		networks:         make(map[string]*testcontainers.DockerNetwork),
 		sessionID:        testcontainers.SessionID(),
-		reaper:           composeReaper,
+		provider:         provider,
 	}
 
 	return composeAPI, nil

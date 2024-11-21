@@ -5,11 +5,11 @@
 # dry-run mode, which will print the commands that would be executed, without actually
 # executing them.
 #
-# Usage: ./scripts/bump-reaper.sh "docker.io/testcontainers/ryuk:1.2.3"
+# Usage: ./scripts/bump-reaper.sh "testcontainers/ryuk:1.2.3"
 #
 # It's possible to run the script without dry-run mode actually executing the commands.
 #
-# Usage: DRY_RUN="false" ./scripts/bump-reaper.sh "docker.io/testcontainers/ryuk:1.2.3"
+# Usage: DRY_RUN="false" ./scripts/bump-reaper.sh "testcontainers/ryuk:1.2.3"
 
 readonly CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly DRY_RUN="${DRY_RUN:-true}"

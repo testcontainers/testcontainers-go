@@ -2,6 +2,7 @@ package qdrant
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -43,11 +44,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *QdrantContainer
+	if container != nil {
+		c = &QdrantContainer{Container: container}
 	}
 
-	return &QdrantContainer{Container: container}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }
 
 // RESTEndpoint returns the REST endpoint of the Qdrant container
@@ -59,7 +65,7 @@ func (c *QdrantContainer) RESTEndpoint(ctx context.Context) (string, error) {
 
 	host, err := c.Host(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to get container host")
+		return "", errors.New("failed to get container host")
 	}
 
 	return fmt.Sprintf("http://%s:%s", host, containerPort.Port()), nil
@@ -74,7 +80,7 @@ func (c *QdrantContainer) GRPCEndpoint(ctx context.Context) (string, error) {
 
 	host, err := c.Host(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to get container host")
+		return "", errors.New("failed to get container host")
 	}
 
 	return fmt.Sprintf("%s:%s", host, containerPort.Port()), nil

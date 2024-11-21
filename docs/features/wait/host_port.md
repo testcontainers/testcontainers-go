@@ -14,7 +14,7 @@ Variations on the HostPort wait strategy are supported, including:
 
 ```golang
 req := ContainerRequest{
-    Image:        "docker.io/nginx:alpine",
+    Image:        "nginx:alpine",
     ExposedPorts: []string{"80/tcp"},
     WaitingFor:   wait.ForListeningPort("80/tcp"),
 }
@@ -26,7 +26,7 @@ The wait strategy will use the lowest exposed port from the container configurat
 
 ```golang
 req := ContainerRequest{
-    Image:        "docker.io/nginx:alpine",
+    Image:        "nginx:alpine",
     WaitingFor:   wait.ForExposedPort(),
 }
 ```
@@ -35,7 +35,7 @@ Said that, it could be the case that the container request included ports to be 
 
 ```golang
 req := ContainerRequest{
-    Image:        "docker.io/nginx:alpine",
+    Image:        "nginx:alpine",
     ExposedPorts: []string{"80/tcp", "9080/tcp"},
     WaitingFor:   wait.ForExposedPort(),
 }
@@ -55,7 +55,7 @@ In this case, the `wait.ForExposedPort.SkipInternalCheck` can be used to skip th
 
 ```golang
 req := ContainerRequest{
-    Image:        "docker.io/nginx:alpine",
+    Image:        "nginx:alpine",
     ExposedPorts: []string{"80/tcp", "9080/tcp"},
     WaitingFor:   wait.ForExposedPort().SkipInternalCheck(),
 }

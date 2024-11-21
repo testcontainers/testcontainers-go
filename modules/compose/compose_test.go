@@ -134,7 +134,7 @@ func TestLocalDockerComposeStrategyForInvalidService(t *testing.T) {
 		Invoke()
 	require.Error(t, err.Error, "Expected error to be thrown because service with wait strategy is not running")
 
-	assert.Len(t, compose.Services, 1)
+	require.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "local-nginx")
 }
 
@@ -157,7 +157,7 @@ func TestLocalDockerComposeWithWaitLogStrategy(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Len(t, compose.Services, 2)
+	require.Len(t, compose.Services, 2)
 	assert.Contains(t, compose.Services, "local-nginx")
 	assert.Contains(t, compose.Services, "local-mysql")
 }
@@ -183,7 +183,7 @@ func TestLocalDockerComposeWithWaitForService(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Len(t, compose.Services, 1)
+	require.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "local-nginx")
 }
 
@@ -207,7 +207,7 @@ func TestLocalDockerComposeWithWaitForShortLifespanService(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Len(t, compose.Services, 2)
+	require.Len(t, compose.Services, 2)
 	assert.Contains(t, compose.Services, "falafel")
 	assert.Contains(t, compose.Services, "tzatziki")
 }
@@ -233,7 +233,7 @@ func TestLocalDockerComposeWithWaitHTTPStrategy(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Len(t, compose.Services, 1)
+	require.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "local-nginx")
 }
 
@@ -258,7 +258,7 @@ func TestLocalDockerComposeWithContainerName(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Len(t, compose.Services, 1)
+	require.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "local-nginx")
 }
 
@@ -280,7 +280,7 @@ func TestLocalDockerComposeWithWaitStrategy_NoExposedPorts(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Len(t, compose.Services, 1)
+	require.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "local-nginx")
 }
 
@@ -303,7 +303,7 @@ func TestLocalDockerComposeWithMultipleWaitStrategies(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Len(t, compose.Services, 2)
+	require.Len(t, compose.Services, 2)
 	assert.Contains(t, compose.Services, "local-nginx")
 	assert.Contains(t, compose.Services, "local-mysql")
 }
@@ -331,7 +331,7 @@ func TestLocalDockerComposeWithFailedStrategy(t *testing.T) {
 	// A specific error message matcher is not asserted since the docker library can change the return message, breaking this test
 	require.Error(t, err.Error, "Expected error to be thrown because of a wrong suplied wait strategy")
 
-	assert.Len(t, compose.Services, 1)
+	require.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "local-nginx")
 }
 
@@ -352,7 +352,7 @@ func TestLocalDockerComposeComplex(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Len(t, compose.Services, 2)
+	require.Len(t, compose.Services, 2)
 	assert.Contains(t, compose.Services, "local-nginx")
 	assert.Contains(t, compose.Services, "local-mysql")
 }
@@ -377,7 +377,7 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Len(t, compose.Services, 1)
+	require.Len(t, compose.Services, 1)
 	assert.Contains(t, compose.Services, "local-nginx")
 
 	present := map[string]string{
@@ -413,7 +413,7 @@ func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 		Invoke()
 	checkIfError(t, err)
 
-	assert.Len(t, compose.Services, 3)
+	require.Len(t, compose.Services, 3)
 	assert.Contains(t, compose.Services, "local-nginx")
 	assert.Contains(t, compose.Services, "local-mysql")
 	assert.Contains(t, compose.Services, "local-postgres")
@@ -446,23 +446,18 @@ func TestLocalDockerComposeWithVolume(t *testing.T) {
 }
 
 func assertVolumeDoesNotExist(tb testing.TB, volumeName string) {
+	tb.Helper()
 	containerClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
-	if err != nil {
-		tb.Fatalf("Failed to get provider: %v", err)
-	}
+	require.NoErrorf(tb, err, "Failed to get provider")
 
 	volumeList, err := containerClient.VolumeList(context.Background(), volume.ListOptions{Filters: filters.NewArgs(filters.Arg("name", volumeName))})
-	if err != nil {
-		tb.Fatalf("Failed to list volumes: %v", err)
-	}
+	require.NoErrorf(tb, err, "Failed to list volumes")
 
 	if len(volumeList.Warnings) > 0 {
 		tb.Logf("Volume list warnings: %v", volumeList.Warnings)
 	}
 
-	if len(volumeList.Volumes) > 0 {
-		tb.Fatalf("Volume list is not empty")
-	}
+	require.Emptyf(tb, volumeList.Volumes, "Volume list is not empty")
 }
 
 func assertContainerEnvironmentVariables(
@@ -471,17 +466,13 @@ func assertContainerEnvironmentVariables(
 	present map[string]string,
 	absent map[string]string,
 ) {
+	tb.Helper()
 	containerClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
-	if err != nil {
-		tb.Fatalf("Failed to get provider: %v", err)
-	}
+	require.NoErrorf(tb, err, "Failed to get provider")
 
 	containers, err := containerClient.ContainerList(context.Background(), container.ListOptions{})
-	if err != nil {
-		tb.Fatalf("Failed to list containers: %v", err)
-	} else if len(containers) == 0 {
-		tb.Fatalf("container list empty")
-	}
+	require.NoErrorf(tb, err, "Failed to list containers")
+	require.NotEmptyf(tb, containers, "container list empty")
 
 	containerNameRegexp := regexp.MustCompile(fmt.Sprintf(`^\/?%s(_|-)%s(_|-)\d$`, composeIdentifier, serviceName))
 	var containerID string
@@ -497,9 +488,7 @@ containerLoop:
 	}
 
 	details, err := containerClient.ContainerInspect(context.Background(), containerID)
-	if err != nil {
-		tb.Fatalf("Failed to inspect container: %v", err)
-	}
+	require.NoErrorf(tb, err, "Failed to inspect container")
 
 	for k, v := range present {
 		keyVal := k + "=" + v
@@ -514,17 +503,11 @@ containerLoop:
 
 func checkIfError(t *testing.T, err ExecError) {
 	t.Helper()
-	if err.Error != nil {
-		t.Fatalf("Failed when running %v: %v", err.Command, err.Error)
-	}
+	require.NoErrorf(t, err.Error, "Failed when running %v", err.Command)
 
-	if err.Stdout != nil {
-		t.Fatalf("An error in Stdout happened when running %v: %v", err.Command, err.Stdout)
-	}
+	require.NoErrorf(t, err.Stdout, "An error in Stdout happened when running %v", err.Command)
 
-	if err.Stderr != nil {
-		t.Fatalf("An error in Stderr happened when running %v: %v", err.Command, err.Stderr)
-	}
+	require.NoErrorf(t, err.Stderr, "An error in Stderr happened when running %v", err.Command)
 
 	assert.NotNil(t, err.StdoutOutput)
 	assert.NotNil(t, err.StderrOutput)

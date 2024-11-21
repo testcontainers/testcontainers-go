@@ -3,6 +3,7 @@ package valkey
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -48,7 +49,7 @@ func (c *ValkeyContainer) ConnectionString(ctx context.Context) (string, error) 
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Valkey container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ValkeyContainer, error) {
-	return Run(ctx, "docker.io/valkey/valkey:7.2.5", opts...)
+	return Run(ctx, "valkey/valkey:7.2.5", opts...)
 }
 
 // Run creates an instance of the Valkey container type
@@ -71,11 +72,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *ValkeyContainer
+	if container != nil {
+		c = &ValkeyContainer{Container: container}
 	}
 
-	return &ValkeyContainer{Container: container}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }
 
 // WithConfigFile sets the config file to be used for the valkey container, and sets the command to run the valkey server
@@ -132,7 +138,7 @@ func WithSnapshotting(seconds int, changedKeys int) testcontainers.CustomizeRequ
 	}
 
 	return func(req *testcontainers.GenericContainerRequest) error {
-		processValkeyServerArgs(req, []string{"--save", fmt.Sprintf("%d", seconds), fmt.Sprintf("%d", changedKeys)})
+		processValkeyServerArgs(req, []string{"--save", strconv.Itoa(seconds), strconv.Itoa(changedKeys)})
 		return nil
 	}
 }
