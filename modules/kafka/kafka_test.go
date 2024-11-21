@@ -100,7 +100,7 @@ func TestKafka_networkConnectivity(t *testing.T) {
 	}
 
 	// kafkaWithListener {
-	KafkaContainer, err := kafka.Run(ctx,
+	kafkaContainer, err := kafka.Run(ctx,
 		"confluentinc/confluent-local:7.6.1",
 		kafka.WithClusterID("test-cluster"),
 		network.WithNetwork([]string{"kafka"}, Network),
@@ -139,7 +139,7 @@ func TestKafka_networkConnectivity(t *testing.T) {
 	err = kcat.CopyToContainer(ctx, []byte("Message produced by kcat"), "/tmp/msgs.txt", 700)
 	require.NoError(t, err)
 
-	brokers, err := KafkaContainer.Brokers(context.TODO())
+	brokers, err := kafkaContainer.Brokers(context.TODO())
 	require.NoError(t, err, "failed to get brokers")
 
 	// err = createTopics(brokers, []string{topic_in, topic_out})
