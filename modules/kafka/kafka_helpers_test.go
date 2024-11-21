@@ -9,208 +9,171 @@ import (
 )
 
 func TestConfigureQuorumVoters(t *testing.T) {
-	tests := []struct {
-		name           string
-		req            *testcontainers.GenericContainerRequest
-		expectedVoters string
-	}{
-		{
-			name: "voters on localhost",
-			req: &testcontainers.GenericContainerRequest{
-				ContainerRequest: testcontainers.ContainerRequest{
-					Env: map[string]string{},
-				},
-			},
-			expectedVoters: "1@localhost:9094",
-		},
-		{
-			name: "voters on first network alias of the first network",
-			req: &testcontainers.GenericContainerRequest{
-				ContainerRequest: testcontainers.ContainerRequest{
-					Env:      map[string]string{},
-					Networks: []string{"foo", "bar", "baaz"},
-					NetworkAliases: map[string][]string{
-						"foo":  {"foo0", "foo1", "foo2", "foo3"},
-						"bar":  {"bar0", "bar1", "bar2", "bar3"},
-						"baaz": {"baaz0", "baaz1", "baaz2", "baaz3"},
-					},
-				},
-			},
-			expectedVoters: "1@foo0:9094",
-		},
-		{
-			name: "voters on localhost if alias but no networks",
-			req: &testcontainers.GenericContainerRequest{
-				ContainerRequest: testcontainers.ContainerRequest{
-					NetworkAliases: map[string][]string{
-						"foo":  {"foo0", "foo1", "foo2", "foo3"},
-						"bar":  {"bar0", "bar1", "bar2", "bar3"},
-						"baaz": {"baaz0", "baaz1", "baaz2", "baaz3"},
-					},
-				},
-			},
-			expectedVoters: "1@localhost:9094",
-		},
+	testConfigureControllerQuorumVotersFn := func(t *testing.T, req *testcontainers.GenericContainerRequest, expectedVoters string) {
+		t.Helper()
+
+		configureControllerQuorumVoters(req)
+		require.Equalf(t, expectedVoters, req.Env["KAFKA_CONTROLLER_QUORUM_VOTERS"], "expected KAFKA_CONTROLLER_QUORUM_VOTERS to be %s, got %s", expectedVoters, req.Env["KAFKA_CONTROLLER_QUORUM_VOTERS"])
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			configureControllerQuorumVoters(test.req)
+	t.Run("voters/localhost", func(t *testing.T) {
+		testConfigureControllerQuorumVotersFn(t, &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Env: map[string]string{},
+			},
+		}, "1@localhost:9094")
+	})
 
-			require.Equalf(t, test.expectedVoters, test.req.Env["KAFKA_CONTROLLER_QUORUM_VOTERS"], "expected KAFKA_CONTROLLER_QUORUM_VOTERS to be %s, got %s", test.expectedVoters, test.req.Env["KAFKA_CONTROLLER_QUORUM_VOTERS"])
-		})
-	}
+	t.Run("voters/first-network-alias/first-network", func(t *testing.T) {
+		testConfigureControllerQuorumVotersFn(t, &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Env:      map[string]string{},
+				Networks: []string{"foo", "bar", "baaz"},
+				NetworkAliases: map[string][]string{
+					"foo":  {"foo0", "foo1", "foo2", "foo3"},
+					"bar":  {"bar0", "bar1", "bar2", "bar3"},
+					"baaz": {"baaz0", "baaz1", "baaz2", "baaz3"},
+				},
+			},
+		}, "1@foo0:9094")
+	})
+
+	t.Run("voters/localhost/alias-no-networks", func(t *testing.T) {
+		testConfigureControllerQuorumVotersFn(t, &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				NetworkAliases: map[string][]string{
+					"foo":  {"foo0", "foo1", "foo2", "foo3"},
+					"bar":  {"bar0", "bar1", "bar2", "bar3"},
+					"baaz": {"baaz0", "baaz1", "baaz2", "baaz3"},
+				},
+			},
+		}, "1@localhost:9094")
+	})
 }
 
 func TestValidateKRaftVersion(t *testing.T) {
-	tests := []struct {
-		name    string
-		image   string
-		wantErr bool
-	}{
-		{
-			name:    "Official: valid version",
-			image:   "confluentinc/confluent-local:7.5.0",
-			wantErr: false,
-		},
-		{
-			name:    "Official: valid, limit version",
-			image:   "confluentinc/confluent-local:7.4.0",
-			wantErr: false,
-		},
-		{
-			name:    "Official: invalid, low version",
-			image:   "confluentinc/confluent-local:7.3.99",
-			wantErr: true,
-		},
-		{
-			name:    "Official: invalid, too low version",
-			image:   "confluentinc/confluent-local:5.0.0",
-			wantErr: true,
-		},
-		{
-			name:    "Unofficial does not validate KRaft version",
-			image:   "my-kafka:1.0.0",
-			wantErr: false,
-		},
+	validateKRaftVersionFn := func(t *testing.T, image string, wantErr bool) {
+		t.Helper()
+
+		err := validateKRaftVersion(image)
+
+		if wantErr {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
+		}
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			err := validateKRaftVersion(test.image)
+	t.Run("official/valid-version", func(t *testing.T) {
+		validateKRaftVersionFn(t, "confluentinc/confluent-local:7.5.0", false)
+	})
 
-			if test.wantErr {
-				require.Errorf(t, err, "expected error, got nil")
-			} else {
-				require.NoErrorf(t, err, "expected no error, got %s", err)
-			}
-		})
-	}
+	t.Run("official/valid-limit-version", func(t *testing.T) {
+		validateKRaftVersionFn(t, "confluentinc/confluent-local:7.4.0", false)
+	})
+
+	t.Run("official/invalid-low-version", func(t *testing.T) {
+		validateKRaftVersionFn(t, "confluentinc/confluent-local:7.3.99", true)
+	})
+
+	t.Run("official/invalid-too-low-version", func(t *testing.T) {
+		validateKRaftVersionFn(t, "confluentinc/confluent-local:5.0.0", true)
+	})
+
+	t.Run("unofficial/does-not-validate-KRaft-version", func(t *testing.T) {
+		validateKRaftVersionFn(t, "my-kafka:1.0.0", false)
+	})
 }
 
 func TestTrimValidateListeners(t *testing.T) {
-	tests := []struct {
-		name        string
-		listeners   []KafkaListener
-		wantErr     bool
-		description string
-	}{
-		{
-			listeners: []KafkaListener{
-				{
-					Name: "PLAINTEXT",
-					Host: "kafka",
-					Port: "9093",
-				},
-			},
-			wantErr:     true,
-			description: "expected to fail due to reserved listener port duplication",
-		},
-		{
-			listeners: []KafkaListener{
-				{
-					Name: "PLAINTEXT",
-					Host: "kafka",
-					Port: "9094",
-				},
-			},
-			wantErr:     true,
-			description: "expected to fail due to reserved listener port duplication",
-		},
-		{
-			listeners: []KafkaListener{
-				{
-					Name: "  cOnTrOller   ",
-					Host: "kafka",
-					Port: "9092",
-				},
-			},
-			wantErr:     true,
-			description: "expected to fail due to reserved listener name CONTROLLER duplication",
-		},
-		{
-			listeners: []KafkaListener{
-				{
-					Name: "plaintext",
-					Host: "kafka",
-					Port: "9092",
-				},
-			},
-			wantErr:     true,
-			description: "expected to fail due to reserved listener name PLAINTEXT duplication",
-		},
-		{
-			listeners: []KafkaListener{
-				{
-					Name: "test",
-					Host: "kafka",
-					Port: "9092",
-				},
-				{
-					Name: "test2",
-					Host: "kafka",
-					Port: "9092",
-				},
-			},
-			wantErr:     true,
-			description: "expected to fail due to port duplication",
-		},
-		{
-			listeners: []KafkaListener{
-				{
-					Name: "test",
-					Host: "kafka",
-					Port: "9092",
-				},
-				{
-					Name: "test",
-					Host: "kafka",
-					Port: "9095",
-				},
-			},
-			wantErr:     true,
-			description: "expected to fail due to name duplication",
-		},
-		{
-			listeners: []KafkaListener{
-				{
-					Name: "test",
-					Host: "kafka",
-					Port: "9095",
-				},
-			},
-			wantErr:     false,
-			description: "expected no errors",
-		},
+	validateFn := func(t *testing.T, listeners []KafkaListener, wantErr bool) {
+		t.Helper()
+
+		err := trimValidateListeners(listeners)
+		if wantErr {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
+		}
 	}
 
-	for _, test := range tests {
-		t.Run("", func(t *testing.T) {
-			err := trimValidateListeners(test.listeners)
+	t.Run("fail/reserved-listener/port-9093", func(t *testing.T) {
+		validateFn(t, []KafkaListener{
+			{
+				Name: "PLAINTEXT",
+				Host: "kafka",
+				Port: "9093",
+			},
+		}, true)
+	})
 
-			if test.wantErr != (err != nil) {
-				t.Fatalf(test.description)
-			}
-		})
-	}
+	t.Run("fail/reserved-listener/port-9094", func(t *testing.T) {
+		validateFn(t, []KafkaListener{
+			{
+				Name: "PLAINTEXT",
+				Host: "kafka",
+				Port: "9094",
+			},
+		}, true)
+	})
+
+	t.Run("fail/reserved-listener/name-controller", func(t *testing.T) {
+		validateFn(t, []KafkaListener{
+			{
+				Name: "  cOnTrOller   ",
+				Host: "kafka",
+				Port: "9092",
+			},
+		}, true)
+	})
+
+	t.Run("fail/reserved-listener/name-plaintext", func(t *testing.T) {
+		validateFn(t, []KafkaListener{
+			{
+				Name: "plaintext",
+				Host: "kafka",
+				Port: "9092",
+			},
+		}, true)
+	})
+
+	t.Run("fail/port-duplication", func(t *testing.T) {
+		validateFn(t, []KafkaListener{
+			{
+				Name: "test",
+				Host: "kafka",
+				Port: "9092",
+			},
+			{
+				Name: "test2",
+				Host: "kafka",
+				Port: "9092",
+			},
+		}, true)
+	})
+
+	t.Run("fail/name-duplication", func(t *testing.T) {
+		validateFn(t, []KafkaListener{
+			{
+				Name: "test",
+				Host: "kafka",
+				Port: "9092",
+			},
+			{
+				Name: "test",
+				Host: "kafka",
+				Port: "9095",
+			},
+		}, true)
+	})
+
+	t.Run("success", func(t *testing.T) {
+		validateFn(t, []KafkaListener{
+			{
+				Name: "test",
+				Host: "kafka",
+				Port: "9095",
+			},
+		}, false)
+	})
 }
