@@ -2,7 +2,6 @@ package kafka_test
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -340,33 +339,6 @@ func TestKafka_listenersValidation(t *testing.T) {
 			},
 		})
 	})
-}
-
-func createTopics(brokers []string, topics []string) error {
-	t := &sarama.CreateTopicsRequest{}
-	t.TopicDetails = make(map[string]*sarama.TopicDetail, len(topics))
-	for _, elem := range topics {
-		t.TopicDetails[elem] = &sarama.TopicDetail{NumPartitions: 1}
-	}
-
-	var err error
-
-	c, err := sarama.NewClient(brokers, sarama.NewConfig())
-	if err != nil {
-		return fmt.Errorf("failed to create client: %w", err)
-	}
-	defer c.Close()
-
-	bs := c.Brokers()
-
-	_, err = bs[0].CreateTopics(t)
-	if err != nil {
-		return fmt.Errorf("failed to create topics: %w", err)
-	}
-
-	fmt.Println("successfully created topics")
-
-	return nil
 }
 
 // assertAdvertisedListeners checks that the advertised listeners are set correctly:
