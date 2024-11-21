@@ -177,7 +177,7 @@ func TestKafka_networkConnectivity(t *testing.T) {
 
 	consumer, _, done, cancel := NewTestKafkaConsumer(t)
 
-	sCtx, _ := context.WithTimeout(context.Background(), time.Second)
+	sCtx, _ := context.WithTimeout(context.Background(), time.Second) //nolint: govet
 	go func() {
 		if err := client.Consume(sCtx, []string{topic_out}, consumer); err != nil {
 			cancel()
