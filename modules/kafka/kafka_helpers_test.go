@@ -151,7 +151,7 @@ func TestTrimValidateListeners(t *testing.T) {
 		{
 			listeners: []KafkaListener{
 				{
-					Name: "external",
+					Name: "plaintext",
 					Host: "kafka",
 					Port: "9092",
 				},
