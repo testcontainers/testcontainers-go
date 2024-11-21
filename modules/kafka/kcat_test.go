@@ -9,12 +9,12 @@ import (
 )
 
 type KcatContainer struct {
-	Container testcontainers.Container
-	FilePath  string
+	testcontainers.Container
+	FilePath string
 }
 
-func createKCat(ctx context.Context, network, filepath string) (KcatContainer, error) {
-	kcat, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+func runKcatContainer(ctx context.Context, network, filepath string) (*KcatContainer, error) {
+	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "confluentinc/cp-kcat:7.4.1",
 			Networks: []string{
@@ -31,11 +31,15 @@ func createKCat(ctx context.Context, network, filepath string) (KcatContainer, e
 		Started: true,
 	})
 
+	var c *KcatContainer
+	if ctr != nil {
+		c = &KcatContainer{Container: ctr, FilePath: filepath}
+	}
 	if err != nil {
-		return KcatContainer{}, fmt.Errorf("create generic container: %w", err)
+		return c, fmt.Errorf("generic container: %w", err)
 	}
 
-	return KcatContainer{Container: kcat, FilePath: filepath}, nil
+	return c, nil
 }
 
 func (kcat *KcatContainer) SaveFile(ctx context.Context, data string) error {
@@ -49,10 +53,16 @@ func (kcat *KcatContainer) ProduceMessageFromFile(ctx context.Context, broker, t
 	return err
 }
 
+func (kcat *KcatContainer) CreateTopic(ctx context.Context, broker, topic string) error {
+	cmd := []string{"kcat", "-b", broker, "-C", "-t", topic}
+	_, _, err := kcat.Container.Exec(ctx, cmd)
+
+	return err
+}
+
 func (kcat *KcatContainer) ConsumeMessage(ctx context.Context, broker, topic string) (string, error) {
 	cmd := []string{"kcat", "-b", broker, "-C", "-t", topic, "-c1"}
 	_, stdout, err := kcat.Container.Exec(ctx, cmd)
-	
 	if err != nil {
 		return "", err
 	}

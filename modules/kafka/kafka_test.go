@@ -115,38 +115,21 @@ func TestKafka_networkConnectivity(t *testing.T) {
 	// }
 	require.NoError(t, err, "failed to start kafka container")
 
-	kcat, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "confluentinc/cp-kcat:7.4.1",
-			Networks: []string{
-				Network.Name,
-			},
-			Entrypoint: []string{
-				"sh",
-			},
-			Cmd: []string{
-				"-c",
-				"tail -f /dev/null",
-			},
-		},
-		Started: true,
-	})
-	// }
-
+	kcat, err := runKcatContainer(ctx, Network.Name, "/tmp/msgs.txt")
 	require.NoError(t, err, "failed to start kcat")
 
 	// 4. Copy message to kcat
-	err = kcat.CopyToContainer(ctx, []byte("Message produced by kcat"), "/tmp/msgs.txt", 700)
+	err = kcat.SaveFile(ctx, "Message produced by kcat")
 	require.NoError(t, err)
 
 	brokers, err := kafkaContainer.Brokers(context.TODO())
 	require.NoError(t, err, "failed to get brokers")
 
 	// err = createTopics(brokers, []string{topic_in, topic_out})
-	_, stdout, err := kcat.Exec(ctx, []string{"kcat", "-b", address, "-C", "-t", topic_in})
+	err = kcat.CreateTopic(ctx, address, topic_in)
 	require.NoError(t, err, "create topic topic_in")
 
-	_, stdout, err = kcat.Exec(ctx, []string{"kcat", "-b", address, "-C", "-t", topic_out})
+	err = kcat.CreateTopic(ctx, address, topic_out)
 	require.NoError(t, err, "create topic topic_out")
 
 	// perform assertions
@@ -170,7 +153,7 @@ func TestKafka_networkConnectivity(t *testing.T) {
 	require.NoError(t, err, "send message")
 
 	// Internal read
-	_, stdout, err = kcat.Exec(ctx, []string{"kcat", "-b", address, "-C", "-t", topic_in, "-c", "1"})
+	_, stdout, err := kcat.Exec(ctx, []string{"kcat", "-b", address, "-C", "-t", topic_in, "-c", "1"})
 	require.NoError(t, err)
 
 	out, err := io.ReadAll(stdout)
@@ -241,45 +224,26 @@ func TestKafka_withListener(t *testing.T) {
 
 	// 3. Start KCat container
 	// withListenerKcat {
-	kcat, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "confluentinc/cp-kcat:7.4.1",
-			Networks: []string{
-				rpNetwork.Name,
-			},
-			Entrypoint: []string{
-				"sh",
-			},
-			Cmd: []string{
-				"-c",
-				"tail -f /dev/null",
-			},
-		},
-		Started: true,
-	})
+	kcat, err := runKcatContainer(ctx, rpNetwork.Name, "/tmp/msgs.txt")
 	// }
 
 	require.NoError(t, err)
 
 	// 4. Copy message to kcat
-	err = kcat.CopyToContainer(ctx, []byte("Message produced by kcat"), "/tmp/msgs.txt", 700)
+	err = kcat.SaveFile(ctx, "Message produced by kcat")
 	require.NoError(t, err)
 
 	// 5. Produce message to Kafka
 	// withListenerExec {
-	_, _, err = kcat.Exec(ctx, []string{"kcat", "-b", "kafka:9092", "-t", "msgs", "-P", "-l", "/tmp/msgs.txt"})
+	err = kcat.ProduceMessageFromFile(ctx, "kafka:9092", "msgs")
 	// }
 
 	require.NoError(t, err)
 
 	// 6. Consume message from Kafka
-	_, stdout, err := kcat.Exec(ctx, []string{"kcat", "-b", "kafka:9092", "-C", "-t", "msgs", "-c", "1"})
-	require.NoError(t, err)
-
 	// 7. Read Message from stdout
-	out, err := io.ReadAll(stdout)
+	out, err := kcat.ConsumeMessage(ctx, "kafka:9092", "msgs")
 	require.NoError(t, err)
-
 	require.Contains(t, string(out), "Message produced by kcat")
 
 	t.Cleanup(func() {
