@@ -63,6 +63,16 @@ func WithMemoryLimit(memoryLimit string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+func WithAlternator(alternatorPort uint) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		setCommandFlag(req, "--alternator-port", strconv.Itoa(int(alternatorPort)))
+		setCommandFlag(req, "--alternator-write-isolation", "always")
+		req.ExposedPorts = append(req.ExposedPorts, strconv.Itoa(int(alternatorPort)))
+		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForListeningPort(nat.Port(strconv.Itoa(int(alternatorPort)))))
+		return nil
+	}
+}
+
 // WithCpuLimit sets the CPU/Cores limit for the ScyllaDB container
 // If you're using Shard Awareness, you should set the CPU limit to at least 2 cores.
 func WithCpuLimit(cores uint) testcontainers.CustomizeRequestOption {
@@ -72,38 +82,21 @@ func WithCpuLimit(cores uint) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// ShardAwareConnectionHost returns the host and port of the Scylladb container
-// using the shard-aware port, and obtaining the host and exposed port from the container
-// Eg: "host:port" -> "localhost:19042"
-func (c ScyllaDBContainer) ShardAwareConnectionHost(ctx context.Context) (string, error) {
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	port, err := c.MappedPort(ctx, shardAwarePort)
-	if err != nil {
-		return "", err
-	}
-
-	return host + ":" + port.Port(), nil
-}
-
 // ConnectionHost returns the host and port of the Scylladb container with the default port
 // and obtaining the host and exposed port from the container
-// Eg: "host:port" -> "localhost:9042"
-func (c ScyllaDBContainer) ConnectionHost(ctx context.Context) (string, error) {
+// Eg: "host:port" -> "localhost:9042" -> "localhost:19042" -> "localhost:8000"
+func (c ScyllaDBContainer) ConnectionHost(ctx context.Context, port uint) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	port, err := c.MappedPort(ctx, port)
+	containerPort, err := c.MappedPort(ctx, nat.Port(strconv.Itoa(int(port))))
 	if err != nil {
 		return "", err
 	}
 
-	return host + ":" + port.Port(), nil
+	return host + ":" + containerPort.Port(), nil
 }
 
 // Run starts a ScyllaDB container with the specified image and options
