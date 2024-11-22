@@ -47,16 +47,6 @@ func WithShardAwareness() testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithoutDeveloperMode disables the developer mode in the ScyllaDB container.
-// This flag enable the various checks Scylla performs at startup to ensure the machine is configured for maximum performance
-// and stability (not relevant on development workstations).
-func WithoutDeveloperMode() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		setCommandFlag(req, "--developer-mode", "0")
-		return nil
-	}
-}
-
 // WithAlternator enables the Alternator (DynamoDB Compatible API) service in the ScyllaDB container.
 // It will set the "alternator-port" parameter to the specified port.
 // It will also set the "alternator-write-isolation" parameter to "always" as a command line argument to the container.

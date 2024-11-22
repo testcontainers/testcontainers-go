@@ -17,6 +17,7 @@ import (
 	"github.com/gocql/gocql"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/scylladb"
 )
 
@@ -27,6 +28,7 @@ func TestScylla(t *testing.T) {
 		"scylladb/scylla:6.2",
 		scylladb.WithShardAwareness(),
 	)
+	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
 	t.Run("test without shard awareness", func(t *testing.T) {
@@ -67,6 +69,7 @@ func TestScyllaWithConfigFile(t *testing.T) {
 		scylladb.WithShardAwareness(),
 	)
 	require.NoError(t, err)
+	testcontainers.CleanupContainer(t, ctr)
 
 	t.Run("test without shard awareness", func(t *testing.T) {
 		host, err := ctr.ConnectionHost(ctx, 9042)
@@ -110,13 +113,12 @@ func TestScyllaWithAlternator(t *testing.T) {
 		scylladb.WithAlternator(alternatorPort),
 	)
 	require.NoError(t, err)
+	testcontainers.CleanupContainer(t, ctr)
 
-	t.Run("test with alternator", func(t *testing.T) {
-		client, err := getDynamoAlternatorClient(t, ctr, alternatorPort)
-		require.NoError(t, err)
-		err = createTable(client)
-		require.NoError(t, err)
-	})
+	client, err := getDynamoAlternatorClient(t, ctr, alternatorPort)
+	require.NoError(t, err)
+	err = createTable(client)
+	require.NoError(t, err)
 }
 
 func TestScyllaWithoutAlternator(t *testing.T) {
@@ -127,13 +129,12 @@ func TestScyllaWithoutAlternator(t *testing.T) {
 		"scylladb/scylla:6.2",
 	)
 	require.NoError(t, err)
+	testcontainers.CleanupContainer(t, ctr)
 
-	t.Run("test with alternator", func(t *testing.T) {
-		client, err := getDynamoAlternatorClient(t, ctr, alternatorPort)
-		require.Error(t, err)
-		err = createTable(client)
-		require.Error(t, err)
-	})
+	client, err := getDynamoAlternatorClient(t, ctr, alternatorPort)
+	require.Error(t, err)
+	err = createTable(client)
+	require.Error(t, err)
 }
 
 type scyllaAlternatorResolver struct {
