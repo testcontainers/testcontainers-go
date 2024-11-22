@@ -47,6 +47,9 @@ func WithShardAwareness() testcontainers.CustomizeRequestOption {
 	}
 }
 
+// WithoutDeveloperMode disables the developer mode in the ScyllaDB container.
+// This flag enable the various checks Scylla performs at startup to ensure the machine is configured for maximum performance
+// and stability (not relevant on development workstations).
 func WithoutDeveloperMode() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		setCommandFlag(req, "--developer-mode", "0")
@@ -54,15 +57,9 @@ func WithoutDeveloperMode() testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithMemoryLimit sets the memory limit for the ScyllaDB container
-// Eg: "1G" | "2G" | "512M"
-func WithMemoryLimit(memoryLimit string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		setCommandFlag(req, "--memory", memoryLimit)
-		return nil
-	}
-}
-
+// WithAlternator enables the Alternator (DynamoDB Compatible API) service in the ScyllaDB container.
+// It will set the "alternator-port" parameter to the specified port.
+// It will also set the "alternator-write-isolation" parameter to "always" as a command line argument to the container.
 func WithAlternator(alternatorPort uint) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		setCommandFlag(req, "--alternator-port", strconv.Itoa(int(alternatorPort)))
@@ -73,11 +70,12 @@ func WithAlternator(alternatorPort uint) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithCpuLimit sets the CPU/Cores limit for the ScyllaDB container
-// If you're using Shard Awareness, you should set the CPU limit to at least 2 cores.
-func WithCpuLimit(cores uint) testcontainers.CustomizeRequestOption {
+// WithCustomCommand sets a custom command with a value for the ScyllaDB container.
+// This is an option to replace the default command with a custom one.
+// See more [here](https://opensource.docs.scylladb.com/stable/operating-scylla/procedures/tips/best-practices-scylla-on-docker.html)
+func WithCustomCommand(command, value string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		setCommandFlag(req, "--smp", strconv.Itoa(int(cores)))
+		setCommandFlag(req, command, value)
 		return nil
 	}
 }
@@ -101,17 +99,13 @@ func (c ScyllaDBContainer) ConnectionHost(ctx context.Context, port uint) (strin
 
 // Run starts a ScyllaDB container with the specified image and options
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ScyllaDBContainer, error) {
-	defaultCommands := []string{
-		"--smp=1",
-		"--memory=1G",
-		"--developer-mode=1",
-		"--overprovisioned=1",
-	}
-
 	req := testcontainers.ContainerRequest{
 		Image:        img,
 		ExposedPorts: []string{port.Port()},
-		Cmd:          defaultCommands,
+		Cmd: []string{
+			"--developer-mode=1",
+			"--overprovisioned=1",
+		},
 		WaitingFor: wait.ForAll(
 			wait.ForLog(".*initialization completed.").AsRegexp(),
 			wait.ForListeningPort(port),
@@ -132,8 +126,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			return nil, err
 		}
 	}
-
-	fmt.Println(genericContainerReq.Cmd)
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	var c *ScyllaDBContainer
