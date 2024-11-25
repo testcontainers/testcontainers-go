@@ -122,6 +122,7 @@ type untypedContextMetadata struct {
 	Name      string                     `json:"name,omitempty"`
 }
 
+// getByID returns the metadata for a context by its ID
 func (s *metadataStore) getByID(id contextdir) (metadata, error) {
 	fileName := filepath.Join(s.contextDir(id), metaFile)
 	bytes, err := os.ReadFile(fileName)
@@ -180,8 +181,11 @@ func (s *metadataStore) list() ([]metadata, error) {
 	return res, nil
 }
 
+// contextdir is a type used to represent a context directory
 type contextdir string
 
+// isContextDir checks if the given path is a context directory,
+// which means it contains a meta.json file.
 func isContextDir(path string) bool {
 	s, err := os.Stat(filepath.Join(path, metaFile))
 	if err != nil {
@@ -191,26 +195,27 @@ func isContextDir(path string) bool {
 	return !s.IsDir()
 }
 
+// listRecursivelyMetadataDirs lists all directories that contain a meta.json file
 func listRecursivelyMetadataDirs(root string) ([]string, error) {
-	fis, err := os.ReadDir(root)
+	fileEntries, err := os.ReadDir(root)
 	if err != nil {
 		return nil, err
 	}
 
 	var result []string
-	for _, fi := range fis {
-		if fi.IsDir() {
-			if isContextDir(filepath.Join(root, fi.Name())) {
-				result = append(result, fi.Name())
+	for _, fileEntry := range fileEntries {
+		if fileEntry.IsDir() {
+			if isContextDir(filepath.Join(root, fileEntry.Name())) {
+				result = append(result, fileEntry.Name())
 			}
 
-			subs, err := listRecursivelyMetadataDirs(filepath.Join(root, fi.Name()))
+			subs, err := listRecursivelyMetadataDirs(filepath.Join(root, fileEntry.Name()))
 			if err != nil {
 				return nil, err
 			}
 
 			for _, s := range subs {
-				result = append(result, filepath.Join(fi.Name(), s))
+				result = append(result, filepath.Join(fileEntry.Name(), s))
 			}
 		}
 	}
@@ -218,6 +223,7 @@ func listRecursivelyMetadataDirs(root string) ([]string, error) {
 	return result, nil
 }
 
+// parseTypedOrMap parses a JSON payload into a typed object or a map
 func parseTypedOrMap(payload []byte, getter typeGetter) (any, error) {
 	if len(payload) == 0 || string(payload) == "null" {
 		return nil, nil
