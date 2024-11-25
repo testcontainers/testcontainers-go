@@ -308,7 +308,7 @@ func GetDockerHostFromCurrentContext() (string, error) {
 		}
 	}
 
-	return "", ErrDockerSocketNotSetInDockerContext
+	return "", errDockerSocketNotSetInDockerContext
 }
 
 // currentContext returns the current context name, based on

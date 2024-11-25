@@ -19,16 +19,16 @@ type dockerHostContext string
 var DockerHostContextKey = dockerHostContext("docker_host")
 
 var (
-	ErrDockerHostNotSet                  = errors.New("DOCKER_HOST is not set")
-	ErrDockerSocketOverrideNotSet        = errors.New("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE is not set")
-	ErrDockerSocketNotSetInContext       = errors.New("socket not set in Go context")
-	ErrDockerSocketNotSetInDockerContext = errors.New("socket not set in Docker context")
-	ErrDockerSocketNotSetInProperties    = errors.New("socket not set in ~/.testcontainers.properties")
-	ErrNoUnixSchema                      = errors.New("URL schema is not unix")
-	ErrSocketNotFound                    = errors.New("socket not found")
-	ErrSocketNotFoundInPath              = errors.New("docker socket not found in " + DockerSocketPath)
-	// ErrTestcontainersHostNotSetInProperties this error is specific to Testcontainers
-	ErrTestcontainersHostNotSetInProperties = errors.New("tc.host not set in ~/.testcontainers.properties")
+	errDockerHostNotSet                  = errors.New("DOCKER_HOST is not set")
+	errDockerSocketOverrideNotSet        = errors.New("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE is not set")
+	errDockerSocketNotSetInContext       = errors.New("socket not set in Go context")
+	errDockerSocketNotSetInDockerContext = errors.New("socket not set in Docker context")
+	errDockerSocketNotSetInProperties    = errors.New("socket not set in ~/.testcontainers.properties")
+	errNoUnixSchema                      = errors.New("URL schema is not unix")
+	errSocketNotFound                    = errors.New("socket not found")
+	errSocketNotFoundInPath              = errors.New("docker socket not found in " + DockerSocketPath)
+	// errTestcontainersHostNotSetInProperties this error is specific to Testcontainers
+	errTestcontainersHostNotSetInProperties = errors.New("tc.host not set in ~/.testcontainers.properties")
 )
 
 var (
@@ -155,7 +155,7 @@ func extractDockerHost(ctx context.Context) (string, error) {
 		return "", errors.Join(errs...)
 	}
 
-	return "", ErrSocketNotFound
+	return "", errSocketNotFound
 }
 
 // extractDockerSocket Extracts the docker socket from the different alternatives, without caching the result.
@@ -232,11 +232,11 @@ func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) st
 // not being set, false otherwise.
 func isHostNotSet(err error) bool {
 	switch {
-	case errors.Is(err, ErrTestcontainersHostNotSetInProperties),
-		errors.Is(err, ErrDockerHostNotSet),
-		errors.Is(err, ErrDockerSocketNotSetInContext),
-		errors.Is(err, ErrDockerSocketNotSetInProperties),
-		errors.Is(err, ErrSocketNotFoundInPath),
+	case errors.Is(err, errTestcontainersHostNotSetInProperties),
+		errors.Is(err, errDockerHostNotSet),
+		errors.Is(err, errDockerSocketNotSetInContext),
+		errors.Is(err, errDockerSocketNotSetInProperties),
+		errors.Is(err, errSocketNotFoundInPath),
 		errors.Is(err, ErrXDGRuntimeDirNotSet),
 		errors.Is(err, ErrRootlessDockerNotFoundHomeRunDir),
 		errors.Is(err, ErrRootlessDockerNotFoundHomeDesktopDir),
@@ -253,7 +253,7 @@ func dockerHostFromEnv(ctx context.Context) (string, error) {
 		return dockerHostPath, nil
 	}
 
-	return "", ErrDockerHostNotSet
+	return "", errDockerHostNotSet
 }
 
 // dockerHostFromContext returns the docker host from the Go context, if it's not empty
@@ -267,7 +267,7 @@ func dockerHostFromContext(ctx context.Context) (string, error) {
 		return parsed, nil
 	}
 
-	return "", ErrDockerSocketNotSetInContext
+	return "", errDockerSocketNotSetInContext
 }
 
 // dockerHostFromContext returns the docker host from the Go context, if it's not empty
@@ -288,7 +288,7 @@ func dockerHostFromProperties(ctx context.Context) (string, error) {
 		return socketPath, nil
 	}
 
-	return "", ErrDockerSocketNotSetInProperties
+	return "", errDockerSocketNotSetInProperties
 }
 
 // dockerSocketOverridePath returns the docker socket from the TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE environment variable,
@@ -298,7 +298,7 @@ func dockerSocketOverridePath() (string, error) {
 		return dockerHostPath, nil
 	}
 
-	return "", ErrDockerSocketOverrideNotSet
+	return "", errDockerSocketOverrideNotSet
 }
 
 // dockerSocketPath returns the docker socket from the default docker socket path, if it's not empty
@@ -308,7 +308,7 @@ func dockerSocketPath(ctx context.Context) (string, error) {
 		return DockerSocketPathWithSchema, nil
 	}
 
-	return "", ErrSocketNotFoundInPath
+	return "", errSocketNotFoundInPath
 }
 
 // testcontainersHostFromProperties returns the testcontainers host from the ~/.testcontainers.properties file, if it's not empty
@@ -324,7 +324,7 @@ func testcontainersHostFromProperties(ctx context.Context) (string, error) {
 		return parsed, nil
 	}
 
-	return "", ErrTestcontainersHostNotSetInProperties
+	return "", errTestcontainersHostNotSetInProperties
 }
 
 // InAContainer returns true if the code is running inside a container
