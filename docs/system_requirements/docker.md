@@ -45,10 +45,10 @@ docker context use orbstack
 
 ### Podman
 
-Podman does not create its own Docker context when it is installed so, after starting a `podman-machine`, please create it with the following command:
+Podman does not create its own Docker context when it is installed so, after starting a `podman-machine` in **rootful mode**, please create the context with the following command:
 
 ```sh
-docker context create podman --description "podman context" --docker "host=unix:///var/folders/_j/nhbgdck523n3008dd3zlsm5m0000gn/T/podman/podman-machine-default-api.sock"
+podman context create podman --description "podman context" --docker "host=unix:///var/folders/_j/nhbgdck523n3008dd3zlsm5m0000gn/T/podman/podman-machine-default-api.sock"
 ```
 
 !!! note
@@ -57,7 +57,7 @@ docker context create podman --description "podman context" --docker "host=unix:
 Then you can set this as the active context by running:
 
 ```sh
-docker context use podman
+podman context use podman
 ```
 
 ### Rancher Desktop
