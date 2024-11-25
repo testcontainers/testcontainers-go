@@ -94,16 +94,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	if err := validateListeners(settings.Listeners); err != nil {
-		return nil, fmt.Errorf("listeners validation: %w", err)
-	}
-
-	// apply envs for listeners
-	envChange := editEnvsForListeners(settings.Listeners)
-	for key, item := range envChange {
-		genericContainerReq.Env[key] = item
-	}
-
 	genericContainerReq.ContainerRequest.LifecycleHooks = []testcontainers.ContainerLifecycleHooks{
 		{
 			PostStarts: []testcontainers.ContainerHook{
@@ -143,34 +133,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
-func validateListeners(listeners []Listener) error {
-	// Validate
-	ports := make(map[string]struct{}, len(listeners)+2)
-	names := make(map[string]struct{}, len(listeners)+2)
-
-	// check for default listeners
-	ports["9094"] = struct{}{}
-	ports["9093"] = struct{}{}
-
-	// check for default listeners
-	names["CONTROLLER"] = struct{}{}
-	names["PLAINTEXT"] = struct{}{}
-
-	for _, item := range listeners {
-		if _, exists := names[item.Name]; exists {
-			return fmt.Errorf("duplicate of listener name: %s", item.Name)
-		}
-		names[item.Name] = struct{}{}
-
-		if _, exists := ports[item.Port]; exists {
-			return fmt.Errorf("duplicate of listener port: %s", item.Port)
-		}
-		ports[item.Port] = struct{}{}
-	}
-
-	return nil
-}
-
 // copyStarterScript copies the starter script into the container.
 func copyStarterScript(ctx context.Context, c testcontainers.Container, settings *options) error {
 	if err := wait.ForListeningPort(publicPort).
@@ -206,44 +168,6 @@ func copyStarterScript(ctx context.Context, c testcontainers.Container, settings
 	}
 
 	return nil
-}
-
-func editEnvsForListeners(listeners []Listener) map[string]string {
-	if len(listeners) == 0 {
-		return nil
-	}
-
-	envs := map[string]string{
-		"KAFKA_LISTENERS":                      "CONTROLLER://0.0.0.0:9094, PLAINTEXT://0.0.0.0:9093",
-		"KAFKA_REST_BOOTSTRAP_SERVERS":         "CONTROLLER://0.0.0.0:9094, PLAINTEXT://0.0.0.0:9093",
-		"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP": "CONTROLLER:PLAINTEXT, PLAINTEXT:PLAINTEXT",
-	}
-
-	// expect first listener has common network between kafka instances
-	envs["KAFKA_INTER_BROKER_LISTENER_NAME"] = listeners[0].Name
-
-	// expect small number of listeners, so joins is okay
-	for _, item := range listeners {
-		envs["KAFKA_LISTENERS"] = strings.Join(
-			[]string{
-				envs["KAFKA_LISTENERS"],
-				item.Name + "://0.0.0.0:" + item.Port,
-			},
-			",",
-		)
-
-		envs["KAFKA_REST_BOOTSTRAP_SERVERS"] = envs["KAFKA_LISTENERS"]
-
-		envs["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"] = strings.Join(
-			[]string{
-				envs["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"],
-				item.Name + ":" + "PLAINTEXT",
-			},
-			",",
-		)
-	}
-
-	return envs
 }
 
 // Brokers retrieves the broker connection strings from Kafka with only one entry,

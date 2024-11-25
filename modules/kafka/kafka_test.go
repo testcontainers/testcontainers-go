@@ -103,12 +103,10 @@ func TestKafka_networkConnectivity(t *testing.T) {
 		"confluentinc/confluent-local:7.6.1",
 		kafka.WithClusterID("test-cluster"),
 		network.WithNetwork([]string{"kafka"}, Network),
-		kafka.WithListener([]kafka.Listener{
-			{
-				Name: "BROKER",
-				Host: "kafka",
-				Port: "9092",
-			},
+		kafka.WithListener(kafka.Listener{
+			Name: "BROKER",
+			Host: "kafka",
+			Port: "9092",
 		}),
 	)
 	// }
@@ -216,12 +214,10 @@ func TestKafka_withListener(t *testing.T) {
 	ctr, err := kafka.Run(ctx,
 		"confluentinc/confluent-local:7.6.1",
 		network.WithNetwork([]string{"kafka"}, rpNetwork),
-		kafka.WithListener([]kafka.Listener{
-			{
-				Name: "BROKER",
-				Host: "kafka",
-				Port: "9092",
-			},
+		kafka.WithListener(kafka.Listener{
+			Name: "BROKER",
+			Host: "kafka",
+			Port: "9092",
 		}),
 	)
 	// }
@@ -264,7 +260,7 @@ func TestKafka_listenersValidation(t *testing.T) {
 		c, err := kafka.Run(context.Background(),
 			"confluentinc/confluent-local:7.6.1",
 			kafka.WithClusterID("test-cluster"),
-			kafka.WithListener(listeners),
+			kafka.WithListener(listeners...),
 		)
 		require.Error(t, err)
 		require.Nil(t, c, "expected container to be nil")

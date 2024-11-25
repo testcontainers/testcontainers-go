@@ -89,7 +89,7 @@ func TestValidateListeners(t *testing.T) {
 	validateFn := func(t *testing.T, listeners []Listener, wantErr bool) {
 		t.Helper()
 
-		err := validateListeners(listeners)
+		err := validateListeners(listeners...)
 		if wantErr {
 			require.Error(t, err)
 		} else {
@@ -120,7 +120,7 @@ func TestValidateListeners(t *testing.T) {
 	t.Run("fail/reserved-listener/name-controller", func(t *testing.T) {
 		validateFn(t, []Listener{
 			{
-				Name: "CONTROLLER",
+				Name: "  cOnTrOller   ",
 				Host: "kafka",
 				Port: "9092",
 			},
@@ -130,7 +130,7 @@ func TestValidateListeners(t *testing.T) {
 	t.Run("fail/reserved-listener/name-plaintext", func(t *testing.T) {
 		validateFn(t, []Listener{
 			{
-				Name: "PLAINTEXT",
+				Name: "plaintext",
 				Host: "kafka",
 				Port: "9092",
 			},
