@@ -84,7 +84,7 @@ KafkaContainer, err = kafka.Run(ctx,
 
 #### Listeners
 
-If you need to connect new listeners, you can use `WithListener(listeners []KafkaListener)`. 
+If you need to connect new listeners, you can use `WithListener(listeners ...Listener)`. 
 This option controls the following environment variables for the Kafka container: 
 - `KAFKA_LISTENERS`
 - `KAFKA_REST_BOOTSTRAP_SERVERS`
