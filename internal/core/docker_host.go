@@ -127,7 +127,9 @@ func extractDockerHost(ctx context.Context) (string, error) {
 		testcontainersHostFromProperties,
 		dockerHostFromEnv,
 		dockerHostFromContext,
-		dockerHostFromDockerContext,
+		func(_ context.Context) (string, error) {
+			return GetDockerHostFromCurrentContext()
+		},
 		dockerSocketPath,
 		dockerHostFromProperties,
 		rootlessDockerSocketPath,

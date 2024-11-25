@@ -317,7 +317,7 @@ func TestExtractDockerHost(t *testing.T) {
 		})
 
 		t.Run("extract-from-docker-context/not-found", func(tt *testing.T) {
-			host, err := dockerHostFromDockerContext(context.Background())
+			host, err := GetDockerHostFromCurrentContext()
 			require.ErrorIs(tt, err, errDockerSocketNotSetInDockerContext)
 			assert.Empty(tt, host)
 		})
@@ -325,7 +325,7 @@ func TestExtractDockerHost(t *testing.T) {
 		t.Run("extract-from-docker-context/found", func(tt *testing.T) {
 			setupDockerContexts(tt, 2, 3) // current context is context2
 
-			host, err := dockerHostFromDockerContext(context.Background())
+			host, err := GetDockerHostFromCurrentContext()
 			require.NoError(tt, err)
 			assert.Equal(tt, "tcp://127.0.0.1:2", host)
 		})
