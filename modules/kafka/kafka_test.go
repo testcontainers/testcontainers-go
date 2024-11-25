@@ -251,87 +251,78 @@ func TestKafka_restProxyService(t *testing.T) {
 }
 
 func TestKafka_listenersValidation(t *testing.T) {
-	runWithErrorFn := func(t *testing.T, listeners []kafka.Listener) {
-		t.Helper()
-
-		c, err := kafka.Run(context.Background(),
-			"confluentinc/confluent-local:7.6.1",
-			kafka.WithClusterID("test-cluster"),
-			kafka.WithListener(listeners...),
-		)
-		require.Error(t, err)
-		require.Nil(t, c, "expected container to be nil")
-	}
-
 	t.Run("reserved-listener/port-9093", func(t *testing.T) {
-		runWithErrorFn(t, []kafka.Listener{
-			{
-				Name: "BROKER",
-				Host: "kafka",
-				Port: "9093",
-			},
+		runWithError(t, kafka.Listener{
+			Name: "BROKER",
+			Host: "kafka",
+			Port: "9093",
 		})
 	})
 
 	t.Run("reserved-listener/port-9094", func(t *testing.T) {
-		runWithErrorFn(t, []kafka.Listener{
-			{
-				Name: "BROKER",
-				Host: "kafka",
-				Port: "9094",
-			},
+		runWithError(t, kafka.Listener{
+			Name: "BROKER",
+			Host: "kafka",
+			Port: "9094",
 		})
 	})
 
 	t.Run("reserved-listener/controller-duplicated", func(t *testing.T) {
-		runWithErrorFn(t, []kafka.Listener{
-			{
-				Name: "  cOnTrOller   ",
-				Host: "kafka",
-				Port: "9092",
-			},
+		runWithError(t, kafka.Listener{
+			Name: "  cOnTrOller   ",
+			Host: "kafka",
+			Port: "9092",
 		})
 	})
 
 	t.Run("reserved-listener/plaintext-duplicated", func(t *testing.T) {
-		runWithErrorFn(t, []kafka.Listener{
-			{
-				Name: "plaintext",
-				Host: "kafka",
-				Port: "9092",
-			},
+		runWithError(t, kafka.Listener{
+			Name: "plaintext",
+			Host: "kafka",
+			Port: "9092",
 		})
 	})
 
 	t.Run("duplicated-ports", func(t *testing.T) {
-		runWithErrorFn(t, []kafka.Listener{
-			{
-				Name: "test",
-				Host: "kafka",
-				Port: "9092",
-			},
-			{
+		runWithError(t, kafka.Listener{
+			Name: "test",
+			Host: "kafka",
+			Port: "9092",
+		},
+			kafka.Listener{
 				Name: "test2",
 				Host: "kafka",
 				Port: "9092",
 			},
-		})
+		)
 	})
 
 	t.Run("duplicated-names", func(t *testing.T) {
-		runWithErrorFn(t, []kafka.Listener{
-			{
-				Name: "test",
-				Host: "kafka",
-				Port: "9092",
-			},
-			{
+		runWithError(t, kafka.Listener{
+			Name: "test",
+			Host: "kafka",
+			Port: "9092",
+		},
+			kafka.Listener{
 				Name: "test",
 				Host: "kafka",
 				Port: "9095",
 			},
-		})
+		)
 	})
+}
+
+// runWithError runs the Kafka container with the provided listeners and expects an error
+func runWithError(t *testing.T, listeners ...kafka.Listener) {
+	t.Helper()
+
+	c, err := kafka.Run(context.Background(),
+		"confluentinc/confluent-local:7.6.1",
+		kafka.WithClusterID("test-cluster"),
+		kafka.WithListener(listeners...),
+	)
+	require.Error(t, err)
+	require.Nil(t, c)
 }
 
 // assertAdvertisedListeners checks that the advertised listeners are set correctly:
