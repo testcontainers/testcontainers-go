@@ -210,8 +210,7 @@ func copyStarterScript(ctx context.Context, c testcontainers.Container, settings
 
 func editEnvsForListeners(listeners []Listener) map[string]string {
 	if len(listeners) == 0 {
-		// no change
-		return map[string]string{}
+		return nil
 	}
 
 	envs := map[string]string{
@@ -228,7 +227,7 @@ func editEnvsForListeners(listeners []Listener) map[string]string {
 		envs["KAFKA_LISTENERS"] = strings.Join(
 			[]string{
 				envs["KAFKA_LISTENERS"],
-				fmt.Sprintf("%s://0.0.0.0:%s", item.Name, item.Port),
+				item.Name + "://0.0.0.0:" + item.Port,
 			},
 			",",
 		)
