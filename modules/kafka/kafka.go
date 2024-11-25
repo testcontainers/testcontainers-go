@@ -145,27 +145,27 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 func validateListeners(listeners []Listener) error {
 	// Validate
-	var ports map[string]bool = make(map[string]bool, len(listeners)+2)
-	var names map[string]bool = make(map[string]bool, len(listeners)+2)
+	ports := make(map[string]struct{}, len(listeners)+2)
+	names := make(map[string]struct{}, len(listeners)+2)
 
 	// check for default listeners
-	ports["9094"] = true
-	ports["9093"] = true
+	ports["9094"] = struct{}{}
+	ports["9093"] = struct{}{}
 
 	// check for default listeners
-	names["CONTROLLER"] = true
-	names["PLAINTEXT"] = true
+	names["CONTROLLER"] = struct{}{}
+	names["PLAINTEXT"] = struct{}{}
 
 	for _, item := range listeners {
-		if names[item.Name] {
+		if _, exists := names[item.Name]; exists {
 			return fmt.Errorf("duplicate of listener name: %s", item.Name)
 		}
-		names[item.Name] = true
+		names[item.Name] = struct{}{}
 
-		if ports[item.Port] {
+		if _, exists := ports[item.Port]; exists {
 			return fmt.Errorf("duplicate of listener port: %s", item.Port)
 		}
-		ports[item.Port] = true
+		ports[item.Port] = struct{}{}
 	}
 
 	return nil
