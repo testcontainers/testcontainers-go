@@ -94,9 +94,7 @@ func TestKafka_networkConnectivity(t *testing.T) {
 	)
 
 	Network, err := network.New(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	// kafkaWithListener {
 	kafkaContainer, err := kafka.Run(ctx,
@@ -111,25 +109,25 @@ func TestKafka_networkConnectivity(t *testing.T) {
 	)
 	// }
 	testcontainers.CleanupContainer(t, kafkaContainer)
-	require.NoError(t, err, "failed to start kafka container")
+	require.NoError(t, err)
 
 	kcat, err := runKcatContainer(ctx, Network.Name, "/tmp/msgs.txt")
 	testcontainers.CleanupContainer(t, kcat)
-	require.NoError(t, err, "failed to start kcat")
+	require.NoError(t, err)
 
 	// 4. Copy message to kcat
 	err = kcat.SaveFile(ctx, "Message produced by kcat")
 	require.NoError(t, err)
 
 	brokers, err := kafkaContainer.Brokers(context.TODO())
-	require.NoError(t, err, "failed to get brokers")
+	require.NoError(t, err)
 
 	// err = createTopics(brokers, []string{topic_in, topic_out})
 	err = kcat.CreateTopic(ctx, address, topic_in)
-	require.NoError(t, err, "create topic topic_in")
+	require.NoError(t, err)
 
 	err = kcat.CreateTopic(ctx, address, topic_out)
-	require.NoError(t, err, "create topic topic_out")
+	require.NoError(t, err)
 
 	// perform assertions
 
@@ -139,7 +137,7 @@ func TestKafka_networkConnectivity(t *testing.T) {
 	config.Consumer.MaxWaitTime = 2 * time.Second
 
 	producer, err := sarama.NewSyncProducer(brokers, config)
-	require.NoError(t, err, "create kafka producer")
+	require.NoError(t, err)
 
 	// Act
 
@@ -149,14 +147,14 @@ func TestKafka_networkConnectivity(t *testing.T) {
 		Key:   sarama.StringEncoder(key),
 		Value: sarama.StringEncoder(text_msg),
 	})
-	require.NoError(t, err, "send message")
+	require.NoError(t, err)
 
 	// Internal read
 	_, stdout, err := kcat.Exec(ctx, []string{"kcat", "-b", address, "-C", "-t", topic_in, "-c", "1"})
 	require.NoError(t, err)
 
 	out, err := io.ReadAll(stdout)
-	require.NoError(t, err, "read message in kcat")
+	require.NoError(t, err)
 	require.Contains(t, string(out), text_msg)
 
 	// Internal write
@@ -166,11 +164,11 @@ func TestKafka_networkConnectivity(t *testing.T) {
 	require.NoError(t, err)
 
 	_, _, err = kcat.Exec(ctx, []string{"kcat", "-b", address, "-t", topic_out, "-P", "-l", tempfile})
-	require.NoError(t, err, "send message with kcat")
+	require.NoError(t, err)
 
 	// External read
 	client, err := sarama.NewConsumerGroup(brokers, "groupName", config)
-	require.NoError(t, err, "create consumer group")
+	require.NoError(t, err)
 
 	consumer, _, done, cancel := NewTestKafkaConsumer(t)
 
@@ -204,9 +202,8 @@ func TestKafka_withListener(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		if err := rpNetwork.Remove(ctx); err != nil {
-			t.Fatalf("failed to remove network: %s", err)
-		}
+		err := rpNetwork.Remove(ctx)
+		require.NoError(t, err)
 	})
 
 	// 2. Start Kafka ctr
