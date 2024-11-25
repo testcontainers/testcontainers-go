@@ -182,14 +182,14 @@ func copyStarterScript(ctx context.Context, c testcontainers.Container, settings
 	if len(settings.Listeners) == 0 {
 		defaultInternal, err := brokerListener(ctx, c)
 		if err != nil {
-			return fmt.Errorf("can't create default internal listener: %w", err)
+			return fmt.Errorf("default internal listener: %w", err)
 		}
 		settings.Listeners = append(settings.Listeners, defaultInternal)
 	}
 
 	defaultExternal, err := plainTextListener(ctx, c)
 	if err != nil {
-		return fmt.Errorf("can't create default external listener: %w", err)
+		return fmt.Errorf("default external listener: %w", err)
 	}
 
 	settings.Listeners = append(settings.Listeners, defaultExternal)
