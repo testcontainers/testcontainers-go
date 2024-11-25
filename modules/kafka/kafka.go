@@ -156,7 +156,7 @@ func copyStarterScript(ctx context.Context, c testcontainers.Container, settings
 
 	settings.Listeners = append(settings.Listeners, defaultExternal)
 
-	advertised := make([]string, 0, len(settings.Listeners))
+	advertised := make([]string, len(settings.Listeners))
 	for i, item := range settings.Listeners {
 		advertised[i] = item.Name + "://" + item.Host + ":" + item.Port
 	}
