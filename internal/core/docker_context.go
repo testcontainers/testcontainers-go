@@ -138,17 +138,17 @@ func (s *metadataStore) getByID(id contextdir) (metadata, error) {
 	}
 
 	if err := json.Unmarshal(bytes, &untyped); err != nil {
-		return metadata{}, fmt.Errorf("parsing %s: %w", fileName, err)
+		return metadata{}, fmt.Errorf("parsing %s (metadata): %w", fileName, err)
 	}
 
 	r.Name = untyped.Name
 	if r.Metadata, err = parseTypedOrMap(untyped.Metadata, s.config.contextType); err != nil {
-		return metadata{}, fmt.Errorf("parsing %s: %w", fileName, err)
+		return metadata{}, fmt.Errorf("parsing %s (context type): %w", fileName, err)
 	}
 
 	for k, v := range untyped.Endpoints {
 		if r.Endpoints[k], err = parseTypedOrMap(v, s.config.endpointTypes[k]); err != nil {
-			return metadata{}, fmt.Errorf("parsing %s: %w", fileName, err)
+			return metadata{}, fmt.Errorf("parsing %s (endpoint types): %w", fileName, err)
 		}
 	}
 
