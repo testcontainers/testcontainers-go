@@ -2,8 +2,10 @@ package kafka_test
 
 import (
 	"context"
+	"errors"
 	"io"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -167,31 +169,50 @@ func TestKafka_networkConnectivity(t *testing.T) {
 	require.NoError(t, err)
 
 	// External read
+	consumer := NewTestConsumer(t)
+
 	client, err := sarama.NewConsumerGroup(brokers, "groupName", config)
 	require.NoError(t, err)
 
-	consumer, _, done, cancel := NewTestKafkaConsumer(t)
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
 
-	sCtx, _ := context.WithTimeout(context.Background(), time.Second) //nolint: govet
+	sCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
 	go func() {
-		if err := client.Consume(sCtx, []string{topic_out}, consumer); err != nil {
-			cancel()
+		defer wg.Done()
+		for {
+			// `Consume` should be called inside an infinite loop, when a
+			// server-side rebalance happens, the consumer session will need to be
+			// recreated to get the new claims
+			if err := client.Consume(sCtx, []string{topic_out}, &consumer); err != nil {
+				if errors.Is(err, sarama.ErrClosedConsumerGroup) {
+					return
+				}
+				require.NoError(t, err)
+			}
+			// check if context was cancelled, signaling that the consumer should stop
+			if ctx.Err() != nil {
+				return
+			}
+			consumer.ready = make(chan bool)
 		}
 	}()
 
-	// wait for the consumer to receive message
-	select {
-	case <-sCtx.Done():
-		t.Log("exit by timeout")
-	case <-done:
-	}
+	<-consumer.ready // Await till the consumer has been set up
+	t.Log("Sarama consumer up and running!...")
 
-	if consumer.message == nil {
-		t.Fatal("Empty message")
-	}
+	cancel()
+	wg.Wait()
+	err = client.Close()
+	require.NoError(t, err)
 
-	require.Contains(t, string(consumer.message.Value), text_msg)
-	require.Contains(t, string(consumer.message.Key), key)
+	msgs := consumer.messages
+	require.Len(t, msgs, 1)
+
+	require.Contains(t, string(msgs[0].Value), text_msg)
+	require.Contains(t, string(msgs[0].Key), key)
 }
 
 func TestKafka_withListener(t *testing.T) {
