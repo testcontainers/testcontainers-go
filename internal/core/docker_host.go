@@ -272,16 +272,6 @@ func dockerHostFromContext(ctx context.Context) (string, error) {
 	return "", errDockerSocketNotSetInContext
 }
 
-// dockerHostFromContext returns the docker host from the Go context, if it's not empty
-func dockerHostFromDockerContext(ctx context.Context) (string, error) {
-	dockerHost, err := GetDockerHostFromCurrentContext()
-	if err == nil {
-		return dockerHost, nil
-	}
-
-	return "", err
-}
-
 // dockerHostFromProperties returns the docker host from the ~/.testcontainers.properties file, if it's not empty
 func dockerHostFromProperties(ctx context.Context) (string, error) {
 	cfg := config.Read()
