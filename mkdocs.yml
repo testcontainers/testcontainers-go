@@ -131,9 +131,7 @@ nav:
             - system_requirements/ci/gitlab_ci.md
             - system_requirements/ci/tekton.md
             - system_requirements/ci/travis.md
-    - Contributing:
-        - contributing.md
-        - contributing_docs.md
+    - Contributing: contributing.md
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
