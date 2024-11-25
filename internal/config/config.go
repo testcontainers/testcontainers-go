@@ -91,7 +91,7 @@ type Config struct {
 
 // defaultConfig
 func defaultConfig() Config {
-	config := Config{}
+	var config Config
 
 	home, err := os.UserHomeDir()
 	if err != nil {
