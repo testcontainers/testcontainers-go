@@ -21,16 +21,19 @@ import (
 const (
 	// defaultContextName is the name reserved for the default context (config & env based)
 	defaultContextName = "default"
+
 	// envOverrideContext is the name of the environment variable that can be
 	// used to override the context to use. If set, it overrides the context
 	// that's set in the CLI's configuration file, but takes no effect if the
 	// "DOCKER_HOST" env-var is set (which takes precedence.
 	envOverrideContext = "DOCKER_CONTEXT"
+
 	// envOverrideConfigDir is the name of the environment variable that can be
 	// used to override the location of the client configuration files (~/.docker).
 	//
 	// It takes priority over the default.
 	envOverrideConfigDir = "DOCKER_CONFIG"
+
 	// configFileName is the name of the client configuration file inside the
 	// config-directory.
 	configFileName = "config.json"
@@ -38,6 +41,7 @@ const (
 	contextsDir    = "contexts"
 	metadataDir    = "meta"
 	metaFile       = "meta.json"
+
 	// DockerEndpoint is the name of the docker endpoint in a stored context
 	dockerEndpoint string = "docker"
 )
