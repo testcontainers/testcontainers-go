@@ -440,7 +440,7 @@ func TestContainerCreationWithName(t *testing.T) {
 			Name:       creationName,
 			// no network means it will be connected to the default bridge network
 			// of any given container runtime
-			Networks: []string{},
+			// Networks: []string{},
 		},
 		Started: true,
 	})
