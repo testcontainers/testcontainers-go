@@ -36,6 +36,7 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 	return nil
 }
 
+// WithClusterID sets the cluster ID for the Kafka container.
 func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["CLUSTER_ID"] = clusterID
