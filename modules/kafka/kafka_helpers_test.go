@@ -52,128 +52,101 @@ func TestConfigureQuorumVoters(t *testing.T) {
 }
 
 func TestValidateKRaftVersion(t *testing.T) {
-	validateKRaftVersionFn := func(t *testing.T, image string, wantErr bool) {
-		t.Helper()
-
-		err := validateKRaftVersion(image)
-
-		if wantErr {
-			require.Error(t, err)
-		} else {
-			require.NoError(t, err)
-		}
-	}
-
 	t.Run("official/valid-version", func(t *testing.T) {
-		validateKRaftVersionFn(t, "confluentinc/confluent-local:7.5.0", false)
+		err := validateKRaftVersion("confluentinc/confluent-local:7.5.0")
+		require.NoError(t, err)
 	})
 
 	t.Run("official/valid-limit-version", func(t *testing.T) {
-		validateKRaftVersionFn(t, "confluentinc/confluent-local:7.4.0", false)
+		err := validateKRaftVersion("confluentinc/confluent-local:7.4.0")
+		require.NoError(t, err)
 	})
 
 	t.Run("official/invalid-low-version", func(t *testing.T) {
-		validateKRaftVersionFn(t, "confluentinc/confluent-local:7.3.99", true)
+		err := validateKRaftVersion("confluentinc/confluent-local:7.3.99")
+		require.Error(t, err)
 	})
 
 	t.Run("official/invalid-too-low-version", func(t *testing.T) {
-		validateKRaftVersionFn(t, "confluentinc/confluent-local:5.0.0", true)
+		err := validateKRaftVersion("confluentinc/confluent-local:5.0.0")
+		require.Error(t, err)
 	})
 
 	t.Run("unofficial/does-not-validate-KRaft-version", func(t *testing.T) {
-		validateKRaftVersionFn(t, "my-kafka:1.0.0", false)
+		err := validateKRaftVersion("my-kafka:1.0.0")
+		require.NoError(t, err)
 	})
 }
 
 func TestValidateListeners(t *testing.T) {
-	validateFn := func(t *testing.T, listeners []Listener, wantErr bool) {
-		t.Helper()
-
-		err := validateListeners(listeners...)
-		if wantErr {
-			require.Error(t, err)
-		} else {
-			require.NoError(t, err)
-		}
-	}
-
 	t.Run("fail/reserved-listener/port-9093", func(t *testing.T) {
-		validateFn(t, []Listener{
-			{
-				Name: "PLAINTEXT",
-				Host: "kafka",
-				Port: "9093",
-			},
-		}, true)
+		err := validateListeners(Listener{
+			Name: "PLAINTEXT",
+			Host: "kafka",
+			Port: "9093",
+		})
+		require.Error(t, err)
 	})
 
 	t.Run("fail/reserved-listener/port-9094", func(t *testing.T) {
-		validateFn(t, []Listener{
-			{
-				Name: "PLAINTEXT",
-				Host: "kafka",
-				Port: "9094",
-			},
-		}, true)
+		err := validateListeners(Listener{
+			Name: "PLAINTEXT",
+			Host: "kafka",
+			Port: "9094",
+		})
+		require.Error(t, err)
 	})
 
 	t.Run("fail/reserved-listener/name-controller", func(t *testing.T) {
-		validateFn(t, []Listener{
-			{
-				Name: "  cOnTrOller   ",
-				Host: "kafka",
-				Port: "9092",
-			},
-		}, true)
+		err := validateListeners(Listener{
+			Name: "  cOnTrOller   ",
+			Host: "kafka",
+			Port: "9092",
+		})
+		require.Error(t, err)
 	})
 
 	t.Run("fail/reserved-listener/name-plaintext", func(t *testing.T) {
-		validateFn(t, []Listener{
-			{
-				Name: "plaintext",
-				Host: "kafka",
-				Port: "9092",
-			},
-		}, true)
+		err := validateListeners(Listener{
+			Name: "plaintext",
+			Host: "kafka",
+			Port: "9092",
+		})
+		require.Error(t, err)
 	})
 
 	t.Run("fail/port-duplication", func(t *testing.T) {
-		validateFn(t, []Listener{
-			{
-				Name: "test",
-				Host: "kafka",
-				Port: "9092",
-			},
-			{
-				Name: "test2",
-				Host: "kafka",
-				Port: "9092",
-			},
-		}, true)
+		err := validateListeners(Listener{
+			Name: "test",
+			Host: "kafka",
+			Port: "9092",
+		}, Listener{
+			Name: "test2",
+			Host: "kafka",
+			Port: "9092",
+		})
+		require.Error(t, err)
 	})
 
 	t.Run("fail/name-duplication", func(t *testing.T) {
-		validateFn(t, []Listener{
-			{
-				Name: "test",
-				Host: "kafka",
-				Port: "9092",
-			},
-			{
-				Name: "test",
-				Host: "kafka",
-				Port: "9095",
-			},
-		}, true)
+		err := validateListeners(Listener{
+			Name: "test",
+			Host: "kafka",
+			Port: "9092",
+		}, Listener{
+			Name: "test",
+			Host: "kafka",
+			Port: "9095",
+		})
+		require.Error(t, err)
 	})
 
 	t.Run("success", func(t *testing.T) {
-		validateFn(t, []Listener{
-			{
-				Name: "test",
-				Host: "kafka",
-				Port: "9095",
-			},
-		}, false)
+		err := validateListeners(Listener{
+			Name: "test",
+			Host: "kafka",
+			Port: "9092",
+		})
+		require.NoError(t, err)
 	})
 }
