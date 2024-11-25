@@ -12,11 +12,15 @@ type options struct {
 	// Listeners is a list of custom listeners that can be provided to access the
 	// containers form within docker networks
 	Listeners []Listener
+	// req is the container request that will be used to create the container.
+	// It's needed to apply the listeners to the container.
+	req *testcontainers.GenericContainerRequest
 }
 
-func defaultOptions() options {
+func defaultOptions(req *testcontainers.GenericContainerRequest) options {
 	return options{
 		Listeners: make([]Listener, 0),
+		req:       req,
 	}
 }
 
@@ -24,7 +28,7 @@ func defaultOptions() options {
 var _ testcontainers.ContainerCustomizer = (*Option)(nil)
 
 // Option is an option for the Kafka container.
-type Option func(*options)
+type Option func(*options) error
 
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
 func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
@@ -39,19 +43,21 @@ func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithListener adds a custom listener to the Kafka containers. Listener
+// WithListener adds custom listeners to the Kafka containers. Each listener
 // will be aliases to all networks, so they can be accessed from within docker
 // networks. At least one network must be attached to the container, if not an
 // error will be thrown when starting the container.
 // This options sanitizes the listener names and ports, so they are in the
 // correct format: name is uppercase and trimmed, and port is trimmed.
-func WithListener(listeners ...Listener) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
+func WithListener(listeners ...Listener) Option {
+	return func(o *options) error {
 		if err := validateListeners(listeners...); err != nil {
 			return fmt.Errorf("validate listeners: %w", err)
 		}
 
-		applyListenersToEnv(req, listeners...)
+		applyListenersToEnv(o.req, listeners...)
+
+		o.Listeners = append(o.Listeners, listeners...)
 
 		return nil
 	}
