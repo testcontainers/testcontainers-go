@@ -95,31 +95,6 @@ type Config struct {
 
 // }
 
-// defaultConfig
-func defaultConfig() Config {
-	var config Config
-
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return applyEnvironmentConfiguration(config)
-	}
-
-	tcProp := filepath.Join(home, TestcontainersProperties)
-	// Init from a file, ignore if it doesn't exist, which is the case for most users.
-	// The properties library will return the default values for the struct.
-	props, err := properties.LoadFiles([]string{tcProp}, properties.UTF8, true)
-	if err != nil {
-		return applyEnvironmentConfiguration(config)
-	}
-
-	if err := props.Decode(&config); err != nil {
-		fmt.Printf("invalid testcontainers properties file, returning an empty Testcontainers configuration: %v\n", err)
-		return applyEnvironmentConfiguration(config)
-	}
-
-	return config
-}
-
 func applyEnvironmentConfiguration(config Config) Config {
 	ryukDisabledEnv := os.Getenv("TESTCONTAINERS_RYUK_DISABLED")
 	if parseBool(ryukDisabledEnv) {
@@ -173,7 +148,25 @@ func Reset() {
 }
 
 func read() Config {
-	config := defaultConfig()
+	var config Config
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return applyEnvironmentConfiguration(config)
+	}
+
+	tcProp := filepath.Join(home, TestcontainersProperties)
+	// Init from a file, ignore if it doesn't exist, which is the case for most users.
+	// The properties library will return the default values for the struct.
+	props, err := properties.LoadFiles([]string{tcProp}, properties.UTF8, true)
+	if err != nil {
+		return applyEnvironmentConfiguration(config)
+	}
+
+	if err := props.Decode(&config); err != nil {
+		fmt.Printf("invalid testcontainers properties file, returning an empty Testcontainers configuration: %v\n", err)
+		return applyEnvironmentConfiguration(config)
+	}
 
 	return applyEnvironmentConfiguration(config)
 }

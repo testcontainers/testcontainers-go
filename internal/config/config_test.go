@@ -102,7 +102,11 @@ func TestReadTCConfig(t *testing.T) {
 
 		config := read()
 
-		expected := defaultConfig()
+		// The time fields are set to the default values.
+		expected := Config{
+			RyukReconnectionTimeout: 10 * time.Second,
+			RyukConnectionTimeout:   time.Minute,
+		}
 
 		assert.Equal(t, expected, config)
 	})
@@ -114,7 +118,14 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("DOCKER_HOST", tcpDockerHost33293)
 
 		config := read()
-		expected := defaultConfig() // the config does not read DOCKER_HOST, that's why it's empty
+
+		// The time fields are set to the default values,
+		// and the config does not read DOCKER_HOST,
+		// that's why it's empty
+		expected := Config{
+			RyukReconnectionTimeout: 10 * time.Second,
+			RyukConnectionTimeout:   time.Minute,
+		}
 
 		assert.Equal(t, expected, config)
 	})
