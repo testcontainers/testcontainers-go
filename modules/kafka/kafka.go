@@ -36,7 +36,6 @@ echo '' > /etc/confluent/docker/ensure
 type KafkaContainer struct {
 	testcontainers.Container
 	ClusterID string
-	listeners Listener
 }
 
 type Listener struct {
