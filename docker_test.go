@@ -456,7 +456,7 @@ func TestContainerCreationWithName(t *testing.T) {
 	require.NoError(t, err)
 	require.Lenf(t, networks, 1, "Expected networks 1. Got '%d'.", len(networks))
 	network := networks[0]
-	assert.Equalf(t, Bridge, network, "Expected network name '%s'. Got '%s'.", Bridge, network)
+	require.Equal(t, Bridge, network)
 
 	endpoint, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
 	require.NoError(t, err)
@@ -671,7 +671,7 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 
 	temp := strings.Split(string(out), "\n")
 	require.NotEmpty(t, temp)
-	assert.Regexpf(t, `^(?i:Step)\s*1/\d+\s*:\s*FROM alpine$`, temp[0], "Expected stdout first line to be %s. Got '%s'.", "Step 1/* : FROM alpine", temp[0])
+	require.Regexp(t, `^(?i:Step)\s*1/\d+\s*:\s*FROM alpine$`, temp[0])
 }
 
 func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
