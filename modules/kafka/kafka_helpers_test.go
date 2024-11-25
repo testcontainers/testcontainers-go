@@ -85,11 +85,11 @@ func TestValidateKRaftVersion(t *testing.T) {
 	})
 }
 
-func TestTrimValidateListeners(t *testing.T) {
+func TestValidateListeners(t *testing.T) {
 	validateFn := func(t *testing.T, listeners []Listener, wantErr bool) {
 		t.Helper()
 
-		err := trimValidateListeners(listeners)
+		err := validateListeners(listeners)
 		if wantErr {
 			require.Error(t, err)
 		} else {
@@ -120,7 +120,7 @@ func TestTrimValidateListeners(t *testing.T) {
 	t.Run("fail/reserved-listener/name-controller", func(t *testing.T) {
 		validateFn(t, []Listener{
 			{
-				Name: "  cOnTrOller   ",
+				Name: "CONTROLLER",
 				Host: "kafka",
 				Port: "9092",
 			},
@@ -130,7 +130,7 @@ func TestTrimValidateListeners(t *testing.T) {
 	t.Run("fail/reserved-listener/name-plaintext", func(t *testing.T) {
 		validateFn(t, []Listener{
 			{
-				Name: "plaintext",
+				Name: "PLAINTEXT",
 				Host: "kafka",
 				Port: "9092",
 			},

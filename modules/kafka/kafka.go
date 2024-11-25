@@ -94,7 +94,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	if err := trimValidateListeners(settings.Listeners); err != nil {
+	if err := validateListeners(settings.Listeners); err != nil {
 		return nil, fmt.Errorf("listeners validation: %w", err)
 	}
 
@@ -143,14 +143,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
-func trimValidateListeners(listeners []Listener) error {
-	// Trim
-	for i := 0; i < len(listeners); i++ {
-		listeners[i].Name = strings.ToUpper(strings.Trim(listeners[i].Name, " "))
-		listeners[i].Host = strings.Trim(listeners[i].Host, " ")
-		listeners[i].Port = strings.Trim(listeners[i].Port, " ")
-	}
-
+func validateListeners(listeners []Listener) error {
 	// Validate
 	var ports map[string]bool = make(map[string]bool, len(listeners)+2)
 	var names map[string]bool = make(map[string]bool, len(listeners)+2)

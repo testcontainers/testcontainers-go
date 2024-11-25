@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -40,9 +41,18 @@ func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
 
 // WithListener adds a custom listener to the Kafka containers. Listener
 // will be aliases to all networks, so they can be accessed from within docker
-// networks. At leas one network must be attached to the container, if not an
+// networks. At least one network must be attached to the container, if not an
 // error will be thrown when starting the container.
+// This options sanitizes the listener names and ports, so they are in the
+// correct format: name is uppercase and trimmed, and port is trimmed.
 func WithListener(listeners []Listener) Option {
+	// Trim
+	for i := 0; i < len(listeners); i++ {
+		listeners[i].Name = strings.ToUpper(strings.Trim(listeners[i].Name, " "))
+		listeners[i].Host = strings.Trim(listeners[i].Host, " ")
+		listeners[i].Port = strings.Trim(listeners[i].Port, " ")
+	}
+
 	return func(o *options) {
 		o.Listeners = append(o.Listeners, listeners...)
 	}
