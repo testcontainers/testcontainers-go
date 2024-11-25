@@ -103,7 +103,7 @@ func TestKafka_networkConnectivity(t *testing.T) {
 		"confluentinc/confluent-local:7.6.1",
 		kafka.WithClusterID("test-cluster"),
 		network.WithNetwork([]string{"kafka"}, Network),
-		kafka.WithListener([]kafka.KafkaListener{
+		kafka.WithListener([]kafka.Listener{
 			{
 				Name: "BROKER",
 				Host: "kafka",
@@ -216,7 +216,7 @@ func TestKafka_withListener(t *testing.T) {
 	ctr, err := kafka.Run(ctx,
 		"confluentinc/confluent-local:7.6.1",
 		network.WithNetwork([]string{"kafka"}, rpNetwork),
-		kafka.WithListener([]kafka.KafkaListener{
+		kafka.WithListener([]kafka.Listener{
 			{
 				Name: "BROKER",
 				Host: "kafka",
@@ -258,7 +258,7 @@ func TestKafka_restProxyService(t *testing.T) {
 }
 
 func TestKafka_listenersValidation(t *testing.T) {
-	runWithErrorFn := func(t *testing.T, listeners []kafka.KafkaListener) {
+	runWithErrorFn := func(t *testing.T, listeners []kafka.Listener) {
 		t.Helper()
 
 		c, err := kafka.Run(context.Background(),
@@ -271,7 +271,7 @@ func TestKafka_listenersValidation(t *testing.T) {
 	}
 
 	t.Run("reserved-listener/port-9093", func(t *testing.T) {
-		runWithErrorFn(t, []kafka.KafkaListener{
+		runWithErrorFn(t, []kafka.Listener{
 			{
 				Name: "BROKER",
 				Host: "kafka",
@@ -281,7 +281,7 @@ func TestKafka_listenersValidation(t *testing.T) {
 	})
 
 	t.Run("reserved-listener/port-9094", func(t *testing.T) {
-		runWithErrorFn(t, []kafka.KafkaListener{
+		runWithErrorFn(t, []kafka.Listener{
 			{
 				Name: "BROKER",
 				Host: "kafka",
@@ -291,7 +291,7 @@ func TestKafka_listenersValidation(t *testing.T) {
 	})
 
 	t.Run("reserved-listener/controller-duplicated", func(t *testing.T) {
-		runWithErrorFn(t, []kafka.KafkaListener{
+		runWithErrorFn(t, []kafka.Listener{
 			{
 				Name: "  cOnTrOller   ",
 				Host: "kafka",
@@ -301,7 +301,7 @@ func TestKafka_listenersValidation(t *testing.T) {
 	})
 
 	t.Run("reserved-listener/plaintext-duplicated", func(t *testing.T) {
-		runWithErrorFn(t, []kafka.KafkaListener{
+		runWithErrorFn(t, []kafka.Listener{
 			{
 				Name: "plaintext",
 				Host: "kafka",
@@ -311,7 +311,7 @@ func TestKafka_listenersValidation(t *testing.T) {
 	})
 
 	t.Run("duplicated-ports", func(t *testing.T) {
-		runWithErrorFn(t, []kafka.KafkaListener{
+		runWithErrorFn(t, []kafka.Listener{
 			{
 				Name: "test",
 				Host: "kafka",
@@ -326,7 +326,7 @@ func TestKafka_listenersValidation(t *testing.T) {
 	})
 
 	t.Run("duplicated-names", func(t *testing.T) {
-		runWithErrorFn(t, []kafka.KafkaListener{
+		runWithErrorFn(t, []kafka.Listener{
 			{
 				Name: "test",
 				Host: "kafka",

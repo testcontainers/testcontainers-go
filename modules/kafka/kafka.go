@@ -36,10 +36,10 @@ echo '' > /etc/confluent/docker/ensure
 type KafkaContainer struct {
 	testcontainers.Container
 	ClusterID string
-	Listeners KafkaListener
+	listeners Listener
 }
 
-type KafkaListener struct {
+type Listener struct {
 	Name string
 	Host string
 	Port string
@@ -143,7 +143,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
-func trimValidateListeners(listeners []KafkaListener) error {
+func trimValidateListeners(listeners []Listener) error {
 	// Trim
 	for i := 0; i < len(listeners); i++ {
 		listeners[i].Name = strings.ToUpper(strings.Trim(listeners[i].Name, " "))
@@ -215,7 +215,7 @@ func copyStarterScript(ctx context.Context, c testcontainers.Container, settings
 	return nil
 }
 
-func editEnvsForListeners(listeners []KafkaListener) map[string]string {
+func editEnvsForListeners(listeners []Listener) map[string]string {
 	if len(listeners) == 0 {
 		// no change
 		return map[string]string{}

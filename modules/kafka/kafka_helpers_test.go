@@ -86,7 +86,7 @@ func TestValidateKRaftVersion(t *testing.T) {
 }
 
 func TestTrimValidateListeners(t *testing.T) {
-	validateFn := func(t *testing.T, listeners []KafkaListener, wantErr bool) {
+	validateFn := func(t *testing.T, listeners []Listener, wantErr bool) {
 		t.Helper()
 
 		err := trimValidateListeners(listeners)
@@ -98,7 +98,7 @@ func TestTrimValidateListeners(t *testing.T) {
 	}
 
 	t.Run("fail/reserved-listener/port-9093", func(t *testing.T) {
-		validateFn(t, []KafkaListener{
+		validateFn(t, []Listener{
 			{
 				Name: "PLAINTEXT",
 				Host: "kafka",
@@ -108,7 +108,7 @@ func TestTrimValidateListeners(t *testing.T) {
 	})
 
 	t.Run("fail/reserved-listener/port-9094", func(t *testing.T) {
-		validateFn(t, []KafkaListener{
+		validateFn(t, []Listener{
 			{
 				Name: "PLAINTEXT",
 				Host: "kafka",
@@ -118,7 +118,7 @@ func TestTrimValidateListeners(t *testing.T) {
 	})
 
 	t.Run("fail/reserved-listener/name-controller", func(t *testing.T) {
-		validateFn(t, []KafkaListener{
+		validateFn(t, []Listener{
 			{
 				Name: "  cOnTrOller   ",
 				Host: "kafka",
@@ -128,7 +128,7 @@ func TestTrimValidateListeners(t *testing.T) {
 	})
 
 	t.Run("fail/reserved-listener/name-plaintext", func(t *testing.T) {
-		validateFn(t, []KafkaListener{
+		validateFn(t, []Listener{
 			{
 				Name: "plaintext",
 				Host: "kafka",
@@ -138,7 +138,7 @@ func TestTrimValidateListeners(t *testing.T) {
 	})
 
 	t.Run("fail/port-duplication", func(t *testing.T) {
-		validateFn(t, []KafkaListener{
+		validateFn(t, []Listener{
 			{
 				Name: "test",
 				Host: "kafka",
@@ -153,7 +153,7 @@ func TestTrimValidateListeners(t *testing.T) {
 	})
 
 	t.Run("fail/name-duplication", func(t *testing.T) {
-		validateFn(t, []KafkaListener{
+		validateFn(t, []Listener{
 			{
 				Name: "test",
 				Host: "kafka",
@@ -168,7 +168,7 @@ func TestTrimValidateListeners(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		validateFn(t, []KafkaListener{
+		validateFn(t, []Listener{
 			{
 				Name: "test",
 				Host: "kafka",

@@ -10,12 +10,12 @@ import (
 type options struct {
 	// Listeners is a list of custom listeners that can be provided to access the
 	// containers form within docker networks
-	Listeners []KafkaListener
+	Listeners []Listener
 }
 
 func defaultOptions() options {
 	return options{
-		Listeners: make([]KafkaListener, 0),
+		Listeners: make([]Listener, 0),
 	}
 }
 
@@ -42,37 +42,37 @@ func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
 // will be aliases to all networks, so they can be accessed from within docker
 // networks. At leas one network must be attached to the container, if not an
 // error will be thrown when starting the container.
-func WithListener(listeners []KafkaListener) Option {
+func WithListener(listeners []Listener) Option {
 	return func(o *options) {
 		o.Listeners = append(o.Listeners, listeners...)
 	}
 }
 
-func plainTextListener(ctx context.Context, c testcontainers.Container) (KafkaListener, error) {
+func plainTextListener(ctx context.Context, c testcontainers.Container) (Listener, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
-		return KafkaListener{}, err
+		return Listener{}, err
 	}
 
 	port, err := c.MappedPort(ctx, publicPort)
 	if err != nil {
-		return KafkaListener{}, err
+		return Listener{}, err
 	}
 
-	return KafkaListener{
+	return Listener{
 		Name: "PLAINTEXT",
 		Host: host,
 		Port: port.Port(),
 	}, nil
 }
 
-func brokerListener(ctx context.Context, c testcontainers.Container) (KafkaListener, error) {
+func brokerListener(ctx context.Context, c testcontainers.Container) (Listener, error) {
 	inspect, err := c.Inspect(ctx)
 	if err != nil {
-		return KafkaListener{}, fmt.Errorf("inspect: %w", err)
+		return Listener{}, fmt.Errorf("inspect: %w", err)
 	}
 
-	return KafkaListener{
+	return Listener{
 		Name: "BROKER",
 		Host: inspect.Config.Hostname,
 		Port: "9092",
