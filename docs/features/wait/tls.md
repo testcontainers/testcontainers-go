@@ -19,9 +19,10 @@ pair to exist once started and then read the
 [tls.Config](https://pkg.go.dev/crypto/tls#Config), alongside how to copy a test
 certificate pair into a container image using a `Dockerfile`.
 
-It that copying certificate pairs into an images is only an example which might
-be useful for testing with testcontainers-go and should not be done with
-production images.
+It should be noted that copying certificate pairs into an images is only an
+example which might be useful for testing with testcontainers-go and should not
+be done with production images as that could expose your certificates if your
+images become public.
 
 <!--codeinclude-->
 [Wait for certificate](../../../wait/tls_test.go) inside_block:waitForTLSCert
