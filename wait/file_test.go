@@ -20,7 +20,7 @@ import (
 
 const testFilename = "/tmp/file"
 
-var anyContext = mock.AnythingOfType("*context.timerCtx")
+var anyContext = mock.MatchedBy(func(_ context.Context) bool { return true })
 
 // newRunningTarget creates a new mockStrategyTarget that is running.
 func newRunningTarget() *mockStrategyTarget {
