@@ -29,4 +29,4 @@ If the default 100 milliseconds poll interval is not sufficient, it can be updat
 ## Modifying request strategies
 
 It's possible for options to modify `ContainerRequest.WaitingFor` using
-[Walk](sql.md).
+[Walk](walk.md).
