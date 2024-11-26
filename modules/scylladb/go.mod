@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/scylladb
 
-go 1.23.3
+go 1.22
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.32.5
@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.37.1
 	github.com/aws/smithy-go v1.22.1
 	github.com/docker/go-connections v0.5.0
-	github.com/gocql/gocql v1.6.0
+	github.com/gocql/gocql v1.7.0
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.34.0
 )
@@ -76,7 +76,5 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/gocql/gocql => github.com/scylladb/gocql v1.14.1
 
 replace github.com/testcontainers/testcontainers-go => ../..
