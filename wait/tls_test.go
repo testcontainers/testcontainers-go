@@ -103,6 +103,8 @@ func ExampleForTLSCert() {
 	ctx := context.Background()
 
 	// waitForTLSCert {
+	// The file names passed to ForTLSCert are the paths where the files will
+	// be copied to in the container as detailed by the Dockerfile.
 	forCert := wait.ForTLSCert("/app/tls.pem", "/app/tls-key.pem").
 		WithServerName("testcontainer.go.test")
 	req := testcontainers.ContainerRequest{
