@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	port           = nat.Port("9042/tcp")
-	shardAwarePort = nat.Port("19042/tcp")
+	port           = "9042/tcp"
+	shardAwarePort = "19042/tcp"
 )
 
 type Container struct {
@@ -41,7 +41,7 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 // WithShardAwareness enable shard-awareness in the ScyllaDB container so you can use the `19042` port.
 func WithShardAwareness() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.ExposedPorts = append(req.ExposedPorts, shardAwarePort.Port())
+		req.ExposedPorts = append(req.ExposedPorts, shardAwarePort)
 		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForListeningPort(shardAwarePort))
 		return nil
 	}
@@ -93,7 +93,7 @@ func (c Container) ConnectionHost(ctx context.Context, port int) (string, error)
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        img,
-		ExposedPorts: []string{port.Port()},
+		ExposedPorts: []string{port},
 		Cmd: []string{
 			"--developer-mode=1",
 			"--overprovisioned=1",
