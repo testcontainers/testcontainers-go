@@ -94,7 +94,7 @@ jobs:
       matrix:
         go-version: [1.22.x, 1.x]
         platform: [ubuntu-latest]
-        module: [artemis, azurite, cassandra, chroma, clickhouse, cockroachdb, compose, consul, couchbase, databend, dolt, dynamodb, elasticsearch, etcd, gcloud, grafana-lgtm, inbucket, influxdb, k3s, k6, kafka, localstack, mariadb, meilisearch, milvus, minio, mockserver, mongodb, mssql, mysql, nats, neo4j, ollama, openfga, openldap, opensearch, postgres, pulsar, qdrant, rabbitmq, redis, redpanda, registry, surrealdb, valkey, vault, vearch, weaviate, yugabytedb]
+        module: [artemis, azurite, cassandra, chroma, clickhouse, cockroachdb, compose, consul, couchbase, databend, dolt, dynamodb, elasticsearch, etcd, gcloud, grafana-lgtm, inbucket, influxdb, k3s, k6, kafka, localstack, mariadb, meilisearch, milvus, minio, mockserver, mongodb, mssql, mysql, nats, neo4j, ollama, openfga, openldap, opensearch, postgres, pulsar, qdrant, rabbitmq, redis, redpanda, registry, scylladb, surrealdb, valkey, vault, vearch, weaviate, yugabytedb]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
@@ -134,10 +134,9 @@ jobs:
           # Disabling shallow clone is recommended for improving relevancy of reporting
           fetch-depth: 0
       
-      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+      - uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3.0.2
         with:
-          pattern: sonarcloud-*
-          merge-multiple: true
+          name: sonarcloud
             
       - name: Analyze with SonarCloud
         uses: sonarsource/sonarcloud-github-action@49e6cd3b187936a73b8280d59ffd9da69df63ec9 # v2.1.1
