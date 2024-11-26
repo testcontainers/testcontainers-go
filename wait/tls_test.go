@@ -137,7 +137,9 @@ func ExampleForTLSCert() {
 
 	fmt.Println(state.Running)
 
+	// waitTLSConfig {
 	config := forCert.TLSConfig()
+	// }
 	fmt.Println(config.ServerName)
 	fmt.Println(len(config.Certificates))
 
