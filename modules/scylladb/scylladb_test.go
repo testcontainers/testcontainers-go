@@ -21,7 +21,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/scylladb"
 )
 
-func TestScylla(t *testing.T) {
+func TestScyllaDB(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := scylladb.Run(ctx,
@@ -147,7 +147,7 @@ func (r *scyllaAlternatorResolver) ResolveEndpoint(ctx context.Context, params d
 	}, nil
 }
 
-func getDynamoAlternatorClient(t *testing.T, c *scylladb.ScyllaDBContainer, port uint) (*dynamodb.Client, error) {
+func getDynamoAlternatorClient(t *testing.T, c *scylladb.Container, port uint) (*dynamodb.Client, error) {
 	t.Helper()
 	var errs []error
 
