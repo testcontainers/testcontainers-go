@@ -15,6 +15,7 @@ Below you can find a list of the available wait strategies that you can use:
 - [Log](./log.md)
 - [Multi](./multi.md)
 - [SQL](./sql.md)
+- [TLS](./tls.md)
 
 ## Startup timeout and Poll interval
 
