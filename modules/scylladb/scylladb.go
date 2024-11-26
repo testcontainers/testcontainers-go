@@ -50,12 +50,12 @@ func WithShardAwareness() testcontainers.CustomizeRequestOption {
 // WithAlternator enables the Alternator (DynamoDB Compatible API) service in the ScyllaDB container.
 // It will set the "alternator-port" parameter to the specified port.
 // It will also set the "alternator-write-isolation" parameter to "always" as a command line argument to the container.
-func WithAlternator(alternatorPort uint) testcontainers.CustomizeRequestOption {
+func WithAlternator(alternatorPort int) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		setCommandFlag(req, "--alternator-port", strconv.Itoa(int(alternatorPort)))
+		setCommandFlag(req, "--alternator-port", strconv.Itoa(alternatorPort))
 		setCommandFlag(req, "--alternator-write-isolation", "always")
-		req.ExposedPorts = append(req.ExposedPorts, strconv.Itoa(int(alternatorPort)))
-		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForListeningPort(nat.Port(strconv.Itoa(int(alternatorPort)))))
+		req.ExposedPorts = append(req.ExposedPorts, strconv.Itoa(alternatorPort))
+		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForListeningPort(nat.Port(strconv.Itoa(alternatorPort))))
 		return nil
 	}
 }
@@ -73,13 +73,13 @@ func WithCustomCommand(command, value string) testcontainers.CustomizeRequestOpt
 // ConnectionHost returns the host and port of the Scylladb container with the default port
 // and obtaining the host and exposed port from the container
 // Eg: "host:port" -> "localhost:9042" -> "localhost:19042" -> "localhost:8000"
-func (c Container) ConnectionHost(ctx context.Context, port uint) (string, error) {
+func (c Container) ConnectionHost(ctx context.Context, port int) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	containerPort, err := c.MappedPort(ctx, nat.Port(strconv.Itoa(int(port))))
+	containerPort, err := c.MappedPort(ctx, nat.Port(strconv.Itoa(port)))
 	if err != nil {
 		return "", err
 	}

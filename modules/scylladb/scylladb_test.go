@@ -107,7 +107,7 @@ func TestScyllaWithConfigFile(t *testing.T) {
 func TestScyllaWithAlternator(t *testing.T) {
 	ctx := context.Background()
 
-	alternatorPort := uint(8000)
+	alternatorPort := 8000
 	ctr, err := scylladb.Run(ctx,
 		"scylladb/scylla:6.2",
 		scylladb.WithAlternator(alternatorPort),
@@ -124,7 +124,7 @@ func TestScyllaWithAlternator(t *testing.T) {
 func TestScyllaWithoutAlternator(t *testing.T) {
 	ctx := context.Background()
 
-	alternatorPort := uint(8000)
+	alternatorPort := 8000
 	ctr, err := scylladb.Run(ctx,
 		"scylladb/scylla:6.2",
 	)
@@ -147,7 +147,7 @@ func (r *scyllaAlternatorResolver) ResolveEndpoint(ctx context.Context, params d
 	}, nil
 }
 
-func getDynamoAlternatorClient(t *testing.T, c *scylladb.Container, port uint) (*dynamodb.Client, error) {
+func getDynamoAlternatorClient(t *testing.T, c *scylladb.Container, port int) (*dynamodb.Client, error) {
 	t.Helper()
 	var errs []error
 
