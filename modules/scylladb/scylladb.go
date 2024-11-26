@@ -51,11 +51,13 @@ func WithShardAwareness() testcontainers.CustomizeRequestOption {
 // It will set the "alternator-port" parameter to the specified port.
 // It will also set the "alternator-write-isolation" parameter to "always" as a command line argument to the container.
 func WithAlternator(alternatorPort int) testcontainers.CustomizeRequestOption {
+	strPort := strconv.Itoa(alternatorPort)
+
 	return func(req *testcontainers.GenericContainerRequest) error {
-		setCommandFlag(req, "--alternator-port", strconv.Itoa(alternatorPort))
+		setCommandFlag(req, "--alternator-port", strPort)
 		setCommandFlag(req, "--alternator-write-isolation", "always")
-		req.ExposedPorts = append(req.ExposedPorts, strconv.Itoa(alternatorPort))
-		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForListeningPort(nat.Port(strconv.Itoa(alternatorPort))))
+		req.ExposedPorts = append(req.ExposedPorts, strPort)
+		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForListeningPort(nat.Port(strPort)))
 		return nil
 	}
 }
