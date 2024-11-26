@@ -138,5 +138,5 @@ func setCommandFlag(req *testcontainers.GenericContainerRequest, flag, value str
 		}
 	}
 	req.Cmd = cmdsWithoutDeveloperMode
-	req.Cmd = append(req.Cmd, fmt.Sprintf("%v=%v", flag, value))
+	req.Cmd = append(req.Cmd, flag+"="+value)
 }
