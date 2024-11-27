@@ -1,5 +1,12 @@
 include ./commons-test.mk
 
+.PHONY: lint-all
+lint-all:
+	$(MAKE) lint
+	$(MAKE) -C modulegen lint
+	$(MAKE) -C examples lint-examples
+	$(MAKE) -C modules lint-modules
+
 .PHONY: test-all
 test-all: tools test-tools test-unit
 
