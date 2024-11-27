@@ -16,9 +16,7 @@ var errInsecureWithPassword = errors.New("insecure mode cannot be used with a pa
 // The database creation will be skipped if data exists in the `/cockroach/cockroach-data` directory within the container.
 func WithDatabase(database string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		// CockroachDB forces the database to be lowercase.
-		database = strings.ToLower(database)
-		req.Env[envDatabase] = database
+		req.Env[envDatabase] = strings.ToLower(database)
 		return nil
 	}
 }
@@ -28,15 +26,14 @@ func WithDatabase(database string) testcontainers.CustomizeRequestOption {
 // The user creation will be skipped if data exists in the `/cockroach/cockroach-data` directory within the container.
 func WithUser(user string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		// CockroachDB forces the user to be lowercase.
-		user = strings.ToLower(user)
-		req.Env[envUser] = user
+		req.Env[envUser] = strings.ToLower(user)
 		return nil
 	}
 }
 
 // WithPassword sets the password of the user to create and connect as.
 // The user creation will be skipped if data exists in the `/cockroach/cockroach-data` directory within the container.
+// This will error if insecure mode is enabled.
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		for _, arg := range req.Cmd {

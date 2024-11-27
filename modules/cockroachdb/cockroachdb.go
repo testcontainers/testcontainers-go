@@ -126,7 +126,7 @@ func (c *CockroachDBContainer) ConnectionConfig(ctx context.Context) (*pgx.ConnC
 // TLSConfig returns config necessary to connect to CockroachDB over TLS.
 // Returns [ErrTLSNotEnabled] if TLS is not enabled.
 //
-// Deprecated: use [CockroachDBContainer.ConnectionConfig] or
+// Deprecated: use [CockroachDBContainer.ConnectionString] or
 // [CockroachDBContainer.ConnectionConfig] instead.
 func (c *CockroachDBContainer) TLSConfig() (*tls.Config, error) {
 	if cfg := c.tlsStrategy.TLSConfig(); cfg != nil {
@@ -134,89 +134,6 @@ func (c *CockroachDBContainer) TLSConfig() (*tls.Config, error) {
 	}
 
 	return nil, ErrTLSNotEnabled
-}
-
-// connString returns a connection string for the given host, port and options.
-func (c *CockroachDBContainer) connString(host string, port nat.Port) (string, error) {
-	cfg, err := c.connConfig(host, port)
-	if err != nil {
-		return "", fmt.Errorf("connection config: %w", err)
-	}
-
-	return stdlib.RegisterConnConfig(cfg), nil
-}
-
-// connConfig returns a [pgx.ConnConfig] for the given host, port and options.
-func (c *CockroachDBContainer) connConfig(host string, port nat.Port) (*pgx.ConnConfig, error) {
-	var user *url.Userinfo
-	if c.password != "" {
-		user = url.UserPassword(c.user, c.password)
-	} else {
-		user = url.User(c.user)
-	}
-
-	sslMode := "disable"
-	tlsConfig := c.tlsStrategy.TLSConfig()
-	if tlsConfig != nil {
-		sslMode = "verify-full"
-	}
-	params := url.Values{
-		"sslmode": []string{sslMode},
-	}
-
-	u := url.URL{
-		Scheme:   "postgres",
-		User:     user,
-		Host:     net.JoinHostPort(host, port.Port()),
-		Path:     c.database,
-		RawQuery: params.Encode(),
-	}
-
-	cfg, err := pgx.ParseConfig(u.String())
-	if err != nil {
-		return nil, fmt.Errorf("parse config: %w", err)
-	}
-
-	cfg.TLSConfig = tlsConfig
-
-	return cfg, nil
-}
-
-// setOptions sets the CockroachDBContainer options from a request.
-func (c *CockroachDBContainer) setOptions(req *testcontainers.GenericContainerRequest) error {
-	c.database = req.Env[envDatabase]
-	c.user = req.Env[envUser]
-	c.password = req.Env[envPassword]
-
-	var insecure bool
-	for _, arg := range req.Cmd {
-		if arg == insecureFlag {
-			insecure = true
-			break
-		}
-	}
-
-	if err := wait.Walk(&req.WaitingFor, func(strategy wait.Strategy) error {
-		if cert, ok := strategy.(*wait.TLSStrategy); ok {
-			if insecure {
-				// If insecure mode is enabled, the certificate strategy is removed.
-				return errors.Join(wait.VisitRemove, wait.VisitStop)
-			}
-
-			// Update the client certificate files to match the user which may have changed.
-			cert.WithCert(certsDir+"/client."+c.user+".crt", certsDir+"/client."+c.user+".key")
-
-			c.tlsStrategy = cert
-
-			// Stop the walk as the certificate strategy has been found.
-			return wait.VisitStop
-		}
-		return nil
-	}); err != nil {
-		return fmt.Errorf("walk strategies: %w", err)
-	}
-
-	return nil
 }
 
 // Deprecated: use Run instead.
@@ -227,7 +144,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run start an instance of the CockroachDB container type using the given image and options.
 //
-// By default, the container will:
+// By default, the container will configured with:
 //   - Cluster: Single node
 //   - Storage: 100% in-memory
 //   - User: root
@@ -292,8 +209,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	// Extract the options from the request so they can used by wait strategies and connection methods.
-	if err := ctr.setOptions(&req); err != nil {
+	if err := ctr.configure(&req); err != nil {
 		return nil, fmt.Errorf("set options: %w", err)
 	}
 
@@ -304,4 +220,91 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	return ctr, nil
+}
+
+// connString returns a connection string for the given host, port and options.
+func (c *CockroachDBContainer) connString(host string, port nat.Port) (string, error) {
+	cfg, err := c.connConfig(host, port)
+	if err != nil {
+		return "", fmt.Errorf("connection config: %w", err)
+	}
+
+	return stdlib.RegisterConnConfig(cfg), nil
+}
+
+// connConfig returns a [pgx.ConnConfig] for the given host, port and options.
+func (c *CockroachDBContainer) connConfig(host string, port nat.Port) (*pgx.ConnConfig, error) {
+	var user *url.Userinfo
+	if c.password != "" {
+		user = url.UserPassword(c.user, c.password)
+	} else {
+		user = url.User(c.user)
+	}
+
+	sslMode := "disable"
+	tlsConfig := c.tlsStrategy.TLSConfig()
+	if tlsConfig != nil {
+		sslMode = "verify-full"
+	}
+	params := url.Values{
+		"sslmode": []string{sslMode},
+	}
+
+	u := url.URL{
+		Scheme:   "postgres",
+		User:     user,
+		Host:     net.JoinHostPort(host, port.Port()),
+		Path:     c.database,
+		RawQuery: params.Encode(),
+	}
+
+	cfg, err := pgx.ParseConfig(u.String())
+	if err != nil {
+		return nil, fmt.Errorf("parse config: %w", err)
+	}
+
+	cfg.TLSConfig = tlsConfig
+
+	return cfg, nil
+}
+
+// configure sets the CockroachDBContainer options from the given request and updates the request
+// wait strategies to match the options.
+func (c *CockroachDBContainer) configure(req *testcontainers.GenericContainerRequest) error {
+	c.database = req.Env[envDatabase]
+	c.user = req.Env[envUser]
+	c.password = req.Env[envPassword]
+
+	var insecure bool
+	for _, arg := range req.Cmd {
+		if arg == insecureFlag {
+			insecure = true
+			break
+		}
+	}
+
+	// Walk the wait strategies to find the TLS strategy and either remove it or
+	// update the client certificate files to match the user and configure the
+	// container to use the TLS strategy.
+	if err := wait.Walk(&req.WaitingFor, func(strategy wait.Strategy) error {
+		if cert, ok := strategy.(*wait.TLSStrategy); ok {
+			if insecure {
+				// If insecure mode is enabled, the certificate strategy is removed.
+				return errors.Join(wait.VisitRemove, wait.VisitStop)
+			}
+
+			// Update the client certificate files to match the user which may have changed.
+			cert.WithCert(certsDir+"/client."+c.user+".crt", certsDir+"/client."+c.user+".key")
+
+			c.tlsStrategy = cert
+
+			// Stop the walk as the certificate strategy has been found.
+			return wait.VisitStop
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("walk strategies: %w", err)
+	}
+
+	return nil
 }
