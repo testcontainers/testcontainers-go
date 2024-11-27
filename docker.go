@@ -1185,6 +1185,18 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 			return nil, fmt.Errorf("expose host ports: %w", err)
 		}
 
+		defer func() {
+			if err != nil && con == nil {
+				// Container setup failed so ensure we clean up the sshd container too.
+				ctr := &DockerContainer{
+					provider:       p,
+					logger:         p.Logger,
+					lifecycleHooks: []ContainerLifecycleHooks{sshdForwardPortsHook},
+				}
+				err = errors.Join(ctr.terminatingHook(ctx))
+			}
+		}()
+
 		defaultHooks = append(defaultHooks, sshdForwardPortsHook)
 	}
 
@@ -1623,6 +1635,9 @@ func (p *DockerProvider) ensureDefaultNetwork(ctx context.Context) (string, erro
 		return "", fmt.Errorf("network list: %w", err)
 	}
 
+	// TODO: remove once we have docker context support via #2810
+	// Prefer the default bridge network if it exists.
+	// This makes the results stable as network list order is not guaranteed.
 	for _, net := range networkResources {
 		switch net.Name {
 		case p.defaultBridgeNetworkName:
@@ -1630,8 +1645,11 @@ func (p *DockerProvider) ensureDefaultNetwork(ctx context.Context) (string, erro
 			return p.defaultNetwork, nil
 		case ReaperDefault:
 			p.defaultNetwork = ReaperDefault
-			return p.defaultNetwork, nil
 		}
+	}
+
+	if p.defaultNetwork != "" {
+		return p.defaultNetwork, nil
 	}
 
 	// Create a bridge network for the container communications.

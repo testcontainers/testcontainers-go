@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	_ "embed"
 	"fmt"
 	"io"
 	"log"
@@ -22,6 +23,9 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
+
+//go:embed testdata/root.pem
+var caBytes []byte
 
 // https://github.com/testcontainers/testcontainers-go/issues/183
 func ExampleHTTPStrategy() {
@@ -80,7 +84,7 @@ func ExampleHTTPStrategy_WithHeaders() {
 	tlsconfig := &tls.Config{RootCAs: certpool, ServerName: "testcontainer.go.test"}
 	req := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context: "testdata",
+			Context: "testdata/http",
 		},
 		ExposedPorts: []string{"6443/tcp"},
 		WaitingFor: wait.ForHTTP("/headers").
@@ -227,20 +231,13 @@ func ExampleHTTPStrategy_WithBasicAuth() {
 }
 
 func TestHTTPStrategyWaitUntilReady(t *testing.T) {
-	workdir, err := os.Getwd()
-	require.NoError(t, err)
-
-	capath := filepath.Join(workdir, "testdata", "root.pem")
-	cafile, err := os.ReadFile(capath)
-	require.NoError(t, err)
-
 	certpool := x509.NewCertPool()
-	require.Truef(t, certpool.AppendCertsFromPEM(cafile), "the ca file isn't valid")
+	require.Truef(t, certpool.AppendCertsFromPEM(caBytes), "the ca file isn't valid")
 
 	tlsconfig := &tls.Config{RootCAs: certpool, ServerName: "testcontainer.go.test"}
 	dockerReq := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context: filepath.Join(workdir, "testdata"),
+			Context: "testdata/http",
 		},
 		ExposedPorts: []string{"6443/tcp"},
 		WaitingFor: wait.NewHTTPStrategy("/auth-ping").WithTLS(true, tlsconfig).
@@ -288,20 +285,13 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 }
 
 func TestHTTPStrategyWaitUntilReadyWithQueryString(t *testing.T) {
-	workdir, err := os.Getwd()
-	require.NoError(t, err)
-
-	capath := filepath.Join(workdir, "testdata", "root.pem")
-	cafile, err := os.ReadFile(capath)
-	require.NoError(t, err)
-
 	certpool := x509.NewCertPool()
-	require.Truef(t, certpool.AppendCertsFromPEM(cafile), "the ca file isn't valid")
+	require.Truef(t, certpool.AppendCertsFromPEM(caBytes), "the ca file isn't valid")
 
 	tlsconfig := &tls.Config{RootCAs: certpool, ServerName: "testcontainer.go.test"}
 	dockerReq := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context: filepath.Join(workdir, "testdata"),
+			Context: "testdata/http",
 		},
 
 		ExposedPorts: []string{"6443/tcp"},
@@ -348,22 +338,15 @@ func TestHTTPStrategyWaitUntilReadyWithQueryString(t *testing.T) {
 }
 
 func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
-	workdir, err := os.Getwd()
-	require.NoError(t, err)
-
-	capath := filepath.Join(workdir, "testdata", "root.pem")
-	cafile, err := os.ReadFile(capath)
-	require.NoError(t, err)
-
 	certpool := x509.NewCertPool()
-	require.Truef(t, certpool.AppendCertsFromPEM(cafile), "the ca file isn't valid")
+	require.Truef(t, certpool.AppendCertsFromPEM(caBytes), "the ca file isn't valid")
 
 	// waitForHTTPStatusCode {
 	tlsconfig := &tls.Config{RootCAs: certpool, ServerName: "testcontainer.go.test"}
 	var i int
 	dockerReq := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context: filepath.Join(workdir, "testdata"),
+			Context: "testdata/http",
 		},
 		ExposedPorts: []string{"6443/tcp"},
 		WaitingFor: wait.NewHTTPStrategy("/ping").WithTLS(true, tlsconfig).

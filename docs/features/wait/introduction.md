@@ -15,6 +15,7 @@ Below you can find a list of the available wait strategies that you can use:
 - [Log](./log.md)
 - [Multi](./multi.md)
 - [SQL](./sql.md)
+- [TLS](./tls.md)
 
 ## Startup timeout and Poll interval
 
@@ -25,3 +26,8 @@ If the default 60s timeout is not sufficient, it can be updated with the `WithSt
 Besides that, it's possible to define a poll interval, which will actually stop 100 milliseconds the test execution.
 
 If the default 100 milliseconds poll interval is not sufficient, it can be updated with the `WithPollInterval(pollInterval time.Duration)` function.
+
+## Modifying request strategies
+
+It's possible for options to modify `ContainerRequest.WaitingFor` using
+[Walk](walk.md).
