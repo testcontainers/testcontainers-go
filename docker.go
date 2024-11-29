@@ -1597,6 +1597,7 @@ func (p *DockerProvider) GetNetwork(ctx context.Context, req NetworkRequest) (ne
 }
 
 func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
+	// Use a default network as defined in the DockerProvider
 	defaultNetwork, err := p.ensureDefaultNetwork(ctx)
 	if err != nil {
 		return "", fmt.Errorf("ensure default network: %w", err)
