@@ -19,12 +19,14 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -35,6 +37,7 @@ const (
 	nginxAlpineImage  = "nginx:alpine"
 	nginxDefaultPort  = "80/tcp"
 	nginxHighPort     = "8080/tcp"
+	golangImage       = "golang"
 	daemonMaxVersion  = "1.41"
 )
 
@@ -43,6 +46,72 @@ var providerType = ProviderDocker
 func init() {
 	if strings.Contains(os.Getenv("DOCKER_HOST"), "podman.sock") {
 		providerType = ProviderPodman
+	}
+}
+
+func TestWithinContainerStage1(t *testing.T) {
+	if providerType != ProviderDocker {
+		t.Skip("This is a docker-specific test.")
+	}
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := ContainerRequest{
+		Image:      golangImage,
+		WorkingDir: dir,
+		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.Mounts = append(hc.Mounts, mount.Mount{
+				Type:   "bind",
+				Source: dir,
+				Target: dir,
+			}, mount.Mount{
+				Type:   "bind",
+				Source: "/var/run",
+				Target: "/var/run",
+			})
+		},
+		Entrypoint: []string{"sleep", "100"},
+	}
+	container, err := GenericContainer(context.Background(), GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The timeout is necessary because when TestWithinContainersStage2 fails, it hangs forever instead of erroring
+	exitCode, outputReader, err := container.Exec(context.Background(), []string{"go", "test", "-v", "-run", "^TestWithinContainerStage2$", "-timeout", "10s"}, exec.Multiplexed())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	outputStr, err := io.ReadAll(outputReader)
+	if err != nil {
+		t.Fatalf("failed to read output: %s", err)
+	}
+	t.Logf("%s", outputStr)
+
+	if exitCode != 0 {
+		t.Fatalf("exit code %d, output: %s", exitCode, outputStr)
+	}
+}
+
+// Regression test for deadlock #2897
+func TestWithinContainerStage2(t *testing.T) {
+	req := ContainerRequest{
+		Image: nginxImage,
+	}
+	container, err := GenericContainer(context.Background(), GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = container.Host(context.Background())
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
