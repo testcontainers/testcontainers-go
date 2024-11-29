@@ -54,9 +54,7 @@ func TestWithinContainerStage1(t *testing.T) {
 		t.Skip("This is a docker-specific test.")
 	}
 	dir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	req := ContainerRequest{
 		Image:      golangImage,
 		WorkingDir: dir,
@@ -77,14 +75,10 @@ func TestWithinContainerStage1(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	// The timeout is necessary because when TestWithinContainersStage2 fails, it hangs forever instead of erroring
 	exitCode, outputReader, err := container.Exec(context.Background(), []string{"go", "test", "-v", "-run", "^TestWithinContainerStage2$", "-timeout", "10s"}, exec.Multiplexed())
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	outputStr, err := io.ReadAll(outputReader)
 	if err != nil {
@@ -106,13 +100,9 @@ func TestWithinContainerStage2(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	_, err = container.Host(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 }
 
 func TestContainerWithHostNetworkOptions(t *testing.T) {
