@@ -1027,7 +1027,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	defer p.Close()
 
 	var defaultNetwork string
-	defaultNetwork, err = p.ensureDefaultNetwork(ctx)
+	defaultNetwork, err = p.ensureDefaultNetwork(ctx, false)
 	if err != nil {
 		return nil, fmt.Errorf("ensure default network: %w", err)
 	}
@@ -1498,7 +1498,7 @@ func (p *DockerProvider) daemonHostLocked(ctx context.Context) (string, error) {
 		p.hostCache = daemonURL.Hostname()
 	case "unix", "npipe":
 		if core.InAContainer() {
-			ip, err := p.GetGatewayIP(ctx)
+			ip, err := p.getGatewayIPMaybeLocked(ctx, true)
 			if err != nil {
 				ip, err = core.DefaultGatewayIP()
 				if err != nil {
@@ -1522,7 +1522,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 	// defer the close of the Docker client connection the soonest
 	defer p.Close()
 
-	if _, err = p.ensureDefaultNetwork(ctx); err != nil {
+	if _, err = p.ensureDefaultNetwork(ctx, false); err != nil {
 		return nil, fmt.Errorf("ensure default network: %w", err)
 	}
 
@@ -1593,8 +1593,12 @@ func (p *DockerProvider) GetNetwork(ctx context.Context, req NetworkRequest) (ne
 }
 
 func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
+	return p.getGatewayIPMaybeLocked(ctx, false)
+}
+
+func (p *DockerProvider) getGatewayIPMaybeLocked(ctx context.Context, locked bool) (string, error) {
 	// Use a default network as defined in the DockerProvider
-	defaultNetwork, err := p.ensureDefaultNetwork(ctx)
+	defaultNetwork, err := p.ensureDefaultNetwork(ctx, locked)
 	if err != nil {
 		return "", fmt.Errorf("ensure default network: %w", err)
 	}
@@ -1621,9 +1625,11 @@ func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
 // ensureDefaultNetwork ensures that defaultNetwork is set and creates
 // it if it does not exist, returning its value.
 // It is safe to call this method concurrently.
-func (p *DockerProvider) ensureDefaultNetwork(ctx context.Context) (string, error) {
-	p.mtx.Lock()
-	defer p.mtx.Unlock()
+func (p *DockerProvider) ensureDefaultNetwork(ctx context.Context, locked bool) (string, error) {
+	if !locked {
+		p.mtx.Lock()
+		defer p.mtx.Unlock()
+	}
 
 	if p.defaultNetwork != "" {
 		// Already set.
