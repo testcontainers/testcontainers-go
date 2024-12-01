@@ -86,7 +86,7 @@ func TestWithinContainerStage1(t *testing.T) {
 	require.NoError(t, err, "failed to read output")
 	t.Logf("%s", outputBytes)
 
-	require.Zero(t, exitCode, "non-zero exit code, output: %s", outputBytes)
+	require.Zero(t, exitCode, "non-zero exit code from stage 2")
 }
 
 var stage2 = flag.Bool("stage2", false, "Run TestWithinContainerStage2")
