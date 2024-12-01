@@ -80,6 +80,13 @@ authorization {
 	// }
 	require.NoError(t, err)
 
+	// connect without token {
+	mallory, err := nats.Connect(uri, nats.Name("Mallory"), nats.Token("secret"))
+	// }
+	require.Error(t, err)
+	require.ErrorIs(t, err, nats.ErrAuthorization)
+	t.Cleanup(mallory.Close)
+
 	// connect via token {
 	nc, err := nats.Connect(uri, nats.Name("API Token Test"), nats.Token("s3cr3t"))
 	// }
