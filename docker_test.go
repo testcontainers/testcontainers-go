@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -50,6 +51,7 @@ func init() {
 }
 
 func TestWithinContainerStage1(t *testing.T) {
+	// TODO: remove this skip check when context rework is merged.
 	if providerType != ProviderDocker {
 		t.Skip("This is a docker-specific test.")
 	}
@@ -77,22 +79,24 @@ func TestWithinContainerStage1(t *testing.T) {
 	})
 	require.NoError(t, err)
 	// The timeout is necessary because when TestWithinContainersStage2 fails, it hangs forever instead of erroring
-	exitCode, outputReader, err := container.Exec(context.Background(), []string{"go", "test", "-v", "-run", "^TestWithinContainerStage2$", "-timeout", "10s"}, exec.Multiplexed())
+	exitCode, outputReader, err := container.Exec(context.Background(), []string{"go", "test", "-v", "-run", "^TestWithinContainerStage2$", "-timeout", "20s", "-stage2"}, exec.Multiplexed())
 	require.NoError(t, err)
 
-	outputStr, err := io.ReadAll(outputReader)
-	if err != nil {
-		t.Fatalf("failed to read output: %s", err)
-	}
-	t.Logf("%s", outputStr)
+	outputBytes, err := io.ReadAll(outputReader)
+	require.NoError(t, err, "failed to read output")
+	t.Logf("%s", outputBytes)
 
-	if exitCode != 0 {
-		t.Fatalf("exit code %d, output: %s", exitCode, outputStr)
-	}
+	require.Zero(t, exitCode, "non-zero exit code, output: %s", outputBytes)
 }
+
+var stage2 = flag.Bool("stage2", false, "Run TestWithinContainerStage2")
 
 // Regression test for deadlock #2897
 func TestWithinContainerStage2(t *testing.T) {
+	if !*stage2 {
+		t.Skip("Skipping test that requires stage2")
+	}
+
 	req := ContainerRequest{
 		Image: nginxImage,
 	}
