@@ -1,7 +1,9 @@
 package nats_test
 
 import (
+	"bufio"
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/nats-io/nats.go"
@@ -56,4 +58,46 @@ func TestNATS(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, "hello", string(msg.Data))
+}
+
+func TestNATSWithConfigFile(t *testing.T) {
+	const natsConf = `
+listen: 0.0.0.0:4222
+authorization {
+    token: "s3cr3t"
+}
+`
+	ctx := context.Background()
+
+	//  createNATSContainer {
+	ctr, err := tcnats.Run(ctx, "nats:2.9", tcnats.WithConfigFile(strings.NewReader(natsConf)))
+	//  }
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	// connectionString {
+	uri, err := ctr.ConnectionString(ctx)
+	// }
+	require.NoError(t, err)
+
+	// connect via token {
+	nc, err := nats.Connect(uri, nats.Name("API Token Test"), nats.Token("s3cr3t"))
+	// }
+	require.NoError(t, err)
+	t.Cleanup(nc.Close)
+
+	// validate /etc/nats.conf mentioned in logs {
+	const expected = "Using configuration file: /etc/nats.conf"
+	logs, err := ctr.Logs(ctx)
+	require.NoError(t, err)
+	sc := bufio.NewScanner(logs)
+	found := false
+	for sc.Scan() {
+		if strings.Contains(sc.Text(), expected) {
+			found = true
+			break
+		}
+	}
+	// }
+	require.Truef(t, found, "expected log line not found: %s", expected)
 }

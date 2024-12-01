@@ -1,18 +1,21 @@
 package nats
 
 import (
+	"io"
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
 )
 
 type options struct {
-	CmdArgs map[string]string
+	CmdArgs    map[string]string
+	ConfigFile io.Reader
 }
 
 func defaultOptions() options {
 	return options{
-		CmdArgs: make(map[string]string, 0),
+		CmdArgs:    make(map[string]string, 0),
+		ConfigFile: nil,
 	}
 }
 
@@ -47,5 +50,13 @@ func WithArgument(flag string, value string) CmdOption {
 
 	return func(o *options) {
 		o.CmdArgs[flag] = value
+	}
+}
+
+// WithConfigFile pass io.Reader to the NATS container as /etc/nats.conf
+// Changes of a connectivity (listen address, or ports) may break a testcontainer
+func WithConfigFile(config io.Reader) CmdOption {
+	return func(o *options) {
+		o.ConfigFile = config
 	}
 }
