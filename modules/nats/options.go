@@ -52,7 +52,7 @@ func WithArgument(flag string, value string) CmdOption {
 }
 
 // WithConfigFile pass io.Reader to the NATS container as /etc/nats.conf
-// Changes of a connectivity (listen address, or ports) may break a testcontainer
+// Changing the connectivity (listen address or ports) can break the container setup.
 func WithConfigFile(config io.Reader) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		if config != nil {
