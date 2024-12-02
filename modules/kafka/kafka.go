@@ -22,7 +22,7 @@ const (
 	// starterScript {
 	starterScriptContent = `#!/bin/bash
 source /etc/confluent/docker/bash-config
-export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://%s:%d,BROKER://%s:9092
+export KAFKA_ADVERTISED_LISTENERS=%s
 echo Starting Kafka KRaft mode
 sed -i '/KAFKA_ZOOKEEPER_CONNECT/d' /etc/confluent/docker/configure
 echo 'kafka-storage format --ignore-formatted -t "$(kafka-storage random-uuid)" -c /etc/kafka/kafka.properties' >> /etc/confluent/docker/configure
@@ -36,6 +36,12 @@ echo '' > /etc/confluent/docker/ensure
 type KafkaContainer struct {
 	testcontainers.Container
 	ClusterID string
+}
+
+type Listener struct {
+	Name string
+	Host string
+	Port string
 }
 
 // Deprecated: use Run instead
@@ -70,24 +76,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Entrypoint: []string{"sh"},
 		// this CMD will wait for the starter script to be copied into the container and then execute it
 		Cmd: []string{"-c", "while [ ! -f " + starterScript + " ]; do sleep 0.1; done; bash " + starterScript},
-		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
-			{
-				PostStarts: []testcontainers.ContainerHook{
-					// Use a single hook to copy the starter script and wait for
-					// the Kafka server to be ready. This prevents the wait running
-					// if the starter script fails to copy.
-					func(ctx context.Context, c testcontainers.Container) error {
-						// 1. copy the starter script into the container
-						if err := copyStarterScript(ctx, c); err != nil {
-							return fmt.Errorf("copy starter script: %w", err)
-						}
-
-						// 2. wait for the Kafka server to be ready
-						return wait.ForLog(".*Transitioning from RECOVERY to RUNNING.*").AsRegexp().WaitUntilReady(ctx, c)
-					},
-				},
-			},
-		},
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
@@ -95,10 +83,35 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Started:          true,
 	}
 
+	settings := defaultOptions(&genericContainerReq)
 	for _, opt := range opts {
+		if apply, ok := opt.(Option); ok {
+			if err := apply(&settings); err != nil {
+				return nil, err
+			}
+		}
 		if err := opt.Customize(&genericContainerReq); err != nil {
 			return nil, err
 		}
+	}
+
+	genericContainerReq.ContainerRequest.LifecycleHooks = []testcontainers.ContainerLifecycleHooks{
+		{
+			PostStarts: []testcontainers.ContainerHook{
+				// Use a single hook to copy the starter script and wait for
+				// the Kafka server to be ready. This prevents the wait running
+				// if the starter script fails to copy.
+				func(ctx context.Context, c testcontainers.Container) error {
+					// 1. copy the starter script into the container
+					if err := copyStarterScript(ctx, c, &settings); err != nil {
+						return fmt.Errorf("copy starter script: %w", err)
+					}
+
+					// 2. wait for the Kafka server to be ready
+					return wait.ForLog(".*Transitioning from RECOVERY to RUNNING.*").AsRegexp().WaitUntilReady(ctx, c)
+				},
+			},
+		},
 	}
 
 	err := validateKRaftVersion(genericContainerReq.Image)
@@ -122,45 +135,40 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 }
 
 // copyStarterScript copies the starter script into the container.
-func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
+func copyStarterScript(ctx context.Context, c testcontainers.Container, settings *options) error {
 	if err := wait.ForListeningPort(publicPort).
 		SkipInternalCheck().
 		WaitUntilReady(ctx, c); err != nil {
 		return fmt.Errorf("wait for exposed port: %w", err)
 	}
 
-	host, err := c.Host(ctx)
-	if err != nil {
-		return fmt.Errorf("host: %w", err)
+	if len(settings.Listeners) == 0 {
+		defaultInternal, err := brokerListener(ctx, c)
+		if err != nil {
+			return fmt.Errorf("default internal listener: %w", err)
+		}
+		settings.Listeners = append(settings.Listeners, defaultInternal)
 	}
 
-	inspect, err := c.Inspect(ctx)
+	defaultExternal, err := plainTextListener(ctx, c)
 	if err != nil {
-		return fmt.Errorf("inspect: %w", err)
+		return fmt.Errorf("default external listener: %w", err)
 	}
 
-	hostname := inspect.Config.Hostname
+	settings.Listeners = append(settings.Listeners, defaultExternal)
 
-	port, err := c.MappedPort(ctx, publicPort)
-	if err != nil {
-		return fmt.Errorf("mapped port: %w", err)
+	advertised := make([]string, len(settings.Listeners))
+	for i, item := range settings.Listeners {
+		advertised[i] = item.Name + "://" + item.Host + ":" + item.Port
 	}
 
-	scriptContent := fmt.Sprintf(starterScriptContent, host, port.Int(), hostname)
+	scriptContent := fmt.Sprintf(starterScriptContent, strings.Join(advertised, ","))
 
 	if err := c.CopyToContainer(ctx, []byte(scriptContent), starterScript, 0o755); err != nil {
 		return fmt.Errorf("copy to container: %w", err)
 	}
 
 	return nil
-}
-
-func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["CLUSTER_ID"] = clusterID
-
-		return nil
-	}
 }
 
 // Brokers retrieves the broker connection strings from Kafka with only one entry,

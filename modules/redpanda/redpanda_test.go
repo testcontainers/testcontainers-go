@@ -525,7 +525,8 @@ func TestRedpandaListener_NoNetwork(t *testing.T) {
 func TestRedpandaBootstrapConfig(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := redpanda.RunContainer(ctx,
+	container, err := redpanda.Run(ctx,
+		"docker.redpanda.com/redpandadata/redpanda:v23.3.3",
 		redpanda.WithEnableWasmTransform(),
 		// These configs would require a restart if applied to a live Redpanda instance
 		redpanda.WithBootstrapConfig("data_transforms_per_core_memory_reservation", 33554432),

@@ -71,6 +71,44 @@ The environment variables that are already set by default are:
 
 {% include "../features/common_functional_options.md" %}
 
+
+#### ClusterId
+
+You can set up cluster id by using `WithClusterID` option.
+
+```
+KafkaContainer, err = kafka.Run(ctx,
+		"confluentinc/confluent-local:7.6.1",
+		kafka.WithClusterID("test-cluster"))
+```
+
+#### Listeners
+
+If you need to connect new listeners, you can use `WithListener(listeners ...Listener)`. 
+This option controls the following environment variables for the Kafka container: 
+- `KAFKA_LISTENERS`
+- `KAFKA_REST_BOOTSTRAP_SERVERS`
+- `KAFKA_LISTENER_SECURITY_PROTOCOL_MAP`
+- `KAFKA_INTER_BROKER_LISTENER_NAME`
+- `KAFKA_ADVERTISED_LISTENERS`
+
+Example:
+
+<!--codeinclude-->
+[Get Kafka brokers](../../modules/kafka/kafka_test.go) inside_block:kafkaWithListener
+<!--/codeinclude-->
+
+In the above code, we created a network for our container and attached kafka to it, so they can communicate. Then we marked port 9092 for our internal usage.
+
+The first listener in the slice will be written in the env parameter `KAFKA_INTER_BROKER_LISTENER_NAME`  
+
+Every listener's name will be converted in upper case. Every name and port should be unique and will be checked in a validation step.
+
+If you are not using this option or the listeners list is empty, there will be 2 default listeners with the following addresses and ports:
+
+External - Host():MappedPort()  
+Internal - Host():9092
+
 ### Container Methods
 
 The Kafka container exposes the following methods:
