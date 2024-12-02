@@ -151,10 +151,21 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 //   - Password: ""
 //   - Database: defaultdb
 //   - Exposed ports: 26257/tcp (SQL), 8080/tcp (Admin UI)
+//   - Init Scripts: `data/cluster_defaults.sql`
+//
+// This supports CockroachDB images v22.2.0 and later, earlier versions will only work with
+// customised options, such as disabling TLS and removing the wait for `init_success` using
+// a [testcontainers.ContainerCustomizer].
+//
+// The init script `data/cluster_defaults.sql` configures the settings recommended
+// by Cockroach Labs for [local testing clusters] unless data exists in the
+// `/cockroach/cockroach-data` directory within the container. Use [WithNoClusterDefaults]
+// to disable this behaviour and provide your own settings using [WithInitScripts].
 //
 // For more information see starting a [local cluster in docker].
 //
 // [local cluster in docker]: https://www.cockroachlabs.com/docs/stable/start-a-local-cluster-in-docker-linux
+// [local testing clusters]: https://www.cockroachlabs.com/docs/stable/local-testing
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*CockroachDBContainer, error) {
 	ctr := &CockroachDBContainer{
 		options: options{
