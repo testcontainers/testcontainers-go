@@ -55,6 +55,7 @@ func TestWithinContainerStage1(t *testing.T) {
 	if providerType != ProviderDocker {
 		t.Skip("This is a docker-specific test.")
 	}
+	socketPath := MustExtractDockerSocket(context.Background())
 	dir, err := os.Getwd()
 	require.NoError(t, err)
 	req := ContainerRequest{
@@ -67,8 +68,8 @@ func TestWithinContainerStage1(t *testing.T) {
 				Target: dir,
 			}, mount.Mount{
 				Type:   "bind",
-				Source: "/var/run",
-				Target: "/var/run",
+				Source: socketPath,
+				Target: socketPath,
 			})
 		},
 		Entrypoint: []string{"sleep", "100"},
