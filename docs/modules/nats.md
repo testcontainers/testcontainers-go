@@ -77,6 +77,8 @@ These arguments are passed to the NATS server when it starts, as part of the com
 
 #### Custom configuration file
 
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
 It's possible to pass a custom config file to NATS container using `nats.WithConfigFile(strings.NewReader(config))`. The `io.Reader` is passed as a `-config /etc/nats.conf` arguments to an entrypoint. 
 
 !!! note
