@@ -69,31 +69,25 @@ authorization {
 `
 	ctx := context.Background()
 
-	//  createNATSContainer {
 	ctr, err := tcnats.Run(ctx, "nats:2.9", tcnats.WithConfigFile(strings.NewReader(natsConf)))
-	//  }
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	// connectionString {
 	uri, err := ctr.ConnectionString(ctx)
-	// }
 	require.NoError(t, err)
 
-	// connect without token {
+	// connect without a correct token must fail
 	mallory, err := nats.Connect(uri, nats.Name("Mallory"), nats.Token("secret"))
-	// }
 	require.Error(t, err)
 	require.ErrorIs(t, err, nats.ErrAuthorization)
 	t.Cleanup(mallory.Close)
 
-	// connect via token {
+	// connect with a correct token must succeed
 	nc, err := nats.Connect(uri, nats.Name("API Token Test"), nats.Token("s3cr3t"))
-	// }
 	require.NoError(t, err)
 	t.Cleanup(nc.Close)
 
-	// validate /etc/nats.conf mentioned in logs {
+	// validate /etc/nats.conf mentioned in logs
 	const expected = "Using configuration file: /etc/nats.conf"
 	logs, err := ctr.Logs(ctx)
 	require.NoError(t, err)
@@ -105,6 +99,5 @@ authorization {
 			break
 		}
 	}
-	// }
 	require.Truef(t, found, "expected log line not found: %s", expected)
 }
