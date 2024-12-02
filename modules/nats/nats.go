@@ -58,19 +58,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		genericContainerReq.Cmd = append(genericContainerReq.Cmd, []string{"--" + k, v}...)
 	}
 
-	// Pass a configuration file if provided
-	if settings.ConfigFile != nil {
-		genericContainerReq.Cmd = append(genericContainerReq.Cmd, "-config", "/etc/nats.conf")
-		genericContainerReq.Files = append(
-			genericContainerReq.Files,
-			testcontainers.ContainerFile{
-				Reader:            settings.ConfigFile,
-				ContainerFilePath: "/etc/nats.conf",
-				FileMode:          0o644,
-			},
-		)
-	}
-
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	var c *NATSContainer
 	if container != nil {

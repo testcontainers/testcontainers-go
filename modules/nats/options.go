@@ -8,22 +8,29 @@ import (
 )
 
 type options struct {
-	CmdArgs    map[string]string
-	ConfigFile io.Reader
+	CmdArgs map[string]string
 }
 
 func defaultOptions() options {
 	return options{
-		CmdArgs:    make(map[string]string, 0),
-		ConfigFile: nil,
+		CmdArgs: make(map[string]string, 0),
 	}
 }
 
-// Compiler check to ensure that Option implements the testcontainers.ContainerCustomizer interface.
-var _ testcontainers.ContainerCustomizer = (*CmdOption)(nil)
+// Compiler check to ensure that CmdOption and ConfigFile implements the
+// testcontainers.ContainerCustomizer interface.
+var (
+	_ testcontainers.ContainerCustomizer = (*CmdOption)(nil)
+	_ testcontainers.ContainerCustomizer = (*ConfigFile)(nil)
+)
 
 // CmdOption is an option for the NATS container.
 type CmdOption func(opts *options)
+
+// ConfigFile optionally pass a configuration file into NATS container.
+type ConfigFile struct {
+	reader io.Reader
+}
 
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
 func (o CmdOption) Customize(req *testcontainers.GenericContainerRequest) error {
@@ -55,8 +62,21 @@ func WithArgument(flag string, value string) CmdOption {
 
 // WithConfigFile pass io.Reader to the NATS container as /etc/nats.conf
 // Changes of a connectivity (listen address, or ports) may break a testcontainer
-func WithConfigFile(config io.Reader) CmdOption {
-	return func(o *options) {
-		o.ConfigFile = config
+func WithConfigFile(config io.Reader) ConfigFile {
+	return ConfigFile{reader: config}
+}
+
+func (c ConfigFile) Customize(req *testcontainers.GenericContainerRequest) error {
+	if c.reader != nil {
+		req.Cmd = append(req.Cmd, "-config", "/etc/nats.conf")
+		req.Files = append(
+			req.Files,
+			testcontainers.ContainerFile{
+				Reader:            c.reader,
+				ContainerFilePath: "/etc/nats.conf",
+				FileMode:          0o644,
+			},
+		)
 	}
+	return nil
 }
