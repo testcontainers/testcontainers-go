@@ -115,6 +115,18 @@ func startOllama(ctx context.Context, localCtx *localContext) (*exec.Cmd, *os.Fi
 func waitForOllama(ctx context.Context, c *OllamaContainer) error {
 	err := wait.ForLog("Listening on "+localIP+":11434").WaitUntilReady(ctx, c)
 	if err != nil {
+		logs, err := c.Logs(ctx)
+		if err != nil {
+			return fmt.Errorf("wait for ollama to start: %w", err)
+		}
+
+		bs, err := io.ReadAll(logs)
+		if err != nil {
+			return fmt.Errorf("read ollama logs: %w", err)
+		}
+
+		testcontainers.Logger.Printf("ollama logs:\n%s", string(bs))
+
 		return fmt.Errorf("wait for ollama to start: %w", err)
 	}
 
