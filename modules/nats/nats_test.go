@@ -5,6 +5,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/require"
@@ -78,14 +79,13 @@ authorization {
 
 	// connect without a correct token must fail
 	mallory, err := nats.Connect(uri, nats.Name("Mallory"), nats.Token("secret"))
-	require.Error(t, err)
-	require.ErrorIs(t, err, nats.ErrAuthorization)
 	t.Cleanup(mallory.Close)
+	require.EqualError(t, err, "nats: Authorization Violation")
 
 	// connect with a correct token must succeed
 	nc, err := nats.Connect(uri, nats.Name("API Token Test"), nats.Token("s3cr3t"))
-	require.NoError(t, err)
 	t.Cleanup(nc.Close)
+	require.NoError(t, err)
 
 	// validate /etc/nats.conf mentioned in logs
 	const expected = "Using configuration file: /etc/nats.conf"
@@ -93,6 +93,9 @@ authorization {
 	require.NoError(t, err)
 	sc := bufio.NewScanner(logs)
 	found := false
+	time.AfterFunc(5*time.Second, func() {
+		require.Truef(t, found, "expected log line not found after 5 seconds: %s", expected)
+	})
 	for sc.Scan() {
 		if strings.Contains(sc.Text(), expected) {
 			found = true
