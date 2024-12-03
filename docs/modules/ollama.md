@@ -16,9 +16,14 @@ go get github.com/testcontainers/testcontainers-go/modules/ollama
 
 ## Usage example
 
+The module allows you to run the Ollama container or the local Ollama binary.
+
 <!--codeinclude-->
 [Creating a Ollama container](../../modules/ollama/examples_test.go) inside_block:runOllamaContainer
+[Running the local Ollama binary](../../modules/ollama/examples_test.go) inside_block:localOllama
 <!--/codeinclude-->
+
+If the local Ollama binary fails to execute, the module will fallback to the container version of Ollama.
 
 ## Module Reference
 
@@ -47,6 +52,39 @@ When starting the Ollama container, you can pass options in a variadic way to co
 
 If you need to set a different Ollama Docker image, you can set a valid Docker image as the second argument in the `Run` function.
 E.g. `Run(context.Background(), "ollama/ollama:0.1.25")`.
+
+#### Use Local
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to run the local Ollama binary, you can set the `UseLocal` option in the `Run` function.
+This option accepts a list of environment variables as a string, that will be applied to the Ollama binary when executing commands.
+
+E.g. `Run(context.Background(), "ollama/ollama:0.1.25", WithUseLocal("OLLAMA_DEBUG=true"))`.
+
+All the container methods are available when using the local Ollama binary, but will be executed locally instead of inside the container.
+Please consider the following differences when using the local Ollama binary:
+
+- The local Ollama binary will create a log file in the current working directory, identified by the session ID. E.g. `local-ollama-<session-id>.log`.
+- `ConnectionString` returns the connection string to connect to the local Ollama binary instead of the container, which maps to `127.0.0.1:11434`.
+- `ContainerIP` returns `127.0.0.1`.
+- `ContainerIPs` returns `["127.0.0.1"]`.
+- `CopyToContainer`, `CopyDirToContainer`, `CopyFileToContainer` and `CopyFileFromContainer` don't perform any action.
+- `GetLogProductionErrorChannel` returns a nil channel.
+- `Endpoint` returns the endpoint to connect to the local Ollama binary instead of the container, which maps to `127.0.0.1:11434`.
+- `Exec` passes the command to the local Ollama binary instead of inside the container. First argument is the command to execute, and the second argument is the list of arguments.
+- `GetContainerID` returns the container ID of the local Ollama binary instead of the container, which maps to `local-ollama-<session-id>`.
+- `Host` returns `127.0.0.1`.
+- `Inspect` returns a ContainerJSON with the state of the local Ollama binary.
+- `IsRunning` returns true if the local Ollama binary process is running.
+- `Logs` returns the logs from the local Ollama binary instead of the container.
+- `MappedPort` returns the port mapping for the local Ollama binary instead of the container.
+- `Start` starts the local Ollama binary process.
+- `State` returns the current state of the local Ollama binary process, `stopped` or `running`.
+- `Stop` stops the local Ollama binary process.
+- `Terminate` calls the `Stop` method and then removes the log file.
+
+The local Ollama binary will create a log file in the current working directory, and it will be available in the container's `Logs` method.
 
 {% include "../features/common_functional_options.md" %}
 
