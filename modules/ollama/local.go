@@ -390,8 +390,6 @@ func (c *OllamaContainer) Start(ctx context.Context) error {
 		return nil
 	}
 
-	testcontainers.Logger.Printf("starting ollama")
-
 	serveCmd, logFile, err := startOllama(context.Background(), c.localCtx)
 	if err != nil {
 		c.localCtx.mx.Unlock()
@@ -408,8 +406,6 @@ func (c *OllamaContainer) Start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("wait for ollama to start: %w", err)
 	}
-
-	testcontainers.Logger.Printf("ollama started")
 
 	return nil
 }
@@ -450,8 +446,6 @@ func (c *OllamaContainer) Stop(ctx context.Context, d *time.Duration) error {
 	c.localCtx.mx.Lock()
 	defer c.localCtx.mx.Unlock()
 
-	testcontainers.Logger.Printf("stopping ollama")
-
 	if c.localCtx.serveCmd == nil {
 		return nil
 	}
@@ -461,8 +455,6 @@ func (c *OllamaContainer) Stop(ctx context.Context, d *time.Duration) error {
 	}
 
 	c.localCtx.serveCmd = nil
-
-	testcontainers.Logger.Printf("ollama stopped")
 
 	return nil
 }
