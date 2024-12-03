@@ -110,7 +110,6 @@ jobs:
         run: go build
 
       - name: Install dependencies
-        working-directory: ./${{ inputs.project-directory }}
         shell: bash
         run: |
           SCRIPT_PATH="./.github/scripts/${{ inputs.project-directory }}/install-dependencies.sh"
