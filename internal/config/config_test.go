@@ -40,7 +40,8 @@ func TestReadConfig(t *testing.T) {
 		t.Setenv("DOCKER_HOST", "")
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 
-		config := Read()
+		config, err := Read()
+		require.NoError(t, err)
 
 		expected := Config{
 			RyukDisabled: true,
@@ -51,7 +52,8 @@ func TestReadConfig(t *testing.T) {
 
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "false")
 
-		config = Read()
+		config, err = Read()
+		require.NoError(t, err)
 		assert.Equal(t, expected, config)
 	})
 }
@@ -65,8 +67,8 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("HOME", "")
 		t.Setenv("USERPROFILE", "") // Windows support
 
-		config := read()
-
+		config, err := read()
+		require.NoError(t, err)
 		expected := Config{}
 
 		assert.Equal(t, expected, config)
@@ -81,7 +83,8 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("RYUK_RECONNECTION_TIMEOUT", "13s")
 		t.Setenv("RYUK_CONNECTION_TIMEOUT", "12s")
 
-		config := read()
+		config, err := read()
+		require.NoError(t, err)
 
 		expected := Config{
 			HubImageNamePrefix:      defaultHubPrefix,
@@ -100,7 +103,8 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("HOME", tmpDir)
 		t.Setenv("USERPROFILE", tmpDir) // Windows support
 
-		config := read()
+		config, err := read()
+		require.NoError(t, err)
 
 		// The time fields are set to the default values.
 		expected := Config{
@@ -117,7 +121,8 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("USERPROFILE", tmpDir) // Windows support
 		t.Setenv("DOCKER_HOST", tcpDockerHost33293)
 
-		config := read()
+		config, err := read()
+		require.NoError(t, err)
 
 		// The time fields are set to the default values,
 		// and the config does not read DOCKER_HOST,
@@ -141,7 +146,9 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("RYUK_RECONNECTION_TIMEOUT", "13s")
 		t.Setenv("RYUK_CONNECTION_TIMEOUT", "12s")
 
-		config := read()
+		config, err := read()
+		require.NoError(t, err)
+
 		expected := Config{
 			HubImageNamePrefix:      defaultHubPrefix,
 			RyukDisabled:            true,
@@ -167,321 +174,333 @@ func TestReadTCConfig(t *testing.T) {
 			content  string
 			env      map[string]string
 			expected Config
+			wantErr  bool
 		}{
 			{
-				"Single Docker host with spaces",
-				"docker.host = " + tcpDockerHost33293,
-				map[string]string{},
-				Config{
+				name:    "Single Docker host with spaces",
+				content: "docker.host = " + tcpDockerHost33293,
+				env:     map[string]string{},
+				expected: Config{
 					Host: tcpDockerHost33293,
 				},
 			},
 			{
-				"Multiple docker host entries, last one wins",
-				`docker.host = ` + tcpDockerHost33293 + `
+				name: "Multiple docker host entries, last one wins",
+				content: `docker.host = ` + tcpDockerHost33293 + `
 	docker.host = ` + tcpDockerHost4711 + `
 	`,
-				map[string]string{},
-				Config{
+				env: map[string]string{},
+				expected: Config{
 					Host: tcpDockerHost4711,
 				},
 			},
 			{
-				"Multiple docker host entries, last one wins, with TLS",
-				`docker.host = ` + tcpDockerHost33293 + `
+				name: "Multiple docker host entries, last one wins, with TLS",
+				content: `docker.host = ` + tcpDockerHost33293 + `
 	docker.host = ` + tcpDockerHost4711 + `
 	docker.host = ` + tcpDockerHost1234 + `
 	docker.tls.verify = 1
 	`,
-				map[string]string{},
-				Config{
+				env: map[string]string{},
+				expected: Config{
 					Host:      tcpDockerHost1234,
 					TLSVerify: 1,
 				},
 			},
 			{
-				"Empty file",
-				"",
-				map[string]string{},
-				Config{},
+				name:     "Empty file",
+				content:  "",
+				env:      map[string]string{},
+				expected: Config{},
+				wantErr:  false,
 			},
 			{
-				"Non-valid properties are ignored",
-				`foo = bar
+				name: "Non-valid properties are ignored",
+				content: `foo = bar
 	docker.host = ` + tcpDockerHost1234 + `
 			`,
-				map[string]string{},
-				Config{
+				env: map[string]string{},
+				expected: Config{
 					Host: tcpDockerHost1234,
 				},
 			},
 			{
-				"Single Docker host without spaces",
-				"docker.host=" + tcpDockerHost33293,
-				map[string]string{},
-				Config{
+				name:    "Single Docker host without spaces",
+				content: "docker.host=" + tcpDockerHost33293,
+				env:     map[string]string{},
+				expected: Config{
 					Host: tcpDockerHost33293,
 				},
 			},
 			{
-				"Comments are ignored",
-				`#docker.host=` + tcpDockerHost33293,
-				map[string]string{},
-				defaultCfg,
+				name:     "Comments are ignored",
+				content:  `#docker.host=` + tcpDockerHost33293,
+				env:      map[string]string{},
+				expected: defaultCfg,
+				wantErr:  false,
 			},
 			{
-				"Multiple docker host entries, last one wins, with TLS and cert path",
-				`#docker.host = ` + tcpDockerHost33293 + `
+				name: "Multiple docker host entries, last one wins, with TLS and cert path",
+				content: `#docker.host = ` + tcpDockerHost33293 + `
 	docker.host = ` + tcpDockerHost4711 + `
 	docker.host = ` + tcpDockerHost1234 + `
 	docker.cert.path=/tmp/certs`,
-				map[string]string{},
-				Config{
+				env: map[string]string{},
+				expected: Config{
 					Host:     tcpDockerHost1234,
 					CertPath: "/tmp/certs",
 				},
 			},
 			{
-				"With Ryuk disabled using properties",
-				`ryuk.disabled=true`,
-				map[string]string{},
-				Config{
+				name:    "With Ryuk disabled using properties",
+				content: `ryuk.disabled=true`,
+				env:     map[string]string{},
+				expected: Config{
 					RyukDisabled: true,
 				},
 			},
 			{
-				"With Ryuk container privileged using properties",
-				`ryuk.container.privileged=true`,
-				map[string]string{},
-				Config{
+				name:    "With Ryuk container privileged using properties",
+				content: `ryuk.container.privileged=true`,
+				env:     map[string]string{},
+				expected: Config{
 					RyukPrivileged: true,
 				},
 			},
 			{
-				"With Ryuk container timeouts configured using properties",
-				`ryuk.connection.timeout=12s
+				name: "With Ryuk container timeouts configured using properties",
+				content: `ryuk.connection.timeout=12s
 	ryuk.reconnection.timeout=13s`,
-				map[string]string{},
-				Config{
+				env: map[string]string{},
+				expected: Config{
 					RyukReconnectionTimeout: 13 * time.Second,
 					RyukConnectionTimeout:   12 * time.Second,
 				},
 			},
 			{
-				"With Ryuk container timeouts configured using env vars",
-				``,
-				map[string]string{
+				name:    "With Ryuk container timeouts configured using env vars",
+				content: ``,
+				env: map[string]string{
 					"RYUK_RECONNECTION_TIMEOUT": "13s",
 					"RYUK_CONNECTION_TIMEOUT":   "12s",
 				},
-				Config{
+				expected: Config{
 					RyukReconnectionTimeout: 13 * time.Second,
 					RyukConnectionTimeout:   12 * time.Second,
 				},
 			},
 			{
-				"With Ryuk container timeouts configured using env vars and properties. Env var wins",
-				`ryuk.connection.timeout=22s
+				name: "With Ryuk container timeouts configured using env vars and properties. Env var wins",
+				content: `ryuk.connection.timeout=22s
 	ryuk.reconnection.timeout=23s`,
-				map[string]string{
+				env: map[string]string{
 					"RYUK_RECONNECTION_TIMEOUT": "13s",
 					"RYUK_CONNECTION_TIMEOUT":   "12s",
 				},
-				Config{
+				expected: Config{
 					RyukReconnectionTimeout: 13 * time.Second,
 					RyukConnectionTimeout:   12 * time.Second,
 				},
 			},
 			{
-				"With Ryuk verbose configured using properties",
-				`ryuk.verbose=true`,
-				map[string]string{},
-				Config{
+				name:    "With Ryuk verbose configured using properties",
+				content: `ryuk.verbose=true`,
+				env:     map[string]string{},
+				expected: Config{
 					RyukVerbose: true,
 				},
 			},
 			{
-				"With Ryuk disabled using an env var",
-				``,
-				map[string]string{
+				name:    "With Ryuk disabled using an env var",
+				content: ``,
+				env: map[string]string{
 					"TESTCONTAINERS_RYUK_DISABLED": "true",
 				},
-				Config{
+				expected: Config{
 					RyukDisabled: true,
 				},
 			},
 			{
-				"With Ryuk container privileged using an env var",
-				``,
-				map[string]string{
+				name:    "With Ryuk container privileged using an env var",
+				content: ``,
+				env: map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
 				},
-				Config{
+				expected: Config{
 					RyukPrivileged: true,
 				},
 			},
 			{
-				"With Ryuk disabled using an env var and properties. Env var wins (0)",
-				`ryuk.disabled=true`,
-				map[string]string{
+				name:    "With Ryuk disabled using an env var and properties. Env var wins (0)",
+				content: `ryuk.disabled=true`,
+				env: map[string]string{
 					"TESTCONTAINERS_RYUK_DISABLED": "true",
 				},
-				Config{
+				expected: Config{
 					RyukDisabled: true,
 				},
 			},
 			{
-				"With Ryuk disabled using an env var and properties. Env var wins (1)",
-				`ryuk.disabled=false`,
-				map[string]string{
+				name:    "With Ryuk disabled using an env var and properties. Env var wins (1)",
+				content: `ryuk.disabled=false`,
+				env: map[string]string{
 					"TESTCONTAINERS_RYUK_DISABLED": "true",
 				},
-				Config{
+				expected: Config{
 					RyukDisabled: true,
 				},
 			},
 			{
-				"With Ryuk disabled using an env var and properties. Env var wins (2)",
-				`ryuk.disabled=true`,
-				map[string]string{
+				name:    "With Ryuk disabled using an env var and properties. Env var wins (2)",
+				content: `ryuk.disabled=true`,
+				env: map[string]string{
 					"TESTCONTAINERS_RYUK_DISABLED": "false",
 				},
-				defaultCfg,
+				expected: defaultCfg,
+				wantErr:  false,
 			},
 			{
-				"With Ryuk disabled using an env var and properties. Env var wins (3)",
-				`ryuk.disabled=false`,
-				map[string]string{
+				name:    "With Ryuk disabled using an env var and properties. Env var wins (3)",
+				content: `ryuk.disabled=false`,
+				env: map[string]string{
 					"TESTCONTAINERS_RYUK_DISABLED": "false",
 				},
-				defaultCfg,
+				expected: defaultCfg,
+				wantErr:  false,
 			},
 			{
-				"With Ryuk verbose using an env var and properties. Env var wins (0)",
-				`ryuk.verbose=true`,
-				map[string]string{
+				name:    "With Ryuk verbose using an env var and properties. Env var wins (0)",
+				content: `ryuk.verbose=true`,
+				env: map[string]string{
 					"RYUK_VERBOSE": "true",
 				},
-				Config{
+				expected: Config{
 					RyukVerbose: true,
 				},
 			},
 			{
-				"With Ryuk verbose using an env var and properties. Env var wins (1)",
-				`ryuk.verbose=false`,
-				map[string]string{
+				name:    "With Ryuk verbose using an env var and properties. Env var wins (1)",
+				content: `ryuk.verbose=false`,
+				env: map[string]string{
 					"RYUK_VERBOSE": "true",
 				},
-				Config{
+				expected: Config{
 					RyukVerbose: true,
 				},
 			},
 			{
-				"With Ryuk verbose using an env var and properties. Env var wins (2)",
-				`ryuk.verbose=true`,
-				map[string]string{
+				name:    "With Ryuk verbose using an env var and properties. Env var wins (2)",
+				content: `ryuk.verbose=true`,
+				env: map[string]string{
 					"RYUK_VERBOSE": "false",
 				},
-				defaultCfg,
+				expected: defaultCfg,
+				wantErr:  false,
 			},
 			{
-				"With Ryuk verbose using an env var and properties. Env var wins (3)",
-				`ryuk.verbose=false`,
-				map[string]string{
+				name:    "With Ryuk verbose using an env var and properties. Env var wins (3)",
+				content: `ryuk.verbose=false`,
+				env: map[string]string{
 					"RYUK_VERBOSE": "false",
 				},
-				defaultCfg,
+				expected: defaultCfg,
+				wantErr:  false,
 			},
 			{
-				"With Ryuk container privileged using an env var and properties. Env var wins (0)",
-				`ryuk.container.privileged=true`,
-				map[string]string{
+				name:    "With Ryuk container privileged using an env var and properties. Env var wins (0)",
+				content: `ryuk.container.privileged=true`,
+				env: map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
 				},
-				Config{
+				expected: Config{
 					RyukPrivileged: true,
 				},
 			},
 			{
-				"With Ryuk container privileged using an env var and properties. Env var wins (1)",
-				`ryuk.container.privileged=false`,
-				map[string]string{
+				name:    "With Ryuk container privileged using an env var and properties. Env var wins (1)",
+				content: `ryuk.container.privileged=false`,
+				env: map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
 				},
-				Config{
+				expected: Config{
 					RyukPrivileged: true,
 				},
 			},
 			{
-				"With Ryuk container privileged using an env var and properties. Env var wins (2)",
-				`ryuk.container.privileged=true`,
-				map[string]string{
+				name:    "With Ryuk container privileged using an env var and properties. Env var wins (2)",
+				content: `ryuk.container.privileged=true`,
+				env: map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "false",
 				},
-				defaultCfg,
+				expected: defaultCfg,
+				wantErr:  false,
 			},
 			{
-				"With Ryuk container privileged using an env var and properties. Env var wins (3)",
-				`ryuk.container.privileged=false`,
-				map[string]string{
+				name:    "With Ryuk container privileged using an env var and properties. Env var wins (3)",
+				content: `ryuk.container.privileged=false`,
+				env: map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "false",
 				},
-				defaultCfg,
+				expected: defaultCfg,
+				wantErr:  false,
 			},
 			{
-				"With TLS verify using properties when value is wrong",
-				`ryuk.container.privileged=false
+				name: "With TLS verify using properties when value is wrong",
+				content: `ryuk.container.privileged=false
 				docker.tls.verify = ERROR`,
-				map[string]string{
+				env: map[string]string{
 					"TESTCONTAINERS_RYUK_DISABLED":             "true",
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
 				},
-				Config{
+				expected: Config{
 					RyukDisabled:   true,
 					RyukPrivileged: true,
 				},
+				wantErr: true,
 			},
 			{
-				"With Ryuk disabled using an env var and properties. Env var does not win because it's not a boolean value",
-				`ryuk.disabled=false`,
-				map[string]string{
+				name:    "With Ryuk disabled using an env var and properties. Env var does not win because it's not a boolean value",
+				content: `ryuk.disabled=false`,
+				env: map[string]string{
 					"TESTCONTAINERS_RYUK_DISABLED": "foo",
 				},
-				defaultCfg,
+				expected: defaultCfg,
+				wantErr:  false,
 			},
 			{
-				"With Ryuk container privileged using an env var and properties. Env var does not win because it's not a boolean value",
-				`ryuk.container.privileged=false`,
-				map[string]string{
+				name:    "With Ryuk container privileged using an env var and properties. Env var does not win because it's not a boolean value",
+				content: `ryuk.container.privileged=false`,
+				env: map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "foo",
 				},
-				defaultCfg,
+				expected: defaultCfg,
+				wantErr:  false,
 			},
 			{
-				"With Hub image name prefix set as a property",
-				`hub.image.name.prefix=` + defaultHubPrefix + `/props/`,
-				map[string]string{},
-				Config{
+				name:    "With Hub image name prefix set as a property",
+				content: `hub.image.name.prefix=` + defaultHubPrefix + `/props/`,
+				env:     map[string]string{},
+				expected: Config{
 					HubImageNamePrefix: defaultHubPrefix + "/props/",
 				},
 			},
 			{
-				"With Hub image name prefix set as env var",
-				``,
-				map[string]string{
+				name:    "With Hub image name prefix set as env var",
+				content: ``,
+				env: map[string]string{
 					"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": defaultHubPrefix + "/env/",
 				},
-				Config{
+				expected: Config{
 					HubImageNamePrefix: defaultHubPrefix + "/env/",
 				},
 			},
 			{
-				"With Hub image name prefix set as env var and properties: Env var wins",
-				`hub.image.name.prefix=` + defaultHubPrefix + `/props/`,
-				map[string]string{
+				name:    "With Hub image name prefix set as env var and properties: Env var wins",
+				content: `hub.image.name.prefix=` + defaultHubPrefix + `/props/`,
+				env: map[string]string{
 					"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": defaultHubPrefix + "/env/",
 				},
-				Config{
+				expected: Config{
 					HubImageNamePrefix: defaultHubPrefix + "/env/",
 				},
 			},
@@ -497,8 +516,12 @@ func TestReadTCConfig(t *testing.T) {
 				err := os.WriteFile(filepath.Join(tmpDir, ".testcontainers.properties"), []byte(tt.content), 0o600)
 				require.NoErrorf(t, err, "Failed to create the file")
 
-				//
-				config := read()
+				config, err := read()
+				if tt.wantErr {
+					require.Error(t, err)
+					return
+				}
+				require.NoError(t, err)
 
 				// Merge the returned config, and the expected one, with the default config
 				// to avoid setting all the fields in the expected config.

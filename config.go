@@ -17,7 +17,11 @@ type TestcontainersConfig struct {
 // ReadConfig reads from testcontainers properties file, storing the result in a singleton instance
 // of the TestcontainersConfig struct
 func ReadConfig() TestcontainersConfig {
-	cfg := config.Read()
+	cfg, err := config.Read()
+	if err != nil {
+		return TestcontainersConfig{}
+	}
+
 	return TestcontainersConfig{
 		Host:           cfg.Host,
 		TLSVerify:      cfg.TLSVerify,

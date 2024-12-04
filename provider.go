@@ -125,10 +125,15 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		return nil, err
 	}
 
+	cfg, err := config.Read()
+	if err != nil {
+		return nil, fmt.Errorf("read config: %w", err)
+	}
+
 	return &DockerProvider{
 		DockerProviderOptions: o,
 		host:                  core.MustExtractDockerHost(ctx),
 		client:                c,
-		config:                config.Read(),
+		config:                cfg,
 	}, nil
 }

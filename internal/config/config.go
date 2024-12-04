@@ -131,12 +131,13 @@ func applyEnvironmentConfiguration(config Config) Config {
 
 // Read reads from testcontainers properties file, if it exists
 // it is possible that certain values get overridden when set as environment variables
-func Read() Config {
+func Read() (Config, error) {
+	var err error
 	tcConfigOnce.Do(func() {
-		tcConfig = read()
+		tcConfig, err = read()
 	})
 
-	return tcConfig
+	return tcConfig, err
 }
 
 // Reset resets the singleton instance of the Config struct,
@@ -147,12 +148,12 @@ func Reset() {
 	tcConfigOnce = new(sync.Once)
 }
 
-func read() Config {
+func read() (Config, error) {
 	var config Config
 
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return applyEnvironmentConfiguration(config)
+		return applyEnvironmentConfiguration(config), nil
 	}
 
 	tcProp := filepath.Join(home, TestcontainersProperties)
@@ -160,15 +161,14 @@ func read() Config {
 	// The properties library will return the default values for the struct.
 	props, err := properties.LoadFiles([]string{tcProp}, properties.UTF8, true)
 	if err != nil {
-		return applyEnvironmentConfiguration(config)
+		return applyEnvironmentConfiguration(config), nil
 	}
 
 	if err := props.Decode(&config); err != nil {
-		fmt.Printf("invalid testcontainers properties file, returning an empty Testcontainers configuration: %v\n", err)
-		return applyEnvironmentConfiguration(config)
+		return applyEnvironmentConfiguration(config), fmt.Errorf("invalid testcontainers properties file: %w", err)
 	}
 
-	return applyEnvironmentConfiguration(config)
+	return applyEnvironmentConfiguration(config), nil
 }
 
 func parseBool(input string) bool {

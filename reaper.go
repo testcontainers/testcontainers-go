@@ -260,7 +260,12 @@ func (r *reaperSpawner) retryError(err error) error {
 //
 // Safe for concurrent calls.
 func (r *reaperSpawner) reaper(ctx context.Context, sessionID string, provider ReaperProvider) (*Reaper, error) {
-	if config.Read().RyukDisabled {
+	cfg, err := config.Read()
+	if err != nil {
+		return nil, fmt.Errorf("read config: %w", err)
+	}
+
+	if cfg.RyukDisabled {
 		return nil, errReaperDisabled
 	}
 
@@ -445,7 +450,12 @@ type Reaper struct {
 // It returns a channel that can be closed to terminate the connection.
 // Returns an error if config.RyukDisabled is true.
 func (r *Reaper) Connect() (chan bool, error) {
-	if config.Read().RyukDisabled {
+	cfg, err := config.Read()
+	if err != nil {
+		return nil, fmt.Errorf("read config: %w", err)
+	}
+
+	if cfg.RyukDisabled {
 		return nil, errReaperDisabled
 	}
 
