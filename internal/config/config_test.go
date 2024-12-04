@@ -177,7 +177,7 @@ func TestReadTCConfig(t *testing.T) {
 			wantErr  bool
 		}{
 			{
-				name:    "Single Docker host with spaces",
+				name:    "single-docker-host/with-spaces",
 				content: "docker.host = " + tcpDockerHost33293,
 				env:     map[string]string{},
 				expected: Config{
@@ -185,7 +185,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				name: "Multiple docker host entries, last one wins",
+				name: "multiple-docker-hosts/last-one-wins",
 				content: `docker.host = ` + tcpDockerHost33293 + `
 	docker.host = ` + tcpDockerHost4711 + `
 	`,
@@ -195,7 +195,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				name: "Multiple docker host entries, last one wins, with TLS",
+				name: "multiple-docker-hosts/last-one-wins/with-tls",
 				content: `docker.host = ` + tcpDockerHost33293 + `
 	docker.host = ` + tcpDockerHost4711 + `
 	docker.host = ` + tcpDockerHost1234 + `
@@ -208,14 +208,14 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				name:     "Empty file",
+				name:     "properties/empty",
 				content:  "",
 				env:      map[string]string{},
 				expected: Config{},
 				wantErr:  false,
 			},
 			{
-				name: "Non-valid properties are ignored",
+				name: "non-valid-properties-are-ignored",
 				content: `foo = bar
 	docker.host = ` + tcpDockerHost1234 + `
 			`,
@@ -225,7 +225,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				name:    "Single Docker host without spaces",
+				name:    "single-docker-host/without-spaces",
 				content: "docker.host=" + tcpDockerHost33293,
 				env:     map[string]string{},
 				expected: Config{
@@ -233,14 +233,14 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				name:     "Comments are ignored",
+				name:     "comments-are-ignored",
 				content:  `#docker.host=` + tcpDockerHost33293,
 				env:      map[string]string{},
 				expected: defaultCfg,
 				wantErr:  false,
 			},
 			{
-				name: "Multiple docker host entries, last one wins, with TLS and cert path",
+				name: "multiple-docker-hosts/last-one-wins/with-tls/cert-path",
 				content: `#docker.host = ` + tcpDockerHost33293 + `
 	docker.host = ` + tcpDockerHost4711 + `
 	docker.host = ` + tcpDockerHost1234 + `
@@ -252,7 +252,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				name:    "With Ryuk disabled using properties",
+				name:    "using-properties/ryuk-disabled",
 				content: `ryuk.disabled=true`,
 				env:     map[string]string{},
 				expected: Config{
@@ -260,7 +260,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				name:    "With Ryuk container privileged using properties",
+				name:    "properties/ryuk-container-privileged",
 				content: `ryuk.container.privileged=true`,
 				env:     map[string]string{},
 				expected: Config{
@@ -268,7 +268,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				name: "With Ryuk container timeouts configured using properties",
+				name: "properties/ryuk-container-timeouts",
 				content: `ryuk.connection.timeout=12s
 	ryuk.reconnection.timeout=13s`,
 				env: map[string]string{},
@@ -278,7 +278,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				name:    "With Ryuk container timeouts configured using env vars",
+				name:    "env-vars/ryuk-container-timeouts",
 				content: ``,
 				env: map[string]string{
 					"RYUK_RECONNECTION_TIMEOUT": "13s",
@@ -290,7 +290,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				name: "With Ryuk container timeouts configured using env vars and properties. Env var wins",
+				name: "env-vars/ryuk-container-timeouts/env-var-wins",
 				content: `ryuk.connection.timeout=22s
 	ryuk.reconnection.timeout=23s`,
 				env: map[string]string{
@@ -303,7 +303,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				name:    "With Ryuk verbose configured using properties",
+				name:    "properties/ryuk-verbose",
 				content: `ryuk.verbose=true`,
 				env:     map[string]string{},
 				expected: Config{
@@ -311,7 +311,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				name:    "With Ryuk disabled using an env var",
+				name:    "env-vars/ryuk-disabled",
 				content: ``,
 				env: map[string]string{
 					"TESTCONTAINERS_RYUK_DISABLED": "true",
@@ -321,7 +321,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				name:    "With Ryuk container privileged using an env var",
+				name:    "env-vars/ryuk-container-privileged",
 				content: ``,
 				env: map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
@@ -331,7 +331,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				name:    "With Ryuk disabled using an env var and properties. Env var wins (0)",
+				name:    "env-vars/properties/ryuk-disabled/env-var-wins-0",
 				content: `ryuk.disabled=true`,
 				env: map[string]string{
 					"TESTCONTAINERS_RYUK_DISABLED": "true",
@@ -341,7 +341,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				name:    "With Ryuk disabled using an env var and properties. Env var wins (1)",
+				name:    "env-vars/properties/ryuk-disabled/env-var-wins-1",
 				content: `ryuk.disabled=false`,
 				env: map[string]string{
 					"TESTCONTAINERS_RYUK_DISABLED": "true",
@@ -351,7 +351,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				name:    "With Ryuk disabled using an env var and properties. Env var wins (2)",
+				name:    "env-vars/properties/ryuk-disabled/env-var-wins-2",
 				content: `ryuk.disabled=true`,
 				env: map[string]string{
 					"TESTCONTAINERS_RYUK_DISABLED": "false",
@@ -360,7 +360,7 @@ func TestReadTCConfig(t *testing.T) {
 				wantErr:  false,
 			},
 			{
-				name:    "With Ryuk disabled using an env var and properties. Env var wins (3)",
+				name:    "env-vars/properties/ryuk-disabled/env-var-wins-3",
 				content: `ryuk.disabled=false`,
 				env: map[string]string{
 					"TESTCONTAINERS_RYUK_DISABLED": "false",
@@ -369,7 +369,7 @@ func TestReadTCConfig(t *testing.T) {
 				wantErr:  false,
 			},
 			{
-				name:    "With Ryuk verbose using an env var and properties. Env var wins (0)",
+				name:    "env-vars/properties/ryuk-verbose/env-var-wins-0",
 				content: `ryuk.verbose=true`,
 				env: map[string]string{
 					"RYUK_VERBOSE": "true",
@@ -379,7 +379,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				name:    "With Ryuk verbose using an env var and properties. Env var wins (1)",
+				name:    "env-vars/properties/ryuk-verbose/env-var-wins-1",
 				content: `ryuk.verbose=false`,
 				env: map[string]string{
 					"RYUK_VERBOSE": "true",
@@ -389,7 +389,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				name:    "With Ryuk verbose using an env var and properties. Env var wins (2)",
+				name:    "env-vars/properties/ryuk-verbose/env-var-wins-2",
 				content: `ryuk.verbose=true`,
 				env: map[string]string{
 					"RYUK_VERBOSE": "false",
@@ -398,7 +398,7 @@ func TestReadTCConfig(t *testing.T) {
 				wantErr:  false,
 			},
 			{
-				name:    "With Ryuk verbose using an env var and properties. Env var wins (3)",
+				name:    "env-vars/properties/ryuk-verbose/env-var-wins-3",
 				content: `ryuk.verbose=false`,
 				env: map[string]string{
 					"RYUK_VERBOSE": "false",
@@ -407,7 +407,7 @@ func TestReadTCConfig(t *testing.T) {
 				wantErr:  false,
 			},
 			{
-				name:    "With Ryuk container privileged using an env var and properties. Env var wins (0)",
+				name:    "env-vars/properties/ryuk-container-privileged/env-var-wins-0",
 				content: `ryuk.container.privileged=true`,
 				env: map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
@@ -417,7 +417,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				name:    "With Ryuk container privileged using an env var and properties. Env var wins (1)",
+				name:    "env-vars/properties/ryuk-container-privileged/env-var-wins-1",
 				content: `ryuk.container.privileged=false`,
 				env: map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
@@ -427,7 +427,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				name:    "With Ryuk container privileged using an env var and properties. Env var wins (2)",
+				name:    "env-vars/properties/ryuk-container-privileged/env-var-wins-2",
 				content: `ryuk.container.privileged=true`,
 				env: map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "false",
@@ -436,7 +436,7 @@ func TestReadTCConfig(t *testing.T) {
 				wantErr:  false,
 			},
 			{
-				name:    "With Ryuk container privileged using an env var and properties. Env var wins (3)",
+				name:    "env-vars/properties/ryuk-container-privileged/env-var-wins-3",
 				content: `ryuk.container.privileged=false`,
 				env: map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "false",
@@ -445,7 +445,7 @@ func TestReadTCConfig(t *testing.T) {
 				wantErr:  false,
 			},
 			{
-				name: "With TLS verify using properties when value is wrong",
+				name: "properties/tls-verify/wrong-value",
 				content: `ryuk.container.privileged=false
 				docker.tls.verify = ERROR`,
 				env: map[string]string{
@@ -459,7 +459,7 @@ func TestReadTCConfig(t *testing.T) {
 				wantErr: true,
 			},
 			{
-				name:    "With Ryuk disabled using an env var and properties. Env var does not win because it's not a boolean value",
+				name:    "env-vars/properties/ryuk-disabled/env-var-does-not-win/wrong-boolean",
 				content: `ryuk.disabled=false`,
 				env: map[string]string{
 					"TESTCONTAINERS_RYUK_DISABLED": "foo",
@@ -468,7 +468,7 @@ func TestReadTCConfig(t *testing.T) {
 				wantErr:  false,
 			},
 			{
-				name:    "With Ryuk container privileged using an env var and properties. Env var does not win because it's not a boolean value",
+				name:    "env-vars/properties/ryuk-container-privileged/env-var-does-not-win/wrong-boolean",
 				content: `ryuk.container.privileged=false`,
 				env: map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "foo",
@@ -477,7 +477,7 @@ func TestReadTCConfig(t *testing.T) {
 				wantErr:  false,
 			},
 			{
-				name:    "With Hub image name prefix set as a property",
+				name:    "properties/hub-image-name-prefix",
 				content: `hub.image.name.prefix=` + defaultHubPrefix + `/props/`,
 				env:     map[string]string{},
 				expected: Config{
@@ -485,7 +485,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				name:    "With Hub image name prefix set as env var",
+				name:    "env-vars/hub-image-name-prefix",
 				content: ``,
 				env: map[string]string{
 					"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": defaultHubPrefix + "/env/",
@@ -495,7 +495,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				name:    "With Hub image name prefix set as env var and properties: Env var wins",
+				name:    "env-vars/properties/hub-image-name-prefix/env-var-wins",
 				content: `hub.image.name.prefix=` + defaultHubPrefix + `/props/`,
 				env: map[string]string{
 					"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": defaultHubPrefix + "/env/",
