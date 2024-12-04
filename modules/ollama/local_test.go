@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -238,4 +239,23 @@ func TestRun_local(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "stopped", state.Status)
 	})
+}
+
+func TestRun_localWithCustomLogFile(t *testing.T) {
+	t.Setenv("OLLAMA_LOGFILE", filepath.Join(t.TempDir(), "server.log"))
+
+	ctx := context.Background()
+
+	ollamaContainer, err := ollama.Run(ctx, "ollama/ollama:0.1.25", ollama.WithUseLocal("FOO=BAR"))
+	require.NoError(t, err)
+	testcontainers.CleanupContainer(t, ollamaContainer)
+
+	logs, err := ollamaContainer.Logs(ctx)
+	require.NoError(t, err)
+	defer logs.Close()
+
+	bs, err := io.ReadAll(logs)
+	require.NoError(t, err)
+
+	require.Contains(t, string(bs), "Listening on 127.0.0.1:11434")
 }
