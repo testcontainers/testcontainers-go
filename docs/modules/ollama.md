@@ -79,7 +79,7 @@ Please consider the following differences when using the local Ollama binary:
 - `CopyToContainer`, `CopyDirToContainer`, `CopyFileToContainer` and `CopyFileFromContainer` don't perform any action.
 - `GetLogProductionErrorChannel` returns a nil channel.
 - `Endpoint` returns the endpoint to connect to the local Ollama binary started by the module instead of the container, which maps to `127.0.0.1:11434`.
-- `Exec` passes the command to the local Ollama binary started by the module instead of inside the container. First argument is the command to execute, and the second argument is the list of arguments.
+- `Exec` passes the command to the local Ollama binary started by the module instead of inside the container. First argument is the command to execute, and the second argument is the list of arguments, else, an error is returned.
 - `GetContainerID` returns the container ID of the local Ollama binary started by the module instead of the container, which maps to `local-ollama-<session-id>`.
 - `Host` returns `127.0.0.1`.
 - `Inspect` returns a ContainerJSON with the state of the local Ollama binary started by the module.
