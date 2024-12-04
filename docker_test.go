@@ -61,6 +61,9 @@ func TestWithinContainerStage1(t *testing.T) {
 	req := ContainerRequest{
 		Image:      golangImage,
 		WorkingDir: dir,
+		Env: map[string]string{
+			"XDG_RUNTIME_DIR": os.Getenv("XDG_RUNTIME_DIR"),
+		},
 		HostConfigModifier: func(hc *container.HostConfig) {
 			hc.Mounts = append(hc.Mounts, mount.Mount{
 				Type:   "bind",
