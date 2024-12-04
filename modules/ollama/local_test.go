@@ -2,6 +2,7 @@ package ollama_test
 
 import (
 	"context"
+	"errors"
 	"io"
 	"os"
 	"os/exec"
@@ -102,6 +103,25 @@ func TestRun_local(t *testing.T) {
 		bs, err = io.ReadAll(logs)
 		require.NoError(t, err)
 		require.Contains(t, string(bs), "llama runner started")
+	})
+
+	t.Run("exec/unsupported-command", func(t *testing.T) {
+		code, r, err := ollamaContainer.Exec(ctx, []string{"cat", "/etc/passwd"})
+		require.Equal(t, 1, code)
+		require.Error(t, err)
+		require.ErrorIs(t, err, errors.ErrUnsupported)
+
+		bs, err := io.ReadAll(r)
+		require.NoError(t, err)
+		require.Equal(t, "cat: unsupported operation", string(bs))
+
+		code, r, err = ollamaContainer.Exec(ctx, []string{})
+		require.Equal(t, 1, code)
+		require.Error(t, err)
+
+		bs, err = io.ReadAll(r)
+		require.NoError(t, err)
+		require.Equal(t, "exec: no command provided", string(bs))
 	})
 
 	t.Run("is-running", func(t *testing.T) {

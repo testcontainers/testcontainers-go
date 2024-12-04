@@ -3,10 +3,12 @@ package ollama
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -218,6 +220,14 @@ func (c *OllamaContainer) Exec(ctx context.Context, cmd []string, options ...tce
 
 	c.localCtx.mx.Lock()
 	defer c.localCtx.mx.Unlock()
+
+	if len(cmd) == 0 {
+		err := errors.New("exec: no command provided")
+		return 1, strings.NewReader(err.Error()), err
+	} else if cmd[0] != "ollama" {
+		err := fmt.Errorf("%s: %w", cmd[0], errors.ErrUnsupported)
+		return 1, strings.NewReader(err.Error()), err
+	}
 
 	args := []string{}
 	if len(cmd) > 1 {
