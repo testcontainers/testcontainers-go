@@ -74,6 +74,11 @@ func runLocal(env map[string]string) (*OllamaContainer, error) {
 // logFile returns an existing log file or creates a new one if it doesn't exist.
 func logFile() (*os.File, error) {
 	logName := "local-ollama-" + testcontainers.SessionID() + ".log"
+
+	if envLogName := os.Getenv("OLLAMA_LOGFILE"); envLogName != "" {
+		logName = envLogName
+	}
+
 	if _, err := os.Stat(logName); err == nil {
 		return os.Open(logName)
 	}
