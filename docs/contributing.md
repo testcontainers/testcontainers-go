@@ -32,6 +32,7 @@ Please just be sure to:
 
 !!!important
     There is a GitHub Actions workflow that will check if your PR title follows the conventional commits convention. If not, it contributes a failed check to your PR.
+    To know more about the conventions, please refer to the [workflow file](https://github.com/testcontainers/testcontainers-go/blob/main/.github/workflows/conventions.yml).
 
 * use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) for your commit messages, as it improves the readability of the commit history, and the review process.
 * unless necessary, please try to **avoid pushing --force** to the published branch you submitted a PR from, as it makes it harder to review the changes from a given previous state.

@@ -19,3 +19,31 @@ jobs:
       - uses: amannn/action-semantic-pull-request@0723387faaf9b38adef4775cd42cfd5155ed6017 # v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # We may not need a scope on every commit (i.e. repo-level change).
+          #
+          # feat(redis): support for clustering
+          # chore(redis): update tests
+          # fix(redis): trim connection string
+          # ^    ^    ^
+          # |    |    |__ Subject
+          # |    |_______ Scope
+          # |____________ Type
+          requireScope: false
+          # Scope should be lowercase.
+          disallowScopes: |
+            [A-Z]+
+          # ensures the subject doesn't start with an uppercase character.
+          subjectPattern: ^(?![A-Z]).+$
+          subjectPatternError: |
+            The subject "{subject}" found in the pull request title "{title}"
+            didn't match the configured pattern. Please ensure that the subject
+            doesn't start with an uppercase character.
+          types: |
+            break
+            fix
+            feat
+            bug
+            docs
+            chore
+            deps
