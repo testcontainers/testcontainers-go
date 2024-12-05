@@ -532,7 +532,7 @@ func (c *ContainerRequest) validateMounts() error {
 	if len(hostConfig.Binds) > 0 {
 		for _, bind := range hostConfig.Binds {
 			parts := strings.Split(bind, ":")
-			if len(parts) != 2 {
+			if len(parts) != 2 && len(parts) != 3 {
 				return fmt.Errorf("%w: %s", ErrInvalidBindMount, bind)
 			}
 			targetPath := parts[1]

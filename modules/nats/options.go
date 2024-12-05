@@ -1,6 +1,7 @@
 package nats
 
 import (
+	"io"
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -16,7 +17,7 @@ func defaultOptions() options {
 	}
 }
 
-// Compiler check to ensure that Option implements the testcontainers.ContainerCustomizer interface.
+// Compiler check to ensure that CmdOption implements the testcontainers.ContainerCustomizer interface.
 var _ testcontainers.ContainerCustomizer = (*CmdOption)(nil)
 
 // CmdOption is an option for the NATS container.
@@ -47,5 +48,24 @@ func WithArgument(flag string, value string) CmdOption {
 
 	return func(o *options) {
 		o.CmdArgs[flag] = value
+	}
+}
+
+// WithConfigFile pass a content of io.Reader to the NATS container as /etc/nats.conf
+// Changing the connectivity (listen address or ports) can break the container setup.
+func WithConfigFile(config io.Reader) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		if config != nil {
+			req.Cmd = append(req.Cmd, "-config", "/etc/nats.conf")
+			req.Files = append(
+				req.Files,
+				testcontainers.ContainerFile{
+					Reader:            config,
+					ContainerFilePath: "/etc/nats.conf",
+					FileMode:          0o644,
+				},
+			)
+		}
+		return nil
 	}
 }
