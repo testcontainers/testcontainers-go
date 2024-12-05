@@ -42,7 +42,13 @@ func DefaultLabels(sessionID string) map[string]string {
 		LabelSessionID: sessionID,
 	}
 
-	if !config.Read().RyukDisabled {
+	cfg, err := config.Read()
+	if err != nil {
+		// do not apply labels from the config if it's not available
+		return labels
+	}
+
+	if !cfg.RyukDisabled {
 		labels[LabelReap] = "true"
 	}
 

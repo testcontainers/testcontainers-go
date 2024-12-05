@@ -43,9 +43,9 @@ import (
 var _ Container = (*DockerContainer)(nil)
 
 const (
-	Bridge        = "bridge" // Bridge network name (as well as driver)
-	Podman        = "podman"
-	ReaperDefault = "reaper_default" // Default network name when bridge is not available
+	Bridge        = "bridge"         // Deprecated, it will removed in the next major release. Bridge network driver and name
+	Podman        = "podman"         // Deprecated: Podman is supported through the current Docker context
+	ReaperDefault = "reaper_default" // Deprecated: it will removed in the next major release. Default network name when bridge is not available
 	packagePath   = "github.com/testcontainers/testcontainers-go"
 )
 
@@ -1026,29 +1026,6 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	// defer the close of the Docker client connection the soonest
 	defer p.Close()
 
-	var defaultNetwork string
-	defaultNetwork, err = p.ensureDefaultNetwork(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("ensure default network: %w", err)
-	}
-
-	// If default network is not bridge make sure it is attached to the request
-	// as container won't be attached to it automatically
-	// in case of Podman the bridge network is called 'podman' as 'bridge' would conflict
-	if defaultNetwork != p.defaultBridgeNetworkName {
-		isAttached := false
-		for _, net := range req.Networks {
-			if net == defaultNetwork {
-				isAttached = true
-				break
-			}
-		}
-
-		if !isAttached {
-			req.Networks = append(req.Networks, defaultNetwork)
-		}
-	}
-
 	imageName := req.Image
 
 	env := []string{}
@@ -1452,6 +1429,7 @@ func (p *DockerProvider) RunContainer(ctx context.Context, req ContainerRequest)
 	return c, nil
 }
 
+// Deprecated: use [testcontainers.NewConfig] instead
 // Config provides the TestcontainersConfig read from $HOME/.testcontainers.properties or
 // the environment variables
 func (p *DockerProvider) Config() TestcontainersConfig {
@@ -1522,10 +1500,6 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 	// defer the close of the Docker client connection the soonest
 	defer p.Close()
 
-	if _, err = p.ensureDefaultNetwork(ctx); err != nil {
-		return nil, fmt.Errorf("ensure default network: %w", err)
-	}
-
 	if req.Labels == nil {
 		req.Labels = make(map[string]string)
 	}
@@ -1593,13 +1567,7 @@ func (p *DockerProvider) GetNetwork(ctx context.Context, req NetworkRequest) (ne
 }
 
 func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
-	// Use a default network as defined in the DockerProvider
-	defaultNetwork, err := p.ensureDefaultNetwork(ctx)
-	if err != nil {
-		return "", fmt.Errorf("ensure default network: %w", err)
-	}
-
-	nw, err := p.GetNetwork(ctx, NetworkRequest{Name: defaultNetwork})
+	nw, err := p.GetNetwork(ctx, NetworkRequest{Name: Bridge})
 	if err != nil {
 		return "", err
 	}
@@ -1616,58 +1584,6 @@ func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
 	}
 
 	return ip, nil
-}
-
-// ensureDefaultNetwork ensures that defaultNetwork is set and creates
-// it if it does not exist, returning its value.
-// It is safe to call this method concurrently.
-func (p *DockerProvider) ensureDefaultNetwork(ctx context.Context) (string, error) {
-	p.mtx.Lock()
-	defer p.mtx.Unlock()
-
-	if p.defaultNetwork != "" {
-		// Already set.
-		return p.defaultNetwork, nil
-	}
-
-	networkResources, err := p.client.NetworkList(ctx, network.ListOptions{})
-	if err != nil {
-		return "", fmt.Errorf("network list: %w", err)
-	}
-
-	// TODO: remove once we have docker context support via #2810
-	// Prefer the default bridge network if it exists.
-	// This makes the results stable as network list order is not guaranteed.
-	for _, net := range networkResources {
-		switch net.Name {
-		case p.defaultBridgeNetworkName:
-			p.defaultNetwork = p.defaultBridgeNetworkName
-			return p.defaultNetwork, nil
-		case ReaperDefault:
-			p.defaultNetwork = ReaperDefault
-		}
-	}
-
-	if p.defaultNetwork != "" {
-		return p.defaultNetwork, nil
-	}
-
-	// Create a bridge network for the container communications.
-	_, err = p.client.NetworkCreate(ctx, ReaperDefault, network.CreateOptions{
-		Driver:     Bridge,
-		Attachable: true,
-		Labels:     GenericLabels(),
-	})
-	// If the network already exists, we can ignore the error as that can
-	// happen if we are running multiple tests in parallel and we only
-	// need to ensure that the network exists.
-	if err != nil && !errdefs.IsConflict(err) {
-		return "", fmt.Errorf("network create: %w", err)
-	}
-
-	p.defaultNetwork = ReaperDefault
-
-	return p.defaultNetwork, nil
 }
 
 // ContainerFromType builds a Docker container struct from the response of the Docker API
