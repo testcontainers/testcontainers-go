@@ -465,7 +465,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_DISABLED": "foo",
 				},
 				expected: defaultCfg,
-				wantErr:  false,
+				wantErr:  true,
 			},
 			{
 				name:    "env-vars/properties/ryuk-container-privileged/env-var-does-not-win/wrong-boolean",
@@ -474,7 +474,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "foo",
 				},
 				expected: defaultCfg,
-				wantErr:  false,
+				wantErr:  true,
 			},
 			{
 				name:    "properties/hub-image-name-prefix",
