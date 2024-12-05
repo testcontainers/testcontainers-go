@@ -283,7 +283,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	require.NoError(t, err)
 	defer dockerClient.Close()
 
-	cfg, err := config.Read()
+	cfg, err := NewConfig()
 	require.NoError(t, err)
 
 	provider := &DockerProvider{

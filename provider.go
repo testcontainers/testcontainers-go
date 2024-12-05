@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
@@ -87,6 +86,8 @@ type ContainerProvider interface {
 	ReuseOrCreateContainer(context.Context, ContainerRequest) (Container, error) // reuses a container if it exists or creates a container without starting
 	RunContainer(context.Context, ContainerRequest) (Container, error)           // create a container and start it
 	Health(context.Context) error
+
+	// Deprecated: use [testcontainers.NewConfig] instead
 	Config() TestcontainersConfig
 }
 
@@ -125,7 +126,7 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		return nil, err
 	}
 
-	cfg, err := config.Read()
+	cfg, err := NewConfig()
 	if err != nil {
 		return nil, fmt.Errorf("read config: %w", err)
 	}

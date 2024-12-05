@@ -1429,6 +1429,7 @@ func (p *DockerProvider) RunContainer(ctx context.Context, req ContainerRequest)
 	return c, nil
 }
 
+// Deprecated: use [testcontainers.NewConfig] instead
 // Config provides the TestcontainersConfig read from $HOME/.testcontainers.properties or
 // the environment variables
 func (p *DockerProvider) Config() TestcontainersConfig {

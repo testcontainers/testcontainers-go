@@ -4,6 +4,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/internal/config"
 )
 
+// Deprecated: use [testcontainers.Config] instead
 // TestcontainersConfig represents the configuration for Testcontainers
 type TestcontainersConfig struct {
 	Host           string `properties:"docker.host,default="`                    // Deprecated: use Config.Host instead
@@ -14,10 +15,11 @@ type TestcontainersConfig struct {
 	Config         config.Config
 }
 
+// Deprecated: use [testcontainers.NewConfig] instead
 // ReadConfig reads from testcontainers properties file, storing the result in a singleton instance
 // of the TestcontainersConfig struct
 func ReadConfig() TestcontainersConfig {
-	cfg, err := config.Read()
+	cfg, err := NewConfig()
 	if err != nil {
 		return TestcontainersConfig{}
 	}
@@ -30,4 +32,12 @@ func ReadConfig() TestcontainersConfig {
 		RyukPrivileged: cfg.RyukPrivileged,
 		Config:         cfg,
 	}
+}
+
+// Config is a type alias for the internal config.Config type
+type Config = config.Config
+
+// NewConfig reads the properties file and returns a new Config instance
+func NewConfig() (Config, error) {
+	return config.Read()
 }

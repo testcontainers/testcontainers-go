@@ -60,6 +60,8 @@ var (
 // The ContainerProvider interface should usually satisfy this as well, so it is pluggable
 type ReaperProvider interface {
 	RunContainer(ctx context.Context, req ContainerRequest) (Container, error)
+
+	// Deprecated: use [testcontainers.NewConfig] instead
 	Config() TestcontainersConfig
 }
 
@@ -260,7 +262,7 @@ func (r *reaperSpawner) retryError(err error) error {
 //
 // Safe for concurrent calls.
 func (r *reaperSpawner) reaper(ctx context.Context, sessionID string, provider ReaperProvider) (*Reaper, error) {
-	cfg, err := config.Read()
+	cfg, err := NewConfig()
 	if err != nil {
 		return nil, fmt.Errorf("read config: %w", err)
 	}
@@ -381,6 +383,7 @@ func (r *reaperSpawner) newReaper(ctx context.Context, sessionID string, provide
 	dockerHostMount := core.MustExtractDockerSocket(ctx)
 
 	port := r.port()
+	// TODO: change deprecated usage of Config() once we have more consistent test for the config and the reaper.
 	tcConfig := provider.Config().Config
 	req := ContainerRequest{
 		Image:        config.ReaperDefaultImage,
