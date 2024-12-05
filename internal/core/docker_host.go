@@ -27,6 +27,7 @@ var (
 	errNoUnixSchema                      = errors.New("URL schema is not unix")
 	errSocketNotFound                    = errors.New("socket not found")
 	errSocketNotFoundInPath              = errors.New("docker socket not found in " + DockerSocketPath)
+
 	// errTestcontainersHostNotSetInProperties this error is specific to Testcontainers
 	errTestcontainersHostNotSetInProperties = errors.New("tc.host not set in ~/.testcontainers.properties")
 )
