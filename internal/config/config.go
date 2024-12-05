@@ -15,8 +15,8 @@ const (
 	// ReaperDefaultImage is the default image used for Ryuk, the resource reaper.
 	ReaperDefaultImage = "testcontainers/ryuk:0.11.0"
 
-	// TestcontainersProperties is the name of the properties file used to configure Testcontainers.
-	TestcontainersProperties = ".testcontainers.properties"
+	// testcontainersProperties is the name of the properties file used to configure Testcontainers.
+	testcontainersProperties = ".testcontainers.properties"
 )
 
 var (
@@ -156,7 +156,7 @@ func read() (Config, error) {
 		return applyEnvironmentConfiguration(config), nil
 	}
 
-	tcProp := filepath.Join(home, TestcontainersProperties)
+	tcProp := filepath.Join(home, testcontainersProperties)
 	// Init from a file, ignore if it doesn't exist, which is the case for most users.
 	// The properties library will return the default values for the struct.
 	props, err := properties.LoadFiles([]string{tcProp}, properties.UTF8, true)
