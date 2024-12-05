@@ -65,7 +65,7 @@ jobs:
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
       - name: Set up Go
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5
+        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5
         with:
             go-version: '${{ inputs.go-version }}'
             cache-dependency-path: '${{ inputs.project-directory }}/go.sum'
@@ -141,7 +141,7 @@ jobs:
             ./scripts/check_environment.sh
 
       - name: Test Summary
-        uses: test-summary/action@032c8a9cec6aaa3c20228112cae6ca10a3b29336 # v2.3
+        uses: test-summary/action@31493c76ec9e7aa675f1585d3ed6f1da69269a86 # v2.4
         with:
             paths: "**/${{ inputs.project-directory }}/TEST-unit*.xml"
         if: always()

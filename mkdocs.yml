@@ -64,6 +64,8 @@ nav:
             - Log: features/wait/log.md
             - Multi: features/wait/multi.md
             - SQL: features/wait/sql.md
+            - TLS: features/wait/tls.md
+            - Walk: features/wait/walk.md
     - Modules:
         - modules/index.md
         - modules/artemis.md
