@@ -32,7 +32,7 @@ func resetTestEnv(t *testing.T) {
 func TestReadConfig(t *testing.T) {
 	resetTestEnv(t)
 
-	t.Run("Config is read just once", func(t *testing.T) {
+	t.Run("config/read-once", func(t *testing.T) {
 		t.Cleanup(Reset)
 
 		t.Setenv("HOME", "")
@@ -63,7 +63,7 @@ func TestReadTCConfig(t *testing.T) {
 
 	const defaultHubPrefix string = "registry.mycompany.com/mirror"
 
-	t.Run("HOME is not set", func(t *testing.T) {
+	t.Run("home/unset", func(t *testing.T) {
 		t.Setenv("HOME", "")
 		t.Setenv("USERPROFILE", "") // Windows support
 
@@ -74,7 +74,7 @@ func TestReadTCConfig(t *testing.T) {
 		assert.Equal(t, expected, config)
 	})
 
-	t.Run("HOME is not set - TESTCONTAINERS_ env is set", func(t *testing.T) {
+	t.Run("home/unset/testcontainers-env/set", func(t *testing.T) {
 		t.Setenv("HOME", "")
 		t.Setenv("USERPROFILE", "") // Windows support
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
@@ -98,7 +98,7 @@ func TestReadTCConfig(t *testing.T) {
 		assert.Equal(t, expected, config)
 	})
 
-	t.Run("HOME does not contain TC props file", func(t *testing.T) {
+	t.Run("home/set/no-testcontainers-props-file", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		t.Setenv("HOME", tmpDir)
 		t.Setenv("USERPROFILE", tmpDir) // Windows support
@@ -115,7 +115,7 @@ func TestReadTCConfig(t *testing.T) {
 		assert.Equal(t, expected, config)
 	})
 
-	t.Run("HOME does not contain TC props file - DOCKER_HOST env is set", func(t *testing.T) {
+	t.Run("home/set/no-testcontainers-props-file/docker-host-env/set", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		t.Setenv("HOME", tmpDir)
 		t.Setenv("USERPROFILE", tmpDir) // Windows support
@@ -135,7 +135,7 @@ func TestReadTCConfig(t *testing.T) {
 		assert.Equal(t, expected, config)
 	})
 
-	t.Run("HOME does not contain TC props file - TESTCONTAINERS_ env is set", func(t *testing.T) {
+	t.Run("home/set/no-testcontainers-props-file/testcontainers-ev/set", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		t.Setenv("HOME", tmpDir)
 		t.Setenv("USERPROFILE", tmpDir) // Windows support
@@ -161,7 +161,7 @@ func TestReadTCConfig(t *testing.T) {
 		assert.Equal(t, expected, config)
 	})
 
-	t.Run("HOME contains TC properties file", func(t *testing.T) {
+	t.Run("home/set/with-testcontainers-properties-file", func(t *testing.T) {
 		defaultRyukConnectionTimeout := 60 * time.Second
 		defaultRyukReconnectionTimeout := 10 * time.Second
 		defaultCfg := Config{
