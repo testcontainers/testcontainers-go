@@ -1498,7 +1498,11 @@ func (p *DockerProvider) daemonHostLocked(ctx context.Context) (string, error) {
 		p.hostCache = daemonURL.Hostname()
 	case "unix", "npipe":
 		if core.InAContainer() {
-			ip, err := p.GetGatewayIP(ctx)
+			defaultNetwork, err := p.ensureDefaultNetworkLocked(ctx)
+			if err != nil {
+				return "", fmt.Errorf("ensure default network: %w", err)
+			}
+			ip, err := p.getGatewayIP(ctx, defaultNetwork)
 			if err != nil {
 				ip, err = core.DefaultGatewayIP()
 				if err != nil {
@@ -1598,7 +1602,10 @@ func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("ensure default network: %w", err)
 	}
+	return p.getGatewayIP(ctx, defaultNetwork)
+}
 
+func (p *DockerProvider) getGatewayIP(ctx context.Context, defaultNetwork string) (string, error) {
 	nw, err := p.GetNetwork(ctx, NetworkRequest{Name: defaultNetwork})
 	if err != nil {
 		return "", err
@@ -1624,7 +1631,10 @@ func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
 func (p *DockerProvider) ensureDefaultNetwork(ctx context.Context) (string, error) {
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
+	return p.ensureDefaultNetworkLocked(ctx)
+}
 
+func (p *DockerProvider) ensureDefaultNetworkLocked(ctx context.Context) (string, error) {
 	if p.defaultNetwork != "" {
 		// Already set.
 		return p.defaultNetwork, nil

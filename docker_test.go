@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -19,12 +20,14 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -35,6 +38,7 @@ const (
 	nginxAlpineImage  = "nginx:alpine"
 	nginxDefaultPort  = "80/tcp"
 	nginxHighPort     = "8080/tcp"
+	golangImage       = "golang"
 	daemonMaxVersion  = "1.41"
 )
 
@@ -44,6 +48,69 @@ func init() {
 	if strings.Contains(os.Getenv("DOCKER_HOST"), "podman.sock") {
 		providerType = ProviderPodman
 	}
+}
+
+func TestWithinContainerStage1(t *testing.T) {
+	// TODO: remove this skip check when context rework is merged.
+	if providerType != ProviderDocker {
+		t.Skip("This is a docker-specific test.")
+	}
+	socketPath := MustExtractDockerSocket(context.Background())
+	dir, err := os.Getwd()
+	require.NoError(t, err)
+	req := ContainerRequest{
+		Image:      golangImage,
+		WorkingDir: dir,
+		Env: map[string]string{
+			"XDG_RUNTIME_DIR": os.Getenv("XDG_RUNTIME_DIR"),
+		},
+		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.Mounts = append(hc.Mounts, mount.Mount{
+				Type:   "bind",
+				Source: dir,
+				Target: dir,
+			}, mount.Mount{
+				Type:   "bind",
+				Source: socketPath,
+				Target: socketPath,
+			})
+		},
+		Entrypoint: []string{"sleep", "100"},
+	}
+	container, err := GenericContainer(context.Background(), GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.NoError(t, err)
+	// The timeout is necessary because when TestWithinContainersStage2 fails, it hangs forever instead of erroring
+	exitCode, outputReader, err := container.Exec(context.Background(), []string{"go", "test", "-v", "-run", "^TestWithinContainerStage2$", "-timeout", "20s", "-stage2"}, exec.Multiplexed())
+	require.NoError(t, err)
+
+	outputBytes, err := io.ReadAll(outputReader)
+	require.NoError(t, err, "failed to read output")
+	t.Logf("%s", outputBytes)
+
+	require.Zero(t, exitCode, "non-zero exit code from stage 2")
+}
+
+var stage2 = flag.Bool("stage2", false, "Run TestWithinContainerStage2")
+
+// Regression test for deadlock #2897
+func TestWithinContainerStage2(t *testing.T) {
+	if !*stage2 {
+		t.Skip("Skipping test that requires stage2")
+	}
+
+	req := ContainerRequest{
+		Image: nginxImage,
+	}
+	container, err := GenericContainer(context.Background(), GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.NoError(t, err)
+	_, err = container.Host(context.Background())
+	require.NoError(t, err)
 }
 
 func TestContainerWithHostNetworkOptions(t *testing.T) {
