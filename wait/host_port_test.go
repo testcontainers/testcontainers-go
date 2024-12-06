@@ -119,6 +119,54 @@ func TestWaitForExposedPortSucceeds(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestWaitForListeningPortSucceedsWithRetriesAndCustomLogger(t *testing.T) {
+	listener, err := net.Listen("tcp", "localhost:0")
+	require.NoError(t, err)
+	defer listener.Close()
+
+	rawPort := listener.Addr().(*net.TCPAddr).Port
+	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
+	require.NoError(t, err)
+
+	var mappedPortCount, execCount int
+	target := &MockStrategyTarget{
+		HostImpl: func(_ context.Context) (string, error) {
+			return "localhost", nil
+		},
+		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+			defer func() { mappedPortCount++ }()
+			if mappedPortCount < 2 {
+				return port, ErrPortNotFound
+			}
+			return port, nil
+		},
+		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
+			return &types.ContainerState{
+				Running: true,
+			}, nil
+		},
+		ExecImpl: func(_ context.Context, _ []string, _ ...exec.ProcessOption) (int, io.Reader, error) {
+			defer func() { execCount++ }()
+			if execCount == 0 {
+				return 1, nil, nil
+			}
+			return 0, nil, nil
+		},
+	}
+
+	wg := ForListeningPort("80").
+		WithStartupTimeout(5 * time.Second).
+		WithPollInterval(100 * time.Millisecond).WithLogger(MockLogger{
+		PrintfImpl: func(format string, v ...interface{}) {
+			require.Equal(t, "mapped port: retries: %d, port: %q, err: %s\n", format)
+			require.Equal(t, []interface{}{1, port, ErrPortNotFound}, v)
+		},
+	})
+
+	err = wg.WaitUntilReady(context.Background(), target)
+	require.NoError(t, err)
+}
+
 func TestHostPortStrategyFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) {
 	var mappedPortCount int
 	target := &MockStrategyTarget{
@@ -467,6 +515,62 @@ func TestHostPortStrategySucceedsGivenShellIsNotInstalled(t *testing.T) {
 	require.Contains(t, buf.String(), "Shell not executable in container, only external port validated")
 }
 
+func TestHostPortStrategySucceedsGivenShellIsNotInstalledWithCustomLogger(t *testing.T) {
+	listener, err := net.Listen("tcp", "localhost:0")
+	require.NoError(t, err)
+	defer listener.Close()
+
+	rawPort := listener.Addr().(*net.TCPAddr).Port
+	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
+	require.NoError(t, err)
+
+	target := &MockStrategyTarget{
+		HostImpl: func(_ context.Context) (string, error) {
+			return "localhost", nil
+		},
+		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
+			return &types.ContainerJSON{
+				NetworkSettings: &types.NetworkSettings{
+					NetworkSettingsBase: types.NetworkSettingsBase{
+						Ports: nat.PortMap{
+							"80": []nat.PortBinding{
+								{
+									HostIP:   "0.0.0.0",
+									HostPort: port.Port(),
+								},
+							},
+						},
+					},
+				},
+			}, nil
+		},
+		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+			return port, nil
+		},
+		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
+			return &types.ContainerState{
+				Running: true,
+			}, nil
+		},
+		ExecImpl: func(_ context.Context, _ []string, _ ...exec.ProcessOption) (int, io.Reader, error) {
+			// This is the error that would be returned if the shell is not installed.
+			return exitEaccess, nil, nil
+		},
+	}
+
+	wg := NewHostPortStrategy("80").
+		WithStartupTimeout(5 * time.Second).
+		WithPollInterval(100 * time.Millisecond).
+		WithLogger(MockLogger{
+			PrintlnImpl: func(v ...interface{}) {
+				require.Equal(t, []interface{}{"Shell not executable in container, only external port validated"}, v)
+			},
+		})
+
+	err = wg.WaitUntilReady(context.Background(), target)
+	require.NoError(t, err)
+}
+
 func TestHostPortStrategySucceedsGivenShellIsNotFound(t *testing.T) {
 	listener, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err)
@@ -525,4 +629,60 @@ func TestHostPortStrategySucceedsGivenShellIsNotFound(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Contains(t, buf.String(), "Shell not found in container")
+}
+
+func TestHostPortStrategySucceedsGivenShellIsNotFoundWithCustomLogger(t *testing.T) {
+	listener, err := net.Listen("tcp", "localhost:0")
+	require.NoError(t, err)
+	defer listener.Close()
+
+	rawPort := listener.Addr().(*net.TCPAddr).Port
+	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
+	require.NoError(t, err)
+
+	target := &MockStrategyTarget{
+		HostImpl: func(_ context.Context) (string, error) {
+			return "localhost", nil
+		},
+		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
+			return &types.ContainerJSON{
+				NetworkSettings: &types.NetworkSettings{
+					NetworkSettingsBase: types.NetworkSettingsBase{
+						Ports: nat.PortMap{
+							"80": []nat.PortBinding{
+								{
+									HostIP:   "0.0.0.0",
+									HostPort: port.Port(),
+								},
+							},
+						},
+					},
+				},
+			}, nil
+		},
+		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+			return port, nil
+		},
+		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
+			return &types.ContainerState{
+				Running: true,
+			}, nil
+		},
+		ExecImpl: func(_ context.Context, _ []string, _ ...exec.ProcessOption) (int, io.Reader, error) {
+			// This is the error that would be returned if the shell is not found.
+			return exitCmdNotFound, nil, nil
+		},
+	}
+
+	wg := NewHostPortStrategy("80").
+		WithStartupTimeout(5 * time.Second).
+		WithPollInterval(100 * time.Millisecond).
+		WithLogger(MockLogger{
+			PrintlnImpl: func(v ...interface{}) {
+				require.Equal(t, []interface{}{"Shell not found in container"}, v)
+			},
+		})
+
+	err = wg.WaitUntilReady(context.Background(), target)
+	require.NoError(t, err)
 }

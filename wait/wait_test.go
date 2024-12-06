@@ -61,3 +61,17 @@ func (st MockStrategyTarget) State(ctx context.Context) (*types.ContainerState, 
 func (st MockStrategyTarget) CopyFileFromContainer(ctx context.Context, filePath string) (io.ReadCloser, error) {
 	return st.CopyFileFromContainerImpl(ctx, filePath)
 }
+
+type MockLogger struct {
+	PrintfImpl  func(format string, v ...interface{})
+	PrintlnImpl func(v ...interface{})
+}
+
+var _ Logging = MockLogger{}
+
+func (l MockLogger) Printf(format string, v ...interface{}) {
+	l.PrintfImpl(format, v...)
+}
+func (l MockLogger) Println(v ...interface{}) {
+	l.PrintlnImpl(v...)
+}
