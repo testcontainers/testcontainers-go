@@ -54,3 +54,61 @@ func (k *TestKafkaConsumer) ConsumeClaim(session sarama.ConsumerGroupSession, cl
 		}
 	}
 }
+
+// Consumer represents a Sarama consumer group consumer
+type TestConsumer struct {
+	t        *testing.T
+	ready    chan bool
+	messages []*sarama.ConsumerMessage
+}
+
+func NewTestConsumer(t *testing.T) TestConsumer {
+	t.Helper()
+
+	return TestConsumer{
+		t:     t,
+		ready: make(chan bool),
+	}
+}
+
+// Setup is run at the beginning of a new session, before ConsumeClaim
+func (c *TestConsumer) Setup(sarama.ConsumerGroupSession) error {
+	// Mark the consumer as ready
+	close(c.ready)
+	return nil
+}
+
+// Cleanup is run at the end of a session, once all ConsumeClaim goroutines have exited
+func (consumer *TestConsumer) Cleanup(sarama.ConsumerGroupSession) error {
+	return nil
+}
+
+// ConsumeClaim must start a consumer loop of ConsumerGroupClaim's Messages().
+// Once the Messages() channel is closed, the Handler must finish its processing
+// loop and exit.
+func (c *TestConsumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+	// NOTE:
+	// Do not move the code below to a goroutine.
+	// The `ConsumeClaim` itself is called within a goroutine, see:
+	// https://github.com/IBM/sarama/blob/main/consumer_group.go#L27-L29
+	for {
+		select {
+		case message, ok := <-claim.Messages():
+			if !ok {
+				c.t.Log("message channel was closed")
+				return nil
+			}
+			c.t.Logf("Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
+			session.MarkMessage(message, "")
+
+			// Store the message to be consumed later
+			c.messages = append(c.messages, message)
+
+		// Should return when `session.Context()` is done.
+		// If not, will raise `ErrRebalanceInProgress` or `read tcp <ip>:<port>: i/o timeout` when kafka rebalance. see:
+		// https://github.com/IBM/sarama/issues/1192
+		case <-session.Context().Done():
+			return nil
+		}
+	}
+}
