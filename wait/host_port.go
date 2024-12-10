@@ -29,6 +29,23 @@ var (
 	errShellNotFound      = errors.New("/bin/sh command not found")
 )
 
+type Logging interface {
+	Printf(format string, v ...interface{})
+	Println(v ...interface{})
+}
+
+var _ Logging = defaultLogger{}
+
+type defaultLogger struct{}
+
+func (defaultLogger) Printf(format string, v ...interface{}) {
+	log.Printf(format, v...)
+}
+
+func (defaultLogger) Println(v ...interface{}) {
+	log.Println(v...)
+}
+
 type HostPortStrategy struct {
 	// Port is a string containing port number and protocol in the format "80/tcp"
 	// which
@@ -41,6 +58,7 @@ type HostPortStrategy struct {
 	// a shell is not available in the container or when the container doesn't bind
 	// the port internally until additional conditions are met.
 	skipInternalCheck bool
+	logger            Logging
 }
 
 // NewHostPortStrategy constructs a default host port strategy that waits for the given
@@ -49,6 +67,7 @@ func NewHostPortStrategy(port nat.Port) *HostPortStrategy {
 	return &HostPortStrategy{
 		Port:         port,
 		PollInterval: defaultPollInterval(),
+		logger:       defaultLogger{},
 	}
 }
 
@@ -74,6 +93,12 @@ func ForExposedPort() *HostPortStrategy {
 // container doesn't bind the port internally until additional conditions are met.
 func (hp *HostPortStrategy) SkipInternalCheck() *HostPortStrategy {
 	hp.skipInternalCheck = true
+
+	return hp
+}
+
+func (hp *HostPortStrategy) WithLogger(logger Logging) *HostPortStrategy {
+	hp.logger = logger
 
 	return hp
 }
@@ -145,7 +170,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 			}
 			port, err = target.MappedPort(ctx, internalPort)
 			if err != nil {
-				log.Printf("mapped port: retries: %d, port: %q, err: %s\n", i, port, err)
+				hp.logger.Printf("mapped port: retries: %d, port: %q, err: %s\n", i, port, err)
 			}
 		}
 	}
@@ -161,10 +186,10 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	if err = internalCheck(ctx, internalPort, target); err != nil {
 		switch {
 		case errors.Is(err, errShellNotExecutable):
-			log.Println("Shell not executable in container, only external port validated")
+			hp.logger.Println("Shell not executable in container, only external port validated")
 			return nil
 		case errors.Is(err, errShellNotFound):
-			log.Println("Shell not found in container")
+			hp.logger.Println("Shell not found in container")
 			return nil
 		default:
 			return fmt.Errorf("internal check: %w", err)
