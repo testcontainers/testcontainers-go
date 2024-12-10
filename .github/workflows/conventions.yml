@@ -41,6 +41,7 @@ jobs:
             doesn't start with an uppercase character.
           types: |
             break
+            security
             fix
             feat
             bug
