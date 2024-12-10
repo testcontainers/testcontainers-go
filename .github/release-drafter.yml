@@ -38,7 +38,7 @@ autolabeler:
       - '/^feat(\(.+\))?!?\:/'
   - label: 'bug'
     title:
-      - '/^(fix|bug)(\(.+\))?!?\:/'
+      - '/^(fix)(\(.+\))?!?\:/'
   - label: 'documentation'
     title:
       - '/^docs(\(.+\))?!?\:/'
