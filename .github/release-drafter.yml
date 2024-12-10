@@ -26,3 +26,25 @@ categories:
       - 'test flakiness'
   - title: 📦 Dependency updates
     label: 'dependencies'
+autolabeler:
+  - label: 'breaking change'
+    title:
+      - '/^[a-z]+(\(.+\))?!\:/'
+  - label: 'security'
+    title:
+      - '/^security(\(.+\))?!?\:/'
+  - label: 'feature'
+    title:
+      - '/^feat(\(.+\))?!?\:/'
+  - label: 'bug'
+    title:
+      - '/^(fix)(\(.+\))?!?\:/'
+  - label: 'documentation'
+    title:
+      - '/^docs(\(.+\))?!?\:/'
+  - label: 'chore'
+    title:
+      - '/^chore(\(.+\))?!?\:/'
+  - label: 'dependencies'
+    title:
+      - '/^deps(\(.+\))?!?\:/'

@@ -22,13 +22,14 @@ jobs:
         with:
           # We may not need a scope on every commit (i.e. repo-level change).
           #
+          # feat!: read config consistenly
           # feat(redis): support for clustering
           # chore(redis): update tests
           # fix(redis): trim connection string
           # ^    ^    ^
           # |    |    |__ Subject
           # |    |_______ Scope
-          # |____________ Type
+          # |____________ Type: it can end with a ! to denote a breaking change.
           requireScope: false
           # Scope should be lowercase.
           disallowScopes: |
@@ -40,10 +41,9 @@ jobs:
             didn't match the configured pattern. Please ensure that the subject
             doesn't start with an uppercase character.
           types: |
-            break
+            security
             fix
             feat
-            bug
             docs
             chore
             deps
