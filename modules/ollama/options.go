@@ -2,11 +2,21 @@ package ollama
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/docker/docker/api/types/container"
 
 	"github.com/testcontainers/testcontainers-go"
 )
+
+type options struct {
+	useLocal bool
+}
+
+func defaultOptions() options {
+	return options{}
+}
 
 var noopCustomizeRequestOption = func(req *testcontainers.GenericContainerRequest) error { return nil }
 
@@ -36,4 +46,35 @@ func withGpu() testcontainers.CustomizeRequestOption {
 			},
 		}
 	})
+}
+
+var _ testcontainers.ContainerCustomizer = (*UseLocal)(nil)
+
+// UseLocal will use the local Ollama instance instead of pulling the Docker image.
+type UseLocal struct {
+	env []string
+}
+
+// WithUseLocal the module will use the local Ollama instance instead of pulling the Docker image.
+// Pass the environment variables you need to set for the Ollama binary to be used,
+// in the format of "KEY=VALUE". KeyValue pairs with the wrong format will cause an error.
+func WithUseLocal(keyVal ...string) UseLocal {
+	return UseLocal{env: keyVal}
+}
+
+// Customize implements the ContainerCustomizer interface, taking the key value pairs
+// and setting them as environment variables for the Ollama binary.
+// In the case of an invalid key value pair, an error is returned.
+func (u UseLocal) Customize(req *testcontainers.GenericContainerRequest) error {
+	env := make(map[string]string)
+	for _, kv := range u.env {
+		parts := strings.SplitN(kv, "=", 2)
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid environment variable: %s", kv)
+		}
+
+		env[parts[0]] = parts[1]
+	}
+
+	return testcontainers.WithEnv(env)(req)
 }
