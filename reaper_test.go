@@ -27,7 +27,7 @@ type mockReaperProvider struct {
 	req              ContainerRequest
 	hostConfig       *container.HostConfig
 	endpointSettings map[string]*network.EndpointSettings
-	config           TestcontainersConfig
+	config           TestcontainersConfig // Deprecated: use [testcontainers.Config] instead
 }
 
 func newMockReaperProvider(cfg config.Config) *mockReaperProvider {
@@ -62,6 +62,7 @@ func (m *mockReaperProvider) RunContainer(ctx context.Context, req ContainerRequ
 	return nil, errExpected
 }
 
+// Deprecated: use [testcontainers.NewConfig] instead
 func (m *mockReaperProvider) Config() TestcontainersConfig {
 	return m.config
 }
@@ -107,7 +108,6 @@ func testContainerStart(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image: nginxAlpineImage,
 			ExposedPorts: []string{
@@ -171,7 +171,6 @@ func testContainerStop(t *testing.T) {
 	ctx := context.Background()
 
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image: nginxAlpineImage,
 			ExposedPorts: []string{
@@ -203,7 +202,6 @@ func testContainerTerminate(t *testing.T) {
 	ctx := context.Background()
 
 	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image: nginxAlpineImage,
 			ExposedPorts: []string{
