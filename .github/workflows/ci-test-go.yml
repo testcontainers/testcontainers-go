@@ -55,11 +55,9 @@ jobs:
     steps:
       - name: Setup rootless Docker
         if: ${{ inputs.rootless-docker }}
-        uses: ScribeMD/rootless-docker@6bd157a512c2fafa4e0243a8aa87d964eb890886  # v0.2.2
-
-      - name: Remove Docker root socket
-        if: ${{ inputs.rootless-docker }}
-        run: sudo rm -rf /var/run/docker.sock
+        uses: docker/setup-docker-action@01efb57f882e3b1a22e7cf3501dbe51287b0ecb4 # v4
+        with:
+          rootless: true
 
       - name: Check out code into the Go module directory
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
