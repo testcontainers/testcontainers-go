@@ -32,19 +32,19 @@ autolabeler:
       - '/^[a-z]+(\(.+\))?!\:/i'
   - label: 'security'
     title:
-      - '/^security(\(.+\))?\:/i'
+      - '/^security(\(.+\))?!?\:/i'
   - label: 'feature'
     title:
-      - '/^feat(\(.+\))?\:/i'
+      - '/^feat(\(.+\))?!?\:/i'
   - label: 'bug'
     title:
-      - '/^(fix|bug)(\(.+\))?\:/i'
+      - '/^(fix|bug)(\(.+\))?!?\:/i'
   - label: 'documentation'
     title:
-      - '/^docs(\(.+\))?\:/i'
+      - '/^docs(\(.+\))?!?\:/i'
   - label: 'chore'
     title:
-      - '/^chore(\(.+\))?\:/i'
+      - '/^chore(\(.+\))?!?\:/i'
   - label: 'dependencies'
     title:
-      - '/^deps(\(.+\))?\:/i'
+      - '/^deps(\(.+\))?!?\:/i'
