@@ -29,22 +29,22 @@ categories:
 autolabeler:
   - label: 'breaking change'
     title:
-      - '/^[a-z]+(\(.+\))?!\:/i'
+      - '/^[a-z]+(\(.+\))?!\:/'
   - label: 'security'
     title:
-      - '/^security(\(.+\))?!?\:/i'
+      - '/^security(\(.+\))?!?\:/'
   - label: 'feature'
     title:
-      - '/^feat(\(.+\))?!?\:/i'
+      - '/^feat(\(.+\))?!?\:/'
   - label: 'bug'
     title:
-      - '/^(fix|bug)(\(.+\))?!?\:/i'
+      - '/^(fix|bug)(\(.+\))?!?\:/'
   - label: 'documentation'
     title:
-      - '/^docs(\(.+\))?!?\:/i'
+      - '/^docs(\(.+\))?!?\:/'
   - label: 'chore'
     title:
-      - '/^chore(\(.+\))?!?\:/i'
+      - '/^chore(\(.+\))?!?\:/'
   - label: 'dependencies'
     title:
-      - '/^deps(\(.+\))?!?\:/i'
+      - '/^deps(\(.+\))?!?\:/'
