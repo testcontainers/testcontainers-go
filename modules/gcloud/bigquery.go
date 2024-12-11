@@ -2,6 +2,7 @@ package gcloud
 
 import (
 	"context"
+	"path/filepath"
 	"time"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -32,6 +33,19 @@ func RunBigQuery(ctx context.Context, img string, opts ...testcontainers.Contain
 	}
 
 	req.Cmd = append(req.Cmd, "--project", settings.ProjectID)
+
+	// Process data yaml file only for the BigQuery container.
+	if settings.bigQueryDataYamlFile != "" {
+		containerPath := "/" + filepath.Base(settings.bigQueryDataYamlFile)
+
+		req.Cmd = append(req.Cmd, "--data-from-yaml", containerPath)
+
+		req.Files = append(req.Files, testcontainers.ContainerFile{
+			HostFilePath:      settings.bigQueryDataYamlFile,
+			ContainerFilePath: containerPath,
+			FileMode:          0o755,
+		})
+	}
 
 	return newGCloudContainer(ctx, req, 9050, settings, "http://")
 }
