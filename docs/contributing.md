@@ -29,7 +29,7 @@ Please just be sure to:
 * follow the style, naming and structure conventions of the rest of the project.
 * make commits atomic and easy to merge.
 * use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) for the PR title. This will help us to understand the nature of the changes, and to generate the changelog after all the commits in the PR are squashed.
-    * Please use the `break` type for breaking changes, as these categories are considered as `breaking change` in the changelog.
+    * Please use the `feat!`, `chore!`, `fix!`... types for breaking changes, as these categories are considered as `breaking change` in the changelog. Please use the `!` to denote a breaking change.
     * Please use the `security` type for security fixes, as these categories are considered as `security` in the changelog.
     * Please use the `feat` type for new features, as these categories are considered as `feature` in the changelog.
     * Please use the `fix` type for bug fixes, as these categories are considered as `bug` in the changelog.
