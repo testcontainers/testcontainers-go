@@ -3,6 +3,7 @@ package gcloud
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/docker/go-connections/nat"
 
@@ -44,8 +45,8 @@ func newGCloudContainer(ctx context.Context, req testcontainers.GenericContainer
 }
 
 type options struct {
-	ProjectID            string
-	bigQueryDataYamlFile string
+	ProjectID        string
+	bigQueryDataYaml io.Reader
 }
 
 func defaultOptions() options {
@@ -73,15 +74,15 @@ func WithProjectID(projectID string) Option {
 	}
 }
 
-// WithDataYamlFile seeds the Bigquery project for the GCloud container
-// with the local path to the data yaml file, which is used to copy the file to the container,
-// and then process the file to seed the Bigquery project.
+// WithDataYAML seeds the Bigquery project for the GCloud container with an io.Reader representing
+// the data yaml file, which is used to copy the file to the container, and then processed to seed
+// the Bigquery project.
 //
 // Other GCloud containers will ignore this option.
-// If this option is passed multiple times, the last file will be used.
-func WithDataYamlFile(f string) Option {
+// If this option is passed multiple times, the last added will be used.
+func WithDataYAML(r io.Reader) Option {
 	return func(o *options) {
-		o.bigQueryDataYamlFile = f
+		o.bigQueryDataYaml = r
 	}
 }
 

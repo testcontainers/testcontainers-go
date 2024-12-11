@@ -28,12 +28,12 @@ go get github.com/testcontainers/testcontainers-go/modules/gcloud
 
 It's important to set the `option.WithEndpoint()` option using the container's URI, as shown in the client example above.
 
-#### Data Yaml (Seed File)
+#### Data YAML (Seed File)
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-If you would like to do additional initialization in the BigQuery container, add a `data.yaml` file to the container request with the `WithDataYamlFile` function.
-Those files will be copied after the container is created but before it's started. The startup command then used will look like `--project test --data-from-yaml /data.yaml`.
+If you would like to do additional initialization in the BigQuery container, add a `data.yaml` file represented by an `io.Reader` to the container request with the `WithDataYAML` function.
+That file is copied after the container is created but before it's started. The startup command then used will look like `--project test --data-from-yaml /testcontainers-data.yaml`.
 
 An example of a `data.yaml` file that seeds the BigQuery instance with datasets and tables is shown below:
 
@@ -42,7 +42,7 @@ An example of a `data.yaml` file that seeds the BigQuery instance with datasets 
 <!--/codeinclude-->
 
 !!!warning
-    This feature is only available for the `BigQuery` container, and if you pass multiple `WithDataYamlFile` options, the last file is used.
+    This feature is only available for the `BigQuery` container, and if you pass multiple `WithDataYAML` options, only the last one is used.
 
 ### BigTable
 

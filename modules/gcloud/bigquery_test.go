@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -95,11 +96,14 @@ func TestBigQueryWithDataYamlFile(t *testing.T) {
 	testDataPath, err := filepath.Abs(filepath.Join(".", "testdata"))
 	require.NoError(t, err)
 
+	r, err := os.Open(filepath.Join(testDataPath, "data.yaml"))
+	require.NoError(t, err)
+
 	bigQueryContainer, err := gcloud.RunBigQuery(
 		ctx,
 		"ghcr.io/goccy/bigquery-emulator:0.6.1",
 		gcloud.WithProjectID("test"),
-		gcloud.WithDataYamlFile(filepath.Join(testDataPath, "data.yaml")),
+		gcloud.WithDataYAML(r),
 	)
 	testcontainers.CleanupContainer(t, bigQueryContainer)
 	require.NoError(t, err)
@@ -142,12 +146,18 @@ func TestBigQueryWithDataYamlFile_multiple(t *testing.T) {
 	testDataPath, err := filepath.Abs(filepath.Join(".", "testdata"))
 	require.NoError(t, err)
 
+	r1, err := os.Open(filepath.Join(testDataPath, "data.yaml"))
+	require.NoError(t, err)
+
+	r2, err := os.Open(filepath.Join(testDataPath, "data2.yaml"))
+	require.NoError(t, err)
+
 	bigQueryContainer, err := gcloud.RunBigQuery(
 		ctx,
 		"ghcr.io/goccy/bigquery-emulator:0.6.1",
 		gcloud.WithProjectID("test"),
-		gcloud.WithDataYamlFile(filepath.Join(testDataPath, "data.yaml")),
-		gcloud.WithDataYamlFile(filepath.Join(testDataPath, "data2.yaml")), // last file will be used
+		gcloud.WithDataYAML(r1),
+		gcloud.WithDataYAML(r2), // last file will be used
 	)
 	testcontainers.CleanupContainer(t, bigQueryContainer)
 	require.NoError(t, err)
