@@ -160,47 +160,5 @@ func TestBigQueryWithDataYamlFile_multiple(t *testing.T) {
 		gcloud.WithDataYAML(r2), // last file will be used
 	)
 	testcontainers.CleanupContainer(t, bigQueryContainer)
-	require.NoError(t, err)
-
-	projectID := bigQueryContainer.Settings.ProjectID
-
-	opts := []option.ClientOption{
-		option.WithEndpoint(bigQueryContainer.URI),
-		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
-		option.WithoutAuthentication(),
-		internaloption.SkipDialSettingsValidation(),
-	}
-
-	client, err := bigquery.NewClient(ctx, projectID, opts...)
-	require.NoError(t, err)
-	defer client.Close()
-
-	t.Run("select/dataset1-not-found", func(t *testing.T) {
-		selectQuery := client.Query("SELECT * FROM dataset1.table_a where name = @name")
-		selectQuery.QueryConfig.Parameters = []bigquery.QueryParameter{
-			{Name: "name", Value: "bob"},
-		}
-		_, err := selectQuery.Read(ctx)
-		require.Error(t, err)
-	})
-
-	t.Run("select/dataset2", func(t *testing.T) {
-		selectQuery := client.Query("SELECT * FROM dataset2.table_b where name = @name")
-		selectQuery.QueryConfig.Parameters = []bigquery.QueryParameter{
-			{Name: "name", Value: "naomi"},
-		}
-		it, err := selectQuery.Read(ctx)
-		require.NoError(t, err)
-
-		var val []bigquery.Value
-		for {
-			err := it.Next(&val)
-			if errors.Is(err, iterator.Done) {
-				break
-			}
-			require.NoError(t, err)
-		}
-
-		require.Equal(t, int64(60), val[0])
-	})
+	require.Error(t, err)
 }

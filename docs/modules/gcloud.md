@@ -42,7 +42,7 @@ An example of a `data.yaml` file that seeds the BigQuery instance with datasets 
 <!--/codeinclude-->
 
 !!!warning
-    This feature is only available for the `BigQuery` container, and if you pass multiple `WithDataYAML` options, only the last one is used.
+    This feature is only available for the `BigQuery` container, and if you pass multiple `WithDataYAML` options, an error is returned.
 
 ### BigTable
 

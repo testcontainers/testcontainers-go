@@ -2,6 +2,7 @@ package gcloud
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 
@@ -59,7 +60,7 @@ func defaultOptions() options {
 var _ testcontainers.ContainerCustomizer = (*Option)(nil)
 
 // Option is an option for the GCloud container.
-type Option func(*options)
+type Option func(*options) error
 
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
 func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
@@ -69,8 +70,9 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 
 // WithProjectID sets the project ID for the GCloud container.
 func WithProjectID(projectID string) Option {
-	return func(o *options) {
+	return func(o *options) error {
 		o.ProjectID = projectID
+		return nil
 	}
 }
 
@@ -81,8 +83,13 @@ func WithProjectID(projectID string) Option {
 // Other GCloud containers will ignore this option.
 // If this option is passed multiple times, the last added will be used.
 func WithDataYAML(r io.Reader) Option {
-	return func(o *options) {
+	return func(o *options) error {
+		if o.bigQueryDataYaml != nil {
+			return errors.New("data yaml file already exists")
+		}
+
 		o.bigQueryDataYaml = r
+		return nil
 	}
 }
 
@@ -91,7 +98,9 @@ func applyOptions(req *testcontainers.GenericContainerRequest, opts []testcontai
 	settings := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
-			apply(&settings)
+			if err := apply(&settings); err != nil {
+				return options{}, err
+			}
 		}
 		if err := opt.Customize(req); err != nil {
 			return options{}, err
