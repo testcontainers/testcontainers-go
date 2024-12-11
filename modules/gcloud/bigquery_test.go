@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"cloud.google.com/go/bigquery"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"google.golang.org/api/option/internaloption"
@@ -92,9 +93,7 @@ func TestBigQueryWithDataYamlFile(t *testing.T) {
 	ctx := context.Background()
 
 	absPath, err := filepath.Abs(filepath.Join(".", "testdata", "data.yaml"))
-	if err != nil {
-		log.Fatalf("failed to run container: %v", err)
-	}
+	require.NoError(t, err)
 
 	bigQueryContainer, err := gcloud.RunBigQuery(
 		ctx,
@@ -102,15 +101,8 @@ func TestBigQueryWithDataYamlFile(t *testing.T) {
 		gcloud.WithProjectID("test"),
 		gcloud.WithDataYamlFile(absPath),
 	)
-	if err != nil {
-		log.Fatalf("failed to run container: %v", err)
-	}
-
-	defer func() {
-		if err := bigQueryContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %v", err)
-		}
-	}()
+	testcontainers.CleanupContainer(t, bigQueryContainer)
+	require.NoError(t, err)
 
 	projectID := bigQueryContainer.Settings.ProjectID
 
@@ -122,9 +114,7 @@ func TestBigQueryWithDataYamlFile(t *testing.T) {
 	}
 
 	client, err := bigquery.NewClient(ctx, projectID, opts...)
-	if err != nil {
-		log.Fatalf("failed to create bigquery client: %v", err) //nolint:gocritic
-	}
+	require.NoError(t, err)
 	defer client.Close()
 
 	selectQuery := client.Query("SELECT * FROM dataset1.table_a where name = @name")
@@ -132,9 +122,7 @@ func TestBigQueryWithDataYamlFile(t *testing.T) {
 		{Name: "name", Value: "bob"},
 	}
 	it, err := selectQuery.Read(ctx)
-	if err != nil {
-		log.Fatalf("failed to read query: %v", err)
-	}
+	require.NoError(t, err)
 
 	var val []bigquery.Value
 	for {
@@ -142,16 +130,12 @@ func TestBigQueryWithDataYamlFile(t *testing.T) {
 		if errors.Is(err, iterator.Done) {
 			break
 		}
-		if err != nil {
-			log.Fatalf("failed to iterate: %v", err)
-		}
+		require.NoError(t, err)
 	}
 
 	// Output:
 	// [30]
 	expectedValue := int64(30)
 	actualValue := val[0]
-	if expectedValue != actualValue {
-		t.Errorf("BigQuery value didn't match. \nExpected %v, \nbut got: %v", expectedValue, actualValue)
-	}
+	require.Equal(t, expectedValue, actualValue)
 }
