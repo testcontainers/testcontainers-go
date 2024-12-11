@@ -29,12 +29,19 @@ Please just be sure to:
 * follow the style, naming and structure conventions of the rest of the project.
 * make commits atomic and easy to merge.
 * use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) for the PR title. This will help us to understand the nature of the changes, and to generate the changelog after all the commits in the PR are squashed.
+    * Please use the `feat!`, `chore!`, `fix!`... types for breaking changes, as these categories are considered as `breaking change` in the changelog. Please use the `!` to denote a breaking change.
+    * Please use the `security` type for security fixes, as these categories are considered as `security` in the changelog.
+    * Please use the `feat` type for new features, as these categories are considered as `feature` in the changelog.
+    * Please use the `fix` type for bug fixes, as these categories are considered as `bug` in the changelog.
+    * Please use the `docs` type for documentation updates, as these categories are considered as `documentation` in the changelog.
+    * Please use the `chore` type for housekeeping commits, including `build`, `ci`, `style`, `refactor`, `test`, `perf` and so on, as these categories are considered as `chore` in the changelog.
+    * Please use the `deps` type for dependency updates, as these categories are considered as `dependencies` in the changelog.
 
 !!!important
     There is a GitHub Actions workflow that will check if your PR title follows the conventional commits convention. If not, it contributes a failed check to your PR.
     To know more about the conventions, please refer to the [workflow file](https://github.com/testcontainers/testcontainers-go/blob/main/.github/workflows/conventions.yml).
 
-* use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) for your commit messages, as it improves the readability of the commit history, and the review process.
+* use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) for your commit messages, as it improves the readability of the commit history, and the review process. Please follow the above conventions for the PR title.
 * unless necessary, please try to **avoid pushing --force** to the published branch you submitted a PR from, as it makes it harder to review the changes from a given previous state.
 * apply format running `make lint-all`. It will run `golangci-lint` for the core and modules with the configuration set in the root directory of the project. Please be aware that the lint stage on CI could fail if this is not done.
     * For linting just the modules: `make -C modules lint-modules`
