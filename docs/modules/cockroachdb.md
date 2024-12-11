@@ -10,7 +10,7 @@ The Testcontainers module for CockroachDB.
 
 Please run the following command to add the CockroachDB module to your Go dependencies:
 
-```
+```shell
 go get github.com/testcontainers/testcontainers-go/modules/cockroachdb
 ```
 
@@ -20,19 +20,24 @@ go get github.com/testcontainers/testcontainers-go/modules/cockroachdb
 [Creating a CockroachDB container](../../modules/cockroachdb/examples_test.go) inside_block:runCockroachDBContainer
 <!--/codeinclude-->
 
-## Module reference
+## Module Reference
 
-The CockroachDB module exposes one entrypoint function to create the CockroachDB container, and this function receives two parameters:
+### Run function
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+
+!!!info
+    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
+
+The CockroachDB module exposes one entrypoint function to create the CockroachDB container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*CockroachDBContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*CockroachDBContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
-
-!!!warning
-    When TLS is enabled there's a very small, unlikely chance that the underlying driver can panic when registering the driver as part of waiting for CockroachDB to be ready to accept connections. If this is repeatedly happening please open an issue.
 
 ### Container Options
 
@@ -40,8 +45,8 @@ When starting the CockroachDB container, you can pass options in a variadic way 
 
 #### Image
 
-If you need to set a different CockroachDB Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for CockroachDB. E.g. `testcontainers.WithImage("cockroachdb/cockroach:latest-v23.1")`.
+If you need to set a different CockroachDB Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "cockroachdb/cockroach:latest-v23.1")`.
 
 {% include "../features/common_functional_options.md" %}
 
@@ -49,9 +54,11 @@ for CockroachDB. E.g. `testcontainers.WithImage("cockroachdb/cockroach:latest-v2
 
 Set the database that is created & dialled with `cockroachdb.WithDatabase`.
 
-#### Password authentication
+#### User and Password
 
-Disable insecure mode and connect with password authentication by setting `cockroachdb.WithUser` and `cockroachdb.WithPassword`.
+You can configured the container to create a user with a password by setting `cockroachdb.WithUser` and `cockroachdb.WithPassword`.
+
+`cockroachdb.WithPassword` is incompatible with `cockroachdb.WithInsecure`.
 
 #### Store size
 
@@ -59,10 +66,21 @@ Control the maximum amount of memory used for storage, by default this is 100% b
 
 #### TLS authentication
 
-`cockroachdb.WithTLS` lets you provide the CA certificate along with the certicate and key for the node & clients to connect with.
-Internally CockroachDB requires a client certificate for the user to connect with.
+`cockroachdb.WithInsecure` lets you disable the use of TLS on connections.
 
-A helper `cockroachdb.NewTLSConfig` exists to generate all of this for you.
+`cockroachdb.WithInsecure` is incompatible with `cockroachdb.WithPassword`.
+
+#### Initialization Scripts
+
+`cockroachdb.WithInitScripts` adds the given scripts to those automatically run when the container starts.
+These will be ignored if data exists in the `/cockroach/cockroach-data` directory within the container.
+
+`cockroachdb.WithNoClusterDefaults` disables the default cluster settings script.
+
+Without this option Cockroach containers run `data/cluster-defaults.sql` on startup
+which configures the settings recommended by Cockroach Labs for
+[local testing clusters](https://www.cockroachlabs.com/docs/stable/local-testing)
+unless data exists in the `/cockroach/cockroach-data` directory within the container.
 
 ### Container Methods
 
@@ -79,3 +97,10 @@ Same as `ConnectionString` but any error to generate the address will raise a pa
 #### TLSConfig
 
 Returns `*tls.Config` setup to allow you to dial your client over TLS, if enabled, else this will error with `cockroachdb.ErrTLSNotEnabled`.
+
+!!!info
+    The `TLSConfig()` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
+
+#### ConnectionConfig
+
+Returns `*pgx.ConnConfig` which can be passed to `pgx.ConnectConfig` to open a new connection.

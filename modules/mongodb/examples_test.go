@@ -14,26 +14,26 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runMongoDBContainer {
 	ctx := context.Background()
 
-	mongodbContainer, err := mongodb.RunContainer(ctx, testcontainers.WithImage("mongo:6"))
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
+	mongodbContainer, err := mongodb.Run(ctx, "mongo:6")
 	defer func() {
-		if err := mongodbContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(mongodbContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := mongodbContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -42,36 +42,38 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainer_connect() {
+func ExampleRun_connect() {
 	// connectToMongo {
 	ctx := context.Background()
 
-	mongodbContainer, err := mongodb.RunContainer(ctx, testcontainers.WithImage("mongo:6"))
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
+	mongodbContainer, err := mongodb.Run(ctx, "mongo:6")
 	defer func() {
-		if err := mongodbContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(mongodbContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	endpoint, err := mongodbContainer.ConnectionString(ctx)
 	if err != nil {
-		log.Fatalf("failed to get connection string: %s", err) // nolint:gocritic
+		log.Printf("failed to get connection string: %s", err)
+		return
 	}
 
 	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(endpoint))
 	if err != nil {
-		log.Fatalf("failed to connect to MongoDB: %s", err)
+		log.Printf("failed to connect to MongoDB: %s", err)
+		return
 	}
 	// }
 
 	err = mongoClient.Ping(ctx, nil)
 	if err != nil {
-		log.Fatalf("failed to ping MongoDB: %s", err)
+		log.Printf("failed to ping MongoDB: %s", err)
+		return
 	}
 
 	fmt.Println(mongoClient.Database("test").Name())
@@ -80,39 +82,41 @@ func ExampleRunContainer_connect() {
 	// test
 }
 
-func ExampleRunContainer_withCredentials() {
+func ExampleRun_withCredentials() {
 	ctx := context.Background()
 
-	container, err := mongodb.RunContainer(ctx,
-		testcontainers.WithImage("mongo:6"),
+	ctr, err := mongodb.Run(ctx,
+		"mongo:6",
 		mongodb.WithUsername("root"),
 		mongodb.WithPassword("password"),
 		testcontainers.WithWaitStrategy(wait.ForLog("Waiting for connections")),
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := container.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(ctr); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
-
-	connStr, err := container.ConnectionString(ctx)
 	if err != nil {
-		log.Fatalf("failed to get connection string: %s", err) // nolint:gocritic
+		log.Printf("failed to start container: %s", err)
+		return
+	}
+
+	connStr, err := ctr.ConnectionString(ctx)
+	if err != nil {
+		log.Printf("failed to get connection string: %s", err)
+		return
 	}
 
 	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(connStr))
 	if err != nil {
-		log.Fatalf("failed to connect to MongoDB: %s", err)
+		log.Printf("failed to connect to MongoDB: %s", err)
+		return
 	}
 
 	err = mongoClient.Ping(ctx, nil)
 	if err != nil {
-		log.Fatalf("failed to ping MongoDB: %s", err)
+		log.Printf("failed to ping MongoDB: %s", err)
+		return
 	}
 	fmt.Println(strings.Split(connStr, "@")[0])
 

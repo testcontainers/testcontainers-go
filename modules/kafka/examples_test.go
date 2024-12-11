@@ -9,29 +9,29 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/kafka"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runKafkaContainer {
 	ctx := context.Background()
 
-	kafkaContainer, err := kafka.RunContainer(ctx,
+	kafkaContainer, err := kafka.Run(ctx,
+		"confluentinc/confluent-local:7.5.0",
 		kafka.WithClusterID("test-cluster"),
-		testcontainers.WithImage("confluentinc/confluent-local:7.5.0"),
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container after
 	defer func() {
-		if err := kafkaContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(kafkaContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := kafkaContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(kafkaContainer.ClusterID)

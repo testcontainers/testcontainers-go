@@ -22,13 +22,21 @@ go get github.com/testcontainers/testcontainers-go/modules/influxdb
 
 ## Module Reference
 
-The InfluxDB module exposes one entrypoint function to create the container, and this function receives two parameters:
+### Run function
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+
+!!!info
+    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
+
+The InfluxDB module exposes one entrypoint function to create the container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*InfluxDbContainer, error) {}
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*InfluxDbContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options
@@ -42,10 +50,11 @@ When starting the container, you can pass options in a variadic way to configure
 
 #### Image
 
-To use a different Docker image, you can use the `testcontainers.WithImage` option to specify the 
-image, E.g. `testcontainers.WithImage("influxdb:1.8.0")`.  By default, the 1.8.10 image is used.  Note that
-`influxdb:latest` will get you a version 2 image which is not supported by this module.
+To use a different Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "influxdb:1.8.0")`.
 
+!!!info
+    Note that `influxdb:latest` will get you a version 2 image which is not supported by this module.
 
 {% include "../features/common_functional_options.md" %}
 

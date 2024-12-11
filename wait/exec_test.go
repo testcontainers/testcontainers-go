@@ -12,6 +12,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
@@ -21,27 +22,29 @@ import (
 func ExampleExecStrategy() {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
-		Image:      "localstack/localstack:latest",
-		WaitingFor: wait.ForExec([]string{"awslocal", "dynamodb", "list-tables"}),
+		Image:      "alpine:latest",
+		Entrypoint: []string{"tail", "-f", "/dev/null"}, // needed for the container to stay alive
+		WaitingFor: wait.ForExec([]string{"ls", "/"}).WithStartupTimeout(1 * time.Second),
 	}
 
-	localstack, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
 	defer func() {
-		if err := localstack.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(ctr); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
-
-	state, err := localstack.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to start container: %s", err)
+		return
+	}
+
+	state, err := ctr.State(ctx)
+	if err != nil {
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -62,6 +65,11 @@ func (st mockExecTarget) Host(_ context.Context) (string, error) {
 	return "", errors.New("not implemented")
 }
 
+func (st mockExecTarget) Inspect(ctx context.Context) (*types.ContainerJSON, error) {
+	return nil, errors.New("not implemented")
+}
+
+// Deprecated: use Inspect instead
 func (st mockExecTarget) Ports(ctx context.Context) (nat.PortMap, error) {
 	return nil, errors.New("not implemented")
 }
@@ -97,23 +105,23 @@ func (st mockExecTarget) State(_ context.Context) (*types.ContainerState, error)
 	return nil, errors.New("not implemented")
 }
 
+func (st mockExecTarget) CopyFileFromContainer(_ context.Context, _ string) (io.ReadCloser, error) {
+	return nil, errors.New("not implemented")
+}
+
 func TestExecStrategyWaitUntilReady(t *testing.T) {
 	target := mockExecTarget{}
 	wg := wait.NewExecStrategy([]string{"true"}).
 		WithStartupTimeout(30 * time.Second)
 	err := wg.WaitUntilReady(context.Background(), target)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 }
 
 func TestExecStrategyWaitUntilReadyForExec(t *testing.T) {
 	target := mockExecTarget{}
 	wg := wait.ForExec([]string{"true"})
 	err := wg.WaitUntilReady(context.Background(), target)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 }
 
 func TestExecStrategyWaitUntilReady_MultipleChecks(t *testing.T) {
@@ -124,9 +132,7 @@ func TestExecStrategyWaitUntilReady_MultipleChecks(t *testing.T) {
 	wg := wait.NewExecStrategy([]string{"true"}).
 		WithPollInterval(500 * time.Millisecond)
 	err := wg.WaitUntilReady(context.Background(), target)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 }
 
 func TestExecStrategyWaitUntilReady_DeadlineExceeded(t *testing.T) {
@@ -138,9 +144,7 @@ func TestExecStrategyWaitUntilReady_DeadlineExceeded(t *testing.T) {
 	}
 	wg := wait.NewExecStrategy([]string{"true"})
 	err := wg.WaitUntilReady(ctx, target)
-	if !errors.Is(err, context.DeadlineExceeded) {
-		t.Fatal(err)
-	}
+	require.ErrorIs(t, err, context.DeadlineExceeded)
 }
 
 func TestExecStrategyWaitUntilReady_CustomExitCode(t *testing.T) {
@@ -151,9 +155,7 @@ func TestExecStrategyWaitUntilReady_CustomExitCode(t *testing.T) {
 		return exitCode == 10
 	})
 	err := wg.WaitUntilReady(context.Background(), target)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 }
 
 func TestExecStrategyWaitUntilReady_withExitCode(t *testing.T) {
@@ -164,23 +166,19 @@ func TestExecStrategyWaitUntilReady_withExitCode(t *testing.T) {
 	// Default is 60. Let's shorten that
 	wg.WithStartupTimeout(time.Second * 2)
 	err := wg.WaitUntilReady(context.Background(), target)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	// Ensure we aren't spuriously returning on any code
 	wg = wait.NewExecStrategy([]string{"true"}).WithExitCode(0)
 	wg.WithStartupTimeout(time.Second * 2)
 	err = wg.WaitUntilReady(context.Background(), target)
-	if err == nil {
-		t.Fatalf("Expected strategy to timeout out")
-	}
+	require.Errorf(t, err, "Expected strategy to timeout out")
 }
 
 func TestExecStrategyWaitUntilReady_CustomResponseMatcher(t *testing.T) {
 	// waitForExecExitCodeResponse {
 	dockerReq := testcontainers.ContainerRequest{
-		Image: "docker.io/nginx:latest",
+		Image: "nginx:latest",
 		WaitingFor: wait.ForExec([]string{"echo", "hello world!"}).
 			WithStartupTimeout(time.Second * 10).
 			WithExitCodeMatcher(func(exitCode int) bool {
@@ -194,15 +192,8 @@ func TestExecStrategyWaitUntilReady_CustomResponseMatcher(t *testing.T) {
 	// }
 
 	ctx := context.Background()
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 	// }
 }

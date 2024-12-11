@@ -11,28 +11,26 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/consul"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runConsulContainer {
 	ctx := context.Background()
 
-	consulContainer, err := consul.RunContainer(ctx,
-		testcontainers.WithImage("docker.io/hashicorp/consul:1.15"),
-	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
+	consulContainer, err := consul.Run(ctx, "hashicorp/consul:1.15")
 	defer func() {
-		if err := consulContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(consulContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := consulContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -41,40 +39,40 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainer_connect() {
+func ExampleRun_connect() {
 	// connectConsul {
 	ctx := context.Background()
 
-	consulContainer, err := consul.RunContainer(ctx,
-		testcontainers.WithImage("docker.io/hashicorp/consul:1.15"),
-	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
+	consulContainer, err := consul.Run(ctx, "hashicorp/consul:1.15")
 	defer func() {
-		if err := consulContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(consulContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	endpoint, err := consulContainer.ApiEndpoint(ctx)
 	if err != nil {
-		log.Fatalf("failed to get endpoint: %s", err) // nolint:gocritic
+		log.Printf("failed to get endpoint: %s", err)
+		return
 	}
 
 	config := capi.DefaultConfig()
 	config.Address = endpoint
 	client, err := capi.NewClient(config)
 	if err != nil {
-		log.Fatalf("failed to connect to Consul: %s", err)
+		log.Printf("failed to connect to Consul: %s", err)
+		return
 	}
 	// }
 
 	node_name, err := client.Agent().NodeName()
 	if err != nil {
-		log.Fatalf("failed to get node name: %s", err) // nolint:gocritic
+		log.Printf("failed to get node name: %s", err)
+		return
 	}
 	fmt.Println(len(node_name) > 0)
 

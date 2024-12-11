@@ -2,6 +2,7 @@ package weaviate
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 )
 
 const (
-	image    = "semitechnologies/weaviate:1.24.6"
 	httpPort = "8080/tcp"
 	grpcPort = "50051/tcp"
 )
@@ -20,10 +20,16 @@ type WeaviateContainer struct {
 	testcontainers.Container
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the Weaviate container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*WeaviateContainer, error) {
+	return Run(ctx, "semitechnologies/weaviate:1.25.5", opts...)
+}
+
+// Run creates an instance of the Weaviate container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*WeaviateContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        image,
+		Image:        img,
 		Cmd:          []string{"--host", "0.0.0.0", "--scheme", "http", "--port", "8080"},
 		ExposedPorts: []string{httpPort, grpcPort},
 		Env: map[string]string{
@@ -33,6 +39,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		WaitingFor: wait.ForAll(
 			wait.ForListeningPort(httpPort).WithStartupTimeout(5*time.Second),
 			wait.ForListeningPort(grpcPort).WithStartupTimeout(5*time.Second),
+			wait.ForHTTP("/v1/.well-known/ready").WithPort(httpPort),
 		),
 	}
 
@@ -48,11 +55,16 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *WeaviateContainer
+	if container != nil {
+		c = &WeaviateContainer{Container: container}
 	}
 
-	return &WeaviateContainer{Container: container}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }
 
 // HttpHostAddress returns the schema and host of the Weaviate container.
@@ -65,7 +77,7 @@ func (c *WeaviateContainer) HttpHostAddress(ctx context.Context) (string, string
 
 	host, err := c.Host(ctx)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get container host")
+		return "", "", errors.New("failed to get container host")
 	}
 
 	return "http", fmt.Sprintf("%s:%s", host, port.Port()), nil
@@ -81,7 +93,7 @@ func (c *WeaviateContainer) GrpcHostAddress(ctx context.Context) (string, error)
 
 	host, err := c.Host(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to get container host")
+		return "", errors.New("failed to get container host")
 	}
 
 	return fmt.Sprintf("%s:%s", host, port.Port()), nil

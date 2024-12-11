@@ -18,6 +18,10 @@
             "path": "../modules/artemis"
         },
         {
+            "name": "module / azurite",
+            "path": "../modules/azurite"
+        },
+        {
             "name": "module / cassandra",
             "path": "../modules/cassandra"
         },
@@ -46,16 +50,32 @@
             "path": "../modules/couchbase"
         },
         {
+            "name": "module / databend",
+            "path": "../modules/databend"
+        },
+        {
             "name": "module / dolt",
             "path": "../modules/dolt"
+        },
+        {
+            "name": "module / dynamodb",
+            "path": "../modules/dynamodb"
         },
         {
             "name": "module / elasticsearch",
             "path": "../modules/elasticsearch"
         },
         {
+            "name": "module / etcd",
+            "path": "../modules/etcd"
+        },
+        {
             "name": "module / gcloud",
             "path": "../modules/gcloud"
+        },
+        {
+            "name": "module / grafana-lgtm",
+            "path": "../modules/grafana-lgtm"
         },
         {
             "name": "module / inbucket",
@@ -84,6 +104,10 @@
         {
             "name": "module / mariadb",
             "path": "../modules/mariadb"
+        },
+        {
+            "name": "module / meilisearch",
+            "path": "../modules/meilisearch"
         },
         {
             "name": "module / milvus",
@@ -166,12 +190,24 @@
             "path": "../modules/surrealdb"
         },
         {
+            "name": "module / valkey",
+            "path": "../modules/valkey"
+        },
+        {
             "name": "module / vault",
             "path": "../modules/vault"
         },
         {
+            "name": "module / vearch",
+            "path": "../modules/vearch"
+        },
+        {
             "name": "module / weaviate",
             "path": "../modules/weaviate"
+        },
+        {
+            "name": "module / yugabytedb",
+            "path": "../modules/yugabytedb"
         },
         {
             "name": "modulegen",

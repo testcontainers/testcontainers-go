@@ -62,10 +62,11 @@ func awsSession(ctx context.Context, l *localstack.LocalStackContainer) (*sessio
 func TestS3(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := localstack.RunContainer(ctx)
+	ctr, err := localstack.Run(ctx, "localstack/localstack:1.4.0")
+	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	session, err := awsSession(ctx, container)
+	session, err := awsSession(ctx, ctr)
 	require.NoError(t, err)
 
 	s3Uploader := s3manager.NewUploader(session)
@@ -81,7 +82,7 @@ func TestS3(t *testing.T) {
 			Bucket: aws.String(bucketName),
 		})
 		require.NoError(t, err)
-		assert.NotNil(t, outputBucket)
+		require.NotNil(t, outputBucket)
 
 		// put object
 		s3Key1 := "key1"
@@ -95,15 +96,15 @@ func TestS3(t *testing.T) {
 			ContentDisposition: aws.String("attachment"),
 		})
 		require.NoError(t, err)
-		assert.NotNil(t, outputObject)
+		require.NotNil(t, outputObject)
 
 		t.Run("List Buckets", func(t *testing.T) {
 			output, err := s3API.ListBuckets(nil)
 			require.NoError(t, err)
-			assert.NotNil(t, output)
+			require.NotNil(t, output)
 
 			buckets := output.Buckets
-			assert.Len(t, buckets, 1)
+			require.Len(t, buckets, 1)
 			assert.Equal(t, bucketName, *buckets[0].Name)
 		})
 
@@ -112,11 +113,11 @@ func TestS3(t *testing.T) {
 				Bucket: aws.String(bucketName),
 			})
 			require.NoError(t, err)
-			assert.NotNil(t, output)
+			require.NotNil(t, output)
 
 			objects := output.Contents
 
-			assert.Len(t, objects, 1)
+			require.Len(t, objects, 1)
 			assert.Equal(t, s3Key1, *objects[0].Key)
 			assert.Equal(t, int64(len(body1)), *objects[0].Size)
 		})

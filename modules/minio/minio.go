@@ -2,6 +2,7 @@ package minio
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -11,7 +12,6 @@ import (
 const (
 	defaultUser     = "minioadmin"
 	defaultPassword = "minioadmin"
-	defaultImage    = "docker.io/minio/minio:RELEASE.2024-01-16T16-07-38Z"
 )
 
 // MinioContainer represents the Minio container type used in the module
@@ -57,10 +57,16 @@ func (c *MinioContainer) ConnectionString(ctx context.Context) (string, error) {
 	return fmt.Sprintf("%s:%s", host, port.Port()), nil
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the Minio container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MinioContainer, error) {
+	return Run(ctx, "minio/minio:RELEASE.2024-01-16T16-07-38Z", opts...)
+}
+
+// Run creates an instance of the Minio container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MinioContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        defaultImage,
+		Image:        img,
 		ExposedPorts: []string{"9000/tcp"},
 		WaitingFor:   wait.ForHTTP("/minio/health/live").WithPort("9000"),
 		Env: map[string]string{
@@ -84,13 +90,18 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	username := req.Env["MINIO_ROOT_USER"]
 	password := req.Env["MINIO_ROOT_PASSWORD"]
 	if username == "" || password == "" {
-		return nil, fmt.Errorf("username or password has not been set")
+		return nil, errors.New("username or password has not been set")
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *MinioContainer
+	if container != nil {
+		c = &MinioContainer{Container: container, Username: username, Password: password}
 	}
 
-	return &MinioContainer{Container: container, Username: username, Password: password}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }

@@ -6,10 +6,7 @@ on:
 
 jobs:
   test-windows:
-    # At the moment, we are running a self-hosted runner on Windows 2022.
-    runs-on: [self-hosted, Windows, X64]
-    strategy:
-      fail-fast: false
+    runs-on: [self-hosted, Windows, X64, desktop-windows-intel]
     timeout-minutes: 30
     steps:
       - name: Create pending status
@@ -27,14 +24,14 @@ jobs:
             })
 
       - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.event.client_payload.pull_request.head.repo.full_name }}
           ref: ${{ github.event.client_payload.pull_request.head.ref }}
 
       - name: Set up Go
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5
+        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5
         with:
           go-version-file: go.mod
         id: go

@@ -10,4 +10,4 @@ lint-modules:
 
 .PHONY: tidy-modules
 tidy-modules:
-	@find . -type f -name Makefile -execdir make tools-tidy \;
+	@find . -type f -name Makefile -execdir make tidy \;

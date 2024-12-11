@@ -92,6 +92,7 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 	}
 
 	c, err := GenericContainer(ctx, gReq)
+	CleanupContainer(t, c)
 	require.NoError(t, err)
 
 	ep, err := c.Endpoint(ctx, "http")
@@ -112,9 +113,7 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 		t.Fatal("never received final log message")
 	}
 
-	assert.Equal(t, []string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs())
-
-	terminateContainerOnEnd(t, ctx, c)
+	require.Equal(t, []string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs())
 }
 
 type TestLogTypeConsumer struct {
@@ -157,8 +156,8 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 	}
 
 	c, err := GenericContainer(ctx, gReq)
+	CleanupContainer(t, c)
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, c)
 
 	ep, err := c.Endpoint(ctx, "http")
 	require.NoError(t, err)
@@ -212,6 +211,7 @@ func Test_MultipleLogConsumers(t *testing.T) {
 	}
 
 	c, err := GenericContainer(ctx, gReq)
+	CleanupContainer(t, c)
 	require.NoError(t, err)
 
 	ep, err := c.Endpoint(ctx, "http")
@@ -226,9 +226,9 @@ func Test_MultipleLogConsumers(t *testing.T) {
 	<-first.Done
 	<-second.Done
 
-	assert.Equal(t, []string{"ready\n", "echo mlem\n"}, first.Msgs())
-	assert.Equal(t, []string{"ready\n", "echo mlem\n"}, second.Msgs())
-	require.NoError(t, c.Terminate(ctx))
+	expected := []string{"ready\n", "echo mlem\n"}
+	require.Equal(t, expected, first.Msgs())
+	require.Equal(t, expected, second.Msgs())
 }
 
 func TestContainerLogWithErrClosed(t *testing.T) {
@@ -251,16 +251,15 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	dind, err := GenericContainer(ctx, GenericContainerRequest{
 		Started: true,
 		ContainerRequest: ContainerRequest{
-			Image:        "docker.io/docker:dind",
+			Image:        "docker:dind",
 			ExposedPorts: []string{"2375/tcp"},
 			Env:          map[string]string{"DOCKER_TLS_CERTDIR": ""},
 			WaitingFor:   wait.ForListeningPort("2375/tcp"),
 			Privileged:   true,
 		},
 	})
-
+	CleanupContainer(t, dind)
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, dind)
 
 	var remoteDocker string
 
@@ -276,24 +275,20 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		if errors.Is(err, context.DeadlineExceeded) {
 			break
 		}
-		time.Sleep(100 * time.Microsecond)
+		time.Sleep(10 * time.Millisecond)
 		t.Log("retrying get endpoint")
 	}
-	if err != nil {
-		t.Fatal("get endpoint:", err)
-	}
+	require.NoErrorf(t, err, "get endpoint")
 
 	opts := []client.Opt{client.WithHost(remoteDocker), client.WithAPIVersionNegotiation()}
 
-	client, err := NewDockerClientWithOpts(ctx, opts...)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer client.Close()
+	dockerClient, err := NewDockerClientWithOpts(ctx, opts...)
+	require.NoError(t, err)
+	defer dockerClient.Close()
 
 	provider := &DockerProvider{
-		client: client,
-		config: ReadConfig(),
+		client: dockerClient,
+		config: config.Read(),
 		DockerProviderOptions: &DockerProviderOptions{
 			GenericProviderOptions: &GenericProviderOptions{
 				Logger: TestLogger(t),
@@ -314,18 +309,13 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 			Consumers: []LogConsumer{&consumer},
 		},
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := nginx.Start(ctx); err != nil {
-		t.Fatal(err)
-	}
-	terminateContainerOnEnd(t, ctx, nginx)
+	require.NoError(t, err)
+	err = nginx.Start(ctx)
+	require.NoError(t, err)
+	CleanupContainer(t, nginx)
 
 	port, err := nginx.MappedPort(ctx, "80/tcp")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	// Gather the initial container logs
 	time.Sleep(time.Second * 1)
@@ -333,17 +323,14 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 
 	hitNginx := func() {
 		i, _, err := dind.Exec(ctx, []string{"wget", "--spider", "localhost:" + port.Port()})
-		if err != nil || i > 0 {
-			t.Fatalf("Can't make request to nginx container from dind container")
-		}
+		require.NoError(t, err, "Can't make request to nginx container from dind container")
+		require.Zerof(t, i, "Can't make request to nginx container from dind container")
 	}
 
 	hitNginx()
 	time.Sleep(time.Second * 1)
 	msgs := consumer.Msgs()
-	if len(msgs)-existingLogs != 1 {
-		t.Fatalf("logConsumer should have 1 new log message, instead has: %v", msgs[existingLogs:])
-	}
+	require.Equalf(t, 1, len(msgs)-existingLogs, "logConsumer should have 1 new log message, instead has: %v", msgs[existingLogs:])
 	existingLogs = len(consumer.Msgs())
 
 	iptableArgs := []string{
@@ -352,25 +339,21 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	}
 	// Simulate a transient closed connection to the docker daemon
 	i, _, err := dind.Exec(ctx, append([]string{"iptables", "-A"}, iptableArgs...))
-	if err != nil || i > 0 {
-		t.Fatalf("Failed to close connection to dind daemon: i(%d), err %v", i, err)
-	}
+	require.NoErrorf(t, err, "Failed to close connection to dind daemon: i(%d), err %v", i, err)
+	require.Zerof(t, i, "Failed to close connection to dind daemon: i(%d), err %v", i, err)
 	i, _, err = dind.Exec(ctx, append([]string{"iptables", "-D"}, iptableArgs...))
-	if err != nil || i > 0 {
-		t.Fatalf("Failed to re-open connection to dind daemon: i(%d), err %v", i, err)
-	}
+	require.NoErrorf(t, err, "Failed to re-open connection to dind daemon: i(%d), err %v", i, err)
+	require.Zerof(t, i, "Failed to re-open connection to dind daemon: i(%d), err %v", i, err)
 	time.Sleep(time.Second * 3)
 
 	hitNginx()
 	hitNginx()
 	time.Sleep(time.Second * 1)
 	msgs = consumer.Msgs()
-	if len(msgs)-existingLogs != 2 {
-		t.Fatalf(
-			"LogConsumer should have 2 new log messages after detecting closed connection and"+
-				" re-requesting logs. Instead has:\n%s", msgs[existingLogs:],
-		)
-	}
+	require.Equalf(t, 2, len(msgs)-existingLogs,
+		"LogConsumer should have 2 new log messages after detecting closed connection and"+
+			" re-requesting logs. Instead has:\n%s", msgs[existingLogs:],
+	)
 }
 
 func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
@@ -380,23 +363,18 @@ func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 		Cmd:        []string{"sh", "-c", "id -u"},
 		WaitingFor: wait.ForExit(),
 	}
-	container, err := GenericContainer(ctx, GenericContainerRequest{
+	ctr, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	terminateContainerOnEnd(t, ctx, container)
-	r, err := container.Logs(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	r, err := ctr.Logs(ctx)
+	require.NoError(t, err)
 	defer r.Close()
 	b, err := io.ReadAll(r)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	assert.Equal(t, "0", strings.TrimSpace(string(b)))
 }
 
@@ -429,6 +407,7 @@ func TestContainerLogsEnableAtStart(t *testing.T) {
 	}
 
 	c, err := GenericContainer(ctx, gReq)
+	CleanupContainer(t, c)
 	require.NoError(t, err)
 
 	ep, err := c.Endpoint(ctx, "http")
@@ -448,9 +427,7 @@ func TestContainerLogsEnableAtStart(t *testing.T) {
 	case <-time.After(10 * time.Second):
 		t.Fatal("never received final log message")
 	}
-	assert.Equal(t, []string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs())
-
-	terminateContainerOnEnd(t, ctx, c)
+	require.Equal(t, []string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs())
 }
 
 func Test_StartLogProductionStillStartsWithTooLowTimeout(t *testing.T) {
@@ -481,8 +458,8 @@ func Test_StartLogProductionStillStartsWithTooLowTimeout(t *testing.T) {
 	}
 
 	c, err := GenericContainer(ctx, gReq)
+	CleanupContainer(t, c)
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, c)
 }
 
 func Test_StartLogProductionStillStartsWithTooHighTimeout(t *testing.T) {
@@ -513,22 +490,44 @@ func Test_StartLogProductionStillStartsWithTooHighTimeout(t *testing.T) {
 	}
 
 	c, err := GenericContainer(ctx, gReq)
+	CleanupContainer(t, c)
 	require.NoError(t, err)
 	require.NotNil(t, c)
 
-	// because the log production timeout is too high, the container should have already been terminated
-	// so no need to terminate it again with "terminateContainerOnEnd(t, ctx, c)"
 	dc := c.(*DockerContainer)
 	require.NoError(t, dc.stopLogProduction())
+}
 
-	terminateContainerOnEnd(t, ctx, c)
+// bufLogger is a Logging implementation that writes to a bytes.Buffer.
+type bufLogger struct {
+	mtx sync.Mutex
+	buf bytes.Buffer
+}
+
+// Printf implements Logging.
+func (l *bufLogger) Printf(format string, v ...any) {
+	l.mtx.Lock()
+	defer l.mtx.Unlock()
+
+	fmt.Fprintf(&l.buf, format, v...)
+}
+
+// String returns the contents of the buffer as a string.
+func (l *bufLogger) String() string {
+	l.mtx.Lock()
+	defer l.mtx.Unlock()
+
+	return l.buf.String()
 }
 
 func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
-	// Redirect stderr to a buffer
-	oldStderr := os.Stderr
-	r, w, _ := os.Pipe()
-	os.Stderr = w
+	// Capture global logger.
+	logger := &bufLogger{}
+	Logger = logger
+	oldLogger := Logger
+	t.Cleanup(func() {
+		Logger = oldLogger
+	})
 
 	// Context with cancellation functionality for simulating user interruption
 	ctx, cancel := context.WithCancel(context.Background())
@@ -558,6 +557,7 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	}
 
 	c, err := GenericContainer(ctx, genericReq1)
+	CleanupContainer(t, c)
 	require.NoError(t, err)
 
 	ep1, err := c.Endpoint(ctx, "http")
@@ -593,6 +593,7 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	}
 
 	c2, err := GenericContainer(ctx, genericReq2)
+	CleanupContainer(t, c2)
 	require.NoError(t, err)
 
 	ep2, err := c2.Endpoint(ctx, "http")
@@ -604,37 +605,98 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	_, err = http.Get(ep2 + "/stdout?echo=there2")
 	require.NoError(t, err)
 
-	// Handling the termination of the containers
-	defer func() {
-		shutdownCtx, shutdownCancel := context.WithTimeout(
-			context.Background(), 10*time.Second,
-		)
-		defer shutdownCancel()
-		_ = c.Terminate(shutdownCtx)
-		_ = c2.Terminate(shutdownCtx)
-	}()
-
 	// Deliberately calling context cancel
 	cancel()
 
 	// We check log size due to context cancellation causing
 	// varying message counts, leading to test failure.
-	assert.GreaterOrEqual(t, len(first.Msgs()), 2)
-	assert.GreaterOrEqual(t, len(second.Msgs()), 2)
+	require.GreaterOrEqual(t, len(first.Msgs()), 2)
+	require.GreaterOrEqual(t, len(second.Msgs()), 2)
 
-	// Restore stderr
-	w.Close()
-	os.Stderr = oldStderr
+	require.NotContains(t, logger.String(), "Unexpected error reading logs")
+}
 
-	// Read the stderr output from the buffer
-	var buf bytes.Buffer
-	_, _ = buf.ReadFrom(r)
+// FooLogConsumer is a test log consumer that accepts logs from the
+// "hello-world" Docker image, which prints out the "Hello from Docker!"
+// log message.
+type FooLogConsumer struct {
+	LogChannel chan string
+	t          *testing.T
+}
 
-	// Check the stderr message
-	actual := buf.String()
+// Accept receives a log message and sends it to the log channel if it
+// contains the "Hello from Docker!" message.
+func (c FooLogConsumer) Accept(rawLog Log) {
+	log := string(rawLog.Content)
+	if strings.Contains(log, "Hello from Docker!") {
+		select {
+		case c.LogChannel <- log:
+		default:
+		}
+	}
+}
 
-	// The context cancel shouldn't cause the system to throw a
-	// logStoppedForOutOfSyncMessage, as it hangs the system with
-	// the multiple containers.
-	assert.False(t, strings.Contains(actual, logStoppedForOutOfSyncMessage))
+// AssertRead waits for a log message to be received.
+func (c FooLogConsumer) AssertRead() {
+	select {
+	case <-c.LogChannel:
+	case <-time.After(5 * time.Second):
+		c.t.Fatal("receive timeout")
+	}
+}
+
+// SlurpOne reads a value from the channel if it is available.
+func (c FooLogConsumer) SlurpOne() {
+	select {
+	case <-c.LogChannel:
+	default:
+	}
+}
+
+func NewFooLogConsumer(t *testing.T) *FooLogConsumer {
+	t.Helper()
+
+	return &FooLogConsumer{
+		t:          t,
+		LogChannel: make(chan string, 2),
+	}
+}
+
+func TestRestartContainerWithLogConsumer(t *testing.T) {
+	logConsumer := NewFooLogConsumer(t)
+
+	ctx := context.Background()
+	ctr, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: ContainerRequest{
+			Image:           "hello-world",
+			AlwaysPullImage: true,
+			LogConsumerCfg: &LogConsumerConfig{
+				Consumers: []LogConsumer{logConsumer},
+			},
+		},
+		Started: false,
+	})
+	CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	// Start and confirm that the log consumer receives the log message.
+	err = ctr.Start(ctx)
+	require.NoError(t, err)
+
+	logConsumer.AssertRead()
+
+	// Stop the container and clear any pending message.
+	d := 5 * time.Second
+	err = ctr.Stop(ctx, &d)
+	require.NoError(t, err)
+
+	logConsumer.SlurpOne()
+
+	// Restart the container and confirm that the log consumer receives new log messages.
+	err = ctr.Start(ctx)
+	require.NoError(t, err)
+
+	// First message is from the first start.
+	logConsumer.AssertRead()
+	logConsumer.AssertRead()
 }

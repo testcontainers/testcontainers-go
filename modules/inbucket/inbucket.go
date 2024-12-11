@@ -44,15 +44,25 @@ func (c *InbucketContainer) WebInterface(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	return fmt.Sprintf("http://%s", net.JoinHostPort(host, containerPort.Port())), nil
+	return "http://" + net.JoinHostPort(host, containerPort.Port()), nil
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the Inbucket container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*InbucketContainer, error) {
+	return Run(ctx, "inbucket/inbucket:sha-2d409bb", opts...)
+}
+
+// Run creates an instance of the Inbucket container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*InbucketContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "inbucket/inbucket:sha-2d409bb",
-		ExposedPorts: []string{"2500/tcp", "9000/tcp"},
-		WaitingFor:   wait.ForLog("SMTP listening on tcp4"),
+		Image:        img,
+		ExposedPorts: []string{"2500/tcp", "9000/tcp", "1100/tcp"},
+		WaitingFor: wait.ForAll(
+			wait.ForListeningPort("2500/tcp"),
+			wait.ForListeningPort("9000/tcp"),
+			wait.ForListeningPort("1100/tcp"),
+		),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
@@ -67,9 +77,14 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *InbucketContainer
+	if container != nil {
+		c = &InbucketContainer{Container: container}
 	}
 
-	return &InbucketContainer{Container: container}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }

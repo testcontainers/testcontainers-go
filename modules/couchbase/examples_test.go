@@ -11,7 +11,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/couchbase"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runCouchbaseContainer {
 	ctx := context.Background()
 
@@ -23,31 +23,34 @@ func ExampleRunContainer() {
 		WithFlushEnabled(false).
 		WithPrimaryIndex(true)
 
-	couchbaseContainer, err := couchbase.RunContainer(ctx,
-		testcontainers.WithImage("couchbase:community-7.1.1"),
+	couchbaseContainer, err := couchbase.Run(ctx,
+		"couchbase:community-7.1.1",
 		couchbase.WithAdminCredentials("testcontainers", "testcontainers.IS.cool!"),
 		couchbase.WithBuckets(bucket),
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
 	defer func() {
-		if err := couchbaseContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(couchbaseContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := couchbaseContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
 
 	connectionString, err := couchbaseContainer.ConnectionString(ctx)
 	if err != nil {
-		log.Fatalf("failed to get connection string: %s", err)
+		log.Printf("failed to get connection string: %s", err)
+		return
 	}
 
 	cluster, err := gocb.Connect(connectionString, gocb.ClusterOptions{
@@ -55,12 +58,14 @@ func ExampleRunContainer() {
 		Password: couchbaseContainer.Password(),
 	})
 	if err != nil {
-		log.Fatalf("failed to connect to cluster: %s", err)
+		log.Printf("failed to connect to cluster: %s", err)
+		return
 	}
 
 	buckets, err := cluster.Buckets().GetAllBuckets(nil)
 	if err != nil {
-		log.Fatalf("failed to get buckets: %s", err)
+		log.Printf("failed to get buckets: %s", err)
+		return
 	}
 
 	fmt.Println(len(buckets))

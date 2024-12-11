@@ -15,26 +15,26 @@ import (
 	tcweaviate "github.com/testcontainers/testcontainers-go/modules/weaviate"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runWeaviateContainer {
 	ctx := context.Background()
 
-	weaviateContainer, err := tcweaviate.RunContainer(ctx, testcontainers.WithImage("semitechnologies/weaviate:1.24.5"))
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
+	weaviateContainer, err := tcweaviate.Run(ctx, "semitechnologies/weaviate:1.24.5")
 	defer func() {
-		if err := weaviateContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(weaviateContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := weaviateContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -43,35 +43,37 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainer_connectWithClient() {
+func ExampleRun_connectWithClient() {
 	// createClientNoModules {
 	ctx := context.Background()
 
-	weaviateContainer, err := tcweaviate.RunContainer(ctx, testcontainers.WithImage("semitechnologies/weaviate:1.23.9"))
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
+	weaviateContainer, err := tcweaviate.Run(ctx, "semitechnologies/weaviate:1.23.9")
 	defer func() {
-		if err := weaviateContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(weaviateContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	scheme, host, err := weaviateContainer.HttpHostAddress(ctx)
 	if err != nil {
-		log.Fatalf("failed to get http schema and host: %s", err) // nolint:gocritic
+		log.Printf("failed to get http schema and host: %s", err)
+		return
 	}
 
 	grpcHost, err := weaviateContainer.GrpcHostAddress(ctx)
 	if err != nil {
-		log.Fatalf("failed to get gRPC host: %s", err) // nolint:gocritic
+		log.Printf("failed to get gRPC host: %s", err)
+		return
 	}
 
 	connectionClient := &http.Client{}
 	headers := map[string]string{
 		// put here the custom API key, e.g. for OpenAPI
-		"Authorization": fmt.Sprintf("Bearer %s", "custom-api-key"),
+		"Authorization": "Bearer custom-api-key",
 	}
 
 	cli := weaviate.New(weaviate.Config{
@@ -94,7 +96,7 @@ func ExampleRunContainer_connectWithClient() {
 	// <nil>
 }
 
-func ExampleRunContainer_connectWithClientWithModules() {
+func ExampleRun_connectWithClientWithModules() {
 	// createClientAndModules {
 	ctx := context.Background()
 
@@ -111,35 +113,36 @@ func ExampleRunContainer_connectWithClientWithModules() {
 	}
 
 	opts := []testcontainers.ContainerCustomizer{
-		testcontainers.WithImage("semitechnologies/weaviate:1.24.5"),
 		testcontainers.WithEnv(envs),
 	}
 
-	weaviateContainer, err := tcweaviate.RunContainer(ctx, opts...)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
+	weaviateContainer, err := tcweaviate.Run(ctx, "semitechnologies/weaviate:1.25.5", opts...)
 	defer func() {
-		if err := weaviateContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(weaviateContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	scheme, host, err := weaviateContainer.HttpHostAddress(ctx)
 	if err != nil {
-		log.Fatalf("failed to get http schema and host: %s", err) // nolint:gocritic
+		log.Printf("failed to get http schema and host: %s", err)
+		return
 	}
 
 	grpcHost, err := weaviateContainer.GrpcHostAddress(ctx)
 	if err != nil {
-		log.Fatalf("failed to get gRPC host: %s", err) // nolint:gocritic
+		log.Printf("failed to get gRPC host: %s", err)
+		return
 	}
 
 	connectionClient := &http.Client{}
 	headers := map[string]string{
 		// put here the custom API key, e.g. for OpenAPI
-		"Authorization": fmt.Sprintf("Bearer %s", "custom-api-key"),
+		"Authorization": "Bearer custom-api-key",
 	}
 
 	cli := weaviate.New(weaviate.Config{

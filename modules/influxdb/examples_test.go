@@ -9,31 +9,31 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/influxdb"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runInfluxContainer {
 	ctx := context.Background()
 
-	influxdbContainer, err := influxdb.RunContainer(
-		ctx, testcontainers.WithImage("influxdb:1.8.10"),
+	influxdbContainer, err := influxdb.Run(ctx,
+		"influxdb:1.8.10",
 		influxdb.WithDatabase("influx"),
 		influxdb.WithUsername("root"),
 		influxdb.WithPassword("password"),
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := influxdbContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(influxdbContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := influxdbContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)

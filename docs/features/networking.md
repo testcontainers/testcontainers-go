@@ -45,11 +45,11 @@ It is normally advisable to use `Host` and `MappedPort` together when constructi
 <!--/codeinclude-->
 
 !!! info
-    Setting the `TC_HOST` environment variable overrides the host of the docker daemon where the container port is exposed. For example, `TC_HOST=172.17.0.1`.
+    Setting the `TESTCONTAINERS_HOST_OVERRIDE` environment variable overrides the host of the docker daemon where the container port is exposed. For example, `TESTCONTAINERS_HOST_OVERRIDE=172.17.0.1`.
 
 ## Exposing host ports to the container
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.31.0"><span class="tc-version">:material-tag: v0.31.0</span></a>
 
 In some cases it is necessary to make a network connection from a container to a socket that is listening on the host machine. Natively, Docker has limited support for this model across platforms. Testcontainers, however, makes this possible, allowing your code to access services running on the host machine.
 

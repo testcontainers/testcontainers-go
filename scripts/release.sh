@@ -13,7 +13,7 @@
 # Usage: DRY_RUN="false" ./scripts/release.sh
 
 readonly BUMP_TYPE="${BUMP_TYPE:-minor}"
-readonly DOCKER_IMAGE_SEMVER="docker.io/mdelapenya/semver-tool:3.4.0"
+readonly DOCKER_IMAGE_SEMVER="mdelapenya/semver-tool:3.4.0"
 readonly DRY_RUN="${DRY_RUN:-true}"
 readonly CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly ROOT_DIR="$(dirname "$CURRENT_DIR")"

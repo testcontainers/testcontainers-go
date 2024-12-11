@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	defaultPulsarImage                     = "docker.io/apachepulsar/pulsar:2.10.2"
 	defaultPulsarPort                      = "6650/tcp"
 	defaultPulsarAdminPort                 = "8080/tcp"
 	defaultPulsarCmd                       = "/pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone"
@@ -130,18 +129,24 @@ func WithTransactions() testcontainers.CustomizeRequestOption {
 	}
 }
 
-// RunContainer creates an instance of the Pulsar container type, being possible to pass a custom request and options
+// Deprecated: use Run instead
+// RunContainer creates an instance of the Pulsar container type
+func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+	return Run(ctx, "apachepulsar/pulsar:2.10.2", opts...)
+}
+
+// Run creates an instance of the Pulsar container type, being possible to pass a custom request and options
 // The created container will use the following defaults:
-// - image: docker.io/apachepulsar/pulsar:2.10.2
+// - image: apachepulsar/pulsar:2.10.2
 // - exposed ports: 6650/tcp, 8080/tcp
 // - waiting strategy: wait for all the following strategies:
 //   - the Pulsar admin API ("/admin/v2/clusters") to be ready on port 8080/tcp and return the response `["standalone"]`
 //   - the log message "Successfully updated the policies on namespace public/default"
 //
 // - command: "/bin/bash -c /pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone --no-functions-worker -nss"
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        defaultPulsarImage,
+		Image:        img,
 		Env:          map[string]string{},
 		ExposedPorts: []string{defaultPulsarPort, defaultPulsarAdminPort},
 		WaitingFor:   defaultWaitStrategies,
@@ -159,14 +164,15 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		}
 	}
 
-	c, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	var c *Container
+	if container != nil {
+		c = &Container{Container: container}
+	}
+
 	if err != nil {
-		return nil, err
+		return c, fmt.Errorf("generic container: %w", err)
 	}
 
-	pc := &Container{
-		Container: c,
-	}
-
-	return pc, nil
+	return c, nil
 }

@@ -10,31 +10,31 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/redis"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runRedisContainer {
 	ctx := context.Background()
 
-	redisContainer, err := redis.RunContainer(ctx,
-		testcontainers.WithImage("docker.io/redis:7"),
+	redisContainer, err := redis.Run(ctx,
+		"redis:7",
 		redis.WithSnapshotting(10, 1),
 		redis.WithLogLevel(redis.LogLevelVerbose),
 		redis.WithConfigFile(filepath.Join("testdata", "redis7.conf")),
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := redisContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(redisContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := redisContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)

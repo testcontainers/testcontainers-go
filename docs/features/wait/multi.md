@@ -9,7 +9,7 @@ Available Options:
 
 ```golang
 req := ContainerRequest{
-    Image:        "docker.io/mysql:8.0.36",
+    Image:        "mysql:8.0.36",
     ExposedPorts: []string{"3306/tcp", "33060/tcp"},
     Env: map[string]string{
         "MYSQL_ROOT_PASSWORD": "password",

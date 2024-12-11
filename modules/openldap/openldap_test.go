@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/go-ldap/ldap/v3"
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/openldap"
@@ -14,105 +15,61 @@ import (
 func TestOpenLDAP(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := openldap.RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	ctr, err := openldap.Run(ctx, "bitnami/openldap:2.6.6")
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 }
 
 func TestOpenLDAPWithAdminUsernameAndPassword(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := openldap.RunContainer(ctx,
-		testcontainers.WithImage("bitnami/openldap:2.6.6"),
+	ctr, err := openldap.Run(ctx,
+		"bitnami/openldap:2.6.6",
 		openldap.WithAdminUsername("openldap"),
 		openldap.WithAdminPassword("openldap"),
 	)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
-
-	connectionString, err := container.ConnectionString(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	connectionString, err := ctr.ConnectionString(ctx)
+	require.NoError(t, err)
 
 	client, err := ldap.DialURL(connectionString)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer client.Close()
 
 	// First bind with a read only user
 	err = client.Bind("cn=openldap,dc=example,dc=org", "openldap")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 }
 
 func TestOpenLDAPWithDifferentRoot(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := openldap.RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"), openldap.WithRoot("dc=mydomain,dc=com"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	ctr, err := openldap.Run(ctx, "bitnami/openldap:2.6.6", openldap.WithRoot("dc=mydomain,dc=com"))
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
 	// connectionString {
-	connectionString, err := container.ConnectionString(ctx)
+	connectionString, err := ctr.ConnectionString(ctx)
 	// }
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	client, err := ldap.DialURL(connectionString)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer client.Close()
 
 	// First bind with a read only user
 	err = client.Bind("cn=admin,dc=mydomain,dc=com", "adminpassword")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 }
 
 func TestOpenLDAPLoadLdif(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := openldap.RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	ctr, err := openldap.Run(ctx, "bitnami/openldap:2.6.6")
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
 	// loadLdif {
 	ldif := `
@@ -125,28 +82,20 @@ mail: test.user@example.org
 userPassword: Password1
 `
 
-	err = container.LoadLdif(ctx, []byte(ldif))
+	err = ctr.LoadLdif(ctx, []byte(ldif))
 	// }
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	connectionString, err := container.ConnectionString(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	connectionString, err := ctr.ConnectionString(ctx)
+	require.NoError(t, err)
 
 	client, err := ldap.DialURL(connectionString)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer client.Close()
 
 	// First bind with a read only user
 	err = client.Bind("cn=admin,dc=example,dc=org", "adminpassword")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	result, err := client.Search(&ldap.SearchRequest{
 		BaseDN:     "uid=test.user,ou=users,dc=example,dc=org",
@@ -154,16 +103,9 @@ userPassword: Password1
 		Filter:     "(objectClass=*)",
 		Attributes: []string{"dn"},
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(result.Entries) != 1 {
-		t.Fatal("Invalid number of entries returned", result.Entries)
-	}
-	if result.Entries[0].DN != "uid=test.user,ou=users,dc=example,dc=org" {
-		t.Fatal("Invalid entry returned", result.Entries[0].DN)
-	}
+	require.NoError(t, err)
+	require.Len(t, result.Entries, 1)
+	require.Equal(t, "uid=test.user,ou=users,dc=example,dc=org", result.Entries[0].DN)
 }
 
 func TestOpenLDAPWithInitialLdif(t *testing.T) {
@@ -178,49 +120,29 @@ mail: test.user@example.org
 userPassword: Password1
 `
 
-	f, err := os.CreateTemp("", "test.ldif")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.Remove(f.Name())
+	f, err := os.CreateTemp(t.TempDir(), "test.ldif")
+	require.NoError(t, err)
 
 	_, err = f.WriteString(ldif)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+
 	err = f.Close()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	container, err := openldap.RunContainer(ctx, testcontainers.WithImage("bitnami/openldap:2.6.6"), openldap.WithInitialLdif(f.Name()))
-	if err != nil {
-		t.Fatal(err)
-	}
+	ctr, err := openldap.Run(ctx, "bitnami/openldap:2.6.6", openldap.WithInitialLdif(f.Name()))
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
-
-	connectionString, err := container.ConnectionString(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	connectionString, err := ctr.ConnectionString(ctx)
+	require.NoError(t, err)
 
 	client, err := ldap.DialURL(connectionString)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer client.Close()
 
 	// First bind with a read only user
 	err = client.Bind("cn=admin,dc=example,dc=org", "adminpassword")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	result, err := client.Search(&ldap.SearchRequest{
 		BaseDN:     "uid=test.user,ou=users,dc=example,dc=org",
@@ -228,14 +150,8 @@ userPassword: Password1
 		Filter:     "(objectClass=*)",
 		Attributes: []string{"dn"},
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	if len(result.Entries) != 1 {
-		t.Fatal("Invalid number of entries returned", result.Entries)
-	}
-	if result.Entries[0].DN != "uid=test.user,ou=users,dc=example,dc=org" {
-		t.Fatal("Invalid entry returned", result.Entries[0].DN)
-	}
+	require.Len(t, result.Entries, 1)
+	require.Equal(t, "uid=test.user,ou=users,dc=example,dc=org", result.Entries[0].DN)
 }

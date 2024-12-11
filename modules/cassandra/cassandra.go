@@ -2,6 +2,7 @@ package cassandra
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"path/filepath"
 	"strings"
@@ -74,10 +75,16 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the Cassandra container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*CassandraContainer, error) {
+	return Run(ctx, "cassandra:4.1.3", opts...)
+}
+
+// Run creates an instance of the Cassandra container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*CassandraContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "cassandra:4.1.3",
+		Image:        img,
 		ExposedPorts: []string{string(port)},
 		Env: map[string]string{
 			"CASSANDRA_SNITCH":          "GossipingPropertyFileSnitch",
@@ -108,9 +115,14 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *CassandraContainer
+	if container != nil {
+		c = &CassandraContainer{Container: container}
 	}
 
-	return &CassandraContainer{Container: container}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }

@@ -25,6 +25,6 @@ It's important to mention that the name of the network is automatically generate
 ## Usage example
 
 <!--codeinclude-->
-[Creating a network](../../network/network_test.go) inside_block:createNetwork
-[Creating a network with options](../../network/network_test.go) inside_block:newNetworkWithOptions
+[Creating a network](../../network/examples_test.go) inside_block:createNetwork
+[Creating a network with options](../../network/examples_test.go) inside_block:newNetworkWithOptions
 <!--/codeinclude--> 

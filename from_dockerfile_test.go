@@ -5,20 +5,19 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/docker/docker/api/types"
-	"github.com/stretchr/testify/assert"
+	"github.com/docker/docker/api/types/image"
 	"github.com/stretchr/testify/require"
 )
 
 func TestBuildImageFromDockerfile(t *testing.T) {
 	provider, err := NewDockerProvider()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer provider.Close()
 
 	cli := provider.Client()
@@ -36,27 +35,23 @@ func TestBuildImageFromDockerfile(t *testing.T) {
 		// }
 	})
 	require.NoError(t, err)
-	assert.Equal(t, "test-repo:test-tag", tag)
+	require.Equal(t, "test-repo:test-tag", tag)
 
 	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		_, err := cli.ImageRemove(ctx, tag, types.ImageRemoveOptions{
+		_, err := cli.ImageRemove(ctx, tag, image.RemoveOptions{
 			Force:         true,
 			PruneChildren: true,
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 	})
 }
 
 func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
 	provider, err := NewDockerProvider()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer provider.Close()
 
 	cli := provider.Client()
@@ -71,27 +66,45 @@ func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	assert.True(t, strings.HasPrefix(tag, "test-repo:"))
+	require.True(t, strings.HasPrefix(tag, "test-repo:"))
 
 	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		_, err := cli.ImageRemove(ctx, tag, types.ImageRemoveOptions{
+		_, err := cli.ImageRemove(ctx, tag, image.RemoveOptions{
 			Force:         true,
 			PruneChildren: true,
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 	})
+}
+
+func TestBuildImageFromDockerfile_BuildError(t *testing.T) {
+	ctx := context.Background()
+	dockerClient, err := NewDockerClientWithOpts(ctx)
+	require.NoError(t, err)
+
+	defer dockerClient.Close()
+
+	req := ContainerRequest{
+		FromDockerfile: FromDockerfile{
+			Dockerfile: "error.Dockerfile",
+			Context:    filepath.Join(".", "testdata"),
+		},
+	}
+	ctr, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType:     providerType,
+		ContainerRequest: req,
+		Started:          true,
+	})
+	CleanupContainer(t, ctr)
+	require.EqualError(t, err, `create container: build image: The command '/bin/sh -c exit 1' returned a non-zero code: 1`)
 }
 
 func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
 	provider, err := NewDockerProvider()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer provider.Close()
 
 	cli := provider.Client()
@@ -106,19 +119,17 @@ func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	assert.True(t, strings.HasSuffix(tag, ":test-tag"))
+	require.True(t, strings.HasSuffix(tag, ":test-tag"))
 
 	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		_, err := cli.ImageRemove(ctx, tag, types.ImageRemoveOptions{
+		_, err := cli.ImageRemove(ctx, tag, image.RemoveOptions{
 			Force:         true,
 			PruneChildren: true,
 		})
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 	})
 }
 
@@ -129,10 +140,9 @@ func TestBuildImageFromDockerfile_Target(t *testing.T) {
 		c, err := GenericContainer(ctx, GenericContainerRequest{
 			ContainerRequest: ContainerRequest{
 				FromDockerfile: FromDockerfile{
-					Context:       "testdata",
-					Dockerfile:    "target.Dockerfile",
-					PrintBuildLog: true,
-					KeepImage:     false,
+					Context:    "testdata",
+					Dockerfile: "target.Dockerfile",
+					KeepImage:  false,
 					BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
 						buildOptions.Target = fmt.Sprintf("target%d", i)
 					},
@@ -140,6 +150,7 @@ func TestBuildImageFromDockerfile_Target(t *testing.T) {
 			},
 			Started: true,
 		})
+		CleanupContainer(t, c)
 		require.NoError(t, err)
 
 		r, err := c.Logs(ctx)
@@ -147,12 +158,7 @@ func TestBuildImageFromDockerfile_Target(t *testing.T) {
 
 		logs, err := io.ReadAll(r)
 		require.NoError(t, err)
-
-		assert.Equal(t, fmt.Sprintf("target%d\n\n", i), string(logs))
-
-		t.Cleanup(func() {
-			require.NoError(t, c.Terminate(ctx))
-		})
+		require.Equal(t, fmt.Sprintf("target%d\n\n", i), string(logs))
 	}
 }
 
@@ -163,10 +169,9 @@ func ExampleGenericContainer_buildFromDockerfile() {
 	c, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
 			FromDockerfile: FromDockerfile{
-				Context:       "testdata",
-				Dockerfile:    "target.Dockerfile",
-				PrintBuildLog: true,
-				KeepImage:     false,
+				Context:    "testdata",
+				Dockerfile: "target.Dockerfile",
+				KeepImage:  false,
 				BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
 					buildOptions.Target = "target2"
 				},
@@ -175,18 +180,26 @@ func ExampleGenericContainer_buildFromDockerfile() {
 		Started: true,
 	})
 	// }
+	defer func() {
+		if err := TerminateContainer(c); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
 	if err != nil {
-		log.Fatalf("failed to start container: %v", err)
+		log.Printf("failed to start container: %v", err)
+		return
 	}
 
 	r, err := c.Logs(ctx)
 	if err != nil {
-		log.Fatalf("failed to get logs: %v", err)
+		log.Printf("failed to get logs: %v", err)
+		return
 	}
 
 	logs, err := io.ReadAll(r)
 	if err != nil {
-		log.Fatalf("failed to read logs: %v", err)
+		log.Printf("failed to read logs: %v", err)
+		return
 	}
 
 	fmt.Println(string(logs))
@@ -199,13 +212,12 @@ func TestBuildImageFromDockerfile_TargetDoesNotExist(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	_, err := GenericContainer(ctx, GenericContainerRequest{
+	ctr, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
 			FromDockerfile: FromDockerfile{
-				Context:       "testdata",
-				Dockerfile:    "target.Dockerfile",
-				PrintBuildLog: true,
-				KeepImage:     false,
+				Context:    "testdata",
+				Dockerfile: "target.Dockerfile",
+				KeepImage:  false,
 				BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
 					buildOptions.Target = "target-foo"
 				},
@@ -213,5 +225,6 @@ func TestBuildImageFromDockerfile_TargetDoesNotExist(t *testing.T) {
 		},
 		Started: true,
 	})
+	CleanupContainer(t, ctr)
 	require.Error(t, err)
 }

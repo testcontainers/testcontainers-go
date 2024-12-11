@@ -36,13 +36,19 @@ func (c *OpenFGAContainer) PlaygroundEndpoint(ctx context.Context) (string, erro
 		return "", fmt.Errorf("failed to get playground endpoint: %w", err)
 	}
 
-	return fmt.Sprintf("%s/playground", endpoint), nil
+	return endpoint + "/playground", nil
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the OpenFGA container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*OpenFGAContainer, error) {
+	return Run(ctx, "openfga/openfga:v1.5.0", opts...)
+}
+
+// Run creates an instance of the OpenFGA container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*OpenFGAContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "openfga/openfga:v1.5.0",
+		Image:        img,
 		Cmd:          []string{"run"},
 		ExposedPorts: []string{"3000/tcp", "8080/tcp", "8081/tcp"},
 		WaitingFor: wait.ForAll(
@@ -72,9 +78,14 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *OpenFGAContainer
+	if container != nil {
+		c = &OpenFGAContainer{Container: container}
 	}
 
-	return &OpenFGAContainer{Container: container}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }

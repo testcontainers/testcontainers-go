@@ -2,9 +2,9 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -70,7 +70,7 @@ func TestRootlessDockerSocketPathNotSupportedOnWindows(t *testing.T) {
 	t.Setenv("GOOS", "windows")
 	socketPath, err := rootlessDockerSocketPath(context.Background())
 	require.ErrorIs(t, err, ErrRootlessDockerNotSupportedWindows)
-	assert.Empty(t, socketPath)
+	require.Empty(t, socketPath)
 }
 
 func TestRootlessDockerSocketPath(t *testing.T) {
@@ -161,7 +161,7 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 		})
 
 		uid := os.Getuid()
-		runDir := filepath.Join(tmpDir, "user", fmt.Sprintf("%d", uid))
+		runDir := filepath.Join(tmpDir, "user", strconv.Itoa(uid))
 		err = createTmpDockerSocket(runDir)
 		require.NoError(t, err)
 
@@ -178,18 +178,13 @@ func TestRootlessDockerSocketPath(t *testing.T) {
 		setupRootlessNotFound(t)
 
 		socketPath, err := rootlessDockerSocketPath(context.Background())
-		require.ErrorIs(t, err, ErrRootlessDockerNotFound)
-		assert.Empty(t, socketPath)
-
-		// the wrapped error includes all the locations that were checked
-		require.ErrorContains(t, err, ErrRootlessDockerNotFoundXDGRuntimeDir.Error())
-		require.ErrorContains(t, err, ErrRootlessDockerNotFoundHomeRunDir.Error())
-		require.ErrorContains(t, err, ErrRootlessDockerNotFoundHomeDesktopDir.Error())
-		require.ErrorContains(t, err, ErrRootlessDockerNotFoundRunDir.Error())
+		require.ErrorIs(t, err, ErrRootlessDockerNotFoundXDGRuntimeDir)
+		require.Empty(t, socketPath)
 	})
 }
 
 func setupRootlessNotFound(t *testing.T) {
+	t.Helper()
 	t.Cleanup(func() {
 		baseRunDir = originalBaseRunDir
 		os.Setenv("XDG_RUNTIME_DIR", originalXDGRuntimeDir)
@@ -213,7 +208,7 @@ func setupRootlessNotFound(t *testing.T) {
 
 	baseRunDir = tmpDir
 	uid := os.Getuid()
-	runDir := filepath.Join(tmpDir, "run", "user", fmt.Sprintf("%d", uid))
+	runDir := filepath.Join(tmpDir, "run", "user", strconv.Itoa(uid))
 	err = createTmpDir(runDir)
 	require.NoError(t, err)
 }

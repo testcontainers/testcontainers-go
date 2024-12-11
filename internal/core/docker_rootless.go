@@ -3,11 +3,11 @@ package core
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 )
 
 var (
@@ -53,18 +53,24 @@ func rootlessDockerSocketPath(_ context.Context) (string, error) {
 		rootlessSocketPathFromRunDir,
 	}
 
-	outerErr := ErrRootlessDockerNotFound
+	var errs []error
 	for _, socketPathFn := range socketPathFns {
 		s, err := socketPathFn()
 		if err != nil {
-			outerErr = fmt.Errorf("%w: %w", outerErr, err)
+			if !isHostNotSet(err) {
+				errs = append(errs, err)
+			}
 			continue
 		}
 
 		return DockerSocketSchema + s, nil
 	}
 
-	return "", outerErr
+	if len(errs) > 0 {
+		return "", errors.Join(errs...)
+	}
+
+	return "", ErrRootlessDockerNotFound
 }
 
 func fileExists(f string) bool {
@@ -138,7 +144,7 @@ func rootlessSocketPathFromHomeDesktopDir() (string, error) {
 // rootlessSocketPathFromRunDir returns the path to the rootless Docker socket from the /run/user/<uid>/docker.sock file.
 func rootlessSocketPathFromRunDir() (string, error) {
 	uid := os.Getuid()
-	f := filepath.Join(baseRunDir, "user", fmt.Sprintf("%d", uid), "docker.sock")
+	f := filepath.Join(baseRunDir, "user", strconv.Itoa(uid), "docker.sock")
 	if fileExists(f) {
 		return f, nil
 	}

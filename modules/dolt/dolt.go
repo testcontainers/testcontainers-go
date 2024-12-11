@@ -3,6 +3,7 @@ package dolt
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -17,8 +18,6 @@ const (
 	defaultPassword     = "test"
 	defaultDatabaseName = "test"
 )
-
-const defaultImage = "dolthub/dolt-sql-server:1.32.4"
 
 // DoltContainer represents the Dolt container type used in the module
 type DoltContainer struct {
@@ -40,10 +39,16 @@ func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
 	}
 }
 
-// RunContainer creates an instance of the Dolt container type
+// Deprecated: use Run instead
+// RunContainer creates an instance of the Couchbase container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*DoltContainer, error) {
+	return Run(ctx, "dolthub/dolt-sql-server:1.32.4", opts...)
+}
+
+// Run creates an instance of the Dolt container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*DoltContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        defaultImage,
+		Image:        img,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
 			"DOLT_USER":     defaultUser,
@@ -61,7 +66,9 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	opts = append(opts, WithDefaultCredentials())
 
 	for _, opt := range opts {
-		opt.Customize(&genericContainerReq)
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, err
+		}
 	}
 
 	createUser := true
@@ -78,19 +85,24 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	if len(password) == 0 && password == "" && !strings.EqualFold(rootUser, username) {
-		return nil, fmt.Errorf("empty password can be used only with the root user")
+		return nil, errors.New("empty password can be used only with the root user")
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	var dc *DoltContainer
+	if container != nil {
+		dc = &DoltContainer{Container: container, username: username, password: password, database: database}
+	}
 	if err != nil {
-		return nil, err
+		return dc, err
 	}
 
-	dc := &DoltContainer{container, username, password, database}
-
 	// dolthub/dolt-sql-server does not create user or database, so we do so here
-	err = dc.initialize(ctx, createUser)
-	return dc, err
+	if err = dc.initialize(ctx, createUser); err != nil {
+		return dc, fmt.Errorf("initialize: %w", err)
+	}
+
+	return dc, nil
 }
 
 func (c *DoltContainer) initialize(ctx context.Context, createUser bool) error {
