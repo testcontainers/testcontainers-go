@@ -73,12 +73,15 @@ func WithProjectID(projectID string) Option {
 	}
 }
 
-// WithDataYamlFile seeds the Bigquery project for the GCloud container.
+// WithDataYamlFile seeds the Bigquery project for the GCloud container
+// with the local path to the data yaml file, which is used to copy the file to the container,
+// and then process the file to seed the Bigquery project.
+//
 // Other GCloud containers will ignore this option.
 // If this option is passed multiple times, the last file will be used.
-func WithDataYamlFile(dataYamlFile string) Option {
+func WithDataYamlFile(f string) Option {
 	return func(o *options) {
-		o.bigQueryDataYamlFile = dataYamlFile
+		o.bigQueryDataYamlFile = f
 	}
 }
 
