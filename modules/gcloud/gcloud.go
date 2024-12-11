@@ -44,14 +44,12 @@ func newGCloudContainer(ctx context.Context, req testcontainers.GenericContainer
 }
 
 type options struct {
-	ProjectID    string
-	DataYamlFile string
+	ProjectID string
 }
 
 func defaultOptions() options {
 	return options{
-		ProjectID:    defaultProjectID,
-		DataYamlFile: "/data.yaml",
+		ProjectID: defaultProjectID,
 	}
 }
 
