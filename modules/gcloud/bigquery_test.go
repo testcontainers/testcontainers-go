@@ -96,9 +96,9 @@ func TestBigQueryWithDataYamlFile(t *testing.T) {
 		log.Fatalf("failed to run container: %v", err)
 	}
 
-	bigQueryContainer, err := gcloud.RunBigQueryContainer(
+	bigQueryContainer, err := gcloud.RunBigQuery(
 		ctx,
-		testcontainers.WithImage("ghcr.io/goccy/bigquery-emulator:0.6.1"),
+		"ghcr.io/goccy/bigquery-emulator:0.6.1",
 		gcloud.WithProjectID("test"),
 		gcloud.WithDataYamlFile(absPath),
 	)
