@@ -76,16 +76,16 @@ func WithProjectID(projectID string) Option {
 	}
 }
 
-// WithDataYAML seeds the Bigquery project for the GCloud container with an io.Reader representing
+// WithDataYAML seeds the Bigquery project for the GCloud container with an [io.Reader] representing
 // the data yaml file, which is used to copy the file to the container, and then processed to seed
 // the Bigquery project.
 //
 // Other GCloud containers will ignore this option.
-// If this option is passed multiple times, the last added will be used.
+// If this option is passed multiple times, an error is returned.
 func WithDataYAML(r io.Reader) Option {
 	return func(o *options) error {
 		if o.bigQueryDataYaml != nil {
-			return errors.New("data yaml file already exists")
+			return errors.New("data yaml already exists")
 		}
 
 		o.bigQueryDataYaml = r
