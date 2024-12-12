@@ -76,9 +76,9 @@ func WithProjectID(projectID string) Option {
 	}
 }
 
-// WithDataYAML seeds the Bigquery project for the GCloud container with an [io.Reader] representing
+// WithDataYAML seeds the BigQuery project for the GCloud container with an [io.Reader] representing
 // the data yaml file, which is used to copy the file to the container, and then processed to seed
-// the Bigquery project.
+// the BigQuery project.
 //
 // Other GCloud containers will ignore this option.
 // If this option is passed multiple times, an error is returned.
