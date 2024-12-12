@@ -93,60 +93,79 @@ func ExampleRunBigQueryContainer() {
 	// 30
 }
 
-func TestBigQueryWithDataYamlFile(t *testing.T) {
+func TestBigQueryWithDataYAML(t *testing.T) {
 	ctx := context.Background()
 
-	bigQueryContainer, err := gcloud.RunBigQuery(
-		ctx,
-		"ghcr.io/goccy/bigquery-emulator:0.6.1",
-		gcloud.WithProjectID("test"),
-		gcloud.WithDataYAML(bytes.NewReader(dataYaml)),
-	)
-	testcontainers.CleanupContainer(t, bigQueryContainer)
-	require.NoError(t, err)
-
-	projectID := bigQueryContainer.Settings.ProjectID
-
-	opts := []option.ClientOption{
-		option.WithEndpoint(bigQueryContainer.URI),
-		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
-		option.WithoutAuthentication(),
-		internaloption.SkipDialSettingsValidation(),
-	}
-
-	client, err := bigquery.NewClient(ctx, projectID, opts...)
-	require.NoError(t, err)
-	defer client.Close()
-
-	selectQuery := client.Query("SELECT * FROM dataset1.table_a where name = @name")
-	selectQuery.QueryConfig.Parameters = []bigquery.QueryParameter{
-		{Name: "name", Value: "bob"},
-	}
-	it, err := selectQuery.Read(ctx)
-	require.NoError(t, err)
-
-	var val []bigquery.Value
-	for {
-		err := it.Next(&val)
-		if errors.Is(err, iterator.Done) {
-			break
-		}
+	t.Run("valid", func(t *testing.T) {
+		bigQueryContainer, err := gcloud.RunBigQuery(
+			ctx,
+			"ghcr.io/goccy/bigquery-emulator:0.6.1",
+			gcloud.WithProjectID("test"),
+			gcloud.WithDataYAML(bytes.NewReader(dataYaml)),
+		)
+		testcontainers.CleanupContainer(t, bigQueryContainer)
 		require.NoError(t, err)
-	}
 
-	require.Equal(t, int64(30), val[0])
-}
+		projectID := bigQueryContainer.Settings.ProjectID
 
-func TestBigQueryWithDataYamlFile_multiple(t *testing.T) {
-	ctx := context.Background()
+		opts := []option.ClientOption{
+			option.WithEndpoint(bigQueryContainer.URI),
+			option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
+			option.WithoutAuthentication(),
+			internaloption.SkipDialSettingsValidation(),
+		}
 
-	bigQueryContainer, err := gcloud.RunBigQuery(
-		ctx,
-		"ghcr.io/goccy/bigquery-emulator:0.6.1",
-		gcloud.WithProjectID("test"),
-		gcloud.WithDataYAML(bytes.NewReader(dataYaml)),
-		gcloud.WithDataYAML(bytes.NewReader(dataYaml)), // last file will cause an error
-	)
-	testcontainers.CleanupContainer(t, bigQueryContainer)
-	require.Error(t, err)
+		client, err := bigquery.NewClient(ctx, projectID, opts...)
+		require.NoError(t, err)
+		defer client.Close()
+
+		selectQuery := client.Query("SELECT * FROM dataset1.table_a where name = @name")
+		selectQuery.QueryConfig.Parameters = []bigquery.QueryParameter{
+			{Name: "name", Value: "bob"},
+		}
+		it, err := selectQuery.Read(ctx)
+		require.NoError(t, err)
+
+		var val []bigquery.Value
+		for {
+			err := it.Next(&val)
+			if errors.Is(err, iterator.Done) {
+				break
+			}
+			require.NoError(t, err)
+		}
+
+		require.Equal(t, int64(30), val[0])
+	})
+
+	t.Run("multi-value-set", func(t *testing.T) {
+		bigQueryContainer, err := gcloud.RunBigQuery(
+			ctx,
+			"ghcr.io/goccy/bigquery-emulator:0.6.1",
+			gcloud.WithProjectID("test"),
+			gcloud.WithDataYAML(bytes.NewReader(dataYaml)),
+			gcloud.WithDataYAML(bytes.NewReader(dataYaml)),
+		)
+		testcontainers.CleanupContainer(t, bigQueryContainer)
+		require.EqualError(t, err, `data yaml already exists`)
+	})
+
+	t.Run("multi-value-not-set", func(t *testing.T) {
+		noValueOption := func() testcontainers.CustomizeRequestOption {
+			return func(req *testcontainers.GenericContainerRequest) error {
+				req.Cmd = append(req.Cmd, "--data-from-yaml")
+				return nil
+			}
+		}
+
+		bigQueryContainer, err := gcloud.RunBigQuery(
+			ctx,
+			"ghcr.io/goccy/bigquery-emulator:0.6.1",
+			noValueOption(), // because --project is always added last, this option will receive `--project` as value, which results in an error
+			gcloud.WithProjectID("test"),
+			gcloud.WithDataYAML(bytes.NewReader(dataYaml)),
+		)
+		testcontainers.CleanupContainer(t, bigQueryContainer)
+		require.Error(t, err)
+	})
 }
