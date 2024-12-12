@@ -88,9 +88,9 @@ func ExampleRunBigQueryContainer() {
 		}
 	}
 
-	fmt.Println(val[0])
+	fmt.Println(val)
 	// Output:
-	// 30
+	// [30]
 }
 
 func TestBigQueryWithDataYAML(t *testing.T) {
