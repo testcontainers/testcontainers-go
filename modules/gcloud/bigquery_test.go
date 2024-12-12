@@ -1,6 +1,7 @@
 package gcloud_test
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
 	"errors"
@@ -8,7 +9,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"cloud.google.com/go/bigquery"
@@ -152,8 +152,8 @@ func TestBigQueryWithDataYamlFile_multiple(t *testing.T) {
 		ctx,
 		"ghcr.io/goccy/bigquery-emulator:0.6.1",
 		gcloud.WithProjectID("test"),
-		gcloud.WithDataYAML(strings.NewReader(string(dataYaml))),
-		gcloud.WithDataYAML(strings.NewReader(string(dataYaml))), // last file will cause an error
+		gcloud.WithDataYAML(bytes.NewReader(dataYaml)),
+		gcloud.WithDataYAML(bytes.NewReader(dataYaml)), // last file will cause an error
 	)
 	testcontainers.CleanupContainer(t, bigQueryContainer)
 	require.Error(t, err)
