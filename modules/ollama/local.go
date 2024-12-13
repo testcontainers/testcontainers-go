@@ -61,9 +61,6 @@ func runLocal(ctx context.Context, env map[string]string) (*OllamaContainer, err
 	c.localCtx.logFile = logFile
 	c.localCtx.mx.Unlock()
 
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
 	err = waitForOllama(ctx, c)
 	if err != nil {
 		return nil, fmt.Errorf("wait for ollama to start: %w", err)
@@ -119,6 +116,9 @@ func startOllama(ctx context.Context, localCtx *localContext) (*exec.Cmd, *os.Fi
 // Wait until the Ollama process is ready, checking that the log file contains
 // the "Listening on 127.0.0.1:11434" message
 func waitForOllama(ctx context.Context, c *OllamaContainer) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
 	err := wait.ForLog("Listening on "+localIP+":11434").WaitUntilReady(ctx, c)
 	if err != nil {
 		logs, err := c.Logs(ctx)
