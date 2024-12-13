@@ -27,7 +27,7 @@ type OllamaContainer struct {
 // using the default port 11434.
 func (c *OllamaContainer) ConnectionString(ctx context.Context) (string, error) {
 	if c.localCtx != nil {
-		return "http://127.0.0.1:11434", nil
+		return "http://" + c.localCtx.host + ":" + c.localCtx.port, nil
 	}
 
 	host, err := c.Host(ctx)

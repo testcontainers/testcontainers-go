@@ -93,6 +93,10 @@ Please consider the following differences when using the local Ollama binary:
 
 The local Ollama binary will create a log file in the current working directory, and it will be available in the container's `Logs` method.
 
+!!!info
+    The local Ollama binary will use the `OLLAMA_HOST` environment variable to set the host and port to listen on.
+    If the environment variable is not set, it will use the default host `127.0.0.1` and port `11434`.
+
 {% include "../features/common_functional_options.md" %}
 
 ### Container Methods
