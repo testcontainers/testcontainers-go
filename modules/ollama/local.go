@@ -382,22 +382,22 @@ func (c *OllamaContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Po
 	return nat.Port(c.localCtx.port + "/tcp"), nil
 }
 
-// Networks returns the networks for local Ollama binary, which is empty.
+// Networks returns the networks for local Ollama binary, which is a nil slice.
 func (c *OllamaContainer) Networks(ctx context.Context) ([]string, error) {
 	if c.localCtx == nil {
 		return c.Container.Networks(ctx)
 	}
 
-	return []string{}, nil
+	return nil, nil
 }
 
-// NetworkAliases returns the network aliases for local Ollama binary, which is empty.
+// NetworkAliases returns the network aliases for local Ollama binary, which is a nil map.
 func (c *OllamaContainer) NetworkAliases(ctx context.Context) (map[string][]string, error) {
 	if c.localCtx == nil {
 		return c.Container.NetworkAliases(ctx)
 	}
 
-	return map[string][]string{}, nil
+	return nil, nil
 }
 
 // SessionID returns the session ID for local Ollama binary, which is the session ID
