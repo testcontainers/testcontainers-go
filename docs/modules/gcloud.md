@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/gcloud
 ## Usage example
 
 !!!info
-    By default, the all the emulators use `gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators` as the default Docker image, except for the BigQuery emulator, which uses `ghcr.io/goccy/bigquery-emulator:0.4.3`, and Spanner, which uses `gcr.io/cloud-spanner-emulator/emulator:1.4.0`.
+    By default, the all the emulators use `gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators` as the default Docker image, except for the BigQuery emulator, which uses `ghcr.io/goccy/bigquery-emulator:0.6.1`, and Spanner, which uses `gcr.io/cloud-spanner-emulator/emulator:1.4.0`.
 
 ### BigQuery
 
@@ -27,6 +27,22 @@ go get github.com/testcontainers/testcontainers-go/modules/gcloud
 <!--/codeinclude-->
 
 It's important to set the `option.WithEndpoint()` option using the container's URI, as shown in the client example above.
+
+#### Data YAML (Seed File)
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you would like to do additional initialization in the BigQuery container, add a `data.yaml` file represented by an `io.Reader` to the container request with the `WithDataYAML` function.
+That file is copied after the container is created but before it's started. The startup command then used will look like `--project test --data-from-yaml /testcontainers-data.yaml`.
+
+An example of a `data.yaml` file that seeds the BigQuery instance with datasets and tables is shown below:
+
+<!--codeinclude-->
+[Data Yaml content](../../modules/gcloud/testdata/data.yaml)
+<!--/codeinclude-->
+
+!!!warning
+    This feature is only available for the `BigQuery` container, and if you pass multiple `WithDataYAML` options, an error is returned.
 
 ### BigTable
 

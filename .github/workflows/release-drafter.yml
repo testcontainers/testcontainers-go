@@ -5,6 +5,10 @@ on:
   push:
     branches:
       - main
+  # pull_request event is required only for autolabeler
+  pull_request:
+    # Only following types are handled by the action, but one can default to all as well
+    types: [opened, reopened, synchronize]
 
 permissions:
   contents: read
@@ -17,5 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: release-drafter/release-drafter@3f0f87098bd6b5c5b9a36d49c41d998ea58f9348 # v5.19.0
+        with:
+          disable-autolabeler: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
