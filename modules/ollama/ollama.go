@@ -103,17 +103,17 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	// always request a GPU if the host supports it
 	opts = append(opts, withGpu())
 
-	options := defaultOptions()
+	useLocal := false
 	for _, opt := range opts {
 		if err := opt.Customize(&genericContainerReq); err != nil {
 			return nil, fmt.Errorf("customize: %w", err)
 		}
 		if _, ok := opt.(UseLocal); ok {
-			options.useLocal = true
+			useLocal = true
 		}
 	}
 
-	if options.useLocal {
+	if useLocal {
 		container, err := runLocal(ctx, req.Env)
 		if err == nil {
 			return container, nil

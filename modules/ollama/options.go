@@ -10,14 +10,6 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-type options struct {
-	useLocal bool
-}
-
-func defaultOptions() options {
-	return options{}
-}
-
 var noopCustomizeRequestOption = func(req *testcontainers.GenericContainerRequest) error { return nil }
 
 // withGpu requests a GPU for the container, which could improve performance for some models.
