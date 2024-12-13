@@ -112,7 +112,7 @@ jobs:
         run: |
           SCRIPT_PATH="./.github/scripts/${{ inputs.project-directory }}/install-dependencies.sh"
           if [ -f "$SCRIPT_PATH" ]; then
-            bash "$SCRIPT_PATH"
+            $SCRIPT_PATH
           else
             echo "No dependencies script found at $SCRIPT_PATH - skipping installation"
           fi
