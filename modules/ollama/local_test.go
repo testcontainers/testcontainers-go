@@ -29,7 +29,7 @@ func TestRun_local(t *testing.T) {
 	ollamaContainer, err := ollama.Run(
 		ctx,
 		"ollama/ollama:0.1.25",
-		ollama.WithUseLocal("FOO=BAR"),
+		ollama.WithUseLocal(map[string]string{"FOO": "BAR"}),
 	)
 	testcontainers.CleanupContainer(t, ollamaContainer)
 	require.NoError(t, err)
@@ -266,7 +266,7 @@ func TestRun_localWithCustomLogFile(t *testing.T) {
 
 	ctx := context.Background()
 
-	ollamaContainer, err := ollama.Run(ctx, "ollama/ollama:0.1.25", ollama.WithUseLocal("FOO=BAR"))
+	ollamaContainer, err := ollama.Run(ctx, "ollama/ollama:0.1.25", ollama.WithUseLocal(map[string]string{"FOO": "BAR"}))
 	require.NoError(t, err)
 	testcontainers.CleanupContainer(t, ollamaContainer)
 
@@ -285,7 +285,7 @@ func TestRun_localWithCustomHost(t *testing.T) {
 
 	ctx := context.Background()
 
-	ollamaContainer, err := ollama.Run(ctx, "ollama/ollama:0.1.25", ollama.WithUseLocal("FOO=BAR"))
+	ollamaContainer, err := ollama.Run(ctx, "ollama/ollama:0.1.25", ollama.WithUseLocal(nil))
 	require.NoError(t, err)
 	testcontainers.CleanupContainer(t, ollamaContainer)
 
