@@ -26,7 +26,7 @@ type OllamaContainer struct {
 // ConnectionString returns the connection string for the Ollama container,
 // using the default port 11434.
 func (c *OllamaContainer) ConnectionString(ctx context.Context) (string, error) {
-	if c.localCtx.useLocal {
+	if c.localCtx != nil {
 		return "http://127.0.0.1:11434", nil
 	}
 
@@ -48,7 +48,7 @@ func (c *OllamaContainer) ConnectionString(ctx context.Context) (string, error) 
 // of the container into a new image with the given name, so it doesn't override existing images.
 // It should be used for creating an image that contains a loaded model.
 func (c *OllamaContainer) Commit(ctx context.Context, targetImage string) error {
-	if c.localCtx.useLocal {
+	if c.localCtx != nil {
 		return nil
 	}
 
@@ -125,7 +125,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	var c *OllamaContainer
 	if container != nil {
-		c = &OllamaContainer{Container: container, localCtx: &localContext{useLocal: false}}
+		c = &OllamaContainer{Container: container}
 	}
 
 	if err != nil {
