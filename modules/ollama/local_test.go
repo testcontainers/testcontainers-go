@@ -57,16 +57,16 @@ func TestRun_local(t *testing.T) {
 
 	t.Run("copy", func(t *testing.T) {
 		err := ollamaContainer.CopyToContainer(ctx, []byte("test"), "/tmp", 0o755)
-		require.NoError(t, err)
+		require.Error(t, err)
 
 		err = ollamaContainer.CopyDirToContainer(ctx, ".", "/tmp", 0o755)
-		require.NoError(t, err)
+		require.Error(t, err)
 
 		err = ollamaContainer.CopyFileToContainer(ctx, ".", "/tmp", 0o755)
-		require.NoError(t, err)
+		require.Error(t, err)
 
 		reader, err := ollamaContainer.CopyFileFromContainer(ctx, "/tmp")
-		require.NoError(t, err)
+		require.Error(t, err)
 		require.Nil(t, reader)
 	})
 
