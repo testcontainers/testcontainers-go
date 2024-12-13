@@ -77,10 +77,6 @@ func logFile() (*os.File, error) {
 		logName = envLogName
 	}
 
-	if _, err := os.Stat(logName); err == nil {
-		return os.Open(logName)
-	}
-
 	file, err := os.Create(logName)
 	if err != nil {
 		return nil, fmt.Errorf("create ollama log file: %w", err)
