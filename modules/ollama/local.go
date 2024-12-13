@@ -29,7 +29,10 @@ const (
 	localPort = "11434"
 )
 
-var defaultStopTimeout = time.Second * 5
+var (
+	defaultStopTimeout      = time.Second * 5
+	errCopyAPIsNotSupported = errors.New("copy APIs are not supported for local Ollama binary")
+)
 
 // localContext is a type holding the context for local Ollama executions.
 type localContext struct {
@@ -179,7 +182,7 @@ func (c *OllamaContainer) CopyToContainer(ctx context.Context, fileContent []byt
 		return c.Container.CopyToContainer(ctx, fileContent, containerFilePath, fileMode)
 	}
 
-	return nil
+	return errCopyAPIsNotSupported
 }
 
 // CopyDirToContainer is a no-op for the local Ollama binary.
@@ -188,7 +191,7 @@ func (c *OllamaContainer) CopyDirToContainer(ctx context.Context, hostDirPath st
 		return c.Container.CopyDirToContainer(ctx, hostDirPath, containerParentPath, fileMode)
 	}
 
-	return nil
+	return errCopyAPIsNotSupported
 }
 
 // CopyFileToContainer is a no-op for the local Ollama binary.
@@ -197,7 +200,7 @@ func (c *OllamaContainer) CopyFileToContainer(ctx context.Context, hostFilePath 
 		return c.Container.CopyFileToContainer(ctx, hostFilePath, containerFilePath, fileMode)
 	}
 
-	return nil
+	return errCopyAPIsNotSupported
 }
 
 // CopyFileFromContainer is a no-op for the local Ollama binary.
@@ -206,7 +209,7 @@ func (c *OllamaContainer) CopyFileFromContainer(ctx context.Context, filePath st
 		return c.Container.CopyFileFromContainer(ctx, filePath)
 	}
 
-	return nil, nil
+	return nil, errCopyAPIsNotSupported
 }
 
 // GetLogProductionErrorChannel returns a nil channel.
