@@ -493,38 +493,36 @@ func (c *OllamaContainer) Stop(ctx context.Context, d *time.Duration) error {
 }
 
 // Terminate stops the local Ollama process, removing the log file.
-func (c *OllamaContainer) Terminate(ctx context.Context) (err error) {
+func (c *OllamaContainer) Terminate(ctx context.Context) error {
 	if c.localCtx == nil {
 		return c.Container.Terminate(ctx)
 	}
 
 	// First try to stop gracefully
-	err = c.Stop(ctx, &defaultStopTimeout)
+	err := c.Stop(ctx, &defaultStopTimeout)
 	if err != nil {
 		return fmt.Errorf("stop ollama: %w", err)
 	}
 
-	defer func() {
-		c.localCtx.mx.Lock()
-		defer c.localCtx.mx.Unlock()
+	c.localCtx.mx.Lock()
+	defer c.localCtx.mx.Unlock()
 
-		if c.localCtx.logFile == nil {
-			return
+	if c.localCtx.logFile == nil {
+		return nil
+	}
+
+	// remove the log file if it exists
+	if _, err = os.Stat(c.localCtx.logFile.Name()); err == nil {
+		err = c.localCtx.logFile.Close()
+		if err != nil {
+			return err
 		}
 
-		// remove the log file if it exists
-		if _, err := os.Stat(c.localCtx.logFile.Name()); err == nil {
-			err = c.localCtx.logFile.Close()
-			if err != nil {
-				return
-			}
-
-			err = os.Remove(c.localCtx.logFile.Name())
-			if err != nil {
-				return
-			}
+		err = os.Remove(c.localCtx.logFile.Name())
+		if err != nil {
+			return err
 		}
-	}()
+	}
 
 	return nil
 }
