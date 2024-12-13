@@ -38,9 +38,9 @@ type localContext struct {
 // runLocal calls the local Ollama binary instead of using a Docker container.
 func runLocal(env map[string]string) (*OllamaContainer, error) {
 	// Apply the environment variables to the command.
-	cmdEnv := []string{}
+	cmdEnv := make([]string, 0, len(env)*2)
 	for k, v := range env {
-		cmdEnv = append(cmdEnv, fmt.Sprintf("%s=%s", k, v))
+		cmdEnv = append(cmdEnv, k+"="+v)
 	}
 
 	c := &OllamaContainer{
