@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"strings"
@@ -23,7 +24,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const localIP = "127.0.0.1"
+const (
+	localIP   = "127.0.0.1"
+	localPort = "11434"
+)
 
 var defaultStopTimeout = time.Second * 5
 
@@ -33,6 +37,8 @@ type localContext struct {
 	serveCmd *exec.Cmd
 	logFile  *os.File
 	mx       sync.Mutex
+	host     string
+	port     string
 }
 
 // runLocal calls the local Ollama binary instead of using a Docker container.
@@ -43,10 +49,24 @@ func runLocal(ctx context.Context, env map[string]string) (*OllamaContainer, err
 		cmdEnv = append(cmdEnv, k+"="+v)
 	}
 
+	localCtx := &localContext{
+		env:  cmdEnv,
+		host: localIP,
+		port: localPort,
+	}
+
+	if envHost := os.Getenv("OLLAMA_HOST"); envHost != "" {
+		host, port, err := net.SplitHostPort(envHost)
+		if err != nil {
+			return nil, fmt.Errorf("invalid OLLAMA_HOST: %w", err)
+		}
+
+		localCtx.host = host
+		localCtx.port = port
+	}
+
 	c := &OllamaContainer{
-		localCtx: &localContext{
-			env: cmdEnv,
-		},
+		localCtx: localCtx,
 	}
 
 	c.localCtx.mx.Lock()
@@ -115,7 +135,7 @@ func (c *OllamaContainer) waitForOllama(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	err := wait.ForLog("Listening on "+localIP+":11434").WaitUntilReady(ctx, c)
+	err := wait.ForLog("Listening on "+c.localCtx.host+":"+c.localCtx.port).WaitUntilReady(ctx, c)
 	if err != nil {
 		logs, err := c.Logs(ctx)
 		if err != nil {
@@ -204,7 +224,7 @@ func (c *OllamaContainer) Endpoint(ctx context.Context, port string) (string, er
 		return c.Container.Endpoint(ctx, port)
 	}
 
-	return localIP + ":11434", nil
+	return c.localCtx.host + ":" + c.localCtx.port, nil
 }
 
 // Exec executes a command using the local Ollama binary.
@@ -302,7 +322,7 @@ func (c *OllamaContainer) Inspect(ctx context.Context) (*types.ContainerJSON, er
 		Config: &container.Config{
 			Image: string(bs),
 			ExposedPorts: nat.PortSet{
-				"11434/tcp": struct{}{},
+				nat.Port(c.localCtx.port + "/tcp"): struct{}{},
 			},
 			Hostname:   "localhost",
 			Entrypoint: []string{"ollama", "serve"},
@@ -312,13 +332,13 @@ func (c *OllamaContainer) Inspect(ctx context.Context) (*types.ContainerJSON, er
 			NetworkSettingsBase: types.NetworkSettingsBase{
 				Bridge: "bridge",
 				Ports: nat.PortMap{
-					"11434/tcp": {
-						{HostIP: localIP, HostPort: "11434"},
+					nat.Port(c.localCtx.port + "/tcp"): {
+						{HostIP: c.localCtx.host, HostPort: c.localCtx.port},
 					},
 				},
 			},
 			DefaultNetworkSettings: types.DefaultNetworkSettings{
-				IPAddress: localIP,
+				IPAddress: c.localCtx.host,
 			},
 		},
 	}, nil
@@ -356,7 +376,7 @@ func (c *OllamaContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Po
 	}
 
 	// Ollama typically uses port 11434 by default
-	return "11434/tcp", nil
+	return nat.Port(c.localCtx.port + "/tcp"), nil
 }
 
 // Networks returns the networks for local Ollama binary, which is empty.
