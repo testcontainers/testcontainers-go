@@ -304,14 +304,14 @@ func (c *OllamaContainer) Inspect(ctx context.Context) (*types.ContainerJSON, er
 	}
 
 	// read the version from the ollama binary
-	buf := &bytes.Buffer{}
-	command := prepareExec(ctx, "ollama", []string{"-v"}, c.localCtx.env, buf)
+	var buf bytes.Buffer
+	command := prepareExec(ctx, "ollama", []string{"-v"}, c.localCtx.env, &buf)
 	err = command.Run()
 	if err != nil {
 		return nil, fmt.Errorf("read ollama -v output: %w", err)
 	}
 
-	bs, err := io.ReadAll(buf)
+	bs, err := io.ReadAll(&buf)
 	if err != nil {
 		return nil, fmt.Errorf("read ollama -v output: %w", err)
 	}
