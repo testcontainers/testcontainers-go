@@ -55,6 +55,7 @@ func runLocal(env map[string]string) (*OllamaContainer, error) {
 
 	serveCmd, logFile, err := startOllama(context.Background(), c.localCtx)
 	if err != nil {
+		c.localCtx.mx.Unlock()
 		return nil, fmt.Errorf("start ollama: %w", err)
 	}
 
