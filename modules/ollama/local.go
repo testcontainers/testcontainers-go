@@ -29,7 +29,6 @@ var defaultStopTimeout = time.Second * 5
 
 // localContext is a type holding the context for local Ollama executions.
 type localContext struct {
-	useLocal bool
 	env      []string
 	serveCmd *exec.Cmd
 	logFile  *os.File
@@ -46,8 +45,7 @@ func runLocal(env map[string]string) (*OllamaContainer, error) {
 
 	c := &OllamaContainer{
 		localCtx: &localContext{
-			useLocal: true,
-			env:      cmdEnv,
+			env: cmdEnv,
 		},
 	}
 
@@ -143,7 +141,7 @@ func waitForOllama(ctx context.Context, c *OllamaContainer) error {
 
 // ContainerIP returns the IP address of the local Ollama binary.
 func (c *OllamaContainer) ContainerIP(ctx context.Context) (string, error) {
-	if !c.localCtx.useLocal {
+	if c.localCtx == nil {
 		return c.Container.ContainerIP(ctx)
 	}
 
@@ -152,7 +150,7 @@ func (c *OllamaContainer) ContainerIP(ctx context.Context) (string, error) {
 
 // ContainerIPs returns a slice with the IP address of the local Ollama binary.
 func (c *OllamaContainer) ContainerIPs(ctx context.Context) ([]string, error) {
-	if !c.localCtx.useLocal {
+	if c.localCtx == nil {
 		return c.Container.ContainerIPs(ctx)
 	}
 
@@ -161,7 +159,7 @@ func (c *OllamaContainer) ContainerIPs(ctx context.Context) ([]string, error) {
 
 // CopyToContainer is a no-op for the local Ollama binary.
 func (c *OllamaContainer) CopyToContainer(ctx context.Context, fileContent []byte, containerFilePath string, fileMode int64) error {
-	if !c.localCtx.useLocal {
+	if c.localCtx == nil {
 		return c.Container.CopyToContainer(ctx, fileContent, containerFilePath, fileMode)
 	}
 
@@ -170,7 +168,7 @@ func (c *OllamaContainer) CopyToContainer(ctx context.Context, fileContent []byt
 
 // CopyDirToContainer is a no-op for the local Ollama binary.
 func (c *OllamaContainer) CopyDirToContainer(ctx context.Context, hostDirPath string, containerParentPath string, fileMode int64) error {
-	if !c.localCtx.useLocal {
+	if c.localCtx == nil {
 		return c.Container.CopyDirToContainer(ctx, hostDirPath, containerParentPath, fileMode)
 	}
 
@@ -179,7 +177,7 @@ func (c *OllamaContainer) CopyDirToContainer(ctx context.Context, hostDirPath st
 
 // CopyFileToContainer is a no-op for the local Ollama binary.
 func (c *OllamaContainer) CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error {
-	if !c.localCtx.useLocal {
+	if c.localCtx == nil {
 		return c.Container.CopyFileToContainer(ctx, hostFilePath, containerFilePath, fileMode)
 	}
 
@@ -188,7 +186,7 @@ func (c *OllamaContainer) CopyFileToContainer(ctx context.Context, hostFilePath 
 
 // CopyFileFromContainer is a no-op for the local Ollama binary.
 func (c *OllamaContainer) CopyFileFromContainer(ctx context.Context, filePath string) (io.ReadCloser, error) {
-	if !c.localCtx.useLocal {
+	if c.localCtx == nil {
 		return c.Container.CopyFileFromContainer(ctx, filePath)
 	}
 
@@ -197,7 +195,7 @@ func (c *OllamaContainer) CopyFileFromContainer(ctx context.Context, filePath st
 
 // GetLogProductionErrorChannel returns a nil channel.
 func (c *OllamaContainer) GetLogProductionErrorChannel() <-chan error {
-	if !c.localCtx.useLocal {
+	if c.localCtx == nil {
 		return c.Container.GetLogProductionErrorChannel()
 	}
 
@@ -206,7 +204,7 @@ func (c *OllamaContainer) GetLogProductionErrorChannel() <-chan error {
 
 // Endpoint returns the 127.0.0.1:11434 endpoint for the local Ollama binary.
 func (c *OllamaContainer) Endpoint(ctx context.Context, port string) (string, error) {
-	if !c.localCtx.useLocal {
+	if c.localCtx == nil {
 		return c.Container.Endpoint(ctx, port)
 	}
 
@@ -215,7 +213,7 @@ func (c *OllamaContainer) Endpoint(ctx context.Context, port string) (string, er
 
 // Exec executes a command using the local Ollama binary.
 func (c *OllamaContainer) Exec(ctx context.Context, cmd []string, options ...tcexec.ProcessOption) (int, io.Reader, error) {
-	if !c.localCtx.useLocal {
+	if c.localCtx == nil {
 		return c.Container.Exec(ctx, cmd, options...)
 	}
 
@@ -257,7 +255,7 @@ func prepareExec(ctx context.Context, bin string, args []string, env []string, o
 
 // GetContainerID returns a placeholder ID for local execution
 func (c *OllamaContainer) GetContainerID() string {
-	if !c.localCtx.useLocal {
+	if c.localCtx == nil {
 		return c.Container.GetContainerID()
 	}
 
@@ -266,7 +264,7 @@ func (c *OllamaContainer) GetContainerID() string {
 
 // Host returns the 127.0.0.1 address for the local Ollama binary.
 func (c *OllamaContainer) Host(ctx context.Context) (string, error) {
-	if !c.localCtx.useLocal {
+	if c.localCtx == nil {
 		return c.Container.Host(ctx)
 	}
 
@@ -277,7 +275,7 @@ func (c *OllamaContainer) Host(ctx context.Context) (string, error) {
 // The version is read from the local Ollama binary (ollama -v), and the port
 // mapping is set to 11434.
 func (c *OllamaContainer) Inspect(ctx context.Context) (*types.ContainerJSON, error) {
-	if !c.localCtx.useLocal {
+	if c.localCtx == nil {
 		return c.Container.Inspect(ctx)
 	}
 
@@ -332,7 +330,7 @@ func (c *OllamaContainer) Inspect(ctx context.Context) (*types.ContainerJSON, er
 
 // IsRunning returns true if the local Ollama process is running.
 func (c *OllamaContainer) IsRunning() bool {
-	if !c.localCtx.useLocal {
+	if c.localCtx == nil {
 		return c.Container.IsRunning()
 	}
 
@@ -344,7 +342,7 @@ func (c *OllamaContainer) IsRunning() bool {
 
 // Logs returns the logs from the local Ollama binary.
 func (c *OllamaContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
-	if !c.localCtx.useLocal {
+	if c.localCtx == nil {
 		return c.Container.Logs(ctx)
 	}
 
@@ -357,7 +355,7 @@ func (c *OllamaContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
 
 // MappedPort returns the configured port for local Ollama binary.
 func (c *OllamaContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Port, error) {
-	if !c.localCtx.useLocal {
+	if c.localCtx == nil {
 		return c.Container.MappedPort(ctx, port)
 	}
 
@@ -367,7 +365,7 @@ func (c *OllamaContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Po
 
 // Networks returns the networks for local Ollama binary, which is empty.
 func (c *OllamaContainer) Networks(ctx context.Context) ([]string, error) {
-	if !c.localCtx.useLocal {
+	if c.localCtx == nil {
 		return c.Container.Networks(ctx)
 	}
 
@@ -376,7 +374,7 @@ func (c *OllamaContainer) Networks(ctx context.Context) ([]string, error) {
 
 // NetworkAliases returns the network aliases for local Ollama binary, which is empty.
 func (c *OllamaContainer) NetworkAliases(ctx context.Context) (map[string][]string, error) {
-	if !c.localCtx.useLocal {
+	if c.localCtx == nil {
 		return c.Container.NetworkAliases(ctx)
 	}
 
@@ -386,7 +384,7 @@ func (c *OllamaContainer) NetworkAliases(ctx context.Context) (map[string][]stri
 // SessionID returns the session ID for local Ollama binary, which is the session ID
 // of the test execution.
 func (c *OllamaContainer) SessionID() string {
-	if !c.localCtx.useLocal {
+	if c.localCtx == nil {
 		return c.Container.SessionID()
 	}
 
@@ -395,7 +393,7 @@ func (c *OllamaContainer) SessionID() string {
 
 // Start starts the local Ollama process, not failing if it's already running.
 func (c *OllamaContainer) Start(ctx context.Context) error {
-	if !c.localCtx.useLocal {
+	if c.localCtx == nil {
 		return c.Container.Start(ctx)
 	}
 
@@ -406,7 +404,7 @@ func (c *OllamaContainer) Start(ctx context.Context) error {
 		return nil
 	}
 
-	serveCmd, logFile, err := startOllama(context.Background(), c.localCtx)
+	serveCmd, logFile, err := startOllama(ctx, c.localCtx)
 	if err != nil {
 		c.localCtx.mx.Unlock()
 		return fmt.Errorf("start ollama: %w", err)
@@ -429,7 +427,7 @@ func (c *OllamaContainer) Start(ctx context.Context) error {
 // State returns the current state of the Ollama process, simulating a container state
 // for local execution.
 func (c *OllamaContainer) State(ctx context.Context) (*types.ContainerState, error) {
-	if !c.localCtx.useLocal {
+	if c.localCtx == nil {
 		return c.Container.State(ctx)
 	}
 
@@ -455,7 +453,7 @@ func (c *OllamaContainer) State(ctx context.Context) (*types.ContainerState, err
 
 // Stop gracefully stops the local Ollama process
 func (c *OllamaContainer) Stop(ctx context.Context, d *time.Duration) error {
-	if !c.localCtx.useLocal {
+	if c.localCtx == nil {
 		return c.Container.Stop(ctx, d)
 	}
 
@@ -477,7 +475,7 @@ func (c *OllamaContainer) Stop(ctx context.Context, d *time.Duration) error {
 
 // Terminate stops the local Ollama process, removing the log file.
 func (c *OllamaContainer) Terminate(ctx context.Context) (err error) {
-	if !c.localCtx.useLocal {
+	if c.localCtx == nil {
 		return c.Container.Terminate(ctx)
 	}
 
