@@ -145,14 +145,9 @@ func (c *OllamaContainer) waitForOllama(ctx context.Context) error {
 			return fmt.Errorf("wait for ollama to start: %w", err)
 		}
 
-		bs, err := io.ReadAll(logs)
-		if err != nil {
-			return fmt.Errorf("read ollama logs: %w", err)
-		}
-
-		testcontainers.Logger.Printf("ollama logs:\n%s", string(bs))
-
-		return fmt.Errorf("wait for ollama to start: %w", err)
+		// ignore error as we already have an error and the output is already logged
+		bs, _ := io.ReadAll(logs)
+		return fmt.Errorf("wait for ollama to start: %w. Container logs:\n%s", err, string(bs))
 	}
 
 	return nil
