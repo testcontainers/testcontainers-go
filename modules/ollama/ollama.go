@@ -114,7 +114,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	if options.useLocal {
-		container, err := runLocal(req.Env)
+		container, err := runLocal(ctx, req.Env)
 		if err == nil {
 			return container, nil
 		}

@@ -36,7 +36,7 @@ type localContext struct {
 }
 
 // runLocal calls the local Ollama binary instead of using a Docker container.
-func runLocal(env map[string]string) (*OllamaContainer, error) {
+func runLocal(ctx context.Context, env map[string]string) (*OllamaContainer, error) {
 	// Apply the environment variables to the command.
 	cmdEnv := make([]string, 0, len(env)*2)
 	for k, v := range env {
@@ -51,7 +51,7 @@ func runLocal(env map[string]string) (*OllamaContainer, error) {
 
 	c.localCtx.mx.Lock()
 
-	serveCmd, logFile, err := startOllama(context.Background(), c.localCtx)
+	serveCmd, logFile, err := startOllama(ctx, c.localCtx)
 	if err != nil {
 		c.localCtx.mx.Unlock()
 		return nil, fmt.Errorf("start ollama: %w", err)
@@ -61,7 +61,7 @@ func runLocal(env map[string]string) (*OllamaContainer, error) {
 	c.localCtx.logFile = logFile
 	c.localCtx.mx.Unlock()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	err = waitForOllama(ctx, c)
