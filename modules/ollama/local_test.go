@@ -279,3 +279,64 @@ func TestRun_localWithCustomLogFile(t *testing.T) {
 
 	require.Contains(t, string(bs), "Listening on 127.0.0.1:11434")
 }
+
+func TestRun_localWithCustomHost(t *testing.T) {
+	t.Setenv("OLLAMA_HOST", "127.0.0.1:1234")
+
+	ctx := context.Background()
+
+	ollamaContainer, err := ollama.Run(ctx, "ollama/ollama:0.1.25", ollama.WithUseLocal("FOO=BAR"))
+	require.NoError(t, err)
+	testcontainers.CleanupContainer(t, ollamaContainer)
+
+	t.Run("connection-string", func(t *testing.T) {
+		connectionStr, err := ollamaContainer.ConnectionString(ctx)
+		require.NoError(t, err)
+		require.Equal(t, "http://127.0.0.1:1234", connectionStr)
+	})
+
+	t.Run("endpoint", func(t *testing.T) {
+		endpoint, err := ollamaContainer.Endpoint(ctx, "1234/tcp")
+		require.NoError(t, err)
+		require.Equal(t, "127.0.0.1:1234", endpoint)
+	})
+
+	t.Run("inspect", func(t *testing.T) {
+		inspect, err := ollamaContainer.Inspect(ctx)
+		require.NoError(t, err)
+
+		require.Contains(t, string(inspect.Config.Image), "ollama version is")
+		_, exists := inspect.Config.ExposedPorts["1234/tcp"]
+		require.True(t, exists)
+		require.Equal(t, "localhost", inspect.Config.Hostname)
+		require.Equal(t, strslice.StrSlice(strslice.StrSlice{"ollama", "serve"}), inspect.Config.Entrypoint)
+
+		require.Empty(t, inspect.NetworkSettings.Networks)
+		require.Equal(t, "bridge", inspect.NetworkSettings.NetworkSettingsBase.Bridge)
+
+		ports := inspect.NetworkSettings.NetworkSettingsBase.Ports
+		_, exists = ports["1234/tcp"]
+		require.True(t, exists)
+
+		require.Equal(t, "127.0.0.1", inspect.NetworkSettings.Ports["1234/tcp"][0].HostIP)
+		require.Equal(t, "1234", inspect.NetworkSettings.Ports["1234/tcp"][0].HostPort)
+	})
+
+	t.Run("logs", func(t *testing.T) {
+		logs, err := ollamaContainer.Logs(ctx)
+		require.NoError(t, err)
+		defer logs.Close()
+
+		bs, err := io.ReadAll(logs)
+		require.NoError(t, err)
+
+		require.Contains(t, string(bs), "Listening on 127.0.0.1:1234")
+	})
+
+	t.Run("mapped-port", func(t *testing.T) {
+		port, err := ollamaContainer.MappedPort(ctx, "1234/tcp")
+		require.NoError(t, err)
+		require.Equal(t, "1234", port.Port())
+		require.Equal(t, "tcp", port.Proto())
+	})
+}
