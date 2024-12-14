@@ -15,20 +15,35 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const publicPort = nat.Port("9093/tcp")
+const (
+	// Internal Listening port for Broker intercommunication
+	brokerToBrokerPort = 9092
+	// Mapped port for advertised listener of localhost:<mapped_port>.
+	publicLocalhostPort = nat.Port("9093/tcp")
+	// Internal listening port for Contoller
+	controllerPort = 9094
+	// Mapped port for advertised listener of host.docker.internal:<mapped_port>
+	publicDockerHostPort = nat.Port("19093/tcp")
+	// Internal listening port for advertised listener of <container_name>:19094. This is not mapped to a random host port
+	networkInternalContainerNamePort = 19094
+	// Internal listening port for advertised listener of <container_id>:19095. This is not mapped to a random host port
+	networkInternalContainerIdPort = 19095
+)
+
 const (
 	starterScript = "/usr/sbin/testcontainers_start.sh"
 
 	// starterScript {
 	starterScriptContent = `#!/bin/bash
 source /etc/confluent/docker/bash-config
-export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://%s:%d,BROKER://%s:9092
+export KAFKA_ADVERTISED_LISTENERS=%s
 echo Starting Kafka KRaft mode
 sed -i '/KAFKA_ZOOKEEPER_CONNECT/d' /etc/confluent/docker/configure
 echo 'kafka-storage format --ignore-formatted -t "$(kafka-storage random-uuid)" -c /etc/kafka/kafka.properties' >> /etc/confluent/docker/configure
 echo '' > /etc/confluent/docker/ensure
 /etc/confluent/docker/configure
-/etc/confluent/docker/launch`
+/etc/confluent/docker/launch
+`
 	// }
 )
 
@@ -46,14 +61,35 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Kafka container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*KafkaContainer, error) {
+	listeners := strings.Join([]string{
+		"LOCALHOST://0.0.0.0:" + strconv.Itoa(publicLocalhostPort.Int()),
+		"HOST_DOCKER_INTERNAL://0.0.0.0:" + strconv.Itoa(publicDockerHostPort.Int()),
+		"CONTAINER_NAME://0.0.0.0:" + strconv.Itoa(networkInternalContainerNamePort),
+		"CONTAINER_ID://0.0.0.0:" + strconv.Itoa(networkInternalContainerIdPort),
+		"BROKER://0.0.0.0:" + strconv.Itoa(brokerToBrokerPort),
+		"CONTROLLER://0.0.0.0:" + strconv.Itoa(controllerPort),
+	}, ",")
+
+	protoMap := strings.Join([]string{
+		"LOCALHOST:PLAINTEXT",
+		"HOST_DOCKER_INTERNAL:PLAINTEXT",
+		"CONTAINER_NAME:PLAINTEXT",
+		"CONTAINER_ID:PLAINTEXT",
+		"BROKER:PLAINTEXT",
+		"CONTROLLER:PLAINTEXT",
+	}, ",")
+
 	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{string(publicPort)},
+		Image: img,
+		ExposedPorts: []string{
+			string(publicLocalhostPort),
+			string(publicDockerHostPort),
+		},
 		Env: map[string]string{
 			// envVars {
-			"KAFKA_LISTENERS":                                "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
-			"KAFKA_REST_BOOTSTRAP_SERVERS":                   "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
-			"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP":           "BROKER:PLAINTEXT,PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT",
+			"KAFKA_LISTENERS":                                listeners,
+			"KAFKA_REST_BOOTSTRAP_SERVERS":                   listeners,
+			"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP":           protoMap,
 			"KAFKA_INTER_BROKER_LISTENER_NAME":               "BROKER",
 			"KAFKA_BROKER_ID":                                "1",
 			"KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR":         "1",
@@ -123,7 +159,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // copyStarterScript copies the starter script into the container.
 func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
-	if err := wait.ForListeningPort(publicPort).
+	if err := wait.ForListeningPort(publicLocalhostPort).
 		SkipInternalCheck().
 		WaitUntilReady(ctx, c); err != nil {
 		return fmt.Errorf("wait for exposed port: %w", err)
@@ -141,12 +177,27 @@ func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
 
 	hostname := inspect.Config.Hostname
 
-	port, err := c.MappedPort(ctx, publicPort)
+	portLh, err := c.MappedPort(ctx, publicLocalhostPort)
 	if err != nil {
 		return fmt.Errorf("mapped port: %w", err)
 	}
 
-	scriptContent := fmt.Sprintf(starterScriptContent, host, port.Int(), hostname)
+	portDh, err := c.MappedPort(ctx, publicDockerHostPort)
+	if err != nil {
+		return fmt.Errorf("mapped port: %w", err)
+	}
+
+	// advertisedListeners {
+	advertisedListeners := strings.Join([]string{
+		fmt.Sprintf("LOCALHOST://%s:%d", host, portLh.Int()),
+		fmt.Sprintf("HOST_DOCKER_INTERNAL://%s:%d", "host.docker.internal", portDh.Int()),
+		fmt.Sprintf("CONTAINER_NAME://%s:%d", strings.Trim(inspect.Name, "/"), networkInternalContainerNamePort),
+		fmt.Sprintf("CONTAINER_ID://%s:%d", hostname, networkInternalContainerIdPort),
+		fmt.Sprintf("BROKER://%s:%d", hostname, brokerToBrokerPort),
+	}, ",")
+
+	scriptContent := fmt.Sprintf(starterScriptContent, advertisedListeners)
+	// }
 
 	if err := c.CopyToContainer(ctx, []byte(scriptContent), starterScript, 0o755); err != nil {
 		return fmt.Errorf("copy to container: %w", err)
@@ -165,18 +216,61 @@ func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
 
 // Brokers retrieves the broker connection strings from Kafka with only one entry,
 // defined by the exposed public port.
+//
+// Example Output: localhost:<random_port>
 func (kc *KafkaContainer) Brokers(ctx context.Context) ([]string, error) {
 	host, err := kc.Host(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	port, err := kc.MappedPort(ctx, publicPort)
+	port, err := kc.MappedPort(ctx, publicLocalhostPort)
 	if err != nil {
 		return nil, err
 	}
 
-	return []string{fmt.Sprintf("%s:%d", host, port.Int())}, nil
+	return []string{host + ":" + port.Port()}, nil
+}
+
+// BrokersByHostDockerInternal retrieves broker connection string suitable when
+// running 2 containers in the default docker network
+//
+// Example Output: host.docker.internal:<random_port>
+func (kc *KafkaContainer) BrokersByHostDockerInternal(ctx context.Context) ([]string, error) {
+	port, err := kc.MappedPort(ctx, publicDockerHostPort)
+	if err != nil {
+		return nil, err
+	}
+
+	host := "host.docker.internal"
+	return []string{host + ":" + port.Port()}, nil
+}
+
+// BrokersByContainerName retrieves broker connection string suitable when
+// trying to connect 2 containers running within the same docker network together
+//
+// Example Output: zealous_murdock:19093
+func (kc *KafkaContainer) BrokersByContainerName(ctx context.Context) ([]string, error) {
+	inspect, err := kc.Inspect(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	host := strings.Trim(inspect.Name, "/")
+	return []string{host + ":" + strconv.Itoa(networkInternalContainerNamePort)}, nil
+}
+
+// BrokersByContainerId retrieves broker connection string suitable when
+// trying to connect 2 containers running within the same docker network together
+//
+// Example Output: e3c69e4fc625:19094
+func (kc *KafkaContainer) BrokersByContainerId(ctx context.Context) ([]string, error) {
+	inspect, err := kc.Inspect(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return []string{inspect.Config.Hostname + ":" + strconv.Itoa(networkInternalContainerIdPort)}, nil
 }
 
 // configureControllerQuorumVoters sets the quorum voters for the controller. For that, it will
