@@ -178,7 +178,7 @@ func ExampleRun_withLocal() {
 	ctx := context.Background()
 
 	// localOllama {
-	ollamaContainer, err := tcollama.Run(ctx, "ollama/ollama:0.3.13", tcollama.WithUseLocal(map[string]string{"OLLAMA_DEBUG": "true"}))
+	ollamaContainer, err := tcollama.Run(ctx, "ollama/ollama:0.3.13", tcollama.WithUseLocal("OLLAMA_DEBUG=true"))
 	defer func() {
 		if err := testcontainers.TerminateContainer(ollamaContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
