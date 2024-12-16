@@ -468,7 +468,7 @@ func (c *OllamaContainer) Stop(ctx context.Context, d *time.Duration) error {
 		return nil
 	}
 
-	if err := c.localCtx.serveCmd.Process.Signal(syscall.Signal(syscall.SIGTERM)); err != nil {
+	if err := c.localCtx.serveCmd.Process.Signal(syscall.SIGTERM); err != nil {
 		return fmt.Errorf("signal ollama: %w", err)
 	}
 
