@@ -506,5 +506,11 @@ func (c *OllamaContainer) Terminate(ctx context.Context) error {
 		errs = append(errs, fmt.Errorf("remove log: %w", err))
 	}
 
-	return errors.Join(errs...)
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+
+	c.localCtx.logFile = nil
+
+	return nil
 }
