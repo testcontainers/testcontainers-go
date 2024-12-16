@@ -72,14 +72,9 @@ func runLocal(ctx context.Context, env map[string]string) (*OllamaContainer, err
 		localCtx: localCtx,
 	}
 
-	err := c.localCtx.startOllama(ctx)
+	err := c.startLocalOllama(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("start ollama: %w", err)
-	}
-
-	err = c.waitForOllama(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("wait for ollama to start: %w", err)
 	}
 
 	return c, nil
@@ -101,22 +96,22 @@ func logFile() (*os.File, error) {
 	return file, nil
 }
 
-// startOllama starts the Ollama serve command in the background, writing to the
+// startLocalOllama starts the Ollama serve command in the background, writing to the
 // provided log file.
-func (localCtx *localContext) startOllama(ctx context.Context) error {
-	localCtx.mx.Lock()
-	defer localCtx.mx.Unlock() // unlock before waiting for the process to be ready
-
-	if localCtx.serveCmd != nil {
+func (c *OllamaContainer) startLocalOllama(ctx context.Context) error {
+	if c.localCtx.serveCmd != nil {
 		return nil
 	}
 
+	c.localCtx.mx.Lock()
+
 	serveCmd := exec.CommandContext(ctx, "ollama", "serve")
-	serveCmd.Env = append(serveCmd.Env, localCtx.env...)
+	serveCmd.Env = append(serveCmd.Env, c.localCtx.env...)
 	serveCmd.Env = append(serveCmd.Env, os.Environ()...)
 
 	logFile, err := logFile()
 	if err != nil {
+		c.localCtx.mx.Unlock()
 		return fmt.Errorf("ollama log file: %w", err)
 	}
 
@@ -126,11 +121,23 @@ func (localCtx *localContext) startOllama(ctx context.Context) error {
 	// Run the ollama serve command in background
 	err = serveCmd.Start()
 	if err != nil {
+		c.localCtx.mx.Unlock()
 		return fmt.Errorf("start ollama serve: %w", err)
 	}
 
-	localCtx.serveCmd = serveCmd
-	localCtx.logFile = logFile
+	c.localCtx.serveCmd = serveCmd
+	c.localCtx.logFile = logFile
+
+	// unlock before waiting for the process to be ready
+	c.localCtx.mx.Unlock()
+
+	waitCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	err = c.waitForOllama(waitCtx)
+	if err != nil {
+		return fmt.Errorf("wait for ollama to start: %w", err)
+	}
 
 	return nil
 }
@@ -413,17 +420,9 @@ func (c *OllamaContainer) Start(ctx context.Context) error {
 		return c.Container.Start(ctx)
 	}
 
-	err := c.localCtx.startOllama(ctx)
+	err := c.startLocalOllama(ctx)
 	if err != nil {
 		return fmt.Errorf("start ollama: %w", err)
-	}
-
-	waitCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	err = c.waitForOllama(waitCtx)
-	if err != nil {
-		return fmt.Errorf("wait for ollama to start: %w", err)
 	}
 
 	return nil
