@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net"
 	"os"
 	"os/exec"
@@ -496,18 +497,14 @@ func (c *OllamaContainer) Terminate(ctx context.Context) error {
 		return nil
 	}
 
-	// remove the log file if it exists
-	if _, err = os.Stat(c.localCtx.logFile.Name()); err == nil {
-		err = c.localCtx.logFile.Close()
-		if err != nil {
-			return err
-		}
-
-		err = os.Remove(c.localCtx.logFile.Name())
-		if err != nil {
-			return err
-		}
+	var errs []error
+	if err = c.localCtx.logFile.Close(); err != nil {
+		errs = append(errs, fmt.Errorf("close log: %w", err))
 	}
 
-	return nil
+	if err = os.Remove(c.localCtx.logFile.Name()); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		errs = append(errs, fmt.Errorf("remove log: %w", err))
+	}
+
+	return errors.Join(errs...)
 }
