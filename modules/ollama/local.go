@@ -439,7 +439,7 @@ func (c *OllamaContainer) State(ctx context.Context) (*types.ContainerState, err
 	defer c.localCtx.mx.Unlock()
 
 	if c.localCtx.serveCmd == nil {
-		return &types.ContainerState{Status: "stopped"}, nil
+		return &types.ContainerState{Status: "exited"}, nil
 	}
 
 	// Check if process is still running. Signal(0) is a special case in Unix-like systems.
@@ -447,7 +447,7 @@ func (c *OllamaContainer) State(ctx context.Context) (*types.ContainerState, err
 	// - It performs all the normal error checking (permissions, process existence, etc.)
 	// - But it doesn't actually send any signal to the process
 	if err := c.localCtx.serveCmd.Process.Signal(syscall.Signal(0)); err != nil {
-		return &types.ContainerState{Status: "stopped"}, nil
+		return &types.ContainerState{Status: "created"}, nil
 	}
 
 	// Setting the Running field because it's required by the wait strategy

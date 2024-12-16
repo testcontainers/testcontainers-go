@@ -220,7 +220,7 @@ func TestRun_local(t *testing.T) {
 
 		state, err := ollamaContainer.State(ctx)
 		require.NoError(t, err)
-		require.Equal(t, "stopped", state.Status)
+		require.Equal(t, "exited", state.Status)
 
 		err = ollamaContainer.Start(ctx)
 		require.NoError(t, err)
@@ -257,7 +257,7 @@ func TestRun_local(t *testing.T) {
 
 		state, err := ollamaContainer.State(ctx)
 		require.NoError(t, err)
-		require.Equal(t, "stopped", state.Status)
+		require.Equal(t, "exited", state.Status)
 	})
 }
 
