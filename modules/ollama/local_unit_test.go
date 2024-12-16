@@ -35,13 +35,13 @@ func TestRun_localWithCustomLogFileError(t *testing.T) {
 		require.NoError(t, err)
 		defer func() {
 			// Cleanup: restore permissions
-			os.Chmod(filepath.Dir(f.Name()), 0700)
+			require.NoError(t, os.Chmod(filepath.Dir(f.Name()), 0o700))
 		}()
 
 		// Make the file read-only and its parent directory read-only
 		// This should cause removal to fail on most systems
 		dir := filepath.Dir(f.Name())
-		require.NoError(t, os.Chmod(dir, 0500))
+		require.NoError(t, os.Chmod(dir, 0o500))
 
 		c := &OllamaContainer{
 			localCtx: &localContext{
