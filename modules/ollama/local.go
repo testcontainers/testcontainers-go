@@ -72,17 +72,10 @@ func runLocal(ctx context.Context, env map[string]string) (*OllamaContainer, err
 		localCtx: localCtx,
 	}
 
-	c.localCtx.mx.Lock()
-
-	serveCmd, logFile, err := startOllama(ctx, c.localCtx)
+	err := c.localCtx.startOllama(ctx)
 	if err != nil {
-		c.localCtx.mx.Unlock()
 		return nil, fmt.Errorf("start ollama: %w", err)
 	}
-
-	c.localCtx.serveCmd = serveCmd
-	c.localCtx.logFile = logFile
-	c.localCtx.mx.Unlock()
 
 	err = c.waitForOllama(ctx)
 	if err != nil {
@@ -110,14 +103,21 @@ func logFile() (*os.File, error) {
 
 // startOllama starts the Ollama serve command in the background, writing to the
 // provided log file.
-func startOllama(ctx context.Context, localCtx *localContext) (*exec.Cmd, *os.File, error) {
+func (localCtx *localContext) startOllama(ctx context.Context) error {
+	localCtx.mx.Lock()
+	defer localCtx.mx.Unlock() // unlock before waiting for the process to be ready
+
+	if localCtx.serveCmd != nil {
+		return nil
+	}
+
 	serveCmd := exec.CommandContext(ctx, "ollama", "serve")
 	serveCmd.Env = append(serveCmd.Env, localCtx.env...)
 	serveCmd.Env = append(serveCmd.Env, os.Environ()...)
 
 	logFile, err := logFile()
 	if err != nil {
-		return nil, nil, fmt.Errorf("ollama log file: %w", err)
+		return fmt.Errorf("ollama log file: %w", err)
 	}
 
 	serveCmd.Stdout = logFile
@@ -126,10 +126,13 @@ func startOllama(ctx context.Context, localCtx *localContext) (*exec.Cmd, *os.Fi
 	// Run the ollama serve command in background
 	err = serveCmd.Start()
 	if err != nil {
-		return nil, nil, fmt.Errorf("start ollama serve: %w", err)
+		return fmt.Errorf("start ollama serve: %w", err)
 	}
 
-	return serveCmd, logFile, nil
+	localCtx.serveCmd = serveCmd
+	localCtx.logFile = logFile
+
+	return nil
 }
 
 // waitForOllama Wait until the Ollama process is ready, checking that the log file contains
@@ -411,21 +414,10 @@ func (c *OllamaContainer) Start(ctx context.Context) error {
 		return c.Container.Start(ctx)
 	}
 
-	c.localCtx.mx.Lock()
-
-	if c.localCtx.serveCmd != nil {
-		c.localCtx.mx.Unlock()
-		return nil
-	}
-
-	serveCmd, logFile, err := startOllama(ctx, c.localCtx)
+	err := c.localCtx.startOllama(ctx)
 	if err != nil {
-		c.localCtx.mx.Unlock()
 		return fmt.Errorf("start ollama: %w", err)
 	}
-	c.localCtx.serveCmd = serveCmd
-	c.localCtx.logFile = logFile
-	c.localCtx.mx.Unlock() // unlock before waiting for the process to be ready
 
 	waitCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
