@@ -4,12 +4,15 @@ import (
 	"context"
 	"errors"
 	"io"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/stretchr/testify/require"
 
@@ -18,26 +21,52 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/ollama"
 )
 
+const (
+	testImage   = "ollama/ollama:latest"
+	testNatPort = "11434/tcp"
+	testHost    = "127.0.0.1"
+	testBinary  = "ollama"
+)
+
+var (
+	reLogDetails = regexp.MustCompile(`Listening on (.*:\d+) \(version\s(.*)\)`)
+	zeroTime     = time.Time{}.Format(time.RFC3339Nano)
+)
+
 func TestRun_local(t *testing.T) {
 	// check if the local ollama binary is available
-	if _, err := exec.LookPath("ollama"); err != nil {
+	if _, err := exec.LookPath(testBinary); err != nil {
 		t.Skip("local ollama binary not found, skipping")
 	}
 
 	ctx := context.Background()
-
 	ollamaContainer, err := ollama.Run(
 		ctx,
-		"ollama/ollama:0.1.25",
+		testImage,
 		ollama.WithUseLocal("FOO=BAR"),
 	)
 	testcontainers.CleanupContainer(t, ollamaContainer)
 	require.NoError(t, err)
 
+	t.Run("state", func(t *testing.T) {
+		state, err := ollamaContainer.State(ctx)
+		require.NoError(t, err)
+		require.NotEmpty(t, state.StartedAt)
+		require.NotEqual(t, zeroTime, state.StartedAt)
+		require.NotZero(t, state.Pid)
+		require.Equal(t, &types.ContainerState{
+			Status:     "running",
+			Running:    true,
+			Pid:        state.Pid,
+			StartedAt:  state.StartedAt,
+			FinishedAt: time.Time{}.Format(time.RFC3339Nano),
+		}, state)
+	})
+
 	t.Run("connection-string", func(t *testing.T) {
 		connectionStr, err := ollamaContainer.ConnectionString(ctx)
 		require.NoError(t, err)
-		require.Equal(t, "http://127.0.0.1:11434", connectionStr)
+		require.NotEmpty(t, connectionStr)
 	})
 
 	t.Run("container-id", func(t *testing.T) {
@@ -48,11 +77,11 @@ func TestRun_local(t *testing.T) {
 	t.Run("container-ips", func(t *testing.T) {
 		ip, err := ollamaContainer.ContainerIP(ctx)
 		require.NoError(t, err)
-		require.Equal(t, "127.0.0.1", ip)
+		require.Equal(t, testHost, ip)
 
 		ips, err := ollamaContainer.ContainerIPs(ctx)
 		require.NoError(t, err)
-		require.Equal(t, []string{"127.0.0.1"}, ips)
+		require.Equal(t, []string{testHost}, ips)
 	})
 
 	t.Run("copy", func(t *testing.T) {
@@ -76,52 +105,13 @@ func TestRun_local(t *testing.T) {
 	})
 
 	t.Run("endpoint", func(t *testing.T) {
-		endpoint, err := ollamaContainer.Endpoint(ctx, "88888/tcp")
+		endpoint, err := ollamaContainer.Endpoint(ctx, "")
 		require.NoError(t, err)
-		require.Equal(t, "127.0.0.1:11434", endpoint)
-	})
+		require.Contains(t, endpoint, testHost+":")
 
-	t.Run("exec/pull-and-run-model", func(t *testing.T) {
-		const model = "llama3.2:1b"
-
-		code, r, err := ollamaContainer.Exec(ctx, []string{"ollama", "pull", model})
+		endpoint, err = ollamaContainer.Endpoint(ctx, "http")
 		require.NoError(t, err)
-		require.Equal(t, 0, code)
-
-		bs, err := io.ReadAll(r)
-		require.NoError(t, err)
-		require.Empty(t, bs)
-
-		code, _, err = ollamaContainer.Exec(ctx, []string{"ollama", "run", model}, tcexec.Multiplexed())
-		require.NoError(t, err)
-		require.Equal(t, 0, code)
-
-		logs, err := ollamaContainer.Logs(ctx)
-		require.NoError(t, err)
-		defer logs.Close()
-
-		bs, err = io.ReadAll(logs)
-		require.NoError(t, err)
-		require.Contains(t, string(bs), "llama runner started")
-	})
-
-	t.Run("exec/unsupported-command", func(t *testing.T) {
-		code, r, err := ollamaContainer.Exec(ctx, []string{"cat", "/etc/passwd"})
-		require.Equal(t, 1, code)
-		require.Error(t, err)
-		require.ErrorIs(t, err, errors.ErrUnsupported)
-
-		bs, err := io.ReadAll(r)
-		require.NoError(t, err)
-		require.Equal(t, "cat: unsupported operation", string(bs))
-
-		code, r, err = ollamaContainer.Exec(ctx, []string{})
-		require.Equal(t, 1, code)
-		require.Error(t, err)
-
-		bs, err = io.ReadAll(r)
-		require.NoError(t, err)
-		require.Equal(t, "exec: no command provided", string(bs))
+		require.Contains(t, endpoint, "http://"+testHost+":")
 	})
 
 	t.Run("is-running", func(t *testing.T) {
@@ -129,20 +119,18 @@ func TestRun_local(t *testing.T) {
 
 		err = ollamaContainer.Stop(ctx, nil)
 		require.NoError(t, err)
-
 		require.False(t, ollamaContainer.IsRunning())
 
 		// return it to the running state
 		err = ollamaContainer.Start(ctx)
 		require.NoError(t, err)
-
 		require.True(t, ollamaContainer.IsRunning())
 	})
 
 	t.Run("host", func(t *testing.T) {
 		host, err := ollamaContainer.Host(ctx)
 		require.NoError(t, err)
-		require.Equal(t, "127.0.0.1", host)
+		require.Equal(t, testHost, host)
 	})
 
 	t.Run("inspect", func(t *testing.T) {
@@ -153,74 +141,87 @@ func TestRun_local(t *testing.T) {
 		require.Equal(t, "local-ollama-"+testcontainers.SessionID(), inspect.ContainerJSONBase.Name)
 		require.True(t, inspect.ContainerJSONBase.State.Running)
 
-		require.Contains(t, string(inspect.Config.Image), "ollama version is")
-		_, exists := inspect.Config.ExposedPorts["11434/tcp"]
+		require.NotEmpty(t, inspect.Config.Image)
+		_, exists := inspect.Config.ExposedPorts[testNatPort]
 		require.True(t, exists)
-		require.Equal(t, "localhost", inspect.Config.Hostname)
-		require.Equal(t, strslice.StrSlice(strslice.StrSlice{"ollama", "serve"}), inspect.Config.Entrypoint)
+		require.Equal(t, testHost, inspect.Config.Hostname)
+		require.Equal(t, strslice.StrSlice(strslice.StrSlice{testBinary, "serve"}), inspect.Config.Entrypoint)
 
 		require.Empty(t, inspect.NetworkSettings.Networks)
 		require.Equal(t, "bridge", inspect.NetworkSettings.NetworkSettingsBase.Bridge)
 
 		ports := inspect.NetworkSettings.NetworkSettingsBase.Ports
-		_, exists = ports["11434/tcp"]
+		port, exists := ports[testNatPort]
 		require.True(t, exists)
-
-		require.Equal(t, "127.0.0.1", inspect.NetworkSettings.Ports["11434/tcp"][0].HostIP)
-		require.Equal(t, "11434", inspect.NetworkSettings.Ports["11434/tcp"][0].HostPort)
+		require.Len(t, port, 1)
+		require.Equal(t, testHost, port[0].HostIP)
+		require.NotEmpty(t, port[0].HostPort)
 	})
 
 	t.Run("logfile", func(t *testing.T) {
-		openFile, err := os.Open("local-ollama-" + testcontainers.SessionID() + ".log")
+		file, err := os.Open("local-ollama-" + testcontainers.SessionID() + ".log")
 		require.NoError(t, err)
-		require.NotNil(t, openFile)
-		require.NoError(t, openFile.Close())
+		require.NoError(t, file.Close())
 	})
 
 	t.Run("logs", func(t *testing.T) {
 		logs, err := ollamaContainer.Logs(ctx)
 		require.NoError(t, err)
-		defer logs.Close()
+		t.Cleanup(func() {
+			require.NoError(t, logs.Close())
+		})
 
 		bs, err := io.ReadAll(logs)
 		require.NoError(t, err)
-
-		require.Contains(t, string(bs), "Listening on 127.0.0.1:11434")
+		require.Regexp(t, reLogDetails, string(bs))
 	})
 
 	t.Run("mapped-port", func(t *testing.T) {
-		port, err := ollamaContainer.MappedPort(ctx, "11434/tcp")
+		port, err := ollamaContainer.MappedPort(ctx, testNatPort)
 		require.NoError(t, err)
-		require.Equal(t, "11434", port.Port())
+		require.NotEmpty(t, port.Port())
 		require.Equal(t, "tcp", port.Proto())
 	})
 
 	t.Run("networks", func(t *testing.T) {
 		networks, err := ollamaContainer.Networks(ctx)
 		require.NoError(t, err)
-		require.Empty(t, networks)
+		require.Nil(t, networks)
 	})
 
 	t.Run("network-aliases", func(t *testing.T) {
 		aliases, err := ollamaContainer.NetworkAliases(ctx)
 		require.NoError(t, err)
-		require.Empty(t, aliases)
+		require.Nil(t, aliases)
+	})
+
+	t.Run("port-endpoint", func(t *testing.T) {
+		endpoint, err := ollamaContainer.PortEndpoint(ctx, testNatPort, "")
+		require.NoError(t, err)
+		require.Regexp(t, regexp.MustCompile(`^127.0.0.1:\d+$`), endpoint)
+
+		endpoint, err = ollamaContainer.PortEndpoint(ctx, testNatPort, "http")
+		require.NoError(t, err)
+		require.Regexp(t, regexp.MustCompile(`^http://127.0.0.1:\d+$`), endpoint)
 	})
 
 	t.Run("session-id", func(t *testing.T) {
-		id := ollamaContainer.SessionID()
-		require.Equal(t, testcontainers.SessionID(), id)
+		require.Equal(t, testcontainers.SessionID(), ollamaContainer.SessionID())
 	})
 
 	t.Run("stop-start", func(t *testing.T) {
 		d := time.Second * 5
-
 		err := ollamaContainer.Stop(ctx, &d)
 		require.NoError(t, err)
 
 		state, err := ollamaContainer.State(ctx)
 		require.NoError(t, err)
 		require.Equal(t, "exited", state.Status)
+		require.NotEmpty(t, state.StartedAt)
+		require.NotEqual(t, zeroTime, state.StartedAt)
+		require.NotEmpty(t, state.FinishedAt)
+		require.NotEqual(t, zeroTime, state.FinishedAt)
+		require.Zero(t, state.ExitCode)
 
 		err = ollamaContainer.Start(ctx)
 		require.NoError(t, err)
@@ -231,12 +232,13 @@ func TestRun_local(t *testing.T) {
 
 		logs, err := ollamaContainer.Logs(ctx)
 		require.NoError(t, err)
-		defer logs.Close()
+		t.Cleanup(func() {
+			require.NoError(t, logs.Close())
+		})
 
 		bs, err := io.ReadAll(logs)
 		require.NoError(t, err)
-
-		require.Contains(t, string(bs), "Listening on 127.0.0.1:11434")
+		require.Regexp(t, reLogDetails, string(bs))
 	})
 
 	t.Run("start-start", func(t *testing.T) {
@@ -245,7 +247,7 @@ func TestRun_local(t *testing.T) {
 		require.Equal(t, "running", state.Status)
 
 		err = ollamaContainer.Start(ctx)
-		require.NoError(t, err)
+		require.Error(t, err)
 	})
 
 	t.Run("terminate", func(t *testing.T) {
@@ -253,41 +255,126 @@ func TestRun_local(t *testing.T) {
 		require.NoError(t, err)
 
 		_, err = os.Stat("ollama-" + testcontainers.SessionID() + ".log")
-		require.True(t, os.IsNotExist(err))
+		require.ErrorIs(t, err, fs.ErrNotExist)
 
 		state, err := ollamaContainer.State(ctx)
 		require.NoError(t, err)
-		require.Equal(t, "exited", state.Status)
+		require.NotEmpty(t, state.StartedAt)
+		require.NotEqual(t, zeroTime, state.StartedAt)
+		require.NotEmpty(t, state.FinishedAt)
+		require.NotEqual(t, zeroTime, state.FinishedAt)
+		require.Equal(t, &types.ContainerState{
+			Status:     "exited",
+			StartedAt:  state.StartedAt,
+			FinishedAt: state.FinishedAt,
+		}, state)
+	})
+
+	t.Run("deprecated", func(t *testing.T) {
+		t.Run("ports", func(t *testing.T) {
+			inspect, err := ollamaContainer.Inspect(ctx)
+			require.NoError(t, err)
+
+			ports, err := ollamaContainer.Ports(ctx)
+			require.NoError(t, err)
+			require.Equal(t, inspect.NetworkSettings.Ports, ports)
+		})
+
+		t.Run("follow-output", func(t *testing.T) {
+			require.Panics(t, func() {
+				ollamaContainer.FollowOutput(&testcontainers.StdoutLogConsumer{})
+			})
+		})
+
+		t.Run("start-log-producer", func(t *testing.T) {
+			err := ollamaContainer.StartLogProducer(ctx)
+			require.ErrorIs(t, err, errors.ErrUnsupported)
+		})
+
+		t.Run("stop-log-producer", func(t *testing.T) {
+			err := ollamaContainer.StopLogProducer()
+			require.ErrorIs(t, err, errors.ErrUnsupported)
+		})
+
+		t.Run("name", func(t *testing.T) {
+			name, err := ollamaContainer.Name(ctx)
+			require.NoError(t, err)
+			require.Equal(t, "local-ollama-"+testcontainers.SessionID(), name)
+		})
 	})
 }
 
 func TestRun_localWithCustomLogFile(t *testing.T) {
-	t.Setenv("OLLAMA_LOGFILE", filepath.Join(t.TempDir(), "server.log"))
-
 	ctx := context.Background()
+	logFile := filepath.Join(t.TempDir(), "server.log")
 
-	ollamaContainer, err := ollama.Run(ctx, "ollama/ollama:0.1.25", ollama.WithUseLocal("FOO=BAR"))
-	require.NoError(t, err)
-	testcontainers.CleanupContainer(t, ollamaContainer)
+	t.Run("parent-env", func(t *testing.T) {
+		t.Setenv("OLLAMA_LOGFILE", logFile)
 
-	logs, err := ollamaContainer.Logs(ctx)
-	require.NoError(t, err)
-	defer logs.Close()
+		ollamaContainer, err := ollama.Run(ctx, testImage, ollama.WithUseLocal())
+		testcontainers.CleanupContainer(t, ollamaContainer)
+		require.NoError(t, err)
 
-	bs, err := io.ReadAll(logs)
-	require.NoError(t, err)
+		logs, err := ollamaContainer.Logs(ctx)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, logs.Close())
+		})
 
-	require.Contains(t, string(bs), "Listening on 127.0.0.1:11434")
+		bs, err := io.ReadAll(logs)
+		require.NoError(t, err)
+		require.Regexp(t, reLogDetails, string(bs))
+
+		file, ok := logs.(*os.File)
+		require.True(t, ok)
+		require.Equal(t, logFile, file.Name())
+	})
+
+	t.Run("local-env", func(t *testing.T) {
+		ollamaContainer, err := ollama.Run(ctx, testImage, ollama.WithUseLocal("OLLAMA_LOGFILE="+logFile))
+		testcontainers.CleanupContainer(t, ollamaContainer)
+		require.NoError(t, err)
+
+		logs, err := ollamaContainer.Logs(ctx)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, logs.Close())
+		})
+
+		bs, err := io.ReadAll(logs)
+		require.NoError(t, err)
+		require.Regexp(t, reLogDetails, string(bs))
+
+		file, ok := logs.(*os.File)
+		require.True(t, ok)
+		require.Equal(t, logFile, file.Name())
+	})
 }
 
 func TestRun_localWithCustomHost(t *testing.T) {
-	t.Setenv("OLLAMA_HOST", "127.0.0.1:1234")
-
 	ctx := context.Background()
 
-	ollamaContainer, err := ollama.Run(ctx, "ollama/ollama:0.1.25", ollama.WithUseLocal())
-	require.NoError(t, err)
-	testcontainers.CleanupContainer(t, ollamaContainer)
+	t.Run("parent-env", func(t *testing.T) {
+		t.Setenv("OLLAMA_HOST", "127.0.0.1:1234")
+
+		ollamaContainer, err := ollama.Run(ctx, testImage, ollama.WithUseLocal())
+		testcontainers.CleanupContainer(t, ollamaContainer)
+		require.NoError(t, err)
+
+		testRun_localWithCustomHost(ctx, t, ollamaContainer)
+	})
+
+	t.Run("local-env", func(t *testing.T) {
+		ollamaContainer, err := ollama.Run(ctx, testImage, ollama.WithUseLocal("OLLAMA_HOST=127.0.0.1:1234"))
+		testcontainers.CleanupContainer(t, ollamaContainer)
+		require.NoError(t, err)
+
+		testRun_localWithCustomHost(ctx, t, ollamaContainer)
+	})
+}
+
+func testRun_localWithCustomHost(ctx context.Context, t *testing.T, ollamaContainer *ollama.OllamaContainer) {
+	t.Helper()
 
 	t.Run("connection-string", func(t *testing.T) {
 		connectionStr, err := ollamaContainer.ConnectionString(ctx)
@@ -296,36 +383,38 @@ func TestRun_localWithCustomHost(t *testing.T) {
 	})
 
 	t.Run("endpoint", func(t *testing.T) {
-		endpoint, err := ollamaContainer.Endpoint(ctx, "1234/tcp")
+		endpoint, err := ollamaContainer.Endpoint(ctx, "http")
 		require.NoError(t, err)
-		require.Equal(t, "127.0.0.1:1234", endpoint)
+		require.Equal(t, "http://127.0.0.1:1234", endpoint)
 	})
 
 	t.Run("inspect", func(t *testing.T) {
 		inspect, err := ollamaContainer.Inspect(ctx)
 		require.NoError(t, err)
+		require.Regexp(t, regexp.MustCompile(`^local-ollama:\d+\.\d+\.\d+$`), inspect.Config.Image)
 
-		require.Contains(t, string(inspect.Config.Image), "ollama version is")
-		_, exists := inspect.Config.ExposedPorts["1234/tcp"]
+		_, exists := inspect.Config.ExposedPorts[testNatPort]
 		require.True(t, exists)
-		require.Equal(t, "localhost", inspect.Config.Hostname)
-		require.Equal(t, strslice.StrSlice(strslice.StrSlice{"ollama", "serve"}), inspect.Config.Entrypoint)
+		require.Equal(t, testHost, inspect.Config.Hostname)
+		require.Equal(t, strslice.StrSlice(strslice.StrSlice{testBinary, "serve"}), inspect.Config.Entrypoint)
 
 		require.Empty(t, inspect.NetworkSettings.Networks)
 		require.Equal(t, "bridge", inspect.NetworkSettings.NetworkSettingsBase.Bridge)
 
 		ports := inspect.NetworkSettings.NetworkSettingsBase.Ports
-		_, exists = ports["1234/tcp"]
+		port, exists := ports[testNatPort]
 		require.True(t, exists)
-
-		require.Equal(t, "127.0.0.1", inspect.NetworkSettings.Ports["1234/tcp"][0].HostIP)
-		require.Equal(t, "1234", inspect.NetworkSettings.Ports["1234/tcp"][0].HostPort)
+		require.Len(t, port, 1)
+		require.Equal(t, testHost, port[0].HostIP)
+		require.Equal(t, "1234", port[0].HostPort)
 	})
 
 	t.Run("logs", func(t *testing.T) {
 		logs, err := ollamaContainer.Logs(ctx)
 		require.NoError(t, err)
-		defer logs.Close()
+		t.Cleanup(func() {
+			require.NoError(t, logs.Close())
+		})
 
 		bs, err := io.ReadAll(logs)
 		require.NoError(t, err)
@@ -334,9 +423,109 @@ func TestRun_localWithCustomHost(t *testing.T) {
 	})
 
 	t.Run("mapped-port", func(t *testing.T) {
-		port, err := ollamaContainer.MappedPort(ctx, "1234/tcp")
+		port, err := ollamaContainer.MappedPort(ctx, testNatPort)
 		require.NoError(t, err)
 		require.Equal(t, "1234", port.Port())
 		require.Equal(t, "tcp", port.Proto())
+	})
+}
+
+func TestRun_localExec(t *testing.T) {
+	// check if the local ollama binary is available
+	if _, err := exec.LookPath(testBinary); err != nil {
+		t.Skip("local ollama binary not found, skipping")
+	}
+
+	ctx := context.Background()
+
+	ollamaContainer, err := ollama.Run(ctx, testImage, ollama.WithUseLocal())
+	testcontainers.CleanupContainer(t, ollamaContainer)
+	require.NoError(t, err)
+
+	t.Run("no-command", func(t *testing.T) {
+		code, r, err := ollamaContainer.Exec(ctx, nil)
+		require.Error(t, err)
+		require.Equal(t, 1, code)
+		require.Nil(t, r)
+	})
+
+	t.Run("unsupported-command", func(t *testing.T) {
+		code, r, err := ollamaContainer.Exec(ctx, []string{"cat", "/etc/hosts"})
+		require.ErrorIs(t, err, errors.ErrUnsupported)
+		require.Equal(t, 1, code)
+		require.Nil(t, r)
+	})
+
+	t.Run("unsupported-option-user", func(t *testing.T) {
+		code, r, err := ollamaContainer.Exec(ctx, []string{testBinary, "-v"}, tcexec.WithUser("root"))
+		require.ErrorIs(t, err, errors.ErrUnsupported)
+		require.Equal(t, 1, code)
+		require.Nil(t, r)
+	})
+
+	t.Run("unsupported-option-privileged", func(t *testing.T) {
+		code, r, err := ollamaContainer.Exec(ctx, []string{testBinary, "-v"}, tcexec.ProcessOptionFunc(func(opts *tcexec.ProcessOptions) {
+			opts.ExecConfig.Privileged = true
+		}))
+		require.ErrorIs(t, err, errors.ErrUnsupported)
+		require.Equal(t, 1, code)
+		require.Nil(t, r)
+	})
+
+	t.Run("unsupported-option-tty", func(t *testing.T) {
+		code, r, err := ollamaContainer.Exec(ctx, []string{testBinary, "-v"}, tcexec.ProcessOptionFunc(func(opts *tcexec.ProcessOptions) {
+			opts.ExecConfig.Tty = true
+		}))
+		require.ErrorIs(t, err, errors.ErrUnsupported)
+		require.Equal(t, 1, code)
+		require.Nil(t, r)
+	})
+
+	t.Run("unsupported-option-detach", func(t *testing.T) {
+		code, r, err := ollamaContainer.Exec(ctx, []string{testBinary, "-v"}, tcexec.ProcessOptionFunc(func(opts *tcexec.ProcessOptions) {
+			opts.ExecConfig.Detach = true
+		}))
+		require.ErrorIs(t, err, errors.ErrUnsupported)
+		require.Equal(t, 1, code)
+		require.Nil(t, r)
+	})
+
+	t.Run("unsupported-option-detach-keys", func(t *testing.T) {
+		code, r, err := ollamaContainer.Exec(ctx, []string{testBinary, "-v"}, tcexec.ProcessOptionFunc(func(opts *tcexec.ProcessOptions) {
+			opts.ExecConfig.DetachKeys = "ctrl-p,ctrl-q"
+		}))
+		require.ErrorIs(t, err, errors.ErrUnsupported)
+		require.Equal(t, 1, code)
+		require.Nil(t, r)
+	})
+
+	t.Run("pull-and-run-model", func(t *testing.T) {
+		const model = "llama3.2:1b"
+
+		code, r, err := ollamaContainer.Exec(ctx, []string{testBinary, "pull", model})
+		require.NoError(t, err)
+		require.Zero(t, code)
+
+		bs, err := io.ReadAll(r)
+		require.NoError(t, err)
+		require.Contains(t, string(bs), "success")
+
+		code, r, err = ollamaContainer.Exec(ctx, []string{testBinary, "run", model}, tcexec.Multiplexed())
+		require.NoError(t, err)
+		require.Zero(t, code)
+
+		bs, err = io.ReadAll(r)
+		require.NoError(t, err)
+		require.Empty(t, bs)
+
+		logs, err := ollamaContainer.Logs(ctx)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, logs.Close())
+		})
+
+		bs, err = io.ReadAll(logs)
+		require.NoError(t, err)
+		require.Contains(t, string(bs), "llama runner started")
 	})
 }

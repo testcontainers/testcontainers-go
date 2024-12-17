@@ -20,24 +20,19 @@ const DefaultOllamaImage = "ollama/ollama:0.1.25"
 // OllamaContainer represents the Ollama container type used in the module
 type OllamaContainer struct {
 	testcontainers.Container
-	localCtx *localContext
 }
 
 // ConnectionString returns the connection string for the Ollama container,
 // using the default port 11434.
 func (c *OllamaContainer) ConnectionString(ctx context.Context) (string, error) {
-	if c.localCtx != nil {
-		return "http://" + c.localCtx.host + ":" + c.localCtx.port, nil
-	}
-
 	host, err := c.Host(ctx)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("host: %w", err)
 	}
 
 	port, err := c.MappedPort(ctx, "11434/tcp")
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("mapped port: %w", err)
 	}
 
 	return fmt.Sprintf("http://%s:%d", host, port.Int()), nil
@@ -48,7 +43,7 @@ func (c *OllamaContainer) ConnectionString(ctx context.Context) (string, error) 
 // of the container into a new image with the given name, so it doesn't override existing images.
 // It should be used for creating an image that contains a loaded model.
 func (c *OllamaContainer) Commit(ctx context.Context, targetImage string) error {
-	if c.localCtx != nil {
+	if _, ok := c.Container.(*localProcess); ok {
 		return nil
 	}
 
@@ -89,40 +84,33 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Ollama container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*OllamaContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{"11434/tcp"},
-		WaitingFor:   wait.ForListeningPort("11434/tcp").WithStartupTimeout(60 * time.Second),
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:        img,
+			ExposedPorts: []string{"11434/tcp"},
+			WaitingFor:   wait.ForListeningPort("11434/tcp").WithStartupTimeout(60 * time.Second),
+		},
+		Started: true,
 	}
 
 	// always request a GPU if the host supports it
 	opts = append(opts, withGpu())
 
-	useLocal := false
+	var local bool
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
+		if err := opt.Customize(&req); err != nil {
 			return nil, fmt.Errorf("customize: %w", err)
 		}
-		if _, ok := opt.(UseLocal); ok {
-			useLocal = true
+		if _, ok := opt.(useLocal); ok {
+			local = true
 		}
 	}
 
-	if useLocal {
-		container, err := runLocal(ctx, req.Env)
-		if err == nil {
-			return container, nil
-		}
-
-		testcontainers.Logger.Printf("failed to run local ollama: %v, switching to docker", err)
+	if local {
+		return runLocal(ctx, req)
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.GenericContainer(ctx, req)
 	var c *OllamaContainer
 	if container != nil {
 		c = &OllamaContainer{Container: container}
