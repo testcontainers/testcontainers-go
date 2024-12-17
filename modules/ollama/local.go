@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"sync"
 	"syscall"
@@ -18,6 +19,8 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/errdefs"
+	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -26,54 +29,98 @@ import (
 )
 
 const (
-	localIP   = "127.0.0.1"
-	localPort = "11434"
+	localPort       = "11434"
+	localBinary     = "ollama"
+	localServeArg   = "serve"
+	localLogRegex   = `Listening on (.*:\d+) \(version\s(.*)\)`
+	localNamePrefix = "local-ollama"
+	localHostVar    = "OLLAMA_HOST"
+	localLogVar     = "OLLAMA_LOGFILE"
 )
 
 var (
-	defaultStopTimeout      = time.Second * 5
-	errCopyAPIsNotSupported = errors.New("copy APIs are not supported for local Ollama binary")
+	// Ensure localContext implements the testcontainers.Container interface.
+	_ testcontainers.Container = &localProcess{}
+
+	// defaultStopTimeout is the default timeout for stopping the local Ollama process.
+	defaultStopTimeout = time.Second * 5
+
+	// zeroTime is the zero time value.
+	zeroTime time.Time
+
+	// reLogDetails is the regular expression to extract the listening address and version from the log.
+	reLogDetails = regexp.MustCompile(localLogRegex)
 )
 
-// localContext is a type holding the context for local Ollama executions.
-type localContext struct {
-	env      []string
-	serveCmd *exec.Cmd
-	logFile  *os.File
-	mx       sync.Mutex
-	host     string
-	port     string
+// localProcess emulates the Ollama container using a local process to improve performance.
+type localProcess struct {
+	sessionID string
+
+	// env is the combined environment variables passed to the Ollama binary.
+	env []string
+
+	// cmd is the command that runs the Ollama binary, not valid externally if nil.
+	cmd *exec.Cmd
+
+	// logName and logFile are the file where the Ollama logs are written.
+	logName string
+	logFile *os.File
+
+	// host, port and version are extracted from log on startup.
+	host    string
+	port    string
+	version string
+
+	// waitFor is the strategy to wait for the process to be ready.
+	waitFor wait.Strategy
+
+	// done is closed when the process is finished.
+	done chan struct{}
+
+	// wg is used to wait for the process to finish.
+	wg sync.WaitGroup
+
+	// startedAt is the time when the process started.
+	startedAt time.Time
+
+	// mtx is used to synchronize access to the process state fields below.
+	mtx sync.Mutex
+
+	// finishedAt is the time when the process finished.
+	finishedAt time.Time
+
+	// exitErr is the error returned by the process.
+	exitErr error
 }
 
-// runLocal calls the local Ollama binary instead of using a Docker container.
-func runLocal(ctx context.Context, env map[string]string) (*OllamaContainer, error) {
-	// Apply the environment variables to the command.
-	cmdEnv := make([]string, 0, len(env)*2)
-	for k, v := range env {
-		cmdEnv = append(cmdEnv, k+"="+v)
+// runLocal returns an OllamaContainer that uses the local Ollama binary instead of using a Docker container.
+func runLocal(ctx context.Context, req testcontainers.GenericContainerRequest) (*OllamaContainer, error) {
+	// TODO: validate the request and return an error if it
+	// contains any unsupported elements.
+
+	sessionID := testcontainers.SessionID()
+	local := &localProcess{
+		sessionID: sessionID,
+		env:       make([]string, 0, len(req.Env)),
+		waitFor:   req.WaitingFor,
+		logName:   localNamePrefix + "-" + sessionID + ".log",
 	}
 
-	localCtx := &localContext{
-		env:  cmdEnv,
-		host: localIP,
-		port: localPort,
-	}
-
-	if envHost := os.Getenv("OLLAMA_HOST"); envHost != "" {
-		host, port, err := net.SplitHostPort(envHost)
-		if err != nil {
-			return nil, fmt.Errorf("invalid OLLAMA_HOST: %w", err)
+	// Apply the environment variables to the command and
+	// override the log file if specified.
+	for k, v := range req.Env {
+		local.env = append(local.env, k+"="+v)
+		if k == localLogVar {
+			local.logName = v
 		}
-
-		localCtx.host = host
-		localCtx.port = port
 	}
 
-	c := &OllamaContainer{
-		localCtx: localCtx,
+	err := local.Start(ctx)
+	var c *OllamaContainer
+	if local.cmd != nil {
+		c = &OllamaContainer{Container: local}
 	}
 
-	err := c.startLocalOllama(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("start ollama: %w", err)
 	}
@@ -81,430 +128,524 @@ func runLocal(ctx context.Context, env map[string]string) (*OllamaContainer, err
 	return c, nil
 }
 
-// logFile returns an existing log file or creates a new one if it doesn't exist.
-func logFile() (*os.File, error) {
-	logName := "local-ollama-" + testcontainers.SessionID() + ".log"
-
-	if envLogName := os.Getenv("OLLAMA_LOGFILE"); envLogName != "" {
-		logName = envLogName
+// Start implements testcontainers.Container interface for the local Ollama binary.
+func (c *localProcess) Start(ctx context.Context) error {
+	if c.IsRunning() {
+		return errors.New("already running")
 	}
 
-	file, err := os.Create(logName)
+	cmd := exec.CommandContext(ctx, localBinary, localServeArg)
+	cmd.Env = c.env
+
+	var err error
+	c.logFile, err = os.Create(c.logName)
 	if err != nil {
-		return nil, fmt.Errorf("create ollama log file: %w", err)
+		return fmt.Errorf("create ollama log file: %w", err)
 	}
 
-	return file, nil
-}
+	// Multiplex stdout and stderr to the log file matching the Docker API.
+	cmd.Stdout = stdcopy.NewStdWriter(c.logFile, stdcopy.Stdout)
+	cmd.Stderr = stdcopy.NewStdWriter(c.logFile, stdcopy.Stderr)
 
-// startLocalOllama starts the Ollama serve command in the background, writing to the
-// provided log file.
-func (c *OllamaContainer) startLocalOllama(ctx context.Context) error {
-	if c.localCtx.serveCmd != nil {
-		return nil
+	// Run the ollama serve command in background.
+	if err = cmd.Start(); err != nil {
+		return fmt.Errorf("start ollama serve: %w", errors.Join(err, c.cleanupLog()))
 	}
 
-	c.localCtx.mx.Lock()
+	// Past this point, the process was started successfully.
+	c.cmd = cmd
+	c.startedAt = time.Now()
 
-	serveCmd := exec.CommandContext(ctx, "ollama", "serve")
-	serveCmd.Env = append(serveCmd.Env, c.localCtx.env...)
-	serveCmd.Env = append(serveCmd.Env, os.Environ()...)
+	// Reset the details to allow multiple start / stop cycles.
+	c.done = make(chan struct{})
+	c.mtx.Lock()
+	c.finishedAt = zeroTime
+	c.exitErr = nil
+	c.mtx.Unlock()
 
-	logFile, err := logFile()
-	if err != nil {
-		c.localCtx.mx.Unlock()
-		return fmt.Errorf("ollama log file: %w", err)
-	}
+	// Wait for the process to finish in a goroutine.
+	c.wg.Add(1)
+	go func() {
+		defer func() {
+			c.wg.Done()
+			close(c.done)
+		}()
 
-	serveCmd.Stdout = logFile
-	serveCmd.Stderr = logFile
-
-	// Run the ollama serve command in background
-	err = serveCmd.Start()
-	if err != nil {
-		c.localCtx.mx.Unlock()
-		return fmt.Errorf("start ollama serve: %w", err)
-	}
-
-	c.localCtx.serveCmd = serveCmd
-	c.localCtx.logFile = logFile
-
-	// unlock before waiting for the process to be ready
-	c.localCtx.mx.Unlock()
-
-	waitCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	err = c.waitForOllama(waitCtx)
-	if err != nil {
-		return fmt.Errorf("wait for ollama to start: %w", err)
-	}
-
-	return nil
-}
-
-// waitForOllama Wait until the Ollama process is ready, checking that the log file contains
-// the "Listening on 127.0.0.1:11434" message
-func (c *OllamaContainer) waitForOllama(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-
-	err := wait.ForLog("Listening on "+c.localCtx.host+":"+c.localCtx.port).WaitUntilReady(ctx, c)
-	if err != nil {
-		logs, err := c.Logs(ctx)
+		err := c.cmd.Wait()
+		c.mtx.Lock()
+		defer c.mtx.Unlock()
 		if err != nil {
-			return fmt.Errorf("wait for ollama to start: %w", err)
+			c.exitErr = fmt.Errorf("process wait: %w", err)
 		}
+		c.finishedAt = time.Now()
+	}()
 
-		// ignore error as we already have an error and the output is already logged
-		bs, _ := io.ReadAll(logs)
-		return fmt.Errorf("wait for ollama to start: %w. Container logs:\n%s", err, string(bs))
+	if err = c.waitStrategy(ctx); err != nil {
+		return fmt.Errorf("wait strategy: %w", err)
+	}
+
+	if err := c.extractLogDetails(ctx); err != nil {
+		return fmt.Errorf("extract log details: %w", err)
 	}
 
 	return nil
 }
 
-// ContainerIP returns the IP address of the local Ollama binary.
-func (c *OllamaContainer) ContainerIP(ctx context.Context) (string, error) {
-	if c.localCtx == nil {
-		return c.Container.ContainerIP(ctx)
+// waitStrategy waits until the Ollama process is ready.
+func (c *localProcess) waitStrategy(ctx context.Context) error {
+	if err := c.waitFor.WaitUntilReady(ctx, c); err != nil {
+		logs, lerr := c.Logs(ctx)
+		if lerr != nil {
+			return errors.Join(err, lerr)
+		}
+		defer logs.Close()
+
+		var stderr, stdout bytes.Buffer
+		_, cerr := stdcopy.StdCopy(&stdout, &stderr, logs)
+
+		return fmt.Errorf(
+			"%w (stdout: %s, stderr: %s)",
+			errors.Join(err, cerr),
+			strings.TrimSpace(stdout.String()),
+			strings.TrimSpace(stderr.String()),
+		)
 	}
 
-	return localIP, nil
+	return nil
+}
+
+// extractLogDetails extracts the listening address and version from the log.
+func (c *localProcess) extractLogDetails(ctx context.Context) error {
+	rc, err := c.Logs(ctx)
+	if err != nil {
+		return fmt.Errorf("logs: %w", err)
+	}
+	defer rc.Close()
+
+	bs, err := io.ReadAll(rc)
+	if err != nil {
+		return fmt.Errorf("read logs: %w", err)
+	}
+
+	matches := reLogDetails.FindSubmatch(bs)
+	if len(matches) != 3 {
+		return errors.New("address and version not found")
+	}
+
+	c.host, c.port, err = net.SplitHostPort(string(matches[1]))
+	if err != nil {
+		return fmt.Errorf("split host port: %w", err)
+	}
+
+	// Set OLLAMA_HOST variable to the extracted host so Exec can use it.
+	c.env = append(c.env, localHostVar+"="+string(matches[1]))
+	c.version = string(matches[2])
+
+	return nil
+}
+
+// ContainerIP implements testcontainers.Container interface for the local Ollama binary.
+func (c *localProcess) ContainerIP(ctx context.Context) (string, error) {
+	return c.host, nil
 }
 
 // ContainerIPs returns a slice with the IP address of the local Ollama binary.
-func (c *OllamaContainer) ContainerIPs(ctx context.Context) ([]string, error) {
-	if c.localCtx == nil {
-		return c.Container.ContainerIPs(ctx)
-	}
-
-	return []string{localIP}, nil
+func (c *localProcess) ContainerIPs(ctx context.Context) ([]string, error) {
+	return []string{c.host}, nil
 }
 
-// CopyToContainer is a no-op for the local Ollama binary.
-func (c *OllamaContainer) CopyToContainer(ctx context.Context, fileContent []byte, containerFilePath string, fileMode int64) error {
-	if c.localCtx == nil {
-		return c.Container.CopyToContainer(ctx, fileContent, containerFilePath, fileMode)
-	}
-
-	return errCopyAPIsNotSupported
+// CopyToContainer implements testcontainers.Container interface for the local Ollama binary.
+// Returns [errors.ErrUnsupported].
+func (c *localProcess) CopyToContainer(ctx context.Context, fileContent []byte, containerFilePath string, fileMode int64) error {
+	return errors.ErrUnsupported
 }
 
-// CopyDirToContainer is a no-op for the local Ollama binary.
-func (c *OllamaContainer) CopyDirToContainer(ctx context.Context, hostDirPath string, containerParentPath string, fileMode int64) error {
-	if c.localCtx == nil {
-		return c.Container.CopyDirToContainer(ctx, hostDirPath, containerParentPath, fileMode)
-	}
-
-	return errCopyAPIsNotSupported
+// CopyDirToContainer implements testcontainers.Container interface for the local Ollama binary.
+// Returns [errors.ErrUnsupported].
+func (c *localProcess) CopyDirToContainer(ctx context.Context, hostDirPath string, containerParentPath string, fileMode int64) error {
+	return errors.ErrUnsupported
 }
 
-// CopyFileToContainer is a no-op for the local Ollama binary.
-func (c *OllamaContainer) CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error {
-	if c.localCtx == nil {
-		return c.Container.CopyFileToContainer(ctx, hostFilePath, containerFilePath, fileMode)
-	}
-
-	return errCopyAPIsNotSupported
+// CopyFileToContainer implements testcontainers.Container interface for the local Ollama binary.
+// Returns [errors.ErrUnsupported].
+func (c *localProcess) CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error {
+	return errors.ErrUnsupported
 }
 
-// CopyFileFromContainer is a no-op for the local Ollama binary.
-func (c *OllamaContainer) CopyFileFromContainer(ctx context.Context, filePath string) (io.ReadCloser, error) {
-	if c.localCtx == nil {
-		return c.Container.CopyFileFromContainer(ctx, filePath)
-	}
-
-	return nil, errCopyAPIsNotSupported
+// CopyFileFromContainer implements testcontainers.Container interface for the local Ollama binary.
+// Returns [errors.ErrUnsupported].
+func (c *localProcess) CopyFileFromContainer(ctx context.Context, filePath string) (io.ReadCloser, error) {
+	return nil, errors.ErrUnsupported
 }
 
-// GetLogProductionErrorChannel returns a nil channel.
-func (c *OllamaContainer) GetLogProductionErrorChannel() <-chan error {
-	if c.localCtx == nil {
-		return c.Container.GetLogProductionErrorChannel()
-	}
-
+// GetLogProductionErrorChannel implements testcontainers.Container interface for the local Ollama binary.
+// It returns a nil channel because the local Ollama binary doesn't have a production error channel.
+func (c *localProcess) GetLogProductionErrorChannel() <-chan error {
 	return nil
 }
 
-// Endpoint returns the 127.0.0.1:11434 endpoint for the local Ollama binary.
-func (c *OllamaContainer) Endpoint(ctx context.Context, port string) (string, error) {
-	if c.localCtx == nil {
-		return c.Container.Endpoint(ctx, port)
-	}
-
-	return c.localCtx.host + ":" + c.localCtx.port, nil
-}
-
-// Exec executes a command using the local Ollama binary.
-func (c *OllamaContainer) Exec(ctx context.Context, cmd []string, options ...tcexec.ProcessOption) (int, io.Reader, error) {
-	if c.localCtx == nil {
-		return c.Container.Exec(ctx, cmd, options...)
-	}
-
-	c.localCtx.mx.Lock()
-	defer c.localCtx.mx.Unlock()
-
+// Exec implements testcontainers.Container interface for the local Ollama binary.
+// It executes a command using the local Ollama binary and returns the exit status
+// of the executed command, an [io.Reader] containing the combined stdout and stderr,
+// and any encountered error.
+//
+// Reading directly from the [io.Reader] may result in unexpected bytes due to custom
+// stream multiplexing headers. Use [tcexec.Multiplexed] option to read the combined output
+// without the multiplexing headers.
+// Alternatively, to separate the stdout and stderr from [io.Reader] and interpret these
+// headers properly, [stdcopy.StdCopy] from the Docker API should be used.
+func (c *localProcess) Exec(ctx context.Context, cmd []string, options ...tcexec.ProcessOption) (int, io.Reader, error) {
 	if len(cmd) == 0 {
-		err := errors.New("exec: no command provided")
-		return 1, strings.NewReader(err.Error()), err
-	} else if cmd[0] != "ollama" {
-		err := fmt.Errorf("%s: %w", cmd[0], errors.ErrUnsupported)
-		return 1, strings.NewReader(err.Error()), err
+		return 1, nil, errors.New("no command provided")
+	} else if cmd[0] != localBinary {
+		return 1, nil, fmt.Errorf("command %q: %w", cmd[0], errors.ErrUnsupported)
 	}
 
-	args := []string{}
-	if len(cmd) > 1 {
-		args = cmd[1:] // prevent when there is only one command
+	command := exec.CommandContext(ctx, cmd[0], cmd[1:]...)
+	command.Env = c.env
+
+	// Multiplex stdout and stderr to the buffer so they can be read separately later.
+	var buf bytes.Buffer
+	command.Stdout = stdcopy.NewStdWriter(&buf, stdcopy.Stdout)
+	command.Stderr = stdcopy.NewStdWriter(&buf, stdcopy.Stderr)
+
+	// Use process options to customize the command execution
+	// emulating the Docker API behaviour.
+	processOptions := tcexec.NewProcessOptions(cmd)
+	processOptions.Reader = &buf
+	for _, o := range options {
+		o.Apply(processOptions)
 	}
 
-	command := prepareExec(ctx, cmd[0], args, c.localCtx.env, c.localCtx.logFile)
-	err := command.Run()
-	if err != nil {
-		return command.ProcessState.ExitCode(), c.localCtx.logFile, fmt.Errorf("exec %v: %w", cmd, err)
+	if err := c.validateExecOptions(processOptions.ExecConfig); err != nil {
+		return 1, nil, fmt.Errorf("validate exec option: %w", err)
 	}
 
-	return command.ProcessState.ExitCode(), c.localCtx.logFile, nil
+	if !processOptions.ExecConfig.AttachStderr {
+		command.Stderr = io.Discard
+	}
+	if !processOptions.ExecConfig.AttachStdout {
+		command.Stdout = io.Discard
+	}
+	if processOptions.ExecConfig.AttachStdin {
+		command.Stdin = os.Stdin
+	}
+
+	command.Dir = processOptions.ExecConfig.WorkingDir
+	command.Env = append(command.Env, processOptions.ExecConfig.Env...)
+
+	if err := command.Run(); err != nil {
+		return command.ProcessState.ExitCode(), processOptions.Reader, fmt.Errorf("exec %v: %w", cmd, err)
+	}
+
+	return command.ProcessState.ExitCode(), processOptions.Reader, nil
 }
 
-func prepareExec(ctx context.Context, bin string, args []string, env []string, output io.Writer) *exec.Cmd {
-	command := exec.CommandContext(ctx, bin, args...)
-	command.Env = append(command.Env, env...)
-	command.Env = append(command.Env, os.Environ()...)
-
-	command.Stdout = output
-	command.Stderr = output
-
-	return command
-}
-
-// GetContainerID returns a placeholder ID for local execution
-func (c *OllamaContainer) GetContainerID() string {
-	if c.localCtx == nil {
-		return c.Container.GetContainerID()
+// validateExecOptions checks if the given exec options are supported by the local Ollama binary.
+func (c *localProcess) validateExecOptions(options container.ExecOptions) error {
+	var errs []error
+	if options.User != "" {
+		errs = append(errs, fmt.Errorf("user: %w", errors.ErrUnsupported))
+	}
+	if options.Privileged {
+		errs = append(errs, fmt.Errorf("privileged: %w", errors.ErrUnsupported))
+	}
+	if options.Tty {
+		errs = append(errs, fmt.Errorf("tty: %w", errors.ErrUnsupported))
+	}
+	if options.Detach {
+		errs = append(errs, fmt.Errorf("detach: %w", errors.ErrUnsupported))
+	}
+	if options.DetachKeys != "" {
+		errs = append(errs, fmt.Errorf("detach keys: %w", errors.ErrUnsupported))
 	}
 
-	return "local-ollama-" + testcontainers.SessionID()
+	return errors.Join(errs...)
 }
 
-// Host returns the 127.0.0.1 address for the local Ollama binary.
-func (c *OllamaContainer) Host(ctx context.Context) (string, error) {
-	if c.localCtx == nil {
-		return c.Container.Host(ctx)
-	}
-
-	return localIP, nil
-}
-
-// Inspect returns a ContainerJSON with the state of the local Ollama binary.
-// The version is read from the local Ollama binary (ollama -v), and the port
-// mapping is set to 11434.
-func (c *OllamaContainer) Inspect(ctx context.Context) (*types.ContainerJSON, error) {
-	if c.localCtx == nil {
-		return c.Container.Inspect(ctx)
-	}
-
+// Inspect implements testcontainers.Container interface for the local Ollama binary.
+// It returns a ContainerJSON with the state of the local Ollama binary.
+func (c *localProcess) Inspect(ctx context.Context) (*types.ContainerJSON, error) {
 	state, err := c.State(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("get ollama state: %w", err)
-	}
-
-	// read the version from the ollama binary
-	var buf bytes.Buffer
-	command := prepareExec(ctx, "ollama", []string{"-v"}, c.localCtx.env, &buf)
-	if err := command.Run(); err != nil {
-		return nil, fmt.Errorf("read ollama -v output: %w", err)
-	}
-
-	bs, err := io.ReadAll(&buf)
-	if err != nil {
-		return nil, fmt.Errorf("read ollama -v output: %w", err)
+		return nil, fmt.Errorf("state: %w", err)
 	}
 
 	return &types.ContainerJSON{
 		ContainerJSONBase: &types.ContainerJSONBase{
 			ID:    c.GetContainerID(),
-			Name:  "local-ollama-" + testcontainers.SessionID(),
+			Name:  localNamePrefix + "-" + c.sessionID,
 			State: state,
 		},
 		Config: &container.Config{
-			Image: string(bs),
+			Image: localNamePrefix + ":" + c.version,
 			ExposedPorts: nat.PortSet{
-				nat.Port(c.localCtx.port + "/tcp"): struct{}{},
+				nat.Port(localPort + "/tcp"): struct{}{},
 			},
-			Hostname:   "localhost",
-			Entrypoint: []string{"ollama", "serve"},
+			Hostname:   c.host,
+			Entrypoint: []string{localBinary, localServeArg},
 		},
 		NetworkSettings: &types.NetworkSettings{
 			Networks: map[string]*network.EndpointSettings{},
 			NetworkSettingsBase: types.NetworkSettingsBase{
 				Bridge: "bridge",
 				Ports: nat.PortMap{
-					nat.Port(c.localCtx.port + "/tcp"): {
-						{HostIP: c.localCtx.host, HostPort: c.localCtx.port},
+					nat.Port(localPort + "/tcp"): {
+						{HostIP: c.host, HostPort: c.port},
 					},
 				},
 			},
 			DefaultNetworkSettings: types.DefaultNetworkSettings{
-				IPAddress: c.localCtx.host,
+				IPAddress: c.host,
 			},
 		},
 	}, nil
 }
 
-// IsRunning returns true if the local Ollama process is running.
-func (c *OllamaContainer) IsRunning() bool {
-	if c.localCtx == nil {
-		return c.Container.IsRunning()
+// IsRunning implements testcontainers.Container interface for the local Ollama binary.
+// It returns true if the local Ollama process is running, false otherwise.
+func (c *localProcess) IsRunning() bool {
+	if c.startedAt.IsZero() {
+		// The process hasn't started yet.
+		return false
 	}
 
-	c.localCtx.mx.Lock()
-	defer c.localCtx.mx.Unlock()
-
-	return c.localCtx.serveCmd != nil
+	select {
+	case <-c.done:
+		// The process exited.
+		return false
+	default:
+		// The process is still running.
+		return true
+	}
 }
 
-// Logs returns the logs from the local Ollama binary.
-func (c *OllamaContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
-	if c.localCtx == nil {
-		return c.Container.Logs(ctx)
-	}
-
-	c.localCtx.mx.Lock()
-	defer c.localCtx.mx.Unlock()
-
-	// stream the log file
-	return os.Open(c.localCtx.logFile.Name())
-}
-
-// MappedPort returns the configured port for local Ollama binary.
-func (c *OllamaContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Port, error) {
-	if c.localCtx == nil {
-		return c.Container.MappedPort(ctx, port)
-	}
-
-	// Ollama typically uses port 11434 by default
-	return nat.Port(c.localCtx.port + "/tcp"), nil
-}
-
-// Networks returns the networks for local Ollama binary, which is a nil slice.
-func (c *OllamaContainer) Networks(ctx context.Context) ([]string, error) {
-	if c.localCtx == nil {
-		return c.Container.Networks(ctx)
-	}
-
-	return nil, nil
-}
-
-// NetworkAliases returns the network aliases for local Ollama binary, which is a nil map.
-func (c *OllamaContainer) NetworkAliases(ctx context.Context) (map[string][]string, error) {
-	if c.localCtx == nil {
-		return c.Container.NetworkAliases(ctx)
-	}
-
-	return nil, nil
-}
-
-// SessionID returns the session ID for local Ollama binary, which is the session ID
-// of the test execution.
-func (c *OllamaContainer) SessionID() string {
-	if c.localCtx == nil {
-		return c.Container.SessionID()
-	}
-
-	return testcontainers.SessionID()
-}
-
-// Start starts the local Ollama process, not failing if it's already running.
-func (c *OllamaContainer) Start(ctx context.Context) error {
-	if c.localCtx == nil {
-		return c.Container.Start(ctx)
-	}
-
-	err := c.startLocalOllama(ctx)
+// Logs implements testcontainers.Container interface for the local Ollama binary.
+// It returns the logs from the local Ollama binary.
+func (c *localProcess) Logs(ctx context.Context) (io.ReadCloser, error) {
+	file, err := os.Open(c.logFile.Name())
 	if err != nil {
-		return fmt.Errorf("start ollama: %w", err)
+		return nil, fmt.Errorf("open log file: %w", err)
 	}
 
-	return nil
+	return file, nil
 }
 
-// State returns the current state of the Ollama process, simulating a container state
-// for local execution.
-func (c *OllamaContainer) State(ctx context.Context) (*types.ContainerState, error) {
-	if c.localCtx == nil {
-		return c.Container.State(ctx)
-	}
+// State implements testcontainers.Container interface for the local Ollama binary.
+// It returns the current state of the Ollama process, simulating a container state.
+func (c *localProcess) State(ctx context.Context) (*types.ContainerState, error) {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
 
-	c.localCtx.mx.Lock()
-	defer c.localCtx.mx.Unlock()
+	if !c.IsRunning() {
+		state := &types.ContainerState{
+			Status:     "exited",
+			ExitCode:   c.cmd.ProcessState.ExitCode(),
+			StartedAt:  c.startedAt.Format(time.RFC3339Nano),
+			FinishedAt: c.finishedAt.Format(time.RFC3339Nano),
+		}
+		if c.exitErr != nil {
+			state.Error = c.exitErr.Error()
+		}
 
-	if c.localCtx.serveCmd == nil {
-		return &types.ContainerState{Status: "exited"}, nil
-	}
-
-	// Check if process is still running. Signal(0) is a special case in Unix-like systems.
-	// When you send signal 0 to a process:
-	// - It performs all the normal error checking (permissions, process existence, etc.)
-	// - But it doesn't actually send any signal to the process
-	if err := c.localCtx.serveCmd.Process.Signal(syscall.Signal(0)); err != nil {
-		return &types.ContainerState{Status: "created"}, nil
+		return state, nil
 	}
 
 	// Setting the Running field because it's required by the wait strategy
 	// to check if the given log message is present.
-	return &types.ContainerState{Status: "running", Running: true}, nil
+	return &types.ContainerState{
+		Status:     "running",
+		Running:    true,
+		Pid:        c.cmd.Process.Pid,
+		StartedAt:  c.startedAt.Format(time.RFC3339Nano),
+		FinishedAt: c.finishedAt.Format(time.RFC3339Nano),
+	}, nil
 }
 
-// Stop gracefully stops the local Ollama process
-func (c *OllamaContainer) Stop(ctx context.Context, d *time.Duration) error {
-	if c.localCtx == nil {
-		return c.Container.Stop(ctx, d)
-	}
-
-	c.localCtx.mx.Lock()
-	defer c.localCtx.mx.Unlock()
-
-	if c.localCtx.serveCmd == nil {
-		return nil
-	}
-
-	if err := c.localCtx.serveCmd.Process.Signal(syscall.SIGTERM); err != nil {
+// Stop implements testcontainers.Container interface for the local Ollama binary.
+// It gracefully stops the local Ollama process.
+func (c *localProcess) Stop(ctx context.Context, d *time.Duration) error {
+	if err := c.cmd.Process.Signal(syscall.SIGTERM); err != nil {
 		return fmt.Errorf("signal ollama: %w", err)
 	}
 
-	c.localCtx.serveCmd = nil
+	if d != nil {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, *d)
+		defer cancel()
+	}
 
-	return nil
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-c.done:
+		// The process exited.
+		c.mtx.Lock()
+		defer c.mtx.Unlock()
+
+		return c.exitErr
+	}
 }
 
-// Terminate stops the local Ollama process, removing the log file.
-func (c *OllamaContainer) Terminate(ctx context.Context) error {
-	if c.localCtx == nil {
-		return c.Container.Terminate(ctx)
+// Terminate implements testcontainers.Container interface for the local Ollama binary.
+// It stops the local Ollama process, removing the log file.
+func (c *localProcess) Terminate(ctx context.Context) error {
+	// First try to stop gracefully.
+	if err := c.Stop(ctx, &defaultStopTimeout); !c.isCleanupSafe(err) {
+		return fmt.Errorf("stop: %w", err)
 	}
 
-	// First try to stop gracefully
-	err := c.Stop(ctx, &defaultStopTimeout)
-	if err != nil {
-		return fmt.Errorf("stop ollama: %w", err)
+	if c.IsRunning() {
+		// Still running, force kill.
+		if err := c.cmd.Process.Kill(); !c.isCleanupSafe(err) {
+			return fmt.Errorf("kill: %w", err)
+		}
+
+		// Wait for the process to exit so capture any error.
+		c.wg.Wait()
 	}
 
-	c.localCtx.mx.Lock()
-	defer c.localCtx.mx.Unlock()
+	c.mtx.Lock()
+	exitErr := c.exitErr
+	c.mtx.Unlock()
 
-	if c.localCtx.logFile == nil {
+	return errors.Join(exitErr, c.cleanupLog())
+}
+
+// cleanupLog closes the log file and removes it.
+func (c *localProcess) cleanupLog() error {
+	if c.logFile == nil {
 		return nil
 	}
 
 	var errs []error
-	if err = c.localCtx.logFile.Close(); err != nil {
+	if err := c.logFile.Close(); err != nil {
 		errs = append(errs, fmt.Errorf("close log: %w", err))
 	}
 
-	if err = os.Remove(c.localCtx.logFile.Name()); err != nil && !errors.Is(err, fs.ErrNotExist) {
+	if err := os.Remove(c.logFile.Name()); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		errs = append(errs, fmt.Errorf("remove log: %w", err))
 	}
 
+	c.logFile = nil // Prevent double cleanup.
+
 	return errors.Join(errs...)
+}
+
+// Endpoint implements testcontainers.Container interface for the local Ollama binary.
+// It returns proto://host:port string for the Ollama port.
+// It returns just host:port if proto is blank.
+func (c *localProcess) Endpoint(ctx context.Context, proto string) (string, error) {
+	return c.PortEndpoint(ctx, localPort, proto)
+}
+
+// GetContainerID implements testcontainers.Container interface for the local Ollama binary.
+func (c *localProcess) GetContainerID() string {
+	return localNamePrefix + "-" + c.sessionID
+}
+
+// Host implements testcontainers.Container interface for the local Ollama binary.
+func (c *localProcess) Host(ctx context.Context) (string, error) {
+	return c.host, nil
+}
+
+// MappedPort implements testcontainers.Container interface for the local Ollama binary.
+func (c *localProcess) MappedPort(ctx context.Context, port nat.Port) (nat.Port, error) {
+	if port.Port() != localPort || port.Proto() != "tcp" {
+		return "", errdefs.NotFound(fmt.Errorf("port %q not found", port))
+	}
+
+	return nat.Port(c.port + "/tcp"), nil
+}
+
+// Networks implements testcontainers.Container interface for the local Ollama binary.
+// It returns a nil slice.
+func (c *localProcess) Networks(ctx context.Context) ([]string, error) {
+	return nil, nil
+}
+
+// NetworkAliases implements testcontainers.Container interface for the local Ollama binary.
+// It returns a nil map.
+func (c *localProcess) NetworkAliases(ctx context.Context) (map[string][]string, error) {
+	return nil, nil
+}
+
+// PortEndpoint implements testcontainers.Container interface for the local Ollama binary.
+// It returns proto://host:port string for the given exposed port.
+// It returns just host:port if proto is blank.
+func (c *localProcess) PortEndpoint(ctx context.Context, port nat.Port, proto string) (string, error) {
+	host, err := c.Host(ctx)
+	if err != nil {
+		return "", fmt.Errorf("host: %w", err)
+	}
+
+	outerPort, err := c.MappedPort(ctx, port)
+	if err != nil {
+		return "", fmt.Errorf("mapped port: %w", err)
+	}
+
+	if proto != "" {
+		proto += "://"
+	}
+
+	return fmt.Sprintf("%s%s:%s", proto, host, outerPort.Port()), nil
+}
+
+// SessionID implements testcontainers.Container interface for the local Ollama binary.
+func (c *localProcess) SessionID() string {
+	return c.sessionID
+}
+
+// Deprecated: it will be removed in the next major release.
+// FollowOutput is not implemented for the local Ollama binary.
+// It panics if called.
+func (c *localProcess) FollowOutput(consumer testcontainers.LogConsumer) {
+	panic("not implemented")
+}
+
+// Deprecated: use c.Inspect(ctx).NetworkSettings.Ports instead.
+// Ports gets the exposed ports for the container.
+func (c *localProcess) Ports(ctx context.Context) (nat.PortMap, error) {
+	inspect, err := c.Inspect(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return inspect.NetworkSettings.Ports, nil
+}
+
+// Deprecated: it will be removed in the next major release.
+// StartLogProducer implements testcontainers.Container interface for the local Ollama binary.
+// It returns an error because the local Ollama binary doesn't have a log producer.
+func (c *localProcess) StartLogProducer(context.Context, ...testcontainers.LogProductionOption) error {
+	return errors.ErrUnsupported
+}
+
+// Deprecated: it will be removed in the next major release.
+// StopLogProducer implements testcontainers.Container interface for the local Ollama binary.
+// It returns an error because the local Ollama binary doesn't have a log producer.
+func (c *localProcess) StopLogProducer() error {
+	return errors.ErrUnsupported
+}
+
+// Deprecated: Use c.Inspect(ctx).Name instead.
+// Name returns the name for the local Ollama binary.
+func (c *localProcess) Name(context.Context) (string, error) {
+	return localNamePrefix + "-" + c.sessionID, nil
+}
+
+// isCleanupSafe reports whether all errors in err's tree are one of the
+// following, so can safely be ignored:
+//   - nil
+//   - os: process already finished
+//   - context deadline exceeded
+func (c *localProcess) isCleanupSafe(err error) bool {
+	switch {
+	case err == nil,
+		errors.Is(err, os.ErrProcessDone),
+		errors.Is(err, context.DeadlineExceeded):
+		return true
+	default:
+		return false
+	}
 }
