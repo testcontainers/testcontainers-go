@@ -8,13 +8,13 @@ TOOLS_MOD_DIR    := $(SRC_ROOT)/internal/tools
 TOOLS_MOD_REGEX  := "\s+_\s+\".*\""
 TOOLS_PKG_NAMES  := $(shell grep -E $(TOOLS_MOD_REGEX) < $(TOOLS_MOD_DIR)/tools.go | tr -d " _\"")
 TOOLS_BIN_DIR    := $(SRC_ROOT)/.tools
-TOOLS_BIN_NAMES  := $(addprefix $(TOOLS_BIN_DIR)/, $(notdir $(TOOLS_PKG_NAMES)))
+TOOLS_BIN_NAMES  := $(addprefix $(TOOLS_BIN_DIR)/, $(notdir $(patsubst %/v%,%,$(TOOLS_PKG_NAMES))))
 
 $(TOOLS_BIN_DIR):
 	mkdir -p $@
 
 $(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
-	cd $(TOOLS_MOD_DIR) && GOOS="" GOARCH="" $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@)%,$(TOOLS_PKG_NAMES))
+	cd $(TOOLS_MOD_DIR) && GOOS="" GOARCH="" $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $(patsubst %/v%,%,$@)),$(TOOLS_PKG_NAMES))
 
 GOLANGCI_LINT       := $(TOOLS_BIN_DIR)/golangci-lint
 GOTESTSUM           := $(TOOLS_BIN_DIR)/gotestsum
