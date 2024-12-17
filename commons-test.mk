@@ -1,27 +1,33 @@
-ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-GOBIN= $(GOPATH)/bin
+SHELL = /bin/bash
 
-define go_install
-    go install $(1)
-endef
+SRC_ROOT := $(shell git rev-parse --show-toplevel)
 
-$(GOBIN)/golangci-lint:
-	$(call go_install,github.com/golangci/golangci-lint/cmd/golangci-lint@v1.61.0)
+GOCMD?= go
 
-$(GOBIN)/gotestsum:
-	$(call go_install,gotest.tools/gotestsum@latest)
+TOOLS_MOD_DIR    := $(SRC_ROOT)/internal/tools
+TOOLS_MOD_REGEX  := "\s+_\s+\".*\""
+TOOLS_PKG_NAMES  := $(shell grep -E $(TOOLS_MOD_REGEX) < $(TOOLS_MOD_DIR)/tools.go | tr -d " _\"")
+TOOLS_BIN_DIR    := $(SRC_ROOT)/.tools
+TOOLS_BIN_NAMES  := $(addprefix $(TOOLS_BIN_DIR)/, $(notdir $(TOOLS_PKG_NAMES)))
 
-$(GOBIN)/mockery:
-	$(call go_install,github.com/vektra/mockery/v2@v2.45)
+$(TOOLS_BIN_DIR):
+	mkdir -p $@
+
+$(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
+	cd $(TOOLS_MOD_DIR) && GOOS="" GOARCH="" $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
+
+GOLANGCI_LINT       := $(TOOLS_BIN_DIR)/golangci-lint
+GOTESTSUM           := $(TOOLS_BIN_DIR)/gotestsum
+MOCKERY             := $(TOOLS_BIN_DIR)/mockery
 
 .PHONY: install
-install: $(GOBIN)/golangci-lint $(GOBIN)/gotestsum $(GOBIN)/mockery
+install: $(GOLANGCI_LINT) $(GOTESTSUM) $(MOCKERY)
 
 .PHONY: clean
 clean:
-	rm $(GOBIN)/golangci-lint
-	rm $(GOBIN)/gotestsum
-	rm $(GOBIN)/mockery
+	rm $(GOLANGCI_LINT)
+	rm $(GOTESTSUM)
+	rm $(MOCKERY)
 
 .PHONY: dependencies-scan
 dependencies-scan:
@@ -29,17 +35,17 @@ dependencies-scan:
 	go list -json -m all | docker run --rm -i sonatypecommunity/nancy:latest sleuth --skip-update-check
 
 .PHONY: lint
-lint: $(GOBIN)/golangci-lint
-	golangci-lint run --out-format=colored-line-number --path-prefix=. --verbose -c $(ROOT_DIR)/.golangci.yml --fix
+lint: $(GOLANGCI_LINT)
+	$(GOLANGCI_LINT) run --out-format=colored-line-number --path-prefix=. --verbose -c $(SRC_ROOT)/.golangci.yml --fix
 
 .PHONY: generate
-generate: $(GOBIN)/mockery
+generate: $(MOCKERY)
 	go generate ./...
 
 .PHONY: test-%
-test-%: $(GOBIN)/gotestsum
+test-%: $(GOTESTSUM)
 	@echo "Running $* tests..."
-	gotestsum \
+	$(GOTESTSUM) \
 		--format short-verbose \
 		--rerun-fails=5 \
 		--packages="./..." \
@@ -49,13 +55,6 @@ test-%: $(GOBIN)/gotestsum
 		-coverprofile=coverage.out \
 		-timeout=30m \
 		-race
-
-.PHONY: tools
-tools:
-	go mod download
-
-.PHONY: test-tools
-test-tools: $(GOBIN)/gotestsum
 
 .PHONY: tidy
 tidy:

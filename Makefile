@@ -1,14 +1,29 @@
 include ./commons-test.mk
 
+# ALL_MODULES includes ./* dirs (excludes . dir)
+ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | grep -E '^./' )
+
+# Append root module to all modules
+GOMODULES = $(ALL_MODULES) $(PWD)
+
+# Define a delegation target for each module
+.PHONY: $(GOMODULES)
+$(GOMODULES):
+	@echo "Running target '$(TARGET)' in module '$@'"
+	$(MAKE) -C $@ $(TARGET)
+
+# Triggers each module's delegation target
+.PHONY: for-all-target
+for-all-target: $(GOMODULES)
+
+
 .PHONY: lint-all
 lint-all:
-	$(MAKE) lint
-	$(MAKE) -C modulegen lint
-	$(MAKE) -C examples lint-examples
-	$(MAKE) -C modules lint-modules
+	@$(MAKE) for-all-target TARGET="lint"
 
 .PHONY: test-all
-test-all: tools test-tools test-unit
+test-all: 
+	@$(MAKE) for-all-target TARGET="test-unit"
 
 .PHONY: test-examples
 test-examples:
@@ -17,9 +32,7 @@ test-examples:
 
 .PHONY: tidy-all
 tidy-all:
-	$(MAKE) tidy
-	$(MAKE) -C examples tidy-examples
-	$(MAKE) -C modules tidy-modules
+	@$(MAKE) for-all-target TARGET="tidy"
 
 ## --------------------------------------
 
