@@ -14,7 +14,7 @@ $(TOOLS_BIN_DIR):
 	mkdir -p $@
 
 $(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
-	cd $(TOOLS_MOD_DIR) && GOOS="" GOARCH="" $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
+	cd $(TOOLS_MOD_DIR) && GOOS="" GOARCH="" $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@)%,$(TOOLS_PKG_NAMES))
 
 GOLANGCI_LINT       := $(TOOLS_BIN_DIR)/golangci-lint
 GOTESTSUM           := $(TOOLS_BIN_DIR)/gotestsum
