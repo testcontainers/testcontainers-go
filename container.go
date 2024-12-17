@@ -77,7 +77,8 @@ type ImageBuildInfo interface {
 	GetDockerfile() string                          // the relative path to the Dockerfile, including the file itself
 	GetRepo() string                                // get repo label for image
 	GetTag() string                                 // get tag label for image
-	ShouldPrintBuildLog() bool                      // allow build log to be printed to stdout
+	ShouldPrintBuildLog() bool                      // allow build log to be printed
+	GetBuildLogWriter() io.Writer                   // for output of build log if ShouldPrintBuildLog is true
 	ShouldBuildImage() bool                         // return true if the image needs to be built
 	GetBuildArgs() map[string]*string               // return the environment args used to build the from Dockerfile
 	GetAuthConfigs() map[string]registry.AuthConfig // Deprecated. Testcontainers will detect registry credentials automatically. Return the auth configs to be able to pull from an authenticated docker registry
@@ -93,6 +94,7 @@ type FromDockerfile struct {
 	Tag            string                         // the tag label for image, defaults to UUID
 	BuildArgs      map[string]*string             // enable user to pass build args to docker daemon
 	PrintBuildLog  bool                           // enable user to print build log
+	BuildLogWriter io.Writer                      // for output of build log if PrintBuildLog is true, defaults to os.Stderr
 	AuthConfigs    map[string]registry.AuthConfig // Deprecated. Testcontainers will detect registry credentials automatically. Enable auth configs to be able to pull from an authenticated docker registry
 	// KeepImage describes whether DockerContainer.Terminate should not delete the
 	// container image. Useful for images that are built from a Dockerfile and take a
@@ -412,6 +414,14 @@ func (c *ContainerRequest) ShouldKeepBuiltImage() bool {
 
 func (c *ContainerRequest) ShouldPrintBuildLog() bool {
 	return c.FromDockerfile.PrintBuildLog
+}
+
+func (c *ContainerRequest) GetBuildLogWriter() io.Writer {
+	if c.FromDockerfile.BuildLogWriter == nil {
+		c.FromDockerfile.BuildLogWriter = os.Stderr
+	}
+
+	return c.FromDockerfile.BuildLogWriter
 }
 
 // BuildOptions returns the image build options when building a Docker image from a Dockerfile.
