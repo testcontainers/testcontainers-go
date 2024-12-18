@@ -16,14 +16,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/ollama"
 )
 
-func TestOllamaBasic(t *testing.T) {
-	ctx := context.Background()
-
-	ctr, err := ollama.Run(ctx, "ollama/ollama:0.1.25")
-	testcontainers.CleanupContainer(t, ctr)
-	require.NoError(t, err)
-}
-
 func TestOllama(t *testing.T) {
 	ctx := context.Background()
 
