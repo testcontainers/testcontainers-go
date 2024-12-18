@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"reflect"
 	"strings"
 	"sync"
 	"syscall"
@@ -92,8 +93,9 @@ type localProcess struct {
 
 // runLocal returns an OllamaContainer that uses the local Ollama binary instead of using a Docker container.
 func (c *localProcess) run(ctx context.Context, req testcontainers.GenericContainerRequest) (*OllamaContainer, error) {
-	// TODO: validate the request and return an error if it
-	// contains any unsupported elements.
+	if err := c.validateRequest(req); err != nil {
+		return nil, fmt.Errorf("validate request: %w", err)
+	}
 
 	// Apply the updated details from the request.
 	c.waitFor = req.WaitingFor
@@ -116,6 +118,52 @@ func (c *localProcess) run(ctx context.Context, req testcontainers.GenericContai
 	}
 
 	return container, nil
+}
+
+// validateRequest checks that req is valid for the local Ollama binary.
+func (c *localProcess) validateRequest(req testcontainers.GenericContainerRequest) error {
+	var errs []error
+	if req.WaitingFor == nil {
+		errs = append(errs, errors.New("ContainerRequest.WaitingFor must be set"))
+	}
+
+	if !req.Started {
+		errs = append(errs, errors.New("Started must be true"))
+	}
+
+	if !reflect.DeepEqual(req.ExposedPorts, []string{localPort + "/tcp"}) {
+		errs = append(errs, fmt.Errorf("ContainerRequest.ExposedPorts must be %s/tcp got: %s", localPort, req.ExposedPorts))
+	}
+
+	// Reset fields we support to their zero values.
+	req.Env = nil
+	req.ExposedPorts = nil
+	req.WaitingFor = nil
+	req.Image = "" // We just ignore the image.
+	req.Started = false
+	req.Logger = nil // We don't need the logger.
+
+	parts := make([]string, 0, 3)
+	value := reflect.ValueOf(req)
+	typ := value.Type()
+	fields := reflect.VisibleFields(typ)
+	for _, f := range fields {
+		field := value.FieldByIndex(f.Index)
+		if field.Kind() == reflect.Struct {
+			// Only check the leaf fields.
+			continue
+		}
+
+		if !field.IsZero() {
+			parts = parts[:0]
+			for i := range f.Index {
+				parts = append(parts, typ.FieldByIndex(f.Index[:i+1]).Name)
+			}
+			errs = append(errs, fmt.Errorf("unsupported field: %s = %q", strings.Join(parts, "."), field))
+		}
+	}
+
+	return errors.Join(errs...)
 }
 
 // Start implements testcontainers.Container interface for the local Ollama binary.
