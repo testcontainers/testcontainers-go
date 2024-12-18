@@ -530,3 +530,67 @@ func TestRun_localExec(t *testing.T) {
 		require.Contains(t, string(bs), "llama runner started")
 	})
 }
+
+func TestRun_localValidateRequest(t *testing.T) {
+	// check if the local ollama binary is available
+	if _, err := exec.LookPath(testBinary); err != nil {
+		t.Skip("local ollama binary not found, skipping")
+	}
+
+	ctx := context.Background()
+	t.Run("waiting-for-nil", func(t *testing.T) {
+		ollamaContainer, err := ollama.Run(
+			ctx,
+			testImage,
+			ollama.WithUseLocal("FOO=BAR"),
+			testcontainers.CustomizeRequestOption(func(req *testcontainers.GenericContainerRequest) error {
+				req.WaitingFor = nil
+				return nil
+			}),
+		)
+		testcontainers.CleanupContainer(t, ollamaContainer)
+		require.EqualError(t, err, "validate request: ContainerRequest.WaitingFor must be set")
+	})
+
+	t.Run("started-false", func(t *testing.T) {
+		ollamaContainer, err := ollama.Run(
+			ctx,
+			testImage,
+			ollama.WithUseLocal("FOO=BAR"),
+			testcontainers.CustomizeRequestOption(func(req *testcontainers.GenericContainerRequest) error {
+				req.Started = false
+				return nil
+			}),
+		)
+		testcontainers.CleanupContainer(t, ollamaContainer)
+		require.EqualError(t, err, "validate request: Started must be true")
+	})
+
+	t.Run("exposed-ports-empty", func(t *testing.T) {
+		ollamaContainer, err := ollama.Run(
+			ctx,
+			testImage,
+			ollama.WithUseLocal("FOO=BAR"),
+			testcontainers.CustomizeRequestOption(func(req *testcontainers.GenericContainerRequest) error {
+				req.ExposedPorts = req.ExposedPorts[:0]
+				return nil
+			}),
+		)
+		testcontainers.CleanupContainer(t, ollamaContainer)
+		require.EqualError(t, err, "validate request: ContainerRequest.ExposedPorts must be 11434/tcp got: []")
+	})
+
+	t.Run("dockerfile-set", func(t *testing.T) {
+		ollamaContainer, err := ollama.Run(
+			ctx,
+			testImage,
+			ollama.WithUseLocal("FOO=BAR"),
+			testcontainers.CustomizeRequestOption(func(req *testcontainers.GenericContainerRequest) error {
+				req.Dockerfile = "FROM scratch"
+				return nil
+			}),
+		)
+		testcontainers.CleanupContainer(t, ollamaContainer)
+		require.EqualError(t, err, "validate request: unsupported field: ContainerRequest.FromDockerfile.Dockerfile = \"FROM scratch\"")
+	})
+}
