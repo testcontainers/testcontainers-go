@@ -29,6 +29,7 @@ const (
 )
 
 var (
+	// reLogDetails matches the log details of the local ollama binary and should match localLogRegex.
 	reLogDetails = regexp.MustCompile(`Listening on (.*:\d+) \(version\s(.*)\)`)
 	zeroTime     = time.Time{}.Format(time.RFC3339Nano)
 )

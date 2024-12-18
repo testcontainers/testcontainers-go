@@ -93,21 +93,22 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Started: true,
 	}
 
-	// always request a GPU if the host supports it
+	// Always request a GPU if the host supports it.
 	opts = append(opts, withGpu())
 
-	var local bool
+	var local *localProcess
 	for _, opt := range opts {
 		if err := opt.Customize(&req); err != nil {
 			return nil, fmt.Errorf("customize: %w", err)
 		}
-		if _, ok := opt.(useLocal); ok {
-			local = true
+		if l, ok := opt.(*localProcess); ok {
+			local = l
 		}
 	}
 
-	if local {
-		return runLocal(ctx, req)
+	// Now we have processed all the options, we can check if we need to use the local process.
+	if local != nil {
+		return local.run(ctx, req)
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, req)

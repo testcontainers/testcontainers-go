@@ -10,7 +10,6 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"regexp"
 	"strings"
 	"sync"
 	"syscall"
@@ -39,17 +38,15 @@ const (
 )
 
 var (
-	// Ensure localContext implements the testcontainers.Container interface.
-	_ testcontainers.Container = &localProcess{}
+	// Ensure localProcess implements the required interfaces.
+	_ testcontainers.Container           = (*localProcess)(nil)
+	_ testcontainers.ContainerCustomizer = (*localProcess)(nil)
 
 	// defaultStopTimeout is the default timeout for stopping the local Ollama process.
 	defaultStopTimeout = time.Second * 5
 
 	// zeroTime is the zero time value.
 	zeroTime time.Time
-
-	// reLogDetails is the regular expression to extract the listening address and version from the log.
-	reLogDetails = regexp.MustCompile(localLogRegex)
 )
 
 // localProcess emulates the Ollama container using a local process to improve performance.
@@ -94,38 +91,31 @@ type localProcess struct {
 }
 
 // runLocal returns an OllamaContainer that uses the local Ollama binary instead of using a Docker container.
-func runLocal(ctx context.Context, req testcontainers.GenericContainerRequest) (*OllamaContainer, error) {
+func (c *localProcess) run(ctx context.Context, req testcontainers.GenericContainerRequest) (*OllamaContainer, error) {
 	// TODO: validate the request and return an error if it
 	// contains any unsupported elements.
 
-	sessionID := testcontainers.SessionID()
-	local := &localProcess{
-		sessionID: sessionID,
-		env:       make([]string, 0, len(req.Env)),
-		waitFor:   req.WaitingFor,
-		logName:   localNamePrefix + "-" + sessionID + ".log",
-	}
-
-	// Apply the environment variables to the command and
-	// override the log file if specified.
+	// Apply the updated details from the request.
+	c.waitFor = req.WaitingFor
+	c.env = c.env[:0]
 	for k, v := range req.Env {
-		local.env = append(local.env, k+"="+v)
+		c.env = append(c.env, k+"="+v)
 		if k == localLogVar {
-			local.logName = v
+			c.logName = v
 		}
 	}
 
-	err := local.Start(ctx)
-	var c *OllamaContainer
-	if local.cmd != nil {
-		c = &OllamaContainer{Container: local}
+	err := c.Start(ctx)
+	var container *OllamaContainer
+	if c.cmd != nil {
+		container = &OllamaContainer{Container: c}
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("start ollama: %w", err)
+		return container, fmt.Errorf("start ollama: %w", err)
 	}
 
-	return c, nil
+	return container, nil
 }
 
 // Start implements testcontainers.Container interface for the local Ollama binary.
@@ -184,10 +174,6 @@ func (c *localProcess) Start(ctx context.Context) error {
 		return fmt.Errorf("wait strategy: %w", err)
 	}
 
-	if err := c.extractLogDetails(ctx); err != nil {
-		return fmt.Errorf("extract log details: %w", err)
-	}
-
 	return nil
 }
 
@@ -215,33 +201,32 @@ func (c *localProcess) waitStrategy(ctx context.Context) error {
 }
 
 // extractLogDetails extracts the listening address and version from the log.
-func (c *localProcess) extractLogDetails(ctx context.Context) error {
-	rc, err := c.Logs(ctx)
+func (c *localProcess) extractLogDetails(pattern string, submatches [][][]byte) error {
+	var err error
+	for _, matches := range submatches {
+		if len(matches) != 3 {
+			err = fmt.Errorf("`%s` matched %d times, expected %d", pattern, len(matches), 3)
+			continue
+		}
+
+		c.host, c.port, err = net.SplitHostPort(string(matches[1]))
+		if err != nil {
+			return wait.NewPermanentError(fmt.Errorf("split host port: %w", err))
+		}
+
+		// Set OLLAMA_HOST variable to the extracted host so Exec can use it.
+		c.env = append(c.env, localHostVar+"="+string(matches[1]))
+		c.version = string(matches[2])
+
+		return nil
+	}
+
 	if err != nil {
-		return fmt.Errorf("logs: %w", err)
-	}
-	defer rc.Close()
-
-	bs, err := io.ReadAll(rc)
-	if err != nil {
-		return fmt.Errorf("read logs: %w", err)
+		// Return the last error encountered.
+		return err
 	}
 
-	matches := reLogDetails.FindSubmatch(bs)
-	if len(matches) != 3 {
-		return errors.New("address and version not found")
-	}
-
-	c.host, c.port, err = net.SplitHostPort(string(matches[1]))
-	if err != nil {
-		return fmt.Errorf("split host port: %w", err)
-	}
-
-	// Set OLLAMA_HOST variable to the extracted host so Exec can use it.
-	c.env = append(c.env, localHostVar+"="+string(matches[1]))
-	c.version = string(matches[2])
-
-	return nil
+	return fmt.Errorf("address and version not found: `%s` no matches", pattern)
 }
 
 // ContainerIP implements testcontainers.Container interface for the local Ollama binary.
@@ -632,6 +617,46 @@ func (c *localProcess) StopLogProducer() error {
 // Name returns the name for the local Ollama binary.
 func (c *localProcess) Name(context.Context) (string, error) {
 	return localNamePrefix + "-" + c.sessionID, nil
+}
+
+// Customize implements the [testcontainers.ContainerCustomizer] interface.
+// It configures the environment variables set by [WithUseLocal] and sets up
+// the wait strategy to extract the host, port and version from the log.
+func (c *localProcess) Customize(req *testcontainers.GenericContainerRequest) error {
+	// Replace the default host port strategy with one that waits for a log entry
+	// and extracts the host, port and version from it.
+	if err := wait.Walk(&req.WaitingFor, func(w wait.Strategy) error {
+		if _, ok := w.(*wait.HostPortStrategy); ok {
+			return wait.VisitRemove
+		}
+
+		return nil
+	}); err != nil {
+		return fmt.Errorf("walk strategies: %w", err)
+	}
+
+	logStrategy := wait.ForLog(localLogRegex).Submatch(c.extractLogDetails)
+	if req.WaitingFor == nil {
+		req.WaitingFor = logStrategy
+	} else {
+		req.WaitingFor = wait.ForAll(req.WaitingFor, logStrategy)
+	}
+
+	// Setup the environment variables using a random port by default
+	// to avoid conflicts.
+	osEnv := os.Environ()
+	env := make(map[string]string, len(osEnv)+len(c.env)+1)
+	env[localHostVar] = "localhost:0"
+	for _, kv := range append(osEnv, c.env...) {
+		parts := strings.SplitN(kv, "=", 2)
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid environment variable: %q", kv)
+		}
+
+		env[parts[0]] = parts[1]
+	}
+
+	return testcontainers.WithEnv(env)(req)
 }
 
 // isCleanupSafe reports whether all errors in err's tree are one of the
