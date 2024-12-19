@@ -73,11 +73,33 @@ func Test_ContainerValidation(t *testing.T) {
 		},
 		{
 			Name:          "Invalid bind mount",
-			ExpectedError: "invalid bind mount: /data:/data:/data",
+			ExpectedError: "invalid bind mount: /data:/data:a:b",
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: "redis:latest",
 				HostConfigModifier: func(hc *container.HostConfig) {
-					hc.Binds = []string{"/data:/data:/data"}
+					hc.Binds = []string{"/data:/data:a:b"}
+				},
+			},
+		},
+		{
+			Name: "bind-options/provided",
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: "redis:latest",
+				HostConfigModifier: func(hc *container.HostConfig) {
+					hc.Binds = []string{
+						"/a:/a:nocopy",
+						"/b:/b:ro",
+						"/c:/c:rw",
+						"/d:/d:z",
+						"/e:/e:Z",
+						"/f:/f:shared",
+						"/g:/g:rshared",
+						"/h:/h:slave",
+						"/i:/i:rslave",
+						"/j:/j:private",
+						"/k:/k:rprivate",
+						"/l:/l:ro,z,shared",
+					}
 				},
 			},
 		},

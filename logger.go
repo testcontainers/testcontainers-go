@@ -11,17 +11,18 @@ import (
 )
 
 // Logger is the default log instance
-var Logger Logging = log.New(os.Stderr, "", log.LstdFlags)
+var Logger Logging = &noopLogger{}
 
 func init() {
-	for _, arg := range os.Args {
-		if strings.EqualFold(arg, "-test.v=true") || strings.EqualFold(arg, "-v") {
-			return
+	// Enable default logger in the testing with a verbose flag.
+	if testing.Testing() {
+		// Parse manually because testing.Verbose() panics unless flag.Parse() has done.
+		for _, arg := range os.Args {
+			if strings.EqualFold(arg, "-test.v=true") || strings.EqualFold(arg, "-v") {
+				Logger = log.New(os.Stderr, "", log.LstdFlags)
+			}
 		}
 	}
-
-	// If we are not running in verbose mode, we configure a noop logger by default.
-	Logger = &noopLogger{}
 }
 
 // Validate our types implement the required interfaces.
