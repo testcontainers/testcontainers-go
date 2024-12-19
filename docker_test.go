@@ -733,7 +733,7 @@ func Test_BuildContainerFromDockerfileWithBuildLogWriter(t *testing.T) {
 	out := buffer.String()
 	temp := strings.Split(out, "\n")
 	require.NotEmpty(t, temp)
-	assert.Regexpf(t, `^Step\s*1/\d+\s*:\s*FROM alpine$`, temp[0], "Expected stdout first line to be %s. Got '%s'.", "Step 1/* : FROM alpine", temp[0])
+	require.Regexpf(t, `^Step\s*1/\d+\s*:\s*FROM alpine$`, temp[0], "Expected stdout first line to be %s. Got '%s'.", "Step 1/* : FROM alpine", temp[0])
 }
 
 func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
