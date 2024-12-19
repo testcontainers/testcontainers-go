@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -35,6 +36,7 @@ const (
 	nginxAlpineImage  = "nginx:alpine"
 	nginxDefaultPort  = "80/tcp"
 	nginxHighPort     = "8080/tcp"
+	golangImage       = "golang"
 	daemonMaxVersion  = "1.41"
 )
 
@@ -2155,4 +2157,40 @@ func TestCustomPrefixTrailingSlashIsProperlyRemovedIfPresent(t *testing.T) {
 	// which will be changed in future implementations of the library
 	dockerContainer := c.(*DockerContainer)
 	require.Equal(t, fmt.Sprintf("%s%s", hubPrefixWithTrailingSlash, dockerImage), dockerContainer.Image)
+}
+
+// TODO: remove this skip check when context rework is merged alongside [core.DockerEnvFile] removal.
+func Test_Provider_DaemonHost_Issue2897(t *testing.T) {
+	ctx := context.Background()
+	provider, err := NewDockerProvider()
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, provider.Close())
+	})
+
+	orig := core.DockerEnvFile
+	core.DockerEnvFile = filepath.Join(t.TempDir(), ".dockerenv")
+	t.Cleanup(func() {
+		core.DockerEnvFile = orig
+	})
+
+	f, err := os.Create(core.DockerEnvFile)
+	require.NoError(t, err)
+	require.NoError(t, f.Close())
+	t.Cleanup(func() {
+		require.NoError(t, os.Remove(f.Name()))
+	})
+
+	errCh := make(chan error, 1)
+	go func() {
+		_, err := provider.DaemonHost(ctx)
+		errCh <- err
+	}()
+
+	select {
+	case <-time.After(1 * time.Second):
+		t.Fatal("timeout waiting for DaemonHost")
+	case err := <-errCh:
+		require.NoError(t, err)
+	}
 }
