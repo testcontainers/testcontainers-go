@@ -715,7 +715,6 @@ func Test_BuildContainerFromDockerfileWithBuildLogWriter(t *testing.T) {
 		FromDockerfile: FromDockerfile{
 			Context:        filepath.Join(".", "testdata"),
 			Dockerfile:     "buildlog.Dockerfile",
-			PrintBuildLog:  true,
 			BuildLogWriter: &buffer,
 		},
 	}
@@ -731,10 +730,8 @@ func Test_BuildContainerFromDockerfileWithBuildLogWriter(t *testing.T) {
 	CleanupContainer(t, c)
 	require.NoError(t, err)
 
-	out, err := io.ReadAll(&buffer)
-	require.NoError(t, err)
-
-	temp := strings.Split(string(out), "\n")
+	out := buffer.String()
+	temp := strings.Split(out, "\n")
 	require.NotEmpty(t, temp)
 	assert.Regexpf(t, `^Step\s*1/\d+\s*:\s*FROM alpine$`, temp[0], "Expected stdout first line to be %s. Got '%s'.", "Step 1/* : FROM alpine", temp[0])
 }

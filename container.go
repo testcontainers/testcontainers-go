@@ -92,8 +92,8 @@ type FromDockerfile struct {
 	Repo           string                         // the repo label for image, defaults to UUID
 	Tag            string                         // the tag label for image, defaults to UUID
 	BuildArgs      map[string]*string             // enable user to pass build args to docker daemon
-	PrintBuildLog  bool                           // enable user to print build log
-	BuildLogWriter io.Writer                      // for output of build log if PrintBuildLog is true, defaults to os.Stderr
+	PrintBuildLog  bool                           // Deprecated: Use BuildLogWriter instead
+	BuildLogWriter io.Writer                      // for output of build log, defaults to io.Discard
 	AuthConfigs    map[string]registry.AuthConfig // Deprecated. Testcontainers will detect registry credentials automatically. Enable auth configs to be able to pull from an authenticated docker registry
 	// KeepImage describes whether DockerContainer.Terminate should not delete the
 	// container image. Useful for images that are built from a Dockerfile and take a
@@ -411,16 +411,20 @@ func (c *ContainerRequest) ShouldKeepBuiltImage() bool {
 	return c.FromDockerfile.KeepImage
 }
 
+// BuildLogWriter returns the io.Writer for output of log when building a Docker image from
+// a Dockerfile. It returns the BuildLogWriter from the ContainerRequest, defaults to io.Discard.
+// For backward compatibility, if BuildLogWriter is default and PrintBuildLog is true,
+// the function returns os.Stderr.
 func (c *ContainerRequest) BuildLogWriter() io.Writer {
-	if c.FromDockerfile.BuildLogWriter == nil {
-		c.FromDockerfile.BuildLogWriter = os.Stderr
-	}
-
-	if c.FromDockerfile.PrintBuildLog {
+	if c.FromDockerfile.BuildLogWriter != nil {
 		return c.FromDockerfile.BuildLogWriter
-	} else {
-		return io.Discard
 	}
+	if c.FromDockerfile.PrintBuildLog {
+		c.FromDockerfile.BuildLogWriter = os.Stderr
+	} else {
+		c.FromDockerfile.BuildLogWriter = io.Discard
+	}
+	return c.FromDockerfile.BuildLogWriter
 }
 
 // BuildOptions returns the image build options when building a Docker image from a Dockerfile.
