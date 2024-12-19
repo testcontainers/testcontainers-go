@@ -1004,10 +1004,7 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 	}
 	defer resp.Body.Close()
 
-	output := io.Discard
-	if img.ShouldPrintBuildLog() {
-		output = os.Stderr
-	}
+	output := img.BuildLogWriter()
 
 	// Always process the output, even if it is not printed
 	// to ensure that errors during the build process are
