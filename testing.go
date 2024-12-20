@@ -83,7 +83,9 @@ func CleanupNetwork(tb testing.TB, network Network) {
 	tb.Helper()
 
 	tb.Cleanup(func() {
-		noErrorOrIgnored(tb, network.Remove(context.Background()))
+		if !isNil(network) {
+			noErrorOrIgnored(tb, network.Remove(context.Background()))
+		}
 	})
 }
 
