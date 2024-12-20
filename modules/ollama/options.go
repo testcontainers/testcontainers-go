@@ -48,5 +48,6 @@ func WithUseLocal(envKeyValues ...string) *localProcess {
 		sessionID: sessionID,
 		logName:   localNamePrefix + "-" + sessionID + ".log",
 		env:       envKeyValues,
+		binary:    localBinary,
 	}
 }
