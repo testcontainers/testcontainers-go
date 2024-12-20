@@ -71,17 +71,17 @@ All the container methods are available when using the local Ollama binary, but 
 Please consider the following differences when using the local Ollama binary:
 
 - The local Ollama binary will create a log file in the current working directory, identified by the session ID. E.g. `local-ollama-<session-id>.log`. It's possible to set the log file name using the `OLLAMA_LOGFILE` environment variable. So if you're running Ollama yourself, from the Ollama app, or the standalone binary, you could use this environment variable to set the same log file name.
-    - For the Ollama app, the default log file resides in the `$HOME/.ollama/logs/server.log`.
-    - For the standalone binary, you should start it redirecting the logs to a file. E.g. `ollama serve > /tmp/ollama.log 2>&1`.
-- `ConnectionString` returns the connection string to connect to the local Ollama binary started by the module instead of the container, which maps to `127.0.0.1:11434`.
-- `ContainerIP` returns `127.0.0.1`.
-- `ContainerIPs` returns `["127.0.0.1"]`.
-- `CopyToContainer`, `CopyDirToContainer`, `CopyFileToContainer` and `CopyFileFromContainer` don't perform any action.
+  - For the Ollama app, the default log file resides in the `$HOME/.ollama/logs/server.log`.
+  - For the standalone binary, you should start it redirecting the logs to a file. E.g. `ollama serve > /tmp/ollama.log 2>&1`.
+- `ConnectionString` returns the connection string to connect to the local Ollama binary started by the module instead of the container.
+- `ContainerIP` returns the bound host IP `127.0.0.1` by default.
+- `ContainerIPs` returns the bound host IP `["127.0.0.1"]` by default.
+- `CopyToContainer`, `CopyDirToContainer`, `CopyFileToContainer` and `CopyFileFromContainer` return an error if called.
 - `GetLogProductionErrorChannel` returns a nil channel.
-- `Endpoint` returns the endpoint to connect to the local Ollama binary started by the module instead of the container, which maps to `127.0.0.1:11434`.
+- `Endpoint` returns the endpoint to connect to the local Ollama binary started by the module instead of the container.
 - `Exec` passes the command to the local Ollama binary started by the module instead of inside the container. First argument is the command to execute, and the second argument is the list of arguments, else, an error is returned.
 - `GetContainerID` returns the container ID of the local Ollama binary started by the module instead of the container, which maps to `local-ollama-<session-id>`.
-- `Host` returns `127.0.0.1`.
+- `Host` returns the bound host IP `127.0.0.1` by default.
 - `Inspect` returns a ContainerJSON with the state of the local Ollama binary started by the module.
 - `IsRunning` returns true if the local Ollama binary process started by the module is running.
 - `Logs` returns the logs from the local Ollama binary started by the module instead of the container.
@@ -95,7 +95,8 @@ The local Ollama binary will create a log file in the current working directory,
 
 !!!info
     The local Ollama binary will use the `OLLAMA_HOST` environment variable to set the host and port to listen on.
-    If the environment variable is not set, it will use the default host `127.0.0.1` and port `11434`.
+    If the environment variable is not set, it will default to `localhost:0`
+    which bind to a loopback address on an ephemeral port to avoid port conflicts.
 
 {% include "../features/common_functional_options.md" %}
 
