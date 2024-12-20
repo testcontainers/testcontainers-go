@@ -39,9 +39,22 @@ func withGpu() testcontainers.CustomizeRequestOption {
 }
 
 // WithUseLocal starts a local Ollama process with the given environment in
-// KEY=VALUE for instead of a Docker container which can be more performant
+// format KEY=VALUE instead of a Docker container, which can be more performant
 // as it has direct access to the GPU.
-// By default OLLAMA_HOST is set to localhost:0 to avoid port conflicts.
+// By default `OLLAMA_HOST=localhost:0` is set to avoid port conflicts.
+//
+// When using this option, the container request will be validated to ensure
+// that only the options that are compatible with the local process are used.
+//
+// Supported fields are:
+// - [testcontainers.GenericContainerRequest.Started] must be set to true
+// - [testcontainers.GenericContainerRequest.ExposedPorts] must be set to ["11434/tcp"]
+// - [testcontainers.ContainerRequest.WaitingFor] should not be changed from the default
+// - [testcontainers.ContainerRequest.Image] used to determine the local process binary [<path-ignored>/]<binary>[:latest] if not blank.
+// - [testcontainers.ContainerRequest.Env] applied to all local process executions
+// - [testcontainers.GenericContainerRequest.Logger] is unused
+//
+// Any other leaf field not set to the type's zero value will result in an error.
 func WithUseLocal(envKeyValues ...string) *localProcess {
 	sessionID := testcontainers.SessionID()
 	return &localProcess{
