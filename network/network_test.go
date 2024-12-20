@@ -440,3 +440,8 @@ func TestWithNewNetworkContextTimeout(t *testing.T) {
 	require.Empty(t, req.Networks)
 	require.Empty(t, req.NetworkAliases)
 }
+
+func TestCleanupWithNil(t *testing.T) {
+	var network *testcontainers.DockerNetwork
+	testcontainers.CleanupNetwork(t, network)
+}
