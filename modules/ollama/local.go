@@ -89,6 +89,9 @@ type localProcess struct {
 
 	// exitErr is the error returned by the process.
 	exitErr error
+
+	// binary is the name of the Ollama binary.
+	binary string
 }
 
 // runLocal returns an OllamaContainer that uses the local Ollama binary instead of using a Docker container.
@@ -135,11 +138,34 @@ func (c *localProcess) validateRequest(req testcontainers.GenericContainerReques
 		errs = append(errs, fmt.Errorf("ContainerRequest.ExposedPorts must be %s/tcp got: %s", localPort, req.ExposedPorts))
 	}
 
+	// Validate the image and extract the binary name.
+	// The image must be in the format "[<path>/]<binary>[:latest]".
+	if binary := req.Image; binary != "" {
+		// Check if the version is "latest" or not specified.
+		if idx := strings.IndexByte(binary, ':'); idx != -1 {
+			if binary[idx+1:] != "latest" {
+				errs = append(errs, fmt.Errorf(`ContainerRequest.Image version must be blank or "latest", got: %q`, binary[idx+1:]))
+			}
+			binary = binary[:idx]
+		}
+
+		// Trim the path if present.
+		if idx := strings.LastIndexByte(binary, '/'); idx != -1 {
+			binary = binary[idx+1:]
+		}
+
+		if _, err := exec.LookPath(binary); err != nil {
+			errs = append(errs, fmt.Errorf("invalid image %q: %w", req.Image, err))
+		} else {
+			c.binary = binary
+		}
+	}
+
 	// Reset fields we support to their zero values.
 	req.Env = nil
 	req.ExposedPorts = nil
 	req.WaitingFor = nil
-	req.Image = "" // We just ignore the image.
+	req.Image = ""
 	req.Started = false
 	req.Logger = nil // We don't need the logger.
 
@@ -172,7 +198,7 @@ func (c *localProcess) Start(ctx context.Context) error {
 		return errors.New("already running")
 	}
 
-	cmd := exec.CommandContext(ctx, localBinary, localServeArg)
+	cmd := exec.CommandContext(ctx, c.binary, localServeArg)
 	cmd.Env = c.env
 
 	var err error
@@ -330,7 +356,7 @@ func (c *localProcess) GetLogProductionErrorChannel() <-chan error {
 func (c *localProcess) Exec(ctx context.Context, cmd []string, options ...tcexec.ProcessOption) (int, io.Reader, error) {
 	if len(cmd) == 0 {
 		return 1, nil, errors.New("no command provided")
-	} else if cmd[0] != localBinary {
+	} else if cmd[0] != c.binary {
 		return 1, nil, fmt.Errorf("command %q: %w", cmd[0], errors.ErrUnsupported)
 	}
 
@@ -416,7 +442,7 @@ func (c *localProcess) Inspect(ctx context.Context) (*types.ContainerJSON, error
 				nat.Port(localPort + "/tcp"): struct{}{},
 			},
 			Hostname:   c.host,
-			Entrypoint: []string{localBinary, localServeArg},
+			Entrypoint: []string{c.binary, localServeArg},
 		},
 		NetworkSettings: &types.NetworkSettings{
 			Networks: map[string]*network.EndpointSettings{},

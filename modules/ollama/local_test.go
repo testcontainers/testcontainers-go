@@ -593,4 +593,44 @@ func TestRun_localValidateRequest(t *testing.T) {
 		testcontainers.CleanupContainer(t, ollamaContainer)
 		require.EqualError(t, err, "validate request: unsupported field: ContainerRequest.FromDockerfile.Dockerfile = \"FROM scratch\"")
 	})
+
+	t.Run("image-only", func(t *testing.T) {
+		ollamaContainer, err := ollama.Run(
+			ctx,
+			testBinary,
+			ollama.WithUseLocal(),
+		)
+		testcontainers.CleanupContainer(t, ollamaContainer)
+		require.NoError(t, err)
+	})
+
+	t.Run("image-path", func(t *testing.T) {
+		ollamaContainer, err := ollama.Run(
+			ctx,
+			"prefix-path/"+testBinary,
+			ollama.WithUseLocal(),
+		)
+		testcontainers.CleanupContainer(t, ollamaContainer)
+		require.NoError(t, err)
+	})
+
+	t.Run("image-bad-version", func(t *testing.T) {
+		ollamaContainer, err := ollama.Run(
+			ctx,
+			testBinary+":bad-version",
+			ollama.WithUseLocal(),
+		)
+		testcontainers.CleanupContainer(t, ollamaContainer)
+		require.EqualError(t, err, `validate request: ContainerRequest.Image version must be blank or "latest", got: "bad-version"`)
+	})
+
+	t.Run("image-not-found", func(t *testing.T) {
+		ollamaContainer, err := ollama.Run(
+			ctx,
+			"ollama/ollama-not-found",
+			ollama.WithUseLocal(),
+		)
+		testcontainers.CleanupContainer(t, ollamaContainer)
+		require.EqualError(t, err, `validate request: invalid image "ollama/ollama-not-found": exec: "ollama-not-found": executable file not found in $PATH`)
+	})
 }
