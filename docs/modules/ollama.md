@@ -16,9 +16,14 @@ go get github.com/testcontainers/testcontainers-go/modules/ollama
 
 ## Usage example
 
+The module allows you to run the Ollama container or the local Ollama binary.
+
 <!--codeinclude-->
 [Creating a Ollama container](../../modules/ollama/examples_test.go) inside_block:runOllamaContainer
+[Running the local Ollama binary](../../modules/ollama/examples_test.go) inside_block:localOllama
 <!--/codeinclude-->
+
+If the local Ollama binary fails to execute, the module will fallback to the container version of Ollama.
 
 ## Module Reference
 
@@ -47,6 +52,51 @@ When starting the Ollama container, you can pass options in a variadic way to co
 
 If you need to set a different Ollama Docker image, you can set a valid Docker image as the second argument in the `Run` function.
 E.g. `Run(context.Background(), "ollama/ollama:0.1.25")`.
+
+#### Use Local
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+!!!warning
+    Please make sure the local Ollama binary is not running when using the local version of the module:
+    Ollama can be started as a system service, or as part of the Ollama application,
+    and interacting with the logs of a running Ollama process not managed by the module is not supported.
+
+If you need to run the local Ollama binary, you can set the `UseLocal` option in the `Run` function.
+This option accepts a list of environment variables as a string, that will be applied to the Ollama binary when executing commands.
+
+E.g. `Run(context.Background(), "ollama/ollama:0.1.25", WithUseLocal("OLLAMA_DEBUG=true"))`.
+
+All the container methods are available when using the local Ollama binary, but will be executed locally instead of inside the container.
+Please consider the following differences when using the local Ollama binary:
+
+- The local Ollama binary will create a log file in the current working directory, identified by the session ID. E.g. `local-ollama-<session-id>.log`. It's possible to set the log file name using the `OLLAMA_LOGFILE` environment variable. So if you're running Ollama yourself, from the Ollama app, or the standalone binary, you could use this environment variable to set the same log file name.
+  - For the Ollama app, the default log file resides in the `$HOME/.ollama/logs/server.log`.
+  - For the standalone binary, you should start it redirecting the logs to a file. E.g. `ollama serve > /tmp/ollama.log 2>&1`.
+- `ConnectionString` returns the connection string to connect to the local Ollama binary started by the module instead of the container.
+- `ContainerIP` returns the bound host IP `127.0.0.1` by default.
+- `ContainerIPs` returns the bound host IP `["127.0.0.1"]` by default.
+- `CopyToContainer`, `CopyDirToContainer`, `CopyFileToContainer` and `CopyFileFromContainer` return an error if called.
+- `GetLogProductionErrorChannel` returns a nil channel.
+- `Endpoint` returns the endpoint to connect to the local Ollama binary started by the module instead of the container.
+- `Exec` passes the command to the local Ollama binary started by the module instead of inside the container. First argument is the command to execute, and the second argument is the list of arguments, else, an error is returned.
+- `GetContainerID` returns the container ID of the local Ollama binary started by the module instead of the container, which maps to `local-ollama-<session-id>`.
+- `Host` returns the bound host IP `127.0.0.1` by default.
+- `Inspect` returns a ContainerJSON with the state of the local Ollama binary started by the module.
+- `IsRunning` returns true if the local Ollama binary process started by the module is running.
+- `Logs` returns the logs from the local Ollama binary started by the module instead of the container.
+- `MappedPort` returns the port mapping for the local Ollama binary started by the module instead of the container.
+- `Start` starts the local Ollama binary process.
+- `State` returns the current state of the local Ollama binary process, `stopped` or `running`.
+- `Stop` stops the local Ollama binary process.
+- `Terminate` calls the `Stop` method and then removes the log file.
+
+The local Ollama binary will create a log file in the current working directory, and it will be available in the container's `Logs` method.
+
+!!!info
+    The local Ollama binary will use the `OLLAMA_HOST` environment variable to set the host and port to listen on.
+    If the environment variable is not set, it will default to `localhost:0`
+    which bind to a loopback address on an ephemeral port to avoid port conflicts.
 
 {% include "../features/common_functional_options.md" %}
 
