@@ -321,15 +321,16 @@ func WithTerminateVolumes(volumes ...string) TerminateOption {
 // Default: timeout is 10 seconds.
 func (c *DockerContainer) Terminate(ctx context.Context, opts ...TerminateOption) error {
 	defaultTimeout := 10 * time.Second
-	options := &terminateOptions{
+	defaultOptions := &terminateOptions{
 		timeout: &defaultTimeout,
+		ctx:     ctx,
 	}
 
 	for _, opt := range opts {
-		opt(options)
+		opt(defaultOptions)
 	}
 
-	err := c.Stop(ctx, options.timeout)
+	err := c.Stop(defaultOptions.ctx, defaultOptions.timeout)
 	if err != nil && !isCleanupSafe(err) {
 		return fmt.Errorf("stop: %w", err)
 	}
@@ -365,7 +366,7 @@ func (c *DockerContainer) Terminate(ctx context.Context, opts ...TerminateOption
 	c.isRunning = false
 
 	// Remove additional volumes if any.
-	if len(options.volumes) == 0 {
+	if len(defaultOptions.volumes) == 0 {
 		return nil
 	}
 
@@ -377,7 +378,7 @@ func (c *DockerContainer) Terminate(ctx context.Context, opts ...TerminateOption
 	defer client.Close()
 
 	// Best effort to remove all volumes.
-	for _, volume := range options.volumes {
+	for _, volume := range defaultOptions.volumes {
 		if errRemove := client.VolumeRemove(ctx, volume, true); errRemove != nil {
 			errs = append(errs, fmt.Errorf("volume remove %q: %w", volume, errRemove))
 		}
