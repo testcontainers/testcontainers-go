@@ -15,21 +15,21 @@ type terminateOptions struct {
 }
 
 // TerminateOption is a type that represents an option for terminating a container.
-type TerminateOption func(*DockerContainer)
+type TerminateOption func(*terminateOptions)
 
 // StopContext returns a TerminateOption that sets the context.
 // Default: context.Background().
 func StopContext(ctx context.Context) TerminateOption {
-	return func(c *DockerContainer) {
-		c.terminationOptions.ctx = ctx
+	return func(c *terminateOptions) {
+		c.ctx = ctx
 	}
 }
 
 // StopTimeout returns a TerminateOption that sets the timeout.
 // Default: See [Container.Stop].
 func StopTimeout(timeout time.Duration) TerminateOption {
-	return func(c *DockerContainer) {
-		c.terminationOptions.timeout = &timeout
+	return func(c *terminateOptions) {
+		c.timeout = &timeout
 	}
 }
 
@@ -38,8 +38,8 @@ func StopTimeout(timeout time.Duration) TerminateOption {
 // which are not removed by default.
 // Default: nil.
 func RemoveVolumes(volumes ...string) TerminateOption {
-	return func(c *DockerContainer) {
-		c.terminationOptions.volumes = volumes
+	return func(c *terminateOptions) {
+		c.volumes = volumes
 	}
 }
 
