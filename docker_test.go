@@ -1110,6 +1110,56 @@ func TestContainerCreationWithVolumeAndFileWritingToIt(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestContainerCreationWithVolumeCleaning(t *testing.T) {
+	absPath, err := filepath.Abs(filepath.Join(".", "testdata", "hello.sh"))
+	require.NoError(t, err)
+	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cnl()
+
+	// Create the volume.
+	volumeName := "volumeName"
+
+	// Create the container that writes into the mounted volume.
+	bashC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image: "bash:5.2.26",
+			Files: []ContainerFile{
+				{
+					HostFilePath:      absPath,
+					ContainerFilePath: "/hello.sh",
+				},
+			},
+			Mounts:     Mounts(VolumeMount(volumeName, "/data")),
+			Cmd:        []string{"bash", "/hello.sh"},
+			WaitingFor: wait.ForLog("done"),
+		},
+		Started: true,
+	})
+	require.NoError(t, err)
+	err = bashC.Terminate(ctx, WithTerminateVolumes(volumeName))
+	require.NoError(t, err)
+}
+
+func TestContainerTerminationOptions(t *testing.T) {
+	volumeName := "volumeName"
+	definedVolumeOpt := &terminateOptions{}
+	volumeOpt := WithTerminateVolumes(volumeName)
+	volumeOpt(definedVolumeOpt)
+	require.Equal(t, definedVolumeOpt.volumes, []string{volumeName})
+
+	defaultTimeout := 10 * time.Second
+	definedTimeoutOpt := &terminateOptions{
+		timeout: &defaultTimeout,
+	}
+
+	configuredTimeout := 1 * time.Second
+
+	timeoutOpt := WithTerminateTimeout(1 * time.Second)
+	timeoutOpt(definedTimeoutOpt)
+	require.Equal(t, *definedTimeoutOpt.timeout, configuredTimeout)
+}
+
 func TestContainerWithTmpFs(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{

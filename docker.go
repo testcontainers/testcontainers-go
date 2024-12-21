@@ -89,7 +89,6 @@ type DockerContainer struct {
 	logProductionCtx    context.Context
 
 	logProductionTimeout *time.Duration
-	terminationOptions   terminateOptions
 	logger               Logging
 	lifecycleHooks       []ContainerLifecycleHooks
 
@@ -299,8 +298,15 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 
 // WithTerminateTimeout is a functional option that sets the timeout for the container termination.
 func WithTerminateTimeout(timeout time.Duration) TerminateOption {
-	return func(c *DockerContainer) {
-		c.terminationOptions.timeout = &timeout
+	return func(c *terminateOptions) {
+		c.timeout = &timeout
+	}
+}
+
+// WithTerminateVolumes is a functional option that sets the volumes for the container termination.
+func WithTerminateVolumes(volumes ...string) TerminateOption {
+	return func(opts *terminateOptions) {
+		opts.volumes = volumes
 	}
 }
 
@@ -314,16 +320,16 @@ func WithTerminateTimeout(timeout time.Duration) TerminateOption {
 //
 // Default: timeout is 10 seconds.
 func (c *DockerContainer) Terminate(ctx context.Context, opts ...TerminateOption) error {
-	if len(opts) == 0 {
-		d := 10 * time.Second
-		c.terminationOptions.timeout = &d
+	defaultTimeout := 10 * time.Second
+	options := &terminateOptions{
+		timeout: &defaultTimeout,
 	}
 
 	for _, opt := range opts {
-		opt(c)
+		opt(options)
 	}
 
-	err := c.Stop(ctx, c.terminationOptions.timeout)
+	err := c.Stop(ctx, options.timeout)
 	if err != nil && !isCleanupSafe(err) {
 		return fmt.Errorf("stop: %w", err)
 	}
@@ -359,7 +365,7 @@ func (c *DockerContainer) Terminate(ctx context.Context, opts ...TerminateOption
 	c.isRunning = false
 
 	// Remove additional volumes if any.
-	if len(c.terminationOptions.volumes) == 0 {
+	if len(options.volumes) == 0 {
 		return nil
 	}
 
@@ -371,7 +377,7 @@ func (c *DockerContainer) Terminate(ctx context.Context, opts ...TerminateOption
 	defer client.Close()
 
 	// Best effort to remove all volumes.
-	for _, volume := range c.terminationOptions.volumes {
+	for _, volume := range options.volumes {
 		if errRemove := client.VolumeRemove(ctx, volume, true); errRemove != nil {
 			errs = append(errs, fmt.Errorf("volume remove %q: %w", volume, errRemove))
 		}
