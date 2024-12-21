@@ -2,7 +2,6 @@ package testcontainers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"time"
@@ -54,41 +53,12 @@ func TerminateContainer(container Container, options ...TerminateOption) error {
 		return nil
 	}
 
-	c := &terminateOptions{
-		ctx: context.Background(),
-	}
-
-	for _, opt := range options {
-		opt(c)
-	}
-
-	// TODO: Add a timeout when terminate supports it.
-	err := container.Terminate(c.ctx)
+	err := container.Terminate(context.Background(), options...)
 	if !isCleanupSafe(err) {
 		return fmt.Errorf("terminate: %w", err)
 	}
 
-	// Remove additional volumes if any.
-	if len(c.volumes) == 0 {
-		return nil
-	}
-
-	client, err := NewDockerClientWithOpts(c.ctx)
-	if err != nil {
-		return fmt.Errorf("docker client: %w", err)
-	}
-
-	defer client.Close()
-
-	// Best effort to remove all volumes.
-	var errs []error
-	for _, volume := range c.volumes {
-		if errRemove := client.VolumeRemove(c.ctx, volume, true); errRemove != nil {
-			errs = append(errs, fmt.Errorf("volume remove %q: %w", volume, errRemove))
-		}
-	}
-
-	return errors.Join(errs...)
+	return nil
 }
 
 // isNil returns true if val is nil or an nil instance false otherwise.

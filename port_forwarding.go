@@ -225,10 +225,10 @@ type sshdContainer struct {
 }
 
 // Terminate stops the container and closes the SSH session
-func (sshdC *sshdContainer) Terminate(ctx context.Context) error {
+func (sshdC *sshdContainer) Terminate(ctx context.Context, opts ...TerminateOption) error {
 	return errors.Join(
 		sshdC.closePorts(),
-		sshdC.Container.Terminate(ctx),
+		sshdC.Container.Terminate(ctx, opts...),
 	)
 }
 
