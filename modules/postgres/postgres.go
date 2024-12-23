@@ -192,7 +192,7 @@ func WithSnapshotName(name string) SnapshotOption {
 // WithSSLSettings configures the Postgres server to run with the provided CA Chain
 // This will not function if the corresponding postgres conf is not correctly configured.
 // Namely the paths below must match what is set in the conf file
-func WithSSLSettings(sslSettings SSLSettings) testcontainers.CustomizeRequestOption {
+func WithSSLCert(caCertFile, certFile, keyFile) testcontainers.CustomizeRequestOption {
 	const postgresCaCertPath = "/tmp/data/ca_cert.pem"
 	const postgresCertPath = "/tmp/data/server.cert"
 	const postgresKeyPath = "/tmp/data/server.key"
