@@ -200,49 +200,34 @@ func WithSSLSettings(sslSettings SSLSettings) testcontainers.CustomizeRequestOpt
 	const defaultPermission = 0o600
 
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Files = append(req.Files, testcontainers.ContainerFile{
-			HostFilePath:      sslSettings.CACertFile,
-			ContainerFilePath: postgresCaCertPath,
-			FileMode:          defaultPermission,
-		})
-		req.Files = append(req.Files, testcontainers.ContainerFile{
-			HostFilePath:      sslSettings.CertFile,
-			ContainerFilePath: postgresCertPath,
-			FileMode:          defaultPermission,
-		})
-		req.Files = append(req.Files, testcontainers.ContainerFile{
-			HostFilePath:      sslSettings.KeyFile,
-			ContainerFilePath: postgresKeyPath,
-			FileMode:          defaultPermission,
-		})
+		const entrypointPath = "/usr/local/bin/docker-entrypoint-ssl.bash"
 
-		expectedFiles := []string{sslSettings.CACertFile, sslSettings.CertFile, sslSettings.KeyFile}
-		for _, expectedFile := range expectedFiles {
-			_, err := os.Stat(expectedFile)
-			if err != nil {
-				return err
-			}
-		}
-
-		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForLog("database system is ready to accept connections"))
-
-		internalEntrypoint(req)
+		req.Files = append(req.Files,
+			testcontainers.ContainerFile{
+				HostFilePath:      caCertFile,
+				ContainerFilePath: "/tmp/certs/ca_cert.pem",
+				FileMode:          defaultPermission,
+			},
+			testcontainers.ContainerFile{
+				HostFilePath:      certFile,
+				ContainerFilePath: "/tmp/certs/server.cert",
+				FileMode:          defaultPermission,
+			},
+			testcontainers.ContainerFile{
+				HostFilePath:      keyFile,
+				ContainerFilePath: "/tmp/data/server.key",
+				FileMode:          defaultPermission,
+			},
+			testcontainers.ContainerFile{
+				Reader:            strings.NewReader(embeddedCustomEntrypoint),
+				ContainerFilePath: entrypointPath ,
+				FileMode:          defaultPermission,
+			},
+		)
+		req.Entrypoint = []string{"sh", entrypointPath}
+		
 		return nil
 	}
-}
-
-func internalEntrypoint(req *testcontainers.GenericContainerRequest) {
-	const entrypointPath = "/usr/local/bin/docker-entrypoint-ssl.bash"
-
-	reader := strings.NewReader(embeddedCustomEntrypoint)
-
-	req.Files = append(req.Files, testcontainers.ContainerFile{
-		Reader:            reader,
-		ContainerFilePath: entrypointPath,
-		FileMode:          0o666,
-	})
-
-	req.Entrypoint = []string{"sh", entrypointPath}
 }
 
 // Snapshot takes a snapshot of the current state of the database as a template, which can then be restored using
