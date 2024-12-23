@@ -7,29 +7,32 @@ import (
 	"time"
 )
 
-// terminateOptions is a type that holds the options for terminating a container.
-type terminateOptions struct {
-	ctx     context.Context
-	timeout *time.Duration
-	volumes []string
+// DefaultTimeout for termination
+var DefaultTimeout = 10 * time.Second
+
+// TerminateOptions is a type that holds the options for terminating a container.
+type TerminateOptions struct {
+	Context context.Context
+	Timeout *time.Duration
+	Volumes []string
 }
 
 // TerminateOption is a type that represents an option for terminating a container.
-type TerminateOption func(*terminateOptions)
+type TerminateOption func(*TerminateOptions)
 
 // StopContext returns a TerminateOption that sets the context.
 // Default: context.Background().
 func StopContext(ctx context.Context) TerminateOption {
-	return func(c *terminateOptions) {
-		c.ctx = ctx
+	return func(c *TerminateOptions) {
+		c.Context = ctx
 	}
 }
 
 // StopTimeout returns a TerminateOption that sets the timeout.
 // Default: See [Container.Stop].
 func StopTimeout(timeout time.Duration) TerminateOption {
-	return func(c *terminateOptions) {
-		c.timeout = &timeout
+	return func(c *TerminateOptions) {
+		c.Timeout = &timeout
 	}
 }
 
@@ -38,8 +41,8 @@ func StopTimeout(timeout time.Duration) TerminateOption {
 // which are not removed by default.
 // Default: nil.
 func RemoveVolumes(volumes ...string) TerminateOption {
-	return func(c *terminateOptions) {
-		c.volumes = volumes
+	return func(c *TerminateOptions) {
+		c.Volumes = volumes
 	}
 }
 
