@@ -33,9 +33,7 @@ func createSSLCerts(t *testing.T) (*tlscert.Certificate, *tlscert.Certificate, e
 	tmpDir := t.TempDir()
 	certsDir := tmpDir + "/certs"
 
-	if err := os.MkdirAll(certsDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(certsDir, 0o755))
 
 	t.Cleanup(func() {
 		require.NoError(t, os.RemoveAll(tmpDir))
