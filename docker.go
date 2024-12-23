@@ -296,6 +296,20 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 	return nil
 }
 
+// WithTerminateTimeout is a functional option that sets the timeout for the container termination.
+func WithTerminateTimeout(timeout time.Duration) TerminateOption {
+	return func(c *TerminateOptions) {
+		c.Timeout = &timeout
+	}
+}
+
+// WithTerminateVolumes is a functional option that sets the volumes for the container termination.
+func WithTerminateVolumes(volumes ...string) TerminateOption {
+	return func(opts *TerminateOptions) {
+		opts.Volumes = volumes
+	}
+}
+
 // Terminate calls stops and then removes the container including its volumes.
 // If its image was built it and all child images are also removed unless
 // the [FromDockerfile.KeepImage] on the [ContainerRequest] was set to true.
@@ -303,12 +317,19 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 // The following hooks are called in order:
 //   - [ContainerLifecycleHooks.PreTerminates]
 //   - [ContainerLifecycleHooks.PostTerminates]
-func (c *DockerContainer) Terminate(ctx context.Context) error {
-	// ContainerRemove hardcodes stop timeout to 3 seconds which is too short
-	// to ensure that child containers are stopped so we manually call stop.
-	// TODO: make this configurable via a functional option.
-	timeout := 10 * time.Second
-	err := c.Stop(ctx, &timeout)
+//
+// Default: timeout is 10 seconds.
+func (c *DockerContainer) Terminate(ctx context.Context, opts ...TerminateOption) error {
+	defaultOptions := &TerminateOptions{
+		Timeout: &DefaultTimeout,
+		Context: ctx,
+	}
+
+	for _, opt := range opts {
+		opt(defaultOptions)
+	}
+
+	err := c.Stop(defaultOptions.Context, defaultOptions.Timeout)
 	if err != nil && !isCleanupSafe(err) {
 		return fmt.Errorf("stop: %w", err)
 	}
@@ -342,6 +363,26 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 
 	c.sessionID = ""
 	c.isRunning = false
+
+	// Remove additional volumes if any.
+	// TODO: simplify this when when perform the client refactor.
+	if len(defaultOptions.Volumes) == 0 {
+		return nil
+	}
+
+	client, err := NewDockerClientWithOpts(ctx)
+	if err != nil {
+		return fmt.Errorf("docker client: %w", err)
+	}
+
+	defer client.Close()
+
+	// Best effort to remove all volumes.
+	for _, volume := range defaultOptions.Volumes {
+		if errRemove := client.VolumeRemove(ctx, volume, true); errRemove != nil {
+			errs = append(errs, fmt.Errorf("volume remove %q: %w", volume, errRemove))
+		}
+	}
 
 	return errors.Join(errs...)
 }

@@ -50,7 +50,7 @@ type Container interface {
 	Stop(context.Context, *time.Duration) error                                    // stop the container
 
 	// Terminate stops and removes the container and its image if it was built and not flagged as kept.
-	Terminate(ctx context.Context) error
+	Terminate(ctx context.Context, opts ...TerminateOption) error
 
 	Logs(context.Context) (io.ReadCloser, error)                    // Get logs of the container
 	FollowOutput(LogConsumer)                                       // Deprecated: it will be removed in the next major release
