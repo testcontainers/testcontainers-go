@@ -38,7 +38,7 @@ func createSSLCerts(t *testing.T) (*tlscert.Certificate, *tlscert.Certificate, e
 	}
 
 	t.Cleanup(func() {
-		os.RemoveAll(tmpDir)
+		require.NoError(t, os.RemoveAll(tmpDir))
 	})
 
 	caCert := tlscert.SelfSignedFromRequest(tlscert.Request{
