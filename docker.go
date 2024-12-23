@@ -298,15 +298,15 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 
 // WithTerminateTimeout is a functional option that sets the timeout for the container termination.
 func WithTerminateTimeout(timeout time.Duration) TerminateOption {
-	return func(c *terminateOptions) {
-		c.timeout = &timeout
+	return func(c *TerminateOptions) {
+		c.Timeout = &timeout
 	}
 }
 
 // WithTerminateVolumes is a functional option that sets the volumes for the container termination.
 func WithTerminateVolumes(volumes ...string) TerminateOption {
-	return func(opts *terminateOptions) {
-		opts.volumes = volumes
+	return func(opts *TerminateOptions) {
+		opts.Volumes = volumes
 	}
 }
 
@@ -320,17 +320,16 @@ func WithTerminateVolumes(volumes ...string) TerminateOption {
 //
 // Default: timeout is 10 seconds.
 func (c *DockerContainer) Terminate(ctx context.Context, opts ...TerminateOption) error {
-	defaultTimeout := 10 * time.Second
-	defaultOptions := &terminateOptions{
-		timeout: &defaultTimeout,
-		ctx:     ctx,
+	defaultOptions := &TerminateOptions{
+		Timeout: &DefaultTimeout,
+		Context: ctx,
 	}
 
 	for _, opt := range opts {
 		opt(defaultOptions)
 	}
 
-	err := c.Stop(defaultOptions.ctx, defaultOptions.timeout)
+	err := c.Stop(defaultOptions.Context, defaultOptions.Timeout)
 	if err != nil && !isCleanupSafe(err) {
 		return fmt.Errorf("stop: %w", err)
 	}
@@ -366,7 +365,8 @@ func (c *DockerContainer) Terminate(ctx context.Context, opts ...TerminateOption
 	c.isRunning = false
 
 	// Remove additional volumes if any.
-	if len(defaultOptions.volumes) == 0 {
+	// TODO: simplify this when when perform the client refactor.
+	if len(defaultOptions.Volumes) == 0 {
 		return nil
 	}
 
@@ -378,7 +378,7 @@ func (c *DockerContainer) Terminate(ctx context.Context, opts ...TerminateOption
 	defer client.Close()
 
 	// Best effort to remove all volumes.
-	for _, volume := range defaultOptions.volumes {
+	for _, volume := range defaultOptions.Volumes {
 		if errRemove := client.VolumeRemove(ctx, volume, true); errRemove != nil {
 			errs = append(errs, fmt.Errorf("volume remove %q: %w", volume, errRemove))
 		}

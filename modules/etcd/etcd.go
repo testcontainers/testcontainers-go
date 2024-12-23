@@ -40,7 +40,7 @@ func (c *EtcdContainer) Terminate(ctx context.Context, opts ...testcontainers.Te
 	}
 
 	if c.Container != nil {
-		if err := c.Container.Terminate(ctx); err != nil {
+		if err := c.Container.Terminate(ctx, opts...); err != nil {
 			errs = append(errs, fmt.Errorf("terminate cluster node: %w", err))
 		}
 	}
