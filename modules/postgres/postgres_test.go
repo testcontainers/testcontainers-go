@@ -30,6 +30,7 @@ const (
 )
 
 func createSSLCerts(t *testing.T) (*tlscert.Certificate, *tlscert.Certificate, error) {
+	t.Helper()
 	tmpDir := t.TempDir()
 	certsDir := tmpDir + "/certs"
 
@@ -46,7 +47,7 @@ func createSSLCerts(t *testing.T) (*tlscert.Certificate, *tlscert.Certificate, e
 	})
 
 	if caCert == nil {
-		return caCert, nil, errors.New("Unable to create CA Authority")
+		return caCert, nil, errors.New("unable to create CA Authority")
 	}
 
 	cert := tlscert.SelfSignedFromRequest(tlscert.Request{
@@ -56,7 +57,7 @@ func createSSLCerts(t *testing.T) (*tlscert.Certificate, *tlscert.Certificate, e
 		ParentDir: certsDir,
 	})
 	if cert == nil {
-		return caCert, cert, errors.New("Unable to create Server Certificates")
+		return caCert, cert, errors.New("unable to create Server Certificates")
 	}
 
 	return caCert, cert, nil
@@ -247,7 +248,7 @@ func TestWithSSL(t *testing.T) {
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
 		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
-		postgres.WithSSLSettings(sslSettings),
+		postgres.WithSSLCert(sslSettings.CACertFile, sslSettings.CertFile, sslSettings.KeyFile),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -284,11 +285,10 @@ func TestSSLValidatesKeyMaterialPath(t *testing.T) {
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
 		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
-		postgres.WithSSLSettings(sslSettings),
+		postgres.WithSSLCert(sslSettings.CACertFile, sslSettings.CertFile, sslSettings.KeyFile),
 	)
-	if err == nil {
-		t.Fatal("Error should not have been nil. Container creation should have failed due to empty key material")
-	}
+
+	require.Error(t, err, "Error should not have been nil. Container creation should have failed due to empty key material")
 }
 
 func TestWithInitScript(t *testing.T) {

@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"os"
 	"path/filepath"
 	"strings"
 
 	_ "embed"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
@@ -192,11 +190,7 @@ func WithSnapshotName(name string) SnapshotOption {
 // WithSSLSettings configures the Postgres server to run with the provided CA Chain
 // This will not function if the corresponding postgres conf is not correctly configured.
 // Namely the paths below must match what is set in the conf file
-func WithSSLCert(caCertFile, certFile, keyFile) testcontainers.CustomizeRequestOption {
-	const postgresCaCertPath = "/tmp/data/ca_cert.pem"
-	const postgresCertPath = "/tmp/data/server.cert"
-	const postgresKeyPath = "/tmp/data/server.key"
-
+func WithSSLCert(caCertFile string, certFile string, keyFile string) testcontainers.CustomizeRequestOption {
 	const defaultPermission = 0o600
 
 	return func(req *testcontainers.GenericContainerRequest) error {
@@ -205,27 +199,27 @@ func WithSSLCert(caCertFile, certFile, keyFile) testcontainers.CustomizeRequestO
 		req.Files = append(req.Files,
 			testcontainers.ContainerFile{
 				HostFilePath:      caCertFile,
-				ContainerFilePath: "/tmp/certs/ca_cert.pem",
+				ContainerFilePath: "/tmp/testcontainers-go/postgres/ca_cert.pem",
 				FileMode:          defaultPermission,
 			},
 			testcontainers.ContainerFile{
 				HostFilePath:      certFile,
-				ContainerFilePath: "/tmp/certs/server.cert",
+				ContainerFilePath: "/tmp/testcontainers-go/postgres/server.cert",
 				FileMode:          defaultPermission,
 			},
 			testcontainers.ContainerFile{
 				HostFilePath:      keyFile,
-				ContainerFilePath: "/tmp/data/server.key",
+				ContainerFilePath: "/tmp/testcontainers-go/postgres/server.key",
 				FileMode:          defaultPermission,
 			},
 			testcontainers.ContainerFile{
 				Reader:            strings.NewReader(embeddedCustomEntrypoint),
-				ContainerFilePath: entrypointPath ,
+				ContainerFilePath: entrypointPath,
 				FileMode:          defaultPermission,
 			},
 		)
 		req.Entrypoint = []string{"sh", entrypointPath}
-		
+
 		return nil
 	}
 }

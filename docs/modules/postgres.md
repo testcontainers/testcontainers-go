@@ -75,7 +75,7 @@ This function can be used `WithSSLSettings` but requires your configuration corr
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-If you would like to use SSL with the container you can use the `WithSSLSettings`. This function accepts a `SSLSettings` which has the required secret material, namely the ca-certificate, server certificate and key. The container will copy this material to `/tmp/data/ca_cert.pem`, `tmp/data/server.cert` and `/tmp/data/server.key`
+If you would like to use SSL with the container you can use the `WithSSLSettings`. This function accepts a `SSLSettings` which has the required secret material, namely the ca-certificate, server certificate and key. The container will copy this material to `/tmp/testcontainers-go/postgres/ca_cert.pem`, `/tmp/testcontainers-go/postgres/server.cert` and `/tmp/testcontainers-go/postgres/server.key`
 
 This function requires a custom postgres configuration file that enables SSL and correctly sets the paths on the key material.
 
@@ -83,9 +83,9 @@ If you use this function by itself or in conjuction with `WithConfigFile` your c
 
  ```
  ssl = on
-ssl_ca_file = '/tmp/data/ca_cert.pem'
-ssl_cert_file = '/tmp/data/server.cert'
-ssl_key_file = '/tmp/data/server.key'
+ssl_ca_file = '/tmp/testcontainers-go/postgres/ca_cert.pem'
+ssl_cert_file = '/tmp/testcontainers-go/postgres/server.cert'
+ssl_key_file = '/tmp/testcontainers-go/postgres/server.key'
  ```
 
 This function assumes the postgres user in the container is `postgres`
