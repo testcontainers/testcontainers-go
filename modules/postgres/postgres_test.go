@@ -64,6 +64,7 @@ func createSSLCerts(t *testing.T) (*tlscert.Certificate, *tlscert.Certificate, e
 }
 
 func createSSLSettings(t *testing.T) postgres.SSLSettings {
+	t.Helper()
 	caCert, serverCerts, err := createSSLCerts(t)
 	require.NoError(t, err)
 
