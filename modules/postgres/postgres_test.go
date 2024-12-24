@@ -235,13 +235,9 @@ func TestWithSSL(t *testing.T) {
 		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
 		postgres.WithSSLCert(sslSettings.CACertFile, sslSettings.CertFile, sslSettings.KeyFile),
 	)
-	require.NoError(t, err)
 
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	testcontainers.CleanupContainer(t, container)
+	require.NoError(t, err)
 
 	connStr, err := container.ConnectionString(ctx, "sslmode=require")
 	require.NoError(t, err)
