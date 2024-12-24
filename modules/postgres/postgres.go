@@ -3,14 +3,13 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	_ "embed"
 	"errors"
 	"fmt"
 	"io"
 	"net"
 	"path/filepath"
 	"strings"
-
-	_ "embed"
 
 	"github.com/testcontainers/testcontainers-go"
 )

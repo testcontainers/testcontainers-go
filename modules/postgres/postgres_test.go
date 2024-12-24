@@ -15,7 +15,6 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/lib/pq"
 	"github.com/mdelapenya/tlscert"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
