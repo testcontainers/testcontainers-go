@@ -47,15 +47,21 @@ func WithManifest(manifestPath string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the K3s container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*K3sContainer, error) {
+	return Run(ctx, "rancher/k3s:v1.27.1-k3s1", opts...)
+}
+
+// Run creates an instance of the K3s container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*K3sContainer, error) {
 	host, err := getContainerHost(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	req := testcontainers.ContainerRequest{
-		Image: "docker.io/rancher/k3s:v1.27.1-k3s1",
+		Image: img,
 		ExposedPorts: []string{
 			defaultKubeSecurePort,
 			defaultRancherWebhookPort,
@@ -92,11 +98,16 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *K3sContainer
+	if container != nil {
+		c = &K3sContainer{Container: container}
 	}
 
-	return &K3sContainer{Container: container}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }
 
 func getContainerHost(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (string, error) {
@@ -209,7 +220,7 @@ func (c *K3sContainer) LoadImages(ctx context.Context, images ...string) error {
 		return fmt.Errorf("saving images %w", err)
 	}
 
-	containerPath := fmt.Sprintf("/tmp/%s", filepath.Base(imagesTar.Name()))
+	containerPath := "/tmp/" + filepath.Base(imagesTar.Name())
 	err = c.Container.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0x644)
 	if err != nil {
 		return fmt.Errorf("copying image to container %w", err)

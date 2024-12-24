@@ -24,8 +24,6 @@ const (
 	defaultDatabaseName = "clickhouse"
 )
 
-const defaultImage = "clickhouse/clickhouse-server:23.3.8.21-alpine"
-
 const (
 	// containerPorts {
 	httpPort   = nat.Port("8123/tcp")
@@ -216,10 +214,16 @@ func WithUsername(user string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the ClickHouse container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ClickHouseContainer, error) {
+	return Run(ctx, "clickhouse/clickhouse-server:23.3.8.21-alpine", opts...)
+}
+
+// Run creates an instance of the ClickHouse container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ClickHouseContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image: defaultImage,
+		Image: img,
 		Env: map[string]string{
 			"CLICKHOUSE_USER":     defaultUser,
 			"CLICKHOUSE_PASSWORD": defaultUser,
@@ -245,13 +249,17 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	var c *ClickHouseContainer
+	if container != nil {
+		c = &ClickHouseContainer{Container: container}
+	}
 	if err != nil {
-		return nil, err
+		return c, fmt.Errorf("generic container: %w", err)
 	}
 
-	user := req.Env["CLICKHOUSE_USER"]
-	password := req.Env["CLICKHOUSE_PASSWORD"]
-	dbName := req.Env["CLICKHOUSE_DB"]
+	c.User = req.Env["CLICKHOUSE_USER"]
+	c.Password = req.Env["CLICKHOUSE_PASSWORD"]
+	c.DbName = req.Env["CLICKHOUSE_DB"]
 
-	return &ClickHouseContainer{Container: container, DbName: dbName, Password: password, User: user}, nil
+	return c, nil
 }

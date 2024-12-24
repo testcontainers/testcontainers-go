@@ -6,7 +6,12 @@ import (
 	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
-// ExtractDockerSocket Extracts the docker socket from the different alternatives, removing the socket schema.
+// Deprecated: use MustExtractDockerHost instead.
+func ExtractDockerSocket() string {
+	return MustExtractDockerSocket(context.Background())
+}
+
+// MustExtractDockerSocket Extracts the docker socket from the different alternatives, removing the socket schema.
 // Use this function to get the docker socket path, not the host (e.g. mounting the socket in a container).
 // This function does not consider Windows containers at the moment.
 // The possible alternatives are:
@@ -14,13 +19,13 @@ import (
 //  1. Docker host from the "tc.host" property in the ~/.testcontainers.properties file.
 //  2. The TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE environment variable.
 //  3. Using a Docker client, check if the Info().OperativeSystem is "Docker Desktop" and return the default docker socket path for rootless docker.
-//  4. Else, Get the current Docker Host from the existing strategies: see ExtractDockerHost.
+//  4. Else, Get the current Docker Host from the existing strategies: see MustExtractDockerHost.
 //  5. If the socket contains the unix schema, the schema is removed (e.g. unix:///var/run/docker.sock -> /var/run/docker.sock)
 //  6. Else, the default location of the docker socket is used (/var/run/docker.sock)
 //
-// In any case, if the docker socket schema is "tcp://", the default docker socket path will be returned.
-func ExtractDockerSocket() string {
-	return core.ExtractDockerSocket(context.Background())
+// It panics if a Docker client cannot be created, or the Docker host cannot be discovered.
+func MustExtractDockerSocket(ctx context.Context) string {
+	return core.MustExtractDockerSocket(ctx)
 }
 
 // SessionID returns a unique session ID for the current test session. Because each Go package

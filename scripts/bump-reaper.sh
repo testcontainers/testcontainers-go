@@ -5,11 +5,11 @@
 # dry-run mode, which will print the commands that would be executed, without actually
 # executing them.
 #
-# Usage: ./scripts/bump-reaper.sh "docker.io/testcontainers/ryuk:1.2.3"
+# Usage: ./scripts/bump-reaper.sh "testcontainers/ryuk:1.2.3"
 #
 # It's possible to run the script without dry-run mode actually executing the commands.
 #
-# Usage: DRY_RUN="false" ./scripts/bump-reaper.sh "docker.io/testcontainers/ryuk:1.2.3"
+# Usage: DRY_RUN="false" ./scripts/bump-reaper.sh "testcontainers/ryuk:1.2.3"
 
 readonly CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly DRY_RUN="${DRY_RUN:-true}"
@@ -39,7 +39,7 @@ function main() {
 
 # This function reads the reaper.go file and extracts the current version.
 function extractCurrentVersion() {
-  cat "${REAPER_FILE}" | grep 'ReaperDefaultImage = ' | cut -d '=' -f 2 | cut -d '"' -f 1
+  cat "${REAPER_FILE}" | grep 'ReaperDefaultImage = ' | cut -d '=' -f 2
 }
 
 main "$@"

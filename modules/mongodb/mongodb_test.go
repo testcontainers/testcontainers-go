@@ -2,9 +2,10 @@ package mongodb_test
 
 import (
 	"context"
-	"log"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -14,60 +15,128 @@ import (
 
 func TestMongoDB(t *testing.T) {
 	type tests struct {
-		name  string
-		image string
+		name string
+		img  string
+		opts []testcontainers.ContainerCustomizer
 	}
 	testCases := []tests{
 		{
-			name:  "From Docker Hub",
-			image: "mongo:6",
+			name: "From Docker Hub",
+			img:  "mongo:6",
+			opts: []testcontainers.ContainerCustomizer{},
 		},
 		{
-			name:  "Community Server",
-			image: "mongodb/mongodb-community-server:7.0.2-ubi8",
+			name: "Community Server",
+			img:  "mongodb/mongodb-community-server:7.0.2-ubi8",
+			opts: []testcontainers.ContainerCustomizer{},
 		},
 		{
-			name:  "Enterprise Server",
-			image: "mongodb/mongodb-enterprise-server:7.0.0-ubi8",
+			name: "Enterprise Server",
+			img:  "mongodb/mongodb-enterprise-server:7.0.0-ubi8",
+			opts: []testcontainers.ContainerCustomizer{},
+		},
+		{
+			name: "with-replica/mongo:4",
+			img:  "mongo:4",
+			opts: []testcontainers.ContainerCustomizer{
+				mongodb.WithReplicaSet("rs"),
+			},
+		},
+		{
+			name: "with-replica/mongo:6",
+			img:  "mongo:6",
+			opts: []testcontainers.ContainerCustomizer{
+				mongodb.WithReplicaSet("rs"),
+			},
+		},
+		{
+			name: "with-replica/mongo:7",
+			img:  "mongo:7",
+			opts: []testcontainers.ContainerCustomizer{
+				mongodb.WithReplicaSet("rs"),
+			},
+		},
+		{
+			name: "with-auth/replica/mongo:7",
+			img:  "mongo:7",
+			opts: []testcontainers.ContainerCustomizer{
+				mongodb.WithReplicaSet("rs"),
+				mongodb.WithUsername("tester"),
+				mongodb.WithPassword("testerpass"),
+			},
+		},
+		{
+			name: "with-auth/replica/mongo:6",
+			img:  "mongo:6",
+			opts: []testcontainers.ContainerCustomizer{
+				mongodb.WithReplicaSet("rs"),
+				mongodb.WithUsername("tester"),
+				mongodb.WithPassword("testerpass"),
+			},
+		},
+		{
+			name: "with-auth/mongo:6",
+			img:  "mongo:6",
+			opts: []testcontainers.ContainerCustomizer{
+				mongodb.WithUsername("tester"),
+				mongodb.WithPassword("testerpass"),
+			},
+		},
+		{
+			name: "with-auth/replica/mongodb-enterprise-server:7.0.0-ubi8",
+			img:  "mongodb/mongodb-enterprise-server:7.0.0-ubi8",
+			opts: []testcontainers.ContainerCustomizer{
+				mongodb.WithReplicaSet("rs"),
+				mongodb.WithUsername("tester"),
+				mongodb.WithPassword("testerpass"),
+			},
+		},
+		{
+			name: "with-auth/replica/mongodb-community-server:7.0.2-ubi8",
+			img:  "mongodb/mongodb-community-server:7.0.2-ubi8",
+			opts: []testcontainers.ContainerCustomizer{
+				mongodb.WithReplicaSet("rs"),
+				mongodb.WithUsername("tester"),
+				mongodb.WithPassword("testerpass"),
+			},
+		},
+		{
+			name: "with-auth/replica/mongo:4",
+			img:  "mongo:4",
+			opts: []testcontainers.ContainerCustomizer{
+				mongodb.WithReplicaSet("rs"),
+				mongodb.WithUsername("tester"),
+				mongodb.WithPassword("testerpass"),
+			},
 		},
 	}
 
 	for _, tc := range testCases {
-		image := tc.image
-		t.Run(image, func(t *testing.T) {
-			t.Parallel()
+		tc := tc
+		t.Run(tc.name, func(tt *testing.T) {
+			tt.Parallel()
 
 			ctx := context.Background()
 
-			mongodbContainer, err := mongodb.RunContainer(ctx, testcontainers.WithImage(image))
-			if err != nil {
-				t.Fatalf("failed to start container: %s", err)
-			}
-
-			defer func() {
-				if err := mongodbContainer.Terminate(ctx); err != nil {
-					t.Fatalf("failed to terminate container: %s", err)
-				}
-			}()
+			mongodbContainer, err := mongodb.Run(ctx, tc.img, tc.opts...)
+			testcontainers.CleanupContainer(t, mongodbContainer)
+			require.NoError(tt, err)
 
 			endpoint, err := mongodbContainer.ConnectionString(ctx)
-			if err != nil {
-				t.Fatalf("failed to get connection string: %s", err)
-			}
+			require.NoError(tt, err)
 
-			mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(endpoint))
-			if err != nil {
-				t.Fatalf("failed to connect to MongoDB: %s", err)
-			}
+			// Force direct connection to the container to avoid the replica set
+			// connection string that is returned by the container itself when
+			// using the replica set option.
+			mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(endpoint).SetDirect(true))
+			require.NoError(tt, err)
 
 			err = mongoClient.Ping(ctx, nil)
-			if err != nil {
-				log.Fatalf("failed to ping MongoDB: %s", err)
-			}
+			require.NoError(tt, err)
+			require.Equal(t, "test", mongoClient.Database("test").Name())
 
-			if mongoClient.Database("test").Name() != "test" {
-				t.Fatalf("failed to connect to the correct database")
-			}
+			_, err = mongoClient.Database("testcontainer").Collection("test").InsertOne(context.Background(), bson.M{})
+			require.NoError(tt, err)
 		})
 	}
 }

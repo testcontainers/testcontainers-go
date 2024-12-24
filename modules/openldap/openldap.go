@@ -38,7 +38,7 @@ func (c *OpenLDAPContainer) ConnectionString(ctx context.Context, args ...string
 		return "", err
 	}
 
-	connStr := fmt.Sprintf("ldap://%s", net.JoinHostPort(host, containerPort.Port()))
+	connStr := "ldap://" + net.JoinHostPort(host, containerPort.Port())
 	return connStr, nil
 }
 
@@ -122,10 +122,16 @@ func WithInitialLdif(ldif string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the OpenLDAP container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*OpenLDAPContainer, error) {
+	return Run(ctx, "bitnami/openldap:2.6.6", opts...)
+}
+
+// Run creates an instance of the OpenLDAP container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*OpenLDAPContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image: "bitnami/openldap:2.6.6",
+		Image: img,
 		Env: map[string]string{
 			"LDAP_ADMIN_USERNAME": defaultUser,
 			"LDAP_ADMIN_PASSWORD": defaultPassword,
@@ -155,14 +161,19 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *OpenLDAPContainer
+	if container != nil {
+		c = &OpenLDAPContainer{
+			Container:     container,
+			adminUsername: req.Env["LDAP_ADMIN_USERNAME"],
+			adminPassword: req.Env["LDAP_ADMIN_PASSWORD"],
+			rootDn:        req.Env["LDAP_ROOT"],
+		}
 	}
 
-	return &OpenLDAPContainer{
-		Container:     container,
-		adminUsername: req.Env["LDAP_ADMIN_USERNAME"],
-		adminPassword: req.Env["LDAP_ADMIN_PASSWORD"],
-		rootDn:        req.Env["LDAP_ROOT"],
-	}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }

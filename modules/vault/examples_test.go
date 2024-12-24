@@ -5,30 +5,31 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/modules/vault"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runVaultContainer {
 	ctx := context.Background()
 
-	vaultContainer, err := vault.RunContainer(ctx)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
+	vaultContainer, err := vault.Run(ctx, "hashicorp/vault:1.13.0")
 	defer func() {
-		if err := vaultContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(vaultContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := vaultContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -37,26 +38,26 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainer_withToken() {
+func ExampleRun_withToken() {
 	// runVaultContainerWithToken {
 	ctx := context.Background()
 
-	vaultContainer, err := vault.RunContainer(ctx, vault.WithToken("MyToKeN"))
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
+	vaultContainer, err := vault.Run(ctx, "hashicorp/vault:1.13.0", vault.WithToken("MyToKeN"))
 	defer func() {
-		if err := vaultContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(vaultContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := vaultContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -66,7 +67,8 @@ func ExampleRunContainer_withToken() {
 	}
 	exitCode, _, err := vaultContainer.Exec(ctx, cmds, exec.Multiplexed())
 	if err != nil {
-		log.Fatalf("failed to execute command: %s", err)
+		log.Printf("failed to execute command: %s", err)
+		return
 	}
 
 	fmt.Println(exitCode)
@@ -76,32 +78,32 @@ func ExampleRunContainer_withToken() {
 	// 0
 }
 
-func ExampleRunContainer_withInitCommand() {
+func ExampleRun_withInitCommand() {
 	// runVaultContainerWithInitCommand {
 	ctx := context.Background()
 
-	vaultContainer, err := vault.RunContainer(ctx, vault.WithToken("MyToKeN"), vault.WithInitCommand(
+	vaultContainer, err := vault.Run(ctx, "hashicorp/vault:1.13.0", vault.WithToken("MyToKeN"), vault.WithInitCommand(
 		"auth enable approle",                         // Enable the approle auth method
 		"secrets disable secret",                      // Disable the default secret engine
 		"secrets enable -version=1 -path=secret kv",   // Enable the kv secret engine at version 1
 		"write --force auth/approle/role/myrole",      // Create a role
 		"write secret/testing top_secret=password123", // Create a secret
 	))
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := vaultContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(vaultContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := vaultContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)

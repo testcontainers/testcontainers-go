@@ -2,8 +2,10 @@ package kafka
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 
 	"github.com/docker/go-connections/nat"
@@ -36,10 +38,16 @@ type KafkaContainer struct {
 	ClusterID string
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the Kafka container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*KafkaContainer, error) {
+	return Run(ctx, "confluentinc/confluent-local:7.5.0", opts...)
+}
+
+// Run creates an instance of the Kafka container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*KafkaContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "confluentinc/confluent-local:7.5.0",
+		Image:        img,
 		ExposedPorts: []string{string(publicPort)},
 		Env: map[string]string{
 			// envVars {
@@ -52,7 +60,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 			"KAFKA_OFFSETS_TOPIC_NUM_PARTITIONS":             "1",
 			"KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR": "1",
 			"KAFKA_TRANSACTION_STATE_LOG_MIN_ISR":            "1",
-			"KAFKA_LOG_FLUSH_INTERVAL_MESSAGES":              fmt.Sprintf("%d", math.MaxInt),
+			"KAFKA_LOG_FLUSH_INTERVAL_MESSAGES":              strconv.Itoa(math.MaxInt),
 			"KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS":         "0",
 			"KAFKA_NODE_ID":                                  "1",
 			"KAFKA_PROCESS_ROLES":                            "broker,controller",
@@ -65,24 +73,16 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
 			{
 				PostStarts: []testcontainers.ContainerHook{
-					// 1. copy the starter script into the container
+					// Use a single hook to copy the starter script and wait for
+					// the Kafka server to be ready. This prevents the wait running
+					// if the starter script fails to copy.
 					func(ctx context.Context, c testcontainers.Container) error {
-						host, err := c.Host(ctx)
-						if err != nil {
-							return err
+						// 1. copy the starter script into the container
+						if err := copyStarterScript(ctx, c); err != nil {
+							return fmt.Errorf("copy starter script: %w", err)
 						}
 
-						port, err := c.MappedPort(ctx, publicPort)
-						if err != nil {
-							return err
-						}
-
-						scriptContent := fmt.Sprintf(starterScriptContent, host, port.Int(), host)
-
-						return c.CopyToContainer(ctx, []byte(scriptContent), starterScript, 0o755)
-					},
-					// 2. wait for the Kafka server to be ready
-					func(ctx context.Context, c testcontainers.Container) error {
+						// 2. wait for the Kafka server to be ready
 						return wait.ForLog(".*Transitioning from RECOVERY to RUNNING.*").AsRegexp().WaitUntilReady(ctx, c)
 					},
 				},
@@ -106,16 +106,53 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 		return nil, err
 	}
 
-	clusterID := genericContainerReq.Env["CLUSTER_ID"]
-
 	configureControllerQuorumVoters(&genericContainerReq)
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *KafkaContainer
+	if container != nil {
+		c = &KafkaContainer{Container: container, ClusterID: genericContainerReq.Env["CLUSTER_ID"]}
 	}
 
-	return &KafkaContainer{Container: container, ClusterID: clusterID}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
+}
+
+// copyStarterScript copies the starter script into the container.
+func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
+	if err := wait.ForListeningPort(publicPort).
+		SkipInternalCheck().
+		WaitUntilReady(ctx, c); err != nil {
+		return fmt.Errorf("wait for exposed port: %w", err)
+	}
+
+	host, err := c.Host(ctx)
+	if err != nil {
+		return fmt.Errorf("host: %w", err)
+	}
+
+	inspect, err := c.Inspect(ctx)
+	if err != nil {
+		return fmt.Errorf("inspect: %w", err)
+	}
+
+	hostname := inspect.Config.Hostname
+
+	port, err := c.MappedPort(ctx, publicPort)
+	if err != nil {
+		return fmt.Errorf("mapped port: %w", err)
+	}
+
+	scriptContent := fmt.Sprintf(starterScriptContent, host, port.Int(), hostname)
+
+	if err := c.CopyToContainer(ctx, []byte(scriptContent), starterScript, 0o755); err != nil {
+		return fmt.Errorf("copy to container: %w", err)
+	}
+
+	return nil
 }
 
 func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
@@ -168,7 +205,7 @@ func configureControllerQuorumVoters(req *testcontainers.GenericContainerRequest
 // which is available since version 7.0.0.
 func validateKRaftVersion(fqName string) error {
 	if fqName == "" {
-		return fmt.Errorf("image cannot be empty")
+		return errors.New("image cannot be empty")
 	}
 
 	image := fqName[:strings.LastIndex(fqName, ":")]
@@ -183,7 +220,7 @@ func validateKRaftVersion(fqName string) error {
 
 	// semver requires the version to start with a "v"
 	if !strings.HasPrefix(version, "v") {
-		version = fmt.Sprintf("v%s", version)
+		version = "v" + version
 	}
 
 	if semver.Compare(version, "v7.4.0") < 0 { // version < v7.4.0

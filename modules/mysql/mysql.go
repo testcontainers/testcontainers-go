@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -16,11 +17,6 @@ const (
 	defaultPassword     = "test"
 	defaultDatabaseName = "test"
 )
-
-// defaultImage {
-const defaultImage = "mysql:8.0.36"
-
-// }
 
 // MySQLContainer represents the MySQL container type used in the module
 type MySQLContainer struct {
@@ -48,10 +44,16 @@ func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
 	}
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the MySQL container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MySQLContainer, error) {
+	return Run(ctx, "mysql:8.0.36", opts...)
+}
+
+// Run creates an instance of the MySQL container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MySQLContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        defaultImage,
+		Image:        img,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
 			"MYSQL_USER":     defaultUser,
@@ -81,22 +83,30 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	password := req.Env["MYSQL_PASSWORD"]
 
 	if len(password) == 0 && password == "" && !strings.EqualFold(rootUser, username) {
-		return nil, fmt.Errorf("empty password can be used only with the root user")
+		return nil, errors.New("empty password can be used only with the root user")
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *MySQLContainer
+	if container != nil {
+		c = &MySQLContainer{
+			Container: container,
+			password:  password,
+			username:  username,
+			database:  req.Env["MYSQL_DATABASE"],
+		}
 	}
 
-	database := req.Env["MYSQL_DATABASE"]
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
 
-	return &MySQLContainer{container, username, password, database}, nil
+	return c, nil
 }
 
 // MustConnectionString panics if the address cannot be determined.
 func (c *MySQLContainer) MustConnectionString(ctx context.Context, args ...string) string {
-	addr, err := c.ConnectionString(ctx,args...)
+	addr, err := c.ConnectionString(ctx, args...)
 	if err != nil {
 		panic(err)
 	}

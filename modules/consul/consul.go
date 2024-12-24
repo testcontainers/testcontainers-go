@@ -14,7 +14,8 @@ const (
 )
 
 const (
-	DefaultBaseImage = "docker.io/hashicorp/consul:1.15"
+	// Deprecated: it will be removed in the next major version.
+	DefaultBaseImage = "hashicorp/consul:1.15"
 )
 
 // ConsulContainer represents the Consul container type used in the module.
@@ -61,11 +62,17 @@ func WithConfigFile(configPath string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the Consul container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ConsulContainer, error) {
+	return Run(ctx, "hashicorp/consul:1.15", opts...)
+}
+
+// Run creates an instance of the Consul container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ConsulContainer, error) {
 	containerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: DefaultBaseImage,
+			Image: img,
 			ExposedPorts: []string{
 				defaultHttpApiPort + "/tcp",
 				defaultBrokerPort + "/tcp",
@@ -87,9 +94,14 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, containerReq)
-	if err != nil {
-		return nil, err
+	var c *ConsulContainer
+	if container != nil {
+		c = &ConsulContainer{Container: container}
 	}
 
-	return &ConsulContainer{Container: container}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }

@@ -96,8 +96,9 @@ func (o ComposeLoggerOption) ApplyToLocalCompose(opts *LocalDockerComposeOptions
 	opts.Logger = o.logger
 }
 
-func (o ComposeLoggerOption) applyToComposeStack(opts *composeStackOptions) {
+func (o ComposeLoggerOption) applyToComposeStack(opts *composeStackOptions) error {
 	opts.Logger = o.logger
+	return nil
 }
 
 // Deprecated: it will be removed in the next major release
@@ -135,7 +136,7 @@ func (dc *LocalDockerCompose) containerNameFromServiceName(service, separator st
 func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 	cli, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	if err != nil {
-		return err
+		return fmt.Errorf("new docker client: %w", err)
 	}
 	defer cli.Close()
 
@@ -149,22 +150,22 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 		containerListOptions := container.ListOptions{Filters: f, All: true}
 		containers, err := cli.ContainerList(context.Background(), containerListOptions)
 		if err != nil {
-			return fmt.Errorf("error %w occurred while filtering the service %s: %d by name and published port", err, k.service, k.publishedPort)
+			return fmt.Errorf("container list service %q: %w", k.service, err)
 		}
 
 		if len(containers) == 0 {
-			return fmt.Errorf("service with name %s not found in list of running containers", k.service)
+			return fmt.Errorf("service with name %q not found in list of running containers", k.service)
 		}
 
 		// The length should always be a list of 1, since we are matching one service name at a time
 		if l := len(containers); l > 1 {
-			return fmt.Errorf("expecting only one running container for %s but got %d", k.service, l)
+			return fmt.Errorf("expecting only one running container for %q but got %d", k.service, l)
 		}
 		container := containers[0]
 		strategy := dc.WaitStrategyMap[k]
 		dockerProvider, err := testcontainers.NewDockerProvider(testcontainers.WithLogger(dc.Logger))
 		if err != nil {
-			return fmt.Errorf("unable to create new Docker Provider: %w", err)
+			return fmt.Errorf("new docker provider: %w", err)
 		}
 		defer dockerProvider.Close()
 
@@ -174,7 +175,7 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 
 		err = strategy.WaitUntilReady(context.Background(), dockercontainer)
 		if err != nil {
-			return fmt.Errorf("unable to apply wait strategy %v to service %s due to %w", strategy, k.service, err)
+			return fmt.Errorf("wait until ready %v to service %q due: %w", strategy, k.service, err)
 		}
 	}
 	return nil
@@ -222,7 +223,6 @@ func (dc *LocalDockerCompose) WithExposedService(service string, port int, strat
 // depending on the version services names are composed in a different way
 func (dc *LocalDockerCompose) determineVersion() error {
 	execErr := executeCompose(dc, []string{"version", "--short"})
-
 	if err := execErr.Error; err != nil {
 		return err
 	}
@@ -234,7 +234,7 @@ func (dc *LocalDockerCompose) determineVersion() error {
 
 	majorVersion, err := strconv.ParseInt(string(components[0]), 10, 8)
 	if err != nil {
-		return err
+		return fmt.Errorf("parsing major version: %w", err)
 	}
 
 	switch majorVersion {
@@ -262,11 +262,11 @@ func (dc *LocalDockerCompose) validate() error {
 
 		yamlFile, err := os.ReadFile(abs)
 		if err != nil {
-			return err
+			return fmt.Errorf("read compose file %q: %w", abs, err)
 		}
 		err = yaml.Unmarshal(yamlFile, &c)
 		if err != nil {
-			return err
+			return fmt.Errorf("unmarshalling file %q: %w", abs, err)
 		}
 
 		if dc.Services == nil {
@@ -306,14 +306,26 @@ func execute(
 		cmd.Env = append(cmd.Env, key+"="+value)
 	}
 
-	stdoutIn, _ := cmd.StdoutPipe()
-	stderrIn, _ := cmd.StderrPipe()
+	stdoutIn, err := cmd.StdoutPipe()
+	if err != nil {
+		return ExecError{
+			Command: cmd.Args,
+			Error:   fmt.Errorf("stdout: %w", err),
+		}
+	}
+
+	stderrIn, err := cmd.StderrPipe()
+	if err != nil {
+		return ExecError{
+			Command: cmd.Args,
+			Error:   fmt.Errorf("stderr: %w", err),
+		}
+	}
 
 	stdout := newCapturingPassThroughWriter(os.Stdout)
 	stderr := newCapturingPassThroughWriter(os.Stderr)
 
-	err := cmd.Start()
-	if err != nil {
+	if err = cmd.Start(); err != nil {
 		execCmd := []string{"Starting command", dirContext, binary}
 		execCmd = append(execCmd, args...)
 
@@ -435,7 +447,9 @@ func (w *capturingPassThroughWriter) Bytes() []byte {
 
 // Which checks if a binary is present in PATH
 func which(binary string) error {
-	_, err := exec.LookPath(binary)
+	if _, err := exec.LookPath(binary); err != nil {
+		return fmt.Errorf("lookup: %w", err)
+	}
 
-	return err
+	return nil
 }

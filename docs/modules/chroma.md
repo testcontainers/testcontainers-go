@@ -25,15 +25,23 @@ go get github.com/testcontainers/testcontainers-go/modules/chroma
 [Creating a Chroma container](../../modules/chroma/examples_test.go) inside_block:runChromaContainer
 <!--/codeinclude-->
 
-## Module reference
+## Module Reference
 
-The Chroma module exposes one entrypoint function to create the Chroma container, and this function receives two parameters:
+### Run function
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+
+!!!info
+    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
+
+The Chroma module exposes one entrypoint function to create the Chroma container, and this function receives three parameters:
 
 ```golang
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ChromaContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ChromaContainer, error)
 ```
 
 - `context.Context`, the Go context.
+- `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options
@@ -42,8 +50,8 @@ When starting the Chroma container, you can pass options in a variadic way to co
 
 #### Image
 
-If you need to set a different Chroma Docker image, you can use `testcontainers.WithImage` with a valid Docker image
-for Chroma. E.g. `testcontainers.WithImage("chromadb/chroma:0.4.24")`.
+If you need to set a different Chroma Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+E.g. `Run(context.Background(), "chromadb/chroma:0.4.24")`.
 
 {% include "../features/common_functional_options.md" %}
 

@@ -51,6 +51,11 @@ func (st NopStrategyTarget) Host(_ context.Context) (string, error) {
 	return "", nil
 }
 
+func (st NopStrategyTarget) Inspect(_ context.Context) (*types.ContainerJSON, error) {
+	return nil, nil
+}
+
+// Deprecated: use Inspect instead
 func (st NopStrategyTarget) Ports(_ context.Context) (nat.PortMap, error) {
 	return nil, nil
 }
@@ -69,4 +74,8 @@ func (st NopStrategyTarget) Exec(_ context.Context, _ []string, _ ...exec.Proces
 
 func (st NopStrategyTarget) State(_ context.Context) (*types.ContainerState, error) {
 	return &st.ContainerState, nil
+}
+
+func (st NopStrategyTarget) CopyFileFromContainer(context.Context, string) (io.ReadCloser, error) {
+	return st.ReaderCloser, nil
 }

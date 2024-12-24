@@ -9,28 +9,26 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/pulsar"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runPulsarContainer {
 	ctx := context.Background()
 
-	pulsarContainer, err := pulsar.RunContainer(ctx,
-		testcontainers.WithImage("docker.io/apachepulsar/pulsar:2.10.2"),
-	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
+	pulsarContainer, err := pulsar.Run(ctx, "apachepulsar/pulsar:2.10.2")
 	defer func() {
-		if err := pulsarContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(pulsarContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := pulsarContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)

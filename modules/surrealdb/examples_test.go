@@ -9,26 +9,26 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/surrealdb"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runSurrealDBContainer {
 	ctx := context.Background()
 
-	surrealdbContainer, err := surrealdb.RunContainer(ctx, testcontainers.WithImage("surrealdb/surrealdb:v1.1.1"))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Clean up the container
+	surrealdbContainer, err := surrealdb.Run(ctx, "surrealdb/surrealdb:v1.1.1")
 	defer func() {
-		if err := surrealdbContainer.Terminate(ctx); err != nil {
-			log.Fatal(err)
+		if err := testcontainers.TerminateContainer(surrealdbContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Print(err)
+		return
+	}
 	// }
 
 	state, err := surrealdbContainer.State(ctx)
 	if err != nil {
-		log.Fatal(err) // nolint:gocritic
+		log.Print(err)
+		return
 	}
 
 	fmt.Println(state.Running)

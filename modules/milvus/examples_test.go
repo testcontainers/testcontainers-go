@@ -12,26 +12,26 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/milvus"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runMilvusContainer {
 	ctx := context.Background()
 
-	milvusContainer, err := milvus.RunContainer(ctx, testcontainers.WithImage("milvusdb/milvus:v2.3.9"))
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
+	milvusContainer, err := milvus.Run(ctx, "milvusdb/milvus:v2.3.9")
 	defer func() {
-		if err := milvusContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(milvusContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := milvusContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -44,27 +44,28 @@ func ExampleMilvusContainer_collections() {
 	// createCollections {
 	ctx := context.Background()
 
-	milvusContainer, err := milvus.RunContainer(ctx, testcontainers.WithImage("milvusdb/milvus:v2.3.9"))
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
+	milvusContainer, err := milvus.Run(ctx, "milvusdb/milvus:v2.3.9")
 	defer func() {
-		if err := milvusContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(milvusContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	connectionStr, err := milvusContainer.ConnectionString(ctx)
 	if err != nil {
-		log.Fatalf("failed to get connection string: %s", err) // nolint:gocritic
+		log.Printf("failed to get connection string: %s", err)
+		return
 	}
 
 	// Create a client to interact with the Milvus container
 	milvusClient, err := client.NewGrpcClient(context.Background(), connectionStr)
 	if err != nil {
-		log.Fatal("failed to connect to Milvus:", err.Error())
+		log.Print("failed to connect to Milvus:", err.Error())
+		return
 	}
 	defer milvusClient.Close()
 
@@ -102,12 +103,14 @@ func ExampleMilvusContainer_collections() {
 		2, // shardNum
 	)
 	if err != nil {
-		log.Fatalf("failed to create collection: %s", err) // nolint:gocritic
+		log.Printf("failed to create collection: %s", err)
+		return
 	}
 
 	list, err := milvusClient.ListCollections(context.Background())
 	if err != nil {
-		log.Fatalf("failed to list collections: %s", err) // nolint:gocritic
+		log.Printf("failed to list collections: %s", err)
+		return
 	}
 	// }
 

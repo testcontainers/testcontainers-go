@@ -2,7 +2,7 @@
 
 The HTTP wait strategy will check the result of an HTTP(S) request against the container and allows to set the following conditions:
 
-- the port to be used. If no port is passed, it will use the first exposed port in the image.
+- the port to be used. If no port is passed, it will use the lowest exposed port in the image.
 - the path to be used.
 - the HTTP method to be used.
 - the HTTP request body to be sent.

@@ -3,6 +3,7 @@ package testcontainers
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"time"
 
 	"dario.cat/mergo"
@@ -95,6 +96,7 @@ func WithHostPortAccess(ports ...int) CustomizeRequestOption {
 	}
 }
 
+// Deprecated: the modules API forces passing the image as part of the signature of the Run function.
 // WithImage sets the image for a container
 func WithImage(image string) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {
@@ -115,6 +117,52 @@ type ImageSubstitutor interface {
 }
 
 // }
+
+// CustomHubSubstitutor represents a way to substitute the hub of an image with a custom one,
+// using provided value with respect to the HubImageNamePrefix configuration value.
+type CustomHubSubstitutor struct {
+	hub string
+}
+
+// NewCustomHubSubstitutor creates a new CustomHubSubstitutor
+func NewCustomHubSubstitutor(hub string) CustomHubSubstitutor {
+	return CustomHubSubstitutor{
+		hub: hub,
+	}
+}
+
+// Description returns the name of the type and a short description of how it modifies the image.
+func (c CustomHubSubstitutor) Description() string {
+	return fmt.Sprintf("CustomHubSubstitutor (replaces hub with %s)", c.hub)
+}
+
+// Substitute replaces the hub of the image with the provided one, with certain conditions:
+//   - if the hub is empty, the image is returned as is.
+//   - if the image already contains a registry, the image is returned as is.
+//   - if the HubImageNamePrefix configuration value is set, the image is returned as is.
+func (c CustomHubSubstitutor) Substitute(image string) (string, error) {
+	registry := core.ExtractRegistry(image, "")
+	cfg := ReadConfig()
+
+	exclusions := []func() bool{
+		func() bool { return c.hub == "" },
+		func() bool { return registry != "" },
+		func() bool { return cfg.Config.HubImageNamePrefix != "" },
+	}
+
+	for _, exclusion := range exclusions {
+		if exclusion() {
+			return image, nil
+		}
+	}
+
+	result, err := url.JoinPath(c.hub, image)
+	if err != nil {
+		return "", err
+	}
+
+	return result, nil
+}
 
 // prependHubRegistry represents a way to prepend a custom Hub registry to the image name,
 // using the HubImageNamePrefix configuration value
@@ -138,7 +186,7 @@ func (p prependHubRegistry) Description() string {
 //   - if the prefix is empty, the image is returned as is.
 //   - if the image is a non-hub image (e.g. where another registry is set), the image is returned as is.
 //   - if the image is a Docker Hub image where the hub registry is explicitly part of the name
-//     (i.e. anything with a docker.io or registry.hub.docker.com host part), the image is returned as is.
+//     (i.e. anything with a registry.hub.docker.com host part), the image is returned as is.
 func (p prependHubRegistry) Substitute(image string) (string, error) {
 	registry := core.ExtractRegistry(image, "")
 
@@ -156,7 +204,12 @@ func (p prependHubRegistry) Substitute(image string) (string, error) {
 		}
 	}
 
-	return fmt.Sprintf("%s/%s", p.prefix, image), nil
+	result, err := url.JoinPath(p.prefix, image)
+	if err != nil {
+		return "", err
+	}
+
+	return result, nil
 }
 
 // WithImageSubstitutors sets the image substitutors for a container

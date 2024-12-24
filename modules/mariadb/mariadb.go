@@ -2,6 +2,7 @@ package mariadb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -16,11 +17,6 @@ const (
 	defaultPassword     = "test"
 	defaultDatabaseName = "test"
 )
-
-// defaultImage {
-const defaultImage = "mariadb:11.0.3"
-
-// }
 
 // MariaDBContainer represents the MariaDB container type used in the module
 type MariaDBContainer struct {
@@ -124,10 +120,16 @@ func WithScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the MariaDB container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MariaDBContainer, error) {
+	return Run(ctx, "mariadb:11.0.3", opts...)
+}
+
+// Run creates an instance of the MariaDB container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MariaDBContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        defaultImage,
+		Image:        img,
 		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
 		Env: map[string]string{
 			"MARIADB_USER":     defaultUser,
@@ -164,28 +166,35 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	password := req.Env["MARIADB_PASSWORD"]
 
 	if len(password) == 0 && password == "" && !strings.EqualFold(rootUser, username) {
-		return nil, fmt.Errorf("empty password can be used only with the root user")
+		return nil, errors.New("empty password can be used only with the root user")
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *MariaDBContainer
+	if container != nil {
+		c = &MariaDBContainer{
+			Container: container,
+			username:  username,
+			password:  password,
+			database:  req.Env["MARIADB_DATABASE"],
+		}
 	}
 
-	database := req.Env["MARIADB_DATABASE"]
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
 
-	return &MariaDBContainer{container, username, password, database}, nil
+	return c, nil
 }
 
 // MustConnectionString panics if the address cannot be determined.
 func (c *MariaDBContainer) MustConnectionString(ctx context.Context, args ...string) string {
-	addr, err := c.ConnectionString(ctx,args...)
+	addr, err := c.ConnectionString(ctx, args...)
 	if err != nil {
 		panic(err)
 	}
 	return addr
 }
-
 
 func (c *MariaDBContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "3306/tcp")

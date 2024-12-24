@@ -2,6 +2,7 @@ package core
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
 
@@ -89,7 +90,7 @@ func init() {
 		return
 	}
 
-	sessionID = fmt.Sprintf("%x", hasher.Sum(nil))
+	sessionID = hex.EncodeToString(hasher.Sum(nil))
 }
 
 func ProcessID() string {

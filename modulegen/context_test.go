@@ -11,6 +11,7 @@ import (
 )
 
 func getTestRootContext(t *testing.T) context.Context {
+	t.Helper()
 	current, err := os.Getwd()
 	require.NoError(t, err)
 	return context.New(filepath.Dir(current))

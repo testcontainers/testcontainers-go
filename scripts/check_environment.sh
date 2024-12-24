@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 i=0
-while [ $i -ne 10 ]
+while [ $i -ne 30 ]
 do
     containers=$(docker ps --format "{{.ID}}" | wc -l)
     if [ "$containers" -eq "0" ]; then

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"path/filepath"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -12,24 +11,24 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func ExampleRunContainer() {
+func ExampleRun() {
 	// runRegistryContainer {
-	registryContainer, err := registry.RunContainer(context.Background(), testcontainers.WithImage("registry:2.8.3"))
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
+	registryContainer, err := registry.Run(context.Background(), "registry:2.8.3")
 	defer func() {
-		if err := registryContainer.Terminate(context.Background()); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(registryContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := registryContainer.State(context.Background())
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -38,46 +37,38 @@ func ExampleRunContainer() {
 	// true
 }
 
-func ExampleRunContainer_withAuthentication() {
+func ExampleRun_withAuthentication() {
 	// htpasswdFile {
-	registryContainer, err := registry.RunContainer(
-		context.Background(),
-		testcontainers.WithImage("registry:2.8.3"),
+	ctx := context.Background()
+	registryContainer, err := registry.Run(
+		ctx,
+		"registry:2.8.3",
 		registry.WithHtpasswdFile(filepath.Join("testdata", "auth", "htpasswd")),
 		registry.WithData(filepath.Join("testdata", "data")),
 	)
 	// }
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
 	defer func() {
-		if err := registryContainer.Terminate(context.Background()); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(registryContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
-
-	registryPort, err := registryContainer.MappedPort(context.Background(), "5000/tcp")
 	if err != nil {
-		log.Fatalf("failed to get mapped port: %s", err) // nolint:gocritic
+		log.Printf("failed to start container: %s", err)
+		return
 	}
-	strPort := registryPort.Port()
 
-	previousAuthConfig := os.Getenv("DOCKER_AUTH_CONFIG")
+	registryHost, err := registryContainer.HostAddress(ctx)
+	if err != nil {
+		log.Printf("failed to get host: %s", err)
+		return
+	}
 
-	// make sure the Docker Auth credentials are set
-	// using the same as in the Docker Registry
-	// testuser:testpassword
-	os.Setenv("DOCKER_AUTH_CONFIG", `{
-		"auths": {
-			"localhost:`+strPort+`": { "username": "testuser", "password": "testpassword", "auth": "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" }
-		},
-		"credsStore": "desktop"
-	}`)
-	defer func() {
-		// reset the original state after the example.
-		os.Unsetenv("DOCKER_AUTH_CONFIG")
-		os.Setenv("DOCKER_AUTH_CONFIG", previousAuthConfig)
-	}()
+	cleanup, err := registry.SetDockerAuthConfig(registryHost, "testuser", "testpassword")
+	if err != nil {
+		log.Printf("failed to set docker auth config: %s", err)
+		return
+	}
+	defer cleanup()
 
 	// build a custom redis image from the private registry,
 	// using RegistryName of the container as the registry.
@@ -87,9 +78,8 @@ func ExampleRunContainer_withAuthentication() {
 			FromDockerfile: testcontainers.FromDockerfile{
 				Context: filepath.Join("testdata", "redis"),
 				BuildArgs: map[string]*string{
-					"REGISTRY_PORT": &strPort,
+					"REGISTRY_HOST": &registryHost,
 				},
-				PrintBuildLog: true,
 			},
 			AlwaysPullImage: true, // make sure the authentication takes place
 			ExposedPorts:    []string{"6379/tcp"},
@@ -97,18 +87,20 @@ func ExampleRunContainer_withAuthentication() {
 		},
 		Started: true,
 	})
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err) // nolint:gocritic
-	}
 	defer func() {
-		if err := redisC.Terminate(context.Background()); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(redisC); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	state, err := redisC.State(context.Background())
 	if err != nil {
-		log.Fatalf("failed to get redis container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get redis container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -117,52 +109,46 @@ func ExampleRunContainer_withAuthentication() {
 	// true
 }
 
-func ExampleRunContainer_pushImage() {
-	registryContainer, err := registry.RunContainer(
-		context.Background(),
-		testcontainers.WithImage("registry:2.8.3"),
+func ExampleRun_pushImage() {
+	ctx := context.Background()
+	registryContainer, err := registry.Run(
+		ctx,
+		registry.DefaultImage,
 		registry.WithHtpasswdFile(filepath.Join("testdata", "auth", "htpasswd")),
 		registry.WithData(filepath.Join("testdata", "data")),
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
 	defer func() {
-		if err := registryContainer.Terminate(context.Background()); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(registryContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
-
-	registryPort, err := registryContainer.MappedPort(context.Background(), "5000/tcp")
 	if err != nil {
-		log.Fatalf("failed to get mapped port: %s", err) // nolint:gocritic
+		log.Printf("failed to start container: %s", err)
+		return
 	}
-	strPort := registryPort.Port()
 
-	previousAuthConfig := os.Getenv("DOCKER_AUTH_CONFIG")
+	registryHost, err := registryContainer.HostAddress(ctx)
+	if err != nil {
+		log.Printf("failed to get host: %s", err)
+		return
+	}
 
-	// make sure the Docker Auth credentials are set
-	// using the same as in the Docker Registry
-	// testuser:testpassword
 	// Besides, we are also setting the authentication
 	// for both the registry and localhost to make sure
 	// the image is pushed to the private registry.
-	os.Setenv("DOCKER_AUTH_CONFIG", `{
-		"auths": {
-			"localhost:`+strPort+`": { "username": "testuser", "password": "testpassword", "auth": "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" },
-			"`+registryContainer.RegistryName+`": { "username": "testuser", "password": "testpassword", "auth": "dGVzdHVzZXI6dGVzdHBhc3N3b3Jk" }
-		},
-		"credsStore": "desktop"
-	}`)
-	defer func() {
-		// reset the original state after the example.
-		os.Unsetenv("DOCKER_AUTH_CONFIG")
-		os.Setenv("DOCKER_AUTH_CONFIG", previousAuthConfig)
-	}()
+	cleanup, err := registry.SetDockerAuthConfig(
+		registryHost, "testuser", "testpassword",
+		registryContainer.RegistryName, "testuser", "testpassword",
+	)
+	if err != nil {
+		log.Printf("failed to set docker auth config: %s", err)
+		return
+	}
+	defer cleanup()
 
 	// build a custom redis image from the private registry,
 	// using RegistryName of the container as the registry.
-	// We are agoing to build the image with a fixed tag
+	// We are going to build the image with a fixed tag
 	// that matches the private registry, and we are going to
 	// push it again to the registry after the build.
 
@@ -174,11 +160,10 @@ func ExampleRunContainer_pushImage() {
 			FromDockerfile: testcontainers.FromDockerfile{
 				Context: filepath.Join("testdata", "redis"),
 				BuildArgs: map[string]*string{
-					"REGISTRY_PORT": &strPort,
+					"REGISTRY_HOST": &registryHost,
 				},
-				Repo:          repo,
-				Tag:           tag,
-				PrintBuildLog: true,
+				Repo: repo,
+				Tag:  tag,
 			},
 			AlwaysPullImage: true, // make sure the authentication takes place
 			ExposedPorts:    []string{"6379/tcp"},
@@ -186,21 +171,23 @@ func ExampleRunContainer_pushImage() {
 		},
 		Started: true,
 	})
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err) // nolint:gocritic
-	}
 	defer func() {
-		if err := redisC.Terminate(context.Background()); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(redisC); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	// pushingImage {
 	// repo is localhost:32878/customredis
 	// tag is v1.2.3
 	err = registryContainer.PushImage(context.Background(), fmt.Sprintf("%s:%s", repo, tag))
 	if err != nil {
-		log.Fatalf("failed to push image: %s", err) // nolint:gocritic
+		log.Printf("failed to push image: %s", err)
+		return
 	}
 	// }
 
@@ -213,7 +200,8 @@ func ExampleRunContainer_pushImage() {
 	// newImage is customredis:v1.2.3
 	err = registryContainer.DeleteImage(context.Background(), newImage)
 	if err != nil {
-		log.Fatalf("failed to delete image: %s", err) // nolint:gocritic
+		log.Printf("failed to delete image: %s", err)
+		return
 	}
 	// }
 
@@ -225,18 +213,20 @@ func ExampleRunContainer_pushImage() {
 		},
 		Started: true,
 	})
-	if err != nil {
-		log.Fatalf("failed to start container from %s: %s", newImage, err) // nolint:gocritic
-	}
 	defer func() {
-		if err := newRedisC.Terminate(context.Background()); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(newRedisC); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container from %s: %s", newImage, err)
+		return
+	}
 
 	state, err := newRedisC.State(context.Background())
 	if err != nil {
-		log.Fatalf("failed to get redis container state from %s: %s", newImage, err) // nolint:gocritic
+		log.Printf("failed to get redis container state from %s: %s", newImage, err)
+		return
 	}
 
 	fmt.Println(state.Running)

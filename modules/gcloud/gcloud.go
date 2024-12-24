@@ -2,7 +2,9 @@ package gcloud
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 
 	"github.com/docker/go-connections/nat"
 
@@ -18,30 +20,34 @@ type GCloudContainer struct {
 }
 
 // newGCloudContainer creates a new GCloud container, obtaining the URL to access the container from the specified port.
-func newGCloudContainer(ctx context.Context, port int, c testcontainers.Container, settings options) (*GCloudContainer, error) {
+func newGCloudContainer(ctx context.Context, req testcontainers.GenericContainerRequest, port int, settings options, urlPrefix string) (*GCloudContainer, error) {
+	container, err := testcontainers.GenericContainer(ctx, req)
+	var c *GCloudContainer
+	if container != nil {
+		c = &GCloudContainer{Container: container, Settings: settings}
+	}
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
 	mappedPort, err := c.MappedPort(ctx, nat.Port(fmt.Sprintf("%d/tcp", port)))
 	if err != nil {
-		return nil, err
+		return c, fmt.Errorf("mapped port: %w", err)
 	}
 
 	hostIP, err := c.Host(ctx)
 	if err != nil {
-		return nil, err
+		return c, fmt.Errorf("host: %w", err)
 	}
 
-	uri := fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
+	c.URI = urlPrefix + hostIP + ":" + mappedPort.Port()
 
-	gCloudContainer := &GCloudContainer{
-		Container: c,
-		Settings:  settings,
-		URI:       uri,
-	}
-
-	return gCloudContainer, nil
+	return c, nil
 }
 
 type options struct {
-	ProjectID string
+	ProjectID        string
+	bigQueryDataYaml io.Reader
 }
 
 func defaultOptions() options {
@@ -54,7 +60,7 @@ func defaultOptions() options {
 var _ testcontainers.ContainerCustomizer = (*Option)(nil)
 
 // Option is an option for the GCloud container.
-type Option func(*options)
+type Option func(*options) error
 
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
 func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
@@ -64,8 +70,26 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 
 // WithProjectID sets the project ID for the GCloud container.
 func WithProjectID(projectID string) Option {
-	return func(o *options) {
+	return func(o *options) error {
 		o.ProjectID = projectID
+		return nil
+	}
+}
+
+// WithDataYAML seeds the BigQuery project for the GCloud container with an [io.Reader] representing
+// the data yaml file, which is used to copy the file to the container, and then processed to seed
+// the BigQuery project.
+//
+// Other GCloud containers will ignore this option.
+// If this option is passed multiple times, an error is returned.
+func WithDataYAML(r io.Reader) Option {
+	return func(o *options) error {
+		if o.bigQueryDataYaml != nil {
+			return errors.New("data yaml already exists")
+		}
+
+		o.bigQueryDataYaml = r
+		return nil
 	}
 }
 
@@ -74,7 +98,9 @@ func applyOptions(req *testcontainers.GenericContainerRequest, opts []testcontai
 	settings := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
-			apply(&settings)
+			if err := apply(&settings); err != nil {
+				return options{}, err
+			}
 		}
 		if err := opt.Customize(req); err != nil {
 			return options{}, err

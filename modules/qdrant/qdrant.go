@@ -2,6 +2,7 @@ package qdrant
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -14,10 +15,16 @@ type QdrantContainer struct {
 	testcontainers.Container
 }
 
+// Deprecated: use Run instead
 // RunContainer creates an instance of the Qdrant container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*QdrantContainer, error) {
+	return Run(ctx, "qdrant/qdrant:v1.7.4", opts...)
+}
+
+// Run creates an instance of the Qdrant container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*QdrantContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "qdrant/qdrant:v1.7.4",
+		Image:        img,
 		ExposedPorts: []string{"6333/tcp", "6334/tcp"},
 		WaitingFor: wait.ForAll(
 			wait.ForListeningPort("6333/tcp").WithStartupTimeout(5*time.Second),
@@ -37,11 +44,16 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *QdrantContainer
+	if container != nil {
+		c = &QdrantContainer{Container: container}
 	}
 
-	return &QdrantContainer{Container: container}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }
 
 // RESTEndpoint returns the REST endpoint of the Qdrant container
@@ -53,7 +65,7 @@ func (c *QdrantContainer) RESTEndpoint(ctx context.Context) (string, error) {
 
 	host, err := c.Host(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to get container host")
+		return "", errors.New("failed to get container host")
 	}
 
 	return fmt.Sprintf("http://%s:%s", host, containerPort.Port()), nil
@@ -68,7 +80,7 @@ func (c *QdrantContainer) GRPCEndpoint(ctx context.Context) (string, error) {
 
 	host, err := c.Host(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to get container host")
+		return "", errors.New("failed to get container host")
 	}
 
 	return fmt.Sprintf("%s:%s", host, containerPort.Port()), nil

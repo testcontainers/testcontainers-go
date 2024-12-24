@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
@@ -57,7 +58,7 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 	}
 	provider, err := req.ProviderType.GetProvider(WithLogger(logging))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get provider: %w", err)
 	}
 	defer provider.Close()
 
@@ -74,12 +75,20 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 	}
 	if err != nil {
 		// At this point `c` might not be nil. Give the caller an opportunity to call Destroy on the container.
-		return c, fmt.Errorf("%w: failed to create container", err)
+		// TODO: Remove this debugging.
+		if strings.Contains(err.Error(), "toomanyrequests") {
+			// Debugging information for rate limiting.
+			cfg, err := getDockerConfig()
+			if err == nil {
+				fmt.Printf("XXX: too many requests: %+v", cfg)
+			}
+		}
+		return c, fmt.Errorf("create container: %w", err)
 	}
 
 	if req.Started && !c.IsRunning() {
 		if err := c.Start(ctx); err != nil {
-			return c, fmt.Errorf("failed to start container: %w", err)
+			return c, fmt.Errorf("start container: %w", err)
 		}
 	}
 	return c, nil
@@ -92,7 +101,17 @@ type GenericProvider interface {
 	ImageProvider
 }
 
-// GenericLabels returns a map of labels that can be used to identify containers created by this library
+// GenericLabels returns a map of labels that can be used to identify resources
+// created by this library. This includes the standard LabelSessionID if the
+// reaper is enabled, otherwise this is excluded to prevent resources being
+// incorrectly reaped.
 func GenericLabels() map[string]string {
 	return core.DefaultLabels(core.SessionID())
+}
+
+// AddGenericLabels adds the generic labels to target.
+func AddGenericLabels(target map[string]string) {
+	for k, v := range GenericLabels() {
+		target[k] = v
+	}
 }
