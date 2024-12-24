@@ -1,7 +1,5 @@
 package postgres
 
-type SSLVerificationMode string
-
 type SSLSettings struct {
 	// Path to the CA certificate file
 	CACertFile string
