@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"time"
@@ -12,19 +13,63 @@ var DefaultTimeout = 10 * time.Second
 
 // TerminateOptions is a type that holds the options for terminating a container.
 type TerminateOptions struct {
-	Context context.Context
-	Timeout *time.Duration
-	Volumes []string
+	ctx         context.Context
+	stopTimeout *time.Duration
+	volumes     []string
 }
 
 // TerminateOption is a type that represents an option for terminating a container.
 type TerminateOption func(*TerminateOptions)
 
+// NewTerminateOptions returns a fully initialised TerminateOptions.
+// Defaults: StopTimeout: 10 seconds.
+func NewTerminateOptions(ctx context.Context, opts ...TerminateOption) *TerminateOptions {
+	options := &TerminateOptions{
+		stopTimeout: &DefaultTimeout,
+		ctx:         ctx,
+	}
+	for _, opt := range opts {
+		opt(options)
+	}
+	return options
+}
+
+// Context returns the context to use duration a Terminate.
+func (o *TerminateOptions) Context() context.Context {
+	return o.ctx
+}
+
+// StopTimeout returns the stop timeout to use duration a Terminate.
+func (o *TerminateOptions) StopTimeout() *time.Duration {
+	return o.stopTimeout
+}
+
+// Cleanup performs any clean up needed
+func (o *TerminateOptions) Cleanup() error {
+	// TODO: simplify this when when perform the client refactor.
+	if len(o.volumes) == 0 {
+		return nil
+	}
+	client, err := NewDockerClientWithOpts(o.ctx)
+	if err != nil {
+		return fmt.Errorf("docker client: %w", err)
+	}
+	defer client.Close()
+	// Best effort to remove all volumes.
+	var errs []error
+	for _, volume := range o.volumes {
+		if errRemove := client.VolumeRemove(o.ctx, volume, true); errRemove != nil {
+			errs = append(errs, fmt.Errorf("volume remove %q: %w", volume, errRemove))
+		}
+	}
+	return errors.Join(errs...)
+}
+
 // StopContext returns a TerminateOption that sets the context.
 // Default: context.Background().
 func StopContext(ctx context.Context) TerminateOption {
 	return func(c *TerminateOptions) {
-		c.Context = ctx
+		c.ctx = ctx
 	}
 }
 
@@ -32,7 +77,7 @@ func StopContext(ctx context.Context) TerminateOption {
 // Default: See [Container.Stop].
 func StopTimeout(timeout time.Duration) TerminateOption {
 	return func(c *TerminateOptions) {
-		c.Timeout = &timeout
+		c.stopTimeout = &timeout
 	}
 }
 
@@ -42,7 +87,7 @@ func StopTimeout(timeout time.Duration) TerminateOption {
 // Default: nil.
 func RemoveVolumes(volumes ...string) TerminateOption {
 	return func(c *TerminateOptions) {
-		c.Volumes = volumes
+		c.volumes = volumes
 	}
 }
 
