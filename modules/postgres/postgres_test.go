@@ -63,18 +63,6 @@ func createSSLCerts(t *testing.T) (*tlscert.Certificate, *tlscert.Certificate, e
 	return caCert, cert, nil
 }
 
-func createSSLSettings(t *testing.T) postgres.SSLSettings {
-	t.Helper()
-	caCert, serverCerts, err := createSSLCerts(t)
-	require.NoError(t, err)
-
-	return postgres.SSLSettings{
-		CACertFile: caCert.CertPath,
-		CertFile:   serverCerts.CertPath,
-		KeyFile:    serverCerts.KeyPath,
-	}
-}
-
 func TestPostgres(t *testing.T) {
 	ctx := context.Background()
 
@@ -224,7 +212,8 @@ func TestWithConfigFile(t *testing.T) {
 func TestWithSSL(t *testing.T) {
 	ctx := context.Background()
 
-	sslSettings := createSSLSettings(t)
+	caCert, serverCerts, err := createSSLCerts(t)
+	require.NoError(t, err)
 
 	container, err := postgres.RunContainer(ctx,
 		postgres.WithConfigFile(filepath.Join("testdata", "postgres-ssl.conf")),
@@ -233,7 +222,7 @@ func TestWithSSL(t *testing.T) {
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
 		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
-		postgres.WithSSLCert(sslSettings.CACertFile, sslSettings.CertFile, sslSettings.KeyFile),
+		postgres.WithSSLCert(caCert.CertPath, serverCerts.CertPath, serverCerts.KeyPath),
 	)
 
 	testcontainers.CleanupContainer(t, container)
@@ -255,8 +244,6 @@ func TestWithSSL(t *testing.T) {
 func TestSSLValidatesKeyMaterialPath(t *testing.T) {
 	ctx := context.Background()
 
-	sslSettings := postgres.SSLSettings{}
-
 	_, err := postgres.RunContainer(ctx,
 		postgres.WithConfigFile(filepath.Join("testdata", "postgres-ssl.conf")),
 		postgres.WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
@@ -264,7 +251,7 @@ func TestSSLValidatesKeyMaterialPath(t *testing.T) {
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
 		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
-		postgres.WithSSLCert(sslSettings.CACertFile, sslSettings.CertFile, sslSettings.KeyFile),
+		postgres.WithSSLCert("", "", ""),
 	)
 
 	require.Error(t, err, "Error should not have been nil. Container creation should have failed due to empty key material")
