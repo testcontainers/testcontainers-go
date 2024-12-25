@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	_ "embed"
 	"errors"
 	"fmt"
 	"io"
@@ -18,6 +19,9 @@ const (
 	defaultPassword     = "postgres"
 	defaultSnapshotName = "migrated_template"
 )
+
+//go:embed resources/customEntrypoint.sh
+var embeddedCustomEntrypoint string
 
 // PostgresContainer represents the postgres container type used in the module
 type PostgresContainer struct {
@@ -202,6 +206,43 @@ func WithSnapshotName(name string) SnapshotOption {
 	return func(cfg *snapshotConfig) *snapshotConfig {
 		cfg.snapshotName = name
 		return cfg
+	}
+}
+
+// WithSSLSettings configures the Postgres server to run with the provided CA Chain
+// This will not function if the corresponding postgres conf is not correctly configured.
+// Namely the paths below must match what is set in the conf file
+func WithSSLCert(caCertFile string, certFile string, keyFile string) testcontainers.CustomizeRequestOption {
+	const defaultPermission = 0o600
+
+	return func(req *testcontainers.GenericContainerRequest) error {
+		const entrypointPath = "/usr/local/bin/docker-entrypoint-ssl.bash"
+
+		req.Files = append(req.Files,
+			testcontainers.ContainerFile{
+				HostFilePath:      caCertFile,
+				ContainerFilePath: "/tmp/testcontainers-go/postgres/ca_cert.pem",
+				FileMode:          defaultPermission,
+			},
+			testcontainers.ContainerFile{
+				HostFilePath:      certFile,
+				ContainerFilePath: "/tmp/testcontainers-go/postgres/server.cert",
+				FileMode:          defaultPermission,
+			},
+			testcontainers.ContainerFile{
+				HostFilePath:      keyFile,
+				ContainerFilePath: "/tmp/testcontainers-go/postgres/server.key",
+				FileMode:          defaultPermission,
+			},
+			testcontainers.ContainerFile{
+				Reader:            strings.NewReader(embeddedCustomEntrypoint),
+				ContainerFilePath: entrypointPath,
+				FileMode:          defaultPermission,
+			},
+		)
+		req.Entrypoint = []string{"sh", entrypointPath}
+
+		return nil
 	}
 }
 
