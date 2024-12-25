@@ -17,8 +17,9 @@ then
     exit 1
 fi
 
-chown "$pUID":"$pGID" /tmp/testcontainers-go/postgres/ca_cert.pem
-chown "$pUID":"$pGID" /tmp/testcontainers-go/postgres/server.cert
-chown "$pUID":"$pGID" /tmp/testcontainers-go/postgres/server.key
+chown "$pUID":"$pGID" \
+    /tmp/testcontainers-go/postgres/ca_cert.pem \
+    /tmp/testcontainers-go/postgres/server.cert \
+    /tmp/testcontainers-go/postgres/server.key
 
 /usr/local/bin/docker-entrypoint.sh "$@"
