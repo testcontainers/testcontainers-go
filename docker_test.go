@@ -1136,27 +1136,27 @@ func TestContainerCreationWithVolumeCleaning(t *testing.T) {
 
 func TestContainerTerminationOptions(t *testing.T) {
 	t.Run("volumes", func(t *testing.T) {
-		var options TerminateOptions
+		var options terminateOptions
 		WithTerminateVolumes("vol1", "vol2")(&options)
-		require.Equal(t, TerminateOptions{
+		require.Equal(t, terminateOptions{
 			volumes: []string{"vol1", "vol2"},
 		}, options)
 	})
 	t.Run("stop-timeout", func(t *testing.T) {
-		var options TerminateOptions
+		var options terminateOptions
 		timeout := 11 * time.Second
 		WithStopTimeout(timeout)(&options)
-		require.Equal(t, TerminateOptions{
+		require.Equal(t, terminateOptions{
 			stopTimeout: &timeout,
 		}, options)
 	})
 
 	t.Run("all", func(t *testing.T) {
-		var options TerminateOptions
+		var options terminateOptions
 		timeout := 9 * time.Second
 		WithStopTimeout(timeout)(&options)
 		WithTerminateVolumes("vol1", "vol2")(&options)
-		require.Equal(t, TerminateOptions{
+		require.Equal(t, terminateOptions{
 			stopTimeout: &timeout,
 			volumes:     []string{"vol1", "vol2"},
 		}, options)

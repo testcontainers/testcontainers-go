@@ -298,14 +298,14 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 
 // WithStopTimeout is a functional option that sets the timeout for the container termination.
 func WithStopTimeout(timeout time.Duration) TerminateOption {
-	return func(c *TerminateOptions) {
+	return func(c *terminateOptions) {
 		c.stopTimeout = &timeout
 	}
 }
 
 // WithTerminateVolumes is a functional option that sets the volumes for the container termination.
 func WithTerminateVolumes(volumes ...string) TerminateOption {
-	return func(opts *TerminateOptions) {
+	return func(opts *terminateOptions) {
 		opts.volumes = volumes
 	}
 }

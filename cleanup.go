@@ -11,20 +11,20 @@ import (
 // DefaultTimeout for termination
 var DefaultTimeout = 10 * time.Second
 
-// TerminateOptions is a type that holds the options for terminating a container.
-type TerminateOptions struct {
+// terminateOptions is a type that holds the options for terminating a container.
+type terminateOptions struct {
 	ctx         context.Context
 	stopTimeout *time.Duration
 	volumes     []string
 }
 
 // TerminateOption is a type that represents an option for terminating a container.
-type TerminateOption func(*TerminateOptions)
+type TerminateOption func(*terminateOptions)
 
 // NewTerminateOptions returns a fully initialised TerminateOptions.
 // Defaults: StopTimeout: 10 seconds.
-func NewTerminateOptions(ctx context.Context, opts ...TerminateOption) *TerminateOptions {
-	options := &TerminateOptions{
+func NewTerminateOptions(ctx context.Context, opts ...TerminateOption) *terminateOptions {
+	options := &terminateOptions{
 		stopTimeout: &DefaultTimeout,
 		ctx:         ctx,
 	}
@@ -35,17 +35,17 @@ func NewTerminateOptions(ctx context.Context, opts ...TerminateOption) *Terminat
 }
 
 // Context returns the context to use duration a Terminate.
-func (o *TerminateOptions) Context() context.Context {
+func (o *terminateOptions) Context() context.Context {
 	return o.ctx
 }
 
 // StopTimeout returns the stop timeout to use duration a Terminate.
-func (o *TerminateOptions) StopTimeout() *time.Duration {
+func (o *terminateOptions) StopTimeout() *time.Duration {
 	return o.stopTimeout
 }
 
 // Cleanup performs any clean up needed
-func (o *TerminateOptions) Cleanup() error {
+func (o *terminateOptions) Cleanup() error {
 	// TODO: simplify this when when perform the client refactor.
 	if len(o.volumes) == 0 {
 		return nil
@@ -68,7 +68,7 @@ func (o *TerminateOptions) Cleanup() error {
 // StopContext returns a TerminateOption that sets the context.
 // Default: context.Background().
 func StopContext(ctx context.Context) TerminateOption {
-	return func(c *TerminateOptions) {
+	return func(c *terminateOptions) {
 		c.ctx = ctx
 	}
 }
@@ -76,7 +76,7 @@ func StopContext(ctx context.Context) TerminateOption {
 // StopTimeout returns a TerminateOption that sets the timeout.
 // Default: See [Container.Stop].
 func StopTimeout(timeout time.Duration) TerminateOption {
-	return func(c *TerminateOptions) {
+	return func(c *terminateOptions) {
 		c.stopTimeout = &timeout
 	}
 }
@@ -86,7 +86,7 @@ func StopTimeout(timeout time.Duration) TerminateOption {
 // which are not removed by default.
 // Default: nil.
 func RemoveVolumes(volumes ...string) TerminateOption {
-	return func(c *TerminateOptions) {
+	return func(c *terminateOptions) {
 		c.volumes = volumes
 	}
 }
