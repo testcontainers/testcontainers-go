@@ -296,20 +296,6 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 	return nil
 }
 
-// WithStopTimeout is a functional option that sets the timeout for the container termination.
-func WithStopTimeout(timeout time.Duration) TerminateOption {
-	return func(c *terminateOptions) {
-		c.stopTimeout = &timeout
-	}
-}
-
-// WithTerminateVolumes is a functional option that sets the volumes for the container termination.
-func WithTerminateVolumes(volumes ...string) TerminateOption {
-	return func(opts *terminateOptions) {
-		opts.volumes = volumes
-	}
-}
-
 // Terminate calls stops and then removes the container including its volumes.
 // If its image was built it and all child images are also removed unless
 // the [FromDockerfile.KeepImage] on the [ContainerRequest] was set to true.
@@ -356,7 +342,7 @@ func (c *DockerContainer) Terminate(ctx context.Context, opts ...TerminateOption
 	c.sessionID = ""
 	c.isRunning = false
 
-	if err := options.Cleanup(); err != nil {
+	if err = options.Cleanup(); err != nil {
 		errs = append(errs, err)
 	}
 

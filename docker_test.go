@@ -289,7 +289,7 @@ func TestContainerStateAfterTermination(t *testing.T) {
 		err = nginx.Start(ctx)
 		require.NoError(t, err, "expected no error from container start.")
 
-		err = nginx.Terminate(ctx, WithStopTimeout(5*time.Microsecond))
+		err = nginx.Terminate(ctx, StopTimeout(5*time.Microsecond))
 		require.NoError(t, err)
 	})
 
@@ -1129,34 +1129,34 @@ func TestContainerCreationWithVolumeCleaning(t *testing.T) {
 		Started: true,
 	})
 	require.NoError(t, err)
-	err = bashC.Terminate(ctx, WithTerminateVolumes(volumeName))
+	err = bashC.Terminate(ctx, RemoveVolumes(volumeName))
 	CleanupContainer(t, bashC, RemoveVolumes(volumeName))
 	require.NoError(t, err)
 }
 
 func TestContainerTerminationOptions(t *testing.T) {
 	t.Run("volumes", func(t *testing.T) {
-		var options terminateOptions
-		WithTerminateVolumes("vol1", "vol2")(&options)
-		require.Equal(t, terminateOptions{
+		var options TerminateOptions
+		RemoveVolumes("vol1", "vol2")(&options)
+		require.Equal(t, TerminateOptions{
 			volumes: []string{"vol1", "vol2"},
 		}, options)
 	})
 	t.Run("stop-timeout", func(t *testing.T) {
-		var options terminateOptions
+		var options TerminateOptions
 		timeout := 11 * time.Second
-		WithStopTimeout(timeout)(&options)
-		require.Equal(t, terminateOptions{
+		StopTimeout(timeout)(&options)
+		require.Equal(t, TerminateOptions{
 			stopTimeout: &timeout,
 		}, options)
 	})
 
 	t.Run("all", func(t *testing.T) {
-		var options terminateOptions
+		var options TerminateOptions
 		timeout := 9 * time.Second
-		WithStopTimeout(timeout)(&options)
-		WithTerminateVolumes("vol1", "vol2")(&options)
-		require.Equal(t, terminateOptions{
+		StopTimeout(timeout)(&options)
+		RemoveVolumes("vol1", "vol2")(&options)
+		require.Equal(t, TerminateOptions{
 			stopTimeout: &timeout,
 			volumes:     []string{"vol1", "vol2"},
 		}, options)
