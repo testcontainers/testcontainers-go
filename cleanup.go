@@ -8,9 +8,6 @@ import (
 	"time"
 )
 
-// DefaultTimeout for termination
-var DefaultTimeout = 10 * time.Second
-
 // TerminateOptions is a type that holds the options for terminating a container.
 type TerminateOptions struct {
 	ctx         context.Context
@@ -24,8 +21,9 @@ type TerminateOption func(*TerminateOptions)
 // NewTerminateOptions returns a fully initialised TerminateOptions.
 // Defaults: StopTimeout: 10 seconds.
 func NewTerminateOptions(ctx context.Context, opts ...TerminateOption) *TerminateOptions {
+	timeout := time.Second * 10
 	options := &TerminateOptions{
-		stopTimeout: &DefaultTimeout,
+		stopTimeout: &timeout,
 		ctx:         ctx,
 	}
 	for _, opt := range opts {
