@@ -1120,6 +1120,7 @@ func TestContainerCreationWithVolumeCleaning(t *testing.T) {
 				{
 					HostFilePath:      absPath,
 					ContainerFilePath: "/hello.sh",
+					FileMode:          700,
 				},
 			},
 			Mounts:     Mounts(VolumeMount(volumeName, "/data")),

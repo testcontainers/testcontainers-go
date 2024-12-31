@@ -32,12 +32,12 @@ func NewTerminateOptions(ctx context.Context, opts ...TerminateOption) *Terminat
 	return options
 }
 
-// Context returns the context to use duration a Terminate.
+// Context returns the context to use during a Terminate.
 func (o *TerminateOptions) Context() context.Context {
 	return o.ctx
 }
 
-// StopTimeout returns the stop timeout to use duration a Terminate.
+// StopTimeout returns the stop timeout to use during a Terminate.
 func (o *TerminateOptions) StopTimeout() *time.Duration {
 	return o.stopTimeout
 }
