@@ -165,3 +165,41 @@ The above example is updating the predefined command of the image, **appending**
 
 !!!info
     This can't be used to replace the command, only to append options.
+
+#### NewTerminateOptions
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.35.0"><span class="tc-version">:material-tag: v0.35.0</span></a>
+
+If you want to attach option to container termination, you can use the `testcontainer.NewTerminateOptions(ctx context.Context, opts ...TerminateOption) *TerminateOptions` option, which receives a TerminateOption as parameter, creating custom termination options to be passed on the container termination.
+
+##### Terminate Options
+
+###### [StopContext](../../cleanup.go)
+Sets the context for the Container termination.
+
+- **Function**: `StopContext(ctx context.Context) TerminateOption`
+- **Default**: The context passed in `Terminate()`
+- **Usage**:
+```go
+err := container.Terminate(ctx,StopContext(context.Background()))
+```
+
+###### [StopTimeout](../../cleanup.go)
+Sets the timeout for stopping the Container.
+
+- **Function**: ` StopTimeout(timeout time.Duration) TerminateOption`
+- **Default**:  10 seconds
+- **Usage**:
+```go
+err := container.Terminate(ctx, StopTimeout(20 * time.Second))
+```
+
+###### [RemoveVolumes](../../cleanup.go)
+Sets the volumes to be removed during Container termination.
+
+- **Function**: ` RemoveVolumes(volumes ...string) TerminateOption`
+- **Default**:  Empty (no volumes removed)
+- **Usage**:
+```go
+err := container.Terminate(ctx, RemoveVolumes("vol1", "vol2"))
+```
