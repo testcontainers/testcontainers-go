@@ -61,6 +61,15 @@ The Kafka container will be started using a custom shell script:
 [Init script](../../modules/kafka/kafka.go) inside_block:starterScript
 <!--/codeinclude-->
 
+That will set the advertised listeners with these values:
+
+<!--codeinclude-->
+[Advertised Listeners](../../modules/kafka/kafka.go) inside_block:advertisedListeners
+<!--/codeinclude-->
+
+KafkaContainer provides methods to read the broker addresses for different
+connectivity environments.
+
 #### Environment variables
 
 The environment variables that are already set by default are:
@@ -81,4 +90,34 @@ The `Brokers(ctx)` method returns the Kafka brokers as a string slice, containin
 
 <!--codeinclude-->
 [Get Kafka brokers](../../modules/kafka/kafka_test.go) inside_block:getBrokers
+<!--/codeinclude-->
+
+#### BrokersByHostDockerInternal
+
+The `BrokersByHostDockerInternal(ctx)` method returns the Kafka brokers as a
+string slice, containing the hostname `host.docker.internal:<random_port>`.
+
+This method is useful when you need to run additional containers that need to
+connect to Kafka.
+
+<!--codeinclude-->
+[Get Kafka brokers by host.docker.internal](../../modules/kafka/examples_test.go) inside_block:getBrokersByHostDockerInternal
+<!--/codeinclude-->
+
+#### BrokersByContainerName
+
+The `BrokersByContainerName(ctx)` method returns the Kafka brokers as a string
+slice, addressed by the container's name(`Ex: charming_dijkstra:19093`). This
+method is useful when you need to run additional containers that need to connect
+to Kafka.
+
+To use this broker address you should run all the containers inside a docker
+network.
+
+<!--codeinclude-->
+[First start Kafka inside a docker network](../../modules/kafka/examples_test.go) inside_block:getBrokersByContainerName_Kafka
+<!--/codeinclude-->
+
+<!--codeinclude-->
+[Then start a second container in the same network](../../modules/kafka/examples_test.go) inside_block:getBrokersByContainerName_Kcat
 <!--/codeinclude-->
