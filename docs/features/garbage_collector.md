@@ -17,9 +17,11 @@ The primary method is to use the `Terminate(context.Context)` function that is
 available when a container is created. Use `defer` to ensure that it is called
 on test completion.
 
+The `Terminate` function can be customised with termination options to determine how a container is removed: termination timeout, and the ability to remove container volumes are supported at the moment. You can build the default options using the `testcontainers.NewTerminationOptions` function.
+
 #### NewTerminateOptions
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.35.0"><span class="tc-version">:material-tag: v0.35.0</span></a>
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 If you want to attach option to container termination, you can use the `testcontainer.NewTerminateOptions(ctx context.Context, opts ...TerminateOption) *TerminateOptions` option, which receives a TerminateOption as parameter, creating custom termination options to be passed on the container termination.
 
