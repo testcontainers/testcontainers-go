@@ -43,9 +43,6 @@ var (
 	_ testcontainers.Container           = (*localProcess)(nil)
 	_ testcontainers.ContainerCustomizer = (*localProcess)(nil)
 
-	// defaultStopTimeout is the default timeout for stopping the local Ollama process.
-	defaultStopTimeout = time.Second * 5
-
 	// zeroTime is the zero time value.
 	zeroTime time.Time
 )
