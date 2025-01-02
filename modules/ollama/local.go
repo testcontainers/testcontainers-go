@@ -213,7 +213,7 @@ func (c *localProcess) Start(ctx context.Context) error {
 
 	// Run the ollama serve command in background.
 	if err = cmd.Start(); err != nil {
-		return fmt.Errorf("start ollama serve: %w", errors.Join(err, c.cleanupLog()))
+		return fmt.Errorf("start ollama serve: %w", errors.Join(err, c.cleanup()))
 	}
 
 	// Past this point, the process was started successfully.
@@ -548,36 +548,44 @@ func (c *localProcess) Stop(ctx context.Context, d *time.Duration) error {
 
 // Terminate implements testcontainers.Container interface for the local Ollama binary.
 // It stops the local Ollama process, removing the log file.
-func (c *localProcess) Terminate(ctx context.Context) error {
+func (c *localProcess) Terminate(ctx context.Context, opts ...testcontainers.TerminateOption) error {
+	options := testcontainers.NewTerminateOptions(ctx, opts...)
 	// First try to stop gracefully.
-	if err := c.Stop(ctx, &defaultStopTimeout); !c.isCleanupSafe(err) {
+	if err := c.Stop(options.Context(), options.StopTimeout()); !c.isCleanupSafe(err) {
 		return fmt.Errorf("stop: %w", err)
 	}
 
+	var errs []error
 	if c.IsRunning() {
 		// Still running, force kill.
 		if err := c.cmd.Process.Kill(); !c.isCleanupSafe(err) {
-			return fmt.Errorf("kill: %w", err)
+			// Best effort so we can continue with the cleanup.
+			errs = append(errs, fmt.Errorf("kill: %w", err))
 		}
 
-		// Wait for the process to exit so capture any error.
+		// Wait for the process to exit so we can capture any error.
 		c.wg.Wait()
 	}
 
-	c.mtx.Lock()
-	exitErr := c.exitErr
-	c.mtx.Unlock()
+	errs = append(errs, c.cleanup(), options.Cleanup())
 
-	return errors.Join(exitErr, c.cleanupLog())
+	return errors.Join(errs...)
 }
 
-// cleanupLog closes the log file and removes it.
-func (c *localProcess) cleanupLog() error {
+// cleanup performs all clean up, closing and removing the log file if set.
+func (c *localProcess) cleanup() error {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+
 	if c.logFile == nil {
-		return nil
+		return c.exitErr
 	}
 
 	var errs []error
+	if c.exitErr != nil {
+		errs = append(errs, fmt.Errorf("exit: %w", c.exitErr))
+	}
+
 	if err := c.logFile.Close(); err != nil {
 		errs = append(errs, fmt.Errorf("close log: %w", err))
 	}
