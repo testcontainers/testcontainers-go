@@ -303,12 +303,11 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 // The following hooks are called in order:
 //   - [ContainerLifecycleHooks.PreTerminates]
 //   - [ContainerLifecycleHooks.PostTerminates]
-func (c *DockerContainer) Terminate(ctx context.Context) error {
-	// ContainerRemove hardcodes stop timeout to 3 seconds which is too short
-	// to ensure that child containers are stopped so we manually call stop.
-	// TODO: make this configurable via a functional option.
-	timeout := 10 * time.Second
-	err := c.Stop(ctx, &timeout)
+//
+// Default: timeout is 10 seconds.
+func (c *DockerContainer) Terminate(ctx context.Context, opts ...TerminateOption) error {
+	options := NewTerminateOptions(ctx, opts...)
+	err := c.Stop(options.Context(), options.StopTimeout())
 	if err != nil && !isCleanupSafe(err) {
 		return fmt.Errorf("stop: %w", err)
 	}
@@ -342,6 +341,10 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 
 	c.sessionID = ""
 	c.isRunning = false
+
+	if err = options.Cleanup(); err != nil {
+		errs = append(errs, err)
+	}
 
 	return errors.Join(errs...)
 }

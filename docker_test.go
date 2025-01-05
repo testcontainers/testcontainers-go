@@ -281,6 +281,18 @@ func TestContainerStateAfterTermination(t *testing.T) {
 		require.Nil(t, state, "expected nil container inspect.")
 	})
 
+	t.Run("termination-timeout", func(t *testing.T) {
+		ctx := context.Background()
+		nginx, err := createContainerFn(ctx)
+		require.NoError(t, err)
+
+		err = nginx.Start(ctx)
+		require.NoError(t, err, "expected no error from container start.")
+
+		err = nginx.Terminate(ctx, StopTimeout(5*time.Microsecond))
+		require.NoError(t, err)
+	})
+
 	t.Run("Nil State after termination if raw as already set", func(t *testing.T) {
 		ctx := context.Background()
 		nginx, err := createContainerFn(ctx)
@@ -1077,6 +1089,7 @@ func TestContainerCreationWithVolumeAndFileWritingToIt(t *testing.T) {
 				{
 					HostFilePath:      absPath,
 					ContainerFilePath: "/hello.sh",
+					FileMode:          700,
 				},
 			},
 			Mounts:     Mounts(VolumeMount(volumeName, "/data")),
@@ -1087,6 +1100,68 @@ func TestContainerCreationWithVolumeAndFileWritingToIt(t *testing.T) {
 	})
 	CleanupContainer(t, bashC, RemoveVolumes(volumeName))
 	require.NoError(t, err)
+}
+
+func TestContainerCreationWithVolumeCleaning(t *testing.T) {
+	absPath, err := filepath.Abs(filepath.Join(".", "testdata", "hello.sh"))
+	require.NoError(t, err)
+	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cnl()
+
+	// Create the volume.
+	volumeName := "volumeName"
+
+	// Create the container that writes into the mounted volume.
+	bashC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image: "bash:5.2.26",
+			Files: []ContainerFile{
+				{
+					HostFilePath:      absPath,
+					ContainerFilePath: "/hello.sh",
+					FileMode:          700,
+				},
+			},
+			Mounts:     Mounts(VolumeMount(volumeName, "/data")),
+			Cmd:        []string{"bash", "/hello.sh"},
+			WaitingFor: wait.ForLog("done"),
+		},
+		Started: true,
+	})
+	require.NoError(t, err)
+	err = bashC.Terminate(ctx, RemoveVolumes(volumeName))
+	CleanupContainer(t, bashC, RemoveVolumes(volumeName))
+	require.NoError(t, err)
+}
+
+func TestContainerTerminationOptions(t *testing.T) {
+	t.Run("volumes", func(t *testing.T) {
+		var options TerminateOptions
+		RemoveVolumes("vol1", "vol2")(&options)
+		require.Equal(t, TerminateOptions{
+			volumes: []string{"vol1", "vol2"},
+		}, options)
+	})
+	t.Run("stop-timeout", func(t *testing.T) {
+		var options TerminateOptions
+		timeout := 11 * time.Second
+		StopTimeout(timeout)(&options)
+		require.Equal(t, TerminateOptions{
+			stopTimeout: &timeout,
+		}, options)
+	})
+
+	t.Run("all", func(t *testing.T) {
+		var options TerminateOptions
+		timeout := 9 * time.Second
+		StopTimeout(timeout)(&options)
+		RemoveVolumes("vol1", "vol2")(&options)
+		require.Equal(t, TerminateOptions{
+			stopTimeout: &timeout,
+			volumes:     []string{"vol1", "vol2"},
+		}, options)
+	})
 }
 
 func TestContainerWithTmpFs(t *testing.T) {

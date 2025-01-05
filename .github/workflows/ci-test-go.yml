@@ -107,6 +107,16 @@ jobs:
         working-directory: ./${{ inputs.project-directory }}
         run: go build
 
+      - name: Install dependencies
+        shell: bash
+        run: |
+          SCRIPT_PATH="./.github/scripts/${{ inputs.project-directory }}/install-dependencies.sh"
+          if [ -f "$SCRIPT_PATH" ]; then
+            $SCRIPT_PATH
+          else
+            echo "No dependencies script found at $SCRIPT_PATH - skipping installation"
+          fi
+
       - name: go test
         # only run tests on linux, there are a number of things that won't allow the tests to run on anything else
         # many (maybe, all?) images used can only be build on Linux, they don't have Windows in their manifest, and
