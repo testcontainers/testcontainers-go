@@ -215,7 +215,8 @@ func TestWithSSL(t *testing.T) {
 	caCert, serverCerts, err := createSSLCerts(t)
 	require.NoError(t, err)
 
-	container, err := postgres.RunContainer(ctx,
+	container, err := postgres.Run(ctx,
+		"postgres:16-alpine",
 		postgres.WithConfigFile(filepath.Join("testdata", "postgres-ssl.conf")),
 		postgres.WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
 		postgres.WithDatabase(dbname),
@@ -244,7 +245,8 @@ func TestWithSSL(t *testing.T) {
 func TestSSLValidatesKeyMaterialPath(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := postgres.RunContainer(ctx,
+	_, err := postgres.Run(ctx,
+		"postgres:16-alpine",
 		postgres.WithConfigFile(filepath.Join("testdata", "postgres-ssl.conf")),
 		postgres.WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
 		postgres.WithDatabase(dbname),
