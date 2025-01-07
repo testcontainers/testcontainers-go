@@ -215,7 +215,7 @@ func TestWithSSL(t *testing.T) {
 	caCert, serverCerts, err := createSSLCerts(t)
 	require.NoError(t, err)
 
-	container, err := postgres.Run(ctx,
+	ctr, err := postgres.Run(ctx,
 		"postgres:16-alpine",
 		postgres.WithConfigFile(filepath.Join("testdata", "postgres-ssl.conf")),
 		postgres.WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
@@ -226,10 +226,10 @@ func TestWithSSL(t *testing.T) {
 		postgres.WithSSLCert(caCert.CertPath, serverCerts.CertPath, serverCerts.KeyPath),
 	)
 
-	testcontainers.CleanupContainer(t, container)
+	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	connStr, err := container.ConnectionString(ctx, "sslmode=require")
+	connStr, err := ctr.ConnectionString(ctx, "sslmode=require")
 	require.NoError(t, err)
 
 	db, err := sql.Open("postgres", connStr)
