@@ -89,18 +89,19 @@ This function requires a custom postgres configuration file that enables SSL and
 
 If you use this function by itself or in conjuction with `WithConfigFile` your custom conf must set the require ssl fields. The configuration must correctly align the key material provided via `SSLSettings` with the server configuration, namely the paths. Your configuration will need to contain the following:
 
- ```
- ssl = on
+```
+ssl = on
 ssl_ca_file = '/tmp/testcontainers-go/postgres/ca_cert.pem'
 ssl_cert_file = '/tmp/testcontainers-go/postgres/server.cert'
 ssl_key_file = '/tmp/testcontainers-go/postgres/server.key'
- ```
+```
 
-This function assumes the postgres user in the container is `postgres`
+!!!warning
+    This function assumes the postgres user in the container is `postgres`
 
-There is no current support for mutual authentication.
+    There is no current support for mutual authentication.
 
-The `SSLSettings` function will modify the container `entrypoint`. This is done so that key material copied over to the container is chowned by `postgres`. All other container arguments will be passed through to the original container entrypoint.
+    The `SSLSettings` function will modify the container `entrypoint`. This is done so that key material copied over to the container is chowned by `postgres`. All other container arguments will be passed through to the original container entrypoint.
 
 ### Container Methods
 
