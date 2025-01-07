@@ -3,7 +3,9 @@ package postgres_test
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -12,6 +14,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/lib/pq"
+	"github.com/mdelapenya/tlscert"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -24,6 +28,40 @@ const (
 	user     = "postgres"
 	password = "password"
 )
+
+func createSSLCerts(t *testing.T) (*tlscert.Certificate, *tlscert.Certificate, error) {
+	t.Helper()
+	tmpDir := t.TempDir()
+	certsDir := tmpDir + "/certs"
+
+	require.NoError(t, os.MkdirAll(certsDir, 0o755))
+
+	t.Cleanup(func() {
+		require.NoError(t, os.RemoveAll(tmpDir))
+	})
+
+	caCert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Host:      "localhost",
+		Name:      "ca-cert",
+		ParentDir: certsDir,
+	})
+
+	if caCert == nil {
+		return caCert, nil, errors.New("unable to create CA Authority")
+	}
+
+	cert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Host:      "localhost",
+		Name:      "client-cert",
+		Parent:    caCert,
+		ParentDir: certsDir,
+	})
+	if cert == nil {
+		return caCert, cert, errors.New("unable to create Server Certificates")
+	}
+
+	return caCert, cert, nil
+}
 
 func TestPostgres(t *testing.T) {
 	ctx := context.Background()
@@ -169,6 +207,56 @@ func TestWithConfigFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, db)
 	defer db.Close()
+}
+
+func TestWithSSL(t *testing.T) {
+	ctx := context.Background()
+
+	caCert, serverCerts, err := createSSLCerts(t)
+	require.NoError(t, err)
+
+	ctr, err := postgres.Run(ctx,
+		"postgres:16-alpine",
+		postgres.WithConfigFile(filepath.Join("testdata", "postgres-ssl.conf")),
+		postgres.WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
+		postgres.WithDatabase(dbname),
+		postgres.WithUsername(user),
+		postgres.WithPassword(password),
+		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+		postgres.WithSSLCert(caCert.CertPath, serverCerts.CertPath, serverCerts.KeyPath),
+	)
+
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	connStr, err := ctr.ConnectionString(ctx, "sslmode=require")
+	require.NoError(t, err)
+
+	db, err := sql.Open("postgres", connStr)
+	require.NoError(t, err)
+	assert.NotNil(t, db)
+	defer db.Close()
+
+	result, err := db.Exec("SELECT * FROM testdb;")
+	require.NoError(t, err)
+	assert.NotNil(t, result)
+}
+
+func TestSSLValidatesKeyMaterialPath(t *testing.T) {
+	ctx := context.Background()
+
+	_, err := postgres.Run(ctx,
+		"postgres:16-alpine",
+		postgres.WithConfigFile(filepath.Join("testdata", "postgres-ssl.conf")),
+		postgres.WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
+		postgres.WithDatabase(dbname),
+		postgres.WithUsername(user),
+		postgres.WithPassword(password),
+		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+		postgres.WithSSLCert("", "", ""),
+	)
+
+	require.Error(t, err, "Error should not have been nil. Container creation should have failed due to empty key material")
 }
 
 func TestWithInitScript(t *testing.T) {
