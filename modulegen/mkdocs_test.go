@@ -40,9 +40,9 @@ func TestReadMkDocsConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, config)
 
-	assert.Equal(t, "Testcontainers for Go", config.SiteName)
-	assert.Equal(t, "https://github.com/testcontainers/testcontainers-go", config.RepoURL)
-	assert.Equal(t, "edit/main/docs/", config.EditURI)
+	require.Equal(t, "Testcontainers for Go", config.SiteName)
+	require.Equal(t, "https://github.com/testcontainers/testcontainers-go", config.RepoURL)
+	require.Equal(t, "edit/main/docs/", config.EditURI)
 
 	// theme
 	theme := config.Theme
@@ -51,9 +51,9 @@ func TestReadMkDocsConfig(t *testing.T) {
 	// nav bar
 	nav := config.Nav
 	assert.Equal(t, "index.md", nav[0].Home)
-	assert.NotEmpty(t, nav[2].Features)
-	assert.NotEmpty(t, nav[3].Modules)
-	assert.NotEmpty(t, nav[4].Examples)
+	require.NotEmpty(t, nav[2].Features)
+	require.NotEmpty(t, nav[3].Modules)
+	require.NotEmpty(t, nav[4].Examples)
 }
 
 func TestNavItems(t *testing.T) {
@@ -64,7 +64,7 @@ func TestNavItems(t *testing.T) {
 	require.NoError(t, err)
 
 	// we have to remove the index.md file from the examples docs
-	assert.Len(t, examples, len(examplesDocs)-1)
+	require.Len(t, examples, len(examplesDocs)-1)
 
 	// all example modules exist in the documentation
 	for _, example := range examples {
@@ -82,6 +82,7 @@ func TestNavItems(t *testing.T) {
 }
 
 func copyInitialMkdocsConfig(t *testing.T, tmpCtx context.Context) error {
+	t.Helper()
 	ctx := getTestRootContext(t)
 	return mkdocs.CopyConfig(ctx.MkdocsConfigFile(), tmpCtx.MkdocsConfigFile())
 }

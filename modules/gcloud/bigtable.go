@@ -2,7 +2,6 @@ package gcloud
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -33,13 +32,8 @@ func RunBigTable(ctx context.Context, img string, opts ...testcontainers.Contain
 	req.Cmd = []string{
 		"/bin/sh",
 		"-c",
-		"gcloud beta emulators bigtable start --host-port 0.0.0.0:9000 " + fmt.Sprintf("--project=%s", settings.ProjectID),
+		"gcloud beta emulators bigtable start --host-port 0.0.0.0:9000 --project=" + settings.ProjectID,
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	return newGCloudContainer(ctx, 9000, container, settings)
+	return newGCloudContainer(ctx, req, 9000, settings, "")
 }

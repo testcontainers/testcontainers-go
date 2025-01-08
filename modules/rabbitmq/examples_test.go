@@ -24,21 +24,21 @@ func ExampleRun() {
 		rabbitmq.WithAdminUsername("admin"),
 		rabbitmq.WithAdminPassword("password"),
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := rabbitmqContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(rabbitmqContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := rabbitmqContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -55,28 +55,31 @@ func ExampleRun_connectUsingAmqp() {
 		rabbitmq.WithAdminUsername("admin"),
 		rabbitmq.WithAdminPassword("password"),
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
 	defer func() {
-		if err := rabbitmqContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(rabbitmqContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	amqpURL, err := rabbitmqContainer.AmqpURL(ctx)
 	if err != nil {
-		log.Fatalf("failed to get AMQP URL: %s", err) // nolint:gocritic
+		log.Printf("failed to get AMQP URL: %s", err)
+		return
 	}
 
 	amqpConnection, err := amqp.Dial(amqpURL)
 	if err != nil {
-		log.Fatalf("failed to connect to RabbitMQ: %s", err) // nolint:gocritic
+		log.Printf("failed to connect to RabbitMQ: %s", err)
+		return
 	}
 	defer func() {
 		err := amqpConnection.Close()
 		if err != nil {
-			log.Fatalf("failed to close connection: %s", err) // nolint:gocritic
+			log.Printf("failed to close connection: %s", err)
 		}
 	}()
 
@@ -93,11 +96,13 @@ func ExampleRun_withSSL() {
 	tmpDir := os.TempDir()
 	certDirs := tmpDir + "/rabbitmq"
 	if err := os.MkdirAll(certDirs, 0o755); err != nil {
-		log.Fatalf("failed to create temporary directory: %s", err)
+		log.Printf("failed to create temporary directory: %s", err)
+		return
 	}
 	defer os.RemoveAll(certDirs)
 
 	// generates the CA certificate and the certificate
+	// exampleSelfSignedCert {
 	caCert := tlscert.SelfSignedFromRequest(tlscert.Request{
 		Name:      "ca",
 		Host:      "localhost,127.0.0.1",
@@ -105,9 +110,12 @@ func ExampleRun_withSSL() {
 		ParentDir: certDirs,
 	})
 	if caCert == nil {
-		log.Fatal("failed to generate CA certificate") // nolint:gocritic
+		log.Print("failed to generate CA certificate")
+		return
 	}
+	// }
 
+	// exampleSignSelfSignedCert {
 	cert := tlscert.SelfSignedFromRequest(tlscert.Request{
 		Name:      "client",
 		Host:      "localhost,127.0.0.1",
@@ -116,8 +124,10 @@ func ExampleRun_withSSL() {
 		ParentDir: certDirs,
 	})
 	if cert == nil {
-		log.Fatal("failed to generate certificate") // nolint:gocritic
+		log.Print("failed to generate certificate")
+		return
 	}
+	// }
 
 	sslSettings := rabbitmq.SSLSettings{
 		CACertFile:        caCert.CertPath,
@@ -132,20 +142,21 @@ func ExampleRun_withSSL() {
 		"rabbitmq:3.7.25-management-alpine",
 		rabbitmq.WithSSL(sslSettings),
 	)
+	defer func() {
+		if err := testcontainers.TerminateContainer(rabbitmqContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
 	if err != nil {
-		log.Fatalf("failed to start container: %s", err) // nolint:gocritic
+		log.Printf("failed to start container: %s", err)
+		return
 	}
 	// }
 
-	defer func() {
-		if err := rabbitmqContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
-		}
-	}()
-
 	state, err := rabbitmqContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -166,17 +177,22 @@ func ExampleRun_withPlugins() {
 			testcontainers.NewRawCommand([]string{"rabbitmq_random_exchange"}),
 		),
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
 	defer func() {
-		if err := rabbitmqContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(rabbitmqContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
-	fmt.Println(assertPlugins(rabbitmqContainer, "rabbitmq_shovel", "rabbitmq_random_exchange"))
+	if err = assertPlugins(rabbitmqContainer, "rabbitmq_shovel", "rabbitmq_random_exchange"); err != nil {
+		log.Printf("failed to find plugin: %s", err)
+		return
+	}
+
+	fmt.Println(true)
 
 	// Output:
 	// true
@@ -188,24 +204,26 @@ func ExampleRun_withCustomConfigFile() {
 	rabbitmqContainer, err := rabbitmq.Run(ctx,
 		"rabbitmq:3.7.25-management-alpine",
 	)
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
 	defer func() {
-		if err := rabbitmqContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(rabbitmqContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	logs, err := rabbitmqContainer.Logs(ctx)
 	if err != nil {
-		log.Fatalf("failed to get logs: %s", err) // nolint:gocritic
+		log.Printf("failed to get logs: %s", err)
+		return
 	}
 
 	bytes, err := io.ReadAll(logs)
 	if err != nil {
-		log.Fatalf("failed to read logs: %s", err) // nolint:gocritic
+		log.Printf("failed to read logs: %s", err)
+		return
 	}
 
 	fmt.Println(strings.Contains(string(bytes), "config file(s) : /etc/rabbitmq/rabbitmq-testcontainers.conf"))
@@ -214,25 +232,24 @@ func ExampleRun_withCustomConfigFile() {
 	// true
 }
 
-func assertPlugins(container testcontainers.Container, plugins ...string) bool {
+func assertPlugins(container testcontainers.Container, plugins ...string) error {
 	ctx := context.Background()
 
 	for _, plugin := range plugins {
-
 		_, out, err := container.Exec(ctx, []string{"rabbitmq-plugins", "is_enabled", plugin})
 		if err != nil {
-			log.Fatalf("failed to execute command: %s", err)
+			return fmt.Errorf("failed to execute command: %w", err)
 		}
 
 		check, err := io.ReadAll(out)
 		if err != nil {
-			log.Fatalf("failed to read output: %s", err)
+			return fmt.Errorf("failed to read output: %w", err)
 		}
 
 		if !strings.Contains(string(check), plugin+" is enabled") {
-			return false
+			return fmt.Errorf("plugin %q is not enabled", plugin)
 		}
 	}
 
-	return true
+	return nil
 }

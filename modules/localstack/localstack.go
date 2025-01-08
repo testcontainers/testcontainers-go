@@ -29,7 +29,7 @@ func isLegacyMode(image string) bool {
 	}
 
 	if !strings.HasPrefix(version, "v") {
-		version = fmt.Sprintf("v%s", version)
+		version = "v" + version
 	}
 
 	if semver.IsValid(version) {
@@ -48,7 +48,7 @@ func isVersion2(image string) bool {
 	}
 
 	if !strings.HasPrefix(version, "v") {
-		version = fmt.Sprintf("v%s", version)
+		version = "v" + version
 	}
 
 	if semver.IsValid(version) {
@@ -82,7 +82,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		ExposedPorts: []string{fmt.Sprintf("%d/tcp", defaultPort)},
 		Env:          map[string]string{},
 		HostConfigModifier: func(hostConfig *container.HostConfig) {
-			hostConfig.Binds = []string{fmt.Sprintf("%s:/var/run/docker.sock", dockerHost)}
+			hostConfig.Binds = []string{dockerHost + ":/var/run/docker.sock"}
 		},
 	}
 
@@ -116,13 +116,15 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	localStackReq.GenericContainerRequest.Logger.Printf("Setting %s to %s (%s)\n", envVar, req.Env[envVar], hostnameExternalReason)
 
 	container, err := testcontainers.GenericContainer(ctx, localStackReq.GenericContainerRequest)
-	if err != nil {
-		return nil, err
+	var c *LocalStackContainer
+	if container != nil {
+		c = &LocalStackContainer{Container: container}
 	}
 
-	c := &LocalStackContainer{
-		Container: container,
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
 	}
+
 	return c, nil
 }
 

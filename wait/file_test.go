@@ -20,7 +20,7 @@ import (
 
 const testFilename = "/tmp/file"
 
-var anyContext = mock.AnythingOfType("*context.timerCtx")
+var anyContext = mock.MatchedBy(func(_ context.Context) bool { return true })
 
 // newRunningTarget creates a new mockStrategyTarget that is running.
 func newRunningTarget() *mockStrategyTarget {
@@ -79,7 +79,7 @@ func TestFileStrategyWaitUntilReady_WithMatcher(t *testing.T) {
 	// waitForFileWithMatcher {
 	var out bytes.Buffer
 	dockerReq := testcontainers.ContainerRequest{
-		Image: "docker.io/nginx:latest",
+		Image: "nginx:latest",
 		WaitingFor: wait.ForFile("/etc/nginx/nginx.conf").
 			WithStartupTimeout(time.Second * 10).
 			WithPollInterval(time.Second).

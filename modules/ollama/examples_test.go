@@ -10,6 +10,7 @@ import (
 	"github.com/tmc/langchaingo/llms"
 	langchainollama "github.com/tmc/langchaingo/llms/ollama"
 
+	"github.com/testcontainers/testcontainers-go"
 	tcollama "github.com/testcontainers/testcontainers-go/modules/ollama"
 )
 
@@ -18,21 +19,21 @@ func ExampleRun() {
 	ctx := context.Background()
 
 	ollamaContainer, err := tcollama.Run(ctx, "ollama/ollama:0.1.25")
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := ollamaContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(ollamaContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := ollamaContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -46,30 +47,34 @@ func ExampleRun_withModel_llama2_http() {
 	ctx := context.Background()
 
 	ollamaContainer, err := tcollama.Run(ctx, "ollama/ollama:0.1.25")
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
 	defer func() {
-		if err := ollamaContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(ollamaContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	model := "llama2"
 
 	_, _, err = ollamaContainer.Exec(ctx, []string{"ollama", "pull", model})
 	if err != nil {
-		log.Fatalf("failed to pull model %s: %s", model, err) // nolint:gocritic
+		log.Printf("failed to pull model %s: %s", model, err)
+		return
 	}
 
 	_, _, err = ollamaContainer.Exec(ctx, []string{"ollama", "run", model})
 	if err != nil {
-		log.Fatalf("failed to run model %s: %s", model, err) // nolint:gocritic
+		log.Printf("failed to run model %s: %s", model, err)
+		return
 	}
 
 	connectionStr, err := ollamaContainer.ConnectionString(ctx)
 	if err != nil {
-		log.Fatalf("failed to get connection string: %s", err) // nolint:gocritic
+		log.Printf("failed to get connection string: %s", err)
+		return
 	}
 
 	httpClient := &http.Client{}
@@ -80,14 +85,16 @@ func ExampleRun_withModel_llama2_http() {
 	"prompt":"Why is the sky blue?"
 }`
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/generate", connectionStr), strings.NewReader(payload))
+	req, err := http.NewRequest(http.MethodPost, connectionStr+"/api/generate", strings.NewReader(payload))
 	if err != nil {
-		log.Fatalf("failed to create request: %s", err) // nolint:gocritic
+		log.Printf("failed to create request: %s", err)
+		return
 	}
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		log.Fatalf("failed to get response: %s", err) // nolint:gocritic
+		log.Printf("failed to get response: %s", err)
+		return
 	}
 	// }
 
@@ -101,30 +108,34 @@ func ExampleRun_withModel_llama2_langchain() {
 	ctx := context.Background()
 
 	ollamaContainer, err := tcollama.Run(ctx, "ollama/ollama:0.1.25")
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
 	defer func() {
-		if err := ollamaContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err) // nolint:gocritic
+		if err := testcontainers.TerminateContainer(ollamaContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	model := "llama2"
 
 	_, _, err = ollamaContainer.Exec(ctx, []string{"ollama", "pull", model})
 	if err != nil {
-		log.Fatalf("failed to pull model %s: %s", model, err) // nolint:gocritic
+		log.Printf("failed to pull model %s: %s", model, err)
+		return
 	}
 
 	_, _, err = ollamaContainer.Exec(ctx, []string{"ollama", "run", model})
 	if err != nil {
-		log.Fatalf("failed to run model %s: %s", model, err) // nolint:gocritic
+		log.Printf("failed to run model %s: %s", model, err)
+		return
 	}
 
 	connectionStr, err := ollamaContainer.ConnectionString(ctx)
 	if err != nil {
-		log.Fatalf("failed to get connection string: %s", err) // nolint:gocritic
+		log.Printf("failed to get connection string: %s", err)
+		return
 	}
 
 	var llm *langchainollama.LLM
@@ -132,7 +143,8 @@ func ExampleRun_withModel_llama2_langchain() {
 		langchainollama.WithModel(model),
 		langchainollama.WithServerURL(connectionStr),
 	); err != nil {
-		log.Fatalf("failed to create langchain ollama: %s", err) // nolint:gocritic
+		log.Printf("failed to create langchain ollama: %s", err)
+		return
 	}
 
 	completion, err := llm.Call(
@@ -142,7 +154,8 @@ func ExampleRun_withModel_llama2_langchain() {
 		llms.WithTemperature(0.0), // the lower the temperature, the more creative the completion
 	)
 	if err != nil {
-		log.Fatalf("failed to create langchain ollama: %s", err) // nolint:gocritic
+		log.Printf("failed to create langchain ollama: %s", err)
+		return
 	}
 
 	words := []string{
@@ -157,6 +170,76 @@ func ExampleRun_withModel_llama2_langchain() {
 	}
 
 	// }
+
+	// Intentionally not asserting the output, as we don't want to run this example in the tests.
+}
+
+func ExampleRun_withLocal() {
+	ctx := context.Background()
+
+	// localOllama {
+	ollamaContainer, err := tcollama.Run(ctx, "ollama/ollama:0.3.13", tcollama.WithUseLocal("OLLAMA_DEBUG=true"))
+	defer func() {
+		if err := testcontainers.TerminateContainer(ollamaContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
+	// }
+
+	model := "llama3.2:1b"
+
+	_, _, err = ollamaContainer.Exec(ctx, []string{"ollama", "pull", model})
+	if err != nil {
+		log.Printf("failed to pull model %s: %s", model, err)
+		return
+	}
+
+	_, _, err = ollamaContainer.Exec(ctx, []string{"ollama", "run", model})
+	if err != nil {
+		log.Printf("failed to run model %s: %s", model, err)
+		return
+	}
+
+	connectionStr, err := ollamaContainer.ConnectionString(ctx)
+	if err != nil {
+		log.Printf("failed to get connection string: %s", err)
+		return
+	}
+
+	var llm *langchainollama.LLM
+	if llm, err = langchainollama.New(
+		langchainollama.WithModel(model),
+		langchainollama.WithServerURL(connectionStr),
+	); err != nil {
+		log.Printf("failed to create langchain ollama: %s", err)
+		return
+	}
+
+	completion, err := llm.Call(
+		context.Background(),
+		"how can Testcontainers help with testing?",
+		llms.WithSeed(42),         // the lower the seed, the more deterministic the completion
+		llms.WithTemperature(0.0), // the lower the temperature, the more creative the completion
+	)
+	if err != nil {
+		log.Printf("failed to create langchain ollama: %s", err)
+		return
+	}
+
+	words := []string{
+		"easy", "isolation", "consistency",
+	}
+	lwCompletion := strings.ToLower(completion)
+
+	for _, word := range words {
+		if strings.Contains(lwCompletion, word) {
+			fmt.Println(true)
+		}
+	}
 
 	// Intentionally not asserting the output, as we don't want to run this example in the tests.
 }

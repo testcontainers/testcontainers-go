@@ -35,7 +35,7 @@ func WithAdminPassword(adminPassword string) testcontainers.CustomizeRequestOpti
 	return func(req *testcontainers.GenericContainerRequest) error {
 		pwd := "none"
 		if adminPassword != "" {
-			pwd = fmt.Sprintf("neo4j/%s", adminPassword)
+			pwd = "neo4j/" + adminPassword
 		}
 
 		req.Env["NEO4J_AUTH"] = pwd
@@ -127,7 +127,7 @@ func validate(req *testcontainers.GenericContainerRequest) error {
 func formatNeo4jConfig(name string) string {
 	result := strings.ReplaceAll(name, "_", "__")
 	result = strings.ReplaceAll(result, ".", "_")
-	return fmt.Sprintf("NEO4J_%s", result)
+	return "NEO4J_" + result
 }
 
 // WithAcceptCommercialLicenseAgreement sets the environment variable

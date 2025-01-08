@@ -133,14 +133,17 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *RabbitMQContainer
+	if container != nil {
+		c = &RabbitMQContainer{
+			Container:     container,
+			AdminUsername: settings.AdminUsername,
+			AdminPassword: settings.AdminPassword,
+		}
 	}
 
-	c := &RabbitMQContainer{
-		Container:     container,
-		AdminUsername: settings.AdminUsername,
-		AdminPassword: settings.AdminPassword,
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
 	}
 
 	return c, nil

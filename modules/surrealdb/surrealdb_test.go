@@ -4,133 +4,87 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"github.com/surrealdb/surrealdb.go"
+
+	"github.com/testcontainers/testcontainers-go"
 )
 
 func TestSurrealDBSelect(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := Run(ctx, "surrealdb/surrealdb:v1.1.1")
-	if err != nil {
-		t.Fatal(err)
-	}
+	ctr, err := Run(ctx, "surrealdb/surrealdb:v1.1.1")
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
-
-	url, err := container.URL(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	url, err := ctr.URL(ctx)
+	require.NoError(t, err)
 
 	db, err := surrealdb.New(url)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer db.Close()
 
-	if _, err := db.Use("test", "test"); err != nil {
-		t.Fatal(err)
-	}
+	_, err = db.Use("test", "test")
+	require.NoError(t, err)
 
-	if _, err := db.Create("person.tobie", map[string]any{
+	_, err = db.Create("person.tobie", map[string]any{
 		"title": "Founder & CEO",
 		"name": map[string]string{
 			"first": "Tobie",
 			"last":  "Morgan Hitchcock",
 		},
 		"marketing": true,
-	}); err != nil {
-		t.Fatal(err)
-	}
+	})
+	require.NoError(t, err)
 
 	result, err := db.Select("person.tobie")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	resultData := result.([]any)[0].(map[string]interface{})
-	if resultData["title"] != "Founder & CEO" {
-		t.Fatal("title is not Founder & CEO")
-	}
-	if resultData["name"].(map[string]interface{})["first"] != "Tobie" {
-		t.Fatal("name.first is not Tobie")
-	}
-	if resultData["name"].(map[string]interface{})["last"] != "Morgan Hitchcock" {
-		t.Fatal("name.last is not Morgan Hitchcock")
-	}
-	if resultData["marketing"] != true {
-		t.Fatal("marketing is not true")
-	}
+	require.Equal(t, "Founder & CEO", resultData["title"])
+	require.Equal(t, "Tobie", resultData["name"].(map[string]interface{})["first"])
+	require.Equal(t, "Morgan Hitchcock", resultData["name"].(map[string]interface{})["last"])
+	require.Equal(t, true, resultData["marketing"])
 }
 
 func TestSurrealDBWithAuth(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := Run(ctx, "surrealdb/surrealdb:v1.1.1", WithAuthentication())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	ctr, err := Run(ctx, "surrealdb/surrealdb:v1.1.1", WithAuthentication())
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
 	// websocketURL {
-	url, err := container.URL(ctx)
+	url, err := ctr.URL(ctx)
 	// }
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	db, err := surrealdb.New(url)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer db.Close()
 
-	if _, err := db.Signin(map[string]string{"user": "root", "pass": "root"}); err != nil {
-		t.Fatal(err)
-	}
+	_, err = db.Signin(map[string]string{"user": "root", "pass": "root"})
+	require.NoError(t, err)
 
-	if _, err := db.Use("test", "test"); err != nil {
-		t.Fatal(err)
-	}
+	_, err = db.Use("test", "test")
+	require.NoError(t, err)
 
-	if _, err := db.Create("person.tobie", map[string]any{
+	_, err = db.Create("person.tobie", map[string]any{
 		"title": "Founder & CEO",
 		"name": map[string]string{
 			"first": "Tobie",
 			"last":  "Morgan Hitchcock",
 		},
 		"marketing": true,
-	}); err != nil {
-		t.Fatal(err)
-	}
+	})
+	require.NoError(t, err)
 
 	result, err := db.Select("person.tobie")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	resultData := result.([]any)[0].(map[string]interface{})
-	if resultData["title"] != "Founder & CEO" {
-		t.Fatal("title is not Founder & CEO")
-	}
-	if resultData["name"].(map[string]interface{})["first"] != "Tobie" {
-		t.Fatal("name.first is not Tobie")
-	}
-	if resultData["name"].(map[string]interface{})["last"] != "Morgan Hitchcock" {
-		t.Fatal("name.last is not Morgan Hitchcock")
-	}
-	if resultData["marketing"] != true {
-		t.Fatal("marketing is not true")
-	}
+	require.Equal(t, "Founder & CEO", resultData["title"])
+	require.Equal(t, "Tobie", resultData["name"].(map[string]interface{})["first"])
+	require.Equal(t, "Morgan Hitchcock", resultData["name"].(map[string]interface{})["last"])
+	require.Equal(t, true, resultData["marketing"])
 }

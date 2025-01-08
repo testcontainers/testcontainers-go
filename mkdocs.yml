@@ -64,6 +64,8 @@ nav:
             - Log: features/wait/log.md
             - Multi: features/wait/multi.md
             - SQL: features/wait/sql.md
+            - TLS: features/wait/tls.md
+            - Walk: features/wait/walk.md
     - Modules:
         - modules/index.md
         - modules/artemis.md
@@ -74,8 +76,11 @@ nav:
         - modules/cockroachdb.md
         - modules/consul.md
         - modules/couchbase.md
+        - modules/databend.md
         - modules/dolt.md
+        - modules/dynamodb.md
         - modules/elasticsearch.md
+        - modules/etcd.md
         - modules/gcloud.md
         - modules/grafana-lgtm.md
         - modules/inbucket.md
@@ -85,6 +90,7 @@ nav:
         - modules/kafka.md
         - modules/localstack.md
         - modules/mariadb.md
+        - modules/meilisearch.md
         - modules/milvus.md
         - modules/minio.md
         - modules/mockserver.md
@@ -109,6 +115,7 @@ nav:
         - modules/vault.md
         - modules/vearch.md
         - modules/weaviate.md
+        - modules/yugabytedb.md
     - Examples:
         - examples/index.md
         - examples/nginx.md
@@ -129,10 +136,8 @@ nav:
         - system_requirements/using_colima.md
         - system_requirements/using_podman.md
         - system_requirements/rancher.md
-    - Contributing:
-        - contributing.md
-        - contributing_docs.md
+    - Contributing: contributing.md
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: v0.33.0
+    latest_version: v0.34.0

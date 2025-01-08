@@ -11,19 +11,16 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/valkey-io/valkey-go"
 
+	"github.com/testcontainers/testcontainers-go"
 	tcvalkey "github.com/testcontainers/testcontainers-go/modules/valkey"
 )
 
 func TestIntegrationSetGet(t *testing.T) {
 	ctx := context.Background()
 
-	valkeyContainer, err := tcvalkey.Run(ctx, "docker.io/valkey/valkey:7.2.5")
+	valkeyContainer, err := tcvalkey.Run(ctx, "valkey/valkey:7.2.5")
+	testcontainers.CleanupContainer(t, valkeyContainer)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		if err := valkeyContainer.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
 
 	assertSetsGets(t, ctx, valkeyContainer, 1)
 }
@@ -31,13 +28,9 @@ func TestIntegrationSetGet(t *testing.T) {
 func TestValkeyWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	valkeyContainer, err := tcvalkey.Run(ctx, "docker.io/valkey/valkey:7.2.5", tcvalkey.WithConfigFile(filepath.Join("testdata", "valkey7.conf")))
+	valkeyContainer, err := tcvalkey.Run(ctx, "valkey/valkey:7.2.5", tcvalkey.WithConfigFile(filepath.Join("testdata", "valkey7.conf")))
+	testcontainers.CleanupContainer(t, valkeyContainer)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		if err := valkeyContainer.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
 
 	assertSetsGets(t, ctx, valkeyContainer, 1)
 }
@@ -52,19 +45,15 @@ func TestValkeyWithImage(t *testing.T) {
 		// There is only one release of Valkey at the time of writing
 		{
 			name:  "Valkey7.2.5",
-			image: "docker.io/valkey/valkey:7.2.5",
+			image: "valkey/valkey:7.2.5",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			valkeyContainer, err := tcvalkey.Run(ctx, tt.image, tcvalkey.WithConfigFile(filepath.Join("testdata", "valkey7.conf")))
+			testcontainers.CleanupContainer(t, valkeyContainer)
 			require.NoError(t, err)
-			t.Cleanup(func() {
-				if err := valkeyContainer.Terminate(ctx); err != nil {
-					t.Fatalf("failed to terminate container: %s", err)
-				}
-			})
 
 			assertSetsGets(t, ctx, valkeyContainer, 1)
 		})
@@ -74,13 +63,9 @@ func TestValkeyWithImage(t *testing.T) {
 func TestValkeyWithLogLevel(t *testing.T) {
 	ctx := context.Background()
 
-	valkeyContainer, err := tcvalkey.Run(ctx, "docker.io/valkey/valkey:7.2.5", tcvalkey.WithLogLevel(tcvalkey.LogLevelVerbose))
+	valkeyContainer, err := tcvalkey.Run(ctx, "valkey/valkey:7.2.5", tcvalkey.WithLogLevel(tcvalkey.LogLevelVerbose))
+	testcontainers.CleanupContainer(t, valkeyContainer)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		if err := valkeyContainer.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
 
 	assertSetsGets(t, ctx, valkeyContainer, 10)
 }
@@ -88,18 +73,15 @@ func TestValkeyWithLogLevel(t *testing.T) {
 func TestValkeyWithSnapshotting(t *testing.T) {
 	ctx := context.Background()
 
-	valkeyContainer, err := tcvalkey.Run(ctx, "docker.io/valkey/valkey:7.2.5", tcvalkey.WithSnapshotting(10, 1))
+	valkeyContainer, err := tcvalkey.Run(ctx, "valkey/valkey:7.2.5", tcvalkey.WithSnapshotting(10, 1))
+	testcontainers.CleanupContainer(t, valkeyContainer)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		if err := valkeyContainer.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
 
 	assertSetsGets(t, ctx, valkeyContainer, 10)
 }
 
 func assertSetsGets(t *testing.T, ctx context.Context, valkeyContainer *tcvalkey.ValkeyContainer, keyCount int) {
+	t.Helper()
 	// connectionString {
 	uri, err := valkeyContainer.ConnectionString(ctx)
 	// }
@@ -114,6 +96,7 @@ func assertSetsGets(t *testing.T, ctx context.Context, valkeyContainer *tcvalkey
 	client, err := valkey.NewClient(options)
 	require.NoError(t, err)
 	defer func(t *testing.T, ctx context.Context, client *valkey.Client) {
+		t.Helper()
 		require.NoError(t, flushValkey(ctx, *client))
 	}(t, ctx, &client)
 
@@ -126,9 +109,7 @@ func assertSetsGets(t *testing.T, ctx context.Context, valkeyContainer *tcvalkey
 	msg, err := res.ToString()
 	require.NoError(t, err)
 
-	if msg != "PONG" {
-		t.Fatalf("received unexpected response from valkey: %s", res.String())
-	}
+	require.Equalf(t, "PONG", msg, "received unexpected response from valkey: %s", res.String())
 
 	for i := 0; i < keyCount; i++ {
 		// Set data
@@ -149,9 +130,7 @@ func assertSetsGets(t *testing.T, ctx context.Context, valkeyContainer *tcvalkey
 
 		retVal, err := resp.ToString()
 		require.NoError(t, err)
-		if retVal != value {
-			t.Fatalf("Expected value %s. Got %s.", value, retVal)
-		}
+		require.Equal(t, retVal, value)
 	}
 }
 

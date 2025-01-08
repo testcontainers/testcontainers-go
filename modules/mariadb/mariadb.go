@@ -2,6 +2,7 @@ package mariadb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -165,17 +166,25 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	password := req.Env["MARIADB_PASSWORD"]
 
 	if len(password) == 0 && password == "" && !strings.EqualFold(rootUser, username) {
-		return nil, fmt.Errorf("empty password can be used only with the root user")
+		return nil, errors.New("empty password can be used only with the root user")
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *MariaDBContainer
+	if container != nil {
+		c = &MariaDBContainer{
+			Container: container,
+			username:  username,
+			password:  password,
+			database:  req.Env["MARIADB_DATABASE"],
+		}
 	}
 
-	database := req.Env["MARIADB_DATABASE"]
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
 
-	return &MariaDBContainer{container, username, password, database}, nil
+	return c, nil
 }
 
 // MustConnectionString panics if the address cannot be determined.

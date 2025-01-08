@@ -132,12 +132,12 @@ func WithTransactions() testcontainers.CustomizeRequestOption {
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Pulsar container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	return Run(ctx, "docker.io/apachepulsar/pulsar:2.10.2", opts...)
+	return Run(ctx, "apachepulsar/pulsar:2.10.2", opts...)
 }
 
 // Run creates an instance of the Pulsar container type, being possible to pass a custom request and options
 // The created container will use the following defaults:
-// - image: docker.io/apachepulsar/pulsar:2.10.2
+// - image: apachepulsar/pulsar:2.10.2
 // - exposed ports: 6650/tcp, 8080/tcp
 // - waiting strategy: wait for all the following strategies:
 //   - the Pulsar admin API ("/admin/v2/clusters") to be ready on port 8080/tcp and return the response `["standalone"]`
@@ -164,14 +164,15 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	c, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	var c *Container
+	if container != nil {
+		c = &Container{Container: container}
+	}
+
 	if err != nil {
-		return nil, err
+		return c, fmt.Errorf("generic container: %w", err)
 	}
 
-	pc := &Container{
-		Container: c,
-	}
-
-	return pc, nil
+	return c, nil
 }

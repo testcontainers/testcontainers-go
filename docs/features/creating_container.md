@@ -11,7 +11,15 @@ up with Testcontainers and integrate into your tests:
 
 `testcontainers.GenericContainer` defines the container that should be run, similar to the `docker run` command.
 
-The following test creates an NGINX container and validates that it returns 200 for the status code:
+The following test creates an NGINX container on both the `bridge` (docker default
+network) and the `foo` network and validates that it returns 200 for the status code.
+
+It also demonstrates how to use `CleanupContainer` ensures that nginx container
+is removed when the test ends even if the underlying `GenericContainer` errored
+as well as the `CleanupNetwork` which does the same for networks.
+
+The alternatives for these outside of tests as a `defer` are `TerminateContainer`
+and `Network.Remove` which can be seen in the examples.
 
 ```go
 package main
@@ -32,33 +40,38 @@ type nginxContainer struct {
 }
 
 
-func setupNginx(ctx context.Context) (*nginxContainer, error) {
+func setupNginx(ctx context.Context, networkName string) (*nginxContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "nginx",
 		ExposedPorts: []string{"80/tcp"},
+		Networks:     []string{"bridge", networkName},
 		WaitingFor:   wait.ForHTTP("/"),
 	}
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
+	var nginxC *nginxContainer
+	if container != nil {
+		nginxC = &nginxContainer{Container: c}
+	}
 	if err != nil {
-		return nil, err
+		return nginxC, err
 	}
 
 	ip, err := container.Host(ctx)
 	if err != nil {
-		return nil, err
+		return nginxC, err
 	}
 
 	mappedPort, err := container.MappedPort(ctx, "80")
 	if err != nil {
-		return nil, err
+		return nginxC, err
 	}
 
-	uri := fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
+	nginxC.URI = fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
 
-	return &nginxContainer{Container: container, URI: uri}, nil
+	return nginxC, nil
 }
 
 func TestIntegrationNginxLatestReturn(t *testing.T) {
@@ -68,24 +81,24 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 
 	ctx := context.Background()
 
-	nginxC, err := setupNginx(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := nginxC.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
+	networkName := "foo"
+	net, err := provider.CreateNetwork(ctx, NetworkRequest{
+		Name: networkName,
 	})
+	require.NoError(t, err)
+	CleanupNetwork(t, net)
+
+	nginxC, err := setupNginx(ctx, networkName)
+	testcontainers.CleanupContainer(t, nginxC)
+	require.NoError(t, err)
 
 	resp, err := http.Get(nginxC.URI)
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
-	}
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
 ```
+
+
+
 
 ### Lifecycle hooks
 
@@ -93,6 +106,8 @@ _Testcontainers for Go_ allows you to define your own lifecycle hooks for better
 
 You'll be able to pass multiple lifecycle hooks at the `ContainerRequest` as an array of `testcontainers.ContainerLifecycleHooks`. The `testcontainers.ContainerLifecycleHooks` struct defines the following lifecycle hooks, each of them backed by an array of functions representing the hooks:
 
+* `PreBuilds` - hooks that are executed before the image is built. This hook is only available when creating a container from a Dockerfile
+* `PostBuilds` - hooks that are executed after the image is built. This hook is only available when creating a container from a Dockerfile
 * `PreCreates` - hooks that are executed before the container is created
 * `PostCreates` - hooks that are executed after the container is created
 * `PreStarts` - hooks that are executed before the container is started
@@ -198,8 +213,14 @@ func ExampleReusableContainer_usingACopiedFile() {
 		ContainerRequest: req,
 		Started:          true,
 	})
+	defer func() {
+		if err := testcontainers.TerminateContainer(n1); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return
 	}
 	// not terminating the container on purpose, so that it can be reused in a different test.
 	// defer n1.Terminate(ctx)
@@ -213,7 +234,8 @@ echo "done"`)
 	copiedFileName := "hello_copy.sh"
 	err = n1.CopyToContainer(ctx, bs, "/"+copiedFileName, 700)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return
 	}
 
 	// Because n2 uses the same container request, it will reuse the container created by n1.
@@ -221,13 +243,20 @@ echo "done"`)
 		ContainerRequest: req,
 		Started:          true,
 	})
+	defer func() {
+		if err := testcontainers.TerminateContainer(n2); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return
 	}
 
 	c, _, err := n2.Exec(ctx, []string{"bash", copiedFileName})
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return
 	}
 
 	// the file must exist in this second container, as it's reusing the first one
@@ -284,25 +313,26 @@ func main() {
 	}
 
 	res, err := testcontainers.ParallelContainers(ctx, requests, testcontainers.ParallelContainersOptions{})
+	for _, c := range res {
+		c := c
+		defer func() {
+			if err := testcontainers.TerminateContainer(c); err != nil {
+				log.Printf("failed to terminate container: %s", c)
+			}
+		}()
+	}
+
 	if err != nil {
 		e, ok := err.(testcontainers.ParallelContainersError)
 		if !ok {
-			log.Fatalf("unknown error: %v", err)
+			log.Printf("unknown error: %v", err)
+			return
 		}
 
 		for _, pe := range e.Errors {
 			fmt.Println(pe.Request, pe.Error)
 		}
 		return
-	}
-
-	for _, c := range res {
-		c := c
-		defer func() {
-			if err := c.Terminate(ctx); err != nil {
-				log.Fatalf("failed to terminate container: %s", c)
-			}
-		}()
 	}
 }
 ```

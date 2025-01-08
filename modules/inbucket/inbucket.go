@@ -44,7 +44,7 @@ func (c *InbucketContainer) WebInterface(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	return fmt.Sprintf("http://%s", net.JoinHostPort(host, containerPort.Port())), nil
+	return "http://" + net.JoinHostPort(host, containerPort.Port()), nil
 }
 
 // Deprecated: use Run instead
@@ -77,9 +77,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *InbucketContainer
+	if container != nil {
+		c = &InbucketContainer{Container: container}
 	}
 
-	return &InbucketContainer{Container: container}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }

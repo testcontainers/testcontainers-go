@@ -2,6 +2,7 @@ package chroma
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -45,11 +46,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *ChromaContainer
+	if container != nil {
+		c = &ChromaContainer{Container: container}
 	}
 
-	return &ChromaContainer{Container: container}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }
 
 // RESTEndpoint returns the REST endpoint of the Chroma container
@@ -61,7 +67,7 @@ func (c *ChromaContainer) RESTEndpoint(ctx context.Context) (string, error) {
 
 	host, err := c.Host(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to get container host")
+		return "", errors.New("failed to get container host")
 	}
 
 	return fmt.Sprintf("http://%s:%s", host, containerPort.Port()), nil

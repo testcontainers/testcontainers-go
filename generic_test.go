@@ -39,7 +39,7 @@ func TestGenericReusableContainer_reused(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.True(t, n1.IsRunning())
-	terminateContainerOnEnd(t, ctx, n1)
+	CleanupContainer(t, n1)
 
 	copiedFileName := "hello_copy.sh"
 	err = n1.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 700)
@@ -67,7 +67,7 @@ func TestGenericReusableContainer_notReused(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.True(t, n1.IsRunning())
-	terminateContainerOnEnd(t, ctx, n1)
+	CleanupContainer(t, n1)
 
 	copiedFileName := "hello_copy.sh"
 	err = n1.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 700)
@@ -87,7 +87,7 @@ func TestGenericReusableContainer_notReused(t *testing.T) {
 		Started:          true,
 	})
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, n2)
+	CleanupContainer(t, n2)
 
 	c, _, err := n2.Exec(ctx, []string{"/bin/sh", copiedFileName})
 	require.NoError(t, err)
@@ -111,7 +111,7 @@ func TestGenericContainerShouldReturnRefOnError(t *testing.T) {
 	})
 	require.Error(t, err)
 	require.NotNil(t, c)
-	terminateContainerOnEnd(t, context.Background(), c)
+	CleanupContainer(t, c)
 }
 
 func TestGenericReusableContainerInSubprocess(t *testing.T) {
@@ -173,14 +173,20 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 	require.NoError(t, err)
 	defer cli.Close()
 
+	provider, err := NewDockerProvider()
+	require.NoError(t, err)
+
+	provider.SetClient(cli)
+
 	for _, c := range cs {
-		dc, err := containerFromDockerResponse(context.Background(), c)
+		nginxC, err := provider.ContainerFromType(context.Background(), c)
+		CleanupContainer(t, nginxC)
 		require.NoError(t, err)
-		require.NoError(t, dc.Terminate(context.Background()))
 	}
 }
 
 func createReuseContainerInSubprocess(t *testing.T) string {
+	t.Helper()
 	// force verbosity in subprocesses, so that the output is printed
 	cmd := exec.Command(os.Args[0], "-test.run=TestHelperContainerStarterProcess", "-test.v=true")
 	cmd.Env = append(os.Environ(), "GO_WANT_HELPER_PROCESS=1")

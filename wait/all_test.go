@@ -7,6 +7,8 @@ import (
 	"io"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestMultiStrategy_WaitUntilReady(t *testing.T) {
@@ -113,8 +115,11 @@ func TestMultiStrategy_WaitUntilReady(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if err := tt.strategy.WaitUntilReady(tt.args.ctx, tt.args.target); (err != nil) != tt.wantErr {
-				t.Errorf("ForAll.WaitUntilReady() error = %v, wantErr = %v", err, tt.wantErr)
+			err := tt.strategy.WaitUntilReady(tt.args.ctx, tt.args.target)
+			if tt.wantErr {
+				require.Error(t, err, "ForAll.WaitUntilReady()")
+			} else {
+				require.NoErrorf(t, err, "ForAll.WaitUntilReady()")
 			}
 		})
 	}

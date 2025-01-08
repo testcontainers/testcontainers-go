@@ -6,7 +6,7 @@ require (
 	dario.cat/mergo v1.0.0
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/containerd/platforms v0.2.1
-	github.com/cpuguy83/dockercfg v0.3.1
+	github.com/cpuguy83/dockercfg v0.3.2
 	github.com/docker/docker v27.1.1+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/google/uuid v1.6.0
@@ -17,8 +17,8 @@ require (
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/shirou/gopsutil/v3 v3.23.12
 	github.com/stretchr/testify v1.9.0
-	golang.org/x/crypto v0.22.0
-	golang.org/x/sys v0.21.0
+	golang.org/x/crypto v0.31.0
+	golang.org/x/sys v0.28.0
 )
 
 require (

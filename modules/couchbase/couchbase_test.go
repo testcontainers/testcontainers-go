@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/couchbase/gocb/v2"
+	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go"
 	tccouchbase "github.com/testcontainers/testcontainers-go/modules/couchbase"
 )
 
@@ -29,23 +31,13 @@ func TestCouchbaseWithCommunityContainer(t *testing.T) {
 		WithFlushEnabled(false).
 		WithPrimaryIndex(true)
 
-	container, err := tccouchbase.Run(ctx, communityEdition, tccouchbase.WithBuckets(bucket))
-	if err != nil {
-		t.Fatal(err)
-	}
+	ctr, err := tccouchbase.Run(ctx, communityEdition, tccouchbase.WithBuckets(bucket))
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 	// }
 
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
-
-	cluster, err := connectCluster(ctx, container)
-	if err != nil {
-		t.Fatalf("could not connect couchbase: %s", err)
-	}
+	cluster, err := connectCluster(ctx, ctr)
+	require.NoError(t, err)
 
 	testBucketUsage(t, cluster.Bucket(bucketName))
 }
@@ -59,25 +51,15 @@ func TestCouchbaseWithEnterpriseContainer(t *testing.T) {
 		WithReplicas(0).
 		WithFlushEnabled(true).
 		WithPrimaryIndex(true)
-	container, err := tccouchbase.Run(ctx,
+	ctr, err := tccouchbase.Run(ctx,
 		enterpriseEdition,
 		tccouchbase.WithBuckets(bucket),
 	)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
-
-	cluster, err := connectCluster(ctx, container)
-	if err != nil {
-		t.Fatalf("could not connect couchbase: %s", err)
-	}
+	cluster, err := connectCluster(ctx, ctr)
+	require.NoError(t, err)
 
 	testBucketUsage(t, cluster.Bucket(bucketName))
 }
@@ -86,86 +68,70 @@ func TestWithCredentials(t *testing.T) {
 	ctx := context.Background()
 
 	bucketName := "testBucket"
-	_, err := tccouchbase.Run(ctx,
+	ctr, err := tccouchbase.Run(ctx,
 		communityEdition,
 		tccouchbase.WithAdminCredentials("testcontainers", "testcontainers.IS.cool!"),
 		tccouchbase.WithBuckets(tccouchbase.NewBucket(bucketName)))
-	if err != nil {
-		t.Errorf("Expected error to be [%v] , got nil", err)
-	}
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 }
 
 func TestWithCredentials_Password_LessThan_6(t *testing.T) {
 	ctx := context.Background()
 
 	bucketName := "testBucket"
-	_, err := tccouchbase.Run(ctx,
+	ctr, err := tccouchbase.Run(ctx,
 		communityEdition,
 		tccouchbase.WithAdminCredentials("testcontainers", "12345"),
 		tccouchbase.WithBuckets(tccouchbase.NewBucket(bucketName)))
-
-	if err == nil {
-		t.Errorf("Expected error to be [%v] , got nil", err)
-	}
+	testcontainers.CleanupContainer(t, ctr)
+	require.Error(t, err)
 }
 
 func TestAnalyticsServiceWithCommunityContainer(t *testing.T) {
 	ctx := context.Background()
 
 	bucketName := "testBucket"
-	_, err := tccouchbase.Run(ctx,
+	ctr, err := tccouchbase.Run(ctx,
 		communityEdition,
 		tccouchbase.WithServiceAnalytics(),
 		tccouchbase.WithBuckets(tccouchbase.NewBucket(bucketName)))
-
-	if err == nil {
-		t.Errorf("Expected error to be [%v] , got nil", err)
-	}
+	testcontainers.CleanupContainer(t, ctr)
+	require.Error(t, err)
 }
 
 func TestEventingServiceWithCommunityContainer(t *testing.T) {
 	ctx := context.Background()
 
 	bucketName := "testBucket"
-	_, err := tccouchbase.Run(ctx,
+	ctr, err := tccouchbase.Run(ctx,
 		communityEdition,
 		tccouchbase.WithServiceEventing(),
 		tccouchbase.WithBuckets(tccouchbase.NewBucket(bucketName)))
-
-	if err == nil {
-		t.Errorf("Expected error to be [%v] , got nil", err)
-	}
+	testcontainers.CleanupContainer(t, ctr)
+	require.Error(t, err)
 }
 
 func testBucketUsage(t *testing.T, bucket *gocb.Bucket) {
+	t.Helper()
 	err := bucket.WaitUntilReady(5*time.Second, nil)
-	if err != nil {
-		t.Fatalf("could not connect bucket: %s", err)
-	}
+	require.NoErrorf(t, err, "could not connect bucket")
 
 	key := "foo"
 	data := map[string]string{"key": "value"}
 	collection := bucket.DefaultCollection()
 
 	_, err = collection.Upsert(key, data, nil)
-	if err != nil {
-		t.Fatalf("could not upsert data: %s", err)
-	}
+	require.NoErrorf(t, err, "could not upsert data")
 
 	result, err := collection.Get(key, nil)
-	if err != nil {
-		t.Fatalf("could not get data: %s", err)
-	}
+	require.NoErrorf(t, err, "could not get data")
 
 	var resultData map[string]string
 	err = result.Content(&resultData)
-	if err != nil {
-		t.Fatalf("could not assign content: %s", err)
-	}
-
-	if resultData["key"] != "value" {
-		t.Errorf("Expected value to be [%s], got %s", "value", resultData["key"])
-	}
+	require.NoErrorf(t, err, "could not assign content")
+	require.Contains(t, resultData, "key")
+	require.Equalf(t, "value", resultData["key"], "Expected value to be [%s], got %s", "value", resultData["key"])
 }
 
 func connectCluster(ctx context.Context, container *tccouchbase.CouchbaseContainer) (*gocb.Cluster, error) {

@@ -1,11 +1,16 @@
 package nats_test
 
 import (
+	"bufio"
 	"context"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/nats-io/nats.go"
+	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go"
 	tcnats "github.com/testcontainers/testcontainers-go/modules/nats"
 )
 
@@ -13,67 +18,89 @@ func TestNATS(t *testing.T) {
 	ctx := context.Background()
 
 	//  createNATSContainer {
-	container, err := tcnats.Run(ctx, "nats:2.9")
+	ctr, err := tcnats.Run(ctx, "nats:2.9")
 	//  }
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		if err := container.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %s", err)
-		}
-	})
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
 	// connectionString {
-	uri, err := container.ConnectionString(ctx)
+	uri, err := ctr.ConnectionString(ctx)
 	// }
-	if err != nil {
-		t.Fatalf("failed to get connection string: %s", err)
-	}
-	mustUri := container.MustConnectionString(ctx)
-	if mustUri != uri {
-		t.Errorf("URI was not equal to MustUri")
-	}
+	require.NoError(t, err)
+
+	mustUri := ctr.MustConnectionString(ctx)
+	require.Equal(t, mustUri, uri)
+
 	// perform assertions
 	nc, err := nats.Connect(uri)
-	if err != nil {
-		t.Fatalf("failed to connect to nats: %s", err)
-	}
+	require.NoError(t, err)
 	defer nc.Close()
 
 	js, err := nc.JetStream()
-	if err != nil {
-		t.Fatalf("failed to create jetstream context: %s", err)
-	}
+	require.NoError(t, err)
 
 	// add stream to nats
-	if _, err = js.AddStream(&nats.StreamConfig{
+	_, err = js.AddStream(&nats.StreamConfig{
 		Name:     "hello",
 		Subjects: []string{"hello"},
-	}); err != nil {
-		t.Fatalf("failed to add stream: %s", err)
-	}
+	})
+	require.NoError(t, err)
 
 	// add subscriber to nats
 	sub, err := js.SubscribeSync("hello", nats.Durable("worker"))
-	if err != nil {
-		t.Fatalf("failed to subscribe to hello: %s", err)
-	}
+	require.NoError(t, err)
 
 	// publish a message to nats
-	if _, err = js.Publish("hello", []byte("hello")); err != nil {
-		t.Fatalf("failed to publish hello: %s", err)
-	}
+	_, err = js.Publish("hello", []byte("hello"))
+	require.NoError(t, err)
 
 	// wait for the message to be received
 	msg, err := sub.NextMsgWithContext(ctx)
-	if err != nil {
-		t.Fatalf("failed to get message: %s", err)
-	}
+	require.NoError(t, err)
 
-	if string(msg.Data) != "hello" {
-		t.Fatalf("expected message to be 'hello', got '%s'", msg.Data)
+	require.Equal(t, "hello", string(msg.Data))
+}
+
+func TestNATSWithConfigFile(t *testing.T) {
+	const natsConf = `
+listen: 0.0.0.0:4222
+authorization {
+    token: "s3cr3t"
+}
+`
+	ctx := context.Background()
+
+	ctr, err := tcnats.Run(ctx, "nats:2.9", tcnats.WithConfigFile(strings.NewReader(natsConf)))
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	uri, err := ctr.ConnectionString(ctx)
+	require.NoError(t, err)
+
+	// connect without a correct token must fail
+	mallory, err := nats.Connect(uri, nats.Name("Mallory"), nats.Token("secret"))
+	t.Cleanup(mallory.Close)
+	require.EqualError(t, err, "nats: Authorization Violation")
+
+	// connect with a correct token must succeed
+	nc, err := nats.Connect(uri, nats.Name("API Token Test"), nats.Token("s3cr3t"))
+	t.Cleanup(nc.Close)
+	require.NoError(t, err)
+
+	// validate /etc/nats.conf mentioned in logs
+	const expected = "Using configuration file: /etc/nats.conf"
+	logs, err := ctr.Logs(ctx)
+	require.NoError(t, err)
+	sc := bufio.NewScanner(logs)
+	found := false
+	time.AfterFunc(5*time.Second, func() {
+		require.Truef(t, found, "expected log line not found after 5 seconds: %s", expected)
+	})
+	for sc.Scan() {
+		if strings.Contains(sc.Text(), expected) {
+			found = true
+			break
+		}
 	}
+	require.Truef(t, found, "expected log line not found: %s", expected)
 }

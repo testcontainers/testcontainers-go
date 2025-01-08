@@ -36,7 +36,7 @@ func (c *OpenFGAContainer) PlaygroundEndpoint(ctx context.Context) (string, erro
 		return "", fmt.Errorf("failed to get playground endpoint: %w", err)
 	}
 
-	return fmt.Sprintf("%s/playground", endpoint), nil
+	return endpoint + "/playground", nil
 }
 
 // Deprecated: use Run instead
@@ -78,9 +78,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *OpenFGAContainer
+	if container != nil {
+		c = &OpenFGAContainer{Container: container}
 	}
 
-	return &OpenFGAContainer{Container: container}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }

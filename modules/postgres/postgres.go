@@ -3,6 +3,8 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	_ "embed"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -17,6 +19,9 @@ const (
 	defaultPassword     = "postgres"
 	defaultSnapshotName = "migrated_template"
 )
+
+//go:embed resources/customEntrypoint.sh
+var embeddedCustomEntrypoint string
 
 // PostgresContainer represents the postgres container type used in the module
 type PostgresContainer struct {
@@ -136,7 +141,7 @@ func WithUsername(user string) testcontainers.CustomizeRequestOption {
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Postgres container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*PostgresContainer, error) {
-	return Run(ctx, "docker.io/postgres:16-alpine", opts...)
+	return Run(ctx, "postgres:16-alpine", opts...)
 }
 
 // Run creates an instance of the Postgres container type
@@ -169,15 +174,23 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *PostgresContainer
+	if container != nil {
+		c = &PostgresContainer{
+			Container:     container,
+			dbName:        req.Env["POSTGRES_DB"],
+			password:      req.Env["POSTGRES_PASSWORD"],
+			user:          req.Env["POSTGRES_USER"],
+			sqlDriverName: settings.SQLDriverName,
+			snapshotName:  settings.Snapshot,
+		}
 	}
 
-	user := req.Env["POSTGRES_USER"]
-	password := req.Env["POSTGRES_PASSWORD"]
-	dbName := req.Env["POSTGRES_DB"]
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
 
-	return &PostgresContainer{Container: container, dbName: dbName, password: password, user: user, sqlDriverName: settings.SQLDriverName}, nil
+	return c, nil
 }
 
 type snapshotConfig struct {
@@ -196,6 +209,43 @@ func WithSnapshotName(name string) SnapshotOption {
 	}
 }
 
+// WithSSLSettings configures the Postgres server to run with the provided CA Chain
+// This will not function if the corresponding postgres conf is not correctly configured.
+// Namely the paths below must match what is set in the conf file
+func WithSSLCert(caCertFile string, certFile string, keyFile string) testcontainers.CustomizeRequestOption {
+	const defaultPermission = 0o600
+
+	return func(req *testcontainers.GenericContainerRequest) error {
+		const entrypointPath = "/usr/local/bin/docker-entrypoint-ssl.bash"
+
+		req.Files = append(req.Files,
+			testcontainers.ContainerFile{
+				HostFilePath:      caCertFile,
+				ContainerFilePath: "/tmp/testcontainers-go/postgres/ca_cert.pem",
+				FileMode:          defaultPermission,
+			},
+			testcontainers.ContainerFile{
+				HostFilePath:      certFile,
+				ContainerFilePath: "/tmp/testcontainers-go/postgres/server.cert",
+				FileMode:          defaultPermission,
+			},
+			testcontainers.ContainerFile{
+				HostFilePath:      keyFile,
+				ContainerFilePath: "/tmp/testcontainers-go/postgres/server.key",
+				FileMode:          defaultPermission,
+			},
+			testcontainers.ContainerFile{
+				Reader:            strings.NewReader(embeddedCustomEntrypoint),
+				ContainerFilePath: entrypointPath,
+				FileMode:          defaultPermission,
+			},
+		)
+		req.Entrypoint = []string{"sh", entrypointPath}
+
+		return nil
+	}
+}
+
 // Snapshot takes a snapshot of the current state of the database as a template, which can then be restored using
 // the Restore method. By default, the snapshot will be created under a database called migrated_template, you can
 // customize the snapshot name with the options.
@@ -208,7 +258,10 @@ func (c *PostgresContainer) Snapshot(ctx context.Context, opts ...SnapshotOption
 
 	// execute the commands to create the snapshot, in order
 	if err := c.execCommandsSQL(ctx,
-		// Drop the snapshot database if it already exists
+		// Update pg_database to remove the template flag, then drop the database if it exists.
+		// This is needed because dropping a template database will fail.
+		// https://www.postgresql.org/docs/current/manage-ag-templatedbs.html
+		fmt.Sprintf(`UPDATE pg_database SET datistemplate = FALSE WHERE datname = '%s'`, snapshotName),
 		fmt.Sprintf(`DROP DATABASE IF EXISTS "%s"`, snapshotName),
 		// Create a copy of the database to another database to use as a template now that it was fully migrated
 		fmt.Sprintf(`CREATE DATABASE "%s" WITH TEMPLATE "%s" OWNER "%s"`, snapshotName, c.dbName, c.user),
@@ -251,7 +304,7 @@ func (c *PostgresContainer) checkSnapshotConfig(opts []SnapshotOption) (string, 
 	}
 
 	if c.dbName == "postgres" {
-		return "", fmt.Errorf("cannot restore the postgres system database as it cannot be dropped to be restored")
+		return "", errors.New("cannot restore the postgres system database as it cannot be dropped to be restored")
 	}
 	return snapshotName, nil
 }
