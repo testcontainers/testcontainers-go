@@ -34,41 +34,40 @@ func (c ContainerRequest) hash() containerHash {
 	// The initial hash of the files copied to the container is zero.
 	var filesHash uint64
 
-	if len(c.Files) > 0 {
-		for _, f := range c.Files {
-			var fileContent []byte
-			// Read the file content to calculate the hash, if there is an error reading the file,
-			// the hash will be zero to avoid breaking the hash calculation.
-			if f.Reader != nil {
-				fileContent, err = io.ReadAll(f.Reader)
-				if err != nil {
-					continue
-				}
-			} else {
-				ok, err := isDir(f.HostFilePath)
-				if err != nil {
-					continue
-				}
-
-				if !ok {
-					// Calculate the hash of the file content only if it is a file.
-					fileContent, err = os.ReadFile(f.HostFilePath)
-					if err != nil {
-						continue
-					}
-				}
-				// The else of this condition is a NOOP, as calculating the hash of the directory content is not supported.
-			}
-
-			fh, err := core.Hash(fileContent)
+	for _, f := range c.Files {
+		var fileContent []byte
+		// Read the file content to calculate the hash, if there is an error reading the file,
+		// the hash will be zero to avoid breaking the hash calculation.
+		if f.Reader != nil {
+			fileContent, err = io.ReadAll(f.Reader)
 			if err != nil {
 				continue
 			}
-			filesHash += fh
+		} else {
+			ok, err := isDir(f.HostFilePath)
+			if err != nil {
+				continue
+			}
+
+			if !ok {
+				// Calculate the hash of the file content only if it is a file.
+				fileContent, err = os.ReadFile(f.HostFilePath)
+				if err != nil {
+					continue
+				}
+			}
+			// The else of this condition is a NOOP, as calculating the hash of the directory content is not supported.
 		}
 
-		ch.FilesHash = filesHash
+		fh, err := core.Hash(fileContent)
+		if err != nil {
+			continue
+		}
+		filesHash += fh
 	}
+
+	// if there are no files, the filesHash will be zero because of the default value of the uint64 type.
+	ch.FilesHash = filesHash
 
 	return ch
 }
