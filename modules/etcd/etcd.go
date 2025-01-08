@@ -29,18 +29,18 @@ type EtcdContainer struct {
 
 // Terminate terminates the etcd container, its child nodes, and the network in which the cluster is running
 // to communicate between the nodes.
-func (c *EtcdContainer) Terminate(ctx context.Context) error {
+func (c *EtcdContainer) Terminate(ctx context.Context, opts ...testcontainers.TerminateOption) error {
 	var errs []error
 
 	// child nodes has no other children
 	for i, child := range c.childNodes {
-		if err := child.Terminate(ctx); err != nil {
+		if err := child.Terminate(ctx, opts...); err != nil {
 			errs = append(errs, fmt.Errorf("terminate child node(%d): %w", i, err))
 		}
 	}
 
 	if c.Container != nil {
-		if err := c.Container.Terminate(ctx); err != nil {
+		if err := c.Container.Terminate(ctx, opts...); err != nil {
 			errs = append(errs, fmt.Errorf("terminate cluster node: %w", err))
 		}
 	}

@@ -17,6 +17,47 @@ The primary method is to use the `Terminate(context.Context)` function that is
 available when a container is created. Use `defer` to ensure that it is called
 on test completion.
 
+The `Terminate` function can be customised with termination options to determine how a container is removed: termination timeout, and the ability to remove container volumes are supported at the moment. You can build the default options using the `testcontainers.NewTerminationOptions` function.
+
+#### NewTerminateOptions
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you want to attach option to container termination, you can use the `testcontainers.NewTerminateOptions(ctx context.Context, opts ...TerminateOption) *TerminateOptions` option, which receives a TerminateOption as parameter, creating custom termination options to be passed on the container termination.
+
+##### Terminate Options
+
+###### [StopContext](../../cleanup.go)
+Sets the context for the Container termination.
+
+- **Function**: `StopContext(ctx context.Context) TerminateOption`
+- **Default**: The context passed in `Terminate()`
+- **Usage**:
+```go
+err := container.Terminate(ctx,StopContext(context.Background()))
+```
+
+###### [StopTimeout](../../cleanup.go)
+Sets the timeout for stopping the Container.
+
+- **Function**: ` StopTimeout(timeout time.Duration) TerminateOption`
+- **Default**:  10 seconds
+- **Usage**:
+```go
+err := container.Terminate(ctx, StopTimeout(20 * time.Second))
+```
+
+###### [RemoveVolumes](../../cleanup.go)
+Sets the volumes to be removed during Container termination.
+
+- **Function**: ` RemoveVolumes(volumes ...string) TerminateOption`
+- **Default**:  Empty (no volumes removed)
+- **Usage**:
+```go
+err := container.Terminate(ctx, RemoveVolumes("vol1", "vol2"))
+```
+
+
 !!!tip
 
     Remember to `defer` as soon as possible so you won't forget. The best time

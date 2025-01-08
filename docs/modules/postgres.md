@@ -74,8 +74,34 @@ An example of a `*.sh` script that creates a user and database is shown below:
 
 In the case you have a custom config file for Postgres, it's possible to copy that file into the container before it's started, using the `WithConfigFile(cfgPath string)` function.
 
+This function can be used `WithSSLSettings` but requires your configuration correctly sets the SSL properties. See the below section for more information.
+
 !!!tip
     For information on what is available to configure, see the [PostgreSQL docs](https://www.postgresql.org/docs/14/runtime-config.html) for the specific version of PostgreSQL that you are running.
+
+#### SSL Configuration
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you would like to use SSL with the container you can use the `WithSSLSettings`. This function accepts a `SSLSettings` which has the required secret material, namely the ca-certificate, server certificate and key. The container will copy this material to `/tmp/testcontainers-go/postgres/ca_cert.pem`, `/tmp/testcontainers-go/postgres/server.cert` and `/tmp/testcontainers-go/postgres/server.key`
+
+This function requires a custom postgres configuration file that enables SSL and correctly sets the paths on the key material.
+
+If you use this function by itself or in conjuction with `WithConfigFile` your custom conf must set the require ssl fields. The configuration must correctly align the key material provided via `SSLSettings` with the server configuration, namely the paths. Your configuration will need to contain the following:
+
+```
+ssl = on
+ssl_ca_file = '/tmp/testcontainers-go/postgres/ca_cert.pem'
+ssl_cert_file = '/tmp/testcontainers-go/postgres/server.cert'
+ssl_key_file = '/tmp/testcontainers-go/postgres/server.key'
+```
+
+!!!warning
+    This function assumes the postgres user in the container is `postgres`
+
+    There is no current support for mutual authentication.
+
+    The `SSLSettings` function will modify the container `entrypoint`. This is done so that key material copied over to the container is chowned by `postgres`. All other container arguments will be passed through to the original container entrypoint.
 
 ### Container Methods
 
