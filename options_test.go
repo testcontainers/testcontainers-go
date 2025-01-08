@@ -240,26 +240,12 @@ func TestWithHostPortAccess(t *testing.T) {
 }
 
 func TestWithReuse(t *testing.T) {
-	tests := []struct {
-		name   string
-		req    *testcontainers.GenericContainerRequest
-		expect bool
-	}{
-		{
-			name: "Mark for reuse",
-			req: &testcontainers.GenericContainerRequest{
-				ContainerRequest: testcontainers.ContainerRequest{},
-			},
-			expect: true,
-		},
+	req := &testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{},
 	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			opt := testcontainers.WithReuse()
+	opt := testcontainers.WithReuse()
 
-			require.NoError(t, opt.Customize(tc.req))
-			require.Equal(t, tc.expect, tc.req.Reuse)
-			require.Equal(t, tc.expect, tc.req.ContainerRequest.Reuse)
-		})
-	}
+	require.NoError(t, opt.Customize(req))
+	require.True(t, req.Reuse)
+	require.True(t, req.ContainerRequest.Reuse)
 }
