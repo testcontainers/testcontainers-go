@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"sync"
 	"time"
 
@@ -1218,8 +1219,8 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 		// calculate the hash, and add the labels, just before creating the container
 		hash := req.hash()
-		req.Labels[core.LabelContainerHash] = fmt.Sprintf("%d", hash.Hash)
-		req.Labels[core.LabelCopiedFilesHash] = fmt.Sprintf("%d", hash.FilesHash)
+		req.Labels[core.LabelContainerHash] = strconv.FormatUint(hash.Hash, 10)
+		req.Labels[core.LabelCopiedFilesHash] = strconv.FormatUint(hash.FilesHash, 10)
 
 		// in the case different test programs are creating a container with the same hash,
 		// we must check if the container is already created. For that we wait up to 5 seconds
