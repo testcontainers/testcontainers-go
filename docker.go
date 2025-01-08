@@ -1232,7 +1232,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		c, err := p.waitContainerCreationInTimeout(ctx, hash, 5*time.Second)
 		if err != nil && !errdefs.IsNotFound(err) {
 			// another error occurred different from not found, so we return the error
-			return nil, err
+			return nil, fmt.Errorf("wait container creation: %w", err)
 		}
 
 		// Create a new container if the request is to reuse the container, but there is no container found by hash
