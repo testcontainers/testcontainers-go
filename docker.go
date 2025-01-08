@@ -1205,18 +1205,16 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		combineContainerHooks(defaultHooks, origLifecycleHooks),
 	}
 
-	if req.Reuse {
-		// Remove the SessionID label from the request, as we don't want Ryuk to control
-		// the container lifecycle in the case of reusing containers.
-		delete(req.Labels, core.LabelSessionID)
-	}
-
 	var resp container.CreateResponse
 	if req.Reuse {
 		// we must protect the reusability of the container in the case it's invoked
 		// in a parallel execution, via ParallelContainers or t.Parallel()
 		reuseContainerMx.Lock()
 		defer reuseContainerMx.Unlock()
+
+		// Remove the SessionID label from the request, as we don't want Ryuk to control
+		// the container lifecycle in the case of reusing containers.
+		delete(req.Labels, core.LabelSessionID)
 
 		// calculate the hash, and add the labels, just before creating the container
 		hash := req.hash()
