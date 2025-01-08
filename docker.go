@@ -1329,7 +1329,7 @@ func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (
 	if len(containers) > 0 {
 		return &containers[0], nil
 	}
-	return nil, nil
+	return nil, errdefs.NotFound(fmt.Errorf("container not found by name: %s", name))
 }
 
 func (p *DockerProvider) findContainerByHash(ctx context.Context, ch containerHash) (*types.Container, error) {
@@ -1347,7 +1347,7 @@ func (p *DockerProvider) findContainerByHash(ctx context.Context, ch containerHa
 	if len(containers) > 0 {
 		return &containers[0], nil
 	}
-	return nil, nil
+	return nil, errdefs.NotFound(fmt.Errorf("container not found by hash: %s", ch.String()))
 }
 
 func (p *DockerProvider) waitContainerCreation(ctx context.Context, hash containerHash) (*types.Container, error) {

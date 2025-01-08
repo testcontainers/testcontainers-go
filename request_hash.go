@@ -1,6 +1,7 @@
 package testcontainers
 
 import (
+	"fmt"
 	"io"
 	"os"
 
@@ -13,6 +14,10 @@ type containerHash struct {
 	Hash uint64
 	// Hash of the files copied to the container, to verify if they have changed
 	FilesHash uint64
+}
+
+func (ch containerHash) String() string {
+	return fmt.Sprintf("{Hash: %d, FilesHash: %d}", ch.Hash, ch.FilesHash)
 }
 
 func (c ContainerRequest) hash() containerHash {
