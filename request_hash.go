@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"fmt"
+	"hash/fnv"
 	"io"
 	"os"
 
@@ -35,30 +36,34 @@ func (c ContainerRequest) hash() containerHash {
 	var filesHash uint64
 
 	for _, f := range c.Files {
-		var fileContent []byte
 		// Read the file content to calculate the hash, if there is an error reading the file,
 		// the hash will be zero to avoid breaking the hash calculation.
+		// It uses streaming to avoid loading the whole file in memory.
 		if f.Reader != nil {
-			fileContent, err = io.ReadAll(f.Reader)
-			if err != nil {
-				continue
-			}
-		} else {
-			ok, err := isDir(f.HostFilePath)
+			h := fnv.New64()
+			_, err := io.Copy(h, f.Reader)
 			if err != nil {
 				continue
 			}
 
-			if !ok {
-				// Calculate the hash of the file content only if it is a file.
-				fileContent, err = os.ReadFile(f.HostFilePath)
-				if err != nil {
-					continue
-				}
-			}
-			// The else of this condition is a NOOP, as calculating the hash of the directory content is not supported.
+			filesHash += h.Sum64()
+			continue // move to the next file
 		}
 
+		// There is no reader, so we need to read the file content from the host file path.
+		var fileContent []byte
+		ok, err := isDir(f.HostFilePath)
+		if err != nil || ok {
+			continue // move to the next file
+		}
+
+		// Calculate the hash of the file content only if it is a file.
+		fileContent, err = os.ReadFile(f.HostFilePath)
+		if err != nil {
+			continue
+		}
+
+		// At this point, we have the file content in bytes, so we calculate its hash.
 		fh, err := core.Hash(fileContent)
 		if err != nil {
 			continue
