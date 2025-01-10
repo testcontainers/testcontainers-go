@@ -1213,9 +1213,9 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		reuseContainerMx.Lock()
 		defer reuseContainerMx.Unlock()
 
-		// Remove the SessionID label from the request, as we don't want Ryuk to control
+		// Remove the Reap label from the request, as we don't want Ryuk to control
 		// the container lifecycle in the case of reusing containers.
-		delete(req.Labels, core.LabelSessionID)
+		delete(req.Labels, core.LabelReap)
 
 		// calculate the hash, and add the labels, just before creating the container
 		hash, err := req.hash()
