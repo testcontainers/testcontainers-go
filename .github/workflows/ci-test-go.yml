@@ -120,7 +120,7 @@ jobs:
       - name: go test
         # only run tests on linux, there are a number of things that won't allow the tests to run on anything else
         # many (maybe, all?) images used can only be build on Linux, they don't have Windows in their manifest, and
-        # we can't put Windows Server in "Linux Mode" in Github actions
+        # we can't put Windows Server in "Linux Mode" in GitHub actions
         # another, host mode is only available on Linux, and we have tests around that, do we skip them?
         if: ${{ inputs.run-tests }}
         working-directory: ./${{ inputs.project-directory }}

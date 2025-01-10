@@ -87,7 +87,7 @@ func TestPulsar(t *testing.T) {
 		{
 			name: "with log consumers",
 			opts: []testcontainers.ContainerCustomizer{
-				// withLogconsumers {
+				// withLogConsumers {
 				testcontainers.WithLogConsumers(&noopLogConsumer{}),
 				// }
 			},

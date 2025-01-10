@@ -1391,7 +1391,7 @@ func TestDockerContainerCopyDirToContainer(t *testing.T) {
 	CleanupContainer(t, nginxC)
 	require.NoError(t, err)
 
-	p := filepath.Join(".", "testdata", "Dokerfile")
+	p := filepath.Join(".", "testdata", "Dockerfile")
 	err = nginxC.CopyDirToContainer(ctx, p, "/tmp/testdata/Dockerfile", 700)
 	require.Error(t, err) // copying a file using the directory method will raise an error
 
@@ -1870,7 +1870,7 @@ func assertExtractedFiles(t *testing.T, ctx context.Context, container Container
 		}
 
 		fp := filepath.Join(containerFilePath, srcFile.Name())
-		// copy file by file, as there is a limitation in the Docker client to copy an entiry directory from the container
+		// copy file by file, as there is a limitation in the Docker client to copy an entire directory from the container
 		// paths for the container files are using Linux path separators
 		fd, err := container.CopyFileFromContainer(ctx, fp)
 		require.NoError(t, err, "Path not found in container: %s", fp)

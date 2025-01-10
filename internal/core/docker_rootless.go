@@ -36,7 +36,7 @@ func IsWindows() bool {
 //  2. ~/.docker/run/docker.sock file.
 //  3. ~/.docker/desktop/docker.sock file.
 //  4. /run/user/${uid}/docker.sock file.
-//  5. Else, return ErrRootlessDockerNotFound, wrapping secific errors for each of the above paths.
+//  5. Else, return ErrRootlessDockerNotFound, wrapping specific errors for each of the above paths.
 //
 // It should include the Docker socket schema (unix://) in the returned path.
 func rootlessDockerSocketPath(_ context.Context) (string, error) {

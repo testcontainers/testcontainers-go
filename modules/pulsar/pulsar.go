@@ -16,7 +16,7 @@ const (
 	defaultPulsarPort                      = "6650/tcp"
 	defaultPulsarAdminPort                 = "8080/tcp"
 	defaultPulsarCmd                       = "/pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone"
-	detaultPulsarCmdWithoutFunctionsWorker = "--no-functions-worker -nss"
+	defaultPulsarCmdWithoutFunctionsWorker = "--no-functions-worker -nss"
 	transactionTopicEndpoint               = "/admin/v2/persistent/pulsar/system/transaction_coordinator_assign/partitions"
 )
 
@@ -150,7 +150,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Env:          map[string]string{},
 		ExposedPorts: []string{defaultPulsarPort, defaultPulsarAdminPort},
 		WaitingFor:   defaultWaitStrategies,
-		Cmd:          []string{"/bin/bash", "-c", strings.Join([]string{defaultPulsarCmd, detaultPulsarCmdWithoutFunctionsWorker}, " ")},
+		Cmd:          []string{"/bin/bash", "-c", strings.Join([]string{defaultPulsarCmd, defaultPulsarCmdWithoutFunctionsWorker}, " ")},
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
