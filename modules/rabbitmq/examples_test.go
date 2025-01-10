@@ -102,6 +102,7 @@ func ExampleRun_withSSL() {
 	defer os.RemoveAll(certDirs)
 
 	// generates the CA certificate and the certificate
+	// exampleSelfSignedCert {
 	caCert := tlscert.SelfSignedFromRequest(tlscert.Request{
 		Name:      "ca",
 		Host:      "localhost,127.0.0.1",
@@ -112,7 +113,9 @@ func ExampleRun_withSSL() {
 		log.Print("failed to generate CA certificate")
 		return
 	}
+	// }
 
+	// exampleSignSelfSignedCert {
 	cert := tlscert.SelfSignedFromRequest(tlscert.Request{
 		Name:      "client",
 		Host:      "localhost,127.0.0.1",
@@ -124,6 +127,7 @@ func ExampleRun_withSSL() {
 		log.Print("failed to generate certificate")
 		return
 	}
+	// }
 
 	sslSettings := rabbitmq.SSLSettings{
 		CACertFile:        caCert.CertPath,

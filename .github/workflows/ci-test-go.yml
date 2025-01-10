@@ -55,17 +55,15 @@ jobs:
     steps:
       - name: Setup rootless Docker
         if: ${{ inputs.rootless-docker }}
-        uses: ScribeMD/rootless-docker@6bd157a512c2fafa4e0243a8aa87d964eb890886  # v0.2.2
-
-      - name: Remove Docker root socket
-        if: ${{ inputs.rootless-docker }}
-        run: sudo rm -rf /var/run/docker.sock
+        uses: docker/setup-docker-action@01efb57f882e3b1a22e7cf3501dbe51287b0ecb4 # v4
+        with:
+          rootless: true
 
       - name: Check out code into the Go module directory
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
       - name: Set up Go
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5
+        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5
         with:
             go-version: '${{ inputs.go-version }}'
             cache-dependency-path: '${{ inputs.project-directory }}/go.sum'
@@ -109,6 +107,16 @@ jobs:
         working-directory: ./${{ inputs.project-directory }}
         run: go build
 
+      - name: Install dependencies
+        shell: bash
+        run: |
+          SCRIPT_PATH="./.github/scripts/${{ inputs.project-directory }}/install-dependencies.sh"
+          if [ -f "$SCRIPT_PATH" ]; then
+            $SCRIPT_PATH
+          else
+            echo "No dependencies script found at $SCRIPT_PATH - skipping installation"
+          fi
+
       - name: go test
         # only run tests on linux, there are a number of things that won't allow the tests to run on anything else
         # many (maybe, all?) images used can only be build on Linux, they don't have Windows in their manifest, and
@@ -141,7 +149,7 @@ jobs:
             ./scripts/check_environment.sh
 
       - name: Test Summary
-        uses: test-summary/action@032c8a9cec6aaa3c20228112cae6ca10a3b29336 # v2.3
+        uses: test-summary/action@31493c76ec9e7aa675f1585d3ed6f1da69269a86 # v2.4
         with:
             paths: "**/${{ inputs.project-directory }}/TEST-unit*.xml"
         if: always()

@@ -75,6 +75,15 @@ These arguments are passed to the NATS server when it starts, as part of the com
 [Passing arguments](../../modules/nats/examples_test.go) inside_block:withArguments
 <!--/codeinclude-->
 
+#### Custom configuration file
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.35.0"><span class="tc-version">:material-tag: v0.35.0</span></a>
+
+It's possible to pass a custom config file to NATS container using `nats.WithConfigFile(strings.NewReader(config))`. The content of `io.Reader` is passed as a `-config /etc/nats.conf` arguments to an entrypoint. 
+
+!!! note
+    Changing the connectivity (listen address or ports) can break the container setup. So configuration must be done with care.
+
 ### Container Methods
 
 The NATS container exposes the following methods:

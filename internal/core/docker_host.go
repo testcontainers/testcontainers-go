@@ -309,10 +309,15 @@ func testcontainersHostFromProperties(ctx context.Context) (string, error) {
 	return "", ErrTestcontainersHostNotSetInProperties
 }
 
+// DockerEnvFile is the file that is created when running inside a container.
+// It's a variable to allow testing.
+// TODO: Remove this once context rework is done, which eliminates need for the default network creation.
+var DockerEnvFile = "/.dockerenv"
+
 // InAContainer returns true if the code is running inside a container
 // See https://github.com/docker/docker/blob/a9fa38b1edf30b23cae3eade0be48b3d4b1de14b/daemon/initlayer/setup_unix.go#L25
 func InAContainer() bool {
-	return inAContainer("/.dockerenv")
+	return inAContainer(DockerEnvFile)
 }
 
 func inAContainer(path string) bool {
