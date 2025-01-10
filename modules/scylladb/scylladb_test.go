@@ -31,7 +31,7 @@ func TestScyllaDB(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	t.Run("test without shard awareness", func(t *testing.T) {
+	t.Run("test-without-shard-awareness", func(t *testing.T) {
 		host, err := ctr.ConnectionHost(ctx, 19042)
 		require.NoError(t, err)
 
@@ -45,7 +45,7 @@ func TestScyllaDB(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("test with shard awareness", func(t *testing.T) {
+	t.Run("test-with-shard-awareness", func(t *testing.T) {
 		host, err := ctr.ConnectionHost(ctx, 19042)
 		require.NoError(t, err)
 
@@ -71,7 +71,7 @@ func TestScyllaWithConfigFile(t *testing.T) {
 	require.NoError(t, err)
 	testcontainers.CleanupContainer(t, ctr)
 
-	t.Run("test without shard awareness", func(t *testing.T) {
+	t.Run("test-without-shard-awareness", func(t *testing.T) {
 		host, err := ctr.ConnectionHost(ctx, 9042)
 		require.NoError(t, err)
 
@@ -87,7 +87,7 @@ func TestScyllaWithConfigFile(t *testing.T) {
 		require.Equal(t, "Amazing ScyllaDB Test", cluster_name)
 	})
 
-	t.Run("test with shard awareness", func(t *testing.T) {
+	t.Run("test-with-shard-awareness", func(t *testing.T) {
 		host, err := ctr.ConnectionHost(ctx, 19042)
 		require.NoError(t, err)
 
@@ -104,37 +104,37 @@ func TestScyllaWithConfigFile(t *testing.T) {
 	})
 }
 
-func TestScyllaWithAlternator(t *testing.T) {
+func TestScyllaAlternator(t *testing.T) {
 	ctx := context.Background()
 
-	alternatorPort := 8000
-	ctr, err := scylladb.Run(ctx,
-		"scylladb/scylla:6.2",
-		scylladb.WithAlternator(alternatorPort),
-	)
-	require.NoError(t, err)
-	testcontainers.CleanupContainer(t, ctr)
+	alternatorPort := uint16(8000)
 
-	client, err := getDynamoAlternatorClient(t, ctr, alternatorPort)
-	require.NoError(t, err)
-	err = createTable(client)
-	require.NoError(t, err)
-}
+	t.Run("test-with-alternator", func(t *testing.T) {
+		ctr, err := scylladb.Run(ctx,
+			"scylladb/scylla:6.2.2",
+			scylladb.WithAlternator(alternatorPort),
+		)
+		require.NoError(t, err)
+		testcontainers.CleanupContainer(t, ctr)
 
-func TestScyllaWithoutAlternator(t *testing.T) {
-	ctx := context.Background()
+		client, err := getDynamoAlternatorClient(t, ctr, alternatorPort)
+		require.NoError(t, err)
+		err = createTable(client)
+		require.NoError(t, err)
+	})
 
-	alternatorPort := 8000
-	ctr, err := scylladb.Run(ctx,
-		"scylladb/scylla:6.2",
-	)
-	require.NoError(t, err)
-	testcontainers.CleanupContainer(t, ctr)
+	t.Run("test-without-alternator", func(t *testing.T) {
+		ctr, err := scylladb.Run(ctx,
+			"scylladb/scylla:6.2",
+		)
+		require.NoError(t, err)
+		testcontainers.CleanupContainer(t, ctr)
 
-	client, err := getDynamoAlternatorClient(t, ctr, alternatorPort)
-	require.Error(t, err)
-	err = createTable(client)
-	require.Error(t, err)
+		client, err := getDynamoAlternatorClient(t, ctr, alternatorPort)
+		require.Error(t, err)
+		err = createTable(client)
+		require.Error(t, err)
+	})
 }
 
 type scyllaAlternatorResolver struct {
@@ -147,11 +147,11 @@ func (r *scyllaAlternatorResolver) ResolveEndpoint(ctx context.Context, params d
 	}, nil
 }
 
-func getDynamoAlternatorClient(t *testing.T, c *scylladb.Container, port int) (*dynamodb.Client, error) {
+func getDynamoAlternatorClient(t *testing.T, c *scylladb.Container, port uint16) (*dynamodb.Client, error) {
 	t.Helper()
 	var errs []error
 
-	hostPort, err := c.ConnectionHost(context.Background(), port)
+	hostPort, err := c.ConnectionHost(context.Background(), int(port))
 	if err != nil {
 		errs = append(errs, fmt.Errorf("get connection string: %w", err))
 	}

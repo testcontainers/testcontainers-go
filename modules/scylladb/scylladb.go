@@ -18,17 +18,20 @@ const (
 	shardAwarePort = "19042/tcp"
 )
 
+// Container represents a ScyllaDB container type used in the module
 type Container struct {
 	testcontainers.Container
 }
 
-// WithConfig sets the YAML config file to be used for the ScyllaDB container
-func WithConfig(r io.Reader) testcontainers.CustomizeRequestOption {
+// WithConfigFile sets the YAML config file to be used for the cassandra container
+// It will also set the "configFile" parameter to the path of the config file
+// as a command line argument to the container.
+func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		cf := testcontainers.ContainerFile{
-			Reader:      r,
+			HostFilePath:      configFile,
 			ContainerFilePath: "/etc/scylla/scylla.yaml",
-			FileMode:          0o755,
+			FileMode:          0o644,
 		}
 		req.Files = append(req.Files, cf)
 
@@ -48,24 +51,26 @@ func WithShardAwareness() testcontainers.CustomizeRequestOption {
 // WithAlternator enables the Alternator (DynamoDB Compatible API) service in the ScyllaDB container.
 // It will set the "alternator-port" parameter to the specified port.
 // It will also set the "alternator-write-isolation" parameter to "always" as a command line argument to the container.
-func WithAlternator(alternatorPort int) testcontainers.CustomizeRequestOption {
-	strPort := strconv.Itoa(alternatorPort)
-
+func WithAlternator(alternatorPort uint16) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		setCommandFlag(req, "--alternator-port", strPort)
-		setCommandFlag(req, "--alternator-write-isolation", "always")
-		req.ExposedPorts = append(req.ExposedPorts, strPort)
-		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForListeningPort(nat.Port(strPort)))
+		alternatorPortStr := strconv.FormatInt(int64(alternatorPort), 10)
+		req.ExposedPorts = append(req.ExposedPorts, alternatorPortStr)
+		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForListeningPort(nat.Port(alternatorPortStr)))
+		setCommandFlag(req, map[string]string{
+			"--alternator-port":            alternatorPortStr,
+			"--alternator-write-isolation": "always",
+		})
+
 		return nil
 	}
 }
 
-// WithCustomCommand sets a custom command with a value for the ScyllaDB container.
-// This is an option to replace the default command with a custom one.
+// WithCustomCommands sets custom commands with  values for the ScyllaDB container.
+// This is an option to overwrite the default commands with a custom one.
 // See more [here](https://opensource.docs.scylladb.com/stable/operating-scylla/procedures/tips/best-practices-scylla-on-docker.html)
-func WithCustomCommand(command, value string) testcontainers.CustomizeRequestOption {
+func WithCustomCommands(cmds map[string]string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		setCommandFlag(req, command, value)
+		setCommandFlag(req, cmds)
 		return nil
 	}
 }
@@ -95,6 +100,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Cmd: []string{
 			"--developer-mode=1",
 			"--overprovisioned=1",
+			"--smp=1",
+			"--memory=512M",
 		},
 		WaitingFor: wait.ForAll(
 			wait.ForLog(".*initialization completed.").AsRegexp(),
@@ -130,13 +137,24 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
-func setCommandFlag(req *testcontainers.GenericContainerRequest, flag, value string) {
-	cmdsWithoutDeveloperMode := make([]string, 0, len(req.Cmd))
+func setCommandFlag(req *testcontainers.GenericContainerRequest, flag map[string]string) {
+	cmds := make([]string, 0, len(req.Cmd)+len(flag))
+
 	for _, cmd := range req.Cmd {
-		if !strings.Contains(cmd, flag) {
-			cmdsWithoutDeveloperMode = append(cmdsWithoutDeveloperMode, cmd)
+		seps := strings.SplitN(cmd, "=", 1)
+		val, ok := flag[seps[0]]
+
+		if !ok {
+			cmds = append(cmds, cmd)
+		} else {
+			cmds = append(cmds, fmt.Sprintf("%s=%s", seps[0], val))
+			delete(flag, seps[0])
 		}
 	}
-	req.Cmd = cmdsWithoutDeveloperMode
-	req.Cmd = append(req.Cmd, flag+"="+value)
+
+	for key, val := range flag {
+		cmds = append(cmds, fmt.Sprintf("%s=%s", key, val))
+	}
+
+	req.Cmd = cmds
 }

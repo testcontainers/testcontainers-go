@@ -18,8 +18,10 @@ func ExampleRun_withCustomCommands() {
 	// runScyllaDBContainerWithCustomCommands {
 	scyllaContainer, err := scylladb.Run(ctx,
 		"scylladb/scylla:6.2",
-		scylladb.WithCustomCommand("--memory", "1G"),
-		scylladb.WithCustomCommand("--smp", "2"),
+		scylladb.WithCustomCommands(map[string]string{
+			"--memory": "1G",
+			"--smp":    "2",
+		}),
 	)
 	// }
 	defer func() {
@@ -58,7 +60,7 @@ func ExampleRun_withAlternator() {
 	// runScyllaDBContainerWithAlternator {
 	scyllaContainer, err := scylladb.Run(ctx,
 		"scylladb/scylla:6.2",
-		scylladb.WithAlternator(8000), // Choose which port to use on Alternator
+		scylladb.WithAlternator(8080), // Choose which port to use on Alternator
 	)
 	// }
 	defer func() {
@@ -79,13 +81,11 @@ func ExampleRun_withAlternator() {
 
 	fmt.Println(state.Running)
 
-	connectionHost, err := scyllaContainer.ConnectionHost(ctx, 8080) // Alternator port
+	_, err = scyllaContainer.ConnectionHost(ctx, 8080) // Alternator port
 	if err != nil {
 		log.Printf("failed to get connection host: %s", err)
 		return
 	}
-
-	runGoCQLExampleTest(connectionHost)
 
 	// Output:
 	// true
