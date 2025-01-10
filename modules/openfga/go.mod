@@ -5,7 +5,7 @@ go 1.22
 require (
 	github.com/openfga/go-sdk v0.3.5
 	github.com/stretchr/testify v1.9.0
-	github.com/testcontainers/testcontainers-go v0.34.0
+	github.com/testcontainers/testcontainers-go v0.35.0
 )
 
 require (
