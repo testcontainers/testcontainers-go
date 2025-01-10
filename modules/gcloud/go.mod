@@ -11,7 +11,7 @@ require (
 	cloud.google.com/go/spanner v1.57.0
 	github.com/docker/go-connections v0.5.0
 	github.com/stretchr/testify v1.9.0
-	github.com/testcontainers/testcontainers-go v0.34.0
+	github.com/testcontainers/testcontainers-go v0.35.0
 	google.golang.org/api v0.169.0
 	google.golang.org/grpc v1.64.1
 )

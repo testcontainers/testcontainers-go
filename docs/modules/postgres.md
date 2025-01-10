@@ -81,7 +81,7 @@ This function can be used `WithSSLSettings` but requires your configuration corr
 
 #### SSL Configuration
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.35.0"><span class="tc-version">:material-tag: v0.35.0</span></a>
 
 If you would like to use SSL with the container you can use the `WithSSLSettings`. This function accepts a `SSLSettings` which has the required secret material, namely the ca-certificate, server certificate and key. The container will copy this material to `/tmp/testcontainers-go/postgres/ca_cert.pem`, `/tmp/testcontainers-go/postgres/server.cert` and `/tmp/testcontainers-go/postgres/server.key`
 

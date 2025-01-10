@@ -55,7 +55,7 @@ E.g. `Run(context.Background(), "ollama/ollama:0.1.25")`.
 
 #### Use Local
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.35.0"><span class="tc-version">:material-tag: v0.35.0</span></a>
 
 !!!warning
     Please make sure the local Ollama binary is not running when using the local version of the module:
