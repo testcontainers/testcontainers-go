@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/inbucket
 ## Usage example
 
 <!--codeinclude-->
-[Creating a Inbucket container](../../modules/inbucket/examples_test.go) inside_block:runInbucketContainer
+[Creating an Inbucket container](../../modules/inbucket/examples_test.go) inside_block:runInbucketContainer
 <!--/codeinclude-->
 
 ## Module Reference

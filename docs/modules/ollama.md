@@ -19,11 +19,11 @@ go get github.com/testcontainers/testcontainers-go/modules/ollama
 The module allows you to run the Ollama container or the local Ollama binary.
 
 <!--codeinclude-->
-[Creating a Ollama container](../../modules/ollama/examples_test.go) inside_block:runOllamaContainer
+[Creating an Ollama container](../../modules/ollama/examples_test.go) inside_block:runOllamaContainer
 [Running the local Ollama binary](../../modules/ollama/examples_test.go) inside_block:localOllama
 <!--/codeinclude-->
 
-If the local Ollama binary fails to execute, the module will fallback to the container version of Ollama.
+If the local Ollama binary fails to execute, the module will fall back to the container version of Ollama.
 
 ## Module Reference
 

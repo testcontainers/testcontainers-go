@@ -36,7 +36,7 @@ If you still want to host the module under the `testcontainers-go` repository, p
 We are happy to review and merge your PRs, and we are also happy to help you with the development of the module.
 But this is a shared responsibility, so we expect you to be involved in the maintenance, documentation and support of the module.
 - the module will be part of the CI/CD pipeline of the `testcontainers-go` repository, so it will be tested and released with the rest of the modules.
-Think of Github workflows, release notes, etc. Although it sounds great, which it is, it also means that it will increase the build time in our CI/CD pipeline on Github, including flaky tests, number of dependency updates, etc. So in the end it's more work for us.
+Think of GitHub workflows, release notes, etc. Although it sounds great, which it is, it also means that it will increase the build time in our CI/CD pipeline on GitHub, including flaky tests, number of dependency updates, etc. So in the end it's more work for us.
 - once created, we'll add the module to the [Modules Catalog](https://testcontainers.com/modules/?language=go) and to the [Go documentation](https://pkg.go.dev/github.com/testcontainers/testcontainers-go).
 
 ## Creating a new module
@@ -65,7 +65,7 @@ We have provided a command line tool to generate the scaffolding for the code of
 - an entry in the VSCode workspace file, in order to include the new module in the project's workspace.
 
 !!!info
-    If you are hosting the module under your own Github account, please move the generated files to the new repository. Discard the following files and directories: `mkdocs.yml`, VSCode workspace, Sonarqube properties, and the `.github/workflows` directory, as they are specific to the `testcontainers-go` repository. You can use them as reference to create your own CI/CD pipeline.
+    If you are hosting the module under your own GitHub account, please move the generated files to the new repository. Discard the following files and directories: `mkdocs.yml`, VSCode workspace, Sonarqube properties, and the `.github/workflows` directory, as they are specific to the `testcontainers-go` repository. You can use them as reference to create your own CI/CD pipeline.
 
 ### Command line flags
 
@@ -121,7 +121,7 @@ We are going to propose a set of steps to follow when adding types and methods t
     Customize(req *GenericContainerRequest) error
     ```
 
-- We consider that a best practice for the options is define a function using the `With` prefix, that returns a function returning a modified `testcontainers.GenericContainerRequest` type. For that, the library already provides a `testcontainers.CustomizeRequestOption` type implementing the `ContainerCustomizer` interface, and we encourage you to use this type for creating your own customizer functions.
+- We consider that a best practice for the options is to define a function using the `With` prefix, that returns a function returning a modified `testcontainers.GenericContainerRequest` type. For that, the library already provides a `testcontainers.CustomizeRequestOption` type implementing the `ContainerCustomizer` interface, and we encourage you to use this type for creating your own customizer functions.
 - At the same time, you could need to create your own container customizers for your module. Make sure they implement the `testcontainers.ContainerCustomizer` interface. Defining your own customizer functions is useful when you need to transfer a certain state that is not present at the `ContainerRequest` for the container, possibly using an intermediate Config struct.
 - The options will be passed to the `Run` function as variadic arguments after the Go context, and they will be processed right after defining the initial `testcontainers.GenericContainerRequest` struct using a for loop.
 
@@ -226,4 +226,4 @@ The steps to convert an existing example, aka `${THE_EXAMPLE}`, into a module ar
 1. Move the `examples/${THE_EXAMPLE}` directory to `modules/${THE_EXAMPLE}`.
 1. In the `mkdocs.yml` file, move the entry for `${THE_EXAMPLE}` from examples to modules.
 1. Move `docs/examples${THE_EXAMPLE}.md` file to `docs/modules/${THE_EXAMPLE}`, updating the references to the source code paths.
-1. Update the Github workflow for `${THE_EXAMPLE}`, modifying names and paths.
+1. Update the GitHub workflow for `${THE_EXAMPLE}`, modifying names and paths.

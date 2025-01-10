@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/mssql
 ## Usage example
 
 <!--codeinclude-->
-[Creating a MS SQL Server container](../../modules/mssql/examples_test.go) inside_block:runMSSQLServerContainer
+[Creating an MS SQL Server container](../../modules/mssql/examples_test.go) inside_block:runMSSQLServerContainer
 <!--/codeinclude-->
 
 !!! warning "EULA Acceptance"

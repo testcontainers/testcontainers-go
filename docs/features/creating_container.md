@@ -143,7 +143,7 @@ In the following example, we are going to create a container using all the lifec
 _Testcontainers for Go_ comes with a default logging hook that will print a log message for each container lifecycle event, using the default logger. You can add your own logger by passing the `testcontainers.DefaultLoggingHook` option to the `ContainerRequest`, passing a reference to your preferred logger:
 
 <!--codeinclude-->
-[Use a custom logger for container hooks](../../lifecycle_test.go) inside_block:reqWithDefaultLogginHook
+[Use a custom logger for container hooks](../../lifecycle_test.go) inside_block:reqWithDefaultLoggingHook
 [Custom Logger implementation](../../lifecycle_test.go) inside_block:customLoggerImplementation
 <!--/codeinclude-->
 
@@ -156,7 +156,7 @@ The aforementioned `GenericContainer` function and the `ContainerRequest` struct
 <!--/codeinclude-->
 
 !!!warning
-	The only special case where the modifiers are not applied last, is when there are no exposed ports in the container request and the container does not use a network mode from a container (e.g. `req.NetworkMode = container.NetworkMode("container:$CONTAINER_ID")`). In that case, _Testcontainers for Go_ will extract the ports from the underliying Docker image and export them.
+	The only special case where the modifiers are not applied last, is when there are no exposed ports in the container request and the container does not use a network mode from a container (e.g. `req.NetworkMode = container.NetworkMode("container:$CONTAINER_ID")`). In that case, _Testcontainers for Go_ will extract the ports from the underlying Docker image and export them.
 
 ## Reusable container
 
