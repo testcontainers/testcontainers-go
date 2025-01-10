@@ -57,7 +57,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 					},
 				}
 			},
-			EnpointSettingsModifier: func(endpointSettings map[string]*network.EndpointSettings) {
+			EndpointSettingsModifier: func(endpointSettings map[string]*network.EndpointSettings) {
 				endpointSettings["a"] = &network.EndpointSettings{
 					Aliases: []string{"b"},
 					Links:   []string{"link1", "link2"},

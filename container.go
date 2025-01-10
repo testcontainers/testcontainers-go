@@ -128,44 +128,44 @@ func (c *ContainerFile) validate() error {
 // ContainerRequest represents the parameters used to get a running container
 type ContainerRequest struct {
 	FromDockerfile
-	HostAccessPorts         []int
-	Image                   string
-	ImageSubstitutors       []ImageSubstitutor
-	Entrypoint              []string
-	Env                     map[string]string
-	ExposedPorts            []string // allow specifying protocol info
-	Cmd                     []string
-	Labels                  map[string]string
-	Mounts                  ContainerMounts
-	Tmpfs                   map[string]string
-	RegistryCred            string // Deprecated: Testcontainers will detect registry credentials automatically
-	WaitingFor              wait.Strategy
-	Name                    string // for specifying container name
-	Hostname                string
-	WorkingDir              string                                     // specify the working directory of the container
-	ExtraHosts              []string                                   // Deprecated: Use HostConfigModifier instead
-	Privileged              bool                                       // For starting privileged container
-	Networks                []string                                   // for specifying network names
-	NetworkAliases          map[string][]string                        // for specifying network aliases
-	NetworkMode             container.NetworkMode                      // Deprecated: Use HostConfigModifier instead
-	Resources               container.Resources                        // Deprecated: Use HostConfigModifier instead
-	Files                   []ContainerFile                            // files which will be copied when container starts
-	User                    string                                     // for specifying uid:gid
-	SkipReaper              bool                                       // Deprecated: The reaper is globally controlled by the .testcontainers.properties file or the TESTCONTAINERS_RYUK_DISABLED environment variable
-	ReaperImage             string                                     // Deprecated: use WithImageName ContainerOption instead. Alternative reaper image
-	ReaperOptions           []ContainerOption                          // Deprecated: the reaper is configured at the properties level, for an entire test session
-	AutoRemove              bool                                       // Deprecated: Use HostConfigModifier instead. If set to true, the container will be removed from the host when stopped
-	AlwaysPullImage         bool                                       // Always pull image
-	ImagePlatform           string                                     // ImagePlatform describes the platform which the image runs on.
-	Binds                   []string                                   // Deprecated: Use HostConfigModifier instead
-	ShmSize                 int64                                      // Amount of memory shared with the host (in bytes)
-	CapAdd                  []string                                   // Deprecated: Use HostConfigModifier instead. Add Linux capabilities
-	CapDrop                 []string                                   // Deprecated: Use HostConfigModifier instead. Drop Linux capabilities
-	ConfigModifier          func(*container.Config)                    // Modifier for the config before container creation
-	HostConfigModifier      func(*container.HostConfig)                // Modifier for the host config before container creation
-	EnpointSettingsModifier func(map[string]*network.EndpointSettings) // Modifier for the network settings before container creation
-	LifecycleHooks          []ContainerLifecycleHooks                  // define hooks to be executed during container lifecycle
-	LogConsumerCfg          *LogConsumerConfig                         // define the configuration for the log producer and its log consumers to follow the logs
+	HostAccessPorts          []int
+	Image                    string
+	ImageSubstitutors        []ImageSubstitutor
+	Entrypoint               []string
+	Env                      map[string]string
+	ExposedPorts             []string // allow specifying protocol info
+	Cmd                      []string
+	Labels                   map[string]string
+	Mounts                   ContainerMounts
+	Tmpfs                    map[string]string
+	RegistryCred             string // Deprecated: Testcontainers will detect registry credentials automatically
+	WaitingFor               wait.Strategy
+	Name                     string // for specifying container name
+	Hostname                 string
+	WorkingDir               string                                     // specify the working directory of the container
+	ExtraHosts               []string                                   // Deprecated: Use HostConfigModifier instead
+	Privileged               bool                                       // For starting privileged container
+	Networks                 []string                                   // for specifying network names
+	NetworkAliases           map[string][]string                        // for specifying network aliases
+	NetworkMode              container.NetworkMode                      // Deprecated: Use HostConfigModifier instead
+	Resources                container.Resources                        // Deprecated: Use HostConfigModifier instead
+	Files                    []ContainerFile                            // files which will be copied when container starts
+	User                     string                                     // for specifying uid:gid
+	SkipReaper               bool                                       // Deprecated: The reaper is globally controlled by the .testcontainers.properties file or the TESTCONTAINERS_RYUK_DISABLED environment variable
+	ReaperImage              string                                     // Deprecated: use WithImageName ContainerOption instead. Alternative reaper image
+	ReaperOptions            []ContainerOption                          // Deprecated: the reaper is configured at the properties level, for an entire test session
+	AutoRemove               bool                                       // Deprecated: Use HostConfigModifier instead. If set to true, the container will be removed from the host when stopped
+	AlwaysPullImage          bool                                       // Always pull image
+	ImagePlatform            string                                     // ImagePlatform describes the platform which the image runs on.
+	Binds                    []string                                   // Deprecated: Use HostConfigModifier instead
+	ShmSize                  int64                                      // Amount of memory shared with the host (in bytes)
+	CapAdd                   []string                                   // Deprecated: Use HostConfigModifier instead. Add Linux capabilities
+	CapDrop                  []string                                   // Deprecated: Use HostConfigModifier instead. Drop Linux capabilities
+	ConfigModifier           func(*container.Config)                    // Modifier for the config before container creation
+	HostConfigModifier       func(*container.HostConfig)                // Modifier for the host config before container creation
+	EndpointSettingsModifier func(map[string]*network.EndpointSettings) // Modifier for the network settings before container creation
+	LifecycleHooks           []ContainerLifecycleHooks                  // define hooks to be executed during container lifecycle
+	LogConsumerCfg           *LogConsumerConfig                         // define the configuration for the log producer and its log consumers to follow the logs
 }
 
 // sessionID returns the session ID for the container request.
