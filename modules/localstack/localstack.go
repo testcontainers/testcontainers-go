@@ -3,6 +3,7 @@ package localstack
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -20,11 +21,22 @@ const (
 	localstackHostEnvVar   = "LOCALSTACK_HOST"
 )
 
+var nonLegacyTags = []string{
+	"latest",
+	"s3",
+	"s3-latest",
+	"stable",
+}
+
 func isLegacyMode(image string) bool {
 	parts := strings.Split(image, ":")
 	version := parts[len(parts)-1]
 
-	if version == "latest" {
+	if pos := strings.LastIndexByte(version, '-'); pos >= 0 {
+		version = version[0:pos]
+	}
+
+	if slices.Contains(nonLegacyTags, version) {
 		return false
 	}
 
@@ -43,7 +55,11 @@ func isVersion2(image string) bool {
 	parts := strings.Split(image, ":")
 	version := parts[len(parts)-1]
 
-	if version == "latest" {
+	if pos := strings.LastIndexByte(version, '-'); pos >= 0 {
+		version = version[0:pos]
+	}
+
+	if slices.Contains(nonLegacyTags, version) {
 		return true
 	}
 
@@ -52,10 +68,10 @@ func isVersion2(image string) bool {
 	}
 
 	if semver.IsValid(version) {
-		return semver.Compare(version, "v2.0") > 0 // version >= v2.0
+		return semver.Compare(version, "v2.0") >= 0 // version >= v2.0
 	}
 
-	return true
+	return false
 }
 
 // WithNetwork creates a network with the given name and attaches the container to it, setting the network alias
