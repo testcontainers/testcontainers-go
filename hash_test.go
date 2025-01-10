@@ -45,10 +45,12 @@ func TestHashContainerRequest(t *testing.T) {
 		},
 	}
 
-	hash1 := req.hash()
+	hash1, err := req.hash()
+	require.NoError(t, err)
 	require.NotEqual(t, 0, hash1)
 
-	hash2 := req.hash()
+	hash2, err := req.hash()
+	require.NoError(t, err)
 	require.NotEqual(t, 0, hash2)
 
 	require.Equal(t, hash1.Hash, hash2.Hash)
@@ -118,10 +120,12 @@ func TestHashContainerRequest_includingDirs(t *testing.T) {
 		},
 	}
 
-	hash1 := req1.hash()
+	hash1, err := req1.hash()
+	require.NoError(t, err)
 	require.NotEqual(t, 0, hash1)
 
-	hash2 := req2.hash()
+	hash2, err := req2.hash()
+	require.NoError(t, err)
 	require.NotEqual(t, 0, hash2)
 
 	require.NotEqual(t, hash1.Hash, hash2.Hash) // because the hostfile path is different
@@ -192,10 +196,12 @@ func TestHashContainerRequest_differs(t *testing.T) {
 		},
 	}
 
-	hash1 := req1.hash()
+	hash1, err := req1.hash()
+	require.NoError(t, err)
 	require.NotEqual(t, 0, hash1)
 
-	hash2 := req2.hash()
+	hash2, err := req2.hash()
+	require.NoError(t, err)
 	require.NotEqual(t, 0, hash2)
 
 	require.NotEqual(t, hash1.Hash, hash2.Hash)
@@ -245,16 +251,106 @@ func TestHashContainerRequest_modifiedFiles(t *testing.T) {
 		},
 	}
 
-	hash1 := req.hash()
+	hash1, err := req.hash()
+	require.NoError(t, err)
 	require.NotEqual(t, 0, hash1)
 
 	// modify the initial file
 	_, err = f.WriteString("echo goodbye gopher!")
 	require.NoError(t, err)
 
-	hash2 := req.hash()
+	hash2, err := req.hash()
+	require.NoError(t, err)
 	require.NotEqual(t, 0, hash2)
 
 	require.Equal(t, hash1.Hash, hash2.Hash)
 	require.NotEqual(t, hash1.FilesHash, hash2.FilesHash)
+}
+
+func TestHashContainerRequest_error(t *testing.T) {
+	req := ContainerRequest{
+		Image: "nginx",
+		Env:   map[string]string{"a": "b"},
+		FromDockerfile: FromDockerfile{
+			BuildOptionsModifier: func(options *types.ImageBuildOptions) {},
+		},
+		ExposedPorts:      []string{"80/tcp"},
+		Privileged:        false,
+		ImageSubstitutors: []ImageSubstitutor{newPrependHubRegistry("localhost:5000")},
+		LifecycleHooks: []ContainerLifecycleHooks{
+			{
+				PreStarts: []ContainerHook{
+					func(ctx context.Context, c Container) error {
+						return nil
+					},
+				},
+			},
+		},
+		HostConfigModifier: func(hostConfig *container.HostConfig) {
+			// NOOP
+		},
+		WaitingFor: wait.ForLog("nginx: ready"),
+		Files: []ContainerFile{
+			{
+				HostFilePath:      filepath.Join("testdata", "non-existent-file"),
+				ContainerFilePath: "/hello.sh",
+				FileMode:          0o755,
+			},
+		},
+	}
+
+	hash1, err := req.hash()
+	require.Error(t, err)
+	require.ErrorIs(t, err, os.ErrNotExist)
+	require.Equal(t, uint64(0), hash1.Hash)
+	require.Equal(t, uint64(0), hash1.FilesHash)
+}
+
+func TestHashContainerRequest_errors(t *testing.T) {
+	req := ContainerRequest{
+		Image: "nginx",
+		Env:   map[string]string{"a": "b"},
+		FromDockerfile: FromDockerfile{
+			BuildOptionsModifier: func(options *types.ImageBuildOptions) {},
+		},
+		ExposedPorts:      []string{"80/tcp"},
+		Privileged:        false,
+		ImageSubstitutors: []ImageSubstitutor{newPrependHubRegistry("localhost:5000")},
+		LifecycleHooks: []ContainerLifecycleHooks{
+			{
+				PreStarts: []ContainerHook{
+					func(ctx context.Context, c Container) error {
+						return nil
+					},
+				},
+			},
+		},
+		HostConfigModifier: func(hostConfig *container.HostConfig) {
+			// NOOP
+		},
+		WaitingFor: wait.ForLog("nginx: ready"),
+		Files: []ContainerFile{
+			{
+				HostFilePath:      filepath.Join("testdata", "non-existent-file-1"),
+				ContainerFilePath: "/hello.sh",
+				FileMode:          0o755,
+			},
+			{
+				HostFilePath:      filepath.Join("testdata", "hello.sh"),
+				ContainerFilePath: "/hello.sh",
+				FileMode:          0o755,
+			},
+			{
+				HostFilePath:      filepath.Join("testdata", "non-existent-file-2"),
+				ContainerFilePath: "/hello.sh",
+				FileMode:          0o755,
+			},
+		},
+	}
+
+	hash1, err := req.hash()
+	require.Error(t, err)
+	require.ErrorIs(t, err, os.ErrNotExist)
+	require.Equal(t, uint64(0), hash1.Hash)
+	require.Equal(t, uint64(0), hash1.FilesHash)
 }

@@ -1218,7 +1218,11 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		delete(req.Labels, core.LabelSessionID)
 
 		// calculate the hash, and add the labels, just before creating the container
-		hash := req.hash()
+		hash, err := req.hash()
+		if err != nil {
+			return nil, fmt.Errorf("hash container request: %w", err)
+		}
+
 		req.Labels[core.LabelContainerHash] = strconv.FormatUint(hash.Hash, 10)
 		req.Labels[core.LabelCopiedFilesHash] = strconv.FormatUint(hash.FilesHash, 10)
 
@@ -1386,7 +1390,11 @@ func (p *DockerProvider) waitContainerCreationInTimeout(ctx context.Context, has
 
 // Deprecated: it will be removed in the next major release.
 func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req ContainerRequest) (con Container, err error) {
-	hash := req.hash()
+	hash, err := req.hash()
+	if err != nil {
+		return nil, fmt.Errorf("hash container request: %w", err)
+	}
+
 	c, err := p.findContainerByHash(ctx, hash)
 	if err != nil {
 		return nil, err
