@@ -5,6 +5,7 @@ import (
 	"hash/fnv"
 	"io"
 	"os"
+	"strconv"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
 )
@@ -43,7 +44,7 @@ func (c ContainerRequest) hash() (containerHash, error) {
 			}
 
 			// Write the file hash into the combined hash
-			_, err = fileHashWriter.Write([]byte(fmt.Sprintf("%d", fileHash.Sum64())))
+			_, err = fileHashWriter.Write([]byte(strconv.FormatUint(fileHash.Sum64(), 10)))
 			if err != nil {
 				return ch, fmt.Errorf("write hash: %w", err)
 			}
@@ -71,7 +72,7 @@ func (c ContainerRequest) hash() (containerHash, error) {
 		if err != nil {
 			return ch, fmt.Errorf("hash file: %w", err)
 		}
-		_, err = fileHashWriter.Write([]byte(fmt.Sprintf("%d", fh)))
+		_, err = fileHashWriter.Write([]byte(strconv.FormatUint(fh, 10)))
 		if err != nil {
 			return ch, fmt.Errorf("write hash: %w", err)
 		}
