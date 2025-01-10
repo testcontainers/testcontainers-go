@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	"hash/fnv"
 	"os"
 	"path/filepath"
 	"testing"
@@ -128,8 +129,8 @@ func TestHashContainerRequest_includingDirs(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEqual(t, 0, hash2)
 
-	require.NotEqual(t, hash1.Hash, hash2.Hash) // because the hostfile path is different
-	require.Zero(t, hash1.FilesHash)            // the dir is not included in the hash
+	require.NotEqual(t, hash1.Hash, hash2.Hash)            // because the hostfile path is different
+	require.Equal(t, fnv.New64().Sum64(), hash1.FilesHash) // the dir is not included in the hash
 	require.Equal(t, hash1.FilesHash, hash2.FilesHash)
 }
 

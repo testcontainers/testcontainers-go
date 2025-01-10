@@ -28,21 +28,25 @@ func (c ContainerRequest) hash() (containerHash, error) {
 		return ch, err
 	}
 
-	// The initial hash of the files copied to the container is zero.
-	var filesHash uint64
+	fileHashWriter := fnv.New64()
+	defer fileHashWriter.Reset()
 
 	for _, f := range c.Files {
 		// Read the file content to calculate the hash, if there is an error reading the file,
 		// the hash will be zero to avoid breaking the hash calculation.
 		// It uses streaming to avoid loading the whole file in memory.
 		if f.Reader != nil {
-			h := fnv.New64()
-			_, err := io.Copy(h, f.Reader)
+			fileHash := fnv.New64()
+			_, err := io.Copy(fileHash, f.Reader)
 			if err != nil {
 				return ch, fmt.Errorf("copy file from reader: %w", err)
 			}
 
-			filesHash += h.Sum64()
+			// Write the file hash into the combined hash
+			_, err = fileHashWriter.Write([]byte(fmt.Sprintf("%d", fileHash.Sum64())))
+			if err != nil {
+				return ch, fmt.Errorf("write hash: %w", err)
+			}
 			continue // move to the next file
 		}
 
@@ -67,13 +71,16 @@ func (c ContainerRequest) hash() (containerHash, error) {
 		if err != nil {
 			return ch, fmt.Errorf("hash file: %w", err)
 		}
-		filesHash += fh
+		_, err = fileHashWriter.Write([]byte(fmt.Sprintf("%d", fh)))
+		if err != nil {
+			return ch, fmt.Errorf("write hash: %w", err)
+		}
 	}
 
 	ch = containerHash{
 		Hash: hash,
 		// if there are no files, the filesHash will be zero because of the default value of the uint64 type.
-		FilesHash: filesHash,
+		FilesHash: fileHashWriter.Sum64(),
 	}
 
 	return ch, nil
