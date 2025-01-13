@@ -538,6 +538,7 @@ func TestLifecycleHooks(t *testing.T) {
 			// reqWithLifecycleHooks {
 			req := ContainerRequest{
 				Image: nginxAlpineImage,
+				Reuse: tt.reuse,
 				LifecycleHooks: []ContainerLifecycleHooks{
 					{
 						PreCreates: []ContainerRequestHook{
@@ -635,13 +636,8 @@ func TestLifecycleHooks(t *testing.T) {
 			}
 			// }
 
-			if tt.reuse {
-				req.Name = "reuse-container"
-			}
-
 			c, err := GenericContainer(ctx, GenericContainerRequest{
 				ContainerRequest: req,
-				Reuse:            tt.reuse,
 				Started:          true,
 			})
 			CleanupContainer(t, c)

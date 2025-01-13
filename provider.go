@@ -87,7 +87,7 @@ func (f GenericProviderOptionFunc) ApplyGenericTo(opts *GenericProviderOptions) 
 type ContainerProvider interface {
 	Close() error                                                                // close the provider
 	CreateContainer(context.Context, ContainerRequest) (Container, error)        // create a container without starting it
-	ReuseOrCreateContainer(context.Context, ContainerRequest) (Container, error) // reuses a container if it exists or creates a container without starting
+	ReuseOrCreateContainer(context.Context, ContainerRequest) (Container, error) // Deprecated: it will be removed in the next major release. Reuses a container if it exists or creates a container without starting
 	RunContainer(context.Context, ContainerRequest) (Container, error)           // create a container and start it
 	Health(context.Context) error
 	Config() TestcontainersConfig

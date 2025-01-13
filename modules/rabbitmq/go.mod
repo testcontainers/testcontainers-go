@@ -9,6 +9,8 @@ require (
 	github.com/testcontainers/testcontainers-go v0.35.0
 )
 
+require github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
+
 require (
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect

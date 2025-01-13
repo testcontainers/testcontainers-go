@@ -21,7 +21,7 @@ type GenericContainerRequest struct {
 	Started          bool         // whether to auto-start the container
 	ProviderType     ProviderType // which provider to use, Docker if empty
 	Logger           Logging      // provide a container specific Logging - use default global logger if empty
-	Reuse            bool         // reuse an existing container if it exists or create a new one. a container name mustn't be empty
+	Reuse            bool         // Deprecated: use ContainerRequest.Reuse instead. Reuse an existing container if it exists or create a new one. a container name mustn't be empty
 }
 
 // Deprecated: will be removed in the future.
@@ -48,10 +48,6 @@ func GenericNetwork(ctx context.Context, req GenericNetworkRequest) (Network, er
 
 // GenericContainer creates a generic container with parameters
 func GenericContainer(ctx context.Context, req GenericContainerRequest) (Container, error) {
-	if req.Reuse && req.Name == "" {
-		return nil, ErrReuseEmptyName
-	}
-
 	logging := req.Logger
 	if logging == nil {
 		logging = Logger
@@ -62,17 +58,12 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 	}
 	defer provider.Close()
 
-	var c Container
+	// transfer the reuse option to the container request if the deprecated reuse option is set
 	if req.Reuse {
-		// we must protect the reusability of the container in the case it's invoked
-		// in a parallel execution, via ParallelContainers or t.Parallel()
-		reuseContainerMx.Lock()
-		defer reuseContainerMx.Unlock()
-
-		c, err = provider.ReuseOrCreateContainer(ctx, req.ContainerRequest)
-	} else {
-		c, err = provider.CreateContainer(ctx, req.ContainerRequest)
+		req.ContainerRequest.Reuse = req.Reuse
 	}
+
+	c, err := provider.CreateContainer(ctx, req.ContainerRequest)
 	if err != nil {
 		// At this point `c` might not be nil. Give the caller an opportunity to call Destroy on the container.
 		// TODO: Remove this debugging.

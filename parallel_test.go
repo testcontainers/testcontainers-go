@@ -137,9 +137,9 @@ func TestParallelContainersWithReuse(t *testing.T) {
 			WaitingFor: wait.ForLog("database system is ready to accept connections").
 				WithPollInterval(100 * time.Millisecond).
 				WithOccurrence(2),
+			Reuse: true,
 		},
 		Started: true,
-		Reuse:   true,
 	}
 
 	parallelRequest := ParallelContainerRequest{

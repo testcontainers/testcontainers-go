@@ -238,3 +238,14 @@ func TestWithHostPortAccess(t *testing.T) {
 		})
 	}
 }
+
+func TestWithReuse(t *testing.T) {
+	req := &testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{},
+	}
+	opt := testcontainers.WithReuse()
+
+	require.NoError(t, opt.Customize(req))
+	require.True(t, req.Reuse)
+	require.True(t, req.ContainerRequest.Reuse)
+}

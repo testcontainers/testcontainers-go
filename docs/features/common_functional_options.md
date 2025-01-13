@@ -32,7 +32,7 @@ postgres, err = postgresModule.Run(ctx, "postgres:15-alpine", testcontainers.Wit
 If you need to access a port that is already running in the host, you can use `testcontainers.WithHostPortAccess` for example:
 
 ```golang
-postgres, err = postgresModule.Run(ctx, "postgres:15-alpine", testcontainers.WithHostPortAccess(8080))
+ctr, err = tcmodule.Run(ctx, "your-image:your-tag", testcontainers.WithHostPortAccess(8080))
 ```
 
 To understand more about this feature, please read the [Exposing host ports to the container](/features/networking/#exposing-host-ports-to-the-container) documentation.
@@ -70,7 +70,7 @@ useful context instead of appearing out of band.
 ```golang
 func TestHandler(t *testing.T) {
     logger := TestLogger(t)
-    ctr, err := postgresModule.Run(ctx, "postgres:15-alpine", testcontainers.WithLogger(logger))
+    ctr, err := yourModule.Run(ctx, "your-image:your-tag", testcontainers.WithLogger(logger))
     CleanupContainer(t, ctr)
     require.NoError(t, err)
     // Do something with container.
@@ -136,6 +136,18 @@ If you want to attach your containers to a throw-away network, you can use the `
 
 In the case you need to retrieve the network name, you can use the `Networks(ctx)` method of the `Container` interface, right after it's running, which returns a slice of strings with the names of the networks where the container is attached.
 
+#### WithReuse
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you want to reuse a container across different test executions, you can use `testcontainers.WithReuse` option. This option will keep the container running after the test execution, so it can be reused by any other test sharing the same `ContainerRequest`. As a result, the container is not terminated by Ryuk.
+
+```golang
+ctr, err = tcmodule.Run(ctx, "your-image:your-tag", testcontainers.WithReuse())
+```
+
+Please read the [Reuse containers](/features/creating_container#reusable-container) documentation for more information.
+
 #### Docker type modifiers
 
 If you need an advanced configuration for the container, you can leverage the following Docker type modifiers:
@@ -144,14 +156,14 @@ If you need an advanced configuration for the container, you can leverage the fo
 - `testcontainers.WithHostConfigModifier`
 - `testcontainers.WithEndpointSettingsModifier`
 
-Please read the [Create containers: Advanced Settings](/features/creating_container.md#advanced-settings) documentation for more information.
+Please read the [Create containers: Advanced Settings](/features/creating_container#advanced-settings) documentation for more information.
 
 #### Customising the ContainerRequest
 
 This option will merge the customized request into the module's own `ContainerRequest`.
 
 ```go
-container, err := Run(ctx, "postgres:13-alpine",
+ctr, err := Run(ctx, "your-image:your-tag",
     /* Other module options */
     testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
         ContainerRequest: testcontainers.ContainerRequest{

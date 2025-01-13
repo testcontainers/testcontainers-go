@@ -200,6 +200,8 @@ github.com/milvus-io/milvus-proto/go-api/v2 v2.4.0/go.mod h1:1OIl0v5PQeNxIJhCvY+
 github.com/milvus-io/milvus-sdk-go/v2 v2.4.0 h1:llESmiYiaFqRh0CUrZCLH0IWWkk5r8/vz0tkaA0YzQo=
 github.com/milvus-io/milvus-sdk-go/v2 v2.4.0/go.mod h1:8IKyxVV+kd+RADMuMpo8GXnTDq5ZxrSSWpe9nJieboQ=
 github.com/mitchellh/go-homedir v1.1.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrkLzIz1N1q0pr0=
+github.com/mitchellh/hashstructure/v2 v2.0.2 h1:vGKWl0YJqUNxE8d+h8f6NJLcCJrgbhC4NcD46KavDd4=
+github.com/mitchellh/hashstructure/v2 v2.0.2/go.mod h1:MG3aRVU/N29oo/V/IhBX8GR/zz4kQkprJgF2EVszyDE=
 github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
 github.com/moby/docker-image-spec v1.3.1 h1:jMKff3w6PgbfSa69GfNg+zN/XLhfXJGnEx3Nl2EsFP0=
 github.com/moby/docker-image-spec v1.3.1/go.mod h1:eKmb5VW8vQEh/BAr2yvVNvuiJuY6UIocYsFu/DxxRpo=

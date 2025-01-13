@@ -2142,7 +2142,7 @@ func TestDockerProvider_waitContainerCreation_retries(t *testing.T) {
 			// give a chance to retry
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
-			_, _ = p.waitContainerCreation(ctx, "someID")
+			_, _ = p.waitContainerCreation(ctx, containerHash{})
 
 			assert.Positive(t, m.containerListCount)
 			assert.Equal(t, tt.shouldRetry, m.containerListCount > 1)

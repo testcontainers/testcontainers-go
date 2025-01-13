@@ -102,7 +102,7 @@ type FromDockerfile struct {
 	// BuildOptionsModifier Modifier for the build options before image build. Use it for
 	// advanced configurations while building the image. Please consider that the modifier
 	// is called after the default build options are set.
-	BuildOptionsModifier func(*types.ImageBuildOptions)
+	BuildOptionsModifier func(*types.ImageBuildOptions) `hash:"ignore"`
 }
 
 type ContainerFile struct {
@@ -141,6 +141,7 @@ type ContainerRequest struct {
 	RegistryCred            string // Deprecated: Testcontainers will detect registry credentials automatically
 	WaitingFor              wait.Strategy
 	Name                    string // for specifying container name
+	Reuse                   bool   // For reusing an existing container
 	Hostname                string
 	WorkingDir              string                                     // specify the working directory of the container
 	ExtraHosts              []string                                   // Deprecated: Use HostConfigModifier instead
@@ -161,10 +162,10 @@ type ContainerRequest struct {
 	ShmSize                 int64                                      // Amount of memory shared with the host (in bytes)
 	CapAdd                  []string                                   // Deprecated: Use HostConfigModifier instead. Add Linux capabilities
 	CapDrop                 []string                                   // Deprecated: Use HostConfigModifier instead. Drop Linux capabilities
-	ConfigModifier          func(*container.Config)                    // Modifier for the config before container creation
-	HostConfigModifier      func(*container.HostConfig)                // Modifier for the host config before container creation
-	EnpointSettingsModifier func(map[string]*network.EndpointSettings) // Modifier for the network settings before container creation
-	LifecycleHooks          []ContainerLifecycleHooks                  // define hooks to be executed during container lifecycle
+	ConfigModifier          func(*container.Config)                    `hash:"ignore"` // Modifier for the config before container creation
+	HostConfigModifier      func(*container.HostConfig)                `hash:"ignore"` // Modifier for the host config before container creation
+	EnpointSettingsModifier func(map[string]*network.EndpointSettings) `hash:"ignore"` // Modifier for the network settings before container creation
+	LifecycleHooks          []ContainerLifecycleHooks                  `hash:"ignore"` // define hooks to be executed during container lifecycle
 	LogConsumerCfg          *LogConsumerConfig                         // define the configuration for the log producer and its log consumers to follow the logs
 }
 

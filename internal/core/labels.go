@@ -13,6 +13,12 @@ const (
 	// LabelBase is the base label for all testcontainers labels.
 	LabelBase = "org.testcontainers"
 
+	// LabelContainerHash specifies the hash of the container.
+	LabelContainerHash = LabelBase + ".hash"
+
+	// LabelCopiedFilesHash specifies the hash of the copied files.
+	LabelCopiedFilesHash = LabelBase + ".copied_files.hash"
+
 	// LabelLang specifies the language which created the test container.
 	LabelLang = LabelBase + ".lang"
 
