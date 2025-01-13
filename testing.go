@@ -20,21 +20,21 @@ var errAlreadyInProgress = regexp.MustCompile(`removal of container .* is alread
 // This is a function designed to be used in your test, when Docker is not mandatory for CI/CD.
 // In this way tests that depend on Testcontainers won't run if the provider is provisioned correctly.
 func SkipIfProviderIsNotHealthy(t *testing.T) {
+	t.Helper()
 	defer func() {
 		if r := recover(); r != nil {
-			t.Skipf("Recovered from panic. Docker is not running. Testcontainers can't perform is work without it")
+			t.Skipf("Recovered from panic: %v. Docker is not running. Testcontainers can't perform is work without it", r)
 		}
 	}()
 
-	t.Helper()
 	ctx := context.Background()
 	provider, err := ProviderDocker.GetProvider()
 	if err != nil {
-		t.Skipf("Docker is not running. TestContainers can't perform is work without it: %s", err)
+		t.Skipf("Docker is not running. Testcontainers can't perform is work without it: %s", err)
 	}
 	err = provider.Health(ctx)
 	if err != nil {
-		t.Skipf("Docker is not running. TestContainers can't perform is work without it: %s", err)
+		t.Skipf("Docker is not running. Testcontainers can't perform is work without it: %s", err)
 	}
 }
 
