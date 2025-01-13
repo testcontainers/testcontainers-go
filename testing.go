@@ -22,7 +22,7 @@ var errAlreadyInProgress = regexp.MustCompile(`removal of container .* is alread
 func SkipIfProviderIsNotHealthy(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
-			t.Skipf("Recovered from panic. Docker is not running. TestContainers can't perform is work without it")
+			t.Skipf("Recovered from panic. Docker is not running. Testcontainers can't perform is work without it")
 		}
 	}()
 
