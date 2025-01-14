@@ -22,7 +22,7 @@ jobs:
         with:
           # We may not need a scope on every commit (i.e. repo-level change).
           #
-          # feat!: read config consistenly
+          # feat!: read config consistently
           # feat(redis): support for clustering
           # chore(redis): update tests
           # fix(redis): trim connection string

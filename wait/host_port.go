@@ -219,7 +219,7 @@ func internalCheck(ctx context.Context, internalPort nat.Port, target StrategyTa
 			return fmt.Errorf("%w, host port waiting failed", err)
 		}
 
-		// Docker has a issue which override exit code 127 to 126 due to:
+		// Docker has an issue which override exit code 127 to 126 due to:
 		// https://github.com/moby/moby/issues/45795
 		// Handle both to ensure compatibility with Docker and Podman for now.
 		switch exitCode {

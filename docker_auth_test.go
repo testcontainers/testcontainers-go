@@ -493,7 +493,7 @@ func requireValidAuthConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	// We can only check the keys as the values are not deterministic as they depend
-	// on users environment.
+	// on user's environment.
 	expected := map[string]registry.AuthConfig{
 		core.IndexDockerIO: {},
 		exampleRegistry:    {},

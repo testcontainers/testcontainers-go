@@ -677,7 +677,7 @@ func (l *inMemoryLogger) Printf(format string, args ...interface{}) {
 func TestLifecycleHooks_WithDefaultLogger(t *testing.T) {
 	ctx := context.Background()
 
-	// reqWithDefaultLogginHook {
+	// reqWithDefaultLoggingHook {
 	dl := inMemoryLogger{}
 
 	req := ContainerRequest{
@@ -1046,7 +1046,7 @@ func Test_combineContainerHooks(t *testing.T) {
 	got := combineContainerHooks(defaultHooks, userDefinedHooks)
 
 	// Compare for equal. This can't be done with deep equals as functions
-	// are not comparable so we us the unique value stored in funcID when
+	// are not comparable so we use the unique value stored in funcID when
 	// the function is called to determine if they are the same.
 	gotVal := reflect.ValueOf(got)
 	gotType := reflect.TypeOf(got)

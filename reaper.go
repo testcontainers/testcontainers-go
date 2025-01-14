@@ -92,7 +92,7 @@ type reaperSpawner struct {
 	mtx      sync.Mutex
 }
 
-// port returns the port that a new reaper should listens on.
+// port returns the port that a new reaper should listen on.
 func (r *reaperSpawner) port() nat.Port {
 	if port := os.Getenv("RYUK_PORT"); port != "" {
 		natPort, err := nat.NewPort("tcp", port)

@@ -81,7 +81,7 @@ func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
 }
 
 // WithTestScriptReader copies files into the Container using the Reader API
-// The script base name is not a path, neither absolute or relative and should
+// The script base name is not a path, neither absolute nor relative and should
 // be just the file name of the script
 func WithTestScriptReader(reader io.Reader, scriptBaseName string) testcontainers.CustomizeRequestOption {
 	opt := func(req *testcontainers.GenericContainerRequest) error {

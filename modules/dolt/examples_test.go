@@ -82,7 +82,7 @@ func ExampleRun_connect() {
 	}
 	stmt, err := db.Prepare("SELECT dolt_version();")
 	if err != nil {
-		log.Printf("failed to prepate sql statement: %s", err)
+		log.Printf("failed to prepare sql statement: %s", err)
 		return
 	}
 	defer stmt.Close()

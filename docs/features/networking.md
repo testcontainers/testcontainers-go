@@ -53,7 +53,7 @@ It is normally advisable to use `Host` and `MappedPort` together when constructi
 
 In some cases it is necessary to make a network connection from a container to a socket that is listening on the host machine. Natively, Docker has limited support for this model across platforms. Testcontainers, however, makes this possible, allowing your code to access services running on the host machine.
 
-In this example, assume that `freePorts` is an slice of ports on our test host machine where different servers (e.g. a web application) are running.
+In this example, assume that `freePorts` is a slice of ports on our test host machine where different servers (e.g. a web application) are running.
 
 We can simply create a container and expose these ports to the container using the `ContainerRequest` struct:
 
@@ -76,7 +76,7 @@ In the above example we are executing an HTTP request from the command line insi
 
 When you expose a host port to a container, _Testcontainers for Go_ creates an SSHD server companion container, which will be used to forward the traffic from the container to the host machine. This is done by creating a tunnel between the container and the host machine through the SSHD server container.
 
-You can find more information about this SSHD server container on its Github repository: [https://github.com/testcontainers/sshd-docker](https://github.com/testcontainers/sshd-docker).
+You can find more information about this SSHD server container on its GitHub repository: [https://github.com/testcontainers/sshd-docker](https://github.com/testcontainers/sshd-docker).
 
 <!--codeinclude-->
 [SSHD Server Docker Image](../../port_forwarding.go) inside_block:hubSshdImage
@@ -101,7 +101,7 @@ In the case you need to skip a test on non-Linux hosts, you can use the `SkipIfD
 [Skipping tests on non-Linux hosts](../../docker_test.go) inside_block:skipIfDockerDesktop
 <!--/codeinclude-->
 
-It will try to get a Docker client and obtain its Info. In the case the Operation System is "Docker Desktop", it will skip the test.
+It will try to get a Docker client and obtain its Info. In the case the Operating System is "Docker Desktop", it will skip the test.
 
 ## Advanced networking
 

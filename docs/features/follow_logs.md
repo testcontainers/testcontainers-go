@@ -33,7 +33,7 @@ This will represent the current way for associating `LogConsumer`s. You simply d
 [Passing LogConsumers](../../logconsumer_test.go) inside_block:logConsumersAtRequest
 <!--/codeinclude-->
 
-Please check that it's possible to configure the log production with an slice of functional options. These options must be of the `LogProductionOption` type:
+Please check that it's possible to configure the log production with a slice of functional options. These options must be of the `LogProductionOption` type:
 
 ```go
 type LogProductionOption func(*DockerContainer)
@@ -41,7 +41,7 @@ type LogProductionOption func(*DockerContainer)
 
 At the moment, _Testcontainers for Go_ exposes an option to set log production timeout, using the `WithLogProductionTimeout` function.
 
-_Testcontainers for Go_ will read this log producer/consumer configuration to automatically start producing logs if an only if the consumers slice contains at least one valid `LogConsumer`.
+_Testcontainers for Go_ will read this log producer/consumer configuration to automatically start producing logs if and only if the consumers slice contains at least one valid `LogConsumer`.
 
 ## Manually using the FollowOutput function
 

@@ -32,7 +32,7 @@ go get github.com/testcontainers/testcontainers-go/modules/weaviate
 The Weaviate module exposes one entrypoint function to create the Weaviate container, and this function receives three parameters:
 
 ```golang
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*WeaviteContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*WeaviateContainer, error)
 ```
 
 - `context.Context`, the Go context.

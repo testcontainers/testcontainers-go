@@ -55,7 +55,7 @@ go get -u github.com/hashicorp/vault-client-go
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
 
-The Vault module exposes one entrypoint function to create the containerr, and this function receives three parameters:
+The Vault module exposes one entrypoint function to create the container, and this function receives three parameters:
 
 ```golang
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*VaultContainer, error)

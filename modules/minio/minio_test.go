@@ -43,7 +43,7 @@ func TestMinio(t *testing.T) {
 	require.NoError(t, err)
 
 	objectName := "testdata"
-	contentType := "applcation/octet-stream"
+	contentType := "application/octet-stream"
 	content := strings.Repeat("this is some text\n", 1048576) // (16 chars) * 1MB
 	contentLength := int64(len(content))
 

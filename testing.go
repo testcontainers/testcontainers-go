@@ -66,7 +66,7 @@ func (lc *StdoutLogConsumer) Accept(l Log) {
 // of [GenericContainer](...) or a modules Run(...) in a test to ensure the
 // container is stopped when the function ends.
 //
-// before any error check. If container is nil, its a no-op.
+// before any error check. If container is nil, it's a no-op.
 func CleanupContainer(tb testing.TB, ctr Container, options ...TerminateOption) {
 	tb.Helper()
 
@@ -78,7 +78,7 @@ func CleanupContainer(tb testing.TB, ctr Container, options ...TerminateOption) 
 // CleanupNetwork is a helper function that schedules the network to be
 // removed when the test ends.
 // This should be the first call after NewNetwork(...) in a test before
-// any error check. If network is nil, its a no-op.
+// any error check. If network is nil, it's a no-op.
 func CleanupNetwork(tb testing.TB, network Network) {
 	tb.Helper()
 

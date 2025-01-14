@@ -79,7 +79,7 @@ type ImageBuildInfo interface {
 	GetTag() string                                 // get tag label for image
 	BuildLogWriter() io.Writer                      // for output of build log, use io.Discard to disable the output
 	ShouldBuildImage() bool                         // return true if the image needs to be built
-	GetBuildArgs() map[string]*string               // return the environment args used to build the from Dockerfile
+	GetBuildArgs() map[string]*string               // return the environment args used to build the Dockerfile
 	GetAuthConfigs() map[string]registry.AuthConfig // Deprecated. Testcontainers will detect registry credentials automatically. Return the auth configs to be able to pull from an authenticated docker registry
 }
 

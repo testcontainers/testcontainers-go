@@ -618,7 +618,7 @@ func (c *DockerContainer) CopyDirToContainer(ctx context.Context, hostDirPath st
 	}
 
 	if !dir {
-		// it's not a dir: let the consumer to handle an error
+		// it's not a dir: let the consumer handle the error
 		return fmt.Errorf("path %s is not a directory", hostDirPath)
 	}
 
