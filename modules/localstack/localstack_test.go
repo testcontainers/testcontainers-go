@@ -82,7 +82,7 @@ func TestConfigureDockerHost(t *testing.T) {
 	}
 }
 
-func TestIsLegacyMode(t *testing.T) {
+func TestIsLegacyVersion(t *testing.T) {
 	tests := []struct {
 		version string
 		want    bool
@@ -112,13 +112,13 @@ func TestIsLegacyMode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.version, func(t *testing.T) {
-			got := isLegacyMode("localstack/localstack:" + tt.version)
+			got := !isMinimumVersion("localstack/localstack:"+tt.version, "v0.11")
 			require.Equal(t, tt.want, got, "runInLegacyMode() = %v, want %v", got, tt.want)
 		})
 	}
 }
 
-func TestIsVersion2(t *testing.T) {
+func TestIsMinimumVersion2(t *testing.T) {
 	tests := []struct {
 		version string
 		want    bool
@@ -152,7 +152,7 @@ func TestIsVersion2(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.version, func(t *testing.T) {
-			got := isVersion2("localstack/localstack:" + tt.version)
+			got := isMinimumVersion("localstack/localstack:"+tt.version, "v2")
 			require.Equal(t, tt.want, got, "runInLegacyMode() = %v, want %v", got, tt.want)
 		})
 	}

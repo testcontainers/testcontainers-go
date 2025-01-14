@@ -21,14 +21,14 @@ const (
 	localstackHostEnvVar   = "LOCALSTACK_HOST"
 )
 
-var nonLegacyTags = []string{
+var recentVersionTags = []string{
 	"latest",
 	"s3",
 	"s3-latest",
 	"stable",
 }
 
-func isLegacyMode(image string) bool {
+func isMinimumVersion(image string, minVersion string) bool {
 	parts := strings.Split(image, ":")
 	version := parts[len(parts)-1]
 
@@ -36,30 +36,7 @@ func isLegacyMode(image string) bool {
 		version = version[0:pos]
 	}
 
-	if slices.Contains(nonLegacyTags, version) {
-		return false
-	}
-
-	if !strings.HasPrefix(version, "v") {
-		version = "v" + version
-	}
-
-	if semver.IsValid(version) {
-		return semver.Compare(version, "v0.11") < 0 // version < v0.11
-	}
-
-	return true
-}
-
-func isVersion2(image string) bool {
-	parts := strings.Split(image, ":")
-	version := parts[len(parts)-1]
-
-	if pos := strings.LastIndexByte(version, '-'); pos >= 0 {
-		version = version[0:pos]
-	}
-
-	if slices.Contains(nonLegacyTags, version) {
+	if slices.Contains(recentVersionTags, version) {
 		return true
 	}
 
@@ -67,11 +44,7 @@ func isVersion2(image string) bool {
 		version = "v" + version
 	}
 
-	if semver.IsValid(version) {
-		return semver.Compare(version, "v2.0") >= 0 // version >= v2.0
-	}
-
-	return false
+	return semver.IsValid(version) && semver.Compare(version, minVersion) >= 0
 }
 
 // WithNetwork creates a network with the given name and attaches the container to it, setting the network alias
@@ -116,12 +89,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	if isLegacyMode(localStackReq.Image) {
+	if !isMinimumVersion(localStackReq.Image, "v0.11") {
 		return nil, fmt.Errorf("version=%s. Testcontainers for Go does not support running LocalStack in legacy mode. Please use a version >= 0.11.0", localStackReq.Image)
 	}
 
 	envVar := hostnameExternalEnvVar
-	if isVersion2(localStackReq.Image) {
+	if isMinimumVersion(localStackReq.Image, "v2") {
 		envVar = localstackHostEnvVar
 	}
 
