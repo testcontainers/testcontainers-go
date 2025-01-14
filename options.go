@@ -53,7 +53,7 @@ func WithConfigModifier(modifier func(config *container.Config)) CustomizeReques
 // WithEndpointSettingsModifier allows to override the default endpoint settings
 func WithEndpointSettingsModifier(modifier func(settings map[string]*network.EndpointSettings)) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {
-		req.EnpointSettingsModifier = modifier
+		req.EndpointSettingsModifier = modifier
 
 		return nil
 	}
