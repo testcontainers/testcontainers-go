@@ -25,7 +25,7 @@ const (
 	baseImage    string = "amazon/dynamodb-local:"
 )
 
-var image2_2_1 string = baseImage + "2.2.1"
+var image2_2_1 = baseImage + "2.2.1"
 
 func TestRun(t *testing.T) {
 	ctx := context.Background()
