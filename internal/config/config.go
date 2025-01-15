@@ -15,7 +15,7 @@ const ReaperDefaultImage = "testcontainers/ryuk:0.11.0"
 
 var (
 	tcConfig     Config
-	tcConfigOnce *sync.Once = new(sync.Once)
+	tcConfigOnce = new(sync.Once)
 )
 
 // testcontainersConfig {
