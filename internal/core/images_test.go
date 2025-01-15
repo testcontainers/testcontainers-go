@@ -17,10 +17,10 @@ const (
 )
 
 func TestExtractImagesFromDockerfile(t *testing.T) {
-	var baseImage string = "scratch"
-	var registryHost string = "localhost"
-	var registryPort string = "5000"
-	var nginxImage string = "nginx:latest"
+	baseImage := "scratch"
+	registryHost := "localhost"
+	registryPort := "5000"
+	nginxImage := "nginx:latest"
 
 	tests := []struct {
 		name          string
