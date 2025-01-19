@@ -27,7 +27,7 @@ See below for an example runner configuration:
 
 Please also include the following in your GitlabCI pipeline definitions (`.gitlab-ci.yml`) that use Testcontainers:
 
-```yml
+```yaml
 variables:
   TESTCONTAINERS_HOST_OVERRIDE: "host.docker.internal"
 ```
@@ -41,7 +41,7 @@ Caveat: Current Docker releases (verified for 20.10.9) intentionally delay the s
 
 Here is a sample `.gitlab-ci.yml` that executes go test:
 
-```yml
+```yaml
 # DinD service is required for Testcontainers
 services:
   - name: docker:dind
@@ -68,7 +68,7 @@ This applies if your executor is `kubernetes` and you don't want to use DinD. On
 
 Here is the example Kubernetes configuration you must create:
 
-```yml
+```yaml
 # ServiceAccount for Kubedock
 apiVersion: v1
 kind: ServiceAccount
@@ -173,7 +173,7 @@ spec:
 
 Here is a sample `.gitlab-ci.yml` that executes go test:
 
-```yml
+```yaml
 variables:
   # Instruct Testcontainers to use the daemon of kubedock to create containers in kubernetes
   DOCKER_HOST: "tcp://kubedock-service:2475"
