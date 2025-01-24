@@ -1120,11 +1120,10 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		} else {
 			img, _, err := p.client.ImageInspectWithRaw(ctx, imageName)
 			if err != nil {
-				if client.IsErrNotFound(err) {
-					shouldPullImage = true
-				} else {
+				if !client.IsErrNotFound(err) {
 					return nil, err
 				}
+				shouldPullImage = true
 			}
 			if platform != nil && (img.Architecture != platform.Architecture || img.Os != platform.OS) {
 				shouldPullImage = true
