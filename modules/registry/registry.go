@@ -194,9 +194,8 @@ func (c *RegistryContainer) PushImage(ctx context.Context, ref string) error {
 	encodedJSON, err := json.Marshal(imageAuth)
 	if err != nil {
 		return fmt.Errorf("failed to encode image auth: %w", err)
-	} else {
-		pushOpts.RegistryAuth = base64.URLEncoding.EncodeToString(encodedJSON)
 	}
+	pushOpts.RegistryAuth = base64.URLEncoding.EncodeToString(encodedJSON)
 
 	_, err = dockerCli.ImagePush(ctx, ref, pushOpts)
 	if err != nil {

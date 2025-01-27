@@ -79,11 +79,9 @@ func fileExists(f string) bool {
 }
 
 func parseURL(s string) (string, error) {
-	var hostURL *url.URL
-	if u, err := url.Parse(s); err != nil {
+	hostURL, err := url.Parse(s)
+	if err != nil {
 		return "", err
-	} else {
-		hostURL = u
 	}
 
 	switch hostURL.Scheme {
