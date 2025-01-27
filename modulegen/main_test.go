@@ -296,7 +296,7 @@ func TestGenerate(t *testing.T) {
 	assertModuleContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+".go"))
 	assertGoModContent(t, module, originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, module, filepath.Join(generatedTemplatesDir, "Makefile"))
-	assertMkdocsNavItems(t, module, originalConfig, tmpCtx)
+	assertMkdocsNavItems(t, tmpCtx, module, originalConfig)
 }
 
 func TestGenerateModule(t *testing.T) {
@@ -352,7 +352,7 @@ func TestGenerateModule(t *testing.T) {
 	assertModuleContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+".go"))
 	assertGoModContent(t, module, originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, module, filepath.Join(generatedTemplatesDir, "Makefile"))
-	assertMkdocsNavItems(t, module, originalConfig, tmpCtx)
+	assertMkdocsNavItems(t, tmpCtx, module, originalConfig)
 }
 
 // assert content module file in the docs
@@ -480,9 +480,9 @@ func assertMakefileContent(t *testing.T, module context.TestcontainersModule, ma
 }
 
 // assert content in the nav items from mkdocs.yml
-func assertMkdocsNavItems(t *testing.T, module context.TestcontainersModule, originalConfig *mkdocs.Config, tmpCtx context.Context) {
+func assertMkdocsNavItems(t *testing.T, ctx context.Context, module context.TestcontainersModule, originalConfig *mkdocs.Config) {
 	t.Helper()
-	config, err := mkdocs.ReadConfig(tmpCtx.MkdocsConfigFile())
+	config, err := mkdocs.ReadConfig(ctx.MkdocsConfigFile())
 	require.NoError(t, err)
 
 	parentDir := module.ParentDir()
