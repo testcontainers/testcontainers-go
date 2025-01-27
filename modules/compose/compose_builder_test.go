@@ -146,7 +146,7 @@ func writeTemplateWithSrvType(t *testing.T, templateFile string, srvType string,
 	tmpl, err := template.ParseFiles(filepath.Join(testdataPackage, templateFile))
 	require.NoErrorf(t, err, "parsing template file")
 
-	values := map[string]interface{}{}
+	values := map[string]any{}
 	for i, p := range port {
 		values[fmt.Sprintf("Port_%d", i)] = p
 	}
