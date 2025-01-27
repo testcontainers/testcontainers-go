@@ -42,7 +42,7 @@ func newMockReaperProvider(cfg config.Config) *mockReaperProvider {
 
 var errExpected = errors.New("expected")
 
-func (m *mockReaperProvider) RunContainer(ctx context.Context, req ContainerRequest) (Container, error) {
+func (m *mockReaperProvider) RunContainer(_ context.Context, req ContainerRequest) (Container, error) {
 	m.req = req
 
 	m.hostConfig = &container.HostConfig{}

@@ -80,7 +80,7 @@ func WithAttachable() CustomizeNetworkOption {
 //
 // Deprecated: CheckDuplicate is deprecated since API v1.44, but it defaults to true when sent by the client package to older daemons.
 func WithCheckDuplicate() CustomizeNetworkOption {
-	return func(original *network.CreateOptions) error {
+	return func(_ *network.CreateOptions) error {
 		return nil
 	}
 }

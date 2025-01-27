@@ -212,7 +212,7 @@ type dynamoDBResolver struct {
 	HostPort string
 }
 
-func (r *dynamoDBResolver) ResolveEndpoint(ctx context.Context, params dynamodb.EndpointParameters) (smithyendpoints.Endpoint, error) {
+func (r *dynamoDBResolver) ResolveEndpoint(_ context.Context, _ dynamodb.EndpointParameters) (smithyendpoints.Endpoint, error) {
 	return smithyendpoints.Endpoint{
 		URI: url.URL{Host: r.HostPort, Scheme: "http"},
 	}, nil

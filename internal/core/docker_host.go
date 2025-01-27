@@ -240,7 +240,7 @@ func isHostNotSet(err error) bool {
 }
 
 // dockerHostFromEnv returns the docker host from the DOCKER_HOST environment variable, if it's not empty
-func dockerHostFromEnv(ctx context.Context) (string, error) {
+func dockerHostFromEnv(_ context.Context) (string, error) {
 	if dockerHostPath := os.Getenv("DOCKER_HOST"); dockerHostPath != "" {
 		return dockerHostPath, nil
 	}
@@ -263,7 +263,7 @@ func dockerHostFromContext(ctx context.Context) (string, error) {
 }
 
 // dockerHostFromProperties returns the docker host from the ~/.testcontainers.properties file, if it's not empty
-func dockerHostFromProperties(ctx context.Context) (string, error) {
+func dockerHostFromProperties(_ context.Context) (string, error) {
 	cfg := config.Read()
 	socketPath := cfg.Host
 	if socketPath != "" {
@@ -285,7 +285,7 @@ func dockerSocketOverridePath() (string, error) {
 
 // dockerSocketPath returns the docker socket from the default docker socket path, if it's not empty
 // and the socket exists
-func dockerSocketPath(ctx context.Context) (string, error) {
+func dockerSocketPath(_ context.Context) (string, error) {
 	if fileExists(DockerSocketPath) {
 		return DockerSocketPathWithSchema, nil
 	}
@@ -294,7 +294,7 @@ func dockerSocketPath(ctx context.Context) (string, error) {
 }
 
 // testcontainersHostFromProperties returns the testcontainers host from the ~/.testcontainers.properties file, if it's not empty
-func testcontainersHostFromProperties(ctx context.Context) (string, error) {
+func testcontainersHostFromProperties(_ context.Context) (string, error) {
 	cfg := config.Read()
 	testcontainersHost := cfg.TestcontainersHost
 	if testcontainersHost != "" {

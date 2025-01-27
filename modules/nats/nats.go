@@ -84,7 +84,7 @@ func (c *NATSContainer) MustConnectionString(ctx context.Context, args ...string
 }
 
 // ConnectionString returns a connection string for the NATS container
-func (c *NATSContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
+func (c *NATSContainer) ConnectionString(ctx context.Context, _ ...string) (string, error) {
 	mappedPort, err := c.MappedPort(ctx, defaultClientPort)
 	if err != nil {
 		return "", err

@@ -89,7 +89,7 @@ func WithFunctionsWorker() testcontainers.CustomizeRequestOption {
 // WithLogConsumers allows to add log consumers to the container.
 // They will be automatically started and they will follow the container logs,
 // but it's a responsibility of the caller to stop them calling StopLogProducer
-func (c *Container) WithLogConsumers(ctx context.Context, consumer ...testcontainers.LogConsumer) {
+func (c *Container) WithLogConsumers(ctx context.Context, _ ...testcontainers.LogConsumer) {
 	if len(c.LogConsumers) > 0 {
 		// not handling the error because it will return an error if and only if the producer is already started
 		_ = c.StartLogProducer(ctx)

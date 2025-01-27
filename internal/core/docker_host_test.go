@@ -312,7 +312,7 @@ type mockCli struct {
 
 // Info returns a mock implementation of types.Info, which is handy for detecting the operating system,
 // which is used to determine the default docker socket path.
-func (m mockCli) Info(ctx context.Context) (system.Info, error) {
+func (m mockCli) Info(_ context.Context) (system.Info, error) {
 	return system.Info{
 		OperatingSystem: m.OS,
 	}, nil

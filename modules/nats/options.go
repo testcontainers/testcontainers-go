@@ -24,7 +24,7 @@ var _ testcontainers.ContainerCustomizer = (*CmdOption)(nil)
 type CmdOption func(opts *options)
 
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
-func (o CmdOption) Customize(req *testcontainers.GenericContainerRequest) error {
+func (o CmdOption) Customize(_ *testcontainers.GenericContainerRequest) error {
 	// NOOP to satisfy interface.
 	return nil
 }

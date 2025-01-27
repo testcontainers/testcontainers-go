@@ -140,7 +140,7 @@ func TestDockerImageAuth(t *testing.T) {
 		t.Cleanup(func() {
 			defaultRegistryFn = origDefaultRegistryFn
 		})
-		defaultRegistryFn = func(ctx context.Context) string {
+		defaultRegistryFn = func(_ context.Context) string {
 			return ""
 		}
 

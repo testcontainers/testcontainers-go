@@ -20,7 +20,7 @@ func TestQdrant(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	t.Run("REST Endpoint", func(tt *testing.T) {
+	t.Run("REST Endpoint", func(t *testing.T) {
 		// restEndpoint {
 		restEndpoint, err := ctr.RESTEndpoint(ctx)
 		// }
@@ -34,7 +34,7 @@ func TestQdrant(t *testing.T) {
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 
-	t.Run("gRPC Endpoint", func(tt *testing.T) {
+	t.Run("gRPC Endpoint", func(t *testing.T) {
 		// gRPCEndpoint {
 		grpcEndpoint, err := ctr.GRPCEndpoint(ctx)
 		// }
@@ -45,7 +45,7 @@ func TestQdrant(t *testing.T) {
 		defer conn.Close()
 	})
 
-	t.Run("Web UI", func(tt *testing.T) {
+	t.Run("Web UI", func(t *testing.T) {
 		// webUIEndpoint {
 		webUI, err := ctr.WebUI(ctx)
 		// }

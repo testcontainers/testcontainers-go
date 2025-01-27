@@ -41,13 +41,13 @@ type Logging interface {
 type noopLogger struct{}
 
 // Printf implements Logging.
-func (n noopLogger) Printf(format string, v ...any) {
+func (n noopLogger) Printf(_ string, _ ...any) {
 	// NOOP
 }
 
 // Deprecated: this function will be removed in a future release
 // LogDockerServerInfo logs the docker server info using the provided logger and Docker client
-func LogDockerServerInfo(ctx context.Context, client client.APIClient, logger Logging) {
+func LogDockerServerInfo(_ context.Context, _ client.APIClient, _ Logging) {
 	// NOOP
 }
 
