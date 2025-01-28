@@ -199,11 +199,11 @@ func TestRun_local(t *testing.T) {
 	t.Run("port-endpoint", func(t *testing.T) {
 		endpoint, err := ollamaContainer.PortEndpoint(ctx, testNatPort, "")
 		require.NoError(t, err)
-		require.Regexp(t, regexp.MustCompile(`^127.0.0.1:\d+$`), endpoint)
+		require.Regexp(t, `^127.0.0.1:\d+$`, endpoint)
 
 		endpoint, err = ollamaContainer.PortEndpoint(ctx, testNatPort, "http")
 		require.NoError(t, err)
-		require.Regexp(t, regexp.MustCompile(`^http://127.0.0.1:\d+$`), endpoint)
+		require.Regexp(t, `^http://127.0.0.1:\d+$`, endpoint)
 	})
 
 	t.Run("session-id", func(t *testing.T) {
@@ -392,7 +392,7 @@ func testRun_localWithCustomHost(ctx context.Context, t *testing.T, ollamaContai
 	t.Run("inspect", func(t *testing.T) {
 		inspect, err := ollamaContainer.Inspect(ctx)
 		require.NoError(t, err)
-		require.Regexp(t, regexp.MustCompile(`^local-ollama:\d+\.\d+\.\d+$`), inspect.Config.Image)
+		require.Regexp(t, `^local-ollama:\d+\.\d+\.\d+$`, inspect.Config.Image)
 
 		_, exists := inspect.Config.ExposedPorts[testNatPort]
 		require.True(t, exists)
