@@ -40,10 +40,10 @@ func TestSurrealDBSelect(t *testing.T) {
 	result, err := db.Select("person.tobie")
 	require.NoError(t, err)
 
-	resultData := result.([]any)[0].(map[string]interface{})
+	resultData := result.([]any)[0].(map[string]any)
 	require.Equal(t, "Founder & CEO", resultData["title"])
-	require.Equal(t, "Tobie", resultData["name"].(map[string]interface{})["first"])
-	require.Equal(t, "Morgan Hitchcock", resultData["name"].(map[string]interface{})["last"])
+	require.Equal(t, "Tobie", resultData["name"].(map[string]any)["first"])
+	require.Equal(t, "Morgan Hitchcock", resultData["name"].(map[string]any)["last"])
 	require.Equal(t, true, resultData["marketing"])
 }
 
@@ -82,9 +82,9 @@ func TestSurrealDBWithAuth(t *testing.T) {
 	result, err := db.Select("person.tobie")
 	require.NoError(t, err)
 
-	resultData := result.([]any)[0].(map[string]interface{})
+	resultData := result.([]any)[0].(map[string]any)
 	require.Equal(t, "Founder & CEO", resultData["title"])
-	require.Equal(t, "Tobie", resultData["name"].(map[string]interface{})["first"])
-	require.Equal(t, "Morgan Hitchcock", resultData["name"].(map[string]interface{})["last"])
+	require.Equal(t, "Tobie", resultData["name"].(map[string]any)["first"])
+	require.Equal(t, "Morgan Hitchcock", resultData["name"].(map[string]any)["last"])
 	require.Equal(t, true, resultData["marketing"])
 }

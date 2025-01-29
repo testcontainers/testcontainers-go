@@ -24,19 +24,19 @@ type Config struct {
 		Logo    string `yaml:"logo"`
 		Favicon string `yaml:"favicon"`
 	} `yaml:"theme"`
-	ExtraCSS           []string      `yaml:"extra_css"`
-	RepoName           string        `yaml:"repo_name"`
-	RepoURL            string        `yaml:"repo_url"`
-	MarkdownExtensions []interface{} `yaml:"markdown_extensions"`
+	ExtraCSS           []string `yaml:"extra_css"`
+	RepoName           string   `yaml:"repo_name"`
+	RepoURL            string   `yaml:"repo_url"`
+	MarkdownExtensions []any    `yaml:"markdown_extensions"`
 	Nav                []struct {
-		Home               string        `yaml:"Home,omitempty"`
-		Quickstart         string        `yaml:"Quickstart,omitempty"`
-		Features           []interface{} `yaml:"Features,omitempty"`
-		Examples           []string      `yaml:"Examples,omitempty"`
-		Modules            []string      `yaml:"Modules,omitempty"`
-		SystemRequirements []interface{} `yaml:"System Requirements,omitempty"`
-		Contributing       string        `yaml:"Contributing,omitempty"`
-		GettingHelp        string        `yaml:"Getting help,omitempty"`
+		Home               string   `yaml:"Home,omitempty"`
+		Quickstart         string   `yaml:"Quickstart,omitempty"`
+		Features           []any    `yaml:"Features,omitempty"`
+		Examples           []string `yaml:"Examples,omitempty"`
+		Modules            []string `yaml:"Modules,omitempty"`
+		SystemRequirements []any    `yaml:"System Requirements,omitempty"`
+		Contributing       string   `yaml:"Contributing,omitempty"`
+		GettingHelp        string   `yaml:"Getting help,omitempty"`
 	} `yaml:"nav"`
 	EditURI string `yaml:"edit_uri"`
 	Extra   struct {

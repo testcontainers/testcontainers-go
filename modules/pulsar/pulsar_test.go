@@ -181,14 +181,14 @@ func TestPulsar(t *testing.T) {
 			body, err := io.ReadAll(resp.Body)
 			require.NoError(t, err)
 
-			var stats map[string]interface{}
+			var stats map[string]any
 			err = json.Unmarshal(body, &stats)
 			require.NoError(t, err)
 
 			subscriptions := stats["subscriptions"]
 			require.NotNil(t, subscriptions)
 
-			subscriptionsMap := subscriptions.(map[string]interface{})
+			subscriptionsMap := subscriptions.(map[string]any)
 
 			// check that the subscription exists
 			_, ok := subscriptionsMap[subscriptionName]

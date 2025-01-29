@@ -41,7 +41,7 @@ func TestGrafanaLGTM(t *testing.T) {
 
 		require.Equal(t, http.StatusOK, httpResp.StatusCode)
 
-		body := make(map[string]interface{})
+		body := make(map[string]any)
 		err = json.NewDecoder(httpResp.Body).Decode(&body)
 		require.NoError(t, err)
 		require.Equal(t, "11.0.0", body["version"])

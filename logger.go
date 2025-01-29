@@ -35,13 +35,13 @@ var (
 
 // Logging defines the Logger interface
 type Logging interface {
-	Printf(format string, v ...interface{})
+	Printf(format string, v ...any)
 }
 
 type noopLogger struct{}
 
 // Printf implements Logging.
-func (n noopLogger) Printf(format string, v ...interface{}) {
+func (n noopLogger) Printf(format string, v ...any) {
 	// NOOP
 }
 
@@ -98,7 +98,7 @@ type testLogger struct {
 }
 
 // Printf implements Logging.
-func (t testLogger) Printf(format string, v ...interface{}) {
+func (t testLogger) Printf(format string, v ...any) {
 	t.Helper()
 	t.Logf(format, v...)
 }

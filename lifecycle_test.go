@@ -668,7 +668,7 @@ type inMemoryLogger struct {
 	data []string
 }
 
-func (l *inMemoryLogger) Printf(format string, args ...interface{}) {
+func (l *inMemoryLogger) Printf(format string, args ...any) {
 	l.data = append(l.data, fmt.Sprintf(format, args...))
 }
 
@@ -882,7 +882,7 @@ type linesTestLogger struct {
 	data []string
 }
 
-func (l *linesTestLogger) Printf(format string, args ...interface{}) {
+func (l *linesTestLogger) Printf(format string, args ...any) {
 	l.data = append(l.data, fmt.Sprintf(format, args...))
 }
 
