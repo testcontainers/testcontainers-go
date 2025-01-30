@@ -50,7 +50,7 @@ func isMinimumVersion(image string, minVersion string) bool {
 // WithNetwork creates a network with the given name and attaches the container to it, setting the network alias
 // on that network to the given alias.
 // Deprecated: use network.WithNetwork or network.WithNewNetwork instead
-func WithNetwork(networkName string, alias string) testcontainers.CustomizeRequestOption {
+func WithNetwork(_ string, alias string) testcontainers.CustomizeRequestOption {
 	return network.WithNewNetwork(context.Background(), []string{alias})
 }
 

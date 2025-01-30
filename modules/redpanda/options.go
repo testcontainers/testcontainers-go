@@ -144,12 +144,12 @@ func WithTLS(cert, key []byte) Option {
 func WithListener(lis string) Option {
 	host, port, err := net.SplitHostPort(lis)
 	if err != nil {
-		return func(o *options) {}
+		return func(_ *options) {}
 	}
 
 	portInt, err := strconv.Atoi(port)
 	if err != nil {
-		return func(o *options) {}
+		return func(_ *options) {}
 	}
 
 	return func(o *options) {

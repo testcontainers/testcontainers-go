@@ -65,12 +65,12 @@ func (st mockExecTarget) Host(_ context.Context) (string, error) {
 	return "", errors.New("not implemented")
 }
 
-func (st mockExecTarget) Inspect(ctx context.Context) (*types.ContainerJSON, error) {
+func (st mockExecTarget) Inspect(_ context.Context) (*types.ContainerJSON, error) {
 	return nil, errors.New("not implemented")
 }
 
 // Deprecated: use Inspect instead
-func (st mockExecTarget) Ports(ctx context.Context) (nat.PortMap, error) {
+func (st mockExecTarget) Ports(_ context.Context) (nat.PortMap, error) {
 	return nil, errors.New("not implemented")
 }
 
@@ -82,7 +82,7 @@ func (st mockExecTarget) Logs(_ context.Context) (io.ReadCloser, error) {
 	return nil, errors.New("not implemented")
 }
 
-func (st mockExecTarget) Exec(ctx context.Context, _ []string, options ...tcexec.ProcessOption) (int, io.Reader, error) {
+func (st mockExecTarget) Exec(ctx context.Context, _ []string, _ ...tcexec.ProcessOption) (int, io.Reader, error) {
 	time.Sleep(st.waitDuration)
 
 	var reader io.Reader

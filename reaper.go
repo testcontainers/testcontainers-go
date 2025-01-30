@@ -69,7 +69,7 @@ type ReaperProvider interface {
 //
 // The caller must call Connect at least once on the returned Reaper and use the returned
 // result otherwise the reaper will be kept open until the process exits.
-func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, reaperImageName string) (*Reaper, error) {
+func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, _ string) (*Reaper, error) {
 	reaper, err := spawner.reaper(ctx, sessionID, provider)
 	if err != nil {
 		return nil, fmt.Errorf("reaper: %w", err)

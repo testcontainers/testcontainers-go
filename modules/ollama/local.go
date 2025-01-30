@@ -301,36 +301,36 @@ func (c *localProcess) extractLogDetails(pattern string, submatches [][][]byte) 
 }
 
 // ContainerIP implements testcontainers.Container interface for the local Ollama binary.
-func (c *localProcess) ContainerIP(ctx context.Context) (string, error) {
+func (c *localProcess) ContainerIP(_ context.Context) (string, error) {
 	return c.host, nil
 }
 
 // ContainerIPs returns a slice with the IP address of the local Ollama binary.
-func (c *localProcess) ContainerIPs(ctx context.Context) ([]string, error) {
+func (c *localProcess) ContainerIPs(_ context.Context) ([]string, error) {
 	return []string{c.host}, nil
 }
 
 // CopyToContainer implements testcontainers.Container interface for the local Ollama binary.
 // Returns [errors.ErrUnsupported].
-func (c *localProcess) CopyToContainer(ctx context.Context, fileContent []byte, containerFilePath string, fileMode int64) error {
+func (c *localProcess) CopyToContainer(_ context.Context, _ []byte, _ string, _ int64) error {
 	return errors.ErrUnsupported
 }
 
 // CopyDirToContainer implements testcontainers.Container interface for the local Ollama binary.
 // Returns [errors.ErrUnsupported].
-func (c *localProcess) CopyDirToContainer(ctx context.Context, hostDirPath string, containerParentPath string, fileMode int64) error {
+func (c *localProcess) CopyDirToContainer(_ context.Context, _ string, _ string, _ int64) error {
 	return errors.ErrUnsupported
 }
 
 // CopyFileToContainer implements testcontainers.Container interface for the local Ollama binary.
 // Returns [errors.ErrUnsupported].
-func (c *localProcess) CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error {
+func (c *localProcess) CopyFileToContainer(_ context.Context, _ string, _ string, _ int64) error {
 	return errors.ErrUnsupported
 }
 
 // CopyFileFromContainer implements testcontainers.Container interface for the local Ollama binary.
 // Returns [errors.ErrUnsupported].
-func (c *localProcess) CopyFileFromContainer(ctx context.Context, filePath string) (io.ReadCloser, error) {
+func (c *localProcess) CopyFileFromContainer(_ context.Context, _ string) (io.ReadCloser, error) {
 	return nil, errors.ErrUnsupported
 }
 
@@ -478,7 +478,7 @@ func (c *localProcess) IsRunning() bool {
 
 // Logs implements testcontainers.Container interface for the local Ollama binary.
 // It returns the logs from the local Ollama binary.
-func (c *localProcess) Logs(ctx context.Context) (io.ReadCloser, error) {
+func (c *localProcess) Logs(_ context.Context) (io.ReadCloser, error) {
 	file, err := os.Open(c.logFile.Name())
 	if err != nil {
 		return nil, fmt.Errorf("open log file: %w", err)
@@ -489,7 +489,7 @@ func (c *localProcess) Logs(ctx context.Context) (io.ReadCloser, error) {
 
 // State implements testcontainers.Container interface for the local Ollama binary.
 // It returns the current state of the Ollama process, simulating a container state.
-func (c *localProcess) State(ctx context.Context) (*types.ContainerState, error) {
+func (c *localProcess) State(_ context.Context) (*types.ContainerState, error) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
@@ -609,12 +609,12 @@ func (c *localProcess) GetContainerID() string {
 }
 
 // Host implements testcontainers.Container interface for the local Ollama binary.
-func (c *localProcess) Host(ctx context.Context) (string, error) {
+func (c *localProcess) Host(_ context.Context) (string, error) {
 	return c.host, nil
 }
 
 // MappedPort implements testcontainers.Container interface for the local Ollama binary.
-func (c *localProcess) MappedPort(ctx context.Context, port nat.Port) (nat.Port, error) {
+func (c *localProcess) MappedPort(_ context.Context, port nat.Port) (nat.Port, error) {
 	if port.Port() != localPort || port.Proto() != "tcp" {
 		return "", errdefs.NotFound(fmt.Errorf("port %q not found", port))
 	}
@@ -624,13 +624,13 @@ func (c *localProcess) MappedPort(ctx context.Context, port nat.Port) (nat.Port,
 
 // Networks implements testcontainers.Container interface for the local Ollama binary.
 // It returns a nil slice.
-func (c *localProcess) Networks(ctx context.Context) ([]string, error) {
+func (c *localProcess) Networks(_ context.Context) ([]string, error) {
 	return nil, nil
 }
 
 // NetworkAliases implements testcontainers.Container interface for the local Ollama binary.
 // It returns a nil map.
-func (c *localProcess) NetworkAliases(ctx context.Context) (map[string][]string, error) {
+func (c *localProcess) NetworkAliases(_ context.Context) (map[string][]string, error) {
 	return nil, nil
 }
 
@@ -663,7 +663,7 @@ func (c *localProcess) SessionID() string {
 // Deprecated: it will be removed in the next major release.
 // FollowOutput is not implemented for the local Ollama binary.
 // It panics if called.
-func (c *localProcess) FollowOutput(consumer testcontainers.LogConsumer) {
+func (c *localProcess) FollowOutput(_ testcontainers.LogConsumer) {
 	panic("not implemented")
 }
 
