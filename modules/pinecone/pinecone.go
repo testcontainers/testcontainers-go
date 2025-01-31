@@ -15,7 +15,8 @@ type Container struct {
 // Run creates an instance of the Pinecone container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	req := testcontainers.ContainerRequest{
-		Image: img,
+		Image:        img,
+		ExposedPorts: []string{"5080/tcp"},
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
@@ -40,4 +41,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	return c, nil
+}
+
+// HttpEndpoint returns the http endpoint for the pinecone container
+func (c *Container) HttpEndpoint() (string, error) {
+	return c.PortEndpoint(context.Background(), "5080/tcp", "http")
 }
