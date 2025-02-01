@@ -24,9 +24,9 @@ func TestWeaviate(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	t.Run("HttpHostAddress", func(t *testing.T) {
+	t.Run("HTTPHostAddress", func(t *testing.T) {
 		// httpHostAddress {
-		schema, host, err := ctr.HttpHostAddress(ctx)
+		schema, host, err := ctr.HTTPHostAddress(ctx)
 		// }
 		require.NoError(t, err)
 
@@ -56,7 +56,7 @@ func TestWeaviate(t *testing.T) {
 	})
 
 	t.Run("Weaviate client", func(tt *testing.T) {
-		httpScheme, httpHost, err := ctr.HttpHostAddress(ctx)
+		httpScheme, httpHost, err := ctr.HTTPHostAddress(ctx)
 		require.NoError(tt, err)
 		grpcHost, err := ctr.GrpcHostAddress(ctx)
 		require.NoError(tt, err)

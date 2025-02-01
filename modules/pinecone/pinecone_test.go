@@ -18,7 +18,7 @@ func TestPinecone(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	host, err := ctr.HttpEndpoint()
+	host, err := ctr.HTTPEndpoint()
 	require.NoError(t, err)
 
 	pc, err := pinecone.NewClient(pinecone.NewClientParams{
@@ -39,7 +39,7 @@ func TestPinecone_index(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	host, err := ctr.HttpEndpoint()
+	host, err := ctr.HTTPEndpoint()
 	require.NoError(t, err)
 
 	pc, err := pinecone.NewClient(pinecone.NewClientParams{

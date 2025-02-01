@@ -34,7 +34,7 @@ func ExampleRun() {
 	fmt.Println(state.Running)
 
 	// httpConnection {
-	host, err := pineconeContainer.HttpEndpoint()
+	host, err := pineconeContainer.HTTPEndpoint()
 	if err != nil {
 		log.Printf("failed to get container state: %s", err)
 		return

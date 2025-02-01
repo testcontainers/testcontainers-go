@@ -24,7 +24,7 @@ const (
 )
 
 type Test struct {
-	Id uint64
+	ID uint64
 }
 
 func TestClickHouseDefaultConfig(t *testing.T) {
@@ -276,7 +276,7 @@ func performReplicatedCRUD(t *testing.T, conn driver.Conn) ([]Test, error) {
 			for rows.Next() {
 				var r Test
 
-				err := rows.Scan(&r.Id)
+				err := rows.Scan(&r.ID)
 				if err != nil {
 					return nil, err
 				}
@@ -325,7 +325,7 @@ func getAllRows(conn driver.Conn) ([]Test, error) {
 	for rows.Next() {
 		var r Test
 
-		err := rows.Scan(&r.Id)
+		err := rows.Scan(&r.ID)
 		if err != nil {
 			return nil, err
 		}

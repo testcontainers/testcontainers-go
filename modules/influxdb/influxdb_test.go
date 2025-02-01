@@ -58,7 +58,7 @@ func TestWithInitDb(t *testing.T) {
 	}
 
 	cli, err := influxclient.NewHTTPClient(influxclient.HTTPConfig{
-		Addr: influxDbContainer.MustConnectionUrl(ctx),
+		Addr: influxDbContainer.MustConnectionURL(ctx),
 	})
 	require.NoError(t, err)
 	defer cli.Close()
@@ -91,7 +91,7 @@ func TestWithConfigFile(t *testing.T) {
 
 	/// influxConnectionUrl {
 	cli, err := influxclient.NewHTTPClient(influxclient.HTTPConfig{
-		Addr: influxDbContainer.MustConnectionUrl(context.Background()),
+		Addr: influxDbContainer.MustConnectionURL(context.Background()),
 	})
 	// }
 	require.NoError(t, err)

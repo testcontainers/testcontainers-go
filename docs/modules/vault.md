@@ -92,7 +92,7 @@ If you need to run a vault command in the container, you can use the `WithInitCo
 
 ### Container Methods
 
-#### HttpHostAddress
+#### HTTPHostAddress
 
 This method returns the http host address of Vault, in the `http://<host>:<port>` format.
 

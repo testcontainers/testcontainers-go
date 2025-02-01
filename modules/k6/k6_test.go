@@ -70,7 +70,7 @@ func TestK6(t *testing.T) {
 				uri, err := url.Parse(tc.script)
 				require.NoError(t, err)
 
-				desc := k6.DownloadableFile{Uri: *uri, DownloadDir: t.TempDir()}
+				desc := k6.DownloadableFile{URI: *uri, DownloadDir: t.TempDir()}
 				options = k6.WithRemoteTestScript(desc)
 			}
 

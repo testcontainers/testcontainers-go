@@ -38,7 +38,7 @@ func TestVault(t *testing.T) {
 	require.NoError(t, err)
 
 	// httpHostAddress {
-	hostAddress, err := vaultContainer.HttpHostAddress(ctx)
+	hostAddress, err := vaultContainer.HTTPHostAddress(ctx)
 	// }
 	require.NoError(t, err)
 

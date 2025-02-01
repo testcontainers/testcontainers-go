@@ -92,7 +92,7 @@ func ExampleRun_connectWithSDKClient() {
 	}
 
 	// httpEndpoint {
-	httpEndpoint, err := openfgaContainer.HttpEndpoint(context.Background())
+	httpEndpoint, err := openfgaContainer.HTTPEndpoint(context.Background())
 	if err != nil {
 		log.Printf("failed to get HTTP endpoint: %s", err)
 		return
@@ -160,7 +160,7 @@ func ExampleRun_writeModel() {
 		return
 	}
 
-	httpEndpoint, err := openfgaContainer.HttpEndpoint(context.Background())
+	httpEndpoint, err := openfgaContainer.HTTPEndpoint(context.Background())
 	if err != nil {
 		log.Printf("failed to get HTTP endpoint: %s", err)
 		return
