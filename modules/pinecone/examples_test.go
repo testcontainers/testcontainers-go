@@ -24,7 +24,6 @@ func ExampleRun() {
 		log.Printf("failed to start container: %s", err)
 		return
 	}
-	// }
 
 	state, err := pineconeContainer.State(ctx)
 	if err != nil {
