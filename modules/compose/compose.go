@@ -122,11 +122,11 @@ func WithProfiles(profiles ...string) ComposeStackOption {
 	return ComposeProfiles(profiles)
 }
 
-func NewDockerCompose(filePaths ...string) (*dockerCompose, error) {
+func NewDockerCompose(filePaths ...string) (*DockerCompose, error) {
 	return NewDockerComposeWith(WithStackFiles(filePaths...))
 }
 
-func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
+func NewDockerComposeWith(opts ...ComposeStackOption) (*DockerCompose, error) {
 	composeOptions := composeStackOptions{
 		Identifier:     uuid.New().String(),
 		temporaryPaths: make(map[string]bool),
@@ -161,7 +161,7 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 	dockerClient := dockerCli.Client()
 	provider.SetClient(dockerClient)
 
-	composeAPI := &dockerCompose{
+	composeAPI := &DockerCompose{
 		name:             composeOptions.Identifier,
 		configs:          composeOptions.Paths,
 		temporaryConfigs: composeOptions.temporaryPaths,

@@ -148,7 +148,7 @@ func TestDockerComposeAPIWithProfiles(t *testing.T) {
 			t.Cleanup(cancel)
 
 			for _, service := range test.wantServices {
-				compose = compose.WaitForService(service, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).(*dockerCompose)
+				compose = compose.WaitForService(service, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).(*DockerCompose)
 			}
 			err = compose.Up(ctx, Wait(true))
 			cleanup(t, compose)
@@ -694,7 +694,7 @@ func testNameHash(name string) StackIdentifier {
 }
 
 // cleanup is a helper function that schedules the compose stack to be stopped when the test ends.
-func cleanup(t *testing.T, compose *dockerCompose) {
+func cleanup(t *testing.T, compose *DockerCompose) {
 	t.Helper()
 	t.Cleanup(func() {
 		require.NoError(t, compose.Down(
