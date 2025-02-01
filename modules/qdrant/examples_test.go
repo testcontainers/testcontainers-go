@@ -69,7 +69,7 @@ func ExampleRun_createPoints() {
 	}
 	defer conn.Close()
 
-	collections_client := pb.NewCollectionsClient(conn)
+	collectionsClient := pb.NewCollectionsClient(conn)
 
 	const (
 		collectionName        = "test_collection"
@@ -79,7 +79,7 @@ func ExampleRun_createPoints() {
 
 	// 1. create the collection
 	var defaultSegmentNumber uint64 = 2
-	_, err = collections_client.Create(context.Background(), &pb.CreateCollection{
+	_, err = collectionsClient.Create(context.Background(), &pb.CreateCollection{
 		CollectionName: collectionName,
 		VectorsConfig: &pb.VectorsConfig{Config: &pb.VectorsConfig_Params{
 			Params: &pb.VectorParams{
@@ -99,7 +99,7 @@ func ExampleRun_createPoints() {
 	// 2. Contact the server and print out its response.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	r, err := collections_client.List(ctx, &pb.ListCollectionsRequest{})
+	r, err := collectionsClient.List(ctx, &pb.ListCollectionsRequest{})
 	if err != nil {
 		log.Printf("could not get collections: %v", err)
 		return
@@ -270,7 +270,7 @@ func ExampleRun_createPoints() {
 	}
 
 	// 7. Retrieve points by ids
-	pointsById, err := pointsClient.Get(context.Background(), &pb.GetPoints{
+	pointsByID, err := pointsClient.Get(context.Background(), &pb.GetPoints{
 		CollectionName: collectionName,
 		Ids: []*pb.PointId{
 			{PointIdOptions: &pb.PointId_Num{Num: 1}},
@@ -282,7 +282,7 @@ func ExampleRun_createPoints() {
 		return
 	}
 
-	fmt.Printf("Retrieved points: %d\n", len(pointsById.GetResult()))
+	fmt.Printf("Retrieved points: %d\n", len(pointsByID.GetResult()))
 
 	// 8. Unfiltered search
 	unfilteredSearchResult, err := pointsClient.Search(context.Background(), &pb.SearchPoints{

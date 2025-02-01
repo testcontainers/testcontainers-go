@@ -56,13 +56,13 @@ func (c *RabbitMQContainer) AmqpsURL(ctx context.Context) (string, error) {
 	return fmt.Sprintf("amqps://%s:%s@%s", c.AdminUsername, c.AdminPassword, endpoint), nil
 }
 
-// HttpURL returns the URL for HTTP management.
-func (c *RabbitMQContainer) HttpURL(ctx context.Context) (string, error) {
+// HTTPURL returns the URL for HTTP management.
+func (c *RabbitMQContainer) HTTPURL(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, nat.Port(DefaultHTTPPort), "http")
 }
 
-// HttpsURL returns the URL for HTTPS management.
-func (c *RabbitMQContainer) HttpsURL(ctx context.Context) (string, error) {
+// HTTPSURL returns the URL for HTTPS management.
+func (c *RabbitMQContainer) HTTPSURL(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, nat.Port(DefaultHTTPSPort), "https")
 }
 

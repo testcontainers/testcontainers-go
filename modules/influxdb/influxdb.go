@@ -35,7 +35,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"INFLUXDB_HTTP_HTTPS_ENABLED":    "false",
 			"INFLUXDB_HTTP_AUTH_ENABLED":     "false",
 		},
-		WaitingFor: waitForHttpHealth(),
+		WaitingFor: waitForHTTPHealth(),
 	}
 	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
@@ -61,15 +61,15 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
-func (c *InfluxDbContainer) MustConnectionUrl(ctx context.Context) string {
-	connectionString, err := c.ConnectionUrl(ctx)
+func (c *InfluxDbContainer) MustConnectionURL(ctx context.Context) string {
+	connectionString, err := c.ConnectionURL(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return connectionString
 }
 
-func (c *InfluxDbContainer) ConnectionUrl(ctx context.Context) (string, error) {
+func (c *InfluxDbContainer) ConnectionURL(ctx context.Context) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "8086/tcp")
 	if err != nil {
 		return "", err
@@ -129,13 +129,13 @@ func WithInitDb(srcPath string) testcontainers.CustomizeRequestOption {
 
 		req.WaitingFor = wait.ForAll(
 			wait.ForLog("Server shutdown completed"),
-			waitForHttpHealth(),
+			waitForHTTPHealth(),
 		)
 		return nil
 	}
 }
 
-func waitForHttpHealth() *wait.HTTPStrategy {
+func waitForHTTPHealth() *wait.HTTPStrategy {
 	return wait.ForHTTP("/health").
 		WithResponseMatcher(func(body io.Reader) bool {
 			decoder := json.NewDecoder(body)

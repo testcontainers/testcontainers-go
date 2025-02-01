@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	defaultHttpApiPort = "8500"
+	defaultHTTPAPIPort = "8500"
 	defaultBrokerPort  = "8600"
 )
 
@@ -23,9 +23,9 @@ type ConsulContainer struct {
 	testcontainers.Container
 }
 
-// ApiEndpoint returns host:port for the HTTP API endpoint.
-func (c *ConsulContainer) ApiEndpoint(ctx context.Context) (string, error) {
-	mappedPort, err := c.MappedPort(ctx, defaultHttpApiPort)
+// APIEndpoint returns host:port for the HTTP API endpoint.
+func (c *ConsulContainer) APIEndpoint(ctx context.Context) (string, error) {
+	mappedPort, err := c.MappedPort(ctx, defaultHTTPAPIPort)
 	if err != nil {
 		return "", err
 	}
@@ -74,14 +74,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: img,
 			ExposedPorts: []string{
-				defaultHttpApiPort + "/tcp",
+				defaultHTTPAPIPort + "/tcp",
 				defaultBrokerPort + "/tcp",
 				defaultBrokerPort + "/udp",
 			},
 			Env: map[string]string{},
 			WaitingFor: wait.ForAll(
 				wait.ForLog("Consul agent running!"),
-				wait.ForListeningPort(defaultHttpApiPort+"/tcp"),
+				wait.ForListeningPort(defaultHTTPAPIPort+"/tcp"),
 			),
 		},
 		Started: true,

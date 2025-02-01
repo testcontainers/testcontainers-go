@@ -218,7 +218,7 @@ func WithDoltCredsPublicKey(key string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-func WithDoltCloneRemoteUrl(url string) testcontainers.CustomizeRequestOption {
+func WithDoltCloneRemoteURL(url string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["DOLT_REMOTE_CLONE_URL"] = url
 		return nil

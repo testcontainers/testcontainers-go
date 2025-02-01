@@ -58,21 +58,21 @@ func TestWithInitDb(t *testing.T) {
 	}
 
 	cli, err := influxclient.NewHTTPClient(influxclient.HTTPConfig{
-		Addr: influxDbContainer.MustConnectionUrl(ctx),
+		Addr: influxDbContainer.MustConnectionURL(ctx),
 	})
 	require.NoError(t, err)
 	defer cli.Close()
 
-	expected_0 := `[{"statement_id":0,"Series":[{"name":"h2o_feet","tags":{"location":"coyote_creek"},"columns":["time","location","max"],"values":[[1566977040,"coyote_creek",9.964]]},{"name":"h2o_feet","tags":{"location":"santa_monica"},"columns":["time","location","max"],"values":[[1566964440,"santa_monica",7.205]]}],"Messages":null}]`
+	expected0 := `[{"statement_id":0,"Series":[{"name":"h2o_feet","tags":{"location":"coyote_creek"},"columns":["time","location","max"],"values":[[1566977040,"coyote_creek",9.964]]},{"name":"h2o_feet","tags":{"location":"santa_monica"},"columns":["time","location","max"],"values":[[1566964440,"santa_monica",7.205]]}],"Messages":null}]`
 	q := influxclient.NewQuery(`select "location", MAX("water_level") from "h2o_feet" group by "location"`, "NOAA_water_database", "s")
 	response, err := cli.Query(q)
 	require.NoError(t, err)
 
 	require.NoError(t, response.Error())
-	testJson, err := json.Marshal(response.Results)
+	testJSON, err := json.Marshal(response.Results)
 	require.NoError(t, err)
 
-	assert.JSONEq(t, expected_0, string(testJson))
+	assert.JSONEq(t, expected0, string(testJSON))
 }
 
 func TestWithConfigFile(t *testing.T) {
@@ -91,7 +91,7 @@ func TestWithConfigFile(t *testing.T) {
 
 	/// influxConnectionUrl {
 	cli, err := influxclient.NewHTTPClient(influxclient.HTTPConfig{
-		Addr: influxDbContainer.MustConnectionUrl(context.Background()),
+		Addr: influxDbContainer.MustConnectionURL(context.Background()),
 	})
 	// }
 	require.NoError(t, err)

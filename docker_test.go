@@ -1325,13 +1325,13 @@ func TestContainerInspect_RawInspectIsCleanedOnStop(t *testing.T) {
 	require.NoError(t, ctr.Stop(context.Background(), nil))
 }
 
-func readHostname(tb testing.TB, containerId string) string {
+func readHostname(tb testing.TB, containerID string) string {
 	tb.Helper()
 	containerClient, err := NewDockerClientWithOpts(context.Background())
 	require.NoErrorf(tb, err, "Failed to create Docker client")
 	defer containerClient.Close()
 
-	containerDetails, err := containerClient.ContainerInspect(context.Background(), containerId)
+	containerDetails, err := containerClient.ContainerInspect(context.Background(), containerID)
 	require.NoErrorf(tb, err, "Failed to inspect container")
 
 	return containerDetails.Config.Hostname
