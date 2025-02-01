@@ -179,7 +179,7 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*DockerCompose, error) {
 	return composeAPI, nil
 }
 
-// Deprecated: NewLocalDockerCompose returns a DockerCompose compatible instance which is superseded
+// Deprecated: NewLocalDockerCompose returns a DockerComposer compatible instance which is superseded
 // by ComposeStack use NewDockerCompose instead to get a ComposeStack compatible instance
 //
 // NewLocalDockerCompose returns an instance of the local Docker Compose, using an
