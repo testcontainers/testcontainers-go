@@ -77,16 +77,16 @@ type ComposeStack interface {
 	ServiceContainer(ctx context.Context, svcName string) (*testcontainers.DockerContainer, error)
 }
 
-// Deprecated: DockerCompose is the old shell escape based API
+// Deprecated: DockerComposer is the old shell escape based API
 // use ComposeStack instead
-// DockerCompose defines the contract for running Docker Compose
-type DockerCompose interface {
+// DockerComposer defines the contract for running Docker Compose
+type DockerComposer interface {
 	Down() ExecError
 	Invoke() ExecError
-	WaitForService(string, wait.Strategy) DockerCompose
-	WithCommand([]string) DockerCompose
-	WithEnv(map[string]string) DockerCompose
-	WithExposedService(string, int, wait.Strategy) DockerCompose
+	WaitForService(string, wait.Strategy) DockerComposer
+	WithCommand([]string) DockerComposer
+	WithEnv(map[string]string) DockerComposer
+	WithExposedService(string, int, wait.Strategy) DockerComposer
 }
 
 type waitService struct {
