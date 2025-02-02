@@ -81,6 +81,7 @@ nav:
         - modules/dynamodb.md
         - modules/elasticsearch.md
         - modules/etcd.md
+        - modules/firebase.md
         - modules/gcloud.md
         - modules/grafana-lgtm.md
         - modules/inbucket.md

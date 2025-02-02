@@ -94,7 +94,7 @@ jobs:
       matrix:
         go-version: [1.22.x, 1.x]
         platform: [ubuntu-latest]
-        module: [artemis, azurite, cassandra, chroma, clickhouse, cockroachdb, compose, consul, couchbase, databend, dolt, dynamodb, elasticsearch, etcd, gcloud, grafana-lgtm, inbucket, influxdb, k3s, k6, kafka, localstack, mariadb, meilisearch, milvus, minio, mockserver, mongodb, mssql, mysql, nats, neo4j, ollama, openfga, openldap, opensearch, postgres, pulsar, qdrant, rabbitmq, redis, redpanda, registry, surrealdb, valkey, vault, vearch, weaviate, yugabytedb]
+        module: [artemis, azurite, cassandra, chroma, clickhouse, cockroachdb, compose, consul, couchbase, databend, dolt, dynamodb, elasticsearch, etcd, firebase, gcloud, grafana-lgtm, inbucket, influxdb, k3s, k6, kafka, localstack, mariadb, meilisearch, milvus, minio, mockserver, mongodb, mssql, mysql, nats, neo4j, ollama, openfga, openldap, opensearch, postgres, pulsar, qdrant, rabbitmq, redis, redpanda, registry, surrealdb, valkey, vault, vearch, weaviate, yugabytedb]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}

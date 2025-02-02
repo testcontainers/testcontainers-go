@@ -70,6 +70,10 @@
             "path": "../modules/etcd"
         },
         {
+            "name": "module / firebase",
+            "path": "../modules/firebase"
+        },
+        {
             "name": "module / gcloud",
             "path": "../modules/gcloud"
         },
