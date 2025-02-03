@@ -4,8 +4,7 @@ version: 2
 updates:
     - package-ecosystem: github-actions
       directories:
-        - / 
-        - /modulegen/_template
+        - /
       schedule:
         interval: monthly
         day: sunday
