@@ -12,7 +12,7 @@ require (
 require (
 	github.com/containerd/platforms v0.2.1 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
-	golang.org/x/net v0.26.0 // indirect
+	golang.org/x/net v0.33.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240318140521-94a12d6c2237 // indirect
 )
 
