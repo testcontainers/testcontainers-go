@@ -54,7 +54,7 @@ type LocalDockerCompose struct {
 	Identifier           string
 	Cmd                  []string
 	Env                  map[string]string
-	Services             map[string]interface{}
+	Services             map[string]any
 	waitStrategySupplied bool
 	WaitStrategyMap      map[waitService]wait.Strategy
 }
@@ -254,7 +254,7 @@ func (dc *LocalDockerCompose) determineVersion() error {
 // references to all services in them
 func (dc *LocalDockerCompose) validate() error {
 	type compose struct {
-		Services map[string]interface{}
+		Services map[string]any
 	}
 
 	for _, abs := range dc.absComposeFilePaths {

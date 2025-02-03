@@ -13,7 +13,7 @@
     signkey = "secret"
     # skip auth for master and router
     skip_auth = true
-    # tell Vearch whether it should manage it's own instance of etcd or not
+    # tell Vearch whether it should manage its own instance of etcd or not
     self_manage_etcd = false
     # automatically remove the failed node and recover when new nodes join
     auto_recover_ps = false

@@ -50,7 +50,7 @@ type Container interface {
 	Stop(context.Context, *time.Duration) error                                    // stop the container
 
 	// Terminate stops and removes the container and its image if it was built and not flagged as kept.
-	Terminate(ctx context.Context) error
+	Terminate(ctx context.Context, opts ...TerminateOption) error
 
 	Logs(context.Context) (io.ReadCloser, error)                    // Get logs of the container
 	FollowOutput(LogConsumer)                                       // Deprecated: it will be removed in the next major release
@@ -77,9 +77,9 @@ type ImageBuildInfo interface {
 	GetDockerfile() string                          // the relative path to the Dockerfile, including the file itself
 	GetRepo() string                                // get repo label for image
 	GetTag() string                                 // get tag label for image
-	ShouldPrintBuildLog() bool                      // allow build log to be printed to stdout
+	BuildLogWriter() io.Writer                      // for output of build log, use io.Discard to disable the output
 	ShouldBuildImage() bool                         // return true if the image needs to be built
-	GetBuildArgs() map[string]*string               // return the environment args used to build the from Dockerfile
+	GetBuildArgs() map[string]*string               // return the environment args used to build the Dockerfile
 	GetAuthConfigs() map[string]registry.AuthConfig // Deprecated. Testcontainers will detect registry credentials automatically. Return the auth configs to be able to pull from an authenticated docker registry
 }
 
@@ -92,7 +92,8 @@ type FromDockerfile struct {
 	Repo           string                         // the repo label for image, defaults to UUID
 	Tag            string                         // the tag label for image, defaults to UUID
 	BuildArgs      map[string]*string             // enable user to pass build args to docker daemon
-	PrintBuildLog  bool                           // enable user to print build log
+	PrintBuildLog  bool                           // Deprecated: Use BuildLogWriter instead
+	BuildLogWriter io.Writer                      // for output of build log, defaults to io.Discard
 	AuthConfigs    map[string]registry.AuthConfig // Deprecated. Testcontainers will detect registry credentials automatically. Enable auth configs to be able to pull from an authenticated docker registry
 	// KeepImage describes whether DockerContainer.Terminate should not delete the
 	// container image. Useful for images that are built from a Dockerfile and take a
@@ -127,44 +128,44 @@ func (c *ContainerFile) validate() error {
 // ContainerRequest represents the parameters used to get a running container
 type ContainerRequest struct {
 	FromDockerfile
-	HostAccessPorts         []int
-	Image                   string
-	ImageSubstitutors       []ImageSubstitutor
-	Entrypoint              []string
-	Env                     map[string]string
-	ExposedPorts            []string // allow specifying protocol info
-	Cmd                     []string
-	Labels                  map[string]string
-	Mounts                  ContainerMounts
-	Tmpfs                   map[string]string
-	RegistryCred            string // Deprecated: Testcontainers will detect registry credentials automatically
-	WaitingFor              wait.Strategy
-	Name                    string // for specifying container name
-	Hostname                string
-	WorkingDir              string                                     // specify the working directory of the container
-	ExtraHosts              []string                                   // Deprecated: Use HostConfigModifier instead
-	Privileged              bool                                       // For starting privileged container
-	Networks                []string                                   // for specifying network names
-	NetworkAliases          map[string][]string                        // for specifying network aliases
-	NetworkMode             container.NetworkMode                      // Deprecated: Use HostConfigModifier instead
-	Resources               container.Resources                        // Deprecated: Use HostConfigModifier instead
-	Files                   []ContainerFile                            // files which will be copied when container starts
-	User                    string                                     // for specifying uid:gid
-	SkipReaper              bool                                       // Deprecated: The reaper is globally controlled by the .testcontainers.properties file or the TESTCONTAINERS_RYUK_DISABLED environment variable
-	ReaperImage             string                                     // Deprecated: use WithImageName ContainerOption instead. Alternative reaper image
-	ReaperOptions           []ContainerOption                          // Deprecated: the reaper is configured at the properties level, for an entire test session
-	AutoRemove              bool                                       // Deprecated: Use HostConfigModifier instead. If set to true, the container will be removed from the host when stopped
-	AlwaysPullImage         bool                                       // Always pull image
-	ImagePlatform           string                                     // ImagePlatform describes the platform which the image runs on.
-	Binds                   []string                                   // Deprecated: Use HostConfigModifier instead
-	ShmSize                 int64                                      // Amount of memory shared with the host (in bytes)
-	CapAdd                  []string                                   // Deprecated: Use HostConfigModifier instead. Add Linux capabilities
-	CapDrop                 []string                                   // Deprecated: Use HostConfigModifier instead. Drop Linux capabilities
-	ConfigModifier          func(*container.Config)                    // Modifier for the config before container creation
-	HostConfigModifier      func(*container.HostConfig)                // Modifier for the host config before container creation
-	EnpointSettingsModifier func(map[string]*network.EndpointSettings) // Modifier for the network settings before container creation
-	LifecycleHooks          []ContainerLifecycleHooks                  // define hooks to be executed during container lifecycle
-	LogConsumerCfg          *LogConsumerConfig                         // define the configuration for the log producer and its log consumers to follow the logs
+	HostAccessPorts          []int
+	Image                    string
+	ImageSubstitutors        []ImageSubstitutor
+	Entrypoint               []string
+	Env                      map[string]string
+	ExposedPorts             []string // allow specifying protocol info
+	Cmd                      []string
+	Labels                   map[string]string
+	Mounts                   ContainerMounts
+	Tmpfs                    map[string]string
+	RegistryCred             string // Deprecated: Testcontainers will detect registry credentials automatically
+	WaitingFor               wait.Strategy
+	Name                     string // for specifying container name
+	Hostname                 string
+	WorkingDir               string                                     // specify the working directory of the container
+	ExtraHosts               []string                                   // Deprecated: Use HostConfigModifier instead
+	Privileged               bool                                       // For starting privileged container
+	Networks                 []string                                   // for specifying network names
+	NetworkAliases           map[string][]string                        // for specifying network aliases
+	NetworkMode              container.NetworkMode                      // Deprecated: Use HostConfigModifier instead
+	Resources                container.Resources                        // Deprecated: Use HostConfigModifier instead
+	Files                    []ContainerFile                            // files which will be copied when container starts
+	User                     string                                     // for specifying uid:gid
+	SkipReaper               bool                                       // Deprecated: The reaper is globally controlled by the .testcontainers.properties file or the TESTCONTAINERS_RYUK_DISABLED environment variable
+	ReaperImage              string                                     // Deprecated: use WithImageName ContainerOption instead. Alternative reaper image
+	ReaperOptions            []ContainerOption                          // Deprecated: the reaper is configured at the properties level, for an entire test session
+	AutoRemove               bool                                       // Deprecated: Use HostConfigModifier instead. If set to true, the container will be removed from the host when stopped
+	AlwaysPullImage          bool                                       // Always pull image
+	ImagePlatform            string                                     // ImagePlatform describes the platform which the image runs on.
+	Binds                    []string                                   // Deprecated: Use HostConfigModifier instead
+	ShmSize                  int64                                      // Amount of memory shared with the host (in bytes)
+	CapAdd                   []string                                   // Deprecated: Use HostConfigModifier instead. Add Linux capabilities
+	CapDrop                  []string                                   // Deprecated: Use HostConfigModifier instead. Drop Linux capabilities
+	ConfigModifier           func(*container.Config)                    // Modifier for the config before container creation
+	HostConfigModifier       func(*container.HostConfig)                // Modifier for the host config before container creation
+	EndpointSettingsModifier func(map[string]*network.EndpointSettings) // Modifier for the network settings before container creation
+	LifecycleHooks           []ContainerLifecycleHooks                  // define hooks to be executed during container lifecycle
+	LogConsumerCfg           *LogConsumerConfig                         // define the configuration for the log producer and its log consumers to follow the logs
 }
 
 // sessionID returns the session ID for the container request.
@@ -225,7 +226,7 @@ func (c *ContainerRequest) Validate() error {
 // GetContext retrieve the build context for the request
 // Must be closed when no longer needed.
 func (c *ContainerRequest) GetContext() (io.Reader, error) {
-	var includes []string = []string{"."}
+	includes := []string{"."}
 
 	if c.ContextArchive != nil {
 		return c.ContextArchive, nil
@@ -410,8 +411,20 @@ func (c *ContainerRequest) ShouldKeepBuiltImage() bool {
 	return c.FromDockerfile.KeepImage
 }
 
-func (c *ContainerRequest) ShouldPrintBuildLog() bool {
-	return c.FromDockerfile.PrintBuildLog
+// BuildLogWriter returns the io.Writer for output of log when building a Docker image from
+// a Dockerfile. It returns the BuildLogWriter from the ContainerRequest, defaults to io.Discard.
+// For backward compatibility, if BuildLogWriter is default and PrintBuildLog is true,
+// the function returns os.Stderr.
+func (c *ContainerRequest) BuildLogWriter() io.Writer {
+	if c.FromDockerfile.BuildLogWriter != nil {
+		return c.FromDockerfile.BuildLogWriter
+	}
+	if c.FromDockerfile.PrintBuildLog {
+		c.FromDockerfile.BuildLogWriter = os.Stderr
+	} else {
+		c.FromDockerfile.BuildLogWriter = io.Discard
+	}
+	return c.FromDockerfile.BuildLogWriter
 }
 
 // BuildOptions returns the image build options when building a Docker image from a Dockerfile.
@@ -516,9 +529,8 @@ func (c *ContainerRequest) validateMounts() error {
 		targetPath := m.Target.Target()
 		if targets[targetPath] {
 			return fmt.Errorf("%w: %s", ErrDuplicateMountTarget, targetPath)
-		} else {
-			targets[targetPath] = true
 		}
+		targets[targetPath] = true
 	}
 
 	if c.HostConfigModifier == nil {
@@ -538,9 +550,8 @@ func (c *ContainerRequest) validateMounts() error {
 			targetPath := parts[1]
 			if targets[targetPath] {
 				return fmt.Errorf("%w: %s", ErrDuplicateMountTarget, targetPath)
-			} else {
-				targets[targetPath] = true
 			}
+			targets[targetPath] = true
 		}
 	}
 

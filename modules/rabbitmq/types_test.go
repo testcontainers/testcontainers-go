@@ -24,7 +24,7 @@ type Binding struct {
 	DestinationType string
 	RoutingKey      string
 	// additional arguments, that will be serialized to JSON when passed to the container
-	Args map[string]interface{}
+	Args map[string]any
 }
 
 func NewBinding(source string, destination string) Binding {
@@ -82,7 +82,7 @@ type Exchange struct {
 	AutoDelete bool
 	Internal   bool
 	Durable    bool
-	Args       map[string]interface{}
+	Args       map[string]any
 }
 
 func (e Exchange) AsCommand() []string {
@@ -124,7 +124,7 @@ type OperatorPolicy struct {
 	testcontainers.ExecOptions
 	Name       string
 	Pattern    string
-	Definition map[string]interface{}
+	Definition map[string]any
 	Priority   int
 	ApplyTo    string
 }
@@ -230,7 +230,7 @@ type Policy struct {
 	VHost      string
 	Name       string
 	Pattern    string
-	Definition map[string]interface{}
+	Definition map[string]any
 	Priority   int
 	ApplyTo    string
 }
@@ -273,7 +273,7 @@ type Queue struct {
 	VHost      string
 	AutoDelete bool
 	Durable    bool
-	Args       map[string]interface{}
+	Args       map[string]any
 }
 
 func (q Queue) AsCommand() []string {

@@ -167,7 +167,7 @@ type inMemoryLogger struct {
 	buffer strings.Builder
 }
 
-func (iml *inMemoryLogger) Printf(msg string, args ...interface{}) {
+func (iml *inMemoryLogger) Printf(msg string, args ...any) {
 	iml.buffer.Write([]byte(fmt.Sprintf(msg, args...)))
 	iml.buffer.Write([]byte(logSeparator))
 }

@@ -59,7 +59,7 @@ The MockServer container exposes the following methods:
 The `URL` method returns the url string to connect to the MockServer container.
 It returns a string with the format `http://<host>:<port>`.
 
-It can be use to configure a MockServer client (`github.com/BraspagDevelopers/mock-server-client`), e.g.:
+It can be used to configure a MockServer client (`github.com/BraspagDevelopers/mock-server-client`), e.g.:
 
 <!--codeinclude-->
 [Using URL with the MockServer client](../../modules/mockserver/examples_test.go) inside_block:connectToMockServer

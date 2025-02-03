@@ -56,7 +56,7 @@ Set the database that is created & dialled with `cockroachdb.WithDatabase`.
 
 #### User and Password
 
-You can configured the container to create a user with a password by setting `cockroachdb.WithUser` and `cockroachdb.WithPassword`.
+You can configure the container to create a user with a password by setting `cockroachdb.WithUser` and `cockroachdb.WithPassword`.
 
 `cockroachdb.WithPassword` is incompatible with `cockroachdb.WithInsecure`.
 

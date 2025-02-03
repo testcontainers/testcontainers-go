@@ -20,32 +20,32 @@ type healthStrategyTarget struct {
 	mtx   sync.Mutex
 }
 
-func (st *healthStrategyTarget) Host(ctx context.Context) (string, error) {
+func (st *healthStrategyTarget) Host(_ context.Context) (string, error) {
 	return "", nil
 }
 
-func (st *healthStrategyTarget) Inspect(ctx context.Context) (*types.ContainerJSON, error) {
+func (st *healthStrategyTarget) Inspect(_ context.Context) (*types.ContainerJSON, error) {
 	return nil, nil
 }
 
 // Deprecated: use Inspect instead
-func (st *healthStrategyTarget) Ports(ctx context.Context) (nat.PortMap, error) {
+func (st *healthStrategyTarget) Ports(_ context.Context) (nat.PortMap, error) {
 	return nil, nil
 }
 
-func (st *healthStrategyTarget) MappedPort(ctx context.Context, n nat.Port) (nat.Port, error) {
+func (st *healthStrategyTarget) MappedPort(_ context.Context, n nat.Port) (nat.Port, error) {
 	return n, nil
 }
 
-func (st *healthStrategyTarget) Logs(ctx context.Context) (io.ReadCloser, error) {
+func (st *healthStrategyTarget) Logs(_ context.Context) (io.ReadCloser, error) {
 	return nil, nil
 }
 
-func (st *healthStrategyTarget) Exec(ctx context.Context, cmd []string, options ...tcexec.ProcessOption) (int, io.Reader, error) {
+func (st *healthStrategyTarget) Exec(_ context.Context, _ []string, _ ...tcexec.ProcessOption) (int, io.Reader, error) {
 	return 0, nil, nil
 }
 
-func (st *healthStrategyTarget) State(ctx context.Context) (*types.ContainerState, error) {
+func (st *healthStrategyTarget) State(_ context.Context) (*types.ContainerState, error) {
 	st.mtx.Lock()
 	defer st.mtx.Unlock()
 

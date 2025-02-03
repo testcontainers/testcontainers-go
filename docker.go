@@ -303,12 +303,11 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 // The following hooks are called in order:
 //   - [ContainerLifecycleHooks.PreTerminates]
 //   - [ContainerLifecycleHooks.PostTerminates]
-func (c *DockerContainer) Terminate(ctx context.Context) error {
-	// ContainerRemove hardcodes stop timeout to 3 seconds which is too short
-	// to ensure that child containers are stopped so we manually call stop.
-	// TODO: make this configurable via a functional option.
-	timeout := 10 * time.Second
-	err := c.Stop(ctx, &timeout)
+//
+// Default: timeout is 10 seconds.
+func (c *DockerContainer) Terminate(ctx context.Context, opts ...TerminateOption) error {
+	options := NewTerminateOptions(ctx, opts...)
+	err := c.Stop(options.Context(), options.StopTimeout())
 	if err != nil && !isCleanupSafe(err) {
 		return fmt.Errorf("stop: %w", err)
 	}
@@ -342,6 +341,10 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 
 	c.sessionID = ""
 	c.isRunning = false
+
+	if err = options.Cleanup(); err != nil {
+		errs = append(errs, err)
+	}
 
 	return errors.Join(errs...)
 }
@@ -615,7 +618,7 @@ func (c *DockerContainer) CopyDirToContainer(ctx context.Context, hostDirPath st
 	}
 
 	if !dir {
-		// it's not a dir: let the consumer to handle an error
+		// it's not a dir: let the consumer handle the error
 		return fmt.Errorf("path %s is not a directory", hostDirPath)
 	}
 
@@ -995,7 +998,7 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 			return resp, nil
 		},
 		backoff.WithContext(backoff.NewExponentialBackOff(), ctx),
-		func(err error, duration time.Duration) {
+		func(err error, _ time.Duration) {
 			p.Logger.Printf("Failed to build image: %s, will retry", err)
 		},
 	)
@@ -1004,10 +1007,7 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 	}
 	defer resp.Body.Close()
 
-	output := io.Discard
-	if img.ShouldPrintBuildLog() {
-		output = os.Stderr
-	}
+	output := img.BuildLogWriter()
 
 	// Always process the output, even if it is not printed
 	// to ensure that errors during the build process are
@@ -1120,11 +1120,10 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		} else {
 			img, _, err := p.client.ImageInspectWithRaw(ctx, imageName)
 			if err != nil {
-				if client.IsErrNotFound(err) {
-					shouldPullImage = true
-				} else {
+				if !client.IsErrNotFound(err) {
 					return nil, err
 				}
+				shouldPullImage = true
 			}
 			if platform != nil && (img.Architecture != platform.Architecture || img.Os != platform.OS) {
 				shouldPullImage = true
@@ -1415,7 +1414,7 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 			return nil
 		},
 		backoff.WithContext(backoff.NewExponentialBackOff(), ctx),
-		func(err error, duration time.Duration) {
+		func(err error, _ time.Duration) {
 			p.Logger.Printf("Failed to pull image: %s, will retry", err)
 		},
 	)
@@ -1498,7 +1497,11 @@ func (p *DockerProvider) daemonHostLocked(ctx context.Context) (string, error) {
 		p.hostCache = daemonURL.Hostname()
 	case "unix", "npipe":
 		if core.InAContainer() {
-			ip, err := p.GetGatewayIP(ctx)
+			defaultNetwork, err := p.ensureDefaultNetworkLocked(ctx)
+			if err != nil {
+				return "", fmt.Errorf("ensure default network: %w", err)
+			}
+			ip, err := p.getGatewayIP(ctx, defaultNetwork)
 			if err != nil {
 				ip, err = core.DefaultGatewayIP()
 				if err != nil {
@@ -1598,7 +1601,10 @@ func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("ensure default network: %w", err)
 	}
+	return p.getGatewayIP(ctx, defaultNetwork)
+}
 
+func (p *DockerProvider) getGatewayIP(ctx context.Context, defaultNetwork string) (string, error) {
 	nw, err := p.GetNetwork(ctx, NetworkRequest{Name: defaultNetwork})
 	if err != nil {
 		return "", err
@@ -1624,7 +1630,10 @@ func (p *DockerProvider) GetGatewayIP(ctx context.Context) (string, error) {
 func (p *DockerProvider) ensureDefaultNetwork(ctx context.Context) (string, error) {
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
+	return p.ensureDefaultNetworkLocked(ctx)
+}
 
+func (p *DockerProvider) ensureDefaultNetworkLocked(ctx context.Context) (string, error) {
 	if p.defaultNetwork != "" {
 		// Already set.
 		return p.defaultNetwork, nil

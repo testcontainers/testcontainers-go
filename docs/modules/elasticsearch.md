@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/elasticsearch
 ## Usage example
 
 <!--codeinclude-->
-[Creating a Elasticsearch container](../../modules/elasticsearch/examples_test.go) inside_block:runElasticsearchContainer
+[Creating an Elasticsearch container](../../modules/elasticsearch/examples_test.go) inside_block:runElasticsearchContainer
 <!--/codeinclude-->
 
 ## Module Reference

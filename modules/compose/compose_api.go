@@ -592,9 +592,8 @@ func withEnv(env map[string]string) func(*cli.ProjectOptions) error {
 		for k, v := range env {
 			if _, ok := options.Environment[k]; ok {
 				return fmt.Errorf("environment with key %s already set", k)
-			} else {
-				options.Environment[k] = v
 			}
+			options.Environment[k] = v
 		}
 
 		return nil

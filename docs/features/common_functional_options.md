@@ -6,7 +6,7 @@ In more locked down / secured environments, it can be problematic to pull images
 
 An image name substitutor converts a Docker image name, as may be specified in code, to an alternative name. This is intended to provide a way to override image names, for example to enforce pulling of images from a private registry.
 
-_Testcontainers for Go_ exposes an interface to perform this operations: `ImageSubstitutor`, and a No-operation implementation to be used as reference for custom implementations:
+_Testcontainers for Go_ exposes an interface to perform this operation: `ImageSubstitutor`, and a No-operation implementation to be used as reference for custom implementations:
 
 <!--codeinclude-->
 [Image Substitutor Interface](../../options.go) inside_block:imageSubstitutor

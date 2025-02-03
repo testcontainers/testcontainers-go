@@ -179,7 +179,7 @@ func TestDockerComposeAPI_TestcontainersLabelsArePresent(t *testing.T) {
 	require.Contains(t, serviceNames, "api-nginx")
 	require.Contains(t, serviceNames, "api-mysql")
 
-	// all the services in the compose has the Testcontainers Labels
+	// all the services in the compose have the Testcontainers Labels
 	for _, serviceName := range serviceNames {
 		c, err := compose.ServiceContainer(context.Background(), serviceName)
 		require.NoError(t, err, "compose.ServiceContainer()")
@@ -413,7 +413,7 @@ func TestDockerComposeAPIWithFailedStrategy(t *testing.T) {
 	cleanup(t, compose)
 	// Verify that an error is thrown and not nil
 	// A specific error message matcher is not asserted since the docker library can change the return message, breaking this test
-	require.Error(t, err, "Expected error to be thrown because of a wrong suplied wait strategy")
+	require.Error(t, err, "Expected error to be thrown because of a wrong supplied wait strategy")
 
 	serviceNames := compose.Services()
 

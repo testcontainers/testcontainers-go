@@ -117,7 +117,7 @@ func ExampleRunSpannerContainer() {
 	_, err = client.Apply(ctx, []*spanner.Mutation{
 		spanner.Insert("Languages",
 			[]string{"language", "mascot"},
-			[]interface{}{"Go", "Gopher"}),
+			[]any{"Go", "Gopher"}),
 	})
 	if err != nil {
 		log.Printf("failed to apply mutation: %v", err)

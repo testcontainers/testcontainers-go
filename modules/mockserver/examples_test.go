@@ -69,7 +69,7 @@ func ExampleRun_connect() {
 		Method: http.MethodPost,
 		Path:   "/api/categories",
 	}
-	requestMatcher = requestMatcher.WithJSONFields(map[string]interface{}{"name": "Tools"})
+	requestMatcher = requestMatcher.WithJSONFields(map[string]any{"name": "Tools"})
 	err = ms.RegisterExpectation(client.NewExpectation(requestMatcher).WithResponse(client.NewResponseOK().WithJSONBody(map[string]any{"test": "value"})))
 	if err != nil {
 		log.Printf("failed to register expectation: %s", err)
