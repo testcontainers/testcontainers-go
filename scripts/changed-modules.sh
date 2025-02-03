@@ -26,7 +26,7 @@
 #    The output should be: the modules/nginx and modules/localstack modules.
 #
 # 7. Files from the excluded dirs are modified:
-#    ALL_CHANGED_FILES="docs/a.md .vscode/a.json .devcontainer/a.json scripts/a.sh" ./scripts/changed-modules.sh
+#    ALL_CHANGED_FILES="docs/a.md .vscode/a.json .devcontainer/a.json" ./scripts/changed-modules.sh
 #    The output should be: no modules.
 #
 # There is room for improvement in this script. For example, it could detect if the changes applied to the docs or the .github dirs, and then do not include any module in the list.
@@ -36,7 +36,7 @@
 readonly ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 # define an array of modules that won't be included in the list
-readonly excluded_modules=(".devcontainer" ".vscode" "docs" "scripts")
+readonly excluded_modules=(".devcontainer" ".vscode" "docs")
 
 # modules is an array that will store the paths of all the modules in the repository.
 modules=()
