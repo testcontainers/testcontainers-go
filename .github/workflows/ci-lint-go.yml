@@ -37,9 +37,6 @@ jobs:
           version: v1.63.4
           # Optional: working directory, useful for monorepos
           working-directory: ${{ inputs.project-directory }}
-          # Optional: if set to true then the all caching functionality will be complete disabled,
-          #           takes precedence over all other caching options.
-          skip-cache: true
 
       - name: generate
         working-directory: ./${{ inputs.project-directory }}
