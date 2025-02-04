@@ -58,6 +58,8 @@ jobs:
       - detect-modules
       - lint
     strategy:
+      # We don't want to fail the build the soonest but identify which modules passed and failed.
+      fail-fast: false
       matrix:
         go-version: [1.22.x, 1.x]
         module: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
