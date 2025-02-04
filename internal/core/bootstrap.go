@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/google/uuid"
-	"github.com/shirou/gopsutil/v3/process"
+	"github.com/shirou/gopsutil/v4/process"
 )
 
 // sessionID returns a unique session ID for the current test session. Because each Go package
