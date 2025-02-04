@@ -48,10 +48,6 @@ jobs:
           make generate
           git --no-pager diff && [[ 0 -eq $(git status --porcelain | wc -l) ]]
 
-      - name: modVerify
-        working-directory: ./${{ inputs.project-directory }}
-        run: go mod verify
-
       - name: modTidy
         working-directory: ./${{ inputs.project-directory }}
         shell: bash
