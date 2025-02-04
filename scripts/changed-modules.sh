@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# exit on error, unset variables, print commands, fail on pipe errors
+set -euxo pipefail
+
 # How to test this script, run it with the required environment variables:
 # 1. A Go file from the core module is modified:
 #    ALL_CHANGED_FILES="examples/nginx/go.mod examples/foo/a.txt a/b/c/d/a.go" ./scripts/changed-modules.sh
