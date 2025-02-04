@@ -35,7 +35,7 @@ jobs:
         uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
         with:
           # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
-          version: v1.61.0
+          version: v1.63.4
           # Optional: working directory, useful for monorepos
           working-directory: ${{ inputs.project-directory }}
           # Optional: if set to true then the all caching functionality will be complete disabled,
