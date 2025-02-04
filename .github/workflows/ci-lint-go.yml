@@ -38,8 +38,6 @@ jobs:
           version: v1.61.0
           # Optional: working directory, useful for monorepos
           working-directory: ${{ inputs.project-directory }}
-          # Optional: golangci-lint command line arguments.
-          args: --verbose
           # Optional: if set to true then the all caching functionality will be complete disabled,
           #           takes precedence over all other caching options.
           skip-cache: true
