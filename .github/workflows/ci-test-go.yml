@@ -8,11 +8,6 @@ on:
         required: true
         type: string
         description: "The version of Go to use for the test."
-      fail-fast:
-        required: false
-        type: boolean
-        default: true
-        description: "Fail the workflow if any of the jobs fail."
       platforms:
         required: true
         type: string
@@ -43,7 +38,6 @@ jobs:
   test-go-project:
     name: "test: ${{ inputs.project-directory }}/${{ inputs.go-version }}"
     # Modulegen can run the tests on all platforms
-    continue-on-error: ${{ !inputs.fail-fast }}
     env:
       TESTCONTAINERS_RYUK_DISABLED: "${{ inputs.ryuk-disabled }}"
       RYUK_CONNECTION_TIMEOUT: "${{ inputs.project-directory == 'modules/compose' && '5m' || '60s' }}"

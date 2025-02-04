@@ -64,7 +64,6 @@ jobs:
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
-      fail-fast: true
       platforms: ${{ matrix.module == 'modulegen' && '["ubuntu-latest", "macos-latest", "windows-latest"]' || '["ubuntu-latest"]' }}
       project-directory: "${{ matrix.module }}"
       rootless-docker: false
@@ -85,7 +84,6 @@ jobs:
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
-      fail-fast: false
       platforms: '["ubuntu-latest"]'
       project-directory: "."
       rootless-docker: false
@@ -106,7 +104,6 @@ jobs:
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
-      fail-fast: false
       platforms: '["ubuntu-latest"]'
       project-directory: "."
       rootless-docker: true
