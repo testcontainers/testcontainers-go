@@ -36,6 +36,10 @@ set -euxo pipefail
 #    ALL_CHANGED_FILES="modules/nginx/go.mod modules/nginx/a.txt modules/nginx/b.txt" ./scripts/changed-modules.sh
 #    The output should be: the modules/nginx module.
 #
+# 9. Several files in the core module are modified:
+#    ALL_CHANGED_FILES="go.mod a.go b.go" ./scripts/changed-modules.sh
+#    The output should be: all modules.
+#
 # There is room for improvement in this script. For example, it could detect if the changes applied to the docs or the .github dirs, and then do not include any module in the list.
 # But then we would need to verify the CI scripts to ensure that the job receives the correct modules to build.
 
