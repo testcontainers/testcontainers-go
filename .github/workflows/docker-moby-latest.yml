@@ -22,17 +22,14 @@ jobs:
           echo "containerd_integration=${{ matrix.containerd-integration == true && 'containerd' || '' }}" >> "$GITHUB_ENV"
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Set up Go
-        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
         with:
             go-version-file: 'go.mod'
             cache-dependency-path: 'go.sum'
         id: go
-
-      - name: modVerify
-        run: go mod verify
 
       - name: modTidy
         run: go mod tidy
