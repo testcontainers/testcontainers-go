@@ -179,6 +179,112 @@ func TestRedpandaWithAuthentication(t *testing.T) {
 	}
 }
 
+func TestRedpandaWithBootstrapUserAuthentication(t *testing.T) {
+	ctx := context.Background()
+	// redpandaCreateContainer {
+	ctr, err := redpanda.Run(ctx,
+		"docker.redpanda.com/redpandadata/redpanda:v23.3.3",
+		redpanda.WithEnableSASL(),
+		redpanda.WithEnableKafkaAuthorization(),
+		redpanda.WithEnableWasmTransform(),
+		redpanda.WithNewServiceAccount("superuser-1", "test"),
+		redpanda.WithNewServiceAccount("superuser-2", "test"),
+		redpanda.WithNewServiceAccount("no-superuser", "test"),
+		redpanda.WithSuperusers("superuser-1", "superuser-2"),
+		redpanda.WithEnableSchemaRegistryHTTPBasicAuth(),
+		redpanda.WithEnableAdminAPIAuthentication(),
+	)
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+	// }
+
+	// kafkaSeedBroker {
+	seedBroker, err := ctr.KafkaSeedBroker(ctx)
+	// }
+	require.NoError(t, err)
+
+	// Test successful authentication & authorization with all created superusers
+	serviceAccounts := map[string]string{
+		"superuser-1": "test",
+		"superuser-2": "test",
+	}
+
+	for user, password := range serviceAccounts {
+		kafkaCl, err := kgo.NewClient(
+			kgo.SeedBrokers(seedBroker),
+			kgo.SASL(scram.Auth{
+				User: user,
+				Pass: password,
+			}.AsSha256Mechanism()),
+		)
+		require.NoError(t, err)
+
+		kafkaAdmCl := kadm.NewClient(kafkaCl)
+		_, err = kafkaAdmCl.CreateTopic(ctx, 1, 1, nil, fmt.Sprintf("test-%v", user))
+		require.NoError(t, err)
+		kafkaCl.Close()
+	}
+
+	// Test successful authentication, but failed authorization with a non-superuser account
+	{
+		kafkaCl, err := kgo.NewClient(
+			kgo.SeedBrokers(seedBroker),
+			kgo.SASL(scram.Auth{
+				User: "no-superuser",
+				Pass: "test",
+			}.AsSha256Mechanism()),
+		)
+		require.NoError(t, err)
+
+		kafkaAdmCl := kadm.NewClient(kafkaCl)
+		_, err = kafkaAdmCl.CreateTopic(ctx, 1, 1, nil, "test-2")
+		require.Error(t, err)
+		require.ErrorContains(t, err, "TOPIC_AUTHORIZATION_FAILED")
+		kafkaCl.Close()
+	}
+
+	// Test failed authentication
+	{
+		kafkaCl, err := kgo.NewClient(
+			kgo.SeedBrokers(seedBroker),
+			kgo.SASL(scram.Auth{
+				User: "wrong",
+				Pass: "wrong",
+			}.AsSha256Mechanism()),
+		)
+		require.NoError(t, err)
+
+		kafkaAdmCl := kadm.NewClient(kafkaCl)
+		_, err = kafkaAdmCl.Metadata(ctx)
+		require.Error(t, err)
+		require.ErrorContains(t, err, "SASL_AUTHENTICATION_FAILED")
+	}
+
+	// Test Schema Registry API
+	httpCl := &http.Client{Timeout: 5 * time.Second}
+	// schemaRegistryAddress {
+	schemaRegistryURL, err := ctr.SchemaRegistryAddress(ctx)
+	// }
+	require.NoError(t, err)
+
+	// Failed authentication
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, schemaRegistryURL+"/subjects", nil)
+	require.NoError(t, err)
+	resp, err := httpCl.Do(req)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+	resp.Body.Close()
+
+	// Successful authentication
+	for user, password := range serviceAccounts {
+		req.SetBasicAuth(user, password)
+		resp, err = httpCl.Do(req)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		resp.Body.Close()
+	}
+}
+
 func TestRedpandaWithOldVersionAndWasm(t *testing.T) {
 	ctx := context.Background()
 	// redpandaCreateContainer {

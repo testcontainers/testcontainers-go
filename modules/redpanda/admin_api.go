@@ -11,8 +11,10 @@ import (
 )
 
 type AdminAPIClient struct {
-	BaseURL string
-	client  *http.Client
+	BaseURL  string
+	Username string
+	Password string
+	client   *http.Client
 }
 
 func NewAdminAPIClient(baseURL string) *AdminAPIClient {
@@ -54,6 +56,10 @@ func (cl *AdminAPIClient) CreateUser(ctx context.Context, username, password str
 		return fmt.Errorf("failed to build http request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+
+	if cl.Username != "" || cl.Password != "" {
+		req.SetBasicAuth(cl.Username, cl.Password)
+	}
 
 	resp, err := cl.client.Do(req)
 	if err != nil {
