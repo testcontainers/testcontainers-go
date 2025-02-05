@@ -32,6 +32,14 @@ set -euxo pipefail
 #    ALL_CHANGED_FILES="docs/a.md .vscode/a.json .devcontainer/a.json" ./scripts/changed-modules.sh
 #    The output should be: no modules.
 #
+# 8. Several files in the same module are modified:
+#    ALL_CHANGED_FILES="modules/nginx/go.mod modules/nginx/a.txt modules/nginx/b.txt" ./scripts/changed-modules.sh
+#    The output should be: the modules/nginx module.
+#
+# 9. Several files in the core module are modified:
+#    ALL_CHANGED_FILES="go.mod a.go b.go" ./scripts/changed-modules.sh
+#    The output should be: all modules.
+#
 # There is room for improvement in this script. For example, it could detect if the changes applied to the docs or the .github dirs, and then do not include any module in the list.
 # But then we would need to verify the CI scripts to ensure that the job receives the correct modules to build.
 
@@ -114,4 +122,6 @@ done
 # each module will be enclosed in double quotes
 # each module will be separated by a comma
 # the entire list will be enclosed in square brackets
-echo "["$(IFS=,; echo "${modified_modules[*]}" | sed 's/ /,/g')"]"
+# the list will be sorted and unique
+sorted_unique_modules=($(echo "${modified_modules[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
+echo "["$(IFS=,; echo "${sorted_unique_modules[*]}" | sed 's/ /,/g')"]"
