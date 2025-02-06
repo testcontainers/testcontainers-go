@@ -30,7 +30,7 @@ dependencies-scan:
 
 .PHONY: lint
 lint: $(GOBIN)/golangci-lint
-	golangci-lint run --out-format=colored-line-number --path-prefix=. --verbose -c $(ROOT_DIR)/.golangci.yml --fix
+	golangci-lint run --verbose -c $(ROOT_DIR)/.golangci.yml --fix
 
 .PHONY: generate
 generate: $(GOBIN)/mockery

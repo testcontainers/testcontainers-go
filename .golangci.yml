@@ -71,11 +71,18 @@ linters-settings:
       - name: use-any
       - name: var-declaration
       - name: var-naming
-        disabled: true
+        arguments:
+          - ["ID"] # AllowList
+          - ["VM"] # DenyList
+          - - upperCaseConst: true # Extra parameter (upperCaseConst|skipPackageNameChecks)
   testifylint:
     disable:
       - float-compare
       - go-require
     enable-all: true
+output:
+  formats:
+    - format: colored-line-number
+  path-prefix: "."
 run:
   timeout: 5m

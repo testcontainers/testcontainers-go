@@ -26,20 +26,20 @@ type K6Container struct {
 }
 
 type DownloadableFile struct {
-	Uri         url.URL
+	URI         url.URL
 	DownloadDir string
 	User        string
 	Password    string
 }
 
 func (d *DownloadableFile) getDownloadPath() string {
-	baseName := path.Base(d.Uri.Path)
+	baseName := path.Base(d.URI.Path)
 	return path.Join(d.DownloadDir, baseName)
 }
 
 func downloadFileFromDescription(d DownloadableFile) error {
 	client := http.Client{Timeout: time.Second * 60}
-	req, err := http.NewRequest(http.MethodGet, d.Uri.String(), nil)
+	req, err := http.NewRequest(http.MethodGet, d.URI.String(), nil)
 	if err != nil {
 		return err
 	}

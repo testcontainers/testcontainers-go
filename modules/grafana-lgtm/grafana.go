@@ -15,7 +15,7 @@ const (
 	LokiPort       = "3100/tcp"
 	TempoPort      = "3200/tcp"
 	OtlpGrpcPort   = "4317/tcp"
-	OtlpHttpPort   = "4318/tcp"
+	OtlpHTTPPort   = "4318/tcp"
 	PrometheusPort = "9090/tcp"
 )
 
@@ -28,7 +28,7 @@ type GrafanaLGTMContainer struct {
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GrafanaLGTMContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        img,
-		ExposedPorts: []string{GrafanaPort, LokiPort, TempoPort, OtlpGrpcPort, OtlpHttpPort, PrometheusPort},
+		ExposedPorts: []string{GrafanaPort, LokiPort, TempoPort, OtlpGrpcPort, OtlpHTTPPort, PrometheusPort},
 		WaitingFor:   wait.ForLog(".*The OpenTelemetry collector and the Grafana LGTM stack are up and running.*\\s").AsRegexp().WithOccurrence(1),
 	}
 
@@ -50,7 +50,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	c := &GrafanaLGTMContainer{Container: container}
 
-	url, err := c.OtlpHttpEndpoint(ctx)
+	url, err := c.OtlpHTTPEndpoint(ctx)
 	if err != nil {
 		// return the container instance to allow the caller to clean up
 		return c, fmt.Errorf("otlp http endpoint: %w", err)
@@ -109,8 +109,8 @@ func (c *GrafanaLGTMContainer) MustTempoEndpoint(ctx context.Context) string {
 	return url
 }
 
-// HttpEndpoint returns the HTTP URL
-func (c *GrafanaLGTMContainer) HttpEndpoint(ctx context.Context) (string, error) {
+// HTTPEndpoint returns the HTTP URL
+func (c *GrafanaLGTMContainer) HTTPEndpoint(ctx context.Context) (string, error) {
 	url, err := baseEndpoint(ctx, c, GrafanaPort)
 	if err != nil {
 		return "", err
@@ -119,9 +119,9 @@ func (c *GrafanaLGTMContainer) HttpEndpoint(ctx context.Context) (string, error)
 	return url, nil
 }
 
-// MustHttpEndpoint returns the HTTP endpoint or panics if an error occurs
-func (c *GrafanaLGTMContainer) MustHttpEndpoint(ctx context.Context) string {
-	url, err := c.HttpEndpoint(ctx)
+// MustHTTPEndpoint returns the HTTP endpoint or panics if an error occurs
+func (c *GrafanaLGTMContainer) MustHTTPEndpoint(ctx context.Context) string {
+	url, err := c.HTTPEndpoint(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -129,9 +129,9 @@ func (c *GrafanaLGTMContainer) MustHttpEndpoint(ctx context.Context) string {
 	return url
 }
 
-// OtlpHttpEndpoint returns the OTLP HTTP endpoint
-func (c *GrafanaLGTMContainer) OtlpHttpEndpoint(ctx context.Context) (string, error) {
-	url, err := baseEndpoint(ctx, c, OtlpHttpPort)
+// OtlpHTTPEndpoint returns the OTLP HTTP endpoint
+func (c *GrafanaLGTMContainer) OtlpHTTPEndpoint(ctx context.Context) (string, error) {
+	url, err := baseEndpoint(ctx, c, OtlpHTTPPort)
 	if err != nil {
 		return "", err
 	}
@@ -139,9 +139,9 @@ func (c *GrafanaLGTMContainer) OtlpHttpEndpoint(ctx context.Context) (string, er
 	return url, nil
 }
 
-// MustOtlpHttpEndpoint returns the OTLP HTTP endpoint or panics if an error occurs
-func (c *GrafanaLGTMContainer) MustOtlpHttpEndpoint(ctx context.Context) string {
-	url, err := c.OtlpHttpEndpoint(ctx)
+// MustOtlpHTTPEndpoint returns the OTLP HTTP endpoint or panics if an error occurs
+func (c *GrafanaLGTMContainer) MustOtlpHTTPEndpoint(ctx context.Context) string {
+	url, err := c.OtlpHTTPEndpoint(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -169,8 +169,8 @@ func (c *GrafanaLGTMContainer) MustOtlpGrpcEndpoint(ctx context.Context) string 
 	return url
 }
 
-// PrometheusHttpEndpoint returns the Prometheus HTTP endpoint
-func (c *GrafanaLGTMContainer) PrometheusHttpEndpoint(ctx context.Context) (string, error) {
+// PrometheusHTTPEndpoint returns the Prometheus HTTP endpoint
+func (c *GrafanaLGTMContainer) PrometheusHTTPEndpoint(ctx context.Context) (string, error) {
 	url, err := baseEndpoint(ctx, c, PrometheusPort)
 	if err != nil {
 		return "", err
@@ -179,9 +179,9 @@ func (c *GrafanaLGTMContainer) PrometheusHttpEndpoint(ctx context.Context) (stri
 	return url, nil
 }
 
-// MustPrometheusHttpEndpoint returns the Prometheus HTTP endpoint or panics if an error occurs
-func (c *GrafanaLGTMContainer) MustPrometheusHttpEndpoint(ctx context.Context) string {
-	url, err := c.PrometheusHttpEndpoint(ctx)
+// MustPrometheusHTTPEndpoint returns the Prometheus HTTP endpoint or panics if an error occurs
+func (c *GrafanaLGTMContainer) MustPrometheusHTTPEndpoint(ctx context.Context) string {
+	url, err := c.PrometheusHTTPEndpoint(ctx)
 	if err != nil {
 		panic(err)
 	}

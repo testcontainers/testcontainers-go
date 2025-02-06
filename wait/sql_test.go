@@ -18,7 +18,7 @@ func Test_waitForSql_WithQuery(t *testing.T) {
 			return "fake-url"
 		})
 
-		require.Equal(t, defaultForSqlQuery, w.query)
+		require.Equal(t, defaultForSQLQuery, w.query)
 	})
 	t.Run("custom query", func(t *testing.T) {
 		const q = "SELECT 100;"
