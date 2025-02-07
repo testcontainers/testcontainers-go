@@ -51,7 +51,7 @@ func Printf(format string, v ...any) {
 type noopLogger struct{}
 
 // Printf implements Logging.
-func (n noopLogger) Printf(format string, v ...any) {
+func (n noopLogger) Printf(_ string, _ ...any) {
 	// NOOP
 }
 

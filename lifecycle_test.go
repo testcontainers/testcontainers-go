@@ -672,10 +672,6 @@ func (l *inMemoryLogger) Printf(format string, args ...any) {
 	l.data = append(l.data, fmt.Sprintf(format, args...))
 }
 
-func (l *inMemoryLogger) Print(args ...interface{}) {
-	l.data = append(l.data, fmt.Sprint(args...))
-}
-
 // }
 
 func TestLifecycleHooks_WithDefaultLogger(t *testing.T) {
@@ -888,10 +884,6 @@ type linesTestLogger struct {
 
 func (l *linesTestLogger) Printf(format string, args ...any) {
 	l.data = append(l.data, fmt.Sprintf(format, args...))
-}
-
-func (l *linesTestLogger) Print(args ...interface{}) {
-	l.data = append(l.data, fmt.Sprint(args...))
 }
 
 func TestPrintContainerLogsOnError(t *testing.T) {
