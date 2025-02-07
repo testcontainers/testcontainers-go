@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
-	"github.com/testcontainers/testcontainers-go/internal/logging"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -292,7 +292,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		config: config.Read(),
 		DockerProviderOptions: &DockerProviderOptions{
 			GenericProviderOptions: &GenericProviderOptions{
-				Logger: logging.TestLogger(t),
+				Logger: log.TestLogger(t),
 			},
 		},
 	}
@@ -532,10 +532,10 @@ func (l *bufLogger) String() string {
 func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	// Capture global logger.
 	logger := &bufLogger{}
-	oldLogger := logging.Logger
-	SetLogger(logger)
+	oldLogger := log.Default()
+	log.SetDefault(logger)
 	t.Cleanup(func() {
-		logging.Logger = oldLogger
+		log.SetDefault(oldLogger)
 	})
 
 	// Context with cancellation functionality for simulating user interruption

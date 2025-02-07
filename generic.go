@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
-	"github.com/testcontainers/testcontainers-go/internal/logging"
+	"github.com/testcontainers/testcontainers-go/log"
 )
 
 var (
@@ -18,11 +18,11 @@ var (
 
 // GenericContainerRequest represents parameters to a generic container
 type GenericContainerRequest struct {
-	ContainerRequest                 // embedded request for provider
-	Started          bool            // whether to auto-start the container
-	ProviderType     ProviderType    // which provider to use, Docker if empty
-	Logger           logging.Logging // provide a container specific Logging - use default global logger if empty
-	Reuse            bool            // reuse an existing container if it exists or create a new one. a container name mustn't be empty
+	ContainerRequest              // embedded request for provider
+	Started          bool         // whether to auto-start the container
+	ProviderType     ProviderType // which provider to use, Docker if empty
+	Logger           log.Logger   // provide a container specific Logging - use default global logger if empty
+	Reuse            bool         // reuse an existing container if it exists or create a new one. a container name mustn't be empty
 }
 
 // Deprecated: will be removed in the future.
@@ -55,7 +55,7 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 
 	logger := req.Logger
 	if logger == nil {
-		logger = logging.Logger
+		logger = log.Default()
 	}
 	provider, err := req.ProviderType.GetProvider(WithLogger(logger))
 	if err != nil {

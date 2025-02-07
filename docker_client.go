@@ -13,7 +13,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go/internal"
 	"github.com/testcontainers/testcontainers-go/internal/core"
-	"github.com/testcontainers/testcontainers-go/internal/logging"
+	"github.com/testcontainers/testcontainers-go/log"
 )
 
 // DockerClient is a wrapper around the docker client that is used by testcontainers-go.
@@ -74,7 +74,7 @@ func (c *DockerClient) Info(ctx context.Context) (system.Info, error) {
 		}
 	}
 
-	logging.Logger.Printf(infoMessage, packagePath,
+	log.Default().Printf(infoMessage, packagePath,
 		dockerInfo.ServerVersion,
 		c.Client.ClientVersion(),
 		dockerInfo.OperatingSystem, dockerInfo.MemTotal/1024/1024,

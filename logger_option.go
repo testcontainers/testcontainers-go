@@ -1,6 +1,6 @@
 package testcontainers
 
-import "github.com/testcontainers/testcontainers-go/internal/logging"
+import "github.com/testcontainers/testcontainers-go/log"
 
 // Validate our types implement the required interfaces.
 var (
@@ -15,7 +15,7 @@ var (
 //
 // This can be given a TestLogger to collect the logs from testcontainers into a
 // test case.
-func WithLogger(logger logging.Logging) LoggerOption {
+func WithLogger(logger log.Logger) LoggerOption {
 	return LoggerOption{
 		logger: logger,
 	}
@@ -25,7 +25,7 @@ func WithLogger(logger logging.Logging) LoggerOption {
 //
 // It can be used to set the logger for providers and containers.
 type LoggerOption struct {
-	logger logging.Logging
+	logger log.Logger
 }
 
 // ApplyGenericTo implements GenericProviderOption.

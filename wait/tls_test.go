@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/internal/logging"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -121,17 +121,17 @@ func ExampleForTLSCert() {
 	})
 	defer func() {
 		if err := testcontainers.TerminateContainer(c); err != nil {
-			logging.Logger.Printf("failed to terminate container: %s", err)
+			log.Default().Printf("failed to terminate container: %s", err)
 		}
 	}()
 	if err != nil {
-		logging.Logger.Printf("failed to start container: %s", err)
+		log.Default().Printf("failed to start container: %s", err)
 		return
 	}
 
 	state, err := c.State(ctx)
 	if err != nil {
-		logging.Logger.Printf("failed to get container state: %s", err)
+		log.Default().Printf("failed to get container state: %s", err)
 		return
 	}
 

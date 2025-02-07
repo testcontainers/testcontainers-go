@@ -15,7 +15,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
-	"github.com/testcontainers/testcontainers-go/internal/logging"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -33,17 +33,17 @@ func ExampleExecStrategy() {
 	})
 	defer func() {
 		if err := testcontainers.TerminateContainer(ctr); err != nil {
-			logging.Logger.Printf("failed to terminate container: %s", err)
+			log.Default().Printf("failed to terminate container: %s", err)
 		}
 	}()
 	if err != nil {
-		logging.Logger.Printf("failed to start container: %s", err)
+		log.Default().Printf("failed to start container: %s", err)
 		return
 	}
 
 	state, err := ctr.State(ctx)
 	if err != nil {
-		logging.Logger.Printf("failed to get container state: %s", err)
+		log.Default().Printf("failed to get container state: %s", err)
 		return
 	}
 

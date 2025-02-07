@@ -23,7 +23,7 @@ import (
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal/core"
-	"github.com/testcontainers/testcontainers-go/internal/logging"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -470,7 +470,7 @@ func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 		}
 
 		if modifiedTag != tag {
-			logging.Logger.Printf("✍🏼 Replacing image with %s. From: %s to %s\n", is.Description(), tag, modifiedTag)
+			log.Default().Printf("✍🏼 Replacing image with %s. From: %s to %s\n", is.Description(), tag, modifiedTag)
 			tag = modifiedTag
 		}
 	}

@@ -2,7 +2,7 @@ package testcontainers
 
 import (
 	"github.com/docker/docker/api/types/mount"
-	"github.com/testcontainers/testcontainers-go/internal/logging"
+	"github.com/testcontainers/testcontainers-go/log"
 )
 
 var mountTypeMapping = map[MountType]mount.Type{
@@ -118,7 +118,7 @@ func mapToDockerMounts(containerMounts ContainerMounts) []mount.Mount {
 		case TmpfsMounter:
 			containerMount.TmpfsOptions = typedMounter.GetTmpfsOptions()
 		case BindMounter:
-			logging.Logger.Printf("Mount type %s is not supported by Testcontainers for Go", m.Source.Type())
+			log.Default().Printf("Mount type %s is not supported by Testcontainers for Go", m.Source.Type())
 		default:
 			// The provided source type has no custom options
 		}
