@@ -17,6 +17,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -31,7 +32,7 @@ type composeStackOptions struct {
 	Identifier     string
 	Paths          []string
 	temporaryPaths map[string]bool
-	Logger         testcontainers.Logging
+	Logger         log.Logger
 	Profiles       []string
 }
 
@@ -130,7 +131,7 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 	composeOptions := composeStackOptions{
 		Identifier:     uuid.New().String(),
 		temporaryPaths: make(map[string]bool),
-		Logger:         testcontainers.Logger,
+		Logger:         log.Default(),
 		Profiles:       nil,
 	}
 
@@ -192,7 +193,7 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalDockerComposeOption) *LocalDockerCompose {
 	dc := &LocalDockerCompose{
 		LocalDockerComposeOptions: &LocalDockerComposeOptions{
-			Logger: testcontainers.Logger,
+			Logger: log.Default(),
 		},
 	}
 

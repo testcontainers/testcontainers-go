@@ -13,6 +13,7 @@ import (
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -96,7 +97,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
-		Logger:           testcontainers.Logger,
+		Logger:           log.Default(),
 		Started:          true,
 	}
 

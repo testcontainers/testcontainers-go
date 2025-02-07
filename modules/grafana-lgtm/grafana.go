@@ -7,6 +7,7 @@ import (
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -56,7 +57,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return c, fmt.Errorf("otlp http endpoint: %w", err)
 	}
 
-	testcontainers.Logger.Printf("Access to the Grafana dashboard: %s", url)
+	log.Printf("Access to the Grafana dashboard: %s", url)
 
 	return c, nil
 }
