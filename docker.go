@@ -818,7 +818,7 @@ func (c *DockerContainer) copyLogsTimeout(stdout, stderr io.Writer, options *con
 		// Timeout or client connection closed, retry.
 	default:
 		// Unexpected error, retry.
-		log.Default().Printf("Unexpected error reading logs: %v", err)
+		log.Printf("Unexpected error reading logs: %v", err)
 	}
 
 	// Retry from the last log received.

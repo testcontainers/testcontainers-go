@@ -145,7 +145,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 			}
 			port, err = target.MappedPort(ctx, internalPort)
 			if err != nil {
-				log.Default().Printf("mapped port: retries: %d, port: %q, err: %s\n", i, port, err)
+				log.Printf("mapped port: retries: %d, port: %q, err: %s\n", i, port, err)
 			}
 		}
 	}
@@ -161,10 +161,10 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	if err = internalCheck(ctx, internalPort, target); err != nil {
 		switch {
 		case errors.Is(err, errShellNotExecutable):
-			log.Default().Print("Shell not executable in container, only external port validated")
+			log.Printf("Shell not executable in container, only external port validated")
 			return nil
 		case errors.Is(err, errShellNotFound):
-			log.Default().Print("Shell not found in container")
+			log.Printf("Shell not found in container")
 			return nil
 		default:
 			return fmt.Errorf("internal check: %w", err)

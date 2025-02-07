@@ -121,17 +121,17 @@ func ExampleForTLSCert() {
 	})
 	defer func() {
 		if err := testcontainers.TerminateContainer(c); err != nil {
-			log.Default().Printf("failed to terminate container: %s", err)
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
 	if err != nil {
-		log.Default().Printf("failed to start container: %s", err)
+		log.Printf("failed to start container: %s", err)
 		return
 	}
 
 	state, err := c.State(ctx)
 	if err != nil {
-		log.Default().Printf("failed to get container state: %s", err)
+		log.Printf("failed to get container state: %s", err)
 		return
 	}
 

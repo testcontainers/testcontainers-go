@@ -33,17 +33,17 @@ func ExampleExecStrategy() {
 	})
 	defer func() {
 		if err := testcontainers.TerminateContainer(ctr); err != nil {
-			log.Default().Printf("failed to terminate container: %s", err)
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
 	if err != nil {
-		log.Default().Printf("failed to start container: %s", err)
+		log.Printf("failed to start container: %s", err)
 		return
 	}
 
 	state, err := ctr.State(ctx)
 	if err != nil {
-		log.Default().Printf("failed to get container state: %s", err)
+		log.Printf("failed to get container state: %s", err)
 		return
 	}
 

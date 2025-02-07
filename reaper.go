@@ -346,7 +346,7 @@ func (r *reaperSpawner) reuseOrCreate(ctx context.Context, sessionID string, pro
 
 // fromContainer constructs a Reaper from an already running reaper DockerContainer.
 func (r *reaperSpawner) fromContainer(ctx context.Context, sessionID string, provider ReaperProvider, dockerContainer *DockerContainer) (*Reaper, error) {
-	log.Default().Printf("⏳ Waiting for Reaper %q to be ready", dockerContainer.ID[:8])
+	log.Printf("⏳ Waiting for Reaper %q to be ready", dockerContainer.ID[:8])
 
 	// Reusing an existing container so we determine the port from the container's exposed ports.
 	if err := wait.ForExposedPort().
@@ -361,7 +361,7 @@ func (r *reaperSpawner) fromContainer(ctx context.Context, sessionID string, pro
 		return nil, fmt.Errorf("port endpoint: %w", err)
 	}
 
-	log.Default().Printf("🔥 Reaper obtained from Docker for this test session %s", dockerContainer.ID[:8])
+	log.Printf("🔥 Reaper obtained from Docker for this test session %s", dockerContainer.ID[:8])
 
 	return &Reaper{
 		Provider:  provider,
@@ -534,7 +534,7 @@ func (r *Reaper) connect(ctx context.Context) (chan bool, error) {
 	go func() {
 		defer conn.Close()
 		if err := r.handshake(conn); err != nil {
-			log.Default().Printf("Reaper handshake failed: %s", err)
+			log.Printf("Reaper handshake failed: %s", err)
 		}
 		<-terminationSignal
 	}()

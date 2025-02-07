@@ -43,7 +43,7 @@ func tarDir(src string, fileMode int64) (*bytes.Buffer, error) {
 
 	buffer := &bytes.Buffer{}
 
-	log.Default().Printf(">> creating TAR file from directory: %s\n", src)
+	log.Printf(">> creating TAR file from directory: %s\n", src)
 
 	// tar > gzip > buffer
 	zr := gzip.NewWriter(buffer)
@@ -61,7 +61,7 @@ func tarDir(src string, fileMode int64) (*bytes.Buffer, error) {
 
 		// if a symlink, skip file
 		if fi.Mode().Type() == os.ModeSymlink {
-			log.Default().Printf(">> skipping symlink: %s\n", file)
+			log.Printf(">> skipping symlink: %s\n", file)
 			return nil
 		}
 

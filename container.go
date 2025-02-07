@@ -470,7 +470,7 @@ func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 		}
 
 		if modifiedTag != tag {
-			log.Default().Printf("✍🏼 Replacing image with %s. From: %s to %s\n", is.Description(), tag, modifiedTag)
+			log.Printf("✍🏼 Replacing image with %s. From: %s to %s\n", is.Description(), tag, modifiedTag)
 			tag = modifiedTag
 		}
 	}
