@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
+
 	"github.com/testcontainers/testcontainers-go/log"
 )
 

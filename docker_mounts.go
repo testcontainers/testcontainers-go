@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"github.com/docker/docker/api/types/mount"
+
 	"github.com/testcontainers/testcontainers-go/log"
 )
 
