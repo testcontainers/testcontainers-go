@@ -36,6 +36,7 @@ import (
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
+	"github.com/testcontainers/testcontainers-go/internal/logging"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -89,14 +90,14 @@ type DockerContainer struct {
 	logProductionCtx    context.Context
 
 	logProductionTimeout *time.Duration
-	logger               Logging
+	logger               logging.Logging
 	lifecycleHooks       []ContainerLifecycleHooks
 
 	healthStatus string // container health status, will default to healthStatusNone if no healthcheck is present
 }
 
 // SetLogger sets the logger for the container
-func (c *DockerContainer) SetLogger(logger Logging) {
+func (c *DockerContainer) SetLogger(logger logging.Logging) {
 	c.logger = logger
 }
 
@@ -817,7 +818,7 @@ func (c *DockerContainer) copyLogsTimeout(stdout, stderr io.Writer, options *con
 		// Timeout or client connection closed, retry.
 	default:
 		// Unexpected error, retry.
-		Logger.Printf("Unexpected error reading logs: %v", err)
+		logging.Logger.Printf("Unexpected error reading logs: %v", err)
 	}
 
 	// Retry from the last log received.

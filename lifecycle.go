@@ -13,6 +13,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
+	"github.com/testcontainers/testcontainers-go/internal/logging"
 )
 
 // ContainerRequestHook is a hook that will be called before a container is created.
@@ -54,7 +55,7 @@ type ContainerLifecycleHooks struct {
 }
 
 // DefaultLoggingHook is a hook that will log the container lifecycle events
-var DefaultLoggingHook = func(logger Logging) ContainerLifecycleHooks {
+var DefaultLoggingHook = func(logger logging.Logging) ContainerLifecycleHooks {
 	shortContainerID := func(c Container) string {
 		return c.GetContainerID()[:12]
 	}

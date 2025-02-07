@@ -8,7 +8,6 @@ import (
 	_ "embed"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -21,6 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/internal/logging"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -43,18 +43,18 @@ func ExampleHTTPStrategy() {
 	})
 	defer func() {
 		if err := testcontainers.TerminateContainer(c); err != nil {
-			log.Printf("failed to terminate container: %s", err)
+			logging.Logger.Printf("failed to terminate container: %s", err)
 		}
 	}()
 	if err != nil {
-		log.Printf("failed to start container: %s", err)
+		logging.Logger.Printf("failed to start container: %s", err)
 		return
 	}
 	// }
 
 	state, err := c.State(ctx)
 	if err != nil {
-		log.Printf("failed to get container state: %s", err)
+		logging.Logger.Printf("failed to get container state: %s", err)
 		return
 	}
 
@@ -68,13 +68,13 @@ func ExampleHTTPStrategy_WithHeaders() {
 	capath := filepath.Join("testdata", "root.pem")
 	cafile, err := os.ReadFile(capath)
 	if err != nil {
-		log.Printf("can't load ca file: %v", err)
+		logging.Logger.Printf("can't load ca file: %v", err)
 		return
 	}
 
 	certpool := x509.NewCertPool()
 	if !certpool.AppendCertsFromPEM(cafile) {
-		log.Printf("the ca file isn't valid")
+		logging.Logger.Printf("the ca file isn't valid")
 		return
 	}
 
@@ -104,17 +104,17 @@ func ExampleHTTPStrategy_WithHeaders() {
 	})
 	defer func() {
 		if err := testcontainers.TerminateContainer(c); err != nil {
-			log.Printf("failed to terminate container: %s", err)
+			logging.Logger.Printf("failed to terminate container: %s", err)
 		}
 	}()
 	if err != nil {
-		log.Printf("failed to start container: %s", err)
+		logging.Logger.Printf("failed to start container: %s", err)
 		return
 	}
 
 	state, err := c.State(ctx)
 	if err != nil {
-		log.Printf("failed to get container state: %s", err)
+		logging.Logger.Printf("failed to get container state: %s", err)
 		return
 	}
 
@@ -139,18 +139,18 @@ func ExampleHTTPStrategy_WithPort() {
 	})
 	defer func() {
 		if err := testcontainers.TerminateContainer(c); err != nil {
-			log.Printf("failed to terminate container: %s", err)
+			logging.Logger.Printf("failed to terminate container: %s", err)
 		}
 	}()
 	if err != nil {
-		log.Printf("failed to start container: %s", err)
+		logging.Logger.Printf("failed to start container: %s", err)
 		return
 	}
 	// }
 
 	state, err := c.State(ctx)
 	if err != nil {
-		log.Printf("failed to get container state: %s", err)
+		logging.Logger.Printf("failed to get container state: %s", err)
 		return
 	}
 
@@ -174,17 +174,17 @@ func ExampleHTTPStrategy_WithForcedIPv4LocalHost() {
 	})
 	defer func() {
 		if err := testcontainers.TerminateContainer(c); err != nil {
-			log.Printf("failed to terminate container: %s", err)
+			logging.Logger.Printf("failed to terminate container: %s", err)
 		}
 	}()
 	if err != nil {
-		log.Printf("failed to start container: %s", err)
+		logging.Logger.Printf("failed to start container: %s", err)
 		return
 	}
 
 	state, err := c.State(ctx)
 	if err != nil {
-		log.Printf("failed to get container state: %s", err)
+		logging.Logger.Printf("failed to get container state: %s", err)
 		return
 	}
 
@@ -209,18 +209,18 @@ func ExampleHTTPStrategy_WithBasicAuth() {
 	})
 	defer func() {
 		if err := testcontainers.TerminateContainer(gogs); err != nil {
-			log.Printf("failed to terminate container: %s", err)
+			logging.Logger.Printf("failed to terminate container: %s", err)
 		}
 	}()
 	if err != nil {
-		log.Printf("failed to start container: %s", err)
+		logging.Logger.Printf("failed to start container: %s", err)
 		return
 	}
 	// }
 
 	state, err := gogs.State(ctx)
 	if err != nil {
-		log.Printf("failed to get container state: %s", err)
+		logging.Logger.Printf("failed to get container state: %s", err)
 		return
 	}
 

@@ -4,10 +4,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go/internal/logging"
 )
 
 func TestWithLogger(t *testing.T) {
-	logger := TestLogger(t)
+	logger := logging.TestLogger(t)
 	logOpt := WithLogger(logger)
 	t.Run("container", func(t *testing.T) {
 		var req GenericContainerRequest

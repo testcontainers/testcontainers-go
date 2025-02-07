@@ -1,6 +1,9 @@
 package testcontainers
 
-import "github.com/docker/docker/api/types/mount"
+import (
+	"github.com/docker/docker/api/types/mount"
+	"github.com/testcontainers/testcontainers-go/internal/logging"
+)
 
 var mountTypeMapping = map[MountType]mount.Type{
 	MountTypeBind:   mount.TypeBind, // Deprecated, it will be removed in a future release
@@ -115,7 +118,7 @@ func mapToDockerMounts(containerMounts ContainerMounts) []mount.Mount {
 		case TmpfsMounter:
 			containerMount.TmpfsOptions = typedMounter.GetTmpfsOptions()
 		case BindMounter:
-			Logger.Printf("Mount type %s is not supported by Testcontainers for Go", m.Source.Type())
+			logging.Logger.Printf("Mount type %s is not supported by Testcontainers for Go", m.Source.Type())
 		default:
 			// The provided source type has no custom options
 		}
