@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"log"
+	standardlog "log"
 	"net"
 	"strconv"
 	"testing"
@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/log"
 )
 
 func TestWaitForListeningPortSucceeds(t *testing.T) {
@@ -454,11 +455,15 @@ func TestHostPortStrategySucceedsGivenShellIsNotInstalled(t *testing.T) {
 		WithStartupTimeout(5 * time.Second).
 		WithPollInterval(100 * time.Millisecond)
 
-	oldWriter := log.Default().Writer()
-	var buf bytes.Buffer
-	log.Default().SetOutput(&buf)
+	oldLogger := log.Default()
+
+	buf := &bytes.Buffer{}
+	logger := standardlog.New(buf, "test", standardlog.LstdFlags)
+	logger.SetOutput(buf)
+
+	log.SetDefault(logger)
 	t.Cleanup(func() {
-		log.Default().SetOutput(oldWriter)
+		log.SetDefault(oldLogger)
 	})
 
 	err = wg.WaitUntilReady(context.Background(), target)
@@ -514,11 +519,15 @@ func TestHostPortStrategySucceedsGivenShellIsNotFound(t *testing.T) {
 		WithStartupTimeout(5 * time.Second).
 		WithPollInterval(100 * time.Millisecond)
 
-	oldWriter := log.Default().Writer()
-	var buf bytes.Buffer
-	log.Default().SetOutput(&buf)
+	oldLogger := log.Default()
+
+	buf := &bytes.Buffer{}
+	logger := standardlog.New(buf, "test", standardlog.LstdFlags)
+	logger.SetOutput(buf)
+
+	log.SetDefault(logger)
 	t.Cleanup(func() {
-		log.Default().SetOutput(oldWriter)
+		log.SetDefault(oldLogger)
 	})
 
 	err = wg.WaitUntilReady(context.Background(), target)
