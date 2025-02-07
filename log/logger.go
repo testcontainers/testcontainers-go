@@ -7,12 +7,19 @@ import (
 	"testing"
 )
 
-// Logger defines the Logger interface
+// Validate our types implement the required interfaces.
+var (
+	_ Logger = (*log.Logger)(nil)
+	_ Logger = (*noopLogger)(nil)
+	_ Logger = (*testLogger)(nil)
+)
+
+// Logger defines the Logger interface.
 type Logger interface {
 	Printf(format string, v ...any)
 }
 
-// defaultLogger is the default Logger instance
+// defaultLogger is the default Logger instance.
 var defaultLogger Logger = &noopLogger{}
 
 func init() {
@@ -27,12 +34,12 @@ func init() {
 	}
 }
 
-// Default returns the default Logger instance
+// Default returns the default Logger instance.
 func Default() Logger {
 	return defaultLogger
 }
 
-// SetDefault sets the default Logger instance
+// SetDefault sets the default Logger instance.
 func SetDefault(logger Logger) {
 	defaultLogger = logger
 }
@@ -40,11 +47,6 @@ func SetDefault(logger Logger) {
 func Printf(format string, v ...any) {
 	defaultLogger.Printf(format, v...)
 }
-
-// Validate our types implement the required interfaces.
-var (
-	_ Logger = (*log.Logger)(nil)
-)
 
 type noopLogger struct{}
 
