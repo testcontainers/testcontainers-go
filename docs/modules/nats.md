@@ -93,7 +93,6 @@ The NATS container exposes the following methods:
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.24.0"><span class="tc-version">:material-tag: v0.24.0</span></a>
 
 This method returns the connection string to connect to the NATS container, using the default `4222` port.
-It's possible to pass extra parameters to the connection string, in a variadic way.
 
 <!--codeinclude-->
 [Get connection string](../../modules/nats/nats_test.go) inside_block:connectionString
