@@ -174,10 +174,10 @@ func WithBootstrapConfig(cfg string, val any) Option {
 	}
 }
 
-// WithEnableAdminAPIAuthentication enables Admin API Authentication.
+// WithAdminAPIAuthentication enables Admin API Authentication.
 // It sets `admin_api_require_auth` configuration to true and configures a bootstrap user account.
 // See https://docs.redpanda.com/current/deploy/deployment-option/self-hosted/manual/production/production-deployment/#bootstrap-a-user-account
-func WithEnableAdminAPIAuthentication() Option {
+func WithAdminAPIAuthentication() Option {
 	return func(o *options) {
 		o.EnableAdminAPIAuthentication = true
 	}
