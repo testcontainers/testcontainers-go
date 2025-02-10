@@ -347,7 +347,7 @@ func TestRedpandaWithOldVersionAndWasm(t *testing.T) {
 	}
 
 	// Test successful authentication, but failed authorization with a non-superuser account
-	t.Run("non-superuser account", func(t *testing.T) {
+	t.Run("non-superuser", func(t *testing.T) {
 		kafkaCl, err := kgo.NewClient(
 			kgo.SeedBrokers(seedBroker),
 			kgo.SASL(scram.Auth{
