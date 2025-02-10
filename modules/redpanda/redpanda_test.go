@@ -400,7 +400,7 @@ func TestRedpandaWithOldVersionAndWasm(t *testing.T) {
 
 	// Test Schema Registry API
 	t.Run("schema-registry", func(t *testing.T) {
-		t.Run("failed authentication", func(t *testing.T) {
+		t.Run("failed-authentication", func(t *testing.T) {
 			req, err := http.NewRequestWithContext(ctx, http.MethodGet, schemaRegistryURL+"/subjects", nil)
 			require.NoError(t, err)
 			resp, err := httpCl.Do(req)
