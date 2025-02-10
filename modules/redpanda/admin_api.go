@@ -10,23 +10,48 @@ import (
 	"net/url"
 )
 
+// AdminAPIClient is a client for the Redpanda Admin API.
 type AdminAPIClient struct {
-	BaseURL  string
-	Username string
-	Password string
+	baseURL  string
+	username string
+	password string
 	client   *http.Client
 }
 
+// NewAdminAPIClient creates a new AdminAPIClient.
 func NewAdminAPIClient(baseURL string) *AdminAPIClient {
 	return &AdminAPIClient{
-		BaseURL: baseURL,
+		baseURL: baseURL,
 		client:  http.DefaultClient,
 	}
 }
 
+// WithHTTPClient sets the HTTP client for the AdminAPIClient.
 func (cl *AdminAPIClient) WithHTTPClient(c *http.Client) *AdminAPIClient {
 	cl.client = c
 	return cl
+}
+
+// WithAuthentication sets the username and password for the AdminAPIClient.
+func (cl *AdminAPIClient) WithAuthentication(username, password string) *AdminAPIClient {
+	cl.username = username
+	cl.password = password
+	return cl
+}
+
+// BaseURL returns the base URL of the AdminAPIClient.
+func (cl *AdminAPIClient) BaseURL() string {
+	return cl.baseURL
+}
+
+// Username returns the username of the AdminAPIClient.
+func (cl *AdminAPIClient) Username() string {
+	return cl.username
+}
+
+// Password returns the password of the AdminAPIClient.
+func (cl *AdminAPIClient) Password() string {
+	return cl.password
 }
 
 type createUserRequest struct {
@@ -35,6 +60,7 @@ type createUserRequest struct {
 	Algorithm string `json:"algorithm"`
 }
 
+// CreateUser creates a new user in Redpanda using Admin API.
 func (cl *AdminAPIClient) CreateUser(ctx context.Context, username, password string) error {
 	userReq := createUserRequest{
 		User:      username,
@@ -46,7 +72,7 @@ func (cl *AdminAPIClient) CreateUser(ctx context.Context, username, password str
 		return fmt.Errorf("failed to marshal create user request: %w", err)
 	}
 
-	endpoint, err := url.JoinPath(cl.BaseURL, "/v1/security/users")
+	endpoint, err := url.JoinPath(cl.baseURL, "/v1/security/users")
 	if err != nil {
 		return fmt.Errorf("failed to join url path: %w", err)
 	}
@@ -57,8 +83,8 @@ func (cl *AdminAPIClient) CreateUser(ctx context.Context, username, password str
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	if cl.Username != "" || cl.Password != "" {
-		req.SetBasicAuth(cl.Username, cl.Password)
+	if cl.username != "" || cl.password != "" {
+		req.SetBasicAuth(cl.username, cl.password)
 	}
 
 	resp, err := cl.client.Do(req)

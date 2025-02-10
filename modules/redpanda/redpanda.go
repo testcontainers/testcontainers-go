@@ -254,8 +254,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		adminAPIUrl := fmt.Sprintf("%s://%v:%d", c.urlScheme, hostIP, adminAPIPort.Int())
 		adminCl := NewAdminAPIClient(adminAPIUrl)
 		if settings.EnableAdminAPIAuthentication {
-			adminCl.Username = bootstrapAdminAPIUser
-			adminCl.Password = bootstrapAdminAPIPassword
+			adminCl = adminCl.WithAuthentication(bootstrapAdminAPIUser, bootstrapAdminAPIPassword)
 		}
 
 		if settings.EnableTLS {
