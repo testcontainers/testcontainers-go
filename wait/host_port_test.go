@@ -457,9 +457,8 @@ func TestHostPortStrategySucceedsGivenShellIsNotInstalled(t *testing.T) {
 
 	oldLogger := log.Default()
 
-	buf := &bytes.Buffer{}
-	logger := standardlog.New(buf, "test", standardlog.LstdFlags)
-	logger.SetOutput(buf)
+	var buf bytes.Buffer
+	logger := standardlog.New(&buf, "test", standardlog.LstdFlags)
 
 	log.SetDefault(logger)
 	t.Cleanup(func() {
@@ -521,9 +520,8 @@ func TestHostPortStrategySucceedsGivenShellIsNotFound(t *testing.T) {
 
 	oldLogger := log.Default()
 
-	buf := &bytes.Buffer{}
-	logger := standardlog.New(buf, "test", standardlog.LstdFlags)
-	logger.SetOutput(buf)
+	var buf bytes.Buffer
+	logger := standardlog.New(&buf, "test", standardlog.LstdFlags)
 
 	log.SetDefault(logger)
 	t.Cleanup(func() {
