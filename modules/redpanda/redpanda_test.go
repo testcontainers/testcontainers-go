@@ -257,7 +257,7 @@ func TestRedpandaWithBootstrapUserAuthentication(t *testing.T) {
 	})
 
 	// Test failed authentication
-	t.Run("invalid user", func(t *testing.T) {
+	t.Run("invalid-user", func(t *testing.T) {
 		kafkaCl, err := kgo.NewClient(
 			kgo.SeedBrokers(seedBroker),
 			kgo.SASL(scram.Auth{
