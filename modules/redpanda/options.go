@@ -48,8 +48,8 @@ type options struct {
 	// container's bootstrap.yml
 	ExtraBootstrapConfig map[string]any
 
-	// EnableAdminAPIAuthentication enables Admin API authentication
-	EnableAdminAPIAuthentication bool
+	// enableAdminAPIAuthentication enables Admin API authentication
+	enableAdminAPIAuthentication bool
 }
 
 func defaultOptions() options {
@@ -179,6 +179,6 @@ func WithBootstrapConfig(cfg string, val any) Option {
 // See https://docs.redpanda.com/current/deploy/deployment-option/self-hosted/manual/production/production-deployment/#bootstrap-a-user-account
 func WithAdminAPIAuthentication() Option {
 	return func(o *options) {
-		o.EnableAdminAPIAuthentication = true
+		o.enableAdminAPIAuthentication = true
 	}
 }

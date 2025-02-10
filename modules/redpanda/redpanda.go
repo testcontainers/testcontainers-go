@@ -111,7 +111,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	// 2.2. If enabled, bootstrap user account
-	if settings.EnableAdminAPIAuthentication {
+	if settings.enableAdminAPIAuthentication {
 		// set the RP_BOOTSTRAP_USER env var
 		if req.Env == nil {
 			req.Env = map[string]string{}
@@ -253,7 +253,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 		adminAPIUrl := fmt.Sprintf("%s://%v:%d", c.urlScheme, hostIP, adminAPIPort.Int())
 		adminCl := NewAdminAPIClient(adminAPIUrl)
-		if settings.EnableAdminAPIAuthentication {
+		if settings.enableAdminAPIAuthentication {
 			adminCl = adminCl.WithAuthentication(bootstrapAdminAPIUser, bootstrapAdminAPIPassword)
 		}
 
