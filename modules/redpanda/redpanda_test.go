@@ -285,7 +285,7 @@ func TestRedpandaWithBootstrapUserAuthentication(t *testing.T) {
 			resp.Body.Close()
 		})
 
-		t.Run("successful authentication", func(t *testing.T) {
+		t.Run("successful-authentication", func(t *testing.T) {
 			for user, password := range serviceAccounts {
 				req, err := http.NewRequestWithContext(ctx, http.MethodGet, schemaRegistryURL+"/subjects", nil)
 				require.NoError(t, err)
