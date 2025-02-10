@@ -382,7 +382,7 @@ func TestRedpandaWithOldVersionAndWasm(t *testing.T) {
 	})
 
 	// Test wrong mechanism
-	t.Run("wrong mechanism", func(t *testing.T) {
+	t.Run("wrong-mechanism", func(t *testing.T) {
 		kafkaCl, err := kgo.NewClient(
 			kgo.SeedBrokers(seedBroker),
 			kgo.SASL(plain.Auth{
