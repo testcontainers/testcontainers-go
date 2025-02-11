@@ -12,7 +12,7 @@ import (
 
 // AdminAPIClient is a client for the Redpanda Admin API.
 type AdminAPIClient struct {
-	baseURL  string
+	BaseURL  string
 	username string
 	password string
 	client   *http.Client
@@ -21,7 +21,7 @@ type AdminAPIClient struct {
 // NewAdminAPIClient creates a new AdminAPIClient.
 func NewAdminAPIClient(baseURL string) *AdminAPIClient {
 	return &AdminAPIClient{
-		baseURL: baseURL,
+		BaseURL: baseURL,
 		client:  http.DefaultClient,
 	}
 }
@@ -37,11 +37,6 @@ func (cl *AdminAPIClient) WithAuthentication(username, password string) *AdminAP
 	cl.username = username
 	cl.password = password
 	return cl
-}
-
-// BaseURL returns the base URL of the AdminAPIClient.
-func (cl *AdminAPIClient) BaseURL() string {
-	return cl.baseURL
 }
 
 // Username returns the username of the AdminAPIClient.
@@ -72,7 +67,7 @@ func (cl *AdminAPIClient) CreateUser(ctx context.Context, username, password str
 		return fmt.Errorf("failed to marshal create user request: %w", err)
 	}
 
-	endpoint, err := url.JoinPath(cl.baseURL, "/v1/security/users")
+	endpoint, err := url.JoinPath(cl.BaseURL, "/v1/security/users")
 	if err != nil {
 		return fmt.Errorf("failed to join url path: %w", err)
 	}
