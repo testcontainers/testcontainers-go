@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	es "github.com/elastic/go-elasticsearch/v8"
 
@@ -65,6 +66,33 @@ func ExampleRun_withUsingPassword() {
 	// Output:
 	// true
 	// foo
+}
+
+func ExampleRun_withStartupTimeout() {
+	// usingPassword {
+	ctx := context.Background()
+	elasticsearchContainer, err := elasticsearch.Run(
+		ctx,
+		"docker.elastic.co/elasticsearch/elasticsearch:7.9.2",
+		elasticsearch.WithStartupTimeout(2*time.Minute),
+	)
+	defer func() {
+		if err := testcontainers.TerminateContainer(elasticsearchContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
+	// }
+
+	fmt.Println(strings.HasPrefix(elasticsearchContainer.Settings.Address, "http://"))
+	fmt.Println(elasticsearchContainer.Settings.StartupTimeout)
+
+	// Output:
+	// true
+	// 2m0s
 }
 
 func ExampleRun_connectUsingElasticsearchClient() {
