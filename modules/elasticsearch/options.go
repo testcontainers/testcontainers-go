@@ -1,6 +1,8 @@
 package elasticsearch
 
 import (
+	"time"
+
 	"github.com/testcontainers/testcontainers-go"
 )
 
@@ -8,10 +10,11 @@ import (
 // It could be used to build an HTTP client for the Elasticsearch container, as it will
 // hold information on how to connect to the container.
 type Options struct {
-	Address  string
-	CACert   []byte
-	Password string
-	Username string
+	Address        string
+	CACert         []byte
+	Password       string
+	Username       string
+	StartupTimeout time.Duration
 }
 
 func defaultOptions() *Options {
@@ -36,5 +39,12 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 func WithPassword(password string) Option {
 	return func(o *Options) {
 		o.Password = password
+	}
+}
+
+// WithStartupTimeout sets the timeout duration used when waiting for the Elasticsearch container to start.
+func WithStartupTimeout(timeout time.Duration) Option {
+	return func(o *Options) {
+		o.StartupTimeout = timeout
 	}
 }
