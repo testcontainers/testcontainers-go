@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -2268,4 +2269,27 @@ func Test_Provider_DaemonHost_Issue2897(t *testing.T) {
 	case err := <-errCh:
 		require.NoError(t, err)
 	}
+}
+
+func TestGetLocalNonLoopbackIP(t *testing.T) {
+	ip, err := getLocalNonLoopbackIP()
+	if err != nil {
+		// If no non-loopback IP is found, skip the test.
+		t.Skip("No non-loopback IP address found; skipping test:", err)
+	}
+
+	if ip == "" {
+		t.Error("Expected a non-empty IP string, got empty string")
+	}
+
+	parsedIP := net.ParseIP(ip)
+	if parsedIP == nil {
+		t.Errorf("Returned IP %q is not a valid IP address", ip)
+	}
+
+	if parsedIP.IsLoopback() {
+		t.Errorf("Expected a non-loopback IP, but got loopback IP: %q", ip)
+	}
+
+	t.Logf("Found non-loopback IP: %s", ip)
 }
