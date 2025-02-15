@@ -1510,7 +1510,12 @@ func (p *DockerProvider) daemonHostLocked(ctx context.Context) (string, error) {
 			}
 			p.hostCache = ip
 		} else {
-			p.hostCache = "localhost"
+			ip, err := getLocalNonLoopbackIP()
+			if err != nil {
+				p.hostCache = "localhost"
+			} else {
+				p.hostCache = ip
+			}
 		}
 	default:
 		return "", errors.New("could not determine host through env or docker host")
@@ -1799,4 +1804,41 @@ func tryClose(r io.Reader) {
 	if ok {
 		_ = rc.Close()
 	}
+}
+
+// getLocalNonLoopbackIP returns the first non-loopback IPv4 address found.
+func getLocalNonLoopbackIP() (string, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return "", err
+	}
+	for _, iface := range interfaces {
+		// Skip down or loopback interfaces.
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue // try next interface
+		}
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+			// Check if it's a valid IPv4 and not loopback.
+			if ip == nil || ip.IsLoopback() {
+				continue
+			}
+			ip = ip.To4()
+			if ip == nil {
+				continue // not IPv4
+			}
+			return ip.String(), nil
+		}
+	}
+	return "", errors.New("no non-loopback IP address found")
 }

@@ -140,3 +140,52 @@ func TestMongoDB(t *testing.T) {
 		})
 	}
 }
+
+func TestMongoDBChangeStream(t *testing.T) {
+	ctx := context.Background()
+
+	// Start MongoDB with replica set (required for change streams)
+	mongodbContainer, err := mongodb.Run(ctx, "mongo:7",
+		mongodb.WithReplicaSet("rs0"),
+	)
+	require.NoError(t, err)
+	testcontainers.CleanupContainer(t, mongodbContainer)
+
+	endpoint, err := mongodbContainer.ConnectionString(ctx)
+	require.NoError(t, err)
+
+	endpoint = endpoint + "/?replicaSet=rs0"
+	// Connect to MongoDB
+	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(endpoint))
+	require.NoError(t, err)
+	defer mongoClient.Disconnect(ctx)
+
+	// Create a collection
+	coll := mongoClient.Database("test").Collection("changes")
+
+	// Start change stream
+	stream, err := coll.Watch(ctx, mongo.Pipeline{})
+	require.NoError(t, err)
+	defer stream.Close(ctx)
+
+	// Insert a document
+	doc := bson.M{"message": "hello change streams"}
+	_, err = coll.InsertOne(ctx, doc)
+	require.NoError(t, err)
+
+	// Wait for the change event
+	require.True(t, stream.Next(ctx))
+
+	var changeEvent bson.M
+	err = stream.Decode(&changeEvent)
+	require.NoError(t, err)
+
+	// Verify the change event
+	operationType, ok := changeEvent["operationType"].(string)
+	require.True(t, ok)
+	require.Equal(t, "insert", operationType)
+
+	fullDocument, ok := changeEvent["fullDocument"].(bson.M)
+	require.True(t, ok)
+	require.Equal(t, "hello change streams", fullDocument["message"])
+}

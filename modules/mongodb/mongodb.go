@@ -125,10 +125,19 @@ func (c *MongoDBContainer) ConnectionString(ctx context.Context) (string, error)
 	if err != nil {
 		return "", err
 	}
+
+	var base string
 	if c.username != "" && c.password != "" {
-		return fmt.Sprintf("mongodb://%s:%s@%s:%s", c.username, c.password, host, port.Port()), nil
+		base = fmt.Sprintf("mongodb://%s:%s@%s:%s", c.username, c.password, host, port.Port())
+	} else {
+		base = fmt.Sprintf("mongodb://%s:%s", host, port.Port())
 	}
-	return c.Endpoint(ctx, "mongodb")
+
+	if c.replicaSet != "" {
+		base = fmt.Sprintf("%s/?replicaSet=%s", base, c.replicaSet)
+	}
+
+	return base, nil
 }
 
 func setupEntrypointForAuth(req *testcontainers.GenericContainerRequest) {
@@ -176,17 +185,27 @@ func initiateReplicaSet(req *testcontainers.GenericContainerRequest, cli mongoCl
 		req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
 			PostStarts: []testcontainers.ContainerHook{
 				func(ctx context.Context, c testcontainers.Container) error {
-					ip, err := c.ContainerIP(ctx)
+					// Wait for MongoDB to be ready
+					if err := waitForMongoReady(ctx, c, cli); err != nil {
+						return fmt.Errorf("failed to wait for MongoDB ready: %w", err)
+					}
+
+					// Initiate replica set
+					host, err := c.Host(ctx)
 					if err != nil {
-						return fmt.Errorf("container ip: %w", err)
+						return fmt.Errorf("failed to get host: %w", err)
+					}
+					mappedPort, err := c.MappedPort(ctx, "27017/tcp")
+					if err != nil {
+						return fmt.Errorf("failed to get mapped port: %w", err)
 					}
 
 					cmd := cli.eval(
-						"rs.initiate({ _id: '%s', members: [ { _id: 0, host: '%s:27017' } ] })",
+						"rs.initiate({ _id: '%s', members: [ { _id: 0, host: '%s:%s' } ] })",
 						replSetName,
-						ip,
+						host,
+						mappedPort.Port(),
 					)
-
 					return wait.ForExec(cmd).WaitUntilReady(ctx, c)
 				},
 			},
@@ -207,4 +226,8 @@ func withAuthReplicaset(
 
 		return nil
 	}
+}
+
+func waitForMongoReady(ctx context.Context, c testcontainers.Container, cli mongoCli) error {
+	return wait.ForExec(cli.eval("db.runCommand({ ping: 1 })")).WaitUntilReady(ctx, c)
 }
