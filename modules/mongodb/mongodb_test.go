@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"net/url"
 	"os"
 	"testing"
 
@@ -51,6 +52,7 @@ func getLocalNonLoopbackIP() (string, error) {
 	}
 	return "", errors.New("no non-loopback IP address found")
 }
+
 func TestMongoDB(t *testing.T) {
 	host, err := getLocalNonLoopbackIP()
 	if err != nil {
@@ -168,72 +170,53 @@ func TestMongoDB(t *testing.T) {
 			endpoint, err := mongodbContainer.ConnectionString(ctx)
 			require.NoError(tt, err)
 
-			// Force direct connection to the container to avoid the replica set
-			// connection string that is returned by the container itself when
-			// using the replica set option.
+			// Force direct connection to the container.
 			mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(endpoint).SetDirect(true))
 			require.NoError(tt, err)
 
 			err = mongoClient.Ping(ctx, nil)
 			require.NoError(tt, err)
-			require.Equal(t, "test", mongoClient.Database("test").Name())
+			require.Equal(tt, "test", mongoClient.Database("test").Name())
 
-			_, err = mongoClient.Database("testcontainer").Collection("test").InsertOne(context.Background(), bson.M{})
+			// Basic insert test.
+			_, err = mongoClient.Database("testcontainer").Collection("test").InsertOne(ctx, bson.M{})
 			require.NoError(tt, err)
+
+			// If the container is configured with a replica set, run the change stream test.
+			if hasReplica, _ := hasReplicaSet(endpoint); hasReplica {
+				coll := mongoClient.Database("test").Collection("changes")
+				stream, err := coll.Watch(ctx, mongo.Pipeline{})
+				require.NoError(tt, err)
+				defer stream.Close(ctx)
+
+				doc := bson.M{"message": "hello change streams"}
+				_, err = coll.InsertOne(ctx, doc)
+				require.NoError(tt, err)
+
+				require.True(tt, stream.Next(ctx), "Expected to receive a change stream event")
+				var changeEvent bson.M
+				err = stream.Decode(&changeEvent)
+				require.NoError(tt, err)
+
+				opType, ok := changeEvent["operationType"].(string)
+				require.True(tt, ok, "Expected operationType field")
+				require.Equal(tt, "insert", opType, "Expected operationType to be 'insert'")
+
+				fullDoc, ok := changeEvent["fullDocument"].(bson.M)
+				require.True(tt, ok, "Expected fullDocument field")
+				require.Equal(tt, "hello change streams", fullDoc["message"])
+			}
 		})
 	}
 }
 
-func TestMongoDBChangeStream(t *testing.T) {
-	host, err := getLocalNonLoopbackIP()
+// hasReplicaSet checks if the connection string includes a replicaSet query parameter.
+func hasReplicaSet(connStr string) (bool, error) {
+	u, err := url.Parse(connStr)
 	if err != nil {
-		host = "host.docker.internal"
+		return false, err
 	}
-	os.Setenv("TESTCONTAINERS_HOST_OVERRIDE", host)
-
-	ctx := context.Background()
-
-	// Start MongoDB with replica set (required for change streams)
-	mongodbContainer, err := mongodb.Run(ctx, "mongo:7",
-		mongodb.WithReplicaSet("rs0"),
-	)
-	require.NoError(t, err)
-	testcontainers.CleanupContainer(t, mongodbContainer)
-
-	endpoint, err := mongodbContainer.ConnectionString(ctx)
-	require.NoError(t, err)
-
-	// Connect to MongoDB
-	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(endpoint))
-	require.NoError(t, err)
-	defer mongoClient.Disconnect(ctx)
-
-	// Create a collection
-	coll := mongoClient.Database("test").Collection("changes")
-
-	// Start change stream
-	stream, err := coll.Watch(ctx, mongo.Pipeline{})
-	require.NoError(t, err)
-	defer stream.Close(ctx)
-
-	// Insert a document
-	doc := bson.M{"message": "hello change streams"}
-	_, err = coll.InsertOne(ctx, doc)
-	require.NoError(t, err)
-
-	// Wait for the change event
-	require.True(t, stream.Next(ctx))
-
-	var changeEvent bson.M
-	err = stream.Decode(&changeEvent)
-	require.NoError(t, err)
-
-	// Verify the change event
-	operationType, ok := changeEvent["operationType"].(string)
-	require.True(t, ok)
-	require.Equal(t, "insert", operationType)
-
-	fullDocument, ok := changeEvent["fullDocument"].(bson.M)
-	require.True(t, ok)
-	require.Equal(t, "hello change streams", fullDocument["message"])
+	q := u.Query()
+	_, ok := q["replicaSet"]
+	return ok, nil
 }
