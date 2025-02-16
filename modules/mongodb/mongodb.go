@@ -6,6 +6,8 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"net"
+	"net/url"
 	"time"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -125,19 +127,22 @@ func (c *MongoDBContainer) ConnectionString(ctx context.Context) (string, error)
 	if err != nil {
 		return "", err
 	}
+	u := url.URL{
+		Scheme: "mongodb",
+		Host:   net.JoinHostPort(host, port.Port()),
+	}
 
-	var base string
 	if c.username != "" && c.password != "" {
-		base = fmt.Sprintf("mongodb://%s:%s@%s:%s", c.username, c.password, host, port.Port())
-	} else {
-		base = fmt.Sprintf("mongodb://%s:%s", host, port.Port())
+		u.User = url.UserPassword(c.username, c.password)
 	}
 
 	if c.replicaSet != "" {
-		base = fmt.Sprintf("%s/?replicaSet=%s", base, c.replicaSet)
+		q := url.Values{}
+		q.Add("replicaSet", c.replicaSet)
+		u.RawQuery = q.Encode()
 	}
 
-	return base, nil
+	return u.String(), nil
 }
 
 func setupEntrypointForAuth(req *testcontainers.GenericContainerRequest) {
@@ -187,7 +192,7 @@ func initiateReplicaSet(req *testcontainers.GenericContainerRequest, cli mongoCl
 				func(ctx context.Context, c testcontainers.Container) error {
 					// Wait for MongoDB to be ready
 					if err := waitForMongoReady(ctx, c, cli); err != nil {
-						return fmt.Errorf("failed to wait for MongoDB ready: %w", err)
+						return fmt.Errorf("wait for mongo: %w", err)
 					}
 
 					// Initiate replica set

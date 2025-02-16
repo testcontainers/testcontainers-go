@@ -3,6 +3,7 @@ package mongodb_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/url"
 	"os"
@@ -17,10 +18,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/mongodb"
 )
 
-func getLocalNonLoopbackIP() (string, error) {
+func localNonLoopbackIP() (string, error) {
 	interfaces, err := net.Interfaces()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("list network interfaces: %w", err)
 	}
 	for _, iface := range interfaces {
 		// Skip down or loopback interfaces.
@@ -54,7 +55,7 @@ func getLocalNonLoopbackIP() (string, error) {
 }
 
 func TestMongoDB(t *testing.T) {
-	host, err := getLocalNonLoopbackIP()
+	host, err := localNonLoopbackIP()
 	if err != nil {
 		host = "host.docker.internal"
 	}
@@ -211,12 +212,22 @@ func TestMongoDB(t *testing.T) {
 }
 
 // hasReplicaSet checks if the connection string includes a replicaSet query parameter.
+// hasReplicaSet checks if the connection string includes a replicaSet query parameter.
 func hasReplicaSet(connStr string) (bool, error) {
 	u, err := url.Parse(connStr)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("parse connection string: %w", err)
 	}
 	q := u.Query()
-	_, ok := q["replicaSet"]
-	return ok, nil
+	replicaSetValues, ok := q["replicaSet"]
+	if !ok {
+		return false, nil
+	}
+	// Check if any of the replica set values are non-empty.
+	for _, value := range replicaSetValues {
+		if value != "" {
+			return true, nil // Found a non-empty replicaSet value
+		}
+	}
+	return false, nil // replicaSet parameter exists, but all values are empty
 }
