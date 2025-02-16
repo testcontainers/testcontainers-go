@@ -39,6 +39,8 @@ func localNonLoopbackIP() (string, error) {
 				ip = v.IP
 			case *net.IPAddr:
 				ip = v.IP
+			default:
+				continue
 			}
 			// Check if it's a valid IPv4 and not loopback.
 			if ip == nil || ip.IsLoopback() {
