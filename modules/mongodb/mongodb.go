@@ -199,11 +199,11 @@ func initiateReplicaSet(req *testcontainers.GenericContainerRequest, cli mongoCl
 					// Initiate replica set
 					host, err := c.Host(ctx)
 					if err != nil {
-						return fmt.Errorf("failed to get host: %w", err)
+						return fmt.Errorf("get host: %w", err)
 					}
 					mappedPort, err := c.MappedPort(ctx, "27017/tcp")
 					if err != nil {
-						return fmt.Errorf("failed to get mapped port: %w", err)
+						return fmt.Errorf("get mapped port: %w", err)
 					}
 
 					cmd := cli.eval(
