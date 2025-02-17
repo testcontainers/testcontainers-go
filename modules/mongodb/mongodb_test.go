@@ -220,16 +220,5 @@ func hasReplicaSet(connStr string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("parse connection string: %w", err)
 	}
-	q := u.Query()
-	replicaSetValues, ok := q["replicaSet"]
-	if !ok {
-		return false, nil
-	}
-	// Check if any of the replica set values are non-empty.
-	for _, value := range replicaSetValues {
-		if value != "" {
-			return true, nil // Found a non-empty replicaSet value
-		}
-	}
-	return false, nil // replicaSet parameter exists, but all values are empty
+	return q.Get("replicaSet") == ""
 }
