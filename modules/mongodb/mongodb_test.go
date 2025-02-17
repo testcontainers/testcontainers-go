@@ -43,7 +43,7 @@ func localNonLoopbackIP() (string, error) {
 				continue
 			}
 			// Check if it's a valid IPv4 and not loopback.
-			if ip == nil || ip.IsLoopback() {
+			if ip.IsLoopback() {
 				continue
 			}
 			ip = ip.To4()
