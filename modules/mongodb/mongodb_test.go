@@ -214,7 +214,6 @@ func TestMongoDB(t *testing.T) {
 }
 
 // hasReplicaSet checks if the connection string includes a replicaSet query parameter.
-// hasReplicaSet checks if the connection string includes a replicaSet query parameter.
 func hasReplicaSet(connStr string) (bool, error) {
 	u, err := url.Parse(connStr)
 	if err != nil {
