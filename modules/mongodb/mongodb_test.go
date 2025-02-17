@@ -195,7 +195,7 @@ func TestMongoDB(t *testing.T) {
 				_, err = coll.InsertOne(ctx, doc)
 				require.NoError(tt, err)
 
-				require.True(tt, stream.Next(ctx), "Expected to receive a change stream event")
+				require.True(tt, stream.Next(ctx))
 				var changeEvent bson.M
 				err = stream.Decode(&changeEvent)
 				require.NoError(tt, err)
