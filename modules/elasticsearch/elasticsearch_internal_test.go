@@ -19,13 +19,13 @@ func Test_setWaitFor(t *testing.T) {
 		expected *time.Duration
 	}{
 		{
-			name:     "when no StartupTimeout, timeout is nil",
+			name:     "when_no_startupTimeout_timeout_is_nil",
 			options:  &Options{},
 			expected: nil,
 		},
 		{
-			name:     "when no StartupTimeout is set, timeout is the same",
-			options:  &Options{StartupTimeout: sampleTimeout},
+			name:     "when_no_startupTimeout_is_set_timeout_is_the_same",
+			options:  &Options{startupTimeout: sampleTimeout},
 			expected: &sampleTimeout,
 		},
 	}
@@ -41,9 +41,9 @@ func Test_setWaitFor(t *testing.T) {
 		})
 	}
 
-	t.Run("when StartupTimeout and SSL are setup, they work together", func(t *testing.T) {
+	t.Run("when_startupTimeout_and_SSL_are_setup_they_work_together", func(t *testing.T) {
 		timeout := 12 * time.Millisecond
-		options := &Options{StartupTimeout: timeout}
+		options := &Options{startupTimeout: timeout}
 		request := &testcontainers.ContainerRequest{
 			Image: "docker.elastic.co/elasticsearch/elasticsearch:8.9.0",
 		}
@@ -65,10 +65,10 @@ func Test_setWaitFor(t *testing.T) {
 		require.True(t, ok, "strategy should be HTTPStrategy, was: %T", actual.Strategies[1])
 		assert.Equal(t, &timeout, actualHTTPStrategy.Timeout())
 	})
-	t.Run("when request already has a strategy, it is first", func(t *testing.T) {
+	t.Run("when_request_already_has_a_strategy_it_is_first", func(t *testing.T) {
 		timeout := 12 * time.Second
 		options := &Options{
-			StartupTimeout: timeout,
+			startupTimeout: timeout,
 		}
 		request := &testcontainers.ContainerRequest{
 			WaitingFor: wait.ForExit(),

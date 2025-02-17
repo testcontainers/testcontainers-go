@@ -14,7 +14,7 @@ type Options struct {
 	CACert         []byte
 	Password       string
 	Username       string
-	StartupTimeout time.Duration
+	startupTimeout time.Duration
 }
 
 func defaultOptions() *Options {
@@ -45,6 +45,6 @@ func WithPassword(password string) Option {
 // WithStartupTimeout sets the timeout duration used when waiting for the Elasticsearch container to start.
 func WithStartupTimeout(timeout time.Duration) Option {
 	return func(o *Options) {
-		o.StartupTimeout = timeout
+		o.startupTimeout = timeout
 	}
 }
