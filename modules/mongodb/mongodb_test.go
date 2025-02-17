@@ -19,7 +19,6 @@ import (
 
 func localNonLoopbackIP() (string, error) {
 	interfaces, err := net.Interfaces()
-
 	if err != nil {
 		return "", fmt.Errorf("list network interfaces: %w", err)
 	}

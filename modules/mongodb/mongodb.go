@@ -130,7 +130,7 @@ func (c *MongoDBContainer) ConnectionString(ctx context.Context) (string, error)
 	u := url.URL{
 		Scheme: "mongodb",
 		Host:   net.JoinHostPort(host, port.Port()),
-		Path:    "/",
+		Path:   "/",
 	}
 
 	if c.username != "" && c.password != "" {
