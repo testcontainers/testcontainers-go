@@ -27,6 +27,7 @@ func localNonLoopbackIP() (string, error) {
 		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
 			continue
 		}
+
 		addrs, err := iface.Addrs()
 		if err != nil {
 			continue // try next interface
