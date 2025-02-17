@@ -129,8 +129,8 @@ func setWaitFor(options *Options, req *testcontainers.ContainerRequest) {
 	}
 
 	waitHTTP := wait.ForHTTP("/").WithPort(defaultHTTPPort)
-	if options.StartupTimeout > 0 {
-		waitHTTP.WithStartupTimeout(options.StartupTimeout)
+	if options.startupTimeout > 0 {
+		waitHTTP.WithStartupTimeout(options.startupTimeout)
 	}
 	if sslRequired(req) {
 		waitHTTP = waitHTTP.WithTLS(true).WithAllowInsecure(true)
@@ -143,8 +143,8 @@ func setWaitFor(options *Options, req *testcontainers.ContainerRequest) {
 			WithTLS(true, &tls.Config{RootCAs: cw.certPool})
 
 		waitFile := wait.ForFile(defaultCaCertPath).WithMatcher(cw.Read)
-		if options.StartupTimeout > 0 {
-			waitFile.WithStartupTimeout(options.StartupTimeout)
+		if options.startupTimeout > 0 {
+			waitFile.WithStartupTimeout(options.startupTimeout)
 		}
 
 		strategies = append(strategies, waitFile)
