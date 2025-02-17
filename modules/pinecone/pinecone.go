@@ -44,6 +44,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 }
 
 // HttpEndpoint returns the http endpoint for the pinecone container
+//
+//nolint:revive //FIXME
 func (c *Container) HttpEndpoint() (string, error) {
 	return c.PortEndpoint(context.Background(), "5080/tcp", "http")
 }
