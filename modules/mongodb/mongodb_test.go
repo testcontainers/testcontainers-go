@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -53,7 +52,7 @@ func localNonLoopbackIP() (string, error) {
 			return ip.String(), nil
 		}
 	}
-	return "", errors.New("no non-loopback IP address found")
+	return "", errors.New("no non-loopback IPv4 address found")
 }
 
 func TestMongoDB(t *testing.T) {
@@ -61,7 +60,7 @@ func TestMongoDB(t *testing.T) {
 	if err != nil {
 		host = "host.docker.internal"
 	}
-	os.Setenv("TESTCONTAINERS_HOST_OVERRIDE", host)
+	t.Setenv("TESTCONTAINERS_HOST_OVERRIDE", host)
 	type tests struct {
 		name string
 		img  string
@@ -219,5 +218,6 @@ func hasReplicaSet(connStr string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("parse connection string: %w", err)
 	}
-	return q.Get("replicaSet") == ""
+	q := u.Query()
+	return q.Get("replicaSet") != "", nil
 }
