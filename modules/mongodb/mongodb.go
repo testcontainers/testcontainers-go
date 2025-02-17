@@ -137,8 +137,6 @@ func (c *MongoDBContainer) ConnectionString(ctx context.Context) (string, error)
 		u.User = url.UserPassword(c.username, c.password)
 	}
 
-	u.Path = "/"
-
 	if c.replicaSet != "" {
 		q := url.Values{}
 		q.Add("replicaSet", c.replicaSet)
