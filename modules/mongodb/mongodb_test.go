@@ -23,6 +23,7 @@ func localNonLoopbackIP() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("list network interfaces: %w", err)
 	}
+
 	for _, iface := range interfaces {
 		// Skip down or loopback interfaces.
 		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
