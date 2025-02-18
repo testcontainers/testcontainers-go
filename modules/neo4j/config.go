@@ -94,8 +94,10 @@ func WithNeo4jSettings(settings map[string]string) testcontainers.CustomizeReque
 //
 // WithLogger sets a custom logger to be used by the container
 // Consider calling this before other "With functions" as these may generate logs
-var WithLogger = testcontainers.WithLogger
-var _ testcontainers.CustomizeRequestOption = WithLogger(nil).Customize
+var (
+	WithLogger                                       = testcontainers.WithLogger
+	_          testcontainers.CustomizeRequestOption = WithLogger(nil).Customize
+)
 
 func addSetting(req *testcontainers.GenericContainerRequest, key string, newVal string) error {
 	normalizedKey := formatNeo4jConfig(key)
