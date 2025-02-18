@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/log"
 )
 
 type LabsPlugin string
@@ -92,15 +91,12 @@ func WithNeo4jSettings(settings map[string]string) testcontainers.CustomizeReque
 	}
 }
 
+// Deprecated: use testcontainers.WithLogger instead
+//
 // WithLogger sets a custom logger to be used by the container
 // Consider calling this before other "With functions" as these may generate logs
-func WithLogger(logger log.Logger) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Logger = logger
-
-		return nil
-	}
-}
+var WithLogger = testcontainers.WithLogger
+var _ testcontainers.CustomizeRequestOption = WithLogger(nil).Customize
 
 func addSetting(req *testcontainers.GenericContainerRequest, key string, newVal string) error {
 	normalizedKey := formatNeo4jConfig(key)

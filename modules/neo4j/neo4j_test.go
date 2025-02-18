@@ -106,7 +106,7 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 		logger := &inMemoryLogger{}
 		ctr, err := neo4j.Run(ctx,
 			"neo4j:4.4",
-			neo4j.WithLogger(logger), // needs to go before WithNeo4jSetting and WithNeo4jSettings
+			testcontainers.WithLogger(logger), // needs to go before WithNeo4jSetting and WithNeo4jSettings
 			neo4j.WithAdminPassword(testPassword),
 			neo4j.WithNeo4jSetting("some.key", "value1"),
 			neo4j.WithNeo4jSettings(map[string]string{"some.key": "value2"}),
@@ -123,7 +123,7 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 	})
 
 	outer.Run("rejects nil logger", func(t *testing.T) {
-		ctr, err := neo4j.Run(ctx, "neo4j:4.4", neo4j.WithLogger(nil))
+		ctr, err := neo4j.Run(ctx, "neo4j:4.4", testcontainers.WithLogger(nil))
 		testcontainers.CleanupContainer(t, ctr)
 		require.Nilf(t, ctr, "container must not be created with nil logger")
 		require.EqualErrorf(t, err, "nil logger is not permitted", "expected config validation error but got no error")
