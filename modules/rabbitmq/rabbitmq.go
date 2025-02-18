@@ -57,11 +57,15 @@ func (c *RabbitMQContainer) AmqpsURL(ctx context.Context) (string, error) {
 }
 
 // HttpURL returns the URL for HTTP management.
+//
+//nolint:revive //FIXME
 func (c *RabbitMQContainer) HttpURL(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, nat.Port(DefaultHTTPPort), "http")
 }
 
 // HttpsURL returns the URL for HTTPS management.
+//
+//nolint:revive //FIXME
 func (c *RabbitMQContainer) HttpsURL(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, nat.Port(DefaultHTTPSPort), "https")
 }

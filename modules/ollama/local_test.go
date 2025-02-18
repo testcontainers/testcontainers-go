@@ -362,7 +362,7 @@ func TestRun_localWithCustomHost(t *testing.T) {
 		testcontainers.CleanupContainer(t, ollamaContainer)
 		require.NoError(t, err)
 
-		testRun_localWithCustomHost(ctx, t, ollamaContainer)
+		testRunLocalWithCustomHost(ctx, t, ollamaContainer)
 	})
 
 	t.Run("local-env", func(t *testing.T) {
@@ -370,11 +370,11 @@ func TestRun_localWithCustomHost(t *testing.T) {
 		testcontainers.CleanupContainer(t, ollamaContainer)
 		require.NoError(t, err)
 
-		testRun_localWithCustomHost(ctx, t, ollamaContainer)
+		testRunLocalWithCustomHost(ctx, t, ollamaContainer)
 	})
 }
 
-func testRun_localWithCustomHost(ctx context.Context, t *testing.T, ollamaContainer *ollama.OllamaContainer) {
+func testRunLocalWithCustomHost(ctx context.Context, t *testing.T, ollamaContainer *ollama.OllamaContainer) {
 	t.Helper()
 
 	t.Run("connection-string", func(t *testing.T) {

@@ -556,8 +556,8 @@ func TestRedpandaBootstrapConfig(t *testing.T) {
 		require.NoError(t, err)
 		reservation := int(data["data_transforms_per_core_memory_reservation"].(float64))
 		require.Equal(t, 33554432, reservation)
-		pf_limit := int(data["data_transforms_per_function_memory_limit"].(float64))
-		require.Equal(t, 16777216, pf_limit)
+		pfLimit := int(data["data_transforms_per_function_memory_limit"].(float64))
+		require.Equal(t, 16777216, pfLimit)
 	}
 
 	{
@@ -572,7 +572,7 @@ func TestRedpandaBootstrapConfig(t *testing.T) {
 		err = json.NewDecoder(resp.Body).Decode(&data)
 		require.NoError(t, err)
 		require.Len(t, data, 1)
-		needs_restart := data[0]["restart"].(bool)
-		require.False(t, needs_restart)
+		needsRestart := data[0]["restart"].(bool)
+		require.False(t, needsRestart)
 	}
 }
