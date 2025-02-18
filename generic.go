@@ -55,6 +55,7 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 
 	logger := req.Logger
 	if logger == nil {
+		// Ensure there is always a non-nil logger by default
 		logger = log.Default()
 	}
 	provider, err := req.ProviderType.GetProvider(WithLogger(logger))

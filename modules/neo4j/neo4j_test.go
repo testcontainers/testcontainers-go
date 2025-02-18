@@ -121,13 +121,6 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 		require.Containsf(t, errorLogs, `setting "some.key" with value "value2" is now overwritten with value "value3"`+"\n", "expected setting overwrites to be logged")
 		require.Containsf(t, getContainerEnv(t, ctx, ctr), "NEO4J_some_key=value3", "expected custom setting to be set with last value")
 	})
-
-	outer.Run("rejects nil logger", func(t *testing.T) {
-		ctr, err := neo4j.Run(ctx, "neo4j:4.4", testcontainers.WithLogger(nil))
-		testcontainers.CleanupContainer(t, ctr)
-		require.Nilf(t, ctr, "container must not be created with nil logger")
-		require.EqualErrorf(t, err, "nil logger is not permitted", "expected config validation error but got no error")
-	})
 }
 
 func setupNeo4j(ctx context.Context) (*neo4j.Neo4jContainer, error) {

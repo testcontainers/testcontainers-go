@@ -1,7 +1,6 @@
 package neo4j
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -111,13 +110,6 @@ func addSetting(req *testcontainers.GenericContainerRequest, key string, newVal 
 
 	req.Env[normalizedKey] = newVal
 
-	return nil
-}
-
-func validate(req *testcontainers.GenericContainerRequest) error {
-	if req.Logger == nil {
-		return errors.New("nil logger is not permitted")
-	}
 	return nil
 }
 
