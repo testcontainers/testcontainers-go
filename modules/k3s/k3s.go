@@ -159,7 +159,7 @@ func (c *K3sContainer) GetKubeConfig(ctx context.Context) ([]byte, error) {
 	}
 
 	server := "https://" + fmt.Sprintf("%v:%d", hostIP, mappedPort.Int())
-	newKubeConfig, err := kubeConfigWithServerUrl(string(kubeConfigYaml), server)
+	newKubeConfig, err := kubeConfigWithServerURL(string(kubeConfigYaml), server)
 	if err != nil {
 		return nil, fmt.Errorf("failed to modify kubeconfig with server url: %w", err)
 	}
@@ -167,7 +167,7 @@ func (c *K3sContainer) GetKubeConfig(ctx context.Context) ([]byte, error) {
 	return newKubeConfig, nil
 }
 
-func kubeConfigWithServerUrl(kubeConfigYaml, server string) ([]byte, error) {
+func kubeConfigWithServerURL(kubeConfigYaml, server string) ([]byte, error) {
 	kubeConfig, err := unmarshal([]byte(kubeConfigYaml))
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal kubeconfig: %w", err)

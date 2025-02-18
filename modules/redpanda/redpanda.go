@@ -37,7 +37,7 @@ const (
 	defaultKafkaAPIPort       = "9092/tcp"
 	defaultAdminAPIPort       = "9644/tcp"
 	defaultSchemaRegistryPort = "8081/tcp"
-	defaultDockerKafkaApiPort = "29092"
+	defaultDockerKafkaAPIPort = "29092"
 
 	redpandaDir         = "/etc/redpanda"
 	entrypointFile      = "/entrypoint-tc.sh"
