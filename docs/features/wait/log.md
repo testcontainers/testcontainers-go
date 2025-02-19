@@ -40,7 +40,7 @@ Using regular expression with submatch:
 ```golang
 var host, port string
 req := ContainerRequest{
-    Image:        "ollama/ollama:0.1.25",
+    Image:        "ollama/ollama:0.5.7",
     ExposedPorts: []string{"11434/tcp"},
     WaitingFor: wait.ForLog(`Listening on (.*:\d+) \(version\s(.*)\)`).Submatch(func(pattern string, submatches [][][]byte) error {
         var err error
