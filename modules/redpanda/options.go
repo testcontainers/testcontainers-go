@@ -47,6 +47,9 @@ type options struct {
 	// ExtraBootstrapConfig is a map of configs to be interpolated into the
 	// container's bootstrap.yml
 	ExtraBootstrapConfig map[string]any
+
+	// enableAdminAPIAuthentication enables Admin API authentication
+	enableAdminAPIAuthentication bool
 }
 
 func defaultOptions() options {
@@ -168,5 +171,14 @@ func WithListener(lis string) Option {
 func WithBootstrapConfig(cfg string, val any) Option {
 	return func(o *options) {
 		o.ExtraBootstrapConfig[cfg] = val
+	}
+}
+
+// WithAdminAPIAuthentication enables Admin API Authentication.
+// It sets `admin_api_require_auth` configuration to true and configures a bootstrap user account.
+// See https://docs.redpanda.com/current/deploy/deployment-option/self-hosted/manual/production/production-deployment/#bootstrap-a-user-account
+func WithAdminAPIAuthentication() Option {
+	return func(o *options) {
+		o.enableAdminAPIAuthentication = true
 	}
 }
