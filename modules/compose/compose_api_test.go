@@ -19,6 +19,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/internal/config"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -254,7 +255,7 @@ func TestDockerComposeAPIWithStopServices(t *testing.T) {
 	path, _ := RenderComposeComplex(t)
 	compose, err := NewDockerComposeWith(
 		WithStackFiles(path),
-		WithLogger(testcontainers.TestLogger(t)))
+		WithLogger(log.TestLogger(t)))
 	require.NoError(t, err, "NewDockerCompose()")
 
 	ctx, cancel := context.WithCancel(context.Background())

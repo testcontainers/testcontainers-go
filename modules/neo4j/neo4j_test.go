@@ -106,7 +106,7 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 		logger := &inMemoryLogger{}
 		ctr, err := neo4j.Run(ctx,
 			"neo4j:4.4",
-			neo4j.WithLogger(logger), // needs to go before WithNeo4jSetting and WithNeo4jSettings
+			testcontainers.WithLogger(logger), // needs to go before WithNeo4jSetting and WithNeo4jSettings
 			neo4j.WithAdminPassword(testPassword),
 			neo4j.WithNeo4jSetting("some.key", "value1"),
 			neo4j.WithNeo4jSettings(map[string]string{"some.key": "value2"}),
@@ -120,13 +120,6 @@ func TestNeo4jWithWrongSettings(outer *testing.T) {
 		require.Containsf(t, errorLogs, `setting "some.key" with value "value1" is now overwritten with value "value2"`+"\n", "expected setting overwrites to be logged")
 		require.Containsf(t, errorLogs, `setting "some.key" with value "value2" is now overwritten with value "value3"`+"\n", "expected setting overwrites to be logged")
 		require.Containsf(t, getContainerEnv(t, ctx, ctr), "NEO4J_some_key=value3", "expected custom setting to be set with last value")
-	})
-
-	outer.Run("rejects nil logger", func(t *testing.T) {
-		ctr, err := neo4j.Run(ctx, "neo4j:4.4", neo4j.WithLogger(nil))
-		testcontainers.CleanupContainer(t, ctr)
-		require.Nilf(t, ctr, "container must not be created with nil logger")
-		require.EqualErrorf(t, err, "nil logger is not permitted", "expected config validation error but got no error")
 	})
 }
 
