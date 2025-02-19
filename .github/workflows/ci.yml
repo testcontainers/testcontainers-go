@@ -61,7 +61,7 @@ jobs:
       # We don't want to fail the build the soonest but identify which modules passed and failed.
       fail-fast: false
       matrix:
-        go-version: [1.22.x, 1.x]
+        go-version: [1.23.x, 1.24.x]
         module: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
     uses: ./.github/workflows/ci-test-go.yml
     with:
@@ -82,7 +82,7 @@ jobs:
     name: "Test with reaper off"
     strategy:
       matrix:
-        go-version: [1.22.x, 1.x]
+        go-version: [1.23.x, 1.24.x]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
@@ -102,7 +102,7 @@ jobs:
     name: "Test with Rootless Docker"
     strategy:
       matrix:
-        go-version: [1.22.x, 1.x]
+        go-version: [1.23.x, 1.24.x]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
