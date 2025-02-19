@@ -83,7 +83,7 @@ compose-tidy:
 	cd modules/compose && go mod tidy
 
 # The following three goals are used in the GitHub Actions workflow to test the compose module against the latest versions of the compose and compose-spec repositories.
-# Please update the 'docker-moby-latest' workflow if you are making any changes to these goals.
+# Please update the 'docker-projects-latest' workflow if you are making any changes to these goals.
 
 .PHONY: compose-test-all-latest
 compose-test-all-latest: compose-clone compose-replace compose-spec-replace compose-tidy

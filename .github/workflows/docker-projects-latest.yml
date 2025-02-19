@@ -1,4 +1,4 @@
-name: Tests against Latest Docker Moby
+name: Tests against Latest Docker Projects
 
 on:
   schedule:
