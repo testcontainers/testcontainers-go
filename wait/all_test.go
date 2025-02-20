@@ -36,7 +36,7 @@ func TestMultiStrategy_WaitUntilReady(t *testing.T) {
 			name: "returns WaitStrategy error",
 			strategy: ForAll(
 				ForNop(
-					func(ctx context.Context, target StrategyTarget) error {
+					func(_ context.Context, _ StrategyTarget) error {
 						return errors.New("intentional failure")
 					},
 				),
@@ -51,7 +51,7 @@ func TestMultiStrategy_WaitUntilReady(t *testing.T) {
 			name: "WithDeadline sets context Deadline for WaitStrategy",
 			strategy: ForAll(
 				ForNop(
-					func(ctx context.Context, target StrategyTarget) error {
+					func(ctx context.Context, _ StrategyTarget) error {
 						if _, set := ctx.Deadline(); !set {
 							return errors.New("expected context.Deadline to be set")
 						}
@@ -72,7 +72,7 @@ func TestMultiStrategy_WaitUntilReady(t *testing.T) {
 			name: "WithStartupTimeoutDefault skips setting context.Deadline when WaitStrategy.Timeout is defined",
 			strategy: ForAll(
 				ForNop(
-					func(ctx context.Context, target StrategyTarget) error {
+					func(ctx context.Context, _ StrategyTarget) error {
 						if _, set := ctx.Deadline(); set {
 							return errors.New("expected context.Deadline not to be set")
 						}
@@ -93,7 +93,7 @@ func TestMultiStrategy_WaitUntilReady(t *testing.T) {
 			name: "WithStartupTimeoutDefault sets context.Deadline for nil WaitStrategy.Timeout",
 			strategy: ForAll(
 				ForNop(
-					func(ctx context.Context, target StrategyTarget) error {
+					func(ctx context.Context, _ StrategyTarget) error {
 						if _, set := ctx.Deadline(); !set {
 							return errors.New("expected context.Deadline to be set")
 						}

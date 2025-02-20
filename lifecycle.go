@@ -13,6 +13,8 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
+
+	"github.com/testcontainers/testcontainers-go/log"
 )
 
 // ContainerRequestHook is a hook that will be called before a container is created.
@@ -54,74 +56,74 @@ type ContainerLifecycleHooks struct {
 }
 
 // DefaultLoggingHook is a hook that will log the container lifecycle events
-var DefaultLoggingHook = func(logger Logging) ContainerLifecycleHooks {
+var DefaultLoggingHook = func(logger log.Logger) ContainerLifecycleHooks {
 	shortContainerID := func(c Container) string {
 		return c.GetContainerID()[:12]
 	}
 
 	return ContainerLifecycleHooks{
 		PreBuilds: []ContainerRequestHook{
-			func(ctx context.Context, req ContainerRequest) error {
+			func(_ context.Context, req ContainerRequest) error {
 				logger.Printf("🐳 Building image %s:%s", req.GetRepo(), req.GetTag())
 				return nil
 			},
 		},
 		PostBuilds: []ContainerRequestHook{
-			func(ctx context.Context, req ContainerRequest) error {
+			func(_ context.Context, req ContainerRequest) error {
 				logger.Printf("✅ Built image %s", req.Image)
 				return nil
 			},
 		},
 		PreCreates: []ContainerRequestHook{
-			func(ctx context.Context, req ContainerRequest) error {
+			func(_ context.Context, req ContainerRequest) error {
 				logger.Printf("🐳 Creating container for image %s", req.Image)
 				return nil
 			},
 		},
 		PostCreates: []ContainerHook{
-			func(ctx context.Context, c Container) error {
+			func(_ context.Context, c Container) error {
 				logger.Printf("✅ Container created: %s", shortContainerID(c))
 				return nil
 			},
 		},
 		PreStarts: []ContainerHook{
-			func(ctx context.Context, c Container) error {
+			func(_ context.Context, c Container) error {
 				logger.Printf("🐳 Starting container: %s", shortContainerID(c))
 				return nil
 			},
 		},
 		PostStarts: []ContainerHook{
-			func(ctx context.Context, c Container) error {
+			func(_ context.Context, c Container) error {
 				logger.Printf("✅ Container started: %s", shortContainerID(c))
 				return nil
 			},
 		},
 		PostReadies: []ContainerHook{
-			func(ctx context.Context, c Container) error {
+			func(_ context.Context, c Container) error {
 				logger.Printf("🔔 Container is ready: %s", shortContainerID(c))
 				return nil
 			},
 		},
 		PreStops: []ContainerHook{
-			func(ctx context.Context, c Container) error {
+			func(_ context.Context, c Container) error {
 				logger.Printf("🐳 Stopping container: %s", shortContainerID(c))
 				return nil
 			},
 		},
 		PostStops: []ContainerHook{
-			func(ctx context.Context, c Container) error {
+			func(_ context.Context, c Container) error {
 				logger.Printf("✅ Container stopped: %s", shortContainerID(c))
 				return nil
 			},
 		},
 		PreTerminates: []ContainerHook{
-			func(ctx context.Context, c Container) error {
+			func(_ context.Context, c Container) error {
 				logger.Printf("🐳 Terminating container: %s", shortContainerID(c))
 				return nil
 			},
 		},
 		PostTerminates: []ContainerHook{
-			func(ctx context.Context, c Container) error {
+			func(_ context.Context, c Container) error {
 				logger.Printf("🚫 Container terminated: %s", shortContainerID(c))
 				return nil
 			},
@@ -199,7 +201,7 @@ var defaultLogConsumersHook = func(cfg *LogConsumerConfig) ContainerLifecycleHoo
 		PostStops: []ContainerHook{
 			// Stop the log production.
 			// See combineContainerHooks for the order of execution.
-			func(ctx context.Context, c Container) error {
+			func(_ context.Context, c Container) error {
 				if cfg == nil || len(cfg.Consumers) == 0 {
 					return nil
 				}
@@ -266,7 +268,7 @@ var defaultReadinessHook = func() ContainerLifecycleHooks {
 						return checkPortsMapped(jsonRaw.NetworkSettings.Ports, dockerContainer.exposedPorts)
 					},
 					b,
-					func(err error, duration time.Duration) {
+					func(err error, _ time.Duration) {
 						dockerContainer.logger.Printf("All requested ports were not exposed: %v", err)
 					},
 				)
@@ -559,8 +561,8 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 	}
 	req.HostConfigModifier(hostConfig)
 
-	if req.EnpointSettingsModifier != nil {
-		req.EnpointSettingsModifier(endpointSettings)
+	if req.EndpointSettingsModifier != nil {
+		req.EndpointSettingsModifier(endpointSettings)
 	}
 
 	networkingConfig.EndpointsConfig = endpointSettings

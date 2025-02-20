@@ -73,5 +73,5 @@ It returns and error if there is any problem with the ldif file loading process.
 
 #### Initial Ldif
 
-If you would like to load an ldif at the initialization of the openldap container, you can use `WithInititialLdif` function.
+If you would like to load an ldif at the initialization of the openldap container, you can use `WithInitialLdif` function.
 The file will be copied after the container is started and loaded in openldap.

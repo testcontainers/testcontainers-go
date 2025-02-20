@@ -36,6 +36,7 @@ import (
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -89,14 +90,14 @@ type DockerContainer struct {
 	logProductionCtx    context.Context
 
 	logProductionTimeout *time.Duration
-	logger               Logging
+	logger               log.Logger
 	lifecycleHooks       []ContainerLifecycleHooks
 
 	healthStatus string // container health status, will default to healthStatusNone if no healthcheck is present
 }
 
 // SetLogger sets the logger for the container
-func (c *DockerContainer) SetLogger(logger Logging) {
+func (c *DockerContainer) SetLogger(logger log.Logger) {
 	c.logger = logger
 }
 
@@ -303,12 +304,11 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 // The following hooks are called in order:
 //   - [ContainerLifecycleHooks.PreTerminates]
 //   - [ContainerLifecycleHooks.PostTerminates]
-func (c *DockerContainer) Terminate(ctx context.Context) error {
-	// ContainerRemove hardcodes stop timeout to 3 seconds which is too short
-	// to ensure that child containers are stopped so we manually call stop.
-	// TODO: make this configurable via a functional option.
-	timeout := 10 * time.Second
-	err := c.Stop(ctx, &timeout)
+//
+// Default: timeout is 10 seconds.
+func (c *DockerContainer) Terminate(ctx context.Context, opts ...TerminateOption) error {
+	options := NewTerminateOptions(ctx, opts...)
+	err := c.Stop(options.Context(), options.StopTimeout())
 	if err != nil && !isCleanupSafe(err) {
 		return fmt.Errorf("stop: %w", err)
 	}
@@ -342,6 +342,10 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 
 	c.sessionID = ""
 	c.isRunning = false
+
+	if err = options.Cleanup(); err != nil {
+		errs = append(errs, err)
+	}
 
 	return errors.Join(errs...)
 }
@@ -615,7 +619,7 @@ func (c *DockerContainer) CopyDirToContainer(ctx context.Context, hostDirPath st
 	}
 
 	if !dir {
-		// it's not a dir: let the consumer to handle an error
+		// it's not a dir: let the consumer handle the error
 		return fmt.Errorf("path %s is not a directory", hostDirPath)
 	}
 
@@ -814,7 +818,7 @@ func (c *DockerContainer) copyLogsTimeout(stdout, stderr io.Writer, options *con
 		// Timeout or client connection closed, retry.
 	default:
 		// Unexpected error, retry.
-		Logger.Printf("Unexpected error reading logs: %v", err)
+		c.logger.Printf("Unexpected error reading logs: %v", err)
 	}
 
 	// Retry from the last log received.
@@ -995,7 +999,7 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 			return resp, nil
 		},
 		backoff.WithContext(backoff.NewExponentialBackOff(), ctx),
-		func(err error, duration time.Duration) {
+		func(err error, _ time.Duration) {
 			p.Logger.Printf("Failed to build image: %s, will retry", err)
 		},
 	)
@@ -1004,10 +1008,7 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 	}
 	defer resp.Body.Close()
 
-	output := io.Discard
-	if img.ShouldPrintBuildLog() {
-		output = os.Stderr
-	}
+	output := img.BuildLogWriter()
 
 	// Always process the output, even if it is not printed
 	// to ensure that errors during the build process are
@@ -1097,11 +1098,10 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		} else {
 			img, _, err := p.client.ImageInspectWithRaw(ctx, imageName)
 			if err != nil {
-				if client.IsErrNotFound(err) {
-					shouldPullImage = true
-				} else {
+				if !client.IsErrNotFound(err) {
 					return nil, err
 				}
+				shouldPullImage = true
 			}
 			if platform != nil && (img.Architecture != platform.Architecture || img.Os != platform.OS) {
 				shouldPullImage = true
@@ -1392,7 +1392,7 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 			return nil
 		},
 		backoff.WithContext(backoff.NewExponentialBackOff(), ctx),
-		func(err error, duration time.Duration) {
+		func(err error, _ time.Duration) {
 			p.Logger.Printf("Failed to pull image: %s, will retry", err)
 		},
 	)

@@ -286,7 +286,7 @@ func performReplicatedCRUD(t *testing.T, conn driver.Conn) ([]Test, error) {
 			return res, nil
 		},
 		backoff.NewExponentialBackOff(),
-		func(err error, duration time.Duration) {
+		func(err error, _ time.Duration) {
 			t.Log(err)
 		},
 	)
@@ -309,7 +309,7 @@ func performCRUD(t *testing.T, conn driver.Conn) ([]Test, error) {
 			return getAllRows(conn)
 		},
 		backoff.NewExponentialBackOff(),
-		func(err error, duration time.Duration) {
+		func(err error, _ time.Duration) {
 			t.Log(err)
 		},
 	)

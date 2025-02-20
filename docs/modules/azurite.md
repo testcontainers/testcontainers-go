@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/azurite
 ## Usage example
 
 <!--codeinclude-->
-[Creating a Azurite container](../../modules/azurite/examples_test.go) inside_block:runAzuriteContainer
+[Creating an Azurite container](../../modules/azurite/examples_test.go) inside_block:runAzuriteContainer
 <!--/codeinclude-->
 
 ## Module Reference
@@ -44,7 +44,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 The Azurite container uses the following default credentials:
 
 <!--codeinclude-->
-[Default Credencials](../../modules/azurite/azurite.go) inside_block:defaultCredentials
+[Default Credentials](../../modules/azurite/azurite.go) inside_block:defaultCredentials
 <!--/codeinclude-->
 
 ### Container Options

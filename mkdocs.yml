@@ -103,6 +103,7 @@ nav:
         - modules/openfga.md
         - modules/openldap.md
         - modules/opensearch.md
+        - modules/pinecone.md
         - modules/postgres.md
         - modules/pulsar.md
         - modules/qdrant.md
@@ -137,4 +138,4 @@ nav:
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: v0.34.0
+    latest_version: v0.35.0

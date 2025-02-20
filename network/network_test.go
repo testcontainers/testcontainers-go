@@ -190,13 +190,13 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 	testcontainers.CleanupContainer(t, nginx)
 	require.NoError(t, err)
 
-	containerId := nginx.GetContainerID()
+	containerID := nginx.GetContainerID()
 
 	cli, err := testcontainers.NewDockerClientWithOpts(ctx)
 	require.NoError(t, err)
 	defer cli.Close()
 
-	cnt, err := cli.ContainerInspect(ctx, containerId)
+	cnt, err := cli.ContainerInspect(ctx, containerID)
 	require.NoError(t, err)
 	require.Len(t, cnt.NetworkSettings.Networks, maxNetworksCount)
 	require.NotNil(t, cnt.NetworkSettings.Networks[networks[0]])
@@ -439,4 +439,9 @@ func TestWithNewNetworkContextTimeout(t *testing.T) {
 	// we do not want to fail, just skip the network creation
 	require.Empty(t, req.Networks)
 	require.Empty(t, req.NetworkAliases)
+}
+
+func TestCleanupWithNil(t *testing.T) {
+	var network *testcontainers.DockerNetwork
+	testcontainers.CleanupNetwork(t, network)
 }

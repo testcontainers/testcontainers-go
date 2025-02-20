@@ -93,7 +93,7 @@ The Registry container exposes the following methods:
 
 #### HostAddress
 
-This method returns the returns the host address including port of the Distribution Registry.
+This method returns the host address including port of the Distribution Registry.
 E.g. `localhost:32878`.
 
 #### Address

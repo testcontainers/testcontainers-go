@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/google/uuid"
-	"github.com/shirou/gopsutil/v3/process"
+	"github.com/shirou/gopsutil/v4/process"
 )
 
 // sessionID returns a unique session ID for the current test session. Because each Go package
@@ -39,7 +39,7 @@ var sessionID string
 var projectPath string
 
 // processID returns a unique ID for the current test process. Because each Go package will be run in a separate process,
-// we need a way to identify the current test process, in the form of an UUID
+// we need a way to identify the current test process, in the form of a UUID
 var processID string
 
 const sessionIDPlaceholder = "testcontainers-go:%d:%d"
@@ -51,7 +51,7 @@ func init() {
 	var createTime int64
 	fallbackCwd, err := os.Getwd()
 	if err != nil {
-		// very unlinke to fail, but if it does, we will use a temp dir
+		// very unlikely to fail, but if it does, we will use a temp dir
 		fallbackCwd = os.TempDir()
 	}
 

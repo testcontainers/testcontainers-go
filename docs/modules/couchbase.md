@@ -49,7 +49,7 @@ Once the container is started, it will perform the following operations, **in th
 * Configure the Admin user, sending a POST request to the `/settings/web` endpoint in the management port, passing as body of the request the username and password of the admin user.
 * Configure the external ports, sending a POST request to the `/node/controller/setupAlternateAddresses/external` endpoint in the management port, passing as body of the request the external mapped ports for each enabled service.
 * If the `Index` service is enabled, configure the indexer, sending a POST request to the `/settings/indexes` endpoint in the management port, passing as body of the request the defined storage mode. If the Community Edition is used, it will make sure the storage mode is `forestdb`. If the Enterprise Edition is used, it will make sure the storage mode is not `forestdb`, changing to `memory_optimized` in that case.
-* Finally, it will wait for all nodes to be healthy. Depending of the enabled services, it will use a different wait strategy to check if the node is healthy:
+* Finally, it will wait for all nodes to be healthy. Depending on the enabled services, it will use a different wait strategy to check if the node is healthy:
 	- It will wait for the `/pools/default` endpoint in the management port to return a 200 HTTP status code and the response body to contain the `healthy` key set to `true`.
 	- If the `Query` service is enabled, it will wait for the `/admin/ping` endpoint in the query port to return a 200 HTTP status code.
 	- If the `Analytics` service is enabled, it will wait for the `/admin/ping` endpoint in the analytics port to return a 200 HTTP status code.
@@ -93,7 +93,7 @@ When the password has less than 6 characters, the container won't be created and
 
 #### Buckets
 
-When creating a new Couchbase container, you can create one or more buckets. The module exposes a `WithBuckets` optional function that accepts an slice of buckets to be created.
+When creating a new Couchbase container, you can create one or more buckets. The module exposes a `WithBuckets` optional function that accepts a slice of buckets to be created.
 To create a new bucket, the module also exposes a `NewBucket` function, where you can pass the bucket name.
 
 It's possible to customize a newly created bucket, using the following options:

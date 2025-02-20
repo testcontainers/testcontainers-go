@@ -115,7 +115,7 @@ To interact with service containers after a stack was started it is possible to 
 The function takes a **service name** (and a `context.Context`) and returns either a `*tc.DockerContainer` or an `error`.
 This is different to the previous `LocalDockerCompose` API where service containers were accessed via their **container name** e.g. `mysql_1` or `mysql-1` (depending on the version of `docker compose`).
 
-Furthermore, there's the convenience function `Serices()` to get a list of all services **defined** by the current project.
+Furthermore, there's the convenience function `Services()` to get a list of all services **defined** by the current project.
 Note that not all of them need necessarily be correctly started as the information is based on the given compose files.
 
 ### Wait strategies

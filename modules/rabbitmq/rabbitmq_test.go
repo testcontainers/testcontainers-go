@@ -111,7 +111,7 @@ func TestRunContainer_withAllSettings(t *testing.T) {
 			AutoDelete: false,
 			Internal:   false,
 			Durable:    true,
-			Args:       map[string]interface{}{},
+			Args:       map[string]any{},
 		}),
 		testcontainers.WithAfterReadyCommand(Exchange{
 			VHost: "vhost2",
@@ -124,7 +124,7 @@ func TestRunContainer_withAllSettings(t *testing.T) {
 			AutoDelete: false,
 			Internal:   false,
 			Durable:    true,
-			Args:       map[string]interface{}{},
+			Args:       map[string]any{},
 		}),
 		// }
 		// addQueues {
@@ -133,14 +133,14 @@ func TestRunContainer_withAllSettings(t *testing.T) {
 			Name:       "queue2",
 			AutoDelete: true,
 			Durable:    false,
-			Args:       map[string]interface{}{"x-message-ttl": 1000},
+			Args:       map[string]any{"x-message-ttl": 1000},
 		}),
 		testcontainers.WithAfterReadyCommand(Queue{
 			VHost:      "vhost1",
 			Name:       "queue3",
 			AutoDelete: true,
 			Durable:    false,
-			Args:       map[string]interface{}{"x-message-ttl": 1000},
+			Args:       map[string]any{"x-message-ttl": 1000},
 		}),
 		testcontainers.WithAfterReadyCommand(Queue{VHost: "vhost2", Name: "queue4"}),
 		// }
@@ -153,7 +153,7 @@ func TestRunContainer_withAllSettings(t *testing.T) {
 			Destination:     "queue4",
 			RoutingKey:      "ss7",
 			DestinationType: "queue",
-			Args:            map[string]interface{}{},
+			Args:            map[string]any{},
 		}),
 		// }
 		// addUsers {
@@ -174,20 +174,20 @@ func TestRunContainer_withAllSettings(t *testing.T) {
 		testcontainers.WithAfterReadyCommand(Policy{
 			Name:       "max length policy",
 			Pattern:    "^dog",
-			Definition: map[string]interface{}{"max-length": 1},
+			Definition: map[string]any{"max-length": 1},
 			Priority:   1,
 			ApplyTo:    "queues",
 		}),
 		testcontainers.WithAfterReadyCommand(Policy{
 			Name:       "alternate exchange policy",
 			Pattern:    "^direct-exchange",
-			Definition: map[string]interface{}{"alternate-exchange": "amq.direct"},
+			Definition: map[string]any{"alternate-exchange": "amq.direct"},
 		}),
 		testcontainers.WithAfterReadyCommand(Policy{
 			VHost:   "vhost2",
 			Name:    "ha-all",
 			Pattern: ".*",
-			Definition: map[string]interface{}{
+			Definition: map[string]any{
 				"ha-mode":      "all",
 				"ha-sync-mode": "automatic",
 			},
@@ -195,7 +195,7 @@ func TestRunContainer_withAllSettings(t *testing.T) {
 		testcontainers.WithAfterReadyCommand(OperatorPolicy{
 			Name:       "operator policy 1",
 			Pattern:    "^queue1",
-			Definition: map[string]interface{}{"message-ttl": 1000},
+			Definition: map[string]any{"message-ttl": 1000},
 			Priority:   1,
 			ApplyTo:    "queues",
 		}),

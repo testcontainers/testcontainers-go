@@ -105,7 +105,7 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 			// just insert the config file, then the rest of the args
 			req.Cmd = append([]string{redisServerProcess, defaultConfigFile}, req.Cmd[1:]...)
 		} else if req.Cmd[0] != redisServerProcess {
-			// prepend the redis server and the confif file, then the rest of the args
+			// prepend the redis server and the config file, then the rest of the args
 			req.Cmd = append([]string{redisServerProcess, defaultConfigFile}, req.Cmd...)
 		}
 

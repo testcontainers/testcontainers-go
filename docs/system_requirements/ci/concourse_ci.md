@@ -36,7 +36,7 @@ jobs:
             start_docker
 
             cd repo
-            docker run -it --rm -v "$PWD:$PWD" -w "$PWD" -v /var/run/docker.sock:/var/run/docker.sock golang:1.22 go test ./...
+            docker run -it --rm -v "$PWD:$PWD" -w "$PWD" -v /var/run/docker.sock:/var/run/docker.sock golang:1.23 go test ./...
 ```
 
 Finally, you can use Concourse's [fly CLI](https://concourse-ci.org/fly.html) to set the pipeline and trigger the job:

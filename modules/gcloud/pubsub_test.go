@@ -72,7 +72,7 @@ func ExampleRunPubsubContainer() {
 
 	var data []byte
 	cctx, cancel := context.WithCancel(ctx)
-	err = subscription.Receive(cctx, func(ctx context.Context, m *pubsub.Message) {
+	err = subscription.Receive(cctx, func(_ context.Context, m *pubsub.Message) {
 		data = m.Data
 		m.Ack()
 		defer cancel()

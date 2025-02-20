@@ -161,7 +161,7 @@ func untar(dst string, r io.Reader) error {
 		// check the file type
 		switch header.Typeflag {
 
-		// if its a dir and it doesn't exist create it
+		// if it's a dir and it doesn't exist create it
 		case tar.TypeDir:
 			if _, err := os.Stat(target); err != nil {
 				if err := os.MkdirAll(target, 0o755); err != nil {
@@ -181,7 +181,7 @@ func untar(dst string, r io.Reader) error {
 				return err
 			}
 
-			// manually close here after each file operation; defering would cause each file close
+			// manually close here after each file operation; deferring would cause each file close
 			// to wait until all operations have completed.
 			f.Close()
 		}

@@ -26,7 +26,7 @@ type K6Container struct {
 }
 
 type DownloadableFile struct {
-	Uri         url.URL
+	Uri         url.URL //nolint:revive //FIXME
 	DownloadDir string
 	User        string
 	Password    string
@@ -72,7 +72,7 @@ func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
 	scriptBaseName := filepath.Base(scriptPath)
 	f, err := os.Open(scriptPath)
 	if err != nil {
-		return func(req *testcontainers.GenericContainerRequest) error {
+		return func(_ *testcontainers.GenericContainerRequest) error {
 			return fmt.Errorf("cannot create reader for test file: %w", err)
 		}
 	}
@@ -81,7 +81,7 @@ func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
 }
 
 // WithTestScriptReader copies files into the Container using the Reader API
-// The script base name is not a path, neither absolute or relative and should
+// The script base name is not a path, neither absolute nor relative and should
 // be just the file name of the script
 func WithTestScriptReader(reader io.Reader, scriptBaseName string) testcontainers.CustomizeRequestOption {
 	opt := func(req *testcontainers.GenericContainerRequest) error {
@@ -107,7 +107,7 @@ func WithTestScriptReader(reader io.Reader, scriptBaseName string) testcontainer
 func WithRemoteTestScript(d DownloadableFile) testcontainers.CustomizeRequestOption {
 	err := downloadFileFromDescription(d)
 	if err != nil {
-		return func(req *testcontainers.GenericContainerRequest) error {
+		return func(_ *testcontainers.GenericContainerRequest) error {
 			return fmt.Errorf("not able to download required test script: %w", err)
 		}
 	}

@@ -48,7 +48,6 @@ function main() {
   for f in $(find "${ROOT_DIR}/.github/workflows" -name "*.yml"); do
     bumpCIMatrix "${f}" "${escapedCurrentGoVersion}" "${escapedGoVersion}"
   done
-  bumpCIMatrix "${ROOT_DIR}/modulegen/_template/ci.yml.tmpl" "${escapedCurrentGoVersion}" "${escapedGoVersion}"
 
   # bump devcontainer file
   bumpDevcontainer "${ROOT_DIR}/.devcontainer/devcontainer.json" "${escapedCurrentGoVersion}" "${escapedGoVersion}"

@@ -22,7 +22,7 @@ const (
 
 var (
 	tcConfig     Config
-	tcConfigOnce *sync.Once = new(sync.Once)
+	tcConfigOnce = new(sync.Once)
 
 	// errEmptyValue is returned when the value is empty. Needed when parsing boolean values that are not set.
 	errEmptyValue = errors.New("empty value")

@@ -193,7 +193,7 @@ func TestElasticsearch8WithoutCredentials(t *testing.T) {
 	require.Equalf(t, "You Know, for Search", esResp.Tagline, "expected tagline to be 'You Know, for Search' but got: %s", esResp.Tagline)
 }
 
-func TestElasticsearchOSSCannotuseWithPassword(t *testing.T) {
+func TestElasticsearchOSSCannotUseWithPassword(t *testing.T) {
 	ctx := context.Background()
 
 	ossImage := elasticsearch.DefaultBaseImageOSS + ":7.9.2"

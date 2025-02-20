@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -25,6 +24,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go/internal/core"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -35,6 +36,7 @@ const (
 	nginxAlpineImage  = "nginx:alpine"
 	nginxDefaultPort  = "80/tcp"
 	nginxHighPort     = "8080/tcp"
+	golangImage       = "golang"
 	daemonMaxVersion  = "1.41"
 )
 
@@ -263,6 +265,18 @@ func TestContainerStateAfterTermination(t *testing.T) {
 		require.Error(t, err, "expected error from container inspect.")
 
 		require.Nil(t, state, "expected nil container inspect.")
+	})
+
+	t.Run("termination-timeout", func(t *testing.T) {
+		ctx := context.Background()
+		nginx, err := createContainerFn(ctx)
+		require.NoError(t, err)
+
+		err = nginx.Start(ctx)
+		require.NoError(t, err, "expected no error from container start.")
+
+		err = nginx.Terminate(ctx, StopTimeout(5*time.Microsecond))
+		require.NoError(t, err)
 	})
 
 	t.Run("Nil State after termination if raw as already set", func(t *testing.T) {
@@ -674,6 +688,37 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 	require.Regexp(t, `^(?i:Step)\s*1/\d+\s*:\s*FROM alpine$`, temp[0])
 }
 
+func Test_BuildContainerFromDockerfileWithBuildLogWriter(t *testing.T) {
+	var buffer bytes.Buffer
+
+	ctx := context.Background()
+
+	// fromDockerfile {
+	req := ContainerRequest{
+		FromDockerfile: FromDockerfile{
+			Context:        filepath.Join(".", "testdata"),
+			Dockerfile:     "buildlog.Dockerfile",
+			BuildLogWriter: &buffer,
+		},
+	}
+	// }
+
+	genContainerReq := GenericContainerRequest{
+		ProviderType:     providerType,
+		ContainerRequest: req,
+		Started:          true,
+	}
+
+	c, err := GenericContainer(ctx, genContainerReq)
+	CleanupContainer(t, c)
+	require.NoError(t, err)
+
+	out := buffer.String()
+	temp := strings.Split(out, "\n")
+	require.NotEmpty(t, temp)
+	require.Regexpf(t, `^Step\s*1/\d+\s*:\s*FROM alpine$`, temp[0], "Expected stdout first line to be %s. Got '%s'.", "Step 1/* : FROM alpine", temp[0])
+}
+
 func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
@@ -1006,6 +1051,7 @@ func TestContainerCreationWithVolumeAndFileWritingToIt(t *testing.T) {
 				{
 					HostFilePath:      absPath,
 					ContainerFilePath: "/hello.sh",
+					FileMode:          700,
 				},
 			},
 			Mounts:     Mounts(VolumeMount(volumeName, "/data")),
@@ -1016,6 +1062,68 @@ func TestContainerCreationWithVolumeAndFileWritingToIt(t *testing.T) {
 	})
 	CleanupContainer(t, bashC, RemoveVolumes(volumeName))
 	require.NoError(t, err)
+}
+
+func TestContainerCreationWithVolumeCleaning(t *testing.T) {
+	absPath, err := filepath.Abs(filepath.Join(".", "testdata", "hello.sh"))
+	require.NoError(t, err)
+	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cnl()
+
+	// Create the volume.
+	volumeName := "volumeName"
+
+	// Create the container that writes into the mounted volume.
+	bashC, err := GenericContainer(ctx, GenericContainerRequest{
+		ProviderType: providerType,
+		ContainerRequest: ContainerRequest{
+			Image: "bash:5.2.26",
+			Files: []ContainerFile{
+				{
+					HostFilePath:      absPath,
+					ContainerFilePath: "/hello.sh",
+					FileMode:          700,
+				},
+			},
+			Mounts:     Mounts(VolumeMount(volumeName, "/data")),
+			Cmd:        []string{"bash", "/hello.sh"},
+			WaitingFor: wait.ForLog("done"),
+		},
+		Started: true,
+	})
+	require.NoError(t, err)
+	err = bashC.Terminate(ctx, RemoveVolumes(volumeName))
+	CleanupContainer(t, bashC, RemoveVolumes(volumeName))
+	require.NoError(t, err)
+}
+
+func TestContainerTerminationOptions(t *testing.T) {
+	t.Run("volumes", func(t *testing.T) {
+		var options TerminateOptions
+		RemoveVolumes("vol1", "vol2")(&options)
+		require.Equal(t, TerminateOptions{
+			volumes: []string{"vol1", "vol2"},
+		}, options)
+	})
+	t.Run("stop-timeout", func(t *testing.T) {
+		var options TerminateOptions
+		timeout := 11 * time.Second
+		StopTimeout(timeout)(&options)
+		require.Equal(t, TerminateOptions{
+			stopTimeout: &timeout,
+		}, options)
+	})
+
+	t.Run("all", func(t *testing.T) {
+		var options TerminateOptions
+		timeout := 9 * time.Second
+		StopTimeout(timeout)(&options)
+		RemoveVolumes("vol1", "vol2")(&options)
+		require.Equal(t, TerminateOptions{
+			stopTimeout: &timeout,
+			volumes:     []string{"vol1", "vol2"},
+		}, options)
+	})
 }
 
 func TestContainerWithTmpFs(t *testing.T) {
@@ -1171,13 +1279,13 @@ func TestContainerInspect_RawInspectIsCleanedOnStop(t *testing.T) {
 	require.NoError(t, ctr.Stop(context.Background(), nil))
 }
 
-func readHostname(tb testing.TB, containerId string) string {
+func readHostname(tb testing.TB, containerID string) string {
 	tb.Helper()
 	containerClient, err := NewDockerClientWithOpts(context.Background())
 	require.NoErrorf(tb, err, "Failed to create Docker client")
 	defer containerClient.Close()
 
-	containerDetails, err := containerClient.ContainerInspect(context.Background(), containerId)
+	containerDetails, err := containerClient.ContainerInspect(context.Background(), containerID)
 	require.NoErrorf(tb, err, "Failed to inspect container")
 
 	return containerDetails.Config.Hostname
@@ -1235,7 +1343,7 @@ func TestDockerContainerCopyDirToContainer(t *testing.T) {
 	CleanupContainer(t, nginxC)
 	require.NoError(t, err)
 
-	p := filepath.Join(".", "testdata", "Dokerfile")
+	p := filepath.Join(".", "testdata", "Dockerfile")
 	err = nginxC.CopyDirToContainer(ctx, p, "/tmp/testdata/Dockerfile", 700)
 	require.Error(t, err) // copying a file using the directory method will raise an error
 
@@ -1639,7 +1747,7 @@ func TestContainerWithNoUserID(t *testing.T) {
 func TestGetGatewayIP(t *testing.T) {
 	// When using docker compose with DinD mode, and using host port or http wait strategy
 	// It's need to invoke GetGatewayIP for get the host
-	provider, err := ProviderDocker.GetProvider(WithLogger(TestLogger(t)))
+	provider, err := ProviderDocker.GetProvider(WithLogger(log.TestLogger(t)))
 	require.NoError(t, err)
 	defer provider.Close()
 
@@ -1698,7 +1806,7 @@ func assertExtractedFiles(t *testing.T, ctx context.Context, container Container
 		}
 
 		fp := filepath.Join(containerFilePath, srcFile.Name())
-		// copy file by file, as there is a limitation in the Docker client to copy an entiry directory from the container
+		// copy file by file, as there is a limitation in the Docker client to copy an entire directory from the container
 		// paths for the container files are using Linux path separators
 		fd, err := container.CopyFileFromContainer(ctx, fp)
 		require.NoError(t, err, "Path not found in container: %s", fp)
@@ -1726,7 +1834,7 @@ func assertExtractedFiles(t *testing.T, ctx context.Context, container Container
 
 func TestDockerProviderFindContainerByName(t *testing.T) {
 	ctx := context.Background()
-	provider, err := NewDockerProvider(WithLogger(TestLogger(t)))
+	provider, err := NewDockerProvider(WithLogger(log.TestLogger(t)))
 	require.NoError(t, err)
 	defer provider.Close()
 
@@ -2057,4 +2165,40 @@ func TestCustomPrefixTrailingSlashIsProperlyRemovedIfPresent(t *testing.T) {
 	// which will be changed in future implementations of the library
 	dockerContainer := c.(*DockerContainer)
 	require.Equal(t, fmt.Sprintf("%s%s", hubPrefixWithTrailingSlash, dockerImage), dockerContainer.Image)
+}
+
+// TODO: remove this skip check when context rework is merged alongside [core.DockerEnvFile] removal.
+func Test_Provider_DaemonHost_Issue2897(t *testing.T) {
+	ctx := context.Background()
+	provider, err := NewDockerProvider()
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, provider.Close())
+	})
+
+	orig := core.DockerEnvFile
+	core.DockerEnvFile = filepath.Join(t.TempDir(), ".dockerenv")
+	t.Cleanup(func() {
+		core.DockerEnvFile = orig
+	})
+
+	f, err := os.Create(core.DockerEnvFile)
+	require.NoError(t, err)
+	require.NoError(t, f.Close())
+	t.Cleanup(func() {
+		require.NoError(t, os.Remove(f.Name()))
+	})
+
+	errCh := make(chan error, 1)
+	go func() {
+		_, err := provider.DaemonHost(ctx)
+		errCh <- err
+	}()
+
+	select {
+	case <-time.After(1 * time.Second):
+		t.Fatal("timeout waiting for DaemonHost")
+	case err := <-errCh:
+		require.NoError(t, err)
+	}
 }

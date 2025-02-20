@@ -24,7 +24,7 @@ const (
 func TestExposeHostPorts(t *testing.T) {
 	hostPorts := make([]int, 3)
 	for i := range hostPorts {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			fmt.Fprint(w, expectedResponse)
 		}))
 		hostPorts[i] = server.Listener.Addr().(*net.TCPAddr).Port

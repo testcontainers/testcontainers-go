@@ -16,7 +16,7 @@ import (
 
 type emulatorCreds struct{}
 
-func (ec emulatorCreds) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+func (ec emulatorCreds) GetRequestMetadata(_ context.Context, _ ...string) (map[string]string, error) {
 	return map[string]string{"authorization": "Bearer owner"}, nil
 }
 
