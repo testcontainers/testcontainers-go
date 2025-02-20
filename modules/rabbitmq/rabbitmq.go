@@ -100,7 +100,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
-		Logger:           testcontainers.Logger,
 		Started:          true,
 	}
 

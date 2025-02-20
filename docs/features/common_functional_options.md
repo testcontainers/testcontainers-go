@@ -62,14 +62,14 @@ If you need to either pass logger to a container, you can use `testcontainers.Wi
 !!!info
 	Consider calling this before other "With" functions as these may generate logs.
 
-In this example we also use `TestLogger` which writes to the passed in `testing.TB` using `Logf`.
+In this example we also use the testcontainers-go `log.TestLogger`, which writes to the passed in `testing.TB` using `Logf`.
 The result is that we capture all logging from the container into the test context meaning its
 hidden behind `go test -v` and is associated with the relevant test, providing the user with
 useful context instead of appearing out of band.
 
 ```golang
 func TestHandler(t *testing.T) {
-    logger := TestLogger(t)
+    logger := log.TestLogger(t)
     ctr, err := postgresModule.Run(ctx, "postgres:15-alpine", testcontainers.WithLogger(logger))
     CleanupContainer(t, ctr)
     require.NoError(t, err)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -13,6 +12,8 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/image"
 	"github.com/stretchr/testify/require"
+
+	"github.com/testcontainers/testcontainers-go/log"
 )
 
 func TestBuildImageFromDockerfile(t *testing.T) {

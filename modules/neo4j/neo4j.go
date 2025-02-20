@@ -75,7 +75,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: request,
-		Logger:           testcontainers.Logger,
 		Started:          true,
 	}
 
@@ -87,11 +86,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		if err := option.Customize(&genericContainerReq); err != nil {
 			return nil, err
 		}
-	}
-
-	err := validate(&genericContainerReq)
-	if err != nil {
-		return nil, err
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)

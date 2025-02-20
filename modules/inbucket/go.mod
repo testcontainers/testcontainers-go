@@ -1,6 +1,8 @@
 module github.com/testcontainers/testcontainers-go/modules/inbucket
 
-go 1.22
+go 1.23.0
+
+toolchain go1.23.6
 
 require (
 	github.com/inbucket/inbucket v2.0.0+incompatible

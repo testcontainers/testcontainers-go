@@ -1,6 +1,8 @@
 module github.com/testcontainers/testcontainers-go/modules/influxdb
 
-go 1.22
+go 1.23.0
+
+toolchain go1.23.6
 
 require (
 	github.com/influxdata/influxdb1-client v0.0.0-20220302092344-a9ab5670611c

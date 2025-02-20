@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/exec"
+	tclog "github.com/testcontainers/testcontainers-go/log"
 )
 
 func TestWaitForListeningPortSucceeds(t *testing.T) {
@@ -454,11 +455,14 @@ func TestHostPortStrategySucceedsGivenShellIsNotInstalled(t *testing.T) {
 		WithStartupTimeout(5 * time.Second).
 		WithPollInterval(100 * time.Millisecond)
 
-	oldWriter := log.Default().Writer()
+	oldLogger := tclog.Default()
+
 	var buf bytes.Buffer
-	log.Default().SetOutput(&buf)
+	logger := log.New(&buf, "test", log.LstdFlags)
+
+	tclog.SetDefault(logger)
 	t.Cleanup(func() {
-		log.Default().SetOutput(oldWriter)
+		tclog.SetDefault(oldLogger)
 	})
 
 	err = wg.WaitUntilReady(context.Background(), target)
@@ -514,11 +518,14 @@ func TestHostPortStrategySucceedsGivenShellIsNotFound(t *testing.T) {
 		WithStartupTimeout(5 * time.Second).
 		WithPollInterval(100 * time.Millisecond)
 
-	oldWriter := log.Default().Writer()
+	oldLogger := tclog.Default()
+
 	var buf bytes.Buffer
-	log.Default().SetOutput(&buf)
+	logger := log.New(&buf, "test", log.LstdFlags)
+
+	tclog.SetDefault(logger)
 	t.Cleanup(func() {
-		log.Default().SetOutput(oldWriter)
+		tclog.SetDefault(oldLogger)
 	})
 
 	err = wg.WaitUntilReady(context.Background(), target)

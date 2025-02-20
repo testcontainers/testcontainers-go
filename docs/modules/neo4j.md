@@ -65,7 +65,7 @@ E.g. `Run(context.Background(), "neo4j:4.4")`.
 This option sets a custom logger to be used by the container. Consider calling this before other `With` functions as these may generate logs.
 
 !!!info
-    The logger must implement the `testcontainers.Logger` interface.
+    The logger must implement the testcontainers-go `log.Logger` interface.
 
 <!--codeinclude-->
 [Including a custom logger](../../modules/neo4j/neo4j_test.go) inside_block:withSettings

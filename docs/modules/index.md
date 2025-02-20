@@ -205,8 +205,6 @@ In order to simplify the creation of the container for a given module, `Testcont
 - `testcontainers.WithConfigModifier`: a function that sets the config Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
 - `testcontainers.WithEndpointSettingsModifier`: a function that sets the endpoint settings Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
 - `testcontainers.WithHostConfigModifier`: a function that sets the host config Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
-- `testcontainers.WithWaitStrategy`: a function that sets the wait strategy for the container request, adding all the passed wait strategies to the container request, using a `testcontainers.MultiStrategy` with 60 seconds of deadline. Please see [Wait strategies](../features/wait/multi.md) for more information.
-- `testcontainers.WithWaitStrategyAndDeadline`: a function that sets the wait strategy for the container request, adding all the passed wait strategies to the container request, using a `testcontainers.MultiStrategy` with the passed deadline. Please see [Wait strategies](../features/wait/multi.md) for more information.
 - `testcontainers.CustomizeRequest`: a function that merges the default options with the ones provided by the user. Recommended for completely customizing the container request.
 
 ### Update Go dependencies in the modules

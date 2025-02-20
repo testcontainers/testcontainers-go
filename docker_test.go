@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -26,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -1809,7 +1809,7 @@ func TestContainerWithNoUserID(t *testing.T) {
 func TestGetGatewayIP(t *testing.T) {
 	// When using docker compose with DinD mode, and using host port or http wait strategy
 	// It's need to invoke GetGatewayIP for get the host
-	provider, err := providerType.GetProvider(WithLogger(TestLogger(t)))
+	provider, err := providerType.GetProvider(WithLogger(log.TestLogger(t)))
 	require.NoError(t, err)
 	defer provider.Close()
 
@@ -1898,7 +1898,7 @@ func assertExtractedFiles(t *testing.T, ctx context.Context, container Container
 
 func TestDockerProviderFindContainerByName(t *testing.T) {
 	ctx := context.Background()
-	provider, err := NewDockerProvider(WithLogger(TestLogger(t)))
+	provider, err := NewDockerProvider(WithLogger(log.TestLogger(t)))
 	require.NoError(t, err)
 	defer provider.Close()
 

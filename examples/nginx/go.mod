@@ -1,6 +1,8 @@
 module github.com/testcontainers/testcontainers-go/examples/nginx
 
-go 1.22
+go 1.23.0
+
+toolchain go1.23.6
 
 require (
 	github.com/stretchr/testify v1.10.0

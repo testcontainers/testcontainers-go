@@ -1,6 +1,8 @@
 module github.com/testcontainers/testcontainers-go/modules/azurite
 
-go 1.22
+go 1.23.0
+
+toolchain go1.23.6
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.11.1

@@ -19,7 +19,7 @@ import (
 func TestOllama(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := ollama.Run(ctx, "ollama/ollama:0.1.25")
+	ctr, err := ollama.Run(ctx, "ollama/ollama:0.5.7")
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -98,7 +98,7 @@ func TestRunContainer_withModel_error(t *testing.T) {
 
 	ollamaContainer, err := ollama.Run(
 		ctx,
-		"ollama/ollama:0.1.25",
+		"ollama/ollama:0.5.7",
 	)
 	testcontainers.CleanupContainer(t, ollamaContainer)
 	require.NoError(t, err)

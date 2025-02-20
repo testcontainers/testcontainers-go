@@ -1,6 +1,8 @@
 module github.com/testcontainers/testcontainers-go/modules/mssql
 
-go 1.22
+go 1.23.0
+
+toolchain go1.23.6
 
 require (
 	github.com/microsoft/go-mssqldb v1.7.0

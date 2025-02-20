@@ -13,6 +13,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -121,7 +122,7 @@ func getContainerHost(ctx context.Context, opts ...testcontainers.ContainerCusto
 
 	logging := req.Logger
 	if logging == nil {
-		logging = testcontainers.Logger
+		logging = log.Default()
 	}
 	p, err := req.ProviderType.GetProvider(testcontainers.WithLogger(logging))
 	if err != nil {
