@@ -79,13 +79,13 @@ func WithCustomCommands(cmds map[string]string) testcontainers.CustomizeRequestO
 func (c Container) ConnectionHost(ctx context.Context, port uint16) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("host: %w", err)
 	}
 
 	portStr := strconv.FormatInt(int64(port), 10)
 	containerPort, err := c.MappedPort(ctx, nat.Port(portStr))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("mapped port: %w", err)
 	}
 
 	return host + ":" + containerPort.Port(), nil
