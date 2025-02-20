@@ -134,20 +134,24 @@ func applyEnvironmentConfiguration(config Config) (Config, error) {
 
 	ryukReconnectionTimeoutEnv := readTestcontainersEnv("RYUK_RECONNECTION_TIMEOUT")
 	if ryukReconnectionTimeoutEnv != "" {
-		if timeout, err := time.ParseDuration(ryukReconnectionTimeoutEnv); err != nil {
+		var timeout time.Duration
+		var err error
+		if timeout, err = time.ParseDuration(ryukReconnectionTimeoutEnv); err != nil {
 			return config, fmt.Errorf("invalid RYUK_RECONNECTION_TIMEOUT environment variable: %w", err)
-		} else {
-			config.RyukReconnectionTimeout = timeout
 		}
+
+		config.RyukReconnectionTimeout = timeout
 	}
 
 	ryukConnectionTimeoutEnv := readTestcontainersEnv("RYUK_CONNECTION_TIMEOUT")
 	if ryukConnectionTimeoutEnv != "" {
-		if timeout, err := time.ParseDuration(ryukConnectionTimeoutEnv); err != nil {
+		var timeout time.Duration
+		var err error
+		if timeout, err = time.ParseDuration(ryukConnectionTimeoutEnv); err != nil {
 			return config, fmt.Errorf("invalid RYUK_CONNECTION_TIMEOUT environment variable: %w", err)
-		} else {
-			config.RyukConnectionTimeout = timeout
 		}
+
+		config.RyukConnectionTimeout = timeout
 	}
 
 	return config, nil

@@ -28,7 +28,7 @@ func setupDockerContexts(t *testing.T, currentContextIndex int, contextsCount in
 	err := createTmpDir(configDir)
 	require.NoError(t, err)
 
-	configJson := filepath.Join(configDir, "config.json")
+	configJSON := filepath.Join(configDir, "config.json")
 
 	const baseContext = "context"
 
@@ -36,7 +36,7 @@ func setupDockerContexts(t *testing.T, currentContextIndex int, contextsCount in
 	"currentContext": "%s%d"
 }`, baseContext, currentContextIndex)
 
-	err = os.WriteFile(configJson, []byte(configBytes), 0o644)
+	err = os.WriteFile(configJSON, []byte(configBytes), 0o644)
 	require.NoError(t, err)
 
 	metaDir := filepath.Join(configDir, contextsDir, metadataDir)

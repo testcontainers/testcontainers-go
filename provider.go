@@ -70,8 +70,8 @@ func Generic2DockerOptions(opts ...GenericProviderOption) []DockerProviderOption
 }
 
 // Deprecated: WithDefaultNetwork is deprecated and will be removed in the next major version
-func WithDefaultBridgeNetwork(bridgeNetworkName string) DockerProviderOption {
-	return DockerProviderOptionFunc(func(opts *DockerProviderOptions) {
+func WithDefaultBridgeNetwork(_ string) DockerProviderOption {
+	return DockerProviderOptionFunc(func(_ *DockerProviderOptions) {
 		// NOOP
 	})
 }
