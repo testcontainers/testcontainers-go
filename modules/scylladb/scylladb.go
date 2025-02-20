@@ -78,13 +78,14 @@ func WithCustomCommands(cmds map[string]string) testcontainers.CustomizeRequestO
 // ConnectionHost returns the host and port of the Scylladb container with the default port
 // and obtaining the host and exposed port from the container
 // Eg: "host:port" -> "localhost:9042" -> "localhost:19042" -> "localhost:8000"
-func (c Container) ConnectionHost(ctx context.Context, port int) (string, error) {
+func (c Container) ConnectionHost(ctx context.Context, port uint16) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	containerPort, err := c.MappedPort(ctx, nat.Port(strconv.Itoa(port)))
+	portStr := strconv.FormatInt(int64(port), 10)
+	containerPort, err := c.MappedPort(ctx, nat.Port(portStr))
 	if err != nil {
 		return "", err
 	}
