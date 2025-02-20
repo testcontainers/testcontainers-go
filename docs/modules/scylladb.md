@@ -72,7 +72,7 @@ started, using the `WithConfig(r io.Reader)` function.
 [With Config YAML](../../modules/scylladb/examples_test.go) inside_block:runScyllaDBContainerWithConfig
 <!--/codeinclude-->
 !!!warning
-    You should provide a valid ScyllaDB configuration file when using the function, otherwise the container will fail to
+    You should provide a valid ScyllaDB configuration file as an `io.Reader` when using the function, otherwise the container will fail to
     start. The configuration file should be a valid YAML file and follows
     the [ScyllaDB configuration file](https://github.com/scylladb/scylladb/blob/master/conf/scylla.yaml).
 
