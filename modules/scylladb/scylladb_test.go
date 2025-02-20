@@ -84,12 +84,12 @@ func TestScyllaWithConfig(t *testing.T) {
 		require.NoError(t, err)
 		defer session.Close()
 
-		var cluster_name string
-		err = session.Query("SELECT cluster_name FROM system.local").Scan(&cluster_name)
+		var clusterName string
+		err = session.Query("SELECT cluster_name FROM system.local").Scan(&clusterName)
 		require.NoError(t, err)
 
 		// the "Amazing ScyllaDB Test" cluster name is set in the scylla.yaml file
-		require.Equal(t, "Amazing ScyllaDB Test", cluster_name)
+		require.Equal(t, "Amazing ScyllaDB Test", clusterName)
 	})
 
 	t.Run("test-with-shard-awareness", func(t *testing.T) {
@@ -101,12 +101,12 @@ func TestScyllaWithConfig(t *testing.T) {
 		require.NoError(t, err)
 		defer session.Close()
 
-		var cluster_name string
-		err = session.Query("SELECT cluster_name FROM system.local").Scan(&cluster_name)
+		var clusterName string
+		err = session.Query("SELECT cluster_name FROM system.local").Scan(&clusterName)
 		require.NoError(t, err)
 
 		// the "Amazing ScyllaDB Test" cluster name is set in the scylla.yaml file
-		require.Equal(t, "Amazing ScyllaDB Test", cluster_name)
+		require.Equal(t, "Amazing ScyllaDB Test", clusterName)
 	})
 }
 
@@ -144,7 +144,7 @@ type scyllaAlternatorResolver struct {
 	HostPort string
 }
 
-func (r *scyllaAlternatorResolver) ResolveEndpoint(ctx context.Context, params dynamodb.EndpointParameters) (smithyendpoints.Endpoint, error) {
+func (r *scyllaAlternatorResolver) ResolveEndpoint(_ context.Context, _ dynamodb.EndpointParameters) (smithyendpoints.Endpoint, error) {
 	return smithyendpoints.Endpoint{
 		URI: url.URL{Host: r.HostPort, Scheme: "http"},
 	}, nil
