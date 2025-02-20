@@ -119,6 +119,10 @@ jobs:
       - test
     runs-on: ubuntu-latest
     steps:
+      - name: Check if any jobs failed
+        if: ${{ failure() || cancelled() }}
+        run: exit 1
+
       - run: echo "All tests completed successfully!"
 
   sonarcloud:
