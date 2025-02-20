@@ -58,9 +58,11 @@ func ExampleRun_withAlternator() {
 	ctx := context.Background()
 
 	// runScyllaDBContainerWithAlternator {
+	alternatorPort := uint16(8080) // Choose which port to use on Alternator
+
 	scyllaContainer, err := scylladb.Run(ctx,
 		"scylladb/scylla:6.2",
-		scylladb.WithAlternator(8080), // Choose which port to use on Alternator
+		scylladb.WithAlternator(alternatorPort),
 	)
 	// }
 	defer func() {
@@ -81,7 +83,7 @@ func ExampleRun_withAlternator() {
 
 	fmt.Println(state.Running)
 
-	_, err = scyllaContainer.ConnectionHost(ctx, 8080) // Alternator port
+	_, err = scyllaContainer.ConnectionHost(ctx, alternatorPort) // Alternator port
 	if err != nil {
 		log.Printf("failed to get connection host: %s", err)
 		return
