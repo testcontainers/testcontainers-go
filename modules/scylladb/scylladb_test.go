@@ -88,6 +88,7 @@ func TestScyllaWithConfig(t *testing.T) {
 		err = session.Query("SELECT cluster_name FROM system.local").Scan(&cluster_name)
 		require.NoError(t, err)
 
+		// the "Amazing ScyllaDB Test" cluster name is set in the scylla.yaml file
 		require.Equal(t, "Amazing ScyllaDB Test", cluster_name)
 	})
 
@@ -104,6 +105,7 @@ func TestScyllaWithConfig(t *testing.T) {
 		err = session.Query("SELECT cluster_name FROM system.local").Scan(&cluster_name)
 		require.NoError(t, err)
 
+		// the "Amazing ScyllaDB Test" cluster name is set in the scylla.yaml file
 		require.Equal(t, "Amazing ScyllaDB Test", cluster_name)
 	})
 }
