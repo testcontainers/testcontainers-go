@@ -40,8 +40,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 !!! info
     By default, we add the `--developer-mode=1` flag to the ScyllaDB container to disable the various checks Scylla
     performs.
-    Also In scenarios in which static partitioning is not desired - like mostly-idle cluster without hard latency
-    requirements, the --overprovisioned command-line option is recommended. This enables certain optimizations for ScyllaDB
+    Also in scenarios in which static partitioning is not desired - like mostly-idle cluster without hard latency
+    requirements, the `--overprovisioned` command-line option is recommended. This enables certain optimizations for ScyllaDB
     to run efficiently in an overprovisioned environment. You can change it by using the `WithCustomCommand` function.
 
 ### Container Options
