@@ -52,9 +52,9 @@ set -euxo pipefail
 #    ALL_CHANGED_FILES="go.mod a.go b.go" ./scripts/changed-modules.sh
 #    The output should be: all modules but the build-excluded ones.
 #
-# 13. A module is modified with a file that is excluded:
+# 13. A excluded module is modified with a file that is excluded:
 #    ALL_CHANGED_FILES="modules/k6/a.go mkdocs.yml" ./scripts/changed-modules.sh
-#    The output should be: the modules/k6 module.
+#    The output should be: no modules.
 #
 # 14. A excluded file and a file from the core module are modified:
 #    ALL_CHANGED_FILES="mkdocs.yml sonar-project.properties go.mod" ./scripts/changed-modules.sh
