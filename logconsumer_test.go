@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -58,8 +59,7 @@ func (g *TestLogConsumer) Msgs() []string {
 func devNullAcceptorChan() chan string {
 	c := make(chan string)
 	go func(c <-chan string) {
-		for range c {
-			// do nothing, just pull off channel
+		for range c { //nolint:revive // do nothing, just pull off channel
 		}
 	}(c)
 	return c
@@ -291,7 +291,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		config: config.Read(),
 		DockerProviderOptions: &DockerProviderOptions{
 			GenericProviderOptions: &GenericProviderOptions{
-				Logger: TestLogger(t),
+				Logger: log.TestLogger(t),
 			},
 		},
 	}
@@ -512,6 +512,14 @@ func (l *bufLogger) Printf(format string, v ...any) {
 	fmt.Fprintf(&l.buf, format, v...)
 }
 
+// Print implements Logging.
+func (l *bufLogger) Print(v ...any) {
+	l.mtx.Lock()
+	defer l.mtx.Unlock()
+
+	fmt.Fprint(&l.buf, v...)
+}
+
 // String returns the contents of the buffer as a string.
 func (l *bufLogger) String() string {
 	l.mtx.Lock()
@@ -523,10 +531,10 @@ func (l *bufLogger) String() string {
 func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	// Capture global logger.
 	logger := &bufLogger{}
-	Logger = logger
-	oldLogger := Logger
+	oldLogger := log.Default()
+	log.SetDefault(logger)
 	t.Cleanup(func() {
-		Logger = oldLogger
+		log.SetDefault(oldLogger)
 	})
 
 	// Context with cancellation functionality for simulating user interruption

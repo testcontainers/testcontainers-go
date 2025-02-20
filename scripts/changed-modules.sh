@@ -40,6 +40,30 @@ set -euxo pipefail
 #    ALL_CHANGED_FILES="go.mod a.go b.go" ./scripts/changed-modules.sh
 #    The output should be: all modules.
 #
+# 10. Several files in a build-excluded module are modified:
+#    ALL_CHANGED_FILES="modules/k6/a.go" ./scripts/changed-modules.sh
+#    The output should be: no modules.
+#
+# 11. Several files in different modules, including a build-excluded one, are modified:
+#    ALL_CHANGED_FILES="modules/k6/a.go modules/clickhouse/a.txt" ./scripts/changed-modules.sh
+#    The output should be: the modules/clickhouse module.
+#
+# 12. Several files in the core module are modified:
+#    ALL_CHANGED_FILES="go.mod a.go b.go" ./scripts/changed-modules.sh
+#    The output should be: all modules but the build-excluded ones.
+#
+# 13. A excluded module is modified with a file that is excluded:
+#    ALL_CHANGED_FILES="modules/k6/a.go mkdocs.yml" ./scripts/changed-modules.sh
+#    The output should be: no modules.
+#
+# 14. A excluded file and a file from the core module are modified:
+#    ALL_CHANGED_FILES="mkdocs.yml sonar-project.properties go.mod" ./scripts/changed-modules.sh
+#    The output should be: all modules.
+#
+# 15. Only excluded files are modified:
+#    ALL_CHANGED_FILES="mkdocs.yml sonar-project.properties" ./scripts/changed-modules.sh
+#    The output should be: no modules.
+#
 # There is room for improvement in this script. For example, it could detect if the changes applied to the docs or the .github dirs, and then do not include any module in the list.
 # But then we would need to verify the CI scripts to ensure that the job receives the correct modules to build.
 
@@ -48,6 +72,12 @@ readonly ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 # define an array of modules that won't be included in the list
 readonly excluded_modules=(".devcontainer" ".vscode" "docs")
+
+# define an array of files that won't be included in the list
+readonly excluded_files=("mkdocs.yml" "sonar-project.properties")
+
+# define an array of modules that won't be part of the build
+readonly no_build_modules=("modules/k6")
 
 # modules is an array that will store the paths of all the modules in the repository.
 modules=()
@@ -90,6 +120,15 @@ modified_modules=()
 # - if the modified files only contain files in one of the examples, include that example in the list
 # - if the modified files only contain files in the modulegen module, include only the modulegen module in the list
 for file in $modified_files; do
+    # check if the file is in one of the excluded files
+    for exclude_file in ${excluded_files[@]}; do
+        if [[ $file == $exclude_file ]]; then
+            # if the file is in the excluded files, skip the rest of the loop.
+            # Execution continues at the loop control of the 2nd enclosing loop.
+            continue 2
+        fi
+    done
+
     if [[ $file == modules/* ]]; then
         module_name=$(echo $file | cut -d'/' -f2)
         if [[ ! " ${modified_modules[@]} " =~ " ${module_name} " ]]; then
@@ -124,4 +163,21 @@ done
 # the entire list will be enclosed in square brackets
 # the list will be sorted and unique
 sorted_unique_modules=($(echo "${modified_modules[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
+
+# remove modules that won't be part of the build from the list
+filtered_modules=()
+for module in "${sorted_unique_modules[@]}"; do
+    skip=false
+    for no_build_module in "${no_build_modules[@]}"; do
+        if [[ ${module} == \"${no_build_module}\" ]]; then
+            skip=true
+            break
+        fi
+    done
+    if [[ $skip == false ]]; then
+        filtered_modules+=(${module})
+    fi
+done
+sorted_unique_modules=("${filtered_modules[@]}")
+
 echo "["$(IFS=,; echo "${sorted_unique_modules[*]}" | sed 's/ /,/g')"]"

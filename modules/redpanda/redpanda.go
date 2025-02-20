@@ -44,6 +44,9 @@ const (
 	bootstrapConfigFile = ".bootstrap.yaml"
 	certFile            = "cert.pem"
 	keyFile             = "key.pem"
+
+	bootstrapAdminAPIUser     = "redpanda_bootstrap_admin_user"
+	bootstrapAdminAPIPassword = "redpanda_bootstrap_admin_password"
 )
 
 // Container represents the Redpanda container type used in the module.
@@ -105,6 +108,25 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	// 2.1. If the image is not at least v23.3, disable wasm transform
 	if !isAtLeastVersion(req.ContainerRequest.Image, "23.3") {
 		settings.EnableWasmTransform = false
+	}
+
+	// 2.2. If enabled, bootstrap user account
+	if settings.enableAdminAPIAuthentication {
+		// set the RP_BOOTSTRAP_USER env var
+		if req.Env == nil {
+			req.Env = map[string]string{}
+		}
+		req.Env["RP_BOOTSTRAP_USER"] = bootstrapAdminAPIUser + ":" + bootstrapAdminAPIPassword
+
+		// add our internal bootstrap admin user to superusers
+		settings.Superusers = append(settings.Superusers, bootstrapAdminAPIUser)
+
+		// enable admin_api_require_auth
+		if settings.ExtraBootstrapConfig == nil {
+			settings.ExtraBootstrapConfig = map[string]any{}
+		}
+
+		settings.ExtraBootstrapConfig["admin_api_require_auth"] = true
 	}
 
 	// 3. Register extra kafka listeners if provided, network aliases will be
@@ -231,6 +253,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 		adminAPIUrl := fmt.Sprintf("%s://%v:%d", c.urlScheme, hostIP, adminAPIPort.Int())
 		adminCl := NewAdminAPIClient(adminAPIUrl)
+		if settings.enableAdminAPIAuthentication {
+			adminCl = adminCl.WithAuthentication(bootstrapAdminAPIUser, bootstrapAdminAPIPassword)
+		}
+
 		if settings.EnableTLS {
 			adminCl = adminCl.WithHTTPClient(&http.Client{
 				Timeout: 5 * time.Second,
