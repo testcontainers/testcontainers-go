@@ -111,6 +111,20 @@ jobs:
       rootless-docker: true
       ryuk-disabled: false
 
+  # This job serves as confirmation that all test jobs finished
+  end:
+    if: ${{ needs.detect-modules.outputs.modules_count > 0 }}
+    needs:
+      - detect-modules
+      - test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if any jobs failed
+        if: ${{ failure() || cancelled() }}
+        run: exit 1
+
+      - run: echo "All tests completed successfully!"
+
   sonarcloud:
     permissions:
       contents: read  # for actions/checkout to fetch code
