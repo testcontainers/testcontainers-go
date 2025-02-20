@@ -704,7 +704,6 @@ func Test_BuildContainerFromDockerfileWithBuildLogWriter(t *testing.T) {
 	// }
 
 	genContainerReq := GenericContainerRequest{
-		ProviderType:     providerType,
 		ContainerRequest: req,
 		Started:          true,
 	}
@@ -1075,7 +1074,6 @@ func TestContainerCreationWithVolumeCleaning(t *testing.T) {
 
 	// Create the container that writes into the mounted volume.
 	bashC, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image: "bash:5.2.26",
 			Files: []ContainerFile{
