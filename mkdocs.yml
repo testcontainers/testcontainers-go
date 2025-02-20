@@ -103,6 +103,7 @@ nav:
         - modules/openfga.md
         - modules/openldap.md
         - modules/opensearch.md
+        - modules/pinecone.md
         - modules/postgres.md
         - modules/pulsar.md
         - modules/qdrant.md

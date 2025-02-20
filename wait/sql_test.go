@@ -14,16 +14,16 @@ import (
 
 func Test_waitForSql_WithQuery(t *testing.T) {
 	t.Run("default query", func(t *testing.T) {
-		w := ForSQL("5432/tcp", "postgres", func(host string, port nat.Port) string {
+		w := ForSQL("5432/tcp", "postgres", func(_ string, _ nat.Port) string {
 			return "fake-url"
 		})
 
-		require.Equal(t, defaultForSqlQuery, w.query)
+		require.Equal(t, defaultForSQLQuery, w.query)
 	})
 	t.Run("custom query", func(t *testing.T) {
 		const q = "SELECT 100;"
 
-		w := ForSQL("5432/tcp", "postgres", func(host string, port nat.Port) string {
+		w := ForSQL("5432/tcp", "postgres", func(_ string, _ nat.Port) string {
 			return "fake-url"
 		}).WithQuery(q)
 

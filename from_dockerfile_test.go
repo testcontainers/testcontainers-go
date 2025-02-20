@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -13,6 +12,8 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/image"
 	"github.com/stretchr/testify/require"
+
+	"github.com/testcontainers/testcontainers-go/log"
 )
 
 func TestBuildImageFromDockerfile(t *testing.T) {
@@ -134,7 +135,7 @@ func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
 }
 
 func TestBuildImageFromDockerfile_Target(t *testing.T) {
-	// there are thre targets: target0, target1 and target2.
+	// there are three targets: target0, target1 and target2.
 	for i := 0; i < 3; i++ {
 		ctx := context.Background()
 		c, err := GenericContainer(ctx, GenericContainerRequest{

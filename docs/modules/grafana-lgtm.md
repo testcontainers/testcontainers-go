@@ -67,37 +67,37 @@ The Grafana LGTM container exposes the following methods:
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.33.0"><span class="tc-version">:material-tag: v0.33.0</span></a>
 
-The `HttpEndpoint(ctx)` method returns the HTTP endpoint to connect to Grafana, using the default `3000` port. The same method with the `Must` prefix returns just the endpoing, and panics if an error occurs.
+The `HttpEndpoint(ctx)` method returns the HTTP endpoint to connect to Grafana, using the default `3000` port. The same method with the `Must` prefix returns just the endpoint, and panics if an error occurs.
 
 #### Loki Endpoint
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.33.0"><span class="tc-version">:material-tag: v0.33.0</span></a>
 
-The `LokiEndpoint(ctx)` method returns the HTTP endpoint to connect to Loki, using the default `3100` port. The same method with the `Must` prefix returns just the endpoing, and panics if an error occurs.
+The `LokiEndpoint(ctx)` method returns the HTTP endpoint to connect to Loki, using the default `3100` port. The same method with the `Must` prefix returns just the endpoint, and panics if an error occurs.
 
 #### Tempo Endpoint
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.33.0"><span class="tc-version">:material-tag: v0.33.0</span></a>
 
-The `TempoEndpoint(ctx)` method returns the HTTP endpoint to connect to Tempo, using the default `3200` port. The same method with the `Must` prefix returns just the endpoing, and panics if an error occurs.
+The `TempoEndpoint(ctx)` method returns the HTTP endpoint to connect to Tempo, using the default `3200` port. The same method with the `Must` prefix returns just the endpoint, and panics if an error occurs.
 
 #### Otel HTTP Endpoint
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.33.0"><span class="tc-version">:material-tag: v0.33.0</span></a>
 
-The `OtelHTTPEndpoint(ctx)` method returns the endpoint to connect to Otel using HTTP, using the default `4318` port. The same method with the `Must` prefix returns just the endpoing, and panics if an error occurs.
+The `OtelHTTPEndpoint(ctx)` method returns the endpoint to connect to Otel using HTTP, using the default `4318` port. The same method with the `Must` prefix returns just the endpoint, and panics if an error occurs.
 
 #### Otel gRPC Endpoint
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.33.0"><span class="tc-version">:material-tag: v0.33.0</span></a>
 
-The `OtelGRPCEndpoint(ctx)` method returns the endpoint to connect to Otel using gRPC, using the default `4317` port. The same method with the `Must` prefix returns just the endpoing, and panics if an error occurs.
+The `OtelGRPCEndpoint(ctx)` method returns the endpoint to connect to Otel using gRPC, using the default `4317` port. The same method with the `Must` prefix returns just the endpoint, and panics if an error occurs.
 
 #### Prometheus Endpoint
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.33.0"><span class="tc-version">:material-tag: v0.33.0</span></a>
 
-The `PrometheusHttpEndpoint(ctx)` method returns the endpoint to connect to Prometheus, using the default `9090` port. The same method with the `Must` prefix returns just the endpoing, and panics if an error occurs.
+The `PrometheusHttpEndpoint(ctx)` method returns the endpoint to connect to Prometheus, using the default `9090` port. The same method with the `Must` prefix returns just the endpoint, and panics if an error occurs.
 
 ## Examples
 

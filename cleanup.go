@@ -107,7 +107,7 @@ func TerminateContainer(container Container, options ...TerminateOption) error {
 	return nil
 }
 
-// isNil returns true if val is nil or an nil instance false otherwise.
+// isNil returns true if val is nil or a nil instance false otherwise.
 func isNil(val any) bool {
 	if val == nil {
 		return true

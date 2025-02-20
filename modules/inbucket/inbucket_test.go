@@ -19,15 +19,15 @@ func TestInbucket(t *testing.T) {
 	require.NoError(t, err)
 
 	// smtpConnection {
-	smtpUrl, err := ctr.SmtpConnection(ctx)
+	smtpURL, err := ctr.SmtpConnection(ctx)
 	// }
 	require.NoError(t, err)
 
 	// webInterface {
-	webInterfaceUrl, err := ctr.WebInterface(ctx)
+	webInterfaceURL, err := ctr.WebInterface(ctx)
 	// }
 	require.NoError(t, err)
-	restClient, err := client.New(webInterfaceUrl)
+	restClient, err := client.New(webInterfaceURL)
 	require.NoError(t, err)
 
 	headers, err := restClient.ListMailbox("to@example.org")
@@ -38,7 +38,7 @@ func TestInbucket(t *testing.T) {
 		"Subject: Testcontainers test!\r\n" +
 		"\r\n" +
 		"This is a Testcontainers test.\r\n")
-	err = smtp.SendMail(smtpUrl, nil, "from@example.org", []string{"to@example.org"}, msg)
+	err = smtp.SendMail(smtpURL, nil, "from@example.org", []string{"to@example.org"}, msg)
 	require.NoError(t, err)
 
 	headers, err = restClient.ListMailbox("to@example.org")

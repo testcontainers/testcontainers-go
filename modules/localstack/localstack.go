@@ -3,6 +3,7 @@ package localstack
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"golang.org/x/mod/semver"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -20,30 +22,22 @@ const (
 	localstackHostEnvVar   = "LOCALSTACK_HOST"
 )
 
-func isLegacyMode(image string) bool {
-	parts := strings.Split(image, ":")
-	version := parts[len(parts)-1]
-
-	if version == "latest" {
-		return false
-	}
-
-	if !strings.HasPrefix(version, "v") {
-		version = "v" + version
-	}
-
-	if semver.IsValid(version) {
-		return semver.Compare(version, "v0.11") < 0 // version < v0.11
-	}
-
-	return true
+var recentVersionTags = []string{
+	"latest",
+	"s3",
+	"s3-latest",
+	"stable",
 }
 
-func isVersion2(image string) bool {
+func isMinimumVersion(image string, minVersion string) bool {
 	parts := strings.Split(image, ":")
 	version := parts[len(parts)-1]
 
-	if version == "latest" {
+	if pos := strings.LastIndexByte(version, '-'); pos >= 0 {
+		version = version[0:pos]
+	}
+
+	if slices.Contains(recentVersionTags, version) {
 		return true
 	}
 
@@ -51,17 +45,13 @@ func isVersion2(image string) bool {
 		version = "v" + version
 	}
 
-	if semver.IsValid(version) {
-		return semver.Compare(version, "v2.0") > 0 // version >= v2.0
-	}
-
-	return true
+	return semver.IsValid(version) && semver.Compare(version, minVersion) >= 0
 }
 
 // WithNetwork creates a network with the given name and attaches the container to it, setting the network alias
 // on that network to the given alias.
 // Deprecated: use network.WithNetwork or network.WithNewNetwork instead
-func WithNetwork(networkName string, alias string) testcontainers.CustomizeRequestOption {
+func WithNetwork(_ string, alias string) testcontainers.CustomizeRequestOption {
 	return network.WithNewNetwork(context.Background(), []string{alias})
 }
 
@@ -89,7 +79,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	localStackReq := LocalStackContainerRequest{
 		GenericContainerRequest: testcontainers.GenericContainerRequest{
 			ContainerRequest: req,
-			Logger:           testcontainers.Logger,
+			Logger:           log.Default(),
 			Started:          true,
 		},
 	}
@@ -100,12 +90,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	if isLegacyMode(localStackReq.Image) {
+	if !isMinimumVersion(localStackReq.Image, "v0.11") {
 		return nil, fmt.Errorf("version=%s. Testcontainers for Go does not support running LocalStack in legacy mode. Please use a version >= 0.11.0", localStackReq.Image)
 	}
 
 	envVar := hostnameExternalEnvVar
-	if isVersion2(localStackReq.Image) {
+	if isMinimumVersion(localStackReq.Image, "v2") {
 		envVar = localstackHostEnvVar
 	}
 

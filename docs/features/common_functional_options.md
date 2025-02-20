@@ -6,7 +6,7 @@ In more locked down / secured environments, it can be problematic to pull images
 
 An image name substitutor converts a Docker image name, as may be specified in code, to an alternative name. This is intended to provide a way to override image names, for example to enforce pulling of images from a private registry.
 
-_Testcontainers for Go_ exposes an interface to perform this operations: `ImageSubstitutor`, and a No-operation implementation to be used as reference for custom implementations:
+_Testcontainers for Go_ exposes an interface to perform this operation: `ImageSubstitutor`, and a No-operation implementation to be used as reference for custom implementations:
 
 <!--codeinclude-->
 [Image Substitutor Interface](../../options.go) inside_block:imageSubstitutor
@@ -62,14 +62,14 @@ If you need to either pass logger to a container, you can use `testcontainers.Wi
 !!!info
 	Consider calling this before other "With" functions as these may generate logs.
 
-In this example we also use `TestLogger` which writes to the passed in `testing.TB` using `Logf`.
+In this example we also use the testcontainers-go `log.TestLogger`, which writes to the passed in `testing.TB` using `Logf`.
 The result is that we capture all logging from the container into the test context meaning its
 hidden behind `go test -v` and is associated with the relevant test, providing the user with
 useful context instead of appearing out of band.
 
 ```golang
 func TestHandler(t *testing.T) {
-    logger := TestLogger(t)
+    logger := log.TestLogger(t)
     ctr, err := postgresModule.Run(ctx, "postgres:15-alpine", testcontainers.WithLogger(logger))
     CleanupContainer(t, ctr)
     require.NoError(t, err)

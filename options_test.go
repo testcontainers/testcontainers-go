@@ -22,7 +22,7 @@ func TestOverrideContainerRequest(t *testing.T) {
 			Image:        "foo",
 			ExposedPorts: []string{"12345/tcp"},
 			WaitingFor: wait.ForNop(
-				func(ctx context.Context, target wait.StrategyTarget) error {
+				func(_ context.Context, _ wait.StrategyTarget) error {
 					return nil
 				},
 			),

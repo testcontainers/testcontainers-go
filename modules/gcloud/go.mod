@@ -1,6 +1,8 @@
 module github.com/testcontainers/testcontainers-go/modules/gcloud
 
-go 1.22
+go 1.23.0
+
+toolchain go1.23.6
 
 require (
 	cloud.google.com/go/bigquery v1.59.1
@@ -10,7 +12,7 @@ require (
 	cloud.google.com/go/pubsub v1.36.2
 	cloud.google.com/go/spanner v1.57.0
 	github.com/docker/go-connections v0.5.0
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.35.0
 	google.golang.org/api v0.169.0
 	google.golang.org/grpc v1.64.1
@@ -38,6 +40,7 @@ require (
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/docker v27.1.1+incompatible // indirect
 	github.com/docker/go-units v0.5.0 // indirect
+	github.com/ebitengine/purego v0.8.2 // indirect
 	github.com/envoyproxy/go-control-plane v0.12.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -72,12 +75,11 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/shirou/gopsutil/v3 v3.23.12 // indirect
-	github.com/shoenig/go-m1cpu v0.1.6 // indirect
+	github.com/shirou/gopsutil/v4 v4.25.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
-	github.com/yusufpapurcu/wmi v1.2.3 // indirect
+	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0 // indirect
@@ -87,7 +89,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.24.0 // indirect
 	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/mod v0.17.0 // indirect
-	golang.org/x/net v0.26.0 // indirect
+	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/oauth2 v0.18.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect

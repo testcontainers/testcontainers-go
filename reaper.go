@@ -22,6 +22,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -69,7 +70,7 @@ type ReaperProvider interface {
 //
 // The caller must call Connect at least once on the returned Reaper and use the returned
 // result otherwise the reaper will be kept open until the process exits.
-func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, reaperImageName string) (*Reaper, error) {
+func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, _ string) (*Reaper, error) {
 	reaper, err := spawner.reaper(ctx, sessionID, provider)
 	if err != nil {
 		return nil, fmt.Errorf("reaper: %w", err)
@@ -92,7 +93,7 @@ type reaperSpawner struct {
 	mtx      sync.Mutex
 }
 
-// port returns the port that a new reaper should listens on.
+// port returns the port that a new reaper should listen on.
 func (r *reaperSpawner) port() nat.Port {
 	if port := os.Getenv("RYUK_PORT"); port != "" {
 		natPort, err := nat.NewPort("tcp", port)
@@ -345,7 +346,7 @@ func (r *reaperSpawner) reuseOrCreate(ctx context.Context, sessionID string, pro
 
 // fromContainer constructs a Reaper from an already running reaper DockerContainer.
 func (r *reaperSpawner) fromContainer(ctx context.Context, sessionID string, provider ReaperProvider, dockerContainer *DockerContainer) (*Reaper, error) {
-	Logger.Printf("⏳ Waiting for Reaper %q to be ready", dockerContainer.ID[:8])
+	log.Printf("⏳ Waiting for Reaper %q to be ready", dockerContainer.ID[:8])
 
 	// Reusing an existing container so we determine the port from the container's exposed ports.
 	if err := wait.ForExposedPort().
@@ -360,7 +361,7 @@ func (r *reaperSpawner) fromContainer(ctx context.Context, sessionID string, pro
 		return nil, fmt.Errorf("port endpoint: %w", err)
 	}
 
-	Logger.Printf("🔥 Reaper obtained from Docker for this test session %s", dockerContainer.ID[:8])
+	log.Printf("🔥 Reaper obtained from Docker for this test session %s", dockerContainer.ID[:8])
 
 	return &Reaper{
 		Provider:  provider,
@@ -533,7 +534,7 @@ func (r *Reaper) connect(ctx context.Context) (chan bool, error) {
 	go func() {
 		defer conn.Close()
 		if err := r.handshake(conn); err != nil {
-			Logger.Printf("Reaper handshake failed: %s", err)
+			log.Printf("Reaper handshake failed: %s", err)
 		}
 		<-terminationSignal
 	}()

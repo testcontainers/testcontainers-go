@@ -4,7 +4,7 @@
 
 There are many ways to contribute, from writing tutorials or blog posts, improving the documentation, submitting bug reports and feature requests, or writing code for the core library or for a technology module.
 
-In any case, if you like the project, please star the project on [Github](https://github.com/testcontainers/testcontainers-go/stargazers) and help spread the word :)
+In any case, if you like the project, please star the project on [GitHub](https://github.com/testcontainers/testcontainers-go/stargazers) and help spread the word :)
 Also join our [Slack workspace](http://slack.testcontainers.org) to get help, share your ideas, and chat with the community.
 
 ## Questions
@@ -49,7 +49,7 @@ Please just be sure to:
     * For linting just the modulegen: `make -C modulegen lint`
 * verify all tests are passing. Build and test the project with `make test-all` to do this.
     * For a given module or example, go to the module or example directory and run `make test`.
-    * If you find an `ld warning` message on MacOS, you can ignore it. It is a indeed a warning: https://github.com/golang/go/issues/61229
+    * If you find an `ld warning` message on MacOS, you can ignore it. It is indeed a warning: https://github.com/golang/go/issues/61229
 > === Errors
 > ld: warning: '/private/var/folders/3y/8hbf585d4yl6f8j5yzqx6wz80000gn/T/go-link-2319589277/000018.o' has malformed LC_DYSYMTAB, expected 98 undefined symbols to start at index 1626, found 95 undefined symbols starting at index 1626
 
@@ -102,4 +102,4 @@ make clean-docs
 Note that documentation for pull requests will automatically be published by Netlify as 'deploy previews'.
 These deployment previews can be accessed via the `deploy/netlify` check that appears for each pull request.
 
-Please check the Github comment Netlify posts on the PR for the URL to the deployment preview.
+Please check the GitHub comment Netlify posts on the PR for the URL to the deployment preview.

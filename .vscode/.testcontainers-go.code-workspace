@@ -158,6 +158,10 @@
             "path": "../modules/opensearch"
         },
         {
+            "name": "module / pinecone",
+            "path": "../modules/pinecone"
+        },
+        {
             "name": "module / postgres",
             "path": "../modules/postgres"
         },

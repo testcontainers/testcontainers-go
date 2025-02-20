@@ -19,11 +19,11 @@ go get github.com/testcontainers/testcontainers-go/modules/ollama
 The module allows you to run the Ollama container or the local Ollama binary.
 
 <!--codeinclude-->
-[Creating a Ollama container](../../modules/ollama/examples_test.go) inside_block:runOllamaContainer
+[Creating an Ollama container](../../modules/ollama/examples_test.go) inside_block:runOllamaContainer
 [Running the local Ollama binary](../../modules/ollama/examples_test.go) inside_block:localOllama
 <!--/codeinclude-->
 
-If the local Ollama binary fails to execute, the module will fallback to the container version of Ollama.
+If the local Ollama binary fails to execute, the module will fall back to the container version of Ollama.
 
 ## Module Reference
 
@@ -51,7 +51,7 @@ When starting the Ollama container, you can pass options in a variadic way to co
 #### Image
 
 If you need to set a different Ollama Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "ollama/ollama:0.1.25")`.
+E.g. `Run(context.Background(), "ollama/ollama:0.5.7")`.
 
 #### Use Local
 
@@ -65,7 +65,7 @@ E.g. `Run(context.Background(), "ollama/ollama:0.1.25")`.
 If you need to run the local Ollama binary, you can set the `UseLocal` option in the `Run` function.
 This option accepts a list of environment variables as a string, that will be applied to the Ollama binary when executing commands.
 
-E.g. `Run(context.Background(), "ollama/ollama:0.1.25", WithUseLocal("OLLAMA_DEBUG=true"))`.
+E.g. `Run(context.Background(), "ollama/ollama:0.5.7", WithUseLocal("OLLAMA_DEBUG=true"))`.
 
 All the container methods are available when using the local Ollama binary, but will be executed locally instead of inside the container.
 Please consider the following differences when using the local Ollama binary:

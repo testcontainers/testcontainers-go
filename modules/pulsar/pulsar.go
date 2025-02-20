@@ -16,7 +16,7 @@ const (
 	defaultPulsarPort                      = "6650/tcp"
 	defaultPulsarAdminPort                 = "8080/tcp"
 	defaultPulsarCmd                       = "/pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone"
-	detaultPulsarCmdWithoutFunctionsWorker = "--no-functions-worker -nss"
+	defaultPulsarCmdWithoutFunctionsWorker = "--no-functions-worker -nss"
 	transactionTopicEndpoint               = "/admin/v2/persistent/pulsar/system/transaction_coordinator_assign/partitions"
 )
 
@@ -89,7 +89,7 @@ func WithFunctionsWorker() testcontainers.CustomizeRequestOption {
 // WithLogConsumers allows to add log consumers to the container.
 // They will be automatically started and they will follow the container logs,
 // but it's a responsibility of the caller to stop them calling StopLogProducer
-func (c *Container) WithLogConsumers(ctx context.Context, consumer ...testcontainers.LogConsumer) {
+func (c *Container) WithLogConsumers(ctx context.Context, _ ...testcontainers.LogConsumer) {
 	if len(c.LogConsumers) > 0 {
 		// not handling the error because it will return an error if and only if the producer is already started
 		_ = c.StartLogProducer(ctx)
@@ -150,7 +150,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Env:          map[string]string{},
 		ExposedPorts: []string{defaultPulsarPort, defaultPulsarAdminPort},
 		WaitingFor:   defaultWaitStrategies,
-		Cmd:          []string{"/bin/bash", "-c", strings.Join([]string{defaultPulsarCmd, detaultPulsarCmdWithoutFunctionsWorker}, " ")},
+		Cmd:          []string{"/bin/bash", "-c", strings.Join([]string{defaultPulsarCmd, defaultPulsarCmdWithoutFunctionsWorker}, " ")},
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{

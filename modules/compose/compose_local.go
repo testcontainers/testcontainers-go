@@ -17,6 +17,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -54,7 +55,7 @@ type LocalDockerCompose struct {
 	Identifier           string
 	Cmd                  []string
 	Env                  map[string]string
-	Services             map[string]interface{}
+	Services             map[string]any
 	waitStrategySupplied bool
 	WaitStrategyMap      map[waitService]wait.Strategy
 }
@@ -63,7 +64,7 @@ type (
 	// Deprecated: it will be removed in the next major release
 	// LocalDockerComposeOptions defines options applicable to LocalDockerCompose
 	LocalDockerComposeOptions struct {
-		Logger testcontainers.Logging
+		Logger log.Logger
 	}
 
 	// Deprecated: it will be removed in the next major release
@@ -79,13 +80,13 @@ type (
 )
 
 type ComposeLoggerOption struct {
-	logger testcontainers.Logging
+	logger log.Logger
 }
 
 // WithLogger is a generic option that implements LocalDockerComposeOption
 // It replaces the global Logging implementation with a user defined one e.g. to aggregate logs from testcontainers
 // with the logs of specific test case
-func WithLogger(logger testcontainers.Logging) ComposeLoggerOption {
+func WithLogger(logger log.Logger) ComposeLoggerOption {
 	return ComposeLoggerOption{
 		logger: logger,
 	}
@@ -254,7 +255,7 @@ func (dc *LocalDockerCompose) determineVersion() error {
 // references to all services in them
 func (dc *LocalDockerCompose) validate() error {
 	type compose struct {
-		Services map[string]interface{}
+		Services map[string]any
 	}
 
 	for _, abs := range dc.absComposeFilePaths {

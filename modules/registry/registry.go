@@ -89,7 +89,7 @@ func localAddress(ctx context.Context) (string, error) {
 }
 
 // getEndpointWithAuth returns the HTTP endpoint of the Registry container, along with the image auth
-// for the image referece.
+// for the image reference.
 // E.g. imageRef = "localhost:5000/alpine:latest"
 func getEndpointWithAuth(ctx context.Context, imageRef string) (string, string, registry.AuthConfig, error) {
 	registry, imageAuth, err := testcontainers.DockerImageAuth(ctx, imageRef)
@@ -194,9 +194,8 @@ func (c *RegistryContainer) PushImage(ctx context.Context, ref string) error {
 	encodedJSON, err := json.Marshal(imageAuth)
 	if err != nil {
 		return fmt.Errorf("failed to encode image auth: %w", err)
-	} else {
-		pushOpts.RegistryAuth = base64.URLEncoding.EncodeToString(encodedJSON)
 	}
+	pushOpts.RegistryAuth = base64.URLEncoding.EncodeToString(encodedJSON)
 
 	_, err = dockerCli.ImagePush(ctx, ref, pushOpts)
 	if err != nil {

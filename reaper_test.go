@@ -42,7 +42,7 @@ func newMockReaperProvider(cfg config.Config) *mockReaperProvider {
 
 var errExpected = errors.New("expected")
 
-func (m *mockReaperProvider) RunContainer(ctx context.Context, req ContainerRequest) (Container, error) {
+func (m *mockReaperProvider) RunContainer(_ context.Context, req ContainerRequest) (Container, error) {
 	m.req = req
 
 	m.hostConfig = &container.HostConfig{}
@@ -53,8 +53,8 @@ func (m *mockReaperProvider) RunContainer(ctx context.Context, req ContainerRequ
 	}
 	req.HostConfigModifier(m.hostConfig)
 
-	if req.EnpointSettingsModifier != nil {
-		req.EnpointSettingsModifier(m.endpointSettings)
+	if req.EndpointSettingsModifier != nil {
+		req.EndpointSettingsModifier(m.endpointSettings)
 	}
 
 	// we're only interested in the request, so instead of mocking the Docker client

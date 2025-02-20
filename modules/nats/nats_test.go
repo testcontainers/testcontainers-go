@@ -28,8 +28,8 @@ func TestNATS(t *testing.T) {
 	// }
 	require.NoError(t, err)
 
-	mustUri := ctr.MustConnectionString(ctx)
-	require.Equal(t, mustUri, uri)
+	mustURI := ctr.MustConnectionString(ctx)
+	require.Equal(t, mustURI, uri)
 
 	// perform assertions
 	nc, err := nats.Connect(uri)

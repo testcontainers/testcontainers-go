@@ -95,7 +95,7 @@ func (c *CockroachDBContainer) MustConnectionString(ctx context.Context) string 
 }
 
 // ConnectionString returns a connection string to open a new connection to CockroachDB.
-// The returned string is suitable for use by [sql.Open] but is not be compatible with
+// The returned string is suitable for use by [sql.Open] but is not compatible with
 // [pgx.ParseConfig], so if you want to call [pgx.ConnectConfig] use the
 // [CockroachDBContainer.ConnectionConfig] method instead.
 func (c *CockroachDBContainer) ConnectionString(ctx context.Context) (string, error) {
@@ -144,7 +144,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run start an instance of the CockroachDB container type using the given image and options.
 //
-// By default, the container will configured with:
+// By default, the container will be configured with:
 //   - Cluster: Single node
 //   - Storage: 100% in-memory
 //   - User: root

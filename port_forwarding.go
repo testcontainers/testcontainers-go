@@ -123,7 +123,7 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, ports ...int) (
 	}
 
 	if req.HostConfigModifier == nil {
-		req.HostConfigModifier = func(hostConfig *container.HostConfig) {}
+		req.HostConfigModifier = func(_ *container.HostConfig) {}
 	}
 
 	// do not override the original HostConfigModifier
@@ -168,7 +168,7 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, ports ...int) (
 	// for each exposed port from the host.
 	sshdConnectHook = ContainerLifecycleHooks{
 		PostReadies: []ContainerHook{
-			func(ctx context.Context, c Container) error {
+			func(ctx context.Context, _ Container) error {
 				return sshdContainer.exposeHostPort(ctx, req.HostAccessPorts...)
 			},
 		},
@@ -252,7 +252,7 @@ func (sshdC *sshdContainer) closePorts() error {
 	return errors.Join(errs...)
 }
 
-// clientConfig sets up the the SSHD client configuration.
+// clientConfig sets up the SSHD client configuration.
 func (sshdC *sshdContainer) clientConfig(ctx context.Context) error {
 	mappedPort, err := sshdC.MappedPort(ctx, sshPort)
 	if err != nil {
@@ -421,7 +421,7 @@ func (pf *portForwarder) tunnel(remote net.Conn) {
 	}()
 
 	// Wait for the context to be done before returning which triggers
-	// both connections to close. This is done to to prevent the copies
+	// both connections to close. This is done to prevent the copies
 	// blocking forever on unused connections.
 	<-ctx.Done()
 }

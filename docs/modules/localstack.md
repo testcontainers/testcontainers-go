@@ -71,7 +71,7 @@ In the above example you can check how it's possible to copy files that are need
 
 Some Localstack APIs, such as SQS, require the container to be aware of the hostname that it is accessible on - for example, for construction of queue URLs in responses.
 
-Testcontainers will inform Localstack of the best hostname automatically, using the an environment variable for that:
+Testcontainers will inform Localstack of the best hostname automatically, using an environment variable for that:
 
 * for Localstack versions 0.10.0 and above, the `HOSTNAME_EXTERNAL` environment variable will be set to hostname in the container request.
 * for Localstack versions 2.0.0 and above, the `LOCALSTACK_HOST` environment variable will be set to the hostname in the container request.

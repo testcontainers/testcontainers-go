@@ -213,7 +213,7 @@ func validateKRaftVersion(fqName string) error {
 
 	if !strings.EqualFold(image, "confluentinc/confluent-local") {
 		// do not validate if the image is not the official one.
-		// not raising an error here, letting the image to start and
+		// not raising an error here, letting the image start and
 		// eventually evaluate an error if it exists.
 		return nil
 	}

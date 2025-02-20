@@ -24,6 +24,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -194,7 +195,7 @@ type dockerCompose struct {
 	temporaryConfigs map[string]bool
 
 	// used to set logger in DockerContainer
-	logger testcontainers.Logging
+	logger log.Logger
 
 	// wait strategies that are applied per service when starting the stack
 	// only one strategy can be added to a service, to use multiple use wait.ForAll(...)
@@ -592,9 +593,8 @@ func withEnv(env map[string]string) func(*cli.ProjectOptions) error {
 		for k, v := range env {
 			if _, ok := options.Environment[k]; ok {
 				return fmt.Errorf("environment with key %s already set", k)
-			} else {
-				options.Environment[k] = v
 			}
+			options.Environment[k] = v
 		}
 
 		return nil

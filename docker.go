@@ -36,6 +36,7 @@ import (
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -89,14 +90,14 @@ type DockerContainer struct {
 	logProductionCtx    context.Context
 
 	logProductionTimeout *time.Duration
-	logger               Logging
+	logger               log.Logger
 	lifecycleHooks       []ContainerLifecycleHooks
 
 	healthStatus string // container health status, will default to healthStatusNone if no healthcheck is present
 }
 
 // SetLogger sets the logger for the container
-func (c *DockerContainer) SetLogger(logger Logging) {
+func (c *DockerContainer) SetLogger(logger log.Logger) {
 	c.logger = logger
 }
 
@@ -618,7 +619,7 @@ func (c *DockerContainer) CopyDirToContainer(ctx context.Context, hostDirPath st
 	}
 
 	if !dir {
-		// it's not a dir: let the consumer to handle an error
+		// it's not a dir: let the consumer handle the error
 		return fmt.Errorf("path %s is not a directory", hostDirPath)
 	}
 
@@ -817,7 +818,7 @@ func (c *DockerContainer) copyLogsTimeout(stdout, stderr io.Writer, options *con
 		// Timeout or client connection closed, retry.
 	default:
 		// Unexpected error, retry.
-		Logger.Printf("Unexpected error reading logs: %v", err)
+		c.logger.Printf("Unexpected error reading logs: %v", err)
 	}
 
 	// Retry from the last log received.
@@ -998,7 +999,7 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 			return resp, nil
 		},
 		backoff.WithContext(backoff.NewExponentialBackOff(), ctx),
-		func(err error, duration time.Duration) {
+		func(err error, _ time.Duration) {
 			p.Logger.Printf("Failed to build image: %s, will retry", err)
 		},
 	)
@@ -1120,11 +1121,10 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		} else {
 			img, _, err := p.client.ImageInspectWithRaw(ctx, imageName)
 			if err != nil {
-				if client.IsErrNotFound(err) {
-					shouldPullImage = true
-				} else {
+				if !client.IsErrNotFound(err) {
 					return nil, err
 				}
+				shouldPullImage = true
 			}
 			if platform != nil && (img.Architecture != platform.Architecture || img.Os != platform.OS) {
 				shouldPullImage = true
@@ -1415,7 +1415,7 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 			return nil
 		},
 		backoff.WithContext(backoff.NewExponentialBackOff(), ctx),
-		func(err error, duration time.Duration) {
+		func(err error, _ time.Duration) {
 			p.Logger.Printf("Failed to pull image: %s, will retry", err)
 		},
 	)

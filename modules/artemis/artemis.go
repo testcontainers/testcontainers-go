@@ -66,7 +66,7 @@ func WithAnonymousLogin() testcontainers.CustomizeRequestOption {
 	}
 }
 
-// Additional arguments sent to the `artemis create“ command.
+// Additional arguments sent to the `artemis create` command.
 // The default is `--http-host 0.0.0.0 --relax-jolokia`.
 // Setting this value will override the default.
 // See the documentation on `artemis create` for available options.

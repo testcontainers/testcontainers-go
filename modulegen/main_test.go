@@ -247,13 +247,10 @@ func TestGenerate(t *testing.T) {
 	tmpCtx := context.New(t.TempDir())
 	examplesTmp := filepath.Join(tmpCtx.RootDir, "examples")
 	examplesDocTmp := filepath.Join(tmpCtx.DocsDir(), "examples")
-	githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
 
 	err := os.MkdirAll(examplesTmp, 0o777)
 	require.NoError(t, err)
 	err = os.MkdirAll(examplesDocTmp, 0o777)
-	require.NoError(t, err)
-	err = os.MkdirAll(githubWorkflowsTmp, 0o777)
 	require.NoError(t, err)
 
 	err = copyInitialMkdocsConfig(t, tmpCtx)
@@ -283,12 +280,7 @@ func TestGenerate(t *testing.T) {
 	_, err = os.Stat(moduleDocFile)
 	require.NoError(t, err) // error nil implies the file exist
 
-	mainWorkflowFile := filepath.Join(githubWorkflowsTmp, "ci.yml")
-	_, err = os.Stat(mainWorkflowFile)
-	require.NoError(t, err) // error nil implies the file exist
-
 	assertModuleDocContent(t, module, moduleDocFile)
-	assertModuleGithubWorkflowContent(t, mainWorkflowFile)
 
 	generatedTemplatesDir := filepath.Join(examplesTmp, moduleNameLower)
 	// do not generate examples_test.go for examples
@@ -296,20 +288,17 @@ func TestGenerate(t *testing.T) {
 	assertModuleContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+".go"))
 	assertGoModContent(t, module, originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, module, filepath.Join(generatedTemplatesDir, "Makefile"))
-	assertMkdocsNavItems(t, module, originalConfig, tmpCtx)
+	assertMkdocsNavItems(t, tmpCtx, module, originalConfig)
 }
 
 func TestGenerateModule(t *testing.T) {
 	tmpCtx := context.New(t.TempDir())
 	modulesTmp := filepath.Join(tmpCtx.RootDir, "modules")
 	modulesDocTmp := filepath.Join(tmpCtx.DocsDir(), "modules")
-	githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
 
 	err := os.MkdirAll(modulesTmp, 0o777)
 	require.NoError(t, err)
 	err = os.MkdirAll(modulesDocTmp, 0o777)
-	require.NoError(t, err)
-	err = os.MkdirAll(githubWorkflowsTmp, 0o777)
 	require.NoError(t, err)
 
 	err = copyInitialMkdocsConfig(t, tmpCtx)
@@ -339,12 +328,7 @@ func TestGenerateModule(t *testing.T) {
 	_, err = os.Stat(moduleDocFile)
 	require.NoError(t, err) // error nil implies the file exist
 
-	mainWorkflowFile := filepath.Join(githubWorkflowsTmp, "ci.yml")
-	_, err = os.Stat(mainWorkflowFile)
-	require.NoError(t, err) // error nil implies the file exist
-
 	assertModuleDocContent(t, module, moduleDocFile)
-	assertModuleGithubWorkflowContent(t, mainWorkflowFile)
 
 	generatedTemplatesDir := filepath.Join(modulesTmp, moduleNameLower)
 	assertExamplesTestContent(t, module, filepath.Join(generatedTemplatesDir, "examples_test.go"))
@@ -352,7 +336,7 @@ func TestGenerateModule(t *testing.T) {
 	assertModuleContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+".go"))
 	assertGoModContent(t, module, originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, module, filepath.Join(generatedTemplatesDir, "Makefile"))
-	assertMkdocsNavItems(t, module, originalConfig, tmpCtx)
+	assertMkdocsNavItems(t, tmpCtx, module, originalConfig)
 }
 
 // assert content module file in the docs
@@ -439,24 +423,6 @@ func assertModuleContent(t *testing.T, module context.TestcontainersModule, exam
 	require.Equal(t, "\treturn c, nil", data[41])
 }
 
-// assert content GitHub workflow for the module
-func assertModuleGithubWorkflowContent(t *testing.T, moduleWorkflowFile string) {
-	t.Helper()
-	content, err := os.ReadFile(moduleWorkflowFile)
-	require.NoError(t, err)
-
-	data := sanitiseContent(content)
-	ctx := getTestRootContext(t)
-
-	modulesList, err := ctx.GetModules()
-	require.NoError(t, err)
-	assert.Equal(t, "        module: ["+strings.Join(modulesList, ", ")+"]", data[96])
-
-	examplesList, err := ctx.GetExamples()
-	require.NoError(t, err)
-	assert.Equal(t, "        module: ["+strings.Join(examplesList, ", ")+"]", data[111])
-}
-
 // assert content go.mod
 func assertGoModContent(t *testing.T, module context.TestcontainersModule, tcVersion string, goModFile string) {
 	t.Helper()
@@ -480,9 +446,9 @@ func assertMakefileContent(t *testing.T, module context.TestcontainersModule, ma
 }
 
 // assert content in the nav items from mkdocs.yml
-func assertMkdocsNavItems(t *testing.T, module context.TestcontainersModule, originalConfig *mkdocs.Config, tmpCtx context.Context) {
+func assertMkdocsNavItems(t *testing.T, ctx context.Context, module context.TestcontainersModule, originalConfig *mkdocs.Config) {
 	t.Helper()
-	config, err := mkdocs.ReadConfig(tmpCtx.MkdocsConfigFile())
+	config, err := mkdocs.ReadConfig(ctx.MkdocsConfigFile())
 	require.NoError(t, err)
 
 	parentDir := module.ParentDir()
