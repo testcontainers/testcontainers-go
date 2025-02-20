@@ -135,9 +135,8 @@ func TestScyllaAlternator(t *testing.T) {
 		require.NoError(t, err)
 		testcontainers.CleanupContainer(t, ctr)
 
-		client, err := getDynamoAlternatorClient(t, ctr, alternatorPort)
+		_, err = getDynamoAlternatorClient(t, ctr, alternatorPort)
 		require.Error(t, err)
-		requireCreateTable(t, client)
 	})
 }
 
