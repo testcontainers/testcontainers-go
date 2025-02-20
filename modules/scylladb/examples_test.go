@@ -48,7 +48,10 @@ func ExampleRun_withCustomCommands() {
 		return
 	}
 
-	runGoCQLExampleTest(connectionHost)
+	if err := runGoCQLExampleTest(connectionHost); err != nil {
+		log.Printf("failed to run Go CQL example test: %s", err)
+		return
+	}
 
 	// Output:
 	// true
@@ -126,7 +129,10 @@ func ExampleRun_withShardAwareness() {
 		return
 	}
 
-	runGoCQLExampleTest(connectionHost)
+	if err := runGoCQLExampleTest(connectionHost); err != nil {
+		log.Printf("failed to run Go CQL example test: %s", err)
+		return
+	}
 
 	// Output:
 	// true
@@ -196,7 +202,10 @@ enable_tablets: true
 		return
 	}
 
-	runGoCQLExampleTest(connectionHost)
+	if err := runGoCQLExampleTest(connectionHost); err != nil {
+		log.Printf("failed to run Go CQL example test: %s", err)
+		return
+	}
 
 	// Output:
 	// true
@@ -236,23 +245,29 @@ func ExampleRun() {
 		log.Printf("failed to get connection host: %s", err)
 		return
 	}
-	runGoCQLExampleTest(connectionHost)
+
+	if err := runGoCQLExampleTest(connectionHost); err != nil {
+		log.Printf("failed to run Go CQL example test: %s", err)
+		return
+	}
 
 	// Output:
 	// true
 }
 
-func runGoCQLExampleTest(connectionHost string) {
+func runGoCQLExampleTest(connectionHost string) error {
 	cluster := gocql.NewCluster(connectionHost)
 	session, err := cluster.CreateSession()
 	if err != nil {
-		log.Printf("failed to create session: %s", err)
+		return fmt.Errorf("create cluster session: %w", err)
 	}
 	defer session.Close()
 
 	var driver string
 	err = session.Query("SELECT driver_name FROM system.clients").Scan(&driver)
 	if err != nil {
-		log.Printf("failed to query: %s", err)
+		return fmt.Errorf("session query: %w", err)
 	}
+
+	return nil
 }
