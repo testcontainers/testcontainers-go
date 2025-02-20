@@ -161,7 +161,8 @@ commitlog_total_space_in_mb: -1
 murmur3_partitioner_ignore_msb_bits: 12
 strict_is_not_null_in_views: true
 maintenance_socket: ignore
-enable_tablets: true`
+enable_tablets: true
+`
 
 	scyllaContainer, err := scylladb.Run(ctx,
 		"scylladb/scylla:6.2",
