@@ -122,8 +122,7 @@ The ScyllaDB container exposes the following methods:
 
 This method returns the host and port of the ScyllaDB container, depending on the feature you want.
 If you just want to test it with a single node and a single core, you can use port `9042`. However, if you're planning
-to
-more than one core, you should use the **shard-awareness** port `19042`. If you're planning to use the **Alternator**?
+to use more than one core, you should use the **shard-awareness** port `19042`. If you're planning to use the **Alternator**
 API, you should use the port you select in the `WithAlternator` function.
 
 <!--codeinclude-->
