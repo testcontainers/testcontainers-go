@@ -23,7 +23,7 @@ type Container struct {
 	testcontainers.Container
 }
 
-// WithConfig sets the YAML config file to be used for the ScyllaDB container
+// WithConfig sets the YAML config file as an [io.Reader] to be used for the ScyllaDB container
 func WithConfig(r io.Reader) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		cf := testcontainers.ContainerFile{
