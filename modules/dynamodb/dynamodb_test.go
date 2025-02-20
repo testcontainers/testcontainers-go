@@ -70,8 +70,7 @@ func TestRun_withoutEndpointResolver(t *testing.T) {
 
 	cli := dynamodb.New(dynamodb.Options{})
 
-	err = createTable(cli)
-	require.Error(t, err)
+	requireCreateTable(t, cli)
 }
 
 func TestRun_withSharedDB(t *testing.T) {
@@ -156,7 +155,9 @@ func TestRun_shouldStartWithSharedDBEnabledAndTelemetryDisabled(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func createTable(client *dynamodb.Client) error {
+func requireCreateTable(t *testing.T, client *dynamodb.Client) {
+	t.Helper()
+
 	_, err := client.CreateTable(context.Background(), &dynamodb.CreateTableInput{
 		TableName: aws.String(tableName),
 		KeySchema: []types.KeySchemaElement{
@@ -173,11 +174,7 @@ func createTable(client *dynamodb.Client) error {
 		},
 		BillingMode: types.BillingModePayPerRequest,
 	})
-	if err != nil {
-		return fmt.Errorf("create table: %w", err)
-	}
-
-	return nil
+	require.NoError(t, err)
 }
 
 func addDataToTable(t *testing.T, client *dynamodb.Client, val string) {
@@ -249,8 +246,7 @@ func getDynamoDBClient(t *testing.T, c *tcdynamodb.DynamoDBContainer) *dynamodb.
 func requireTableExists(t *testing.T, cli *dynamodb.Client, tableName string) {
 	t.Helper()
 
-	err := createTable(cli)
-	require.NoError(t, err)
+	requireCreateTable(t, cli)
 
 	result, err := cli.ListTables(context.Background(), nil)
 	require.NoError(t, err, "dynamodb list tables operation failed")

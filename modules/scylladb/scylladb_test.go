@@ -123,8 +123,7 @@ func TestScyllaAlternator(t *testing.T) {
 
 		client, err := getDynamoAlternatorClient(t, ctr, alternatorPort)
 		require.NoError(t, err)
-		err = createTable(client)
-		require.NoError(t, err)
+		requireCreateTable(t, client)
 	})
 
 	t.Run("test-without-alternator", func(t *testing.T) {
@@ -136,8 +135,7 @@ func TestScyllaAlternator(t *testing.T) {
 
 		client, err := getDynamoAlternatorClient(t, ctr, alternatorPort)
 		require.Error(t, err)
-		err = createTable(client)
-		require.Error(t, err)
+		requireCreateTable(t, client)
 	})
 }
 
@@ -173,7 +171,9 @@ func getDynamoAlternatorClient(t *testing.T, c *scylladb.Container, port uint16)
 	return dynamodb.NewFromConfig(cfg, dynamodb.WithEndpointResolverV2(&scyllaAlternatorResolver{HostPort: hostPort})), errors.Join(errs...)
 }
 
-func createTable(client *dynamodb.Client) error {
+func requireCreateTable(t *testing.T, client *dynamodb.Client) {
+	t.Helper()
+
 	_, err := client.CreateTable(context.Background(), &dynamodb.CreateTableInput{
 		TableName: aws.String("demo_table"),
 		KeySchema: []types.KeySchemaElement{
@@ -190,9 +190,5 @@ func createTable(client *dynamodb.Client) error {
 		},
 		BillingMode: types.BillingModePayPerRequest,
 	})
-	if err != nil {
-		return fmt.Errorf("create table: %w", err)
-	}
-
-	return nil
+	require.NoError(t, err)
 }
