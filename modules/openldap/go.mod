@@ -1,6 +1,8 @@
 module github.com/testcontainers/testcontainers-go/modules/openldap
 
-go 1.22
+go 1.23.0
+
+toolchain go1.23.6
 
 require (
 	github.com/go-ldap/ldap/v3 v3.4.6
