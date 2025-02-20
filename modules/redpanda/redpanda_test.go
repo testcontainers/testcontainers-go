@@ -110,7 +110,7 @@ func TestRedpandaWithAuthentication(t *testing.T) {
 	}
 
 	// Test successful authentication & authorization with all created superusers
-	t.Run("happy path", func(t *testing.T) {
+	t.Run("happy-path", func(t *testing.T) {
 		for user, password := range serviceAccounts {
 			kafkaCl, err := kgo.NewClient(
 				kgo.SeedBrokers(seedBroker),
@@ -147,7 +147,7 @@ func TestRedpandaWithAuthentication(t *testing.T) {
 	})
 
 	// Test failed authentication
-	t.Run("invalid user", func(t *testing.T) {
+	t.Run("invalid-user", func(t *testing.T) {
 		kafkaCl, err := kgo.NewClient(
 			kgo.SeedBrokers(seedBroker),
 			kgo.SASL(scram.Auth{
@@ -164,8 +164,8 @@ func TestRedpandaWithAuthentication(t *testing.T) {
 	})
 
 	// Test Schema Registry API
-	t.Run("schema registry", func(t *testing.T) {
-		t.Run("failed authentication", func(t *testing.T) {
+	t.Run("schema-registry", func(t *testing.T) {
+		t.Run("failed-authentication", func(t *testing.T) {
 			// Failed authentication
 			req, err := http.NewRequestWithContext(ctx, http.MethodGet, schemaRegistryURL+"/subjects", nil)
 			require.NoError(t, err)
@@ -175,7 +175,7 @@ func TestRedpandaWithAuthentication(t *testing.T) {
 			resp.Body.Close()
 		})
 
-		t.Run("successful authentication", func(t *testing.T) {
+		t.Run("successful-authentication", func(t *testing.T) {
 			for user, password := range serviceAccounts {
 				req, err := http.NewRequestWithContext(ctx, http.MethodGet, schemaRegistryURL+"/subjects", nil)
 				require.NoError(t, err)
@@ -220,7 +220,7 @@ func TestRedpandaWithBootstrapUserAuthentication(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test successful authentication & authorization with all created superusers
-	t.Run("happy path", func(t *testing.T) {
+	t.Run("happy-path", func(t *testing.T) {
 		for user, password := range serviceAccounts {
 			kafkaCl, err := kgo.NewClient(
 				kgo.SeedBrokers(seedBroker),
