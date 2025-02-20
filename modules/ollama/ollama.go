@@ -15,7 +15,7 @@ import (
 )
 
 // Deprecated: it will be removed in the next major version.
-const DefaultOllamaImage = "ollama/ollama:0.1.25"
+const DefaultOllamaImage = "ollama/ollama:0.5.7"
 
 // OllamaContainer represents the Ollama container type used in the module
 type OllamaContainer struct {
@@ -79,7 +79,7 @@ func (c *OllamaContainer) Commit(ctx context.Context, targetImage string) error 
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Ollama container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*OllamaContainer, error) {
-	return Run(ctx, "ollama/ollama:0.1.25", opts...)
+	return Run(ctx, "ollama/ollama:0.5.7", opts...)
 }
 
 // Run creates an instance of the Ollama container type
