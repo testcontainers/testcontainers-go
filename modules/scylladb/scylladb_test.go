@@ -1,11 +1,12 @@
 package scylladb_test
 
 import (
+	"bytes"
 	"context"
+	_ "embed"
 	"errors"
 	"fmt"
 	"net/url"
-	"path/filepath"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -20,6 +21,9 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/scylladb"
 )
+
+//go:embed testdata/scylla.yaml
+var scyllaYaml []byte
 
 func TestScyllaDB(t *testing.T) {
 	ctx := context.Background()
@@ -60,12 +64,12 @@ func TestScyllaDB(t *testing.T) {
 	})
 }
 
-func TestScyllaWithConfigFile(t *testing.T) {
+func TestScyllaWithConfig(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := scylladb.Run(ctx,
 		"scylladb/scylla:6.2",
-		scylladb.WithConfigFile(filepath.Join("testdata", "scylla.yaml")),
+		scylladb.WithConfig(bytes.NewReader(scyllaYaml)),
 		scylladb.WithShardAwareness(),
 	)
 	require.NoError(t, err)

@@ -66,10 +66,10 @@ scylladb.Run(context.Background(), "scylladb/scylla:5.6")
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 In the case you have a custom config file for ScyllaDB, it's possible to copy that file into the container before it's
-started, using the `WithConfigFile(cfgPath string)` function.
+started, using the `WithConfig(r io.Reader)` function.
 
 <!--codeinclude-->
-[With Config YAML](../../modules/scylladb/examples_test.go) inside_block:runScyllaDBContainerWithConfigFile
+[With Config YAML](../../modules/scylladb/examples_test.go) inside_block:runScyllaDBContainerWithConfig
 <!--/codeinclude-->
 !!!warning
     You should provide a valid ScyllaDB configuration file when using the function, otherwise the container will fail to

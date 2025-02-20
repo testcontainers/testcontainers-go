@@ -23,13 +23,11 @@ type Container struct {
 	testcontainers.Container
 }
 
-// WithConfigFile sets the YAML config file to be used for the cassandra container
-// It will also set the "configFile" parameter to the path of the config file
-// as a command line argument to the container.
-func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
+// WithConfig sets the YAML config file to be used for the ScyllaDB container
+func WithConfig(r io.Reader) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		cf := testcontainers.ContainerFile{
-			HostFilePath:      configFile,
+			Reader:            r,
 			ContainerFilePath: "/etc/scylla/scylla.yaml",
 			FileMode:          0o644,
 		}
