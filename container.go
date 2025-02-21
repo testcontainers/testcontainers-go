@@ -19,9 +19,9 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/go-connections/nat"
 	"github.com/google/uuid"
-	"github.com/moby/patternmatcher/ignorefile"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/image"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -240,7 +240,7 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 	}
 	c.Context = abs
 
-	dockerIgnoreExists, excluded, err := parseDockerIgnore(abs)
+	dockerIgnoreExists, excluded, err := image.ParseDockerIgnore(abs)
 	if err != nil {
 		return nil, err
 	}
@@ -261,26 +261,6 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 	}
 
 	return buildContext, nil
-}
-
-// parseDockerIgnore returns if the file exists, the excluded files and an error if any
-func parseDockerIgnore(targetDir string) (bool, []string, error) {
-	// based on https://github.com/docker/cli/blob/master/cli/command/image/build/dockerignore.go#L14
-	fileLocation := filepath.Join(targetDir, ".dockerignore")
-	var excluded []string
-	exists := false
-	if f, openErr := os.Open(fileLocation); openErr == nil {
-		defer f.Close()
-
-		exists = true
-
-		var err error
-		excluded, err = ignorefile.ReadAll(f)
-		if err != nil {
-			return true, excluded, fmt.Errorf("error reading .dockerignore: %w", err)
-		}
-	}
-	return exists, excluded, nil
 }
 
 // GetBuildArgs returns the env args to be used when creating from Dockerfile
