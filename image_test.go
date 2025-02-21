@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go/image"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
@@ -29,7 +30,7 @@ func TestImageList(t *testing.T) {
 	CleanupContainer(t, ctr)
 	require.NoErrorf(t, err, "creating test container")
 
-	images, err := provider.ListImages(context.Background())
+	images, err := image.List(context.Background())
 	require.NoErrorf(t, err, "listing images")
 
 	require.NotEmptyf(t, images, "no images retrieved")

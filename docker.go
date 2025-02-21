@@ -34,6 +34,7 @@ import (
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
+	tcimage "github.com/testcontainers/testcontainers-go/image"
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/log"
@@ -1726,23 +1727,11 @@ func (p *DockerProvider) ContainerFromType(ctx context.Context, response types.C
 	return ctr, nil
 }
 
+// Deprecated: use testcontainers-go [image.List] instead
 // ListImages list images from the provider. If an image has multiple Tags, each tag is reported
 // individually with the same ID and same labels
 func (p *DockerProvider) ListImages(ctx context.Context) ([]ImageInfo, error) {
-	images := []ImageInfo{}
-
-	imageList, err := p.client.ImageList(ctx, image.ListOptions{})
-	if err != nil {
-		return images, fmt.Errorf("listing images %w", err)
-	}
-
-	for _, img := range imageList {
-		for _, tag := range img.RepoTags {
-			images = append(images, ImageInfo{ID: img.ID, Name: tag})
-		}
-	}
-
-	return images, nil
+	return tcimage.List(ctx)
 }
 
 // SaveImages exports a list of images as an uncompressed tar
