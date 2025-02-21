@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
-	"errors"
 	"fmt"
 	"net/url"
 	"testing"
@@ -123,9 +122,9 @@ func TestScyllaAlternator(t *testing.T) {
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 
-		client, err := getDynamoAlternatorClient(t, ctr, alternatorPort)
+		cli, err := getDynamoAlternatorClient(t, ctr, alternatorPort)
 		require.NoError(t, err)
-		requireCreateTable(t, client)
+		requireCreateTable(t, cli)
 	})
 
 	t.Run("test-without-alternator", func(t *testing.T) {
@@ -135,28 +134,31 @@ func TestScyllaAlternator(t *testing.T) {
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 
-		_, err = getDynamoAlternatorClient(t, ctr, alternatorPort)
+		cli, err := getDynamoAlternatorClient(t, ctr, alternatorPort)
 		require.Error(t, err)
+		require.Nil(t, cli)
 	})
 }
 
+// scyllaAlternatorResolver is a custom endpoint resolver for the ScyllaDB Alternator.
 type scyllaAlternatorResolver struct {
 	HostPort string
 }
 
+// ResolveEndpoint resolves the endpoint for the ScyllaDB Alternator.
 func (r *scyllaAlternatorResolver) ResolveEndpoint(_ context.Context, _ dynamodb.EndpointParameters) (smithyendpoints.Endpoint, error) {
 	return smithyendpoints.Endpoint{
 		URI: url.URL{Host: r.HostPort, Scheme: "http"},
 	}, nil
 }
 
+// getDynamoAlternatorClient returns a new DynamoDB client for the ScyllaDB Alternator.
 func getDynamoAlternatorClient(t *testing.T, c *scylladb.Container, port uint16) (*dynamodb.Client, error) {
 	t.Helper()
-	var errs []error
 
 	hostPort, err := c.ConnectionHost(context.Background(), port)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("connection host: %w", err))
+		return nil, fmt.Errorf("connection host: %w", err)
 	}
 
 	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
@@ -166,12 +168,13 @@ func getDynamoAlternatorClient(t *testing.T, c *scylladb.Container, port uint16)
 		},
 	}))
 	if err != nil {
-		errs = append(errs, fmt.Errorf("load default config: %w", err))
+		return nil, fmt.Errorf("load default config: %w", err)
 	}
 
-	return dynamodb.NewFromConfig(cfg, dynamodb.WithEndpointResolverV2(&scyllaAlternatorResolver{HostPort: hostPort})), errors.Join(errs...)
+	return dynamodb.NewFromConfig(cfg, dynamodb.WithEndpointResolverV2(&scyllaAlternatorResolver{HostPort: hostPort})), nil
 }
 
+// requireCreateTable creates a table in the ScyllaDB Alternator, failing the test if an error occurs.
 func requireCreateTable(t *testing.T, client *dynamodb.Client) {
 	t.Helper()
 
