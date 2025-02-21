@@ -18,10 +18,7 @@ func ExampleRun_withCustomCommands() {
 	// runScyllaDBContainerWithCustomCommands {
 	scyllaContainer, err := scylladb.Run(ctx,
 		"scylladb/scylla:6.2",
-		scylladb.WithCustomCommands(map[string]string{
-			"--memory": "1G",
-			"--smp":    "2",
-		}),
+		scylladb.WithCustomCommands("--memory=1G", "--smp=2"),
 	)
 	// }
 	defer func() {

@@ -64,13 +64,36 @@ func WithAlternator(alternatorPort uint16) testcontainers.CustomizeRequestOption
 }
 
 // WithCustomCommands sets custom commands with values for the ScyllaDB container.
-// This is an option to overwrite the default commands with a custom one.
+// Pass the command and the values as a list of strings in the following format: "--flag1=value", "--flag2", etc.
+// In case of an invalid flag (not starting with "--" or "-"), this option returns an error,
+// not applying any changes to the command line. Else, flags that exist in the command line overwrite the default commands.
 // See more in the [ScyllaDB docs].
 //
 // [ScyllaDB docs]: https://opensource.docs.scylladb.com/stable/operating-scylla/procedures/tips/best-practices-scylla-on-docker.html
-func WithCustomCommands(cmds map[string]string) testcontainers.CustomizeRequestOption {
+func WithCustomCommands(flags ...string) testcontainers.CustomizeRequestOption {
+	var errInvalidFlag error
+
+	flagsMap := make(map[string]string)
+	for _, flag := range flags {
+		if !strings.HasPrefix(flag, "--") && !strings.HasPrefix(flag, "-") {
+			errInvalidFlag = fmt.Errorf("invalid flag: %s", flag)
+			break
+		}
+
+		before, after, found := strings.Cut(flag, "=")
+		if found {
+			flagsMap[before] = after
+		} else {
+			flagsMap[flag] = ""
+		}
+	}
+
 	return func(req *testcontainers.GenericContainerRequest) error {
-		setCommandFlag(req, cmds)
+		if errInvalidFlag != nil {
+			return errInvalidFlag
+		}
+
+		setCommandFlag(req, flagsMap)
 		return nil
 	}
 }
@@ -138,23 +161,38 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
-func setCommandFlag(req *testcontainers.GenericContainerRequest, flag map[string]string) {
-	cmds := make([]string, 0, len(req.Cmd)+len(flag))
+// setCommandFlag sets the flags in the command line.
+// It takes the array of commands from the GenericContainerRequest and a map of flags,
+// and checks if the flag is present in the command line, overriding the value if it is.
+// If the flag is not present, it's added to the command line.
+func setCommandFlag(req *testcontainers.GenericContainerRequest, flags map[string]string) {
+	cmds := []string{}
 
 	for _, cmd := range req.Cmd {
-		seps := strings.SplitN(cmd, "=", 1)
-		val, ok := flag[seps[0]]
-
-		if !ok {
-			cmds = append(cmds, cmd)
+		before, _, hasEquals := strings.Cut(cmd, "=")
+		val, ok := flags[before]
+		if ok {
+			if hasEquals {
+				cmds = append(cmds, before+"="+val)
+			} else {
+				cmds = append(cmds, before)
+			}
+			// The flag is present in the command line, so it's removed from the flags map
+			// to avoid adding it to the end of the command line.
+			delete(flags, before)
 		} else {
-			cmds = append(cmds, fmt.Sprintf("%s=%s", seps[0], val))
-			delete(flag, seps[0])
+			cmds = append(cmds, cmd)
 		}
 	}
 
-	for key, val := range flag {
-		cmds = append(cmds, fmt.Sprintf("%s=%s", key, val))
+	// The extra flags not present in the command line are added to the end of the command line,
+	// and this could be in any order.
+	for key, val := range flags {
+		if val == "" {
+			cmds = append(cmds, key)
+		} else {
+			cmds = append(cmds, key+"="+val)
+		}
 	}
 
 	req.Cmd = cmds
