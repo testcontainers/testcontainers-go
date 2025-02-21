@@ -65,7 +65,9 @@ func WithAlternator(alternatorPort uint16) testcontainers.CustomizeRequestOption
 
 // WithCustomCommands sets custom commands with  values for the ScyllaDB container.
 // This is an option to overwrite the default commands with a custom one.
-// See more [here](https://opensource.docs.scylladb.com/stable/operating-scylla/procedures/tips/best-practices-scylla-on-docker.html)
+// See more in the [ScyllaDB docs].
+//
+// [ScyllaDB docs]: https://opensource.docs.scylladb.com/stable/operating-scylla/procedures/tips/best-practices-scylla-on-docker.html
 func WithCustomCommands(cmds map[string]string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		setCommandFlag(req, cmds)
