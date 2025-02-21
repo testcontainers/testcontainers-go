@@ -107,8 +107,12 @@ func (c Container) ConnectionHost(ctx context.Context, port uint16) (string, err
 		return "", fmt.Errorf("host: %w", err)
 	}
 
-	portStr := strconv.FormatInt(int64(port), 10)
-	containerPort, err := c.MappedPort(ctx, nat.Port(portStr))
+	natPort, err := nat.NewPort("tcp", strconv.FormatInt(int64(port), 10))
+	if err != nil {
+		return "", fmt.Errorf("new port: %w", err)
+	}
+
+	containerPort, err := c.MappedPort(ctx, natPort)
 	if err != nil {
 		return "", fmt.Errorf("mapped port: %w", err)
 	}
