@@ -72,8 +72,8 @@ func TestScyllaWithConfig(t *testing.T) {
 		scylladb.WithConfig(bytes.NewReader(scyllaYaml)),
 		scylladb.WithShardAwareness(),
 	)
-	require.NoError(t, err)
 	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
 	t.Run("test-without-shard-awareness", func(t *testing.T) {
 		host, err := ctr.ConnectionHost(ctx, 9042)
@@ -120,8 +120,8 @@ func TestScyllaAlternator(t *testing.T) {
 			"scylladb/scylla:6.2.2",
 			scylladb.WithAlternator(alternatorPort),
 		)
-		require.NoError(t, err)
 		testcontainers.CleanupContainer(t, ctr)
+		require.NoError(t, err)
 
 		client, err := getDynamoAlternatorClient(t, ctr, alternatorPort)
 		require.NoError(t, err)
@@ -132,8 +132,8 @@ func TestScyllaAlternator(t *testing.T) {
 		ctr, err := scylladb.Run(ctx,
 			"scylladb/scylla:6.2",
 		)
-		require.NoError(t, err)
 		testcontainers.CleanupContainer(t, ctr)
+		require.NoError(t, err)
 
 		_, err = getDynamoAlternatorClient(t, ctr, alternatorPort)
 		require.Error(t, err)
