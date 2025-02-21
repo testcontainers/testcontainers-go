@@ -63,7 +63,7 @@ func WithAlternator(alternatorPort uint16) testcontainers.CustomizeRequestOption
 	}
 }
 
-// WithCustomCommands sets custom commands with  values for the ScyllaDB container.
+// WithCustomCommands sets custom commands with values for the ScyllaDB container.
 // This is an option to overwrite the default commands with a custom one.
 // See more in the [ScyllaDB docs].
 //
