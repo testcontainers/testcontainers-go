@@ -156,7 +156,7 @@ func getDynamoAlternatorClient(t *testing.T, c *scylladb.Container, port uint16)
 
 	hostPort, err := c.ConnectionHost(context.Background(), port)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("get connection string: %w", err))
+		errs = append(errs, fmt.Errorf("connection host: %w", err))
 	}
 
 	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
