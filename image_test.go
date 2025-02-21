@@ -64,7 +64,7 @@ func TestSaveImages(t *testing.T) {
 	require.NoErrorf(t, err, "creating test container")
 
 	output := filepath.Join(t.TempDir(), "images.tar")
-	err = provider.SaveImages(context.Background(), output, req.Image)
+	err = image.SaveToTar(context.Background(), output, req.Image)
 	require.NoErrorf(t, err, "saving image %q", req.Image)
 
 	info, err := os.Stat(output)

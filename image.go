@@ -12,7 +12,7 @@ type ImageInfo = image.Info
 
 // ImageProvider allows manipulating images
 type ImageProvider interface {
-	ListImages(context.Context) ([]ImageInfo, error) // Deprecated: use testcontainers-go [image.List] instead
-	SaveImages(context.Context, string, ...string) error
+	ListImages(context.Context) ([]ImageInfo, error)     // Deprecated: use testcontainers-go [image.List] instead
+	SaveImages(context.Context, string, ...string) error // Deprecated: use testcontainers-go [image.SaveToTar] instead
 	PullImage(context.Context, string) error
 }
