@@ -99,6 +99,16 @@ func WithCustomCommands(flags ...string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// ShardAwareConnectionHost returns the host and port of the ScyllaDB container with the shard-aware port
+func (c Container) ShardAwareConnectionHost(ctx context.Context) (string, error) {
+	return c.ConnectionHost(ctx, 19042)
+}
+
+// NonShardAwareConnectionHost returns the host and port of the ScyllaDB container with the non-shard-aware port
+func (c Container) NonShardAwareConnectionHost(ctx context.Context) (string, error) {
+	return c.ConnectionHost(ctx, 9042)
+}
+
 // ConnectionHost returns the host and port of the Scylladb container with the given port
 // and obtaining the host and exposed port from the container
 // Eg: "host:port" -> "localhost:9042" -> "localhost:19042" -> "localhost:8000"

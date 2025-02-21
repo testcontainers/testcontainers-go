@@ -39,7 +39,7 @@ func ExampleRun_withCustomCommands() {
 
 	fmt.Println(state.Running)
 
-	connectionHost, err := scyllaContainer.ConnectionHost(ctx, 9042) // Non ShardAwareness port
+	connectionHost, err := scyllaContainer.NonShardAwareConnectionHost(ctx)
 	if err != nil {
 		log.Printf("failed to get connection host: %s", err)
 		return
@@ -83,7 +83,11 @@ func ExampleRun_withAlternator() {
 
 	fmt.Println(state.Running)
 
-	_, err = scyllaContainer.ConnectionHost(ctx, alternatorPort) // Alternator port
+	// scyllaDbAlternatorConnectionHost {
+	// the alternatorPort variable must be the same as the port used
+	// in the WithAlternator option passed to the Run function.
+	_, err = scyllaContainer.ConnectionHost(ctx, alternatorPort)
+	// }
 	if err != nil {
 		log.Printf("failed to get connection host: %s", err)
 		return
@@ -120,7 +124,9 @@ func ExampleRun_withShardAwareness() {
 
 	fmt.Println(state.Running)
 
-	connectionHost, err := scyllaContainer.ConnectionHost(ctx, 19042) // ShardAwareness port
+	// scyllaDbShardAwareConnectionHost {
+	connectionHost, err := scyllaContainer.ShardAwareConnectionHost(ctx)
+	// }
 	if err != nil {
 		log.Printf("failed to get connection host: %s", err)
 		return
@@ -193,7 +199,7 @@ enable_tablets: true
 
 	fmt.Println(state.Running)
 
-	connectionHost, err := scyllaContainer.ConnectionHost(ctx, 9042) // Non ShardAwareness port
+	connectionHost, err := scyllaContainer.NonShardAwareConnectionHost(ctx)
 	if err != nil {
 		log.Printf("failed to get connection host: %s", err)
 		return
@@ -235,8 +241,8 @@ func ExampleRun() {
 
 	fmt.Println(state.Running)
 
-	// BaseConnectionHost {
-	connectionHost, err := scyllaContainer.ConnectionHost(ctx, 9042)
+	// scyllaDbNonShardAwareConnectionHost {
+	connectionHost, err := scyllaContainer.NonShardAwareConnectionHost(ctx)
 	// }
 	if err != nil {
 		log.Printf("failed to get connection host: %s", err)

@@ -35,7 +35,7 @@ func TestScyllaDB(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("test-without-shard-awareness", func(t *testing.T) {
-		host, err := ctr.ConnectionHost(ctx, 9042) // Non ShardAwareness port
+		host, err := ctr.NonShardAwareConnectionHost(ctx)
 		require.NoError(t, err)
 
 		cluster := gocql.NewCluster(host)
@@ -49,7 +49,7 @@ func TestScyllaDB(t *testing.T) {
 	})
 
 	t.Run("test-with-shard-awareness", func(t *testing.T) {
-		host, err := ctr.ConnectionHost(ctx, 19042) // ShardAwareness port
+		host, err := ctr.ShardAwareConnectionHost(ctx)
 		require.NoError(t, err)
 
 		cluster := gocql.NewCluster(host)
@@ -75,7 +75,7 @@ func TestScyllaWithConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("test-without-shard-awareness", func(t *testing.T) {
-		host, err := ctr.ConnectionHost(ctx, 9042)
+		host, err := ctr.NonShardAwareConnectionHost(ctx)
 		require.NoError(t, err)
 
 		cluster := gocql.NewCluster(host)
@@ -92,7 +92,7 @@ func TestScyllaWithConfig(t *testing.T) {
 	})
 
 	t.Run("test-with-shard-awareness", func(t *testing.T) {
-		host, err := ctr.ConnectionHost(ctx, 19042)
+		host, err := ctr.ShardAwareConnectionHost(ctx)
 		require.NoError(t, err)
 
 		cluster := gocql.NewCluster(host)
