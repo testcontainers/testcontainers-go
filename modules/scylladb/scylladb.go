@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"strconv"
 	"strings"
 
@@ -117,7 +118,7 @@ func (c Container) ConnectionHost(ctx context.Context, port uint16) (string, err
 		return "", fmt.Errorf("mapped port: %w", err)
 	}
 
-	return host + ":" + containerPort.Port(), nil
+	return net.JoinHostPort(host, containerPort.Port()), nil
 }
 
 // Run starts a ScyllaDB container with the specified image and options
