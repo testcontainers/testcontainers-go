@@ -72,26 +72,19 @@ func WithAlternator(alternatorPort uint16) testcontainers.CustomizeRequestOption
 //
 // [ScyllaDB docs]: https://opensource.docs.scylladb.com/stable/operating-scylla/procedures/tips/best-practices-scylla-on-docker.html
 func WithCustomCommands(flags ...string) testcontainers.CustomizeRequestOption {
-	var errInvalidFlag error
-
-	flagsMap := make(map[string]string)
-	for _, flag := range flags {
-		if !strings.HasPrefix(flag, "--") && !strings.HasPrefix(flag, "-") {
-			errInvalidFlag = fmt.Errorf("invalid flag: %s", flag)
-			break
-		}
-
-		before, after, found := strings.Cut(flag, "=")
-		if found {
-			flagsMap[before] = after
-		} else {
-			flagsMap[flag] = ""
-		}
-	}
-
 	return func(req *testcontainers.GenericContainerRequest) error {
-		if errInvalidFlag != nil {
-			return errInvalidFlag
+		flagsMap := make(map[string]string, len(flags))
+		for _, flag := range flags {
+			if !strings.HasPrefix(flag, "--") && !strings.HasPrefix(flag, "-") {
+				return fmt.Errorf("invalid flag: %s", flag)
+			}
+
+			before, after, found := strings.Cut(flag, "=")
+			if found {
+				flagsMap[before] = after
+			} else {
+				flagsMap[flag] = ""
+			}
 		}
 
 		setCommandFlag(req, flagsMap)
