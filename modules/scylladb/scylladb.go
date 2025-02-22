@@ -136,7 +136,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"--memory=512M",
 		},
 		WaitingFor: wait.ForAll(
-			wait.ForLog(".*initialization completed..*").AsRegexp(),
 			wait.ForListeningPort(port),
 			wait.ForExec([]string{"cqlsh", "-e", "SELECT bootstrapped FROM system.local"}).WithResponseMatcher(func(body io.Reader) bool {
 				data, _ := io.ReadAll(body)
