@@ -199,8 +199,6 @@ func requireCreateTable(t *testing.T, client *dynamodb.Client) {
 
 func TestWithCustomCommands(t *testing.T) {
 	t.Run("invalid-flag", func(t *testing.T) {
-		t.Parallel()
-
 		req := testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Cmd: []string{"--memory=1G", "--smp=2"},
@@ -221,8 +219,6 @@ func TestWithCustomCommands(t *testing.T) {
 	})
 
 	t.Run("equals-override", func(t *testing.T) {
-		t.Parallel()
-
 		req := testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Cmd: []string{"--memory=1G", "--smp=2"},
@@ -241,8 +237,6 @@ func TestWithCustomCommands(t *testing.T) {
 	})
 
 	t.Run("equals-override/no-equals", func(t *testing.T) {
-		t.Parallel()
-
 		req := testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Cmd: []string{"--memory=1G", "--flag1=true", "--flag2"},
@@ -267,8 +261,6 @@ func TestWithCustomCommands(t *testing.T) {
 	})
 
 	t.Run("equals-override/different-order", func(t *testing.T) {
-		t.Parallel()
-
 		req := testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: "scylladb/scylla:6.2",
