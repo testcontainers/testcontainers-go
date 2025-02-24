@@ -58,7 +58,7 @@ func ExampleRun_connectWithClient() {
 		return
 	}
 
-	scheme, host, err := weaviateContainer.HttpHostAddress(ctx)
+	scheme, host, err := weaviateContainer.HTTPHostAddress(ctx)
 	if err != nil {
 		log.Printf("failed to get http schema and host: %s", err)
 		return
@@ -127,7 +127,7 @@ func ExampleRun_connectWithClientWithModules() {
 		return
 	}
 
-	scheme, host, err := weaviateContainer.HttpHostAddress(ctx)
+	scheme, host, err := weaviateContainer.HTTPHostAddress(ctx)
 	if err != nil {
 		log.Printf("failed to get http schema and host: %s", err)
 		return
