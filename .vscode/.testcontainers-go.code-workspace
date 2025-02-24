@@ -190,6 +190,10 @@
             "path": "../modules/registry"
         },
         {
+            "name": "module / scylladb",
+            "path": "../modules/scylladb"
+        },
+        {
             "name": "module / surrealdb",
             "path": "../modules/surrealdb"
         },
