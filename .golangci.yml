@@ -45,7 +45,6 @@ linters-settings:
         arguments:
           - "preserveScope"
       - name: empty-block
-        disabled: true
       - name: error-naming
         disabled: true
       - name: error-return
