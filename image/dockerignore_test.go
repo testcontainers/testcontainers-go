@@ -7,8 +7,9 @@ import (
 )
 
 func TestParseDockerIgnore(t *testing.T) {
-
 	assertions := func(t *testing.T, filePath string, exists bool, expectedErr error, expectedExcluded []string) {
+		t.Helper()
+
 		ok, excluded, err := ParseDockerIgnore(filePath)
 		require.Equal(t, exists, ok)
 		require.Equal(t, expectedErr, err)
@@ -26,5 +27,4 @@ func TestParseDockerIgnore(t *testing.T) {
 	t.Run("file-does-not-exists", func(t *testing.T) {
 		assertions(t, "./testdata/data", false, nil, nil)
 	})
-
 }
