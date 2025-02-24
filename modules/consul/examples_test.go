@@ -69,12 +69,12 @@ func ExampleRun_connect() {
 	}
 	// }
 
-	node_name, err := client.Agent().NodeName()
+	nodeName, err := client.Agent().NodeName()
 	if err != nil {
 		log.Printf("failed to get node name: %s", err)
 		return
 	}
-	fmt.Println(len(node_name) > 0)
+	fmt.Println(len(nodeName) > 0)
 
 	// Output:
 	// true
