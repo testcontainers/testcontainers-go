@@ -71,18 +71,9 @@ type Container interface {
 	GetLogProductionErrorChannel() <-chan error
 }
 
+// Deprecated: Use image.Builder instead
 // ImageBuildInfo defines what is needed to build an image
-type ImageBuildInfo interface {
-	BuildOptions() (types.ImageBuildOptions, error) // converts the ImageBuildInfo to a types.ImageBuildOptions
-	GetContext() (io.Reader, error)                 // the path to the build context
-	GetDockerfile() string                          // the relative path to the Dockerfile, including the file itself
-	GetRepo() string                                // get repo label for image
-	GetTag() string                                 // get tag label for image
-	BuildLogWriter() io.Writer                      // for output of build log, use io.Discard to disable the output
-	ShouldBuildImage() bool                         // return true if the image needs to be built
-	GetBuildArgs() map[string]*string               // return the environment args used to build the Dockerfile
-	GetAuthConfigs() map[string]registry.AuthConfig // Deprecated. Testcontainers will detect registry credentials automatically. Return the auth configs to be able to pull from an authenticated docker registry
-}
+type ImageBuildInfo = image.Builder
 
 // FromDockerfile represents the parameters needed to build an image from a Dockerfile
 // rather than using a pre-built one

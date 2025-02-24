@@ -15,17 +15,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/strslice"
-	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	tcimage "github.com/testcontainers/testcontainers-go/image"
 	"github.com/testcontainers/testcontainers-go/internal/core"
+	"github.com/testcontainers/testcontainers-go/internal/core/mock"
 	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -1995,111 +1994,6 @@ func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 	}
 }
 
-// errMockCli is a mock implementation of client.APIClient, which is handy for simulating
-// error returns in retry scenarios.
-type errMockCli struct {
-	client.APIClient
-
-	err                error
-	imageBuildCount    int
-	containerListCount int
-	imagePullCount     int
-}
-
-func (f *errMockCli) ImageBuild(_ context.Context, _ io.Reader, _ types.ImageBuildOptions) (types.ImageBuildResponse, error) {
-	f.imageBuildCount++
-	return types.ImageBuildResponse{Body: io.NopCloser(&bytes.Buffer{})}, f.err
-}
-
-func (f *errMockCli) ContainerList(_ context.Context, _ container.ListOptions) ([]types.Container, error) {
-	f.containerListCount++
-	return []types.Container{{}}, f.err
-}
-
-func (f *errMockCli) ImagePull(_ context.Context, _ string, _ image.PullOptions) (io.ReadCloser, error) {
-	f.imagePullCount++
-	return io.NopCloser(&bytes.Buffer{}), f.err
-}
-
-func (f *errMockCli) Close() error {
-	return nil
-}
-
-func TestDockerProvider_BuildImage_Retries(t *testing.T) {
-	tests := []struct {
-		name        string
-		errReturned error
-		shouldRetry bool
-	}{
-		{
-			name:        "no retry on success",
-			errReturned: nil,
-			shouldRetry: false,
-		},
-		{
-			name:        "no retry when a resource is not found",
-			errReturned: errdefs.NotFound(errors.New("not available")),
-			shouldRetry: false,
-		},
-		{
-			name:        "no retry when parameters are invalid",
-			errReturned: errdefs.InvalidParameter(errors.New("invalid")),
-			shouldRetry: false,
-		},
-		{
-			name:        "no retry when resource access not authorized",
-			errReturned: errdefs.Unauthorized(errors.New("not authorized")),
-			shouldRetry: false,
-		},
-		{
-			name:        "no retry when resource access is forbidden",
-			errReturned: errdefs.Forbidden(errors.New("forbidden")),
-			shouldRetry: false,
-		},
-		{
-			name:        "no retry when not implemented by provider",
-			errReturned: errdefs.NotImplemented(errors.New("unknown method")),
-			shouldRetry: false,
-		},
-		{
-			name:        "no retry on system error",
-			errReturned: errdefs.System(errors.New("system error")),
-			shouldRetry: false,
-		},
-		{
-			name:        "retry on non-permanent error",
-			errReturned: errors.New("whoops"),
-			shouldRetry: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p, err := NewDockerProvider()
-			require.NoError(t, err)
-			m := &errMockCli{err: tt.errReturned}
-			p.client = m
-
-			// give a chance to retry
-			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-			defer cancel()
-			_, err = p.BuildImage(ctx, &ContainerRequest{
-				FromDockerfile: FromDockerfile{
-					Context: filepath.Join(".", "testdata", "retry"),
-				},
-			})
-			if tt.errReturned != nil {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-			}
-
-			assert.Positive(t, m.imageBuildCount)
-			assert.Equal(t, tt.shouldRetry, m.imageBuildCount > 1)
-		})
-	}
-}
-
 func TestDockerProvider_waitContainerCreation_retries(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -2137,7 +2031,7 @@ func TestDockerProvider_waitContainerCreation_retries(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p, err := NewDockerProvider()
 			require.NoError(t, err)
-			m := &errMockCli{err: tt.errReturned}
+			m := mock.NewErrClient(tt.errReturned)
 			p.client = m
 
 			// give a chance to retry
@@ -2145,8 +2039,8 @@ func TestDockerProvider_waitContainerCreation_retries(t *testing.T) {
 			defer cancel()
 			_, _ = p.waitContainerCreation(ctx, "someID")
 
-			assert.Positive(t, m.containerListCount)
-			assert.Equal(t, tt.shouldRetry, m.containerListCount > 1)
+			assert.Positive(t, m.ContainerListCount())
+			assert.Equal(t, tt.shouldRetry, m.ContainerListCount() > 1)
 		})
 	}
 }
@@ -2198,7 +2092,7 @@ func TestDockerProvider_attemptToPullImage_retries(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p, err := NewDockerProvider()
 			require.NoError(t, err)
-			m := &errMockCli{err: tt.errReturned}
+			m := mock.NewErrClient(tt.errReturned)
 			p.client = m
 
 			// give a chance to retry
@@ -2206,8 +2100,8 @@ func TestDockerProvider_attemptToPullImage_retries(t *testing.T) {
 			defer cancel()
 			_ = p.attemptToPullImage(ctx, "someTag", image.PullOptions{})
 
-			assert.Positive(t, m.imagePullCount)
-			assert.Equal(t, tt.shouldRetry, m.imagePullCount > 1)
+			assert.Positive(t, m.ImagePullCount())
+			assert.Equal(t, tt.shouldRetry, m.ImagePullCount() > 1)
 		})
 	}
 }
