@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	tcimage "github.com/testcontainers/testcontainers-go/image"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -2218,7 +2219,7 @@ func TestCustomPrefixTrailingSlashIsProperlyRemovedIfPresent(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:             dockerImage,
-		ImageSubstitutors: []ImageSubstitutor{newPrependHubRegistry(hubPrefixWithTrailingSlash)},
+		ImageSubstitutors: []tcimage.Substitutor{tcimage.NewPrependHubRegistry(hubPrefixWithTrailingSlash)},
 	}
 
 	c, err := GenericContainer(ctx, GenericContainerRequest{

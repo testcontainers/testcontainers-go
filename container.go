@@ -131,7 +131,7 @@ type ContainerRequest struct {
 	FromDockerfile
 	HostAccessPorts          []int
 	Image                    string
-	ImageSubstitutors        []ImageSubstitutor
+	ImageSubstitutors        []image.Substitutor
 	Entrypoint               []string
 	Env                      map[string]string
 	ExposedPorts             []string // allow specifying protocol info
