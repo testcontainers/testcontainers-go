@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go/modulegen/internal"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
+	"github.com/testcontainers/testcontainers-go/modulegen/internal/dependabot"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/mkdocs"
 )
 
@@ -154,20 +156,7 @@ func TestModule_Validate(outer *testing.T) {
 }
 
 func TestGenerateWrongModuleName(t *testing.T) {
-	tmpCtx := context.New(t.TempDir())
-	examplesTmp := filepath.Join(tmpCtx.RootDir, "examples")
-	examplesDocTmp := filepath.Join(tmpCtx.DocsDir(), "examples")
-	githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
-
-	err := os.MkdirAll(examplesTmp, 0o777)
-	require.NoError(t, err)
-	err = os.MkdirAll(examplesDocTmp, 0o777)
-	require.NoError(t, err)
-	err = os.MkdirAll(githubWorkflowsTmp, 0o777)
-	require.NoError(t, err)
-
-	err = copyInitialMkdocsConfig(t, tmpCtx)
-	require.NoError(t, err)
+	testProject := copyInitialProject(t)
 
 	tests := []struct {
 		name string
@@ -190,26 +179,13 @@ func TestGenerateWrongModuleName(t *testing.T) {
 			Image: "example/" + test.name + ":latest",
 		}
 
-		err = internal.GenerateFiles(tmpCtx, module)
+		err := internal.GenerateFiles(testProject.ctx, module)
 		require.Error(t, err)
 	}
 }
 
 func TestGenerateWrongModuleTitle(t *testing.T) {
-	tmpCtx := context.New(t.TempDir())
-	examplesTmp := filepath.Join(tmpCtx.RootDir, "examples")
-	examplesDocTmp := filepath.Join(tmpCtx.DocsDir(), "examples")
-	githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
-
-	err := os.MkdirAll(examplesTmp, 0o777)
-	require.NoError(t, err)
-	err = os.MkdirAll(examplesDocTmp, 0o777)
-	require.NoError(t, err)
-	err = os.MkdirAll(githubWorkflowsTmp, 0o777)
-	require.NoError(t, err)
-
-	err = copyInitialMkdocsConfig(t, tmpCtx)
-	require.NoError(t, err)
+	testProject := copyInitialProject(t)
 
 	tests := []struct {
 		title       string
@@ -234,7 +210,7 @@ func TestGenerateWrongModuleTitle(t *testing.T) {
 			Image:     "example/foo:latest",
 		}
 
-		err = internal.GenerateFiles(tmpCtx, module)
+		err := internal.GenerateFiles(testProject.ctx, module)
 		if test.expectError {
 			require.Error(t, err)
 		} else {
@@ -244,20 +220,7 @@ func TestGenerateWrongModuleTitle(t *testing.T) {
 }
 
 func TestGenerate(t *testing.T) {
-	tmpCtx := context.New(t.TempDir())
-	examplesTmp := filepath.Join(tmpCtx.RootDir, "examples")
-	examplesDocTmp := filepath.Join(tmpCtx.DocsDir(), "examples")
-
-	err := os.MkdirAll(examplesTmp, 0o777)
-	require.NoError(t, err)
-	err = os.MkdirAll(examplesDocTmp, 0o777)
-	require.NoError(t, err)
-
-	err = copyInitialMkdocsConfig(t, tmpCtx)
-	require.NoError(t, err)
-
-	originalConfig, err := mkdocs.ReadConfig(tmpCtx.MkdocsConfigFile())
-	require.NoError(t, err)
+	testProject := copyInitialProject(t)
 
 	module := context.TestcontainersModule{
 		Name:      "foodb4tw",
@@ -267,45 +230,33 @@ func TestGenerate(t *testing.T) {
 	}
 	moduleNameLower := module.Lower()
 
-	err = internal.GenerateFiles(tmpCtx, module)
+	err := internal.GenerateFiles(testProject.ctx, module)
 	require.NoError(t, err)
 
-	moduleDirPath := filepath.Join(examplesTmp, moduleNameLower)
+	moduleDirPath := filepath.Join(testProject.ctx.ExamplesDir(), moduleNameLower)
 
 	moduleDirFileInfo, err := os.Stat(moduleDirPath)
 	require.NoError(t, err) // error nil implies the file exist
 	require.True(t, moduleDirFileInfo.IsDir())
 
-	moduleDocFile := filepath.Join(examplesDocTmp, moduleNameLower+".md")
+	moduleDocFile := filepath.Join(testProject.ctx.ExamplesDocsDir(), moduleNameLower+".md")
 	_, err = os.Stat(moduleDocFile)
 	require.NoError(t, err) // error nil implies the file exist
 
 	assertModuleDocContent(t, module, moduleDocFile)
 
-	generatedTemplatesDir := filepath.Join(examplesTmp, moduleNameLower)
+	generatedTemplatesDir := filepath.Join(testProject.ctx.ExamplesDir(), moduleNameLower)
 	// do not generate examples_test.go for examples
 	assertModuleTestContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+"_test.go"))
 	assertModuleContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+".go"))
-	assertGoModContent(t, module, originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
+	assertGoModContent(t, module, testProject.originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, module, filepath.Join(generatedTemplatesDir, "Makefile"))
-	assertMkdocsNavItems(t, tmpCtx, module, originalConfig)
+	assertMkdocsNavItems(t, testProject.ctx, module, testProject.originalConfig)
+	assertDependabotUpdates(t, module, testProject.originalDependabotConfigUpdates, testProject.ctx)
 }
 
 func TestGenerateModule(t *testing.T) {
-	tmpCtx := context.New(t.TempDir())
-	modulesTmp := filepath.Join(tmpCtx.RootDir, "modules")
-	modulesDocTmp := filepath.Join(tmpCtx.DocsDir(), "modules")
-
-	err := os.MkdirAll(modulesTmp, 0o777)
-	require.NoError(t, err)
-	err = os.MkdirAll(modulesDocTmp, 0o777)
-	require.NoError(t, err)
-
-	err = copyInitialMkdocsConfig(t, tmpCtx)
-	require.NoError(t, err)
-
-	originalConfig, err := mkdocs.ReadConfig(tmpCtx.MkdocsConfigFile())
-	require.NoError(t, err)
+	testProject := copyInitialProject(t)
 
 	module := context.TestcontainersModule{
 		Name:      "foodb",
@@ -315,28 +266,60 @@ func TestGenerateModule(t *testing.T) {
 	}
 	moduleNameLower := module.Lower()
 
-	err = internal.GenerateFiles(tmpCtx, module)
+	err := internal.GenerateFiles(testProject.ctx, module)
 	require.NoError(t, err)
 
-	moduleDirPath := filepath.Join(modulesTmp, moduleNameLower)
+	moduleDirPath := filepath.Join(testProject.ctx.ModulesDir(), moduleNameLower)
 
 	moduleDirFileInfo, err := os.Stat(moduleDirPath)
 	require.NoError(t, err) // error nil implies the file exist
 	require.True(t, moduleDirFileInfo.IsDir())
 
-	moduleDocFile := filepath.Join(modulesDocTmp, moduleNameLower+".md")
+	moduleDocFile := filepath.Join(testProject.ctx.ModulesDocsDir(), moduleNameLower+".md")
 	_, err = os.Stat(moduleDocFile)
 	require.NoError(t, err) // error nil implies the file exist
 
 	assertModuleDocContent(t, module, moduleDocFile)
 
-	generatedTemplatesDir := filepath.Join(modulesTmp, moduleNameLower)
+	generatedTemplatesDir := filepath.Join(testProject.ctx.ModulesDir(), moduleNameLower)
 	assertExamplesTestContent(t, module, filepath.Join(generatedTemplatesDir, "examples_test.go"))
 	assertModuleTestContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+"_test.go"))
 	assertModuleContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+".go"))
-	assertGoModContent(t, module, originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
+	assertGoModContent(t, module, testProject.originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, module, filepath.Join(generatedTemplatesDir, "Makefile"))
-	assertMkdocsNavItems(t, tmpCtx, module, originalConfig)
+	assertMkdocsNavItems(t, testProject.ctx, module, testProject.originalConfig)
+	assertDependabotUpdates(t, module, testProject.originalDependabotConfigUpdates, testProject.ctx)
+}
+
+// assert content in the Dependabot descriptor file
+func assertDependabotUpdates(t *testing.T, module context.TestcontainersModule, originalConfigUpdates dependabot.Updates, tmpCtx context.Context) {
+	modules, err := dependabot.GetUpdates(tmpCtx.DependabotConfigFile())
+	require.NoError(t, err)
+
+	require.Len(t, modules, len(originalConfigUpdates)+1)
+
+	// the module should be in the dependabot updates
+	found := false
+	for _, ex := range modules {
+		directory := "/" + module.ParentDir() + "/" + module.Lower()
+		if directory == ex.Directory {
+			found = true
+		}
+	}
+
+	require.True(t, found)
+
+	// first item is the github-actions module, which uses an array of directories
+	require.Equal(t, "/", modules[0].Directory, modules)
+	require.Equal(t, "github-actions", modules[0].PackageEcosystem, "PackageEcosystem should be github-actions")
+
+	// second item is the core module
+	require.Equal(t, "/", modules[1].Directory, modules)
+	require.Equal(t, "gomod", modules[1].PackageEcosystem, "PackageEcosystem should be gomod")
+
+	// third item is the pip module
+	require.Equal(t, "/", modules[2].Directory, modules)
+	require.Equal(t, "pip", modules[2].PackageEcosystem, "PackageEcosystem should be pip")
 }
 
 // assert content module file in the docs
@@ -486,4 +469,81 @@ func sanitiseContent(bytes []byte) []string {
 	data := strings.Split(content, "\n")
 
 	return data
+}
+
+type testProject struct {
+	ctx                             context.Context
+	originalConfig                  *mkdocs.Config
+	originalDependabotConfigUpdates dependabot.Updates
+}
+
+func copyInitialProject(t *testing.T) testProject {
+	t.Helper()
+
+	tmpCtx := context.New(t.TempDir())
+	ctx := getTestRootContext(t)
+
+	moduleTypes := []string{"examples", "modules"}
+	for _, moduleType := range moduleTypes {
+		moduleTypeDir := filepath.Join(tmpCtx.RootDir, moduleType)
+		err := os.MkdirAll(moduleTypeDir, 0o777)
+		require.NoError(t, err)
+
+		// just create the moduleTypeDir in the tmp context
+		files, err := os.ReadDir(filepath.Join(ctx.RootDir, moduleType))
+		require.NoError(t, err)
+		for _, f := range files {
+			if !f.IsDir() {
+				continue
+			}
+
+			err = os.MkdirAll(filepath.Join(tmpCtx.RootDir, moduleType, f.Name()), 0o777)
+			require.NoError(t, err)
+		}
+
+		moduleTypeDocDir := filepath.Join(tmpCtx.DocsDir(), moduleType)
+		err = os.MkdirAll(moduleTypeDocDir, 0o777)
+		require.NoError(t, err)
+
+		// copy all markdown files from the root context's docs into the tmp context's docs
+		mkFiles, err := os.ReadDir(filepath.Join(ctx.DocsDir(), moduleType))
+		require.NoError(t, err)
+		for _, mkFile := range mkFiles {
+			srcReader, err := os.Open(filepath.Join(ctx.DocsDir(), moduleType, mkFile.Name()))
+			require.NoError(t, err)
+			defer srcReader.Close()
+
+			dstWriter, err := os.Create(filepath.Join(tmpCtx.DocsDir(), moduleType, mkFile.Name()))
+			require.NoError(t, err)
+			defer dstWriter.Close()
+
+			_, err = io.Copy(dstWriter, srcReader)
+			require.NoError(t, err)
+		}
+	}
+
+	githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
+	err := os.MkdirAll(githubWorkflowsTmp, 0o777)
+	require.NoError(t, err)
+
+	err = mkdocs.CopyConfig(ctx.MkdocsConfigFile(), tmpCtx.MkdocsConfigFile())
+	require.NoError(t, err)
+
+	originalConfig, err := mkdocs.ReadConfig(tmpCtx.MkdocsConfigFile())
+	require.NoError(t, err)
+
+	err = dependabot.CopyConfig(ctx.DependabotConfigFile(), tmpCtx.DependabotConfigFile())
+	require.NoError(t, err)
+
+	originalDependabotConfigUpdates, err := dependabot.GetUpdates(tmpCtx.DependabotConfigFile())
+	require.NoError(t, err)
+
+	err = dependabot.CopyConfig(ctx.DependabotConfigFile(), tmpCtx.DependabotConfigFile())
+	require.NoError(t, err)
+
+	return testProject{
+		ctx:                             tmpCtx,
+		originalConfig:                  originalConfig,
+		originalDependabotConfigUpdates: originalDependabotConfigUpdates,
+	}
 }

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
+	"github.com/testcontainers/testcontainers-go/modulegen/internal/dependabot"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/make"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/mkdocs"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/module"
@@ -65,9 +66,10 @@ func GenerateFiles(ctx context.Context, tcModule context.TestcontainersModule) e
 	}
 
 	fileGenerators := []FileGenerator{
-		make.Generator{},   // creates Makefile for module
-		module.Generator{}, // creates go.mod for module
-		mkdocs.Generator{}, // update examples in mkdocs
+		make.Generator{},       // creates Makefile for module
+		module.Generator{},     // creates go.mod for module
+		mkdocs.Generator{},     // update examples in mkdocs
+		dependabot.Generator{}, // update examples in dependabot
 	}
 
 	for _, generator := range fileGenerators {

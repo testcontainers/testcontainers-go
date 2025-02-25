@@ -3,8 +3,14 @@
 version: 2
 updates:
     - package-ecosystem: github-actions
-      directories:
-        - /
+      directory: /
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directory: /
       schedule:
         interval: monthly
         day: sunday
