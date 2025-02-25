@@ -112,17 +112,15 @@ func TestScyllaWithConfig(t *testing.T) {
 func TestScyllaAlternator(t *testing.T) {
 	ctx := context.Background()
 
-	alternatorPort := uint16(8000)
-
 	t.Run("test-with-alternator", func(t *testing.T) {
 		ctr, err := scylladb.Run(ctx,
 			"scylladb/scylla:6.2.2",
-			scylladb.WithAlternator(alternatorPort),
+			scylladb.WithAlternator(),
 		)
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 
-		cli, err := getDynamoAlternatorClient(t, ctr, alternatorPort)
+		cli, err := getDynamoAlternatorClient(t, ctr)
 		require.NoError(t, err)
 		requireCreateTable(t, cli)
 	})
@@ -134,7 +132,7 @@ func TestScyllaAlternator(t *testing.T) {
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 
-		cli, err := getDynamoAlternatorClient(t, ctr, alternatorPort)
+		cli, err := getDynamoAlternatorClient(t, ctr)
 		require.Error(t, err)
 		require.Nil(t, cli)
 	})
@@ -153,10 +151,10 @@ func (r *scyllaAlternatorResolver) ResolveEndpoint(_ context.Context, _ dynamodb
 }
 
 // getDynamoAlternatorClient returns a new DynamoDB client for the ScyllaDB Alternator.
-func getDynamoAlternatorClient(t *testing.T, c *scylladb.Container, port uint16) (*dynamodb.Client, error) {
+func getDynamoAlternatorClient(t *testing.T, c *scylladb.Container) (*dynamodb.Client, error) {
 	t.Helper()
 
-	hostPort, err := c.ConnectionHost(context.Background(), port)
+	hostPort, err := c.AlternatorConnectionHost(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("connection host: %w", err)
 	}

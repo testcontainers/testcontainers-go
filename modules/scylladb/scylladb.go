@@ -4,11 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net"
-	"strconv"
 	"strings"
-
-	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -17,6 +13,7 @@ import (
 const (
 	port           = "9042/tcp"
 	shardAwarePort = "19042/tcp"
+	alternatorPort = "8000/tcp"
 )
 
 // Container represents a ScyllaDB container type used in the module
@@ -47,16 +44,18 @@ func WithShardAwareness() testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithAlternator enables the Alternator (DynamoDB Compatible API) service in the ScyllaDB container.
+// WithAlternator enables the Alternator (DynamoDB Compatible API) service in the ScyllaDB container,
+// using the default HTTP port 8000.
 // It will set the "alternator-port" parameter to the specified port.
 // It will also set the "alternator-write-isolation" parameter to "always" as a command line argument to the container.
-func WithAlternator(alternatorPort uint16) testcontainers.CustomizeRequestOption {
+func WithAlternator() testcontainers.CustomizeRequestOption {
+	portFlagValue := strings.ReplaceAll(alternatorPort, "/tcp", "")
+
 	return func(req *testcontainers.GenericContainerRequest) error {
-		alternatorPortStr := strconv.FormatInt(int64(alternatorPort), 10)
-		req.ExposedPorts = append(req.ExposedPorts, alternatorPortStr)
-		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForListeningPort(nat.Port(alternatorPortStr)))
+		req.ExposedPorts = append(req.ExposedPorts, alternatorPort)
+		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForListeningPort(alternatorPort))
 		setCommandFlag(req, map[string]string{
-			"--alternator-port":            alternatorPortStr,
+			"--alternator-port":            portFlagValue,
 			"--alternator-write-isolation": "always",
 		})
 
@@ -94,34 +93,17 @@ func WithCustomCommands(flags ...string) testcontainers.CustomizeRequestOption {
 
 // ShardAwareConnectionHost returns the host and port of the ScyllaDB container with the shard-aware port
 func (c Container) ShardAwareConnectionHost(ctx context.Context) (string, error) {
-	return c.ConnectionHost(ctx, 19042)
+	return c.PortEndpoint(ctx, shardAwarePort, "")
 }
 
 // NonShardAwareConnectionHost returns the host and port of the ScyllaDB container with the non-shard-aware port
 func (c Container) NonShardAwareConnectionHost(ctx context.Context) (string, error) {
-	return c.ConnectionHost(ctx, 9042)
+	return c.PortEndpoint(ctx, port, "")
 }
 
-// ConnectionHost returns the host and port of the Scylladb container with the given port
-// and obtaining the host and exposed port from the container
-// Eg: "host:port" -> "localhost:9042" -> "localhost:19042" -> "localhost:8000"
-func (c Container) ConnectionHost(ctx context.Context, port uint16) (string, error) {
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", fmt.Errorf("host: %w", err)
-	}
-
-	natPort, err := nat.NewPort("tcp", strconv.FormatInt(int64(port), 10))
-	if err != nil {
-		return "", fmt.Errorf("new port: %w", err)
-	}
-
-	containerPort, err := c.MappedPort(ctx, natPort)
-	if err != nil {
-		return "", fmt.Errorf("mapped port: %w", err)
-	}
-
-	return net.JoinHostPort(host, containerPort.Port()), nil
+// AlternatorConnectionHost returns the host and port of the ScyllaDB container with the alternator port
+func (c Container) AlternatorConnectionHost(ctx context.Context) (string, error) {
+	return c.PortEndpoint(ctx, alternatorPort, "")
 }
 
 // Run starts a ScyllaDB container with the specified image and options

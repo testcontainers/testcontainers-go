@@ -116,7 +116,7 @@ the [ScyllaDB Docker Best Practices](https://opensource.docs.scylladb.com/stable
 
 The ScyllaDB container exposes the following methods:
 
-#### ConnectionHost
+#### ConnectionHost methods
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
@@ -125,7 +125,8 @@ There exist three methods to get the host and port of the ScyllaDB container, de
 If you just want to test it with a single node and a single core, you can use the `NonShardAwareConnectionHost` method. However, if you're planning
 to use more than one core, you should use the `ShardAwareConnectionHost` method, which uses the **shard-awareness** `19042` port.
 
-Else, if you're planning to use the **Alternator** API, you should use the port you selected in the `WithAlternator` function.
+Else, if you're planning to use the **Alternator** API, you should use the `AlternatorConnectionHost` method,
+which uses the default port `8000`.
 
 <!--codeinclude-->
 [Non-shard-aware connection host](../../modules/scylladb/examples_test.go) inside_block:scyllaDbNonShardAwareConnectionHost
