@@ -48,6 +48,23 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 When starting the MS SQL Server container, you can pass options in a variadic way to configure it.
 
+#### Init Scripts
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to execute SQL files when the container starts, you can use `mssql.WithInitSQL(files
+...io.Reader)` with one or more `*.sql` files. The files will be executed in order after the
+container is ready.
+
+<!--codeinclude-->
+[Example of SQL script](../../modules/mssql/testdata/seed.sql)
+<!--/codeinclude-->
+
+This will:
+
+1. Copy each file into the container.
+2. Execute them using `sqlcmd` after the container is ready.
+
 #### Image
 
 If you need to set a different MS SQL Server Docker image, you can set a valid Docker image as the second argument in the `Run` function.
