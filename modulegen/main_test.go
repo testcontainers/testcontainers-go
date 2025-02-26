@@ -251,7 +251,7 @@ func TestGenerate(t *testing.T) {
 	assertGoModContent(t, module, testProject.originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, module, filepath.Join(generatedTemplatesDir, "Makefile"))
 	assertMkdocsNavItems(t, testProject.ctx, module)
-	assertDependabotUpdates(t, module, testProject.ctx)
+	assertDependabotUpdates(t, testProject.ctx, module)
 }
 
 func TestGenerateModule(t *testing.T) {
@@ -287,7 +287,7 @@ func TestGenerateModule(t *testing.T) {
 	assertGoModContent(t, module, testProject.originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, module, filepath.Join(generatedTemplatesDir, "Makefile"))
 	assertMkdocsNavItems(t, testProject.ctx, module)
-	assertDependabotUpdates(t, module, testProject.ctx)
+	assertDependabotUpdates(t, testProject.ctx, module)
 }
 
 func TestRefresh(t *testing.T) {
@@ -320,12 +320,13 @@ func TestRefresh(t *testing.T) {
 
 	for _, module := range modulesAndExamples {
 		assertMkdocsNavItems(t, testProject.ctx, module)
-		assertDependabotUpdates(t, module, testProject.ctx)
+		assertDependabotUpdates(t, testProject.ctx, module)
 	}
 }
 
 // assert content in the Dependabot descriptor file
-func assertDependabotUpdates(t *testing.T, module context.TestcontainersModule, tmpCtx context.Context) {
+func assertDependabotUpdates(t *testing.T, tmpCtx context.Context, module context.TestcontainersModule) {
+	t.Helper()
 	modules, err := dependabot.GetUpdates(tmpCtx.DependabotConfigFile())
 	require.NoError(t, err)
 

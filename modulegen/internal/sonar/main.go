@@ -39,6 +39,6 @@ func (g Generator) Generate(ctx context.Context) error {
 }
 
 // Refresh refresh the sonar-project.properties file
-func (g Generator) Refresh(ctx context.Context, tcModules []context.TestcontainersModule) error {
+func (g Generator) Refresh(ctx context.Context, _ []context.TestcontainersModule) error {
 	return g.Generate(ctx)
 }
