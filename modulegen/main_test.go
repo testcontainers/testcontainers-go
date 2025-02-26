@@ -463,6 +463,7 @@ func assertMakefileContent(t *testing.T, module context.TestcontainersModule, ma
 // assert content in the nav items from mkdocs.yml
 func assertMkdocsNavItems(t *testing.T, ctx context.Context, module context.TestcontainersModule) {
 	t.Helper()
+
 	config, err := mkdocs.ReadConfig(ctx.MkdocsConfigFile())
 	require.NoError(t, err)
 
@@ -482,13 +483,15 @@ func assertMkdocsNavItems(t *testing.T, ctx context.Context, module context.Test
 		}
 	}
 
-	require.True(t, found)
+	// confirm compose is not in the nav
+	require.NotContains(t, navItems, "modules/compose")
+	if module.Lower() != "compose" {
+		require.True(t, found, "module %s not found in nav items", module.Lower())
+	}
 
 	// first item is the index
 	require.Equal(t, parentDir+"/index.md", navItems[0], navItems)
 
-	// confirm compose is not in the nav
-	require.NotContains(t, navItems, "modules/compose")
 }
 
 func sanitiseContent(bytes []byte) []string {

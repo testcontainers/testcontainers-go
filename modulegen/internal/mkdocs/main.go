@@ -2,6 +2,7 @@ package mkdocs
 
 import (
 	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
@@ -39,23 +40,29 @@ func (g Generator) AddModule(ctx context.Context, tcModule context.Testcontainer
 
 // Refresh refresh the mkdocs config file for all the modules,
 // excluding compose as it has its own page in the docs.
-func (g Generator) Refresh(ctx context.Context, tcModules []context.TestcontainersModule) error {
+func (g Generator) Generate(ctx context.Context, examples []string, modules []string) error {
 	configFile := ctx.MkdocsConfigFile()
 	config, err := ReadConfig(configFile)
 	if err != nil {
 		return err
 	}
 
-	for _, tcModule := range tcModules {
-		if tcModule.Name == "compose" {
+	for _, module := range modules {
+		if module == "compose" {
 			continue
 		}
 
-		isModule := tcModule.IsModule
-		moduleMd := tcModule.ParentDir() + "/" + tcModule.Lower() + ".md"
-		indexMd := tcModule.ParentDir() + "/index.md"
+		moduleMd := "modules/" + strings.ToLower(module) + ".md"
+		indexMd := "modules/index.md"
 
-		config.addModule(isModule, moduleMd, indexMd)
+		config.addModule(true, moduleMd, indexMd)
+	}
+
+	for _, example := range examples {
+		exampleMd := "examples/" + strings.ToLower(example) + ".md"
+		indexMd := "examples/index.md"
+
+		config.addModule(false, exampleMd, indexMd)
 	}
 
 	return writeConfig(configFile, config)

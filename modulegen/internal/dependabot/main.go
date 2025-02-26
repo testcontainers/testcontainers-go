@@ -25,8 +25,8 @@ func (g Generator) AddModule(ctx context.Context, tcModule context.Testcontainer
 	return writeConfig(configFile, config)
 }
 
-// Refresh refresh the dependabot config file for all the modules
-func (g Generator) Refresh(ctx context.Context, tcModules []context.TestcontainersModule) error {
+// Generate generates dependabot config file from source
+func (g Generator) Generate(ctx context.Context, examples []string, modules []string) error {
 	configFile := ctx.DependabotConfigFile()
 
 	config, err := readConfig(configFile)
@@ -34,21 +34,14 @@ func (g Generator) Refresh(ctx context.Context, tcModules []context.Testcontaine
 		return fmt.Errorf("read config: %w", err)
 	}
 
-	for _, tcModule := range tcModules {
-		directory := "/" + tcModule.ParentDir() + "/" + tcModule.Lower()
+	for _, example := range examples {
+		directory := "/examples/" + example
 		config.addUpdate(newUpdate(directory, "gomod"))
 	}
 
-	return writeConfig(configFile, config)
-}
-
-// Generate generates dependabot config file from source
-func (g Generator) Generate(ctx context.Context) error {
-	configFile := ctx.DependabotConfigFile()
-
-	config, err := readConfig(configFile)
-	if err != nil {
-		return fmt.Errorf("read config: %w", err)
+	for _, module := range modules {
+		directory := "/modules/" + module
+		config.addUpdate(newUpdate(directory, "gomod"))
 	}
 
 	return writeConfig(configFile, config)
