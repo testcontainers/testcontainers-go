@@ -37,7 +37,8 @@ func (g Generator) AddModule(ctx context.Context, tcModule context.Testcontainer
 	return writeConfig(configFile, config)
 }
 
-// Refresh refresh the mkdocs config file for all the modules
+// Refresh refresh the mkdocs config file for all the modules,
+// excluding compose as it has its own page in the docs.
 func (g Generator) Refresh(ctx context.Context, tcModules []context.TestcontainersModule) error {
 	configFile := ctx.MkdocsConfigFile()
 	config, err := ReadConfig(configFile)
@@ -46,6 +47,10 @@ func (g Generator) Refresh(ctx context.Context, tcModules []context.Testcontaine
 	}
 
 	for _, tcModule := range tcModules {
+		if tcModule.Name == "compose" {
+			continue
+		}
+
 		isModule := tcModule.IsModule
 		moduleMd := tcModule.ParentDir() + "/" + tcModule.Lower() + ".md"
 		indexMd := tcModule.ParentDir() + "/index.md"

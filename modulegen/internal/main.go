@@ -99,9 +99,6 @@ func Refresh(ctx context.Context) error {
 		}
 	}
 
-	fmt.Println("Modules and examples refreshed.")
-	fmt.Println("🙏 Commit the modified files and submit a pull request to include them into the project.")
-	fmt.Println("Thanks!")
 	return nil
 }
 

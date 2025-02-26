@@ -27,7 +27,14 @@ var RefreshModulesCmd = &cobra.Command{
 			return fmt.Errorf(">> could not get the root dir: %w", err)
 		}
 
-		return internal.Refresh(ctx)
+		if err := internal.Refresh(ctx); err != nil {
+			return fmt.Errorf(">> could not refresh the modules: %w", err)
+		}
+
+		fmt.Println("Modules and examples refreshed.")
+		fmt.Println("🙏 Commit the modified files and submit a pull request to include them into the project.")
+		fmt.Println("Thanks!")
+		return nil
 	},
 }
 

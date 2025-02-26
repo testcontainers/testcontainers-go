@@ -485,6 +485,9 @@ func assertMkdocsNavItems(t *testing.T, ctx context.Context, module context.Test
 
 	// first item is the index
 	require.Equal(t, parentDir+"/index.md", navItems[0], navItems)
+
+	// confirm compose is not in the nav
+	require.NotContains(t, navItems, "modules/compose")
 }
 
 func sanitiseContent(bytes []byte) []string {
