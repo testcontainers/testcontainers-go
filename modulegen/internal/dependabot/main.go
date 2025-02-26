@@ -48,7 +48,7 @@ func (g Generator) Generate(ctx context.Context) error {
 
 	config, err := readConfig(configFile)
 	if err != nil {
-		return err
+		return fmt.Errorf("read config: %w", err)
 	}
 
 	return writeConfig(configFile, config)
@@ -57,7 +57,7 @@ func (g Generator) Generate(ctx context.Context) error {
 func GetUpdates(configFile string) (Updates, error) {
 	config, err := readConfig(configFile)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read config: %w", err)
 	}
 	return config.Updates, nil
 }
@@ -65,7 +65,7 @@ func GetUpdates(configFile string) (Updates, error) {
 func CopyConfig(configFile string, tmpFile string) error {
 	config, err := readConfig(configFile)
 	if err != nil {
-		return err
+		return fmt.Errorf("read config: %w", err)
 	}
 	return writeConfig(tmpFile, config)
 }
