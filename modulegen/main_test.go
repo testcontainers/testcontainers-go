@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/modulegen/internal"
@@ -73,10 +72,10 @@ func TestModule(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			module := test.module
 
-			assert.Equal(t, "mongodb", module.Lower())
-			assert.Equal(t, test.expectedTitle, module.Title())
-			assert.Equal(t, "Container", module.ContainerName())
-			assert.Equal(t, test.expectedEntrypoint, module.Entrypoint())
+			require.Equal(t, "mongodb", module.Lower())
+			require.Equal(t, test.expectedTitle, module.Title())
+			require.Equal(t, "Container", module.ContainerName())
+			require.Equal(t, test.expectedEntrypoint, module.Entrypoint())
 		})
 	}
 }
@@ -333,20 +332,20 @@ func assertModuleDocContent(t *testing.T, module context.TestcontainersModule, m
 	entrypoint := module.Entrypoint()
 
 	data := sanitiseContent(content)
-	assert.Equal(t, "# "+title, data[0])
-	assert.Equal(t, `Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>`, data[2])
-	assert.Equal(t, "## Introduction", data[4])
-	assert.Equal(t, "The Testcontainers module for "+title+".", data[6])
-	assert.Equal(t, "## Adding this module to your project dependencies", data[8])
-	assert.Equal(t, "Please run the following command to add the "+title+" module to your Go dependencies:", data[10])
-	assert.Equal(t, "go get github.com/testcontainers/testcontainers-go/"+module.ParentDir()+"/"+lower, data[13])
-	assert.Equal(t, "<!--codeinclude-->", data[18])
-	assert.Equal(t, "[Creating a "+title+" container](../../"+module.ParentDir()+"/"+lower+"/examples_test.go) inside_block:Example"+entrypoint, data[19])
-	assert.Equal(t, "<!--/codeinclude-->", data[20])
-	assert.Equal(t, "The "+title+" module exposes one entrypoint function to create the "+title+" container, and this function receives three parameters:", data[31])
-	assert.True(t, strings.HasSuffix(data[34], "(*"+title+"Container, error)"))
-	assert.Equal(t, "If you need to set a different "+title+" Docker image, you can set a valid Docker image as the second argument in the `Run` function.", data[47])
-	assert.Equal(t, "E.g. `Run(context.Background(), \""+module.Image+"\")`.", data[48])
+	require.Equal(t, "# "+title, data[0])
+	require.Equal(t, `Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>`, data[2])
+	require.Equal(t, "## Introduction", data[4])
+	require.Equal(t, "The Testcontainers module for "+title+".", data[6])
+	require.Equal(t, "## Adding this module to your project dependencies", data[8])
+	require.Equal(t, "Please run the following command to add the "+title+" module to your Go dependencies:", data[10])
+	require.Equal(t, "go get github.com/testcontainers/testcontainers-go/"+module.ParentDir()+"/"+lower, data[13])
+	require.Equal(t, "<!--codeinclude-->", data[18])
+	require.Equal(t, "[Creating a "+title+" container](../../"+module.ParentDir()+"/"+lower+"/examples_test.go) inside_block:Example"+entrypoint, data[19])
+	require.Equal(t, "<!--/codeinclude-->", data[20])
+	require.Equal(t, "The "+title+" module exposes one entrypoint function to create the "+title+" container, and this function receives three parameters:", data[31])
+	require.True(t, strings.HasSuffix(data[34], "(*"+title+"Container, error)"))
+	require.Equal(t, "If you need to set a different "+title+" Docker image, you can set a valid Docker image as the second argument in the `Run` function.", data[47])
+	require.Equal(t, "E.g. `Run(context.Background(), \""+module.Image+"\")`.", data[48])
 }
 
 // assert content module test
@@ -359,14 +358,14 @@ func assertExamplesTestContent(t *testing.T, module context.TestcontainersModule
 	entrypoint := module.Entrypoint()
 
 	data := sanitiseContent(content)
-	assert.Equal(t, "package "+lower+"_test", data[0])
-	assert.Equal(t, "\t\"github.com/testcontainers/testcontainers-go\"", data[7])
-	assert.Equal(t, "\t\"github.com/testcontainers/testcontainers-go/modules/"+lower+"\"", data[8])
-	assert.Equal(t, "func Example"+entrypoint+"() {", data[11])
-	assert.Equal(t, "\t"+lower+"Container, err := "+lower+"."+entrypoint+"(ctx, \""+module.Image+"\")", data[14])
-	assert.Equal(t, "\tfmt.Println(state.Running)", data[32])
-	assert.Equal(t, "\t// Output:", data[34])
-	assert.Equal(t, "\t// true", data[35])
+	require.Equal(t, "package "+lower+"_test", data[0])
+	require.Equal(t, "\t\"github.com/testcontainers/testcontainers-go\"", data[7])
+	require.Equal(t, "\t\"github.com/testcontainers/testcontainers-go/modules/"+lower+"\"", data[8])
+	require.Equal(t, "func Example"+entrypoint+"() {", data[11])
+	require.Equal(t, "\t"+lower+"Container, err := "+lower+"."+entrypoint+"(ctx, \""+module.Image+"\")", data[14])
+	require.Equal(t, "\tfmt.Println(state.Running)", data[32])
+	require.Equal(t, "\t// Output:", data[34])
+	require.Equal(t, "\t// true", data[35])
 }
 
 // assert content module test
@@ -376,9 +375,9 @@ func assertModuleTestContent(t *testing.T, module context.TestcontainersModule, 
 	require.NoError(t, err)
 
 	data := sanitiseContent(content)
-	assert.Equal(t, "package "+module.Lower()+"_test", data[0])
-	assert.Equal(t, "func Test"+module.Title()+"(t *testing.T) {", data[12])
-	assert.Equal(t, "\tctr, err := "+module.Lower()+"."+module.Entrypoint()+"(ctx, \""+module.Image+"\")", data[15])
+	require.Equal(t, "package "+module.Lower()+"_test", data[0])
+	require.Equal(t, "func Test"+module.Title()+"(t *testing.T) {", data[12])
+	require.Equal(t, "\tctr, err := "+module.Lower()+"."+module.Entrypoint()+"(ctx, \""+module.Image+"\")", data[15])
 }
 
 // assert content module
@@ -413,9 +412,9 @@ func assertGoModContent(t *testing.T, module context.TestcontainersModule, tcVer
 	require.NoError(t, err)
 
 	data := sanitiseContent(content)
-	assert.Equal(t, "module github.com/testcontainers/testcontainers-go/"+module.ParentDir()+"/"+module.Lower(), data[0])
-	assert.Equal(t, "require github.com/testcontainers/testcontainers-go "+tcVersion, data[4])
-	assert.Equal(t, "replace github.com/testcontainers/testcontainers-go => ../..", data[6])
+	require.Equal(t, "module github.com/testcontainers/testcontainers-go/"+module.ParentDir()+"/"+module.Lower(), data[0])
+	require.Equal(t, "require github.com/testcontainers/testcontainers-go "+tcVersion, data[4])
+	require.Equal(t, "replace github.com/testcontainers/testcontainers-go => ../..", data[6])
 }
 
 // assert content Makefile
@@ -425,7 +424,7 @@ func assertMakefileContent(t *testing.T, module context.TestcontainersModule, ma
 	require.NoError(t, err)
 
 	data := sanitiseContent(content)
-	assert.Equal(t, data[4], "\t$(MAKE) test-"+module.Lower())
+	require.Equal(t, data[4], "\t$(MAKE) test-"+module.Lower())
 }
 
 // assert content in the nav items from mkdocs.yml
@@ -454,10 +453,10 @@ func assertMkdocsNavItems(t *testing.T, ctx context.Context, module context.Test
 		}
 	}
 
-	assert.True(t, found)
+	require.True(t, found)
 
 	// first item is the index
-	assert.Equal(t, parentDir+"/index.md", navItems[0], navItems)
+	require.Equal(t, parentDir+"/index.md", navItems[0], navItems)
 }
 
 func sanitiseContent(bytes []byte) []string {
