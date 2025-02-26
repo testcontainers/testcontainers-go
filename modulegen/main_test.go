@@ -352,6 +352,17 @@ func assertDependabotUpdates(t *testing.T, tmpCtx context.Context, module contex
 	// third item is the pip module
 	require.Equal(t, "/", modules[2].Directory, modules)
 	require.Equal(t, "pip", modules[2].PackageEcosystem, "PackageEcosystem should be pip")
+
+	// modulegen exists
+	exists := false
+	for _, module := range modules {
+		if module.Directory == "/modulegen" {
+			require.Equal(t, "gomod", module.PackageEcosystem, "PackageEcosystem should be gomod")
+			exists = true
+			break
+		}
+	}
+	require.True(t, exists, "modulegen should exist")
 }
 
 // assert content module file in the docs
@@ -569,9 +580,6 @@ func copyInitialProject(t *testing.T) testProject {
 	require.NoError(t, err)
 
 	// .github/dependabot.yml
-	err = dependabot.CopyConfig(ctx.DependabotConfigFile(), tmpCtx.DependabotConfigFile())
-	require.NoError(t, err)
-
 	err = dependabot.CopyConfig(ctx.DependabotConfigFile(), tmpCtx.DependabotConfigFile())
 	require.NoError(t, err)
 
