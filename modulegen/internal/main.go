@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
+	"github.com/testcontainers/testcontainers-go/modulegen/internal/dependabot"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/make"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/mkdocs"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/module"
@@ -13,6 +14,9 @@ import (
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/vscode"
 )
 
+// Generate generates all the files for a module or example,
+// running the `go mod tidy`, `go vet` and `make lint` commands
+// in the given directory.
 func Generate(moduleVar context.TestcontainersModuleVar, isModule bool) error {
 	ctx, err := context.GetRootContext()
 	if err != nil {
@@ -52,9 +56,44 @@ func Generate(moduleVar context.TestcontainersModuleVar, isModule bool) error {
 	return nil
 }
 
-type ProjectGenerator interface {
-	Generate(context.Context) error
+// Refresh refreshes the modules and examples, returning an error if something goes wrong.
+func Refresh(ctx context.Context) error {
+	modules, err := ctx.GetModules()
+	if err != nil {
+		return fmt.Errorf("get modules: %w", err)
+	}
+
+	examples, err := ctx.GetExamples()
+	if err != nil {
+		return fmt.Errorf("get examples: %w", err)
+	}
+
+	generators := []ProjectGenerator{
+		mkdocs.Generator{},     // update examples in mkdocs
+		dependabot.Generator{}, // update examples in dependabot
+		vscode.Generator{},     // update vscode workspace
+		sonar.Generator{},      // update sonar-project.properties
+	}
+
+	for _, generator := range generators {
+		err := generator.Generate(ctx, examples, modules)
+		if err != nil {
+			return fmt.Errorf("refresh modules: %w", err)
+		}
+	}
+
+	return nil
 }
+
+// ProjectGenerator is the interface for the project generators, which takes
+// a context and for each module in the context, adds it to the project files,
+// returning an error if something goes wrong.
+type ProjectGenerator interface {
+	Generate(ctx context.Context, examples []string, modules []string) error
+}
+
+// FileGenerator is the interface for the file generators, which takes
+// a module and generate a file for it, returning an error if something goes wrong.
 type FileGenerator interface {
 	AddModule(context.Context, context.TestcontainersModule) error
 }
@@ -65,9 +104,10 @@ func GenerateFiles(ctx context.Context, tcModule context.TestcontainersModule) e
 	}
 
 	fileGenerators := []FileGenerator{
-		make.Generator{},   // creates Makefile for module
-		module.Generator{}, // creates go.mod for module
-		mkdocs.Generator{}, // update examples in mkdocs
+		make.Generator{},       // creates Makefile for module
+		module.Generator{},     // creates go.mod for module
+		mkdocs.Generator{},     // update examples in mkdocs
+		dependabot.Generator{}, // update examples in dependabot
 	}
 
 	for _, generator := range fileGenerators {
@@ -85,8 +125,17 @@ func GenerateFiles(ctx context.Context, tcModule context.TestcontainersModule) e
 		sonar.Generator{},  // update sonar-project.properties
 	}
 
+	examples, err := ctx.GetExamples()
+	if err != nil {
+		return err
+	}
+	modules, err := ctx.GetModules()
+	if err != nil {
+		return err
+	}
+
 	for _, generator := range projectGenerators {
-		err := generator.Generate(ctx)
+		err := generator.Generate(ctx, examples, modules)
 		if err != nil {
 			return err
 		}

@@ -10,23 +10,12 @@ import (
 	internal_template "github.com/testcontainers/testcontainers-go/modulegen/internal/template"
 )
 
+// Generator is a struct that contains the logic to generate the sonar-project.properties file.
 type Generator struct{}
 
 // Generate updates sonar-project.properties
-func (g Generator) Generate(ctx context.Context) error {
-	rootCtx, err := context.GetRootContext()
-	if err != nil {
-		return err
-	}
-	examples, err := rootCtx.GetExamples()
-	if err != nil {
-		return err
-	}
-	modules, err := rootCtx.GetModules()
-	if err != nil {
-		return err
-	}
-	mkdocsConfig, err := mkdocs.ReadConfig(rootCtx.MkdocsConfigFile())
+func (g Generator) Generate(ctx context.Context, examples []string, modules []string) error {
+	mkdocsConfig, err := mkdocs.ReadConfig(ctx.MkdocsConfigFile())
 	if err != nil {
 		fmt.Printf(">> could not read MkDocs config: %v\n", err)
 		return err
