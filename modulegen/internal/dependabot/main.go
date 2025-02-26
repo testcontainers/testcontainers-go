@@ -1,6 +1,10 @@
 package dependabot
 
-import "github.com/testcontainers/testcontainers-go/modulegen/internal/context"
+import (
+	"fmt"
+
+	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
+)
 
 type Generator struct{}
 
@@ -10,13 +14,30 @@ func (g Generator) AddModule(ctx context.Context, tcModule context.Testcontainer
 
 	config, err := readConfig(configFile)
 	if err != nil {
-		return err
+		return fmt.Errorf("read config: %w", err)
 	}
 
 	packageEcosystem := "gomod"
 	directory := "/" + tcModule.ParentDir() + "/" + tcModule.Lower()
 
 	config.addUpdate(newUpdate(directory, packageEcosystem))
+
+	return writeConfig(configFile, config)
+}
+
+// Refresh refresh the dependabot config file for all the modules
+func (g Generator) Refresh(ctx context.Context, tcModules []context.TestcontainersModule) error {
+	configFile := ctx.DependabotConfigFile()
+
+	config, err := readConfig(configFile)
+	if err != nil {
+		return fmt.Errorf("read config: %w", err)
+	}
+
+	for _, tcModule := range tcModules {
+		directory := "/" + tcModule.ParentDir() + "/" + tcModule.Lower()
+		config.addUpdate(newUpdate(directory, "gomod"))
+	}
 
 	return writeConfig(configFile, config)
 }

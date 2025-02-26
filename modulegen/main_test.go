@@ -250,8 +250,8 @@ func TestGenerate(t *testing.T) {
 	assertModuleContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+".go"))
 	assertGoModContent(t, module, testProject.originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, module, filepath.Join(generatedTemplatesDir, "Makefile"))
-	assertMkdocsNavItems(t, testProject.ctx, module, testProject.originalConfig)
-	assertDependabotUpdates(t, module, testProject.originalDependabotConfigUpdates, testProject.ctx)
+	assertMkdocsNavItems(t, testProject.ctx, module)
+	assertDependabotUpdates(t, module, testProject.ctx)
 }
 
 func TestGenerateModule(t *testing.T) {
@@ -286,16 +286,48 @@ func TestGenerateModule(t *testing.T) {
 	assertModuleContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+".go"))
 	assertGoModContent(t, module, testProject.originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, module, filepath.Join(generatedTemplatesDir, "Makefile"))
-	assertMkdocsNavItems(t, testProject.ctx, module, testProject.originalConfig)
-	assertDependabotUpdates(t, module, testProject.originalDependabotConfigUpdates, testProject.ctx)
+	assertMkdocsNavItems(t, testProject.ctx, module)
+	assertDependabotUpdates(t, module, testProject.ctx)
+}
+
+func TestRefresh(t *testing.T) {
+	testProject := copyInitialProject(t)
+
+	err := internal.Refresh(testProject.ctx)
+	require.NoError(t, err)
+
+	var modulesAndExamples []context.TestcontainersModule
+
+	examples, err := testProject.ctx.GetExamples()
+	require.NoError(t, err)
+
+	for _, example := range examples {
+		modulesAndExamples = append(modulesAndExamples, context.TestcontainersModule{
+			Name:     example,
+			IsModule: false,
+		})
+	}
+
+	modules, err := testProject.ctx.GetModules()
+	require.NoError(t, err)
+
+	for _, module := range modules {
+		modulesAndExamples = append(modulesAndExamples, context.TestcontainersModule{
+			Name:     module,
+			IsModule: true,
+		})
+	}
+
+	for _, module := range modulesAndExamples {
+		assertMkdocsNavItems(t, testProject.ctx, module)
+		assertDependabotUpdates(t, module, testProject.ctx)
+	}
 }
 
 // assert content in the Dependabot descriptor file
-func assertDependabotUpdates(t *testing.T, module context.TestcontainersModule, originalConfigUpdates dependabot.Updates, tmpCtx context.Context) {
+func assertDependabotUpdates(t *testing.T, module context.TestcontainersModule, tmpCtx context.Context) {
 	modules, err := dependabot.GetUpdates(tmpCtx.DependabotConfigFile())
 	require.NoError(t, err)
-
-	require.Len(t, modules, len(originalConfigUpdates)+1)
 
 	// the module should be in the dependabot updates
 	found := false
@@ -428,7 +460,7 @@ func assertMakefileContent(t *testing.T, module context.TestcontainersModule, ma
 }
 
 // assert content in the nav items from mkdocs.yml
-func assertMkdocsNavItems(t *testing.T, ctx context.Context, module context.TestcontainersModule, originalConfig *mkdocs.Config) {
+func assertMkdocsNavItems(t *testing.T, ctx context.Context, module context.TestcontainersModule) {
 	t.Helper()
 	config, err := mkdocs.ReadConfig(ctx.MkdocsConfigFile())
 	require.NoError(t, err)
@@ -436,13 +468,9 @@ func assertMkdocsNavItems(t *testing.T, ctx context.Context, module context.Test
 	parentDir := module.ParentDir()
 
 	navItems := config.Nav[4].Examples
-	expectedEntries := originalConfig.Nav[4].Examples
 	if module.IsModule {
 		navItems = config.Nav[3].Modules
-		expectedEntries = originalConfig.Nav[3].Modules
 	}
-
-	require.Len(t, navItems, len(expectedEntries)+1)
 
 	// the module should be in the nav
 	found := false
@@ -471,9 +499,8 @@ func sanitiseContent(bytes []byte) []string {
 }
 
 type testProject struct {
-	ctx                             context.Context
-	originalConfig                  *mkdocs.Config
-	originalDependabotConfigUpdates dependabot.Updates
+	ctx            context.Context
+	originalConfig *mkdocs.Config
 }
 
 func copyInitialProject(t *testing.T) testProject {
@@ -482,6 +509,7 @@ func copyInitialProject(t *testing.T) testProject {
 	tmpCtx := context.New(t.TempDir())
 	ctx := getTestRootContext(t)
 
+	// examples and modules
 	moduleTypes := []string{"examples", "modules"}
 	for _, moduleType := range moduleTypes {
 		moduleTypeDir := filepath.Join(tmpCtx.RootDir, moduleType)
@@ -521,28 +549,51 @@ func copyInitialProject(t *testing.T) testProject {
 		}
 	}
 
+	// .github/workflows
 	githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
 	err := os.MkdirAll(githubWorkflowsTmp, 0o777)
 	require.NoError(t, err)
 
+	// mkdocs.yml
 	err = mkdocs.CopyConfig(ctx.MkdocsConfigFile(), tmpCtx.MkdocsConfigFile())
 	require.NoError(t, err)
 
 	originalConfig, err := mkdocs.ReadConfig(tmpCtx.MkdocsConfigFile())
 	require.NoError(t, err)
 
+	// .github/dependabot.yml
 	err = dependabot.CopyConfig(ctx.DependabotConfigFile(), tmpCtx.DependabotConfigFile())
 	require.NoError(t, err)
 
-	originalDependabotConfigUpdates, err := dependabot.GetUpdates(tmpCtx.DependabotConfigFile())
+	err = dependabot.CopyConfig(ctx.DependabotConfigFile(), tmpCtx.DependabotConfigFile())
 	require.NoError(t, err)
 
-	err = dependabot.CopyConfig(ctx.DependabotConfigFile(), tmpCtx.DependabotConfigFile())
+	// go.mod
+	goModFile, err := os.ReadFile(ctx.GoModFile())
+	require.NoError(t, err)
+
+	err = os.WriteFile(tmpCtx.GoModFile(), goModFile, 0o777)
+	require.NoError(t, err)
+
+	// sonar-project.properties
+	sonarProjectFile, err := os.ReadFile(ctx.SonarProjectFile())
+	require.NoError(t, err)
+
+	err = os.WriteFile(tmpCtx.SonarProjectFile(), sonarProjectFile, 0o777)
+	require.NoError(t, err)
+
+	// .vscode/testcontainers-go.code-workspace
+	err = os.MkdirAll(filepath.Dir(tmpCtx.VSCodeWorkspaceFile()), 0o777)
+	require.NoError(t, err)
+
+	vsCodeWorkspaceFile, err := os.ReadFile(ctx.VSCodeWorkspaceFile())
+	require.NoError(t, err)
+
+	err = os.WriteFile(tmpCtx.VSCodeWorkspaceFile(), vsCodeWorkspaceFile, 0o777)
 	require.NoError(t, err)
 
 	return testProject{
-		ctx:                             tmpCtx,
-		originalConfig:                  originalConfig,
-		originalDependabotConfigUpdates: originalDependabotConfigUpdates,
+		ctx:            tmpCtx,
+		originalConfig: originalConfig,
 	}
 }

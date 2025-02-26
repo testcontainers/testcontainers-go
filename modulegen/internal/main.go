@@ -53,11 +53,67 @@ func Generate(moduleVar context.TestcontainersModuleVar, isModule bool) error {
 	return nil
 }
 
+func Refresh(ctx context.Context) error {
+	var modulesAndExamples []context.TestcontainersModule
+
+	modules, err := ctx.GetModules()
+	if err != nil {
+		return fmt.Errorf("get modules: %w", err)
+	}
+	for _, module := range modules {
+		tcModule := context.TestcontainersModule{
+			Image:     "",
+			IsModule:  true,
+			Name:      module,
+			TitleName: "",
+		}
+		modulesAndExamples = append(modulesAndExamples, tcModule)
+	}
+
+	examples, err := ctx.GetExamples()
+	if err != nil {
+		return fmt.Errorf("get examples: %w", err)
+	}
+
+	for _, example := range examples {
+		tcModule := context.TestcontainersModule{
+			Image:     "",
+			IsModule:  false,
+			Name:      example,
+			TitleName: "",
+		}
+		modulesAndExamples = append(modulesAndExamples, tcModule)
+	}
+
+	refreshers := []ModuleRefresher{
+		mkdocs.Generator{},     // update examples in mkdocs
+		dependabot.Generator{}, // update examples in dependabot
+		vscode.Generator{},     // update vscode workspace
+		sonar.Generator{},      // update sonar-project.properties
+	}
+
+	for _, refresher := range refreshers {
+		err := refresher.Refresh(ctx, modulesAndExamples)
+		if err != nil {
+			return fmt.Errorf("refresh modules: %w", err)
+		}
+	}
+
+	fmt.Println("Modules and examples refreshed.")
+	fmt.Println("🙏 Commit the modified files and submit a pull request to include them into the project.")
+	fmt.Println("Thanks!")
+	return nil
+}
+
 type ProjectGenerator interface {
 	Generate(context.Context) error
 }
 type FileGenerator interface {
 	AddModule(context.Context, context.TestcontainersModule) error
+}
+
+type ModuleRefresher interface {
+	Refresh(context.Context, []context.TestcontainersModule) error
 }
 
 func GenerateFiles(ctx context.Context, tcModule context.TestcontainersModule) error {

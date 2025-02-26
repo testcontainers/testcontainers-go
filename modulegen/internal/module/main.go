@@ -21,7 +21,13 @@ func (g Generator) AddModule(ctx context.Context, tcModule context.Testcontainer
 	if err != nil {
 		return err
 	}
-	return generateGoModFile(moduleDir, tcModule)
+	return generateGoModFile(ctx, moduleDir, tcModule)
+}
+
+// Refresh is a NOOP for this generator, as we don't want to override the go.mod file once it's created
+func (g Generator) Refresh(_ context.Context, _ []context.TestcontainersModule) error {
+	// NOOP: we don't want to override the go.mod file once it's created
+	return nil
 }
 
 func generateGoFiles(moduleDir string, tcModule context.TestcontainersModule) error {
@@ -36,17 +42,13 @@ func generateGoFiles(moduleDir string, tcModule context.TestcontainersModule) er
 	return GenerateFiles(moduleDir, tcModule.Lower(), funcMap, tcModule)
 }
 
-func generateGoModFile(moduleDir string, tcModule context.TestcontainersModule) error {
-	rootCtx, err := context.GetRootContext()
-	if err != nil {
-		return err
-	}
-	mkdocsConfig, err := mkdocs.ReadConfig(rootCtx.MkdocsConfigFile())
+func generateGoModFile(ctx context.Context, moduleDir string, tcModule context.TestcontainersModule) error {
+	mkdocsConfig, err := mkdocs.ReadConfig(ctx.MkdocsConfigFile())
 	if err != nil {
 		fmt.Printf(">> could not read MkDocs config: %v\n", err)
 		return err
 	}
-	rootGoModFile := rootCtx.GoModFile()
+	rootGoModFile := ctx.GoModFile()
 	directory := "/" + tcModule.ParentDir() + "/" + tcModule.Lower()
 	tcVersion := mkdocsConfig.Extra.LatestVersion
 	return modfile.GenerateModFile(moduleDir, rootGoModFile, directory, tcVersion)

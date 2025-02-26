@@ -14,19 +14,15 @@ type Generator struct{}
 
 // Generate updates sonar-project.properties
 func (g Generator) Generate(ctx context.Context) error {
-	rootCtx, err := context.GetRootContext()
+	examples, err := ctx.GetExamples()
 	if err != nil {
 		return err
 	}
-	examples, err := rootCtx.GetExamples()
+	modules, err := ctx.GetModules()
 	if err != nil {
 		return err
 	}
-	modules, err := rootCtx.GetModules()
-	if err != nil {
-		return err
-	}
-	mkdocsConfig, err := mkdocs.ReadConfig(rootCtx.MkdocsConfigFile())
+	mkdocsConfig, err := mkdocs.ReadConfig(ctx.MkdocsConfigFile())
 	if err != nil {
 		fmt.Printf(">> could not read MkDocs config: %v\n", err)
 		return err
@@ -40,4 +36,9 @@ func (g Generator) Generate(ctx context.Context) error {
 	}
 
 	return internal_template.GenerateFile(t, ctx.SonarProjectFile(), name, config)
+}
+
+// Refresh refresh the sonar-project.properties file
+func (g Generator) Refresh(ctx context.Context, tcModules []context.TestcontainersModule) error {
+	return g.Generate(ctx)
 }

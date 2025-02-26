@@ -37,6 +37,25 @@ func (g Generator) AddModule(ctx context.Context, tcModule context.Testcontainer
 	return writeConfig(configFile, config)
 }
 
+// Refresh refresh the mkdocs config file for all the modules
+func (g Generator) Refresh(ctx context.Context, tcModules []context.TestcontainersModule) error {
+	configFile := ctx.MkdocsConfigFile()
+	config, err := ReadConfig(configFile)
+	if err != nil {
+		return err
+	}
+
+	for _, tcModule := range tcModules {
+		isModule := tcModule.IsModule
+		moduleMd := tcModule.ParentDir() + "/" + tcModule.Lower() + ".md"
+		indexMd := tcModule.ParentDir() + "/index.md"
+
+		config.addModule(isModule, moduleMd, indexMd)
+	}
+
+	return writeConfig(configFile, config)
+}
+
 func CopyConfig(configFile string, tmpFile string) error {
 	config, err := ReadConfig(configFile)
 	if err != nil {
