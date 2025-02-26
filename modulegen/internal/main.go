@@ -53,6 +53,7 @@ func Generate(moduleVar context.TestcontainersModuleVar, isModule bool) error {
 	return nil
 }
 
+// Refresh refreshes the modules and examples, returning an error if something goes wrong.
 func Refresh(ctx context.Context) error {
 	var modulesAndExamples []context.TestcontainersModule
 
@@ -102,13 +103,21 @@ func Refresh(ctx context.Context) error {
 	return nil
 }
 
+// ProjectGenerator is the interface for the project generators, which takes
+// a context and generate a file for it, returning an error if something goes wrong.
 type ProjectGenerator interface {
 	Generate(context.Context) error
 }
+
+// FileGenerator is the interface for the file generators, which takes
+// a module and generate a file for it, returning an error if something goes wrong.
 type FileGenerator interface {
 	AddModule(context.Context, context.TestcontainersModule) error
 }
 
+// ModuleRefresher is the interface for the modules refreshers, which takes
+// a list of modules and refresh the files for them, returning an error if
+// something goes wrong.
 type ModuleRefresher interface {
 	Refresh(context.Context, []context.TestcontainersModule) error
 }
