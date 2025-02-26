@@ -6,6 +6,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
 )
 
+// Generator is a struct that contains the logic to generate the dependabot config file.
 type Generator struct{}
 
 // AddModule update dependabot with the new module
@@ -47,6 +48,7 @@ func (g Generator) Generate(ctx context.Context, examples []string, modules []st
 	return writeConfig(configFile, config)
 }
 
+// GetUpdates returns the updates from the dependabot config file
 func GetUpdates(configFile string) (Updates, error) {
 	config, err := readConfig(configFile)
 	if err != nil {
@@ -55,6 +57,8 @@ func GetUpdates(configFile string) (Updates, error) {
 	return config.Updates, nil
 }
 
+// CopyConfig helper function to copy the dependabot config file to a another file
+// in the tests.
 func CopyConfig(configFile string, tmpFile string) error {
 	config, err := readConfig(configFile)
 	if err != nil {

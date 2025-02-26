@@ -14,6 +14,9 @@ import (
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/vscode"
 )
 
+// Generate generates all the files for a module or example,
+// running the `go mod tidy`, `go vet` and `make lint` commands
+// in the given directory.
 func Generate(moduleVar context.TestcontainersModuleVar, isModule bool) error {
 	ctx, err := context.GetRootContext()
 	if err != nil {

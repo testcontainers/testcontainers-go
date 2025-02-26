@@ -4,6 +4,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
 )
 
+// Generator is a struct that contains the logic to generate the vscode workspace file.
 type Generator struct{}
 
 // Generate updates the workspace for vscode

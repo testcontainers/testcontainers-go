@@ -1,6 +1,7 @@
 package mkdocs
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,11 +12,11 @@ import (
 func writeConfig(configFile string, config *Config) error {
 	err := os.MkdirAll(filepath.Dir(configFile), 0o755)
 	if err != nil {
-		return err
+		return fmt.Errorf("create directory: %w", err)
 	}
 	data, err := yaml.Marshal(config)
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal config: %w", err)
 	}
 	return os.WriteFile(configFile, overrideData(data), 0o644)
 }

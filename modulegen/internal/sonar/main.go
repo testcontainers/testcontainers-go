@@ -10,6 +10,7 @@ import (
 	internal_template "github.com/testcontainers/testcontainers-go/modulegen/internal/template"
 )
 
+// Generator is a struct that contains the logic to generate the sonar-project.properties file.
 type Generator struct{}
 
 // Generate updates sonar-project.properties

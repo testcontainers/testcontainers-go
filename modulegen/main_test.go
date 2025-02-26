@@ -524,7 +524,13 @@ func copyInitialProject(t *testing.T) testProject {
 	t.Helper()
 
 	tmpCtx := context.New(t.TempDir())
-	ctx := getTestRootContext(t)
+
+	current, err := os.Getwd()
+	require.NoError(t, err)
+
+	// Obtains the root context from the current working directory, its parent,
+	// as the modulegen tool lives in the root of the project.
+	ctx := context.New(filepath.Dir(current))
 
 	// examples and modules
 	moduleTypes := []string{"examples", "modules"}
@@ -568,7 +574,7 @@ func copyInitialProject(t *testing.T) testProject {
 
 	// .github/workflows
 	githubWorkflowsTmp := tmpCtx.GithubWorkflowsDir()
-	err := os.MkdirAll(githubWorkflowsTmp, 0o777)
+	err = os.MkdirAll(githubWorkflowsTmp, 0o777)
 	require.NoError(t, err)
 
 	// mkdocs.yml

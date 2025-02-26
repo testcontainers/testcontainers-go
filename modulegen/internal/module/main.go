@@ -12,6 +12,7 @@ import (
 	internal_template "github.com/testcontainers/testcontainers-go/modulegen/internal/template"
 )
 
+// Generator is a struct that contains the logic to generate the module files.
 type Generator struct{}
 
 // AddModule creates the go.mod file for the module
@@ -19,15 +20,9 @@ func (g Generator) AddModule(ctx context.Context, tcModule context.Testcontainer
 	moduleDir := filepath.Join(ctx.RootDir, tcModule.ParentDir(), tcModule.Lower())
 	err := generateGoFiles(moduleDir, tcModule)
 	if err != nil {
-		return err
+		return fmt.Errorf("generate go files: %w", err)
 	}
 	return generateGoModFile(ctx, moduleDir, tcModule)
-}
-
-// Refresh is a NOOP for this generator, as we don't want to override the go.mod file once it's created
-func (g Generator) Refresh(_ context.Context, _ []context.TestcontainersModule) error {
-	// NOOP: we don't want to override the go.mod file once it's created
-	return nil
 }
 
 func generateGoFiles(moduleDir string, tcModule context.TestcontainersModule) error {
@@ -45,8 +40,7 @@ func generateGoFiles(moduleDir string, tcModule context.TestcontainersModule) er
 func generateGoModFile(ctx context.Context, moduleDir string, tcModule context.TestcontainersModule) error {
 	mkdocsConfig, err := mkdocs.ReadConfig(ctx.MkdocsConfigFile())
 	if err != nil {
-		fmt.Printf(">> could not read MkDocs config: %v\n", err)
-		return err
+		return fmt.Errorf("read mkdocs config: %w", err)
 	}
 	rootGoModFile := ctx.GoModFile()
 	directory := "/" + tcModule.ParentDir() + "/" + tcModule.Lower()
@@ -54,6 +48,7 @@ func generateGoModFile(ctx context.Context, moduleDir string, tcModule context.T
 	return modfile.GenerateModFile(moduleDir, rootGoModFile, directory, tcVersion)
 }
 
+// GenerateFiles generates the module files from the template files.
 func GenerateFiles(moduleDir string, moduleName string, funcMap template.FuncMap, tcModule any) error {
 	templates := []string{"module_test.go", "module.go"}
 
@@ -66,13 +61,13 @@ func GenerateFiles(moduleDir string, moduleName string, funcMap template.FuncMap
 		name := tmpl + ".tmpl"
 		t, err := template.New(name).Funcs(funcMap).ParseFiles(filepath.Join("_template", name))
 		if err != nil {
-			return err
+			return fmt.Errorf("parse template %s: %w", name, err)
 		}
 		moduleFilePath := filepath.Join(moduleDir, strings.ReplaceAll(tmpl, "module", moduleName))
 
 		err = internal_template.GenerateFile(t, moduleFilePath, name, tcModule)
 		if err != nil {
-			return err
+			return fmt.Errorf("generate file %s: %w", moduleFilePath, err)
 		}
 	}
 	return nil

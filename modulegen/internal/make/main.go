@@ -1,7 +1,6 @@
 package make
 
 import (
-	"fmt"
 	"path/filepath"
 	"text/template"
 
@@ -9,6 +8,7 @@ import (
 	internal_template "github.com/testcontainers/testcontainers-go/modulegen/internal/template"
 )
 
+// Generator is a struct that contains the logic to generate the Makefile.
 type Generator struct{}
 
 // AddModule update Makefile with the new module
@@ -27,18 +27,7 @@ func (g Generator) AddModule(ctx context.Context, tcModule context.Testcontainer
 	return internal_template.GenerateFile(t, moduleFilePath, name, moduleName)
 }
 
-// Refresh refresh the Makefile in all the modules
-func (g Generator) Refresh(ctx context.Context, tcModules []context.TestcontainersModule) error {
-	for _, tcModule := range tcModules {
-		err := g.AddModule(ctx, tcModule)
-		if err != nil {
-			return fmt.Errorf("add module %s: %w", tcModule.Name, err)
-		}
-	}
-	return nil
-}
-
-// creates Makefile for example
+// GenerateMakefile creates Makefile for example
 func GenerateMakefile(ctx context.Context, tcModule context.TestcontainersModule) error {
 	moduleDir := filepath.Join(ctx.RootDir, tcModule.ParentDir(), tcModule.Lower())
 	moduleName := tcModule.Lower()
