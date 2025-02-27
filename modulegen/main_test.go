@@ -486,7 +486,7 @@ func assertMkdocsNavItems(t *testing.T, ctx context.Context, module context.Test
 	}
 
 	// first item is the index
-	require.Equal(t, parentDir+"/index.md", navItems[0], navItems)
+	require.Equal(t, filepath.Join(parentDir, "index.md"), navItems[0], navItems)
 }
 
 func sanitiseContent(bytes []byte) []string {
