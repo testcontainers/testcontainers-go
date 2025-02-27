@@ -2,6 +2,7 @@ package dependabot
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
 )
@@ -18,7 +19,7 @@ func (g Generator) AddModule(ctx context.Context, tcModule context.Testcontainer
 		return fmt.Errorf("read config: %w", err)
 	}
 
-	if err := config.addUpdate("/" + tcModule.ParentDir() + "/" + tcModule.Lower()); err != nil {
+	if err := config.addUpdate(string(filepath.Separator) + filepath.Join(tcModule.ParentDir(), tcModule.Lower())); err != nil {
 		return fmt.Errorf("add update: %w", err)
 	}
 
