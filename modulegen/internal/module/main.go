@@ -43,7 +43,7 @@ func generateGoModFile(ctx context.Context, moduleDir string, tcModule context.T
 		return fmt.Errorf("read mkdocs config: %w", err)
 	}
 	rootGoModFile := ctx.GoModFile()
-	directory := filepath.Join(string(filepath.Separator), tcModule.ParentDir(), tcModule.Lower())
+	directory := "/" + tcModule.ParentDir() + "/" + tcModule.Lower()
 	tcVersion := mkdocsConfig.Extra.LatestVersion
 	return modfile.GenerateModFile(moduleDir, rootGoModFile, directory, tcVersion)
 }
@@ -67,7 +67,7 @@ func GenerateFiles(moduleDir string, moduleName string, funcMap template.FuncMap
 
 		err = internal_template.GenerateFile(t, moduleFilePath, name, tcModule)
 		if err != nil {
-			return fmt.Errorf("generate file %s: %w", moduleFilePath, err)
+			return err
 		}
 	}
 	return nil
