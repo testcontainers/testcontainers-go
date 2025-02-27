@@ -50,6 +50,7 @@ func (g Generator) Generate(ctx context.Context, examples []string, modules []st
 	}
 
 	for _, module := range modules {
+		// The compose module has its own page in the docs.
 		if module == "compose" {
 			continue
 		}
