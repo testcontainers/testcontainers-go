@@ -19,7 +19,7 @@ func TestInbucket(t *testing.T) {
 	require.NoError(t, err)
 
 	// smtpConnection {
-	smtpURL, err := ctr.SmtpConnection(ctx)
+	smtpURL, err := ctr.SMTPConnection(ctx)
 	// }
 	require.NoError(t, err)
 
