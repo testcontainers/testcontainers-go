@@ -2,7 +2,6 @@ package dependabot
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
 )
@@ -19,7 +18,7 @@ func (g Generator) AddModule(ctx context.Context, tcModule context.Testcontainer
 		return fmt.Errorf("read config: %w", err)
 	}
 
-	if err := config.addUpdate(string(filepath.Separator) + filepath.Join(tcModule.ParentDir(), tcModule.Lower())); err != nil {
+	if err := config.addUpdate("/" + tcModule.ParentDir() + "/" + tcModule.Lower()); err != nil {
 		return fmt.Errorf("add update: %w", err)
 	}
 
@@ -36,13 +35,13 @@ func (g Generator) Generate(ctx context.Context, examples []string, modules []st
 	}
 
 	for _, example := range examples {
-		if err := config.addUpdate(filepath.Join(string(filepath.Separator), "examples", example)); err != nil {
+		if err := config.addUpdate("/examples/" + example); err != nil {
 			return fmt.Errorf("add update: %w", err)
 		}
 	}
 
 	for _, module := range modules {
-		if err := config.addUpdate(filepath.Join(string(filepath.Separator), "modules", module)); err != nil {
+		if err := config.addUpdate("/modules/" + module); err != nil {
 			return fmt.Errorf("add update: %w", err)
 		}
 	}

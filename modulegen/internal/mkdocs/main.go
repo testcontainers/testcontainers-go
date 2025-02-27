@@ -26,7 +26,7 @@ func (g Generator) AddModule(ctx context.Context, tcModule context.Testcontainer
 	if err != nil {
 		return fmt.Errorf("generate md file: %w", err)
 	}
-	moduleMd := filepath.Join(tcModule.ParentDir(), tcModule.Lower()) + ".md"
+	moduleMd := filepath.Join(tcModule.ParentDir(), tcModule.Lower()+".md")
 	indexMd := filepath.Join(tcModule.ParentDir(), "index.md")
 
 	configFile := ctx.MkdocsConfigFile()

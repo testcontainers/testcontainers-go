@@ -333,7 +333,7 @@ func assertDependabotUpdates(t *testing.T, tmpCtx context.Context, module contex
 
 	// first item is the github-actions module, which uses an array of directories
 	require.Len(t, updates[0].Directories, 1)
-	require.Equal(t, string(filepath.Separator), updates[0].Directories[0], updates)
+	require.Equal(t, "/", updates[0].Directories[0], updates)
 	require.Equal(t, "github-actions", updates[0].PackageEcosystem, "PackageEcosystem should be github-actions")
 
 	// second item is the Go modules
@@ -343,7 +343,7 @@ func assertDependabotUpdates(t *testing.T, tmpCtx context.Context, module contex
 	require.True(t, slices.Contains(updates[1].Directories, "/modulegen"), "modulegen should exist")
 
 	// the module should be in the dependabot updates in the gomod section
-	directory := filepath.Join(string(filepath.Separator), module.ParentDir(), module.Lower())
+	directory := "/" + module.ParentDir() + "/" + module.Lower()
 	require.True(t, slices.Contains(updates[1].Directories, directory), "module should exist")
 
 	// third item is the pip module
