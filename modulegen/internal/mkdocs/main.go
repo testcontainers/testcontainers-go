@@ -26,8 +26,8 @@ func (g Generator) AddModule(ctx context.Context, tcModule context.Testcontainer
 	if err != nil {
 		return fmt.Errorf("generate md file: %w", err)
 	}
-	moduleMd := tcModule.ParentDir() + "/" + tcModule.Lower() + ".md"
-	indexMd := tcModule.ParentDir() + "/index.md"
+	moduleMd := filepath.Join(tcModule.ParentDir(), tcModule.Lower()) + ".md"
+	indexMd := filepath.Join(tcModule.ParentDir(), "index.md")
 
 	configFile := ctx.MkdocsConfigFile()
 	isModule := tcModule.IsModule
@@ -55,15 +55,15 @@ func (g Generator) Generate(ctx context.Context, examples []string, modules []st
 			continue
 		}
 
-		moduleMd := "modules/" + strings.ToLower(module) + ".md"
-		indexMd := "modules/index.md"
+		moduleMd := filepath.Join("modules", strings.ToLower(module)+".md")
+		indexMd := filepath.Join("modules", "index.md")
 
 		config.addModule(true, moduleMd, indexMd)
 	}
 
 	for _, example := range examples {
-		exampleMd := "examples/" + strings.ToLower(example) + ".md"
-		indexMd := "examples/index.md"
+		exampleMd := filepath.Join("examples", strings.ToLower(example)+".md")
+		indexMd := filepath.Join("examples", "index.md")
 
 		config.addModule(false, exampleMd, indexMd)
 	}

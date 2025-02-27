@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -13,7 +14,16 @@ import (
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/dependabot"
 )
 
+// isWindows returns if the current OS is Windows. For that it checks the GOOS environment variable or the runtime.GOOS constant.
+func isWindows() bool {
+	return os.Getenv("GOOS") == "windows" || runtime.GOOS == "windows"
+}
+
 func TestGetDependabotConfigFile(t *testing.T) {
+	if isWindows() {
+		t.Skip("skipping on windows because the dependabot config file uses the '/' separator")
+	}
+
 	ctx := context.New(filepath.Join(t.TempDir(), "testcontainers-go"))
 
 	githubDir := ctx.GithubDir()
@@ -31,6 +41,10 @@ func TestGetDependabotConfigFile(t *testing.T) {
 }
 
 func TestExamplesHasDependabotEntry(t *testing.T) {
+	if isWindows() {
+		t.Skip("skipping on windows because the dependabot config file uses the '/' separator")
+	}
+
 	testProject := copyInitialProject(t)
 
 	examples, err := testProject.ctx.GetExamples()
@@ -45,12 +59,16 @@ func TestExamplesHasDependabotEntry(t *testing.T) {
 
 	// all example modules exist in the dependabot updates
 	for _, example := range examples {
-		dependabotDir := "/examples/" + example
+		dependabotDir := filepath.Join(string(filepath.Separator), "examples", example)
 		require.True(t, slices.Contains(gomodUpdate.Directories, dependabotDir), "example %s is not present in the dependabot updates", example)
 	}
 }
 
 func TestModulesHasDependabotEntry(t *testing.T) {
+	if isWindows() {
+		t.Skip("skipping on windows because the dependabot config file uses the '/' separator")
+	}
+
 	testProject := copyInitialProject(t)
 
 	modules, err := testProject.ctx.GetModules()
@@ -65,7 +83,7 @@ func TestModulesHasDependabotEntry(t *testing.T) {
 
 	// all modules exist in the dependabot updates
 	for _, module := range modules {
-		dependabotDir := "/modules/" + module
+		dependabotDir := filepath.Join(string(filepath.Separator), "modules", module)
 		require.True(t, slices.Contains(gomodUpdate.Directories, dependabotDir), "modules %s is not present in the dependabot updates", modules)
 	}
 }

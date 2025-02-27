@@ -36,13 +36,13 @@ func (g Generator) Generate(ctx context.Context, examples []string, modules []st
 	}
 
 	for _, example := range examples {
-		if err := config.addUpdate("/examples/" + example); err != nil {
+		if err := config.addUpdate(filepath.Join(string(filepath.Separator), "examples", example)); err != nil {
 			return fmt.Errorf("add update: %w", err)
 		}
 	}
 
 	for _, module := range modules {
-		if err := config.addUpdate("/modules/" + module); err != nil {
+		if err := config.addUpdate(filepath.Join(string(filepath.Separator), "modules", module)); err != nil {
 			return fmt.Errorf("add update: %w", err)
 		}
 	}

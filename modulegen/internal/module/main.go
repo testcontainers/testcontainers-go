@@ -43,7 +43,7 @@ func generateGoModFile(ctx context.Context, moduleDir string, tcModule context.T
 		return fmt.Errorf("read mkdocs config: %w", err)
 	}
 	rootGoModFile := ctx.GoModFile()
-	directory := "/" + tcModule.ParentDir() + "/" + tcModule.Lower()
+	directory := filepath.Join(string(filepath.Separator), tcModule.ParentDir(), tcModule.Lower())
 	tcVersion := mkdocsConfig.Extra.LatestVersion
 	return modfile.GenerateModFile(moduleDir, rootGoModFile, directory, tcVersion)
 }
