@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -37,30 +38,15 @@ func TestExamplesHasDependabotEntry(t *testing.T) {
 	dependabotUpdates, err := dependabot.GetUpdates(testProject.ctx.DependabotConfigFile())
 	require.NoError(t, err)
 
-	exampleUpdates := []dependabot.Update{}
-	// exclude the Go modules from the examples updates
-	for _, update := range dependabotUpdates {
-		if strings.HasPrefix(update.Directory, "/examples/") {
-			exampleUpdates = append(exampleUpdates, update)
-		}
-	}
+	// should be the second item in the updates
+	gomodUpdate := dependabotUpdates[1]
 
-	require.Equal(t, len(exampleUpdates), len(examples))
+	require.Equal(t, "monthly", gomodUpdate.Schedule.Interval)
 
 	// all example modules exist in the dependabot updates
 	for _, example := range examples {
-		found := false
-		for _, exampleUpdate := range exampleUpdates {
-			dependabotDir := "/examples/" + example
-
-			require.Equal(t, "monthly", exampleUpdate.Schedule.Interval)
-
-			if dependabotDir == exampleUpdate.Directory {
-				found = true
-				continue
-			}
-		}
-		require.True(t, found, "example %s is not present in the dependabot updates", example)
+		dependabotDir := "/examples/" + example
+		require.True(t, slices.Contains(gomodUpdate.Directories, dependabotDir), "example %s is not present in the dependabot updates", example)
 	}
 }
 
@@ -72,28 +58,14 @@ func TestModulesHasDependabotEntry(t *testing.T) {
 	dependabotUpdates, err := dependabot.GetUpdates(testProject.ctx.DependabotConfigFile())
 	require.NoError(t, err)
 
-	moduleUpdates := []dependabot.Update{}
-	// exclude the Go modules from the examples updates
-	for _, update := range dependabotUpdates {
-		if strings.HasPrefix(update.Directory, "/modules/") {
-			moduleUpdates = append(moduleUpdates, update)
-		}
-	}
-	require.Equal(t, len(moduleUpdates), len(modules))
+	// should be the second item in the updates
+	gomodUpdate := dependabotUpdates[1]
 
-	// all module modules exist in the dependabot updates
+	require.Equal(t, "monthly", gomodUpdate.Schedule.Interval)
+
+	// all modules exist in the dependabot updates
 	for _, module := range modules {
-		found := false
-		for _, moduleUpdate := range moduleUpdates {
-			dependabotDir := "/modules/" + module
-
-			require.Equal(t, "monthly", moduleUpdate.Schedule.Interval)
-
-			if dependabotDir == moduleUpdate.Directory {
-				found = true
-				continue
-			}
-		}
-		require.True(t, found, "module %s is not present in the dependabot updates", module)
+		dependabotDir := "/modules/" + module
+		require.True(t, slices.Contains(gomodUpdate.Directories, dependabotDir), "modules %s is not present in the dependabot updates", modules)
 	}
 }

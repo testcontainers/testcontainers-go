@@ -1,6 +1,8 @@
 package dependabot
 
 import (
+	"errors"
+	"slices"
 	"sort"
 )
 
@@ -19,7 +21,7 @@ type Schedule struct {
 // Update the update for the dependabot config file
 type Update struct {
 	PackageEcosystem      string   `yaml:"package-ecosystem"`
-	Directory             string   `yaml:"directory"`
+	Directories           []string `yaml:"directories"`
 	Schedule              Schedule `yaml:"schedule"`
 	OpenPullRequestsLimit int      `yaml:"open-pull-requests-limit"`
 	RebaseStrategy        string   `yaml:"rebase-strategy"`
@@ -28,31 +30,29 @@ type Update struct {
 // Updates the updates for the dependabot config file
 type Updates []Update
 
-func newUpdate(directory string, packageExosystem string) Update {
-	return Update{
-		Directory:             directory,
-		OpenPullRequestsLimit: 3,
-		PackageEcosystem:      packageExosystem,
-		RebaseStrategy:        "disabled",
-		Schedule: Schedule{
-			Interval: "monthly",
-			Day:      "sunday",
-		},
-	}
-}
-
 // addUpdate adds an update to the config
-func (c *Config) addUpdate(newUpdate Update) {
-	exists := false
-	for _, update := range c.Updates {
-		if update.Directory == newUpdate.Directory && update.PackageEcosystem == newUpdate.PackageEcosystem {
-			exists = true
+func (c *Config) addUpdate(modulePath string) error {
+	found := false
+	for i := range c.Updates {
+		update := &c.Updates[i]
+		if update.PackageEcosystem == "gomod" {
+			found = true
+
+			// look up the update in the gomodsUpdate
+			if slices.Contains(update.Directories, modulePath) {
+				return nil
+			}
+
+			update.Directories = append(update.Directories, modulePath)
+
+			sort.Strings(update.Directories)
 			break
 		}
 	}
 
-	if !exists {
-		c.Updates = append(c.Updates, newUpdate)
-		sort.Sort(c.Updates)
+	if !found {
+		return errors.New("gomod update not found")
 	}
+
+	return nil
 }

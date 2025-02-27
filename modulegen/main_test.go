@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -327,42 +328,26 @@ func TestRefresh(t *testing.T) {
 // assert content in the Dependabot descriptor file
 func assertDependabotUpdates(t *testing.T, tmpCtx context.Context, module context.TestcontainersModule) {
 	t.Helper()
-	modules, err := dependabot.GetUpdates(tmpCtx.DependabotConfigFile())
+	updates, err := dependabot.GetUpdates(tmpCtx.DependabotConfigFile())
 	require.NoError(t, err)
 
-	// the module should be in the dependabot updates
-	found := false
-	for _, ex := range modules {
-		directory := "/" + module.ParentDir() + "/" + module.Lower()
-		if directory == ex.Directory {
-			found = true
-		}
-	}
-
-	require.True(t, found)
-
 	// first item is the github-actions module, which uses an array of directories
-	require.Equal(t, "/", modules[0].Directory, modules)
-	require.Equal(t, "github-actions", modules[0].PackageEcosystem, "PackageEcosystem should be github-actions")
+	require.Len(t, updates[0].Directories, 1)
+	require.Equal(t, "/", updates[0].Directories[0], updates)
+	require.Equal(t, "github-actions", updates[0].PackageEcosystem, "PackageEcosystem should be github-actions")
 
-	// second item is the core module
-	require.Equal(t, "/", modules[1].Directory, modules)
-	require.Equal(t, "gomod", modules[1].PackageEcosystem, "PackageEcosystem should be gomod")
+	// second item is the Go modules
+	require.Equal(t, "gomod", updates[1].PackageEcosystem, "PackageEcosystem should be gomod")
+
+	// modulegen exists as a gomod module
+	require.True(t, slices.Contains(updates[1].Directories, "/modulegen"), "modulegen should exist")
+
+	// the module should be in the dependabot updates in the gomod section
+	directory := "/" + module.ParentDir() + "/" + module.Lower()
+	require.True(t, slices.Contains(updates[1].Directories, directory), "module should exist")
 
 	// third item is the pip module
-	require.Equal(t, "/", modules[2].Directory, modules)
-	require.Equal(t, "pip", modules[2].PackageEcosystem, "PackageEcosystem should be pip")
-
-	// modulegen exists
-	exists := false
-	for _, module := range modules {
-		if module.Directory == "/modulegen" {
-			require.Equal(t, "gomod", module.PackageEcosystem, "PackageEcosystem should be gomod")
-			exists = true
-			break
-		}
-	}
-	require.True(t, exists, "modulegen should exist")
+	require.Equal(t, "pip", updates[2].PackageEcosystem, "PackageEcosystem should be pip")
 }
 
 // assert content module file in the docs

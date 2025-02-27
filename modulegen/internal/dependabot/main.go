@@ -18,10 +18,9 @@ func (g Generator) AddModule(ctx context.Context, tcModule context.Testcontainer
 		return fmt.Errorf("read config: %w", err)
 	}
 
-	packageEcosystem := "gomod"
-	directory := "/" + tcModule.ParentDir() + "/" + tcModule.Lower()
-
-	config.addUpdate(newUpdate(directory, packageEcosystem))
+	if err := config.addUpdate("/" + tcModule.ParentDir() + "/" + tcModule.Lower()); err != nil {
+		return fmt.Errorf("add update: %w", err)
+	}
 
 	return writeConfig(configFile, config)
 }
@@ -36,13 +35,15 @@ func (g Generator) Generate(ctx context.Context, examples []string, modules []st
 	}
 
 	for _, example := range examples {
-		directory := "/examples/" + example
-		config.addUpdate(newUpdate(directory, "gomod"))
+		if err := config.addUpdate("/examples/" + example); err != nil {
+			return fmt.Errorf("add update: %w", err)
+		}
 	}
 
 	for _, module := range modules {
-		directory := "/modules/" + module
-		config.addUpdate(newUpdate(directory, "gomod"))
+		if err := config.addUpdate("/modules/" + module); err != nil {
+			return fmt.Errorf("add update: %w", err)
+		}
 	}
 
 	return writeConfig(configFile, config)
