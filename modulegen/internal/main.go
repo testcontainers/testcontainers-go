@@ -20,7 +20,7 @@ import (
 func Generate(moduleVar context.TestcontainersModuleVar, isModule bool) error {
 	ctx, err := context.GetRootContext()
 	if err != nil {
-		return fmt.Errorf(">> could not get the root dir: %w", err)
+		return fmt.Errorf("get root context: %w", err)
 	}
 
 	tcModule := context.TestcontainersModule{
@@ -32,7 +32,7 @@ func Generate(moduleVar context.TestcontainersModuleVar, isModule bool) error {
 
 	err = GenerateFiles(ctx, tcModule)
 	if err != nil {
-		return fmt.Errorf(">> error generating the module: %w", err)
+		return fmt.Errorf("generate files for module %s: %w", tcModule.Name, err)
 	}
 
 	cmdDir := filepath.Join(ctx.RootDir, tcModule.ParentDir(), tcModule.Lower())
@@ -100,7 +100,7 @@ type FileGenerator interface {
 
 func GenerateFiles(ctx context.Context, tcModule context.TestcontainersModule) error {
 	if err := tcModule.Validate(); err != nil {
-		return err
+		return fmt.Errorf("validate module %s: %w", tcModule.Name, err)
 	}
 
 	fileGenerators := []FileGenerator{
@@ -113,7 +113,7 @@ func GenerateFiles(ctx context.Context, tcModule context.TestcontainersModule) e
 	for _, generator := range fileGenerators {
 		err := generator.AddModule(ctx, tcModule)
 		if err != nil {
-			return err
+			return fmt.Errorf("add module %s: %w", tcModule.Name, err)
 		}
 	}
 
@@ -127,17 +127,17 @@ func GenerateFiles(ctx context.Context, tcModule context.TestcontainersModule) e
 
 	examples, err := ctx.GetExamples()
 	if err != nil {
-		return err
+		return fmt.Errorf("get examples: %w", err)
 	}
 	modules, err := ctx.GetModules()
 	if err != nil {
-		return err
+		return fmt.Errorf("get modules: %w", err)
 	}
 
 	for _, generator := range projectGenerators {
 		err := generator.Generate(ctx, examples, modules)
 		if err != nil {
-			return err
+			return fmt.Errorf("generate project: %w", err)
 		}
 	}
 

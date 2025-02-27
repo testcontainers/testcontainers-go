@@ -9,7 +9,7 @@ import (
 // running the `go mod tidy` command in the given directory.
 func GoModTidy(cmdDir string) error {
 	if err := runCommand(cmdDir, "go", "mod", "tidy"); err != nil {
-		return fmt.Errorf(">> error synchronizing the dependencies: %w", err)
+		return fmt.Errorf("mod tidy dependencies: %w", err)
 	}
 	return nil
 }
@@ -18,7 +18,7 @@ func GoModTidy(cmdDir string) error {
 // running the `go vet ./...` command in the given directory.
 func GoVet(cmdDir string) error {
 	if err := runCommand(cmdDir, "go", "vet", "./..."); err != nil {
-		return fmt.Errorf(">> error checking generated code: %w", err)
+		return fmt.Errorf("go vet generated code: %w", err)
 	}
 	return nil
 }
@@ -26,7 +26,7 @@ func GoVet(cmdDir string) error {
 // MakeLint runs the `make lint` command in the given directory.
 func MakeLint(cmdDir string) error {
 	if err := runCommand(cmdDir, "make", "lint"); err != nil {
-		return fmt.Errorf(">> error running make lint: %w", err)
+		return fmt.Errorf("make lint module: %w", err)
 	}
 	return nil
 }
