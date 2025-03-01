@@ -1,6 +1,7 @@
 package template
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -11,7 +12,7 @@ import (
 func Generate(t *template.Template, wr io.Writer, name string, data any) error {
 	err := t.ExecuteTemplate(wr, name, data)
 	if err != nil {
-		return err
+		return fmt.Errorf("execute template %s: %w", name, err)
 	}
 	return nil
 }
@@ -21,12 +22,12 @@ func Generate(t *template.Template, wr io.Writer, name string, data any) error {
 func GenerateFile(t *template.Template, exampleFilePath string, name string, data any) error {
 	err := os.MkdirAll(filepath.Dir(exampleFilePath), 0o755)
 	if err != nil {
-		return err
+		return fmt.Errorf("create directory: %w", err)
 	}
 
 	exampleFile, err := os.Create(exampleFilePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("create file: %w", err)
 	}
 	defer exampleFile.Close()
 
