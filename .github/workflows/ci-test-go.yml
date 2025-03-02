@@ -49,7 +49,7 @@ jobs:
     steps:
       - name: Setup rootless Docker
         if: ${{ inputs.rootless-docker }}
-        uses: docker/setup-docker-action@370a7dad4b8ce8dbf00f9363e1652e5074dd6abe # v4
+        uses: docker/setup-docker-action@c2d73c1a11a9b44be6d855121d75c3e0dac814c1 # v4
         with:
           rootless: true
 
