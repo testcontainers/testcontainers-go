@@ -1,0 +1,26 @@
+mode: atomic
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:28.108,30.2 1 0
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:33.111,40.54 1 2
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:40.54,47.4 3 4
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:57.2,62.27 2 2
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:62.27,63.61 1 0
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:63.61,65.4 1 0
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:68.2,70.22 3 2
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:70.22,72.3 1 2
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:74.2,74.16 1 2
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:74.16,76.3 1 0
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:78.2,78.15 1 2
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:81.67,83.2 1 2
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:86.76,88.16 2 2
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:88.16,90.3 1 0
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:93.2,94.16 2 2
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:94.16,96.3 1 0
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:97.2,97.15 1 2
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:97.15,99.3 1 2
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:101.2,102.16 2 2
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:102.16,104.3 1 1
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:106.2,108.16 3 1
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:108.16,110.3 1 0
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:112.2,113.16 2 1
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:113.16,115.3 1 0
+github.com/testcontainers/testcontainers-go/modules/dind/dind.go:117.2,117.12 1 1
