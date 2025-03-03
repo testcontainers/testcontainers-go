@@ -5,15 +5,18 @@ import (
 	"strings"
 )
 
+// Config is a struct that contains the logic to generate the sonar-project.properties file.
 type Config struct {
 	Go             Go
 	ProjectVersion string
 }
 
+// Go is a struct that contains the logic to generate the go files.
 type Go struct {
 	Tests Tests
 }
 
+// Tests is a struct that contains the logic to generate the test report paths.
 type Tests struct {
 	ReportPaths string
 }
