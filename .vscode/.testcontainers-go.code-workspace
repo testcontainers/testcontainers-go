@@ -54,6 +54,10 @@
             "path": "../modules/databend"
         },
         {
+            "name": "module / dind",
+            "path": "../modules/dind"
+        },
+        {
             "name": "module / dolt",
             "path": "../modules/dolt"
         },
