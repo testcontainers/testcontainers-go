@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"testing"
@@ -16,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/image"
 	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -400,112 +400,6 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 	require.Contains(t, log, "I was not expecting this")
 }
 
-// dockerImageSubstitutor {
-type dockerImageSubstitutor struct{}
-
-func (s dockerImageSubstitutor) Description() string {
-	return "DockerImageSubstitutor (prepends registry.hub.docker.com)"
-}
-
-func (s dockerImageSubstitutor) Substitute(image string) (string, error) {
-	return "registry.hub.docker.com/library/" + image, nil
-}
-
-// }
-
-// noopImageSubstitutor {
-type NoopImageSubstitutor struct{}
-
-// Description returns a description of what is expected from this Substitutor,
-// which is used in logs.
-func (s NoopImageSubstitutor) Description() string {
-	return "NoopImageSubstitutor (noop)"
-}
-
-// Substitute returns the original image, without any change
-func (s NoopImageSubstitutor) Substitute(image string) (string, error) {
-	return image, nil
-}
-
-// }
-
-type errorSubstitutor struct{}
-
-var errSubstitution = errors.New("substitution error")
-
-// Description returns a description of what is expected from this Substitutor,
-// which is used in logs.
-func (s errorSubstitutor) Description() string {
-	return "errorSubstitutor"
-}
-
-// Substitute returns the original image, but returns an error
-func (s errorSubstitutor) Substitute(image string) (string, error) {
-	return image, errSubstitution
-}
-
-func TestImageSubstitutors(t *testing.T) {
-	tests := []struct {
-		name          string
-		image         string // must be a valid image, as the test will try to create a container from it
-		substitutors  []testcontainers.ImageSubstitutor
-		expectedImage string
-		expectedError error
-	}{
-		{
-			name:          "No substitutors",
-			image:         "alpine",
-			expectedImage: "alpine",
-		},
-		{
-			name:          "Noop substitutor",
-			image:         "alpine",
-			substitutors:  []testcontainers.ImageSubstitutor{NoopImageSubstitutor{}},
-			expectedImage: "alpine",
-		},
-		{
-			name:          "Prepend namespace",
-			image:         "alpine",
-			substitutors:  []testcontainers.ImageSubstitutor{dockerImageSubstitutor{}},
-			expectedImage: "registry.hub.docker.com/library/alpine",
-		},
-		{
-			name:          "Substitution with error",
-			image:         "alpine",
-			substitutors:  []testcontainers.ImageSubstitutor{errorSubstitutor{}},
-			expectedImage: "alpine",
-			expectedError: errSubstitution,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			ctx := context.Background()
-			req := testcontainers.ContainerRequest{
-				Image:             test.image,
-				ImageSubstitutors: test.substitutors,
-			}
-
-			ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-				ContainerRequest: req,
-				Started:          true,
-			})
-			testcontainers.CleanupContainer(t, ctr)
-			if test.expectedError != nil {
-				require.ErrorIs(t, err, test.expectedError)
-				return
-			}
-
-			require.NoError(t, err)
-
-			// enforce the concrete type, as GenericContainer returns an interface,
-			// which will be changed in future implementations of the library
-			dockerContainer := ctr.(*testcontainers.DockerContainer)
-			assert.Equal(t, test.expectedImage, dockerContainer.Image)
-		})
-	}
-}
-
 func TestShouldStartContainersInParallel(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	t.Cleanup(cancel)
@@ -544,7 +438,7 @@ func ExampleGenericContainer_withSubstitutors() {
 	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:             "alpine:latest",
-			ImageSubstitutors: []testcontainers.ImageSubstitutor{dockerImageSubstitutor{}},
+			ImageSubstitutors: []image.Substitutor{image.DockerSubstitutor{}},
 		},
 		Started: true,
 	})

@@ -65,14 +65,14 @@ In this case, image name references in code are **unchanged**. i.e. you would le
 
 You can implement a custom image name substitutor by:
 
-* implementing the `ImageNameSubstitutor` interface, exposed by the `testcontainers` package.
+* implementing the `image.Substitutor` interface, exposed by the `image` package.
 * configuring _Testcontainers for Go_ to use your custom implementation, defined at the `ContainerRequest` level.
 
 The following is an example image substitutor implementation prepending the `registry.hub.docker.com/library/` prefix, used in the tests:
 
 <!--codeinclude-->
-[Image Substitutor Interface](../../options.go) inside_block:imageSubstitutor
-[Docker prefix Image Substitutor](../../container_test.go) inside_block:dockerImageSubstitutor
+[Image Substitutor Interface](../../image/substitutors.go) inside_block:imageSubstitutor
+[Docker prefix Image Substitutor](../../image/substitutors.go) inside_block:dockerImageSubstitutor
 [Applying the substitutor](../../container_test.go) inside_block:applyImageSubstitutors
 <!--/codeinclude-->
 

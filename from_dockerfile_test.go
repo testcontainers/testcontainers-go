@@ -13,19 +13,15 @@ import (
 	"github.com/docker/docker/api/types/image"
 	"github.com/stretchr/testify/require"
 
+	tcimage "github.com/testcontainers/testcontainers-go/image"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/log"
 )
 
 func TestBuildImageFromDockerfile(t *testing.T) {
-	provider, err := NewDockerProvider()
-	require.NoError(t, err)
-	defer provider.Close()
-
-	cli := provider.Client()
-
 	ctx := context.Background()
 
-	tag, err := provider.BuildImage(ctx, &ContainerRequest{
+	tag, err := tcimage.Build(ctx, &ContainerRequest{
 		// fromDockerfileIncludingRepo {
 		FromDockerfile: FromDockerfile{
 			Context:    "testdata",
@@ -37,6 +33,10 @@ func TestBuildImageFromDockerfile(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, "test-repo:test-tag", tag)
+
+	cli, err := core.NewClient(context.Background())
+	require.NoError(t, err)
+	defer cli.Close()
 
 	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
 	require.NoError(t, err)
@@ -51,15 +51,9 @@ func TestBuildImageFromDockerfile(t *testing.T) {
 }
 
 func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
-	provider, err := NewDockerProvider()
-	require.NoError(t, err)
-	defer provider.Close()
-
-	cli := provider.Client()
-
 	ctx := context.Background()
 
-	tag, err := provider.BuildImage(ctx, &ContainerRequest{
+	tag, err := tcimage.Build(ctx, &ContainerRequest{
 		FromDockerfile: FromDockerfile{
 			Context:    "testdata",
 			Dockerfile: "echo.Dockerfile",
@@ -68,6 +62,10 @@ func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.True(t, strings.HasPrefix(tag, "test-repo:"))
+
+	cli, err := core.NewClient(context.Background())
+	require.NoError(t, err)
+	defer cli.Close()
 
 	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
 	require.NoError(t, err)
@@ -104,15 +102,9 @@ func TestBuildImageFromDockerfile_BuildError(t *testing.T) {
 }
 
 func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
-	provider, err := NewDockerProvider()
-	require.NoError(t, err)
-	defer provider.Close()
-
-	cli := provider.Client()
-
 	ctx := context.Background()
 
-	tag, err := provider.BuildImage(ctx, &ContainerRequest{
+	tag, err := tcimage.Build(ctx, &ContainerRequest{
 		FromDockerfile: FromDockerfile{
 			Context:    "testdata",
 			Dockerfile: "echo.Dockerfile",
@@ -121,6 +113,10 @@ func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.True(t, strings.HasSuffix(tag, ":test-tag"))
+
+	cli, err := core.NewClient(context.Background())
+	require.NoError(t, err)
+	defer cli.Close()
 
 	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
 	require.NoError(t, err)
