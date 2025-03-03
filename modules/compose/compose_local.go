@@ -190,7 +190,7 @@ func (dc *LocalDockerCompose) Invoke() ExecError {
 
 // Deprecated: it will be removed in the next major release
 // WaitForService sets the strategy for the service that is to be waited on
-func (dc *LocalDockerCompose) WaitForService(service string, strategy wait.Strategy) DockerCompose {
+func (dc *LocalDockerCompose) WaitForService(service string, strategy wait.Strategy) DockerComposer {
 	dc.waitStrategySupplied = true
 	dc.WaitStrategyMap[waitService{service: service}] = strategy
 	return dc
@@ -198,14 +198,14 @@ func (dc *LocalDockerCompose) WaitForService(service string, strategy wait.Strat
 
 // Deprecated: it will be removed in the next major release
 // WithCommand assigns the command
-func (dc *LocalDockerCompose) WithCommand(cmd []string) DockerCompose {
+func (dc *LocalDockerCompose) WithCommand(cmd []string) DockerComposer {
 	dc.Cmd = cmd
 	return dc
 }
 
 // Deprecated: it will be removed in the next major release
 // WithEnv assigns the environment
-func (dc *LocalDockerCompose) WithEnv(env map[string]string) DockerCompose {
+func (dc *LocalDockerCompose) WithEnv(env map[string]string) DockerComposer {
 	dc.Env = env
 	return dc
 }
@@ -213,7 +213,7 @@ func (dc *LocalDockerCompose) WithEnv(env map[string]string) DockerCompose {
 // Deprecated: it will be removed in the next major release
 // WithExposedService sets the strategy for the service that is to be waited on. If multiple strategies
 // are given for a single service running on different ports, both strategies will be applied on the same container
-func (dc *LocalDockerCompose) WithExposedService(service string, port int, strategy wait.Strategy) DockerCompose {
+func (dc *LocalDockerCompose) WithExposedService(service string, port int, strategy wait.Strategy) DockerComposer {
 	dc.waitStrategySupplied = true
 	dc.WaitStrategyMap[waitService{service: service, publishedPort: port}] = strategy
 	return dc
