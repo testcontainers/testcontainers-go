@@ -61,17 +61,15 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
-//nolint:revive //FIXME
-func (c *InfluxDbContainer) MustConnectionUrl(ctx context.Context) string {
-	connectionString, err := c.ConnectionUrl(ctx)
+func (c *InfluxDbContainer) MustConnectionURL(ctx context.Context) string {
+	connectionString, err := c.ConnectionURL(ctx)
 	if err != nil {
 		panic(err)
 	}
 	return connectionString
 }
 
-//nolint:revive //FIXME
-func (c *InfluxDbContainer) ConnectionUrl(ctx context.Context) (string, error) {
+func (c *InfluxDbContainer) ConnectionURL(ctx context.Context) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "8086/tcp")
 	if err != nil {
 		return "", err

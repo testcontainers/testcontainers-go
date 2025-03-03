@@ -44,7 +44,7 @@ func TestConsul(t *testing.T) {
 			require.NoError(t, err)
 
 			// Check if API is up
-			host, err := ctr.ApiEndpoint(ctx)
+			host, err := ctr.APIEndpoint(ctx)
 			require.NoError(t, err)
 			require.NotEmpty(t, host)
 
