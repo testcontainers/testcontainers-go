@@ -23,12 +23,6 @@ type DinDContainer struct {
 	testcontainers.Container
 }
 
-// Deprecated: use Run instead
-// RunContainer creates an instance of the K3s container type
-func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*DinDContainer, error) {
-	return Run(ctx, "docker:28.0.1-dind", opts...)
-}
-
 // Run creates an instance of the K3s container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*DinDContainer, error) {
 	req := testcontainers.ContainerRequest{
@@ -51,7 +45,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Env: map[string]string{
 			"DOCKER_HOST": "tcp://localhost:2375",
 		},
-		WaitingFor: wait.ForLog("API listen on [::]:2375"),
+		WaitingFor: wait.ForListeningPort("2375/tcp"),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
