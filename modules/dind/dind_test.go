@@ -33,9 +33,6 @@ func Test_LoadImages(t *testing.T) {
 	err = provider.PullImage(ctx, "nginx")
 	require.NoError(t, err)
 
-	err = provider.PullImage(ctx, "sablierapp/mimic")
-	require.NoError(t, err)
-
 	t.Run("Test load image not available", func(t *testing.T) {
 		err := dindContainer.LoadImage(ctx, "fake.registry/fake:non-existing")
 		require.Error(t, err)
