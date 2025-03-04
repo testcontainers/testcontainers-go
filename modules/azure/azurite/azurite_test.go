@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/azurite"
+	"github.com/testcontainers/testcontainers-go/modules/azure/azurite"
 )
 
 func TestAzurite(t *testing.T) {
