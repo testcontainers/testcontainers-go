@@ -1,0 +1,149 @@
+package eventhubs
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/azure/azurite"
+	"github.com/testcontainers/testcontainers-go/network"
+)
+
+const (
+	defaultAMPQPort        = "5672/tcp"
+	connectionStringFormat = "Endpoint=sb://%s;SharedAccessKeyName=%s;SharedAccessKey=%s;UseDevelopmentEmulator=true;"
+
+	// aliasEventhubs is the alias for the eventhubs network
+	aliasEventhubs = "eventhubs"
+
+	// aliasAzurite is the alias for the azurite network
+	aliasAzurite = "azurite"
+
+	// containerConfigFile is the path to the eventhubs config file
+	containerConfigFile = "/Eventhubs_Emulator/ConfigFiles/Config.json"
+)
+
+// Container represents the Azure Event Hubs container type used in the module
+type Container struct {
+	testcontainers.Container
+	azuriteOptions *options
+}
+
+func (c *Container) AzuriteContainer() *azurite.AzuriteContainer {
+	return c.azuriteOptions.azuriteContainer
+}
+
+// Terminate terminates the etcd container, its child nodes, and the network in which the cluster is running
+// to communicate between the nodes.
+func (c *Container) Terminate(ctx context.Context, opts ...testcontainers.TerminateOption) error {
+	var errs []error
+
+	if c.Container != nil {
+		// terminate the eventhubs container
+		if err := c.Container.Terminate(ctx, opts...); err != nil {
+			errs = append(errs, fmt.Errorf("terminate eventhubs container: %w", err))
+		}
+	}
+
+	// terminate the azurite container if it was created
+	if c.azuriteOptions.azuriteContainer != nil {
+		if err := c.azuriteOptions.azuriteContainer.Terminate(ctx, opts...); err != nil {
+			errs = append(errs, fmt.Errorf("terminate azurite container: %w", err))
+		}
+	}
+
+	// remove the azurite network if it was created
+	if c.azuriteOptions.network != nil {
+		if err := c.azuriteOptions.network.Remove(ctx); err != nil {
+			errs = append(errs, fmt.Errorf("remove azurite network: %w", err))
+		}
+	}
+
+	return errors.Join(errs...)
+}
+
+// Run creates an instance of the Azure Event Hubs container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+	req := testcontainers.ContainerRequest{
+		Image: img,
+		Env:   make(map[string]string),
+	}
+
+	genericContainerReq := testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	}
+
+	defaultOptions := defaultOptions()
+	for _, opt := range opts {
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, fmt.Errorf("customize: %w", err)
+		}
+		if o, ok := opt.(Option); ok {
+			o(&defaultOptions)
+		}
+	}
+
+	if genericContainerReq.Env["ACCEPT_EULA"] == "" {
+		return nil, errors.New("EULA not accepted. Please use the WithAcceptEULA option to accept the EULA")
+	}
+
+	c := &Container{azuriteOptions: &defaultOptions}
+
+	if defaultOptions.azuriteContainer == nil {
+		azuriteNetwork, err := network.New(ctx)
+		if err != nil {
+			return c, fmt.Errorf("new azurite network: %w", err)
+		}
+		defaultOptions.network = azuriteNetwork
+
+		// start the azurite container first
+		azuriteContainer, err := azurite.Run(ctx, defaultOptions.azuriteImage, network.WithNetwork([]string{aliasAzurite}, azuriteNetwork))
+		if err != nil {
+			return nil, fmt.Errorf("run azurite container: %w", err)
+		}
+		defaultOptions.azuriteContainer = azuriteContainer
+
+		genericContainerReq.Env["BLOB_SERVER"] = aliasAzurite
+		genericContainerReq.Env["METADATA_SERVER"] = aliasAzurite
+
+		// apply the network to the eventhubs container
+		err = network.WithNetwork([]string{aliasEventhubs}, azuriteNetwork)(&genericContainerReq)
+		if err != nil {
+			return c, fmt.Errorf("with network: %w", err)
+		}
+	}
+
+	var err error
+	c.Container, err = testcontainers.GenericContainer(ctx, genericContainerReq)
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
+}
+
+// ConnectionString returns the connection string for the eventhubs container,
+// using the following format:
+// Endpoint=sb://<hostname>:<port>;SharedAccessKeyName=<key-name>;SharedAccessKey=<key>;UseDevelopmentEmulator=true;
+func (c *Container) ConnectionString(ctx context.Context) (string, error) {
+	// we are passing an empty proto to get the host:port string
+	hostPort, err := c.PortEndpoint(ctx, defaultAMPQPort, "")
+	if err != nil {
+		return "", fmt.Errorf("port endpoint: %w", err)
+	}
+
+	return fmt.Sprintf(connectionStringFormat, hostPort, azurite.AccountName, azurite.AccountKey), nil
+}
+
+// MustConnectionString returns the connection string for the eventhubs container,
+// calling [Container.ConnectionString] and panicking if it returns an error.
+func (c *Container) MustConnectionString(ctx context.Context) string {
+	url, err := c.ConnectionString(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	return url
+}
