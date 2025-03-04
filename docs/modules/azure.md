@@ -98,7 +98,14 @@ In the following example, we will create a container with Azurite and perform so
 credentials, we will create an Azurite container, upload a blob to it, list the blobs, and download the blob. Finally, we will remove the created blob and container.
 
 <!--codeinclude-->
-[Performing blob operations](../../modules/azure/azurite/examples_test.go) inside_block:blobOperations
+[Create Container](../../modules/azure/azurite/examples_test.go) inside_block:runForBlobOperations
+[Create Shared Key Credential](../../modules/azure/azurite/examples_test.go) inside_block:createSharedKeyCredential
+[Create Client](../../modules/azure/azurite/examples_test.go) inside_block:createClient
+[Create Container](../../modules/azure/azurite/examples_test.go) inside_block:createContainer
+[Upload and Download Blob](../../modules/azure/azurite/examples_test.go) inside_block:uploadDownloadBlob
+[List Blobs](../../modules/azure/azurite/examples_test.go) inside_block:listBlobs
+[Delete Blob](../../modules/azure/azurite/examples_test.go) inside_block:deleteBlob
+[Delete Container](../../modules/azure/azurite/examples_test.go) inside_block:deleteContainer
 <!--/codeinclude-->
 
 #### Queue Operations
@@ -107,7 +114,12 @@ In the following example, we will create an Azurite container and perform some q
 credentials, we will create a queue, list the queues, and finally we will remove the created queue.
 
 <!--codeinclude-->
-[Performing queue operations](../../modules/azure/azurite/examples_test.go) inside_block:queueOperations
+[Run Azurite Container](../../modules/azure/azurite/examples_test.go) inside_block:runForQueueOperations
+[Create Shared Key Credential](../../modules/azure/azurite/examples_test.go) inside_block:queueOperations_createSharedKeyCredential
+[Create Client](../../modules/azure/azurite/examples_test.go) inside_block:queueOperations_createClient
+[Create Queue](../../modules/azure/azurite/examples_test.go) inside_block:createQueue
+[List Queues](../../modules/azure/azurite/examples_test.go) inside_block:listQueues
+[Delete Queue](../../modules/azure/azurite/examples_test.go) inside_block:deleteQueue
 <!--/codeinclude-->
 
 #### Table Operations
@@ -116,7 +128,12 @@ In the following example, we will create an Azurite container and perform some t
 credentials, we will create a table, list the tables, and finally we will remove the created table.
 
 <!--codeinclude-->
-[Performing table operations](../../modules/azure/azurite/examples_test.go) inside_block:tableOperations
+[Run Azurite Container](../../modules/azure/azurite/examples_test.go) inside_block:runForTableOperations
+[Create Shared Key Credential](../../modules/azure/azurite/examples_test.go) inside_block:tableOperations_createSharedKeyCredential
+[Create Client](../../modules/azure/azurite/examples_test.go) inside_block:tableOperations_createClient
+[Create Table](../../modules/azure/azurite/examples_test.go) inside_block:createTable
+[List Tables](../../modules/azure/azurite/examples_test.go) inside_block:listTables
+[Delete Table](../../modules/azure/azurite/examples_test.go) inside_block:deleteTable
 <!--/codeinclude-->
 
 ## EventHubs
