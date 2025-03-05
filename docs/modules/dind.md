@@ -43,7 +43,7 @@ When starting the DinD container, you can pass options in a variadic way to conf
 #### Image
 
 If you need to set a different DinD Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "/:")`.
+E.g. `Run(context.Background(), "docker:28.0.1-dind")`.
 
 {% include "../features/common_functional_options.md" %}
 
