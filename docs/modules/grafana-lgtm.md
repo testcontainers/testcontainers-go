@@ -11,7 +11,7 @@ The Testcontainers module for Grafana LGTM.
 Please run the following command to add the Grafana module to your Go dependencies:
 
 ```
-go get github.com/testcontainers/testcontainers-go/modules/grafanalgtm
+go get github.com/testcontainers/testcontainers-go/modules/grafana-lgtm
 ```
 
 ## Usage example
