@@ -134,7 +134,7 @@ func setupOTelSDK(ctx context.Context, ctr *grafanalgtm.GrafanaLGTMContainer) (s
 	)
 	otel.SetTextMapPropagator(prop)
 
-	otlpHTTPEndpoint := ctr.MustOtlpHttpEndpoint(ctx)
+	otlpHTTPEndpoint := ctr.MustOtlpHTTPEndpoint(ctx)
 
 	traceExporter, err := otlptrace.New(ctx,
 		otlptracehttp.NewClient(
