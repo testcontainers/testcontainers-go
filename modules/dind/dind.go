@@ -23,7 +23,7 @@ type DinDContainer struct {
 	testcontainers.Container
 }
 
-// Run creates an instance of the K3s container type
+// Run creates an instance of the DinD container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*DinDContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image: img,
