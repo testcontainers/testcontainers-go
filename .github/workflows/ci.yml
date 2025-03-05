@@ -129,7 +129,7 @@ jobs:
     permissions:
       contents: read  # for actions/checkout to fetch code
       pull-requests: read  # for sonarsource/sonarcloud-github-action to determine which PR to decorate
-    if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && needs.detect-modules.outputs.modules_count > 0 }}
+    if: ${{ needs.detect-modules.outputs.modules_count > 0 }}
     needs:
       - detect-modules
       - test
