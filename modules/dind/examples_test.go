@@ -26,6 +26,7 @@ func ExampleRun() {
 	}
 
 	// Retrieve the host where the DinD daemon is listening
+	// didnHost {
 	host, err := dindContainer.Host(ctx)
 	if err != nil {
 		log.Printf("failed to get docker host: %s", err)
