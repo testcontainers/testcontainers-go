@@ -24,6 +24,11 @@ type MSSQLServerContainer struct {
 	username string
 }
 
+// Password returns the password for the MSSQLServer container
+func (c *MSSQLServerContainer) Password() string {
+	return c.password
+}
+
 func WithAcceptEULA() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["ACCEPT_EULA"] = "Y"
