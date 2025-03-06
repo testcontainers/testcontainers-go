@@ -13,7 +13,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/azurite"
+	"github.com/testcontainers/testcontainers-go/modules/azure/azurite"
 )
 
 func ExampleRun() {
