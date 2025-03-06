@@ -14,10 +14,10 @@ const (
 	defaultAMPQPort        = "5672/tcp"
 	connectionStringFormat = "Endpoint=sb://%s;SharedAccessKeyName=%s;SharedAccessKey=%s;UseDevelopmentEmulator=true;"
 
-	// aliasEventhubs is the alias for the eventhubs network
+	// aliasEventhubs is the alias for the eventhubs container in the network
 	aliasEventhubs = "eventhubs"
 
-	// aliasAzurite is the alias for the azurite network
+	// aliasAzurite is the alias for the azurite container in the network
 	aliasAzurite = "azurite"
 
 	// containerConfigFile is the path to the eventhubs config file

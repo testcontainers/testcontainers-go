@@ -152,12 +152,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-The EventHubs container needs an Azurite container to be running, for that reason _Testcontainers for Go_ automatically creates a Docker network and an Azurite container for EventHubs to work.
+The EventHubs container needs an Azurite container to be running, for that reason _Testcontainers for Go_ **automatically creates a Docker network and an Azurite container** for EventHubs to work.
 When terminating the EventHubs container, the Azurite container and the Docker network are also terminated.
 
 ### Container Options
 
-When starting the Azurite container, you can pass options in a variadic way to configure it.
+When starting the EventHubs container, you can pass options in a variadic way to configure it.
 
 #### Image
 
