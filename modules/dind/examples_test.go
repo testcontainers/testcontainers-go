@@ -24,6 +24,7 @@ func ExampleRun() {
 		log.Printf("failed to start container: %s", err)
 		return
 	}
+	// }
 
 	// Retrieve the host where the DinD daemon is listening
 	// didnHost {
