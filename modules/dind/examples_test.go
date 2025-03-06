@@ -51,6 +51,8 @@ func ExampleRun() {
 
 	fmt.Println(version.APIVersion)
 
+	// The output will vary depending on the Docker version used in the DinD container.
+	// This is the negotiated API version between the client and the server.
 	// Output:
 	// 1.48
 }
