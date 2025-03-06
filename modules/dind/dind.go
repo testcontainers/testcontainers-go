@@ -89,7 +89,7 @@ func (c *DinDContainer) LoadImage(ctx context.Context, image string) error {
 		return fmt.Errorf("creating temporary images file %w", err)
 	}
 	defer func() {
-		_ = os.Remove(imagesTar.Name())
+		err = errors.Join(err, os.Remove(imagesTar.Name())
 	}()
 
 	err = provider.SaveImages(context.Background(), imagesTar.Name(), image)
