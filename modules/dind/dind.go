@@ -18,13 +18,13 @@ var (
 	defaultDockerDaemonPort = "2375/tcp"
 )
 
-// DinDContainer represents the Docker in Docker container type used in the module
-type DinDContainer struct {
+// Container represents the Docker in Docker container type used in the module
+type Container struct {
 	testcontainers.Container
 }
 
 // Run creates an instance of the K3s container type
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*DinDContainer, error) {
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	req := testcontainers.ContainerRequest{
 		Image: img,
 		ExposedPorts: []string{
@@ -60,9 +60,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	var c *DinDContainer
+	var c *Container
 	if container != nil {
-		c = &DinDContainer{Container: container}
+		c = &Container{Container: container}
 	}
 
 	if err != nil {
@@ -72,12 +72,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
-func (c *DinDContainer) Host(ctx context.Context) (string, error) {
+func (c *Container) Host(ctx context.Context) (string, error) {
 	return c.Container.PortEndpoint(ctx, "2375/tcp", "http")
 }
 
 // LoadImage loads an image into the DinD container.
-func (c *DinDContainer) LoadImage(ctx context.Context, image string) error {
+func (c *Container) LoadImage(ctx context.Context, image string) error {
 	provider, err := testcontainers.ProviderDocker.GetProvider()
 	if err != nil {
 		return fmt.Errorf("getting docker provider %w", err)
@@ -92,19 +92,16 @@ func (c *DinDContainer) LoadImage(ctx context.Context, image string) error {
 		err = errors.Join(err, os.Remove(imagesTar.Name())
 	}()
 
-	err = provider.SaveImages(context.Background(), imagesTar.Name(), image)
-	if err != nil {
+	if err = provider.SaveImages(context.Background(), imagesTar.Name(), image); err != nil {
 		return fmt.Errorf("saving images %w", err)
 	}
 
 	containerPath := "/image/" + filepath.Base(imagesTar.Name())
-	err = c.Container.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0x644)
-	if err != nil {
+	if err = c.Container.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0x644); err != nil {
 		return fmt.Errorf("copying image to container %w", err)
 	}
 
-	_, _, err = c.Container.Exec(ctx, []string{"docker", "image", "import", containerPath, image})
-	if err != nil {
+	if _, _, err = c.Container.Exec(ctx, []string{"docker", "image", "import", containerPath, image}); err != nil {
 		return fmt.Errorf("importing image %w", err)
 	}
 

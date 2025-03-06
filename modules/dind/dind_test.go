@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/dind"
+	"slices"
 	"testing"
 	"time"
 )
@@ -33,25 +34,21 @@ func Test_LoadImages(t *testing.T) {
 	err = provider.PullImage(ctx, "nginx")
 	require.NoError(t, err)
 
-	t.Run("Test load image not available", func(t *testing.T) {
+	t.Run("not-available", func(t *testing.T) {
 		err := dindContainer.LoadImage(ctx, "fake.registry/fake:non-existing")
 		require.Error(t, err)
 	})
 
-	t.Run("Test load image in DinD", func(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
 		err := dindContainer.LoadImage(ctx, "nginx")
 		require.NoError(t, err)
 
 		images, err := cli.ImageList(ctx, image.ListOptions{})
 		require.NoError(t, err)
 
-		found := false
-		for _, img := range images {
-			if img.RepoTags[0] == "nginx:latest" {
-				found = true
-				break
-			}
-		}
+		found := slices.ContainsFunc(images, func(img image.Summary) bool {
+			return len(img.RepoTags) > 0 && img.RepoTags[0] == "nginx:latest"
+		})
 
 		require.True(t, found)
 	})

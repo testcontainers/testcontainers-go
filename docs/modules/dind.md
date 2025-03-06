@@ -60,7 +60,8 @@ The `Host` method returns the DinD URL, to be used for connecting
 to the Docker API using a Docker client. It'll be returned in the format of `string`.
 
 <!--codeinclude-->
-[Host](../../modules/dind/examples_test.go) inside_block:GetKubeConfig
+[Host](../../modules/dind/examples_test.go) inside_block: didnHost
+[Get a Docker client](../../modules/dind/examples_test.go) inside_block:getDockerClient
 <!--/codeinclude-->
 
 #### LoadImage
