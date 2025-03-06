@@ -20,7 +20,7 @@ The Azure module exposes the following Go packages:
 
 - [Azurite](#azurite): `github.com/testcontainers/testcontainers-go/modules/azure/azurite`.
 - [EventHubs](#eventhubs): `github.com/testcontainers/testcontainers-go/modules/azure/eventhubs`.
-
+- [ServiceBus](#servicebus): `github.com/testcontainers/testcontainers-go/modules/azure/servicebus`.
 !!! warning "EULA Acceptance"
     Due to licensing restrictions you are required to explicitly accept an End User License Agreement (EULA) for the EventHubs container image. This is facilitated through the `WithAcceptEULA` function.
 
@@ -219,4 +219,88 @@ In the following example, inspired by the [Azure Event Hubs Go SDK](https://lear
 [Create Sample Events](../../modules/azure/eventhubs/examples_test.go) inside_block:createSampleEvents
 [Create Batch](../../modules/azure/eventhubs/examples_test.go) inside_block:createBatch
 [Send Event Data Batch to the EventHub](../../modules/azure/eventhubs/examples_test.go) inside_block:sendEventDataBatch
+<!--/codeinclude-->
+
+## ServiceBus
+
+### Run function
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The ServiceBus module exposes one entrypoint function to create the ServiceBus container, and this function receives three parameters:
+
+```golang
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)
+```
+
+- `context.Context`, the Go context.
+- `string`, the Docker image to use.
+- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+
+The ServiceBus container needs a MSSQL Server container to be running, for that reason _Testcontainers for Go_ **automatically creates a Docker network and an MSSQL Server container** for ServiceBus to work.
+When terminating the ServiceBus container, the MSSQL Server container and the Docker network are also terminated.
+
+### Container Options
+
+When starting the ServiceBus container, you can pass options in a variadic way to configure it.
+
+#### Image
+
+You must set a valid Docker image as the second argument in the `Run` function in order to use the ServiceBus container.
+E.g. `Run(context.Background(), "mcr.microsoft.com/azure-messaging/servicebus-emulator:1.0.1")`.
+
+{% include "../features/common_functional_options.md" %}
+
+#### WithMSSQLImage
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This option allows you to set a different MSSQL Server Docker image, instead of the default one.
+
+#### WithAcceptEULA
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This option allows you to accept the EULA for the ServiceBus container.
+
+#### WithConfig
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This option allows you to set a custom ServiceBus config file for the ServiceBus container.
+
+The config file must be a valid ServiceBus config file, and it must be a valid JSON object.
+
+<!--codeinclude-->
+[ServiceBus JSON Config](../../modules/azure/servicebus/testdata/servicebus_config.json)
+<!--/codeinclude-->
+
+### Container Methods
+
+The ServiceBus container exposes the following methods:
+
+#### ConnectionString
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+Returns the connection string to connect to the ServiceBus container and an error, passing the Go context as parameter.
+
+#### MustConnectionString
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+Returns the connection string to connect to the ServiceBus container, passing the Go context as parameter. If an error occurs, it panics.
+
+### Examples
+
+#### Send events to ServiceBus
+
+In the following example, inspired by the [Azure Event Hubs Go SDK](https://learn.microsoft.com/en-us/azure/event-hubs/event-hubs-go-get-started-send), we are creating an EventHubs container and sending events to it.
+
+<!--codeinclude-->
+[ServiceBus Config](../../modules/azure/servicebus/examples_test.go) inside_block:cfg
+[Run ServiceBus Container](../../modules/azure/servicebus/examples_test.go) inside_block:runServiceBusContainer
+[Create Client](../../modules/azure/servicebus/examples_test.go) inside_block:createClient
+[Send messages to a Queue](../../modules/azure/servicebus/examples_test.go) inside_block:sendMessages
+[Receive messages from a Queue](../../modules/azure/servicebus/examples_test.go) inside_block:receiveMessages
 <!--/codeinclude-->
