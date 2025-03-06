@@ -26,9 +26,6 @@ go get github.com/testcontainers/testcontainers-go/modules/dind
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-!!!info
-    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
-
 The DinD module exposes one entrypoint function to create the DinD container, and this function receives three parameters:
 
 ```golang
@@ -46,7 +43,7 @@ When starting the DinD container, you can pass options in a variadic way to conf
 #### Image
 
 If you need to set a different DinD Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "/:")`.
+E.g. `Run(context.Background(), "docker:28.0.1-dind")`.
 
 {% include "../features/common_functional_options.md" %}
 

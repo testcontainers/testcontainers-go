@@ -2,6 +2,7 @@ package dind
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -89,7 +90,7 @@ func (c *Container) LoadImage(ctx context.Context, image string) error {
 		return fmt.Errorf("creating temporary images file %w", err)
 	}
 	defer func() {
-		err = errors.Join(err, os.Remove(imagesTar.Name())
+		err = errors.Join(err, os.Remove(imagesTar.Name()))
 	}()
 
 	if err = provider.SaveImages(context.Background(), imagesTar.Name(), image); err != nil {
@@ -97,7 +98,7 @@ func (c *Container) LoadImage(ctx context.Context, image string) error {
 	}
 
 	containerPath := "/image/" + filepath.Base(imagesTar.Name())
-	if err = c.Container.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0x644); err != nil {
+	if err = c.Container.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0o644); err != nil {
 		return fmt.Errorf("copying image to container %w", err)
 	}
 
