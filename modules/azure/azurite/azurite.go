@@ -99,12 +99,15 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			switch srv {
 			case BlobService:
 				genericContainerReq.Cmd = append(genericContainerReq.Cmd, "--blobHost", "0.0.0.0")
+				waitingFor = append(waitingFor, wait.ForListeningPort(BlobPort))
 				waitingFor = append(waitingFor, wait.ForLog("Blob service is successfully listening"))
 			case QueueService:
 				genericContainerReq.Cmd = append(genericContainerReq.Cmd, "--queueHost", "0.0.0.0")
+				waitingFor = append(waitingFor, wait.ForListeningPort(QueuePort))
 				waitingFor = append(waitingFor, wait.ForLog("Queue service is successfully listening"))
 			case TableService:
 				genericContainerReq.Cmd = append(genericContainerReq.Cmd, "--tableHost", "0.0.0.0")
+				waitingFor = append(waitingFor, wait.ForListeningPort(TablePort))
 				waitingFor = append(waitingFor, wait.ForLog("Table service is successfully listening"))
 			}
 		}
