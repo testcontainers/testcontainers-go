@@ -8,6 +8,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/azure/azurite"
 	"github.com/testcontainers/testcontainers-go/network"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
@@ -68,6 +69,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	req := testcontainers.ContainerRequest{
 		Image: img,
 		Env:   make(map[string]string),
+		WaitingFor: wait.ForAll(
+			wait.ForListeningPort(defaultAMPQPort),
+			wait.ForLog(".*Emulator Service is Successfully Up.*").AsRegexp(),
+		),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
