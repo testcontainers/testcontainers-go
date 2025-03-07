@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/firestore"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
@@ -24,7 +25,7 @@ func (ec emulatorCreds) RequireTransportSecurity() bool {
 	return false
 }
 
-func ExampleRunFirestoreContainer() {
+func ExampleRunFirestore() {
 	// runFirestoreContainer {
 	ctx := context.Background()
 
@@ -89,6 +90,76 @@ func ExampleRunFirestoreContainer() {
 	var saved Person
 	if err := docsnap.DataTo(&saved); err != nil {
 		log.Printf("failed to convert data: %v", err)
+		return
+	}
+
+	fmt.Println(saved.Firstname, saved.Lastname)
+
+	// Output:
+	// Ada Lovelace
+}
+
+func ExampleRunFirestore_datastoreMode() {
+	// runFirestoreContainer {
+	ctx := context.Background()
+
+	firestoreContainer, err := gcloud.RunFirestore(
+		ctx,
+		"gcr.io/google.com/cloudsdktool/cloud-sdk:513.0.0-emulators",
+		gcloud.WithProjectID("firestore-project"),
+		gcloud.WithDatastoreMode(),
+	)
+	defer func() {
+		if err := testcontainers.TerminateContainer(firestoreContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
+	if err != nil {
+		log.Printf("failed to run container: %v", err)
+		return
+	}
+	// }
+
+	// datastoreClient {
+	projectID := firestoreContainer.Settings.ProjectID
+
+	conn, err := grpc.NewClient(firestoreContainer.URI, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithPerRPCCredentials(emulatorCreds{}))
+	if err != nil {
+		log.Printf("failed to dial: %v", err)
+		return
+	}
+
+	options := []option.ClientOption{option.WithGRPCConn(conn)}
+	client, err := datastore.NewClient(ctx, projectID, options...)
+	if err != nil {
+		log.Printf("failed to create client: %v", err)
+		return
+	}
+	defer client.Close()
+	// }
+
+	userKey := datastore.NameKey("users", "alovelace", nil)
+
+	type Person struct {
+		Firstname string `json:"firstname"`
+		Lastname  string `json:"lastname"`
+	}
+
+	data := Person{
+		Firstname: "Ada",
+		Lastname:  "Lovelace",
+	}
+
+	_, err = client.Put(ctx, userKey, &data)
+	if err != nil {
+		log.Printf("failed to create entity: %v", err)
+		return
+	}
+
+	saved := Person{}
+	err = client.Get(ctx, userKey, &saved)
+	if err != nil {
+		log.Printf("failed to get entity: %v", err)
 		return
 	}
 

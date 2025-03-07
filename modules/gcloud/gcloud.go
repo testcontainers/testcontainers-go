@@ -48,6 +48,7 @@ func newGCloudContainer(ctx context.Context, req testcontainers.GenericContainer
 type options struct {
 	ProjectID        string
 	bigQueryDataYaml io.Reader
+	datastoreMode    bool
 }
 
 func defaultOptions() options {
@@ -89,6 +90,17 @@ func WithDataYAML(r io.Reader) Option {
 		}
 
 		o.bigQueryDataYaml = r
+		return nil
+	}
+}
+
+// WithDatastoreMode sets the firestore emulator to run in datastore mode.
+// Requires a cloud-sdk image with version 465.0.0 or higher
+//
+// Other GCloud containers will ignore this option
+func WithDatastoreMode() Option {
+	return func(o *options) error {
+		o.datastoreMode = true
 		return nil
 	}
 }
