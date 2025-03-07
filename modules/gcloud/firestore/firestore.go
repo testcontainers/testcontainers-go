@@ -56,10 +56,15 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
+	gcloudParameters := "--project=" + settings.ProjectID
+	if settings.datastoreMode {
+		gcloudParameters += " --database-mode=datastore-mode"
+	}
+
 	req.Cmd = []string{
 		"/bin/sh",
 		"-c",
-		"gcloud beta emulators firestore start --host-port 0.0.0.0:8080 --project=" + settings.ProjectID,
+		"gcloud beta emulators firestore start --host-port 0.0.0.0:8080 " + gcloudParameters,
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, req)

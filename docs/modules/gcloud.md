@@ -176,6 +176,12 @@ In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk
 
 {% include "./gcloud-shared.md" %}
 
+### Datastore mode
+
+Using the `WithDatastoreMode` option will run the Firestore emulator using `Firestore In Datastore` mode allowing you to use Datastore APIs and clients towards the Firestore emulator.
+
+Requires `cloud-sdk:465.0.0` or higher
+
 ### Examples
 
 <!--codeinclude-->
