@@ -73,14 +73,15 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
+// Host returns the endpoint to connect to the Docker daemon running inside the DinD container.
 func (c *Container) Host(ctx context.Context) (string, error) {
 	return c.Container.PortEndpoint(ctx, "2375/tcp", "http")
 }
 
 // LoadImage loads an image into the DinD container.
-func (c *Container) LoadImage(ctx context.Context, image string) error {
-	provider, err := testcontainers.ProviderDocker.GetProvider()
-	if err != nil {
+func (c *Container) LoadImage(ctx context.Context, image string) (err error) {
+	var provider testcontainers.GenericProvider
+	if provider, err = testcontainers.ProviderDocker.GetProvider(); err != nil {
 		return fmt.Errorf("getting docker provider %w", err)
 	}
 
