@@ -82,29 +82,29 @@ func (c *Container) Host(ctx context.Context) (string, error) {
 func (c *Container) LoadImage(ctx context.Context, image string) (err error) {
 	var provider testcontainers.GenericProvider
 	if provider, err = testcontainers.ProviderDocker.GetProvider(); err != nil {
-		return fmt.Errorf("getting docker provider %w", err)
+		return fmt.Errorf("get docker provider %w", err)
 	}
 
 	// save image
 	imagesTar, err := os.CreateTemp(os.TempDir(), "image*.tar")
 	if err != nil {
-		return fmt.Errorf("creating temporary images file %w", err)
+		return fmt.Errorf("create temporary images file: %w", err)
 	}
 	defer func() {
 		err = errors.Join(err, os.Remove(imagesTar.Name()))
 	}()
 
 	if err = provider.SaveImages(context.Background(), imagesTar.Name(), image); err != nil {
-		return fmt.Errorf("saving images %w", err)
+		return fmt.Errorf("save images: %w", err)
 	}
 
 	containerPath := "/image/" + filepath.Base(imagesTar.Name())
 	if err = c.Container.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0o644); err != nil {
-		return fmt.Errorf("copying image to container %w", err)
+		return fmt.Errorf("copy image to container: %w", err)
 	}
 
 	if _, _, err = c.Container.Exec(ctx, []string{"docker", "image", "import", containerPath, image}); err != nil {
-		return fmt.Errorf("importing image %w", err)
+		return fmt.Errorf("import image: %w", err)
 	}
 
 	return nil
