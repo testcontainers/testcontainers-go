@@ -10,33 +10,21 @@ import (
 	internal_template "github.com/testcontainers/testcontainers-go/modulegen/internal/template"
 )
 
+// Generator is a struct that contains the logic to generate the sonar-project.properties file.
 type Generator struct{}
 
 // Generate updates sonar-project.properties
-func (g Generator) Generate(ctx context.Context) error {
-	rootCtx, err := context.GetRootContext()
+func (g Generator) Generate(ctx context.Context, examples []string, modules []string) error {
+	mkdocsConfig, err := mkdocs.ReadConfig(ctx.MkdocsConfigFile())
 	if err != nil {
-		return err
-	}
-	examples, err := rootCtx.GetExamples()
-	if err != nil {
-		return err
-	}
-	modules, err := rootCtx.GetModules()
-	if err != nil {
-		return err
-	}
-	mkdocsConfig, err := mkdocs.ReadConfig(rootCtx.MkdocsConfigFile())
-	if err != nil {
-		fmt.Printf(">> could not read MkDocs config: %v\n", err)
-		return err
+		return fmt.Errorf("read config: %w", err)
 	}
 	tcVersion := mkdocsConfig.Extra.LatestVersion
 	config := newConfig(tcVersion, examples, modules)
 	name := "sonar-project.properties.tmpl"
 	t, err := template.New(name).ParseFiles(filepath.Join("_template", name))
 	if err != nil {
-		return err
+		return fmt.Errorf("parse files: %w", err)
 	}
 
 	return internal_template.GenerateFile(t, ctx.SonarProjectFile(), name, config)

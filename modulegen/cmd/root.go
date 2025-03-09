@@ -14,4 +14,5 @@ var NewRootCmd = &cobra.Command{
 
 func init() {
 	NewRootCmd.AddCommand(modules.NewCmd)
+	NewRootCmd.AddCommand(modules.RefreshModulesCmd)
 }
