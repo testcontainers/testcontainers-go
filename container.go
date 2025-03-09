@@ -19,9 +19,9 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/go-connections/nat"
 	"github.com/google/uuid"
-	"github.com/moby/patternmatcher/ignorefile"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/image"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -71,18 +71,9 @@ type Container interface {
 	GetLogProductionErrorChannel() <-chan error
 }
 
+// Deprecated: Use image.Builder instead
 // ImageBuildInfo defines what is needed to build an image
-type ImageBuildInfo interface {
-	BuildOptions() (types.ImageBuildOptions, error) // converts the ImageBuildInfo to a types.ImageBuildOptions
-	GetContext() (io.Reader, error)                 // the path to the build context
-	GetDockerfile() string                          // the relative path to the Dockerfile, including the file itself
-	GetRepo() string                                // get repo label for image
-	GetTag() string                                 // get tag label for image
-	BuildLogWriter() io.Writer                      // for output of build log, use io.Discard to disable the output
-	ShouldBuildImage() bool                         // return true if the image needs to be built
-	GetBuildArgs() map[string]*string               // return the environment args used to build the Dockerfile
-	GetAuthConfigs() map[string]registry.AuthConfig // Deprecated. Testcontainers will detect registry credentials automatically. Return the auth configs to be able to pull from an authenticated docker registry
-}
+type ImageBuildInfo = image.Builder
 
 // FromDockerfile represents the parameters needed to build an image from a Dockerfile
 // rather than using a pre-built one
@@ -131,7 +122,7 @@ type ContainerRequest struct {
 	FromDockerfile
 	HostAccessPorts          []int
 	Image                    string
-	ImageSubstitutors        []ImageSubstitutor
+	ImageSubstitutors        []image.Substitutor
 	Entrypoint               []string
 	Env                      map[string]string
 	ExposedPorts             []string // allow specifying protocol info
@@ -240,7 +231,7 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 	}
 	c.Context = abs
 
-	dockerIgnoreExists, excluded, err := parseDockerIgnore(abs)
+	dockerIgnoreExists, excluded, err := image.ParseDockerIgnore(abs)
 	if err != nil {
 		return nil, err
 	}
@@ -261,26 +252,6 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 	}
 
 	return buildContext, nil
-}
-
-// parseDockerIgnore returns if the file exists, the excluded files and an error if any
-func parseDockerIgnore(targetDir string) (bool, []string, error) {
-	// based on https://github.com/docker/cli/blob/master/cli/command/image/build/dockerignore.go#L14
-	fileLocation := filepath.Join(targetDir, ".dockerignore")
-	var excluded []string
-	exists := false
-	if f, openErr := os.Open(fileLocation); openErr == nil {
-		defer f.Close()
-
-		exists = true
-
-		var err error
-		excluded, err = ignorefile.ReadAll(f)
-		if err != nil {
-			return true, excluded, fmt.Errorf("error reading .dockerignore: %w", err)
-		}
-	}
-	return exists, excluded, nil
 }
 
 // GetBuildArgs returns the env args to be used when creating from Dockerfile
