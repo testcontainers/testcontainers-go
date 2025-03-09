@@ -18,6 +18,10 @@
             "path": "../modules/artemis"
         },
         {
+            "name": "module / azure",
+            "path": "../modules/azure"
+        },
+        {
             "name": "module / azurite",
             "path": "../modules/azurite"
         },
