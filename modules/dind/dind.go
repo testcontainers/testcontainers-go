@@ -82,7 +82,7 @@ func (c *Container) Host(ctx context.Context) (string, error) {
 func (c *Container) LoadImage(ctx context.Context, image string) (err error) {
 	var provider testcontainers.GenericProvider
 	if provider, err = testcontainers.ProviderDocker.GetProvider(); err != nil {
-		return fmt.Errorf("get docker provider %w", err)
+		return fmt.Errorf("get docker provider: %w", err)
 	}
 
 	// save image
