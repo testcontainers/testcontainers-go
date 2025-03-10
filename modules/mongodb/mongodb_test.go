@@ -2,6 +2,10 @@ package mongodb_test
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"net"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -13,7 +17,52 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/mongodb"
 )
 
+func localNonLoopbackIP() (string, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return "", fmt.Errorf("list network interfaces: %w", err)
+	}
+
+	for _, iface := range interfaces {
+		// Skip down or loopback interfaces.
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue // try next interface
+		}
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			default:
+				continue
+			}
+			// Check if it's a valid IPv4 and not loopback.
+			if ip.IsLoopback() {
+				continue
+			}
+			ip = ip.To4()
+			if ip == nil {
+				continue // not IPv4
+			}
+			return ip.String(), nil
+		}
+	}
+	return "", errors.New("no non-loopback IPv4 address found")
+}
+
 func TestMongoDB(t *testing.T) {
+	host, err := localNonLoopbackIP()
+	if err != nil {
+		host = "host.docker.internal"
+	}
+	t.Setenv("TESTCONTAINERS_HOST_OVERRIDE", host)
 	type tests struct {
 		name string
 		img  string
@@ -125,18 +174,52 @@ func TestMongoDB(t *testing.T) {
 			endpoint, err := mongodbContainer.ConnectionString(ctx)
 			require.NoError(tt, err)
 
-			// Force direct connection to the container to avoid the replica set
-			// connection string that is returned by the container itself when
-			// using the replica set option.
+			// Force direct connection to the container.
 			mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(endpoint).SetDirect(true))
 			require.NoError(tt, err)
 
 			err = mongoClient.Ping(ctx, nil)
 			require.NoError(tt, err)
-			require.Equal(t, "test", mongoClient.Database("test").Name())
+			require.Equal(tt, "test", mongoClient.Database("test").Name())
 
-			_, err = mongoClient.Database("testcontainer").Collection("test").InsertOne(context.Background(), bson.M{})
+			// Basic insert test.
+			_, err = mongoClient.Database("testcontainer").Collection("test").InsertOne(ctx, bson.M{})
 			require.NoError(tt, err)
+
+			// If the container is configured with a replica set, run the change stream test.
+			if hasReplica, _ := hasReplicaSet(endpoint); hasReplica {
+				coll := mongoClient.Database("test").Collection("changes")
+				stream, err := coll.Watch(ctx, mongo.Pipeline{})
+				require.NoError(tt, err)
+				defer stream.Close(ctx)
+
+				doc := bson.M{"message": "hello change streams"}
+				_, err = coll.InsertOne(ctx, doc)
+				require.NoError(tt, err)
+
+				require.True(tt, stream.Next(ctx))
+				var changeEvent bson.M
+				err = stream.Decode(&changeEvent)
+				require.NoError(tt, err)
+
+				opType, ok := changeEvent["operationType"].(string)
+				require.True(tt, ok, "Expected operationType field")
+				require.Equal(tt, "insert", opType, "Expected operationType to be 'insert'")
+
+				fullDoc, ok := changeEvent["fullDocument"].(bson.M)
+				require.True(tt, ok, "Expected fullDocument field")
+				require.Equal(tt, "hello change streams", fullDoc["message"])
+			}
 		})
 	}
+}
+
+// hasReplicaSet checks if the connection string includes a replicaSet query parameter.
+func hasReplicaSet(connStr string) (bool, error) {
+	u, err := url.Parse(connStr)
+	if err != nil {
+		return false, fmt.Errorf("parse connection string: %w", err)
+	}
+	q := u.Query()
+	return q.Get("replicaSet") != "", nil
 }
