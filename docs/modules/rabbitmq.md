@@ -45,8 +45,8 @@ When starting the RabbitMQ container, you can pass options in a variadic way to 
 
 #### Image
 
-If you need to set a different RabbitMQ Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "rabbitmq:3.7.25-management-alpine")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "rabbitmq:3.7.25-management-alpine")`.
 
 !!!warning
     From [https://hub.docker.com/_/rabbitmq](https://hub.docker.com/_/rabbitmq): "As of RabbitMQ 3.9, all of the docker-specific variables listed below are deprecated and no longer used. Please use a configuration file instead; visit [rabbitmq.com/configure](https://rabbitmq.com/configure) to learn more about the configuration file. For a starting point, the 3.8 images will print out the config file it generated from supplied environment variables."

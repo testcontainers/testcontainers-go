@@ -50,8 +50,8 @@ When starting the container, you can pass options in a variadic way to configure
 
 #### Image
 
-To use a different Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "influxdb:1.8.0")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "influxdb:1.8.0")`.
 
 !!!info
     Note that `influxdb:latest` will get you a version 2 image which is not supported by this module.

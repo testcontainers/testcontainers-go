@@ -48,6 +48,11 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 When starting the MS SQL Server container, you can pass options in a variadic way to configure it.
 
+#### Image
+
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "mcr.microsoft.com/mssql/server:2022-RTM-GDR1-ubuntu-20.04")`.
+
 #### Init Scripts
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
@@ -64,11 +69,6 @@ This will:
 
 1. Copy each file into the container.
 2. Execute them using `sqlcmd` after the container is ready.
-
-#### Image
-
-If you need to set a different MS SQL Server Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "mcr.microsoft.com/mssql/server:2022-RTM-GDR1-ubuntu-20.04")`.
 
 #### End User License Agreement
 
