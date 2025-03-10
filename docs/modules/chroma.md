@@ -51,7 +51,7 @@ When starting the Chroma container, you can pass options in a variadic way to co
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-E.g. `Run(context.Background(), "chromadb/chroma:0.4.24")`.
+In example: `Run(context.Background(), "chromadb/chroma:0.4.24")`.
 
 {% include "../features/common_functional_options.md" %}
 

@@ -51,7 +51,7 @@ When starting the MS SQL Server container, you can pass options in a variadic wa
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-E.g. `Run(context.Background(), "mcr.microsoft.com/mssql/server:2022-RTM-GDR1-ubuntu-20.04")`.
+In example: `Run(context.Background(), "mcr.microsoft.com/mssql/server:2022-RTM-GDR1-ubuntu-20.04")`.
 
 #### Init Scripts
 

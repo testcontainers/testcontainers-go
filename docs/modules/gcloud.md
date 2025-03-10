@@ -122,7 +122,7 @@ When starting any of the GCloud containers, you can pass options in a variadic w
 #### Image
 
 Use the second argument in the `RunXXX` function (`RunBigQuery, RunDatastore`, ...) to set a valid Docker image.
-E.g. `RunXXX(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators")`.
+In example: `RunXXX(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators")`.
 
 {% include "../features/common_functional_options.md" %}
 

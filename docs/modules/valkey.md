@@ -46,7 +46,7 @@ When starting the Valkey container, you can pass options in a variadic way to co
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-E.g. `Run(context.Background(), "valkey/valkey:7.2.5")`.
+In example: `Run(context.Background(), "valkey/valkey:7.2.5")`.
 
 {% include "../features/common_functional_options.md" %}
 

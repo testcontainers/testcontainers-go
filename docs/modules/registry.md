@@ -57,7 +57,7 @@ When starting the Registry container, you can pass options in a variadic way to 
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-E.g. `Run(context.Background(), "registry:2.8.3")`.
+In example: `Run(context.Background(), "registry:2.8.3")`.
 
 {% include "../features/common_functional_options.md" %}
 

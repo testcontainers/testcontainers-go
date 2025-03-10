@@ -52,7 +52,7 @@ When starting the Pulsar container, you can pass options in a variadic way to co
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-E.g. `Run(context.Background(), "apachepulsar/pulsar:2.10.2")`.
+In example: `Run(context.Background(), "apachepulsar/pulsar:2.10.2")`.
 
 {% include "../features/common_functional_options.md" %}
 

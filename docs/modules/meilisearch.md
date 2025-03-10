@@ -43,7 +43,7 @@ When starting the Meilisearch container, you can pass options in a variadic way 
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-E.g. `Run(context.Background(), "getmeili/meilisearch:v1.10.3")`.
+In example: `Run(context.Background(), "getmeili/meilisearch:v1.10.3")`.
 
 {% include "../features/common_functional_options.md" %}
 

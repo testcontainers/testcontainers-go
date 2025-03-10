@@ -43,7 +43,7 @@ When starting the etcd container, you can pass options in a variadic way to conf
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-E.g. `Run(context.Background(), "bitnami/etcd:latest")`.
+In example: `Run(context.Background(), "bitnami/etcd:latest")`.
 
 {% include "../features/common_functional_options.md" %}
 

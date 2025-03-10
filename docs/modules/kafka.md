@@ -46,7 +46,7 @@ When starting the Kafka container, you can pass options in a variadic way to con
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-E.g. `Run(context.Background(), "confluentinc/confluent-local:7.5.0")`.
+In example: `Run(context.Background(), "confluentinc/confluent-local:7.5.0")`.
 
 !!! warning
     The minimal required version of Kafka for KRaft mode is `confluentinc/confluent-local:7.4.0`. If you are using an image that

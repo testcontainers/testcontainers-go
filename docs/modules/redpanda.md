@@ -51,7 +51,7 @@ When starting the Redpanda container, you can pass options in a variadic way to 
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-E.g. `Run(context.Background(), "docker.redpanda.com/redpandadata/redpanda:v23.1.7")`.
+In example: `Run(context.Background(), "docker.redpanda.com/redpandadata/redpanda:v23.1.7")`.
 
 {% include "../features/common_functional_options.md" %}
 

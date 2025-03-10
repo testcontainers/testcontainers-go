@@ -54,7 +54,7 @@ When starting the ClickHouse container, you can pass options in a variadic way t
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-E.g. `Run(context.Background(), "clickhouse/clickhouse-server:23.3.8.21-alpine")`.
+In example: `Run(context.Background(), "clickhouse/clickhouse-server:23.3.8.21-alpine")`.
 
 {% include "../features/common_functional_options.md" %}
 

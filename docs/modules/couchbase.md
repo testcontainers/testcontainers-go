@@ -73,7 +73,7 @@ When starting the Couchbase container, you can pass options in a variadic way to
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-E.g. `Run(context.Background(), "couchbase:6.5.1")`.
+In example: `Run(context.Background(), "couchbase:6.5.1")`.
 
 You can find the Docker images that are currently tested in this module, for the Enterprise and Community editions, in the following list:
 

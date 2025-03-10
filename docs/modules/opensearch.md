@@ -46,7 +46,7 @@ When starting the OpenSearch container, you can pass options in a variadic way t
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-E.g. `Run(context.Background(), "opensearchproject/opensearch:2.11.1")`.
+In example: `Run(context.Background(), "opensearchproject/opensearch:2.11.1")`.
 
 {% include "../features/common_functional_options.md" %}
 

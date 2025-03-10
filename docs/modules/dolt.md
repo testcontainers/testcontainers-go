@@ -46,7 +46,7 @@ When starting the Dolt container, you can pass options in a variadic way to conf
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-E.g. `Run(context.Background(), "dolthub/dolt-sql-server:1.32.4")`.
+In example: `Run(context.Background(), "dolthub/dolt-sql-server:1.32.4")`.
 
 {% include "../features/common_functional_options.md" %}
 

@@ -46,7 +46,7 @@ When starting the NATS container, you can pass options in a variadic way to conf
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-E.g. `Run(context.Background(), "nats:2.9")`.
+In example: `Run(context.Background(), "nats:2.9")`.
 
 {% include "../features/common_functional_options.md" %}
 
