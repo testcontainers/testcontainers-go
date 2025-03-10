@@ -42,7 +42,7 @@ When starting the DynamoDB container, you can pass options in a variadic way to 
 
 #### Image
 
-If you need to set a different DynamoDB Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+Use the second argument in the `Run` function to set a valid Docker image.
 E.g. `Run(context.Background(), "amazon/dynamodb-local:2.2.1")`.
 
 {% include "../features/common_functional_options.md" %}

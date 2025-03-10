@@ -49,7 +49,7 @@ When starting the MySQL container, you can pass options in a variadic way to con
 
 #### Image
 
-If you need to set a different MySQL Docker image, you can set a valid Docker image as the second argument in the `Run` function.
+Use the second argument in the `Run` function to set a valid Docker image.
 E.g. `Run(context.Background(), "mysql:8.0.36")`.
 
 {% include "../features/common_functional_options.md" %}
