@@ -14,10 +14,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var (
-	// containerPorts {
-	defaultDockerDaemonPort = "2375/tcp"
-)
+// containerPorts {
+var defaultDockerDaemonPort = "2375/tcp"
 
 // Container represents the Docker in Docker container type used in the module
 type Container struct {

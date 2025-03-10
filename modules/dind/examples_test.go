@@ -3,11 +3,12 @@ package dind_test
 import (
 	"context"
 	"fmt"
-	"github.com/docker/docker/client"
-	"github.com/testcontainers/testcontainers-go/modules/dind"
 	"log"
 
+	"github.com/docker/docker/client"
+
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/dind"
 )
 
 func ExampleRun() {

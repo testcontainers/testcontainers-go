@@ -2,14 +2,16 @@ package dind_test
 
 import (
 	"context"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/client"
-	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/dind"
 	"slices"
 	"testing"
 	"time"
+
+	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/client"
+	"github.com/stretchr/testify/require"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/dind"
 )
 
 func Test_LoadImages(t *testing.T) {
