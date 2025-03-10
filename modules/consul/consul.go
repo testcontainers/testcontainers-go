@@ -23,10 +23,8 @@ type ConsulContainer struct {
 	testcontainers.Container
 }
 
-// ApiEndpoint returns host:port for the HTTP API endpoint.
-//
-//nolint:revive //FIXME
-func (c *ConsulContainer) ApiEndpoint(ctx context.Context) (string, error) {
+// APIEndpoint returns host:port for the HTTP API endpoint.
+func (c *ConsulContainer) APIEndpoint(ctx context.Context) (string, error) {
 	mappedPort, err := c.MappedPort(ctx, defaultHTTPAPIPort)
 	if err != nil {
 		return "", err
