@@ -33,10 +33,11 @@ type AzuriteContainer struct {
 	Settings options
 }
 
+// ServiceURL returns the URL of the given service
 func (c *AzuriteContainer) ServiceURL(ctx context.Context, srv Service) (string, error) {
 	hostname, err := c.Host(ctx)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("host: %w", err)
 	}
 
 	var port nat.Port
@@ -53,12 +54,13 @@ func (c *AzuriteContainer) ServiceURL(ctx context.Context, srv Service) (string,
 
 	mappedPort, err := c.MappedPort(ctx, port)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("mapped port: %w", err)
 	}
 
 	return fmt.Sprintf("http://%s:%d", hostname, mappedPort.Int()), nil
 }
 
+// MustServiceURL returns the URL of the given service, panics if an error occurs
 func (c *AzuriteContainer) MustServiceURL(ctx context.Context, srv Service) string {
 	url, err := c.ServiceURL(ctx, srv)
 	if err != nil {
@@ -87,7 +89,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	settings := defaultOptions()
 	for _, opt := range opts {
 		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("customize: %w", err)
 		}
 	}
 
