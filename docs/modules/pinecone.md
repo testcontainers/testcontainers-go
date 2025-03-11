@@ -45,8 +45,8 @@ When starting the Pinecone container, you can pass options in a variadic way to 
 
 #### Image
 
-If you need to set a different Pinecone Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "ghcr.io/pinecone-io/pinecone-local:latest")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "ghcr.io/pinecone-io/pinecone-local:latest")`.
 
 {% include "../features/common_functional_options.md" %}
 

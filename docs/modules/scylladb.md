@@ -50,8 +50,8 @@ When starting the ScyllaDB container, you can pass options in a variadic way to 
 
 #### Image
 
-If you need to set a different ScyllaDB Docker image, you can set a valid Docker image as the second argument in the
-`Run` function. Eg:
+Use the second argument in the `Run` function to set a valid Docker image.
+In example:
 
 ```golang
 scylladb.Run(context.Background(), "scylladb/scylla:6.2.1")
