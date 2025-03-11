@@ -216,6 +216,24 @@ $ cd modules
 $ make tidy-examples
 ```
 
+## Refreshing the modules
+
+To refresh the modules, please run:
+
+```shell
+$ cd modulegen
+$ go run . refresh
+```
+
+This command recreates all the project files for the modules and examples, including:
+
+- the mkdocs.yml file, including all the modules and examples, excluding the `compose` module, as it has its own docs page.
+- the dependabot config file, including all the modules, the examples and the modulegen module.
+- the VSCode project file, including all the modules, the examples and the modulegen module.
+- the Sonar properties file, including all the modules, the examples and the modulegen module.
+
+Executing this command in a well-known state of the project, must not produce any changes in the project files.
+
 ## Interested in converting an example into a module?
 
 The steps to convert an existing example, aka `${THE_EXAMPLE}`, into a module are the following:
