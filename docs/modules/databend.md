@@ -42,8 +42,8 @@ When starting the Databend container, you can pass options in a variadic way to 
 
 #### Image
 
-If you need to set a different Databend Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "datafuselabs/databend:v1.2.615")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "datafuselabs/databend:v1.2.615")`.
 
 {% include "../features/common_functional_options.md" %}
 

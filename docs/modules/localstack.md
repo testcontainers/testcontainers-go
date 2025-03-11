@@ -50,8 +50,8 @@ When starting the Localstack container, you can pass options in a variadic way t
 
 #### Image
 
-If you need to set a different Localstack Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "localstack:1.4.0")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "localstack:1.4.0")`.
 
 {% include "../features/common_functional_options.md" %}
 

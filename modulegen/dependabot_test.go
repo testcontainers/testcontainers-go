@@ -66,6 +66,6 @@ func TestModulesHasDependabotEntry(t *testing.T) {
 	// all modules exist in the dependabot updates
 	for _, module := range modules {
 		dependabotDir := "/modules/" + module
-		require.True(t, slices.Contains(gomodUpdate.Directories, dependabotDir), "modules %s is not present in the dependabot updates", modules)
+		require.True(t, slices.Contains(gomodUpdate.Directories, dependabotDir), "module %s is not present in the dependabot updates", module)
 	}
 }

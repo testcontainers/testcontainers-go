@@ -371,10 +371,10 @@ func assertModuleDocContent(t *testing.T, module context.TestcontainersModule, m
 	require.Equal(t, "<!--codeinclude-->", data[18])
 	require.Equal(t, "[Creating a "+title+" container](../../"+module.ParentDir()+"/"+lower+"/examples_test.go) inside_block:Example"+entrypoint, data[19])
 	require.Equal(t, "<!--/codeinclude-->", data[20])
-	require.Equal(t, "The "+title+" module exposes one entrypoint function to create the "+title+" container, and this function receives three parameters:", data[31])
-	require.True(t, strings.HasSuffix(data[34], "(*"+title+"Container, error)"))
-	require.Equal(t, "If you need to set a different "+title+" Docker image, you can set a valid Docker image as the second argument in the `Run` function.", data[47])
-	require.Equal(t, "E.g. `Run(context.Background(), \""+module.Image+"\")`.", data[48])
+	require.Equal(t, "The "+title+" module exposes one entrypoint function to create the "+title+" container, and this function receives three parameters:", data[28])
+	require.True(t, strings.HasSuffix(data[31], "(*"+title+"Container, error)"))
+	require.Equal(t, "Use the second argument in the `Run` function to set a valid Docker image.", data[44])
+	require.Equal(t, "In example: `Run(context.Background(), \""+module.Image+"\")`.", data[45])
 }
 
 // assert content module test
