@@ -117,10 +117,19 @@ func ExampleRun_authenticateCreateClient() {
 	sbMessage := &azservicebus.Message{
 		Body: []byte(message),
 	}
-	err = sender.SendMessage(context.TODO(), sbMessage, nil)
-	if err != nil {
-		fmt.Printf("failed to send message: %s", err)
-		return
+	maxRetries := 3
+	// Retry sending the message 3 times, because the queue is created from the configuration
+	// and Testcontainers cannot add a wait strategy for the queue to be created.
+	for retries := 0; retries < maxRetries; retries++ {
+		err = sender.SendMessage(context.TODO(), sbMessage, nil)
+		if err == nil {
+			break
+		}
+
+		if retries == maxRetries-1 {
+			fmt.Printf("failed to send message after %d attempts: %s", maxRetries, err)
+			return
+		}
 	}
 	// }
 

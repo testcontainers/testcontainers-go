@@ -111,10 +111,20 @@ func ExampleRun_sendEventsToEventHub() {
 	// createBatch {
 	newBatchOptions := &azeventhubs.EventDataBatchOptions{}
 
-	batch, err := producerClient.NewEventDataBatch(context.TODO(), newBatchOptions)
-	if err != nil {
-		log.Printf("failed to create event data batch: %s", err)
-		return
+	var batch *azeventhubs.EventDataBatch
+	maxRetries := 3
+	// Retry creating the event data batch 3 times, because the event hub is created from the configuration
+	// and Testcontainers cannot add a wait strategy for the event hub to be created.
+	for retries := 0; retries < maxRetries; retries++ {
+		batch, err = producerClient.NewEventDataBatch(context.TODO(), newBatchOptions)
+		if err == nil {
+			break
+		}
+
+		if retries == maxRetries-1 {
+			log.Printf("failed to create event data batch after %d attempts: %s", maxRetries, err)
+			return
+		}
 	}
 
 	for i := range events {
