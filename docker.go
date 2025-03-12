@@ -27,13 +27,12 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
-	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/go-connections/nat"
-	"github.com/moby/term"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
+	tcimage "github.com/testcontainers/testcontainers-go/image"
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/log"
@@ -975,51 +974,10 @@ func (p *DockerProvider) SetClient(c client.APIClient) {
 
 var _ ContainerProvider = (*DockerProvider)(nil)
 
+// Deprecated: use image.Build instead
 // BuildImage will build and image from context and Dockerfile, then return the tag
 func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (string, error) {
-	var buildOptions types.ImageBuildOptions
-	resp, err := backoff.RetryNotifyWithData(
-		func() (types.ImageBuildResponse, error) {
-			var err error
-			buildOptions, err = img.BuildOptions()
-			if err != nil {
-				return types.ImageBuildResponse{}, backoff.Permanent(fmt.Errorf("build options: %w", err))
-			}
-			defer tryClose(buildOptions.Context) // release resources in any case
-
-			resp, err := p.client.ImageBuild(ctx, buildOptions.Context, buildOptions)
-			if err != nil {
-				if isPermanentClientError(err) {
-					return types.ImageBuildResponse{}, backoff.Permanent(fmt.Errorf("build image: %w", err))
-				}
-				return types.ImageBuildResponse{}, err
-			}
-			defer p.Close()
-
-			return resp, nil
-		},
-		backoff.WithContext(backoff.NewExponentialBackOff(), ctx),
-		func(err error, _ time.Duration) {
-			p.Logger.Printf("Failed to build image: %s, will retry", err)
-		},
-	)
-	if err != nil {
-		return "", err // Error is already wrapped.
-	}
-	defer resp.Body.Close()
-
-	output := img.BuildLogWriter()
-
-	// Always process the output, even if it is not printed
-	// to ensure that errors during the build process are
-	// correctly handled.
-	termFd, isTerm := term.GetFdInfo(output)
-	if err = jsonmessage.DisplayJSONMessagesStream(resp.Body, output, termFd, isTerm, nil); err != nil {
-		return "", fmt.Errorf("build image: %w", err)
-	}
-
-	// the first tag is the one we want
-	return buildOptions.Tags[0], nil
+	return tcimage.Build(ctx, img)
 }
 
 // CreateContainer fulfils a request for a container without starting it
@@ -1066,7 +1024,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	// always append the hub substitutor after the user-defined ones
-	req.ImageSubstitutors = append(req.ImageSubstitutors, newPrependHubRegistry(p.config.HubImageNamePrefix))
+	req.ImageSubstitutors = append(req.ImageSubstitutors, tcimage.NewPrependHubRegistry(p.config.HubImageNamePrefix))
 
 	var platform *specs.Platform
 
@@ -1084,7 +1042,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 			return nil, err
 		}
 
-		imageName, err = p.BuildImage(ctx, &req)
+		imageName, err = tcimage.Build(ctx, &req)
 		if err != nil {
 			return nil, err
 		}
@@ -1288,7 +1246,7 @@ func (p *DockerProvider) waitContainerCreation(ctx context.Context, name string)
 		func() (*types.Container, error) {
 			c, err := p.findContainerByName(ctx, name)
 			if err != nil {
-				if !errdefs.IsNotFound(err) && isPermanentClientError(err) {
+				if !errdefs.IsNotFound(err) && core.IsPermanentClientError(err) {
 					return nil, backoff.Permanent(err)
 				}
 				return nil, err
@@ -1405,7 +1363,7 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 		func() error {
 			pull, err = p.client.ImagePull(ctx, tag, pullOpt)
 			if err != nil {
-				if isPermanentClientError(err) {
+				if core.IsPermanentClientError(err) {
 					return backoff.Permanent(err)
 				}
 				return err
@@ -1726,78 +1684,20 @@ func (p *DockerProvider) ContainerFromType(ctx context.Context, response types.C
 	return ctr, nil
 }
 
+// Deprecated: use testcontainers-go [image.List] instead
 // ListImages list images from the provider. If an image has multiple Tags, each tag is reported
 // individually with the same ID and same labels
 func (p *DockerProvider) ListImages(ctx context.Context) ([]ImageInfo, error) {
-	images := []ImageInfo{}
-
-	imageList, err := p.client.ImageList(ctx, image.ListOptions{})
-	if err != nil {
-		return images, fmt.Errorf("listing images %w", err)
-	}
-
-	for _, img := range imageList {
-		for _, tag := range img.RepoTags {
-			images = append(images, ImageInfo{ID: img.ID, Name: tag})
-		}
-	}
-
-	return images, nil
+	return tcimage.List(ctx)
 }
 
+// Deprecated: use testcontainers-go [image.SaveToTar] instead
 // SaveImages exports a list of images as an uncompressed tar
 func (p *DockerProvider) SaveImages(ctx context.Context, output string, images ...string) error {
-	outputFile, err := os.Create(output)
-	if err != nil {
-		return fmt.Errorf("opening output file %w", err)
-	}
-	defer func() {
-		_ = outputFile.Close()
-	}()
-
-	imageReader, err := p.client.ImageSave(ctx, images)
-	if err != nil {
-		return fmt.Errorf("saving images %w", err)
-	}
-	defer func() {
-		_ = imageReader.Close()
-	}()
-
-	// Attempt optimized readFrom, implemented in linux
-	_, err = outputFile.ReadFrom(imageReader)
-	if err != nil {
-		return fmt.Errorf("writing images to output %w", err)
-	}
-
-	return nil
+	return tcimage.SaveToTar(ctx, output, images...)
 }
 
 // PullImage pulls image from registry
 func (p *DockerProvider) PullImage(ctx context.Context, img string) error {
 	return p.attemptToPullImage(ctx, img, image.PullOptions{})
-}
-
-var permanentClientErrors = []func(error) bool{
-	errdefs.IsNotFound,
-	errdefs.IsInvalidParameter,
-	errdefs.IsUnauthorized,
-	errdefs.IsForbidden,
-	errdefs.IsNotImplemented,
-	errdefs.IsSystem,
-}
-
-func isPermanentClientError(err error) bool {
-	for _, isErrFn := range permanentClientErrors {
-		if isErrFn(err) {
-			return true
-		}
-	}
-	return false
-}
-
-func tryClose(r io.Reader) {
-	rc, ok := r.(io.Closer)
-	if ok {
-		_ = rc.Close()
-	}
 }

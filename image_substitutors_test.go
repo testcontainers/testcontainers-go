@@ -2,100 +2,94 @@ package testcontainers
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go/image"
 	"github.com/testcontainers/testcontainers-go/internal/config"
 )
 
-func TestCustomHubSubstitutor(t *testing.T) {
-	t.Run("should substitute the image with the provided one", func(t *testing.T) {
-		s := NewCustomHubSubstitutor("quay.io")
+// Deprecated: use testcontainers-go [image.NoopSubstitutor] instead
+type NoopImageSubstitutor = image.NoopSubstitutor
 
-		img, err := s.Substitute("foo/foo:latest")
-		require.NoError(t, err)
+// errorSubstitutor is a Substitutor that returns an error
+type errorSubstitutor struct{}
 
-		require.Equalf(t, "quay.io/foo/foo:latest", img, "expected quay.io/foo/foo:latest, got %s", img)
-	})
-	t.Run("should not substitute the image if it is already using the provided hub", func(t *testing.T) {
-		s := NewCustomHubSubstitutor("quay.io")
+var errSubstitution = errors.New("substitution error")
 
-		img, err := s.Substitute("quay.io/foo/foo:latest")
-		require.NoError(t, err)
-
-		require.Equalf(t, "quay.io/foo/foo:latest", img, "expected quay.io/foo/foo:latest, got %s", img)
-	})
-	t.Run("should not substitute the image if hub image name prefix config exist", func(t *testing.T) {
-		t.Cleanup(config.Reset)
-		config.Reset()
-		t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", "registry.mycompany.com/mirror")
-		s := NewCustomHubSubstitutor("quay.io")
-
-		img, err := s.Substitute("foo/foo:latest")
-		require.NoError(t, err)
-
-		require.Equalf(t, "foo/foo:latest", img, "expected foo/foo:latest, got %s", img)
-	})
+// Description returns a description of what is expected from this Substitutor,
+// which is used in logs.
+func (s errorSubstitutor) Description() string {
+	return "errorSubstitutor"
 }
 
-func TestPrependHubRegistrySubstitutor(t *testing.T) {
-	t.Run("should prepend the hub registry to images from Docker Hub", func(t *testing.T) {
-		t.Run("plain image", func(t *testing.T) {
-			s := newPrependHubRegistry("my-registry")
+// Substitute returns the original image, but returns an error
+func (s errorSubstitutor) Substitute(image string) (string, error) {
+	return image, errSubstitution
+}
 
-			img, err := s.Substitute("foo:latest")
+func TestImageSubstitutors(t *testing.T) {
+	tests := []struct {
+		name          string
+		image         string // must be a valid image, as the test will try to create a container from it
+		substitutors  []image.Substitutor
+		expectedImage string
+		expectedError error
+	}{
+		{
+			name:          "no-substitutors",
+			image:         "alpine",
+			expectedImage: "alpine",
+		},
+		{
+			name:          "noop-substitutor",
+			image:         "alpine",
+			substitutors:  []image.Substitutor{image.NoopSubstitutor{}},
+			expectedImage: "alpine",
+		},
+		{
+			name:          "prepend-namespace",
+			image:         "alpine",
+			substitutors:  []image.Substitutor{image.DockerSubstitutor{}},
+			expectedImage: "registry.hub.docker.com/library/alpine",
+		},
+		{
+			name:          "substitution-with-error",
+			image:         "alpine",
+			substitutors:  []image.Substitutor{errorSubstitutor{}},
+			expectedImage: "alpine",
+			expectedError: errSubstitution,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			req := ContainerRequest{
+				Image:             test.image,
+				ImageSubstitutors: test.substitutors,
+			}
+
+			ctr, err := GenericContainer(ctx, GenericContainerRequest{
+				ContainerRequest: req,
+				Started:          true,
+			})
+			CleanupContainer(t, ctr)
+			if test.expectedError != nil {
+				require.ErrorIs(t, err, test.expectedError)
+				return
+			}
+
 			require.NoError(t, err)
 
-			require.Equalf(t, "my-registry/foo:latest", img, "expected my-registry/foo, got %s", img)
+			// enforce the concrete type, as GenericContainer returns an interface,
+			// which will be changed in future implementations of the library
+			dockerContainer := ctr.(*DockerContainer)
+			require.Equal(t, test.expectedImage, dockerContainer.Image)
 		})
-		t.Run("image with user", func(t *testing.T) {
-			s := newPrependHubRegistry("my-registry")
-
-			img, err := s.Substitute("user/foo:latest")
-			require.NoError(t, err)
-
-			require.Equalf(t, "my-registry/user/foo:latest", img, "expected my-registry/foo, got %s", img)
-		})
-
-		t.Run("image with organization and user", func(t *testing.T) {
-			s := newPrependHubRegistry("my-registry")
-
-			img, err := s.Substitute("org/user/foo:latest")
-			require.NoError(t, err)
-
-			require.Equalf(t, "my-registry/org/user/foo:latest", img, "expected my-registry/org/foo:latest, got %s", img)
-		})
-	})
-
-	t.Run("should not prepend the hub registry to the image name", func(t *testing.T) {
-		t.Run("non-hub image", func(t *testing.T) {
-			s := newPrependHubRegistry("my-registry")
-
-			img, err := s.Substitute("quay.io/foo:latest")
-			require.NoError(t, err)
-
-			require.Equalf(t, "quay.io/foo:latest", img, "expected quay.io/foo:latest, got %s", img)
-		})
-
-		t.Run("explicitly including registry.hub.docker.com/library", func(t *testing.T) {
-			s := newPrependHubRegistry("my-registry")
-
-			img, err := s.Substitute("registry.hub.docker.com/library/foo:latest")
-			require.NoError(t, err)
-
-			require.Equalf(t, "registry.hub.docker.com/library/foo:latest", img, "expected registry.hub.docker.com/library/foo:latest, got %s", img)
-		})
-
-		t.Run("explicitly including registry.hub.docker.com", func(t *testing.T) {
-			s := newPrependHubRegistry("my-registry")
-
-			img, err := s.Substitute("registry.hub.docker.com/foo:latest")
-			require.NoError(t, err)
-
-			require.Equalf(t, "registry.hub.docker.com/foo:latest", img, "expected registry.hub.docker.com/foo:latest, got %s", img)
-		})
-	})
+	}
 }
 
 func TestSubstituteBuiltImage(t *testing.T) {
@@ -107,12 +101,12 @@ func TestSubstituteBuiltImage(t *testing.T) {
 				Tag:        "my-image",
 				Repo:       "my-repo",
 			},
-			ImageSubstitutors: []ImageSubstitutor{newPrependHubRegistry("my-registry")},
+			ImageSubstitutors: []image.Substitutor{image.NewPrependHubRegistry("my-registry")},
 		},
 		Started: false,
 	}
 
-	t.Run("should not use the properties prefix on built images", func(t *testing.T) {
+	t.Run("should-use-image-substitutors", func(t *testing.T) {
 		config.Reset()
 		c, err := GenericContainer(context.Background(), req)
 		CleanupContainer(t, c)
