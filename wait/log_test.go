@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -187,8 +187,8 @@ func TestWaitForLogFailsDueToOOMKilledContainer(t *testing.T) {
 		LogsImpl: func(_ context.Context) (io.ReadCloser, error) {
 			return readCloser(""), nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				OOMKilled: true,
 			}, nil
 		},
@@ -216,8 +216,8 @@ func TestWaitForLogFailsDueToExitedContainer(t *testing.T) {
 		LogsImpl: func(_ context.Context) (io.ReadCloser, error) {
 			return readCloser(""), nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Status:   "exited",
 				ExitCode: 1,
 			}, nil
@@ -246,8 +246,8 @@ func TestWaitForLogFailsDueToUnexpectedContainerStatus(t *testing.T) {
 		LogsImpl: func(_ context.Context) (io.ReadCloser, error) {
 			return readCloser(""), nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Status: "dead",
 			}, nil
 		},
