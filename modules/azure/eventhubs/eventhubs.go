@@ -117,7 +117,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		// start the azurite container first
 		azuriteContainer, err := azurite.Run(ctx, defaultOptions.azuriteImage, azuriteOpts...)
 		if err != nil {
-			return nil, fmt.Errorf("run azurite container: %w", err)
+			return c, fmt.Errorf("run azurite container: %w", err)
 		}
 		defaultOptions.azuriteContainer = azuriteContainer
 

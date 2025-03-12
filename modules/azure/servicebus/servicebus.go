@@ -50,7 +50,7 @@ func (c *Container) Terminate(ctx context.Context, opts ...testcontainers.Termin
 	if c.Container != nil {
 		// terminate the servicebus container
 		if err := c.Container.Terminate(ctx, opts...); err != nil {
-			errs = append(errs, fmt.Errorf("terminate eventhubs container: %w", err))
+			errs = append(errs, fmt.Errorf("terminate servicebus container: %w", err))
 		}
 	}
 
@@ -126,7 +126,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		// Start the mssql container first. The EULA is accepted by default, as it is required by the servicebus emulator.
 		mssqlContainer, err := mssql.Run(ctx, defaultOptions.mssqlImage, mssqlOpts...)
 		if err != nil {
-			return nil, fmt.Errorf("run mssql container: %w", err)
+			return c, fmt.Errorf("run mssql container: %w", err)
 		}
 		defaultOptions.mssqlContainer = mssqlContainer
 
