@@ -5,7 +5,7 @@ go 1.23.0
 toolchain go1.23.6
 
 require (
-	dario.cat/mergo v1.0.0
+	dario.cat/mergo v1.0.1
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/containerd/platforms v0.2.1
 	github.com/cpuguy83/dockercfg v0.3.2
@@ -15,7 +15,7 @@ require (
 	github.com/magiconair/properties v1.8.7
 	github.com/moby/patternmatcher v0.6.0
 	github.com/moby/term v0.5.0
-	github.com/opencontainers/image-spec v1.1.0
+	github.com/opencontainers/image-spec v1.1.1
 	github.com/shirou/gopsutil/v4 v4.25.1
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/crypto v0.31.0
