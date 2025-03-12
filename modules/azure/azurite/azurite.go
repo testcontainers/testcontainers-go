@@ -111,7 +111,11 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			}
 		}
 
-		genericContainerReq.WaitingFor = wait.ForAll(genericContainerReq.WaitingFor, wait.ForAll(waitingFor...))
+		if genericContainerReq.WaitingFor != nil {
+			genericContainerReq.WaitingFor = wait.ForAll(genericContainerReq.WaitingFor, wait.ForAll(waitingFor...))
+		} else {
+			genericContainerReq.WaitingFor = wait.ForAll(waitingFor...)
+		}
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
