@@ -30,7 +30,7 @@ const (
 // AzuriteContainer represents the Azurite container type used in the module
 type AzuriteContainer struct {
 	testcontainers.Container
-	Settings options
+	opts options
 }
 
 // ServiceURL returns the URL of the given service
@@ -122,7 +122,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	var c *AzuriteContainer
 	if container != nil {
-		c = &AzuriteContainer{Container: container, Settings: settings}
+		c = &AzuriteContainer{Container: container, opts: settings}
 	}
 
 	if err != nil {
