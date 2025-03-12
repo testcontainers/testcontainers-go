@@ -96,27 +96,22 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	// 2. evaluate the enabled services to apply the right wait strategy and Cmd options
 	enabledServices := settings.EnabledServices
 	if len(enabledServices) > 0 {
-		waitingFor := make([]wait.Strategy, 0)
+		waitingFor := make([]wait.Strategy, 0, len(enabledServices))
 		for _, srv := range enabledServices {
 			switch srv {
 			case BlobService:
 				genericContainerReq.Cmd = append(genericContainerReq.Cmd, "--blobHost", "0.0.0.0")
 				waitingFor = append(waitingFor, wait.ForListeningPort(BlobPort))
-				waitingFor = append(waitingFor, wait.ForLog("Blob service is successfully listening"))
 			case QueueService:
 				genericContainerReq.Cmd = append(genericContainerReq.Cmd, "--queueHost", "0.0.0.0")
 				waitingFor = append(waitingFor, wait.ForListeningPort(QueuePort))
-				waitingFor = append(waitingFor, wait.ForLog("Queue service is successfully listening"))
 			case TableService:
 				genericContainerReq.Cmd = append(genericContainerReq.Cmd, "--tableHost", "0.0.0.0")
 				waitingFor = append(waitingFor, wait.ForListeningPort(TablePort))
-				waitingFor = append(waitingFor, wait.ForLog("Table service is successfully listening"))
 			}
 		}
 
-		if len(waitingFor) > 0 {
-			genericContainerReq.WaitingFor = wait.ForAll(waitingFor...)
-		}
+		genericContainerReq.WaitingFor = wait.ForAll(genericContainerReq.WaitingFor, wait.ForAll(waitingFor...))
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
