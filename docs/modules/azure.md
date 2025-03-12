@@ -255,11 +255,11 @@ In example: `Run(context.Background(), "mcr.microsoft.com/azure-messaging/servic
 
 {% include "../features/common_functional_options.md" %}
 
-#### WithMSSQLImage
+#### WithMSSQL
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-This option allows you to set a different MSSQL Server Docker image, instead of the default one.
+This option allows you to set a different MSSQL Server Docker image, instead of the default one, and also pass options to the MSSQL container, in the form of a variadic argument of `testcontainers.ContainerCustomizer`.
 
 #### WithAcceptEULA
 

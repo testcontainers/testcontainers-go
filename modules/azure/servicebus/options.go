@@ -9,6 +9,7 @@ import (
 
 type options struct {
 	mssqlImage     string
+	mssqlOptions   []testcontainers.ContainerCustomizer
 	mssqlContainer *mssql.MSSQLServerContainer
 	network        *testcontainers.DockerNetwork
 }
@@ -32,11 +33,12 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 	return nil
 }
 
-// WithMSSQLImage sets the image for the MSSQL container.
+// WithMSSQL sets the image and options for the MSSQL container.
 // By default, the image is "mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04".
-func WithMSSQLImage(img string) Option {
+func WithMSSQL(img string, opts ...testcontainers.ContainerCustomizer) Option {
 	return func(o *options) {
 		o.mssqlImage = img
+		o.mssqlOptions = opts
 	}
 }
 

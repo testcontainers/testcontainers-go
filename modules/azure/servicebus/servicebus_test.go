@@ -25,7 +25,7 @@ func TestServiceBus_topology(t *testing.T) {
 		ctx,
 		"mcr.microsoft.com/azure-messaging/servicebus-emulator:1.1.2",
 		servicebus.WithAcceptEULA(),
-		servicebus.WithMSSQLImage(mssqlImage),
+		servicebus.WithMSSQL(mssqlImage, testcontainers.WithEnv(map[string]string{"TESTCONTAINERS_TEST_VAR": "test"})),
 	)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
@@ -42,10 +42,11 @@ func TestServiceBus_topology(t *testing.T) {
 
 	require.Equal(t, mssqlNetworks[0], serviceBusNetworks[0])
 
-	// mssql image version
+	// mssql image version and custom options
 	inspect, err := mssqlContainer.Inspect(ctx)
 	require.NoError(t, err)
 	require.Equal(t, mssqlImage, inspect.Config.Image)
+	require.Contains(t, inspect.Config.Env, "TESTCONTAINERS_TEST_VAR=test")
 }
 
 func TestServiceBus_withConfig(t *testing.T) {
@@ -57,7 +58,7 @@ func TestServiceBus_withConfig(t *testing.T) {
 		ctx,
 		"mcr.microsoft.com/azure-messaging/servicebus-emulator:1.1.2",
 		servicebus.WithAcceptEULA(),
-		servicebus.WithMSSQLImage(mssqlImage),
+		servicebus.WithMSSQL(mssqlImage),
 		servicebus.WithConfig(strings.NewReader(servicebusConfig)),
 	)
 	testcontainers.CleanupContainer(t, ctr)

@@ -113,8 +113,15 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 		defaultOptions.network = mssqlNetwork
 
+		mssqlOpts := []testcontainers.ContainerCustomizer{
+			mssql.WithAcceptEULA(),
+			network.WithNetwork([]string{aliasMSSQL}, mssqlNetwork),
+		}
+
+		mssqlOpts = append(mssqlOpts, defaultOptions.mssqlOptions...)
+
 		// Start the mssql container first. The EULA is accepted by default, as it is required by the servicebus emulator.
-		mssqlContainer, err := mssql.Run(ctx, defaultOptions.mssqlImage, mssql.WithAcceptEULA(), network.WithNetwork([]string{aliasMSSQL}, mssqlNetwork))
+		mssqlContainer, err := mssql.Run(ctx, defaultOptions.mssqlImage, mssqlOpts...)
 		if err != nil {
 			return nil, fmt.Errorf("run mssql container: %w", err)
 		}
