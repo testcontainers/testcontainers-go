@@ -90,7 +90,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			return nil, fmt.Errorf("customize: %w", err)
 		}
 		if o, ok := opt.(Option); ok {
-			o(&defaultOptions)
+			if err := o(&defaultOptions); err != nil {
+				return nil, fmt.Errorf("eventhubsoption: %w", err)
+			}
 		}
 	}
 

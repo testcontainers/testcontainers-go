@@ -25,7 +25,7 @@ func defaultOptions() options {
 var _ testcontainers.ContainerCustomizer = (Option)(nil)
 
 // Option is an option for the Redpanda container.
-type Option func(*options)
+type Option func(*options) error
 
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
 func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
@@ -36,9 +36,10 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 // WithMSSQL sets the image and options for the MSSQL container.
 // By default, the image is "mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04".
 func WithMSSQL(img string, opts ...testcontainers.ContainerCustomizer) Option {
-	return func(o *options) {
+	return func(o *options) error {
 		o.mssqlImage = img
 		o.mssqlOptions = opts
+		return nil
 	}
 }
 
