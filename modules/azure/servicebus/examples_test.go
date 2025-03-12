@@ -15,7 +15,7 @@ import (
 func ExampleRun() {
 	ctx := context.Background()
 
-	serviceBusContainer, err := servicebus.Run(ctx, "mcr.microsoft.com/azure-messaging/servicebus-emulator:1.0.1", servicebus.WithAcceptEULA())
+	serviceBusContainer, err := servicebus.Run(ctx, "mcr.microsoft.com/azure-messaging/servicebus-emulator:1.1.2", servicebus.WithAcceptEULA())
 	defer func() {
 		if err := testcontainers.TerminateContainer(serviceBusContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -79,7 +79,7 @@ func ExampleRun_authenticateCreateClient() {
 
 	serviceBusContainer, err := servicebus.Run(
 		ctx,
-		"mcr.microsoft.com/azure-messaging/servicebus-emulator:1.0.1",
+		"mcr.microsoft.com/azure-messaging/servicebus-emulator:1.1.2",
 		servicebus.WithAcceptEULA(),
 		servicebus.WithConfig(strings.NewReader(cfg)),
 	)

@@ -23,7 +23,7 @@ func TestServiceBus_topology(t *testing.T) {
 
 	ctr, err := servicebus.Run(
 		ctx,
-		"mcr.microsoft.com/azure-messaging/servicebus-emulator:1.0.1",
+		"mcr.microsoft.com/azure-messaging/servicebus-emulator:1.1.2",
 		servicebus.WithAcceptEULA(),
 		servicebus.WithMSSQLImage(mssqlImage),
 	)
@@ -55,7 +55,7 @@ func TestServiceBus_withConfig(t *testing.T) {
 
 	ctr, err := servicebus.Run(
 		ctx,
-		"mcr.microsoft.com/azure-messaging/servicebus-emulator:1.0.1",
+		"mcr.microsoft.com/azure-messaging/servicebus-emulator:1.1.2",
 		servicebus.WithAcceptEULA(),
 		servicebus.WithMSSQLImage(mssqlImage),
 		servicebus.WithConfig(strings.NewReader(servicebusConfig)),
@@ -76,7 +76,7 @@ func TestServiceBus_withConfig(t *testing.T) {
 func TestServiceBus_noEULA(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := servicebus.Run(ctx, "mcr.microsoft.com/azure-messaging/servicebus-emulator:1.0.1")
+	ctr, err := servicebus.Run(ctx, "mcr.microsoft.com/azure-messaging/servicebus-emulator:1.1.2")
 	require.Error(t, err)
 	require.Nil(t, ctr)
 }

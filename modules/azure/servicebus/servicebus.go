@@ -13,6 +13,7 @@ import (
 
 const (
 	defaultPort                = "5672/tcp"
+	defaultHTTPPort            = "5300/tcp"
 	defaultSharedAccessKeyName = "RootManageSharedAccessKey"
 	defaultSharedAccessKey     = "SAS_KEY_VALUE"
 	connectionStringFormat     = "Endpoint=sb://%s;SharedAccessKeyName=%s;SharedAccessKey=%s;UseDevelopmentEmulator=true;"
@@ -72,12 +73,15 @@ func (c *Container) Terminate(ctx context.Context, opts ...testcontainers.Termin
 // Run creates an instance of the Azure Event Hubs container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        img,
-		Env:          make(map[string]string),
-		ExposedPorts: []string{defaultPort},
+		Image: img,
+		Env: map[string]string{
+			"SQL_WAIT_INTERVAL": "0", // default is zero because the MSSQL container is started first
+		},
+		ExposedPorts: []string{defaultPort, defaultHTTPPort},
 		WaitingFor: wait.ForAll(
 			wait.ForListeningPort(defaultPort),
-			wait.ForLog(".*Emulator Service is Successfully Up!.*").AsRegexp(),
+			wait.ForListeningPort(defaultHTTPPort),
+			wait.ForHTTP("/health").WithPort(defaultHTTPPort),
 		),
 	}
 

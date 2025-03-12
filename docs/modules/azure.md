@@ -240,6 +240,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 The ServiceBus container needs a MSSQL Server container to be running, for that reason _Testcontainers for Go_ **automatically creates a Docker network and an MSSQL Server container** for ServiceBus to work.
 When terminating the ServiceBus container, the MSSQL Server container and the Docker network are also terminated.
 
+!!! info
+    Since version `1.1.2` of the ServiceBus emulator, it's possible to set the `SQL_WAIT_INTERVAL` environment variable to the given seconds.
+    This module sets it to `0` by default, because the MSSQL Server container is started first.
+
 ### Container Options
 
 When starting the ServiceBus container, you can pass options in a variadic way to configure it.
@@ -247,7 +251,7 @@ When starting the ServiceBus container, you can pass options in a variadic way t
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "mcr.microsoft.com/azure-messaging/servicebus-emulator:1.0.1")`.
+In example: `Run(context.Background(), "mcr.microsoft.com/azure-messaging/servicebus-emulator:1.1.2")`.
 
 {% include "../features/common_functional_options.md" %}
 
