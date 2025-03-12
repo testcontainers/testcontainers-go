@@ -428,7 +428,7 @@ func (c *localProcess) Inspect(ctx context.Context) (*container.InspectResponse,
 	}
 
 	return &container.InspectResponse{
-		ContainerJSONBase: &container.InspectResponseBase{
+		ContainerJSONBase: &container.ContainerJSONBase{
 			ID:    c.GetContainerID(),
 			Name:  localNamePrefix + "-" + c.sessionID,
 			State: state,

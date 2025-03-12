@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/strslice"
-	"github.com/moby/moby/container"
+	"github.com/docker/docker/container"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
