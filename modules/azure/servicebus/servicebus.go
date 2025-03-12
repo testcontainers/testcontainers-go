@@ -38,6 +38,7 @@ type Container struct {
 	mssqlOptions *options
 }
 
+// MSSQLContainer returns the mssql container that is used by the servicebus container
 func (c *Container) MSSQLContainer() *mssql.MSSQLServerContainer {
 	return c.mssqlOptions.mssqlContainer
 }
