@@ -54,7 +54,7 @@ In example: `Run(context.Background(), "openfga/openfga:v1.5.0")`.
 
 The OpenFGA container exposes the following methods:
 
-#### HttpEndpoint
+#### HTTPEndpoint
 
 This method returns the HTTP endpoint to connect to the OpenFGA container, using the `8080` port.
 

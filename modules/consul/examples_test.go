@@ -54,7 +54,7 @@ func ExampleRun_connect() {
 		return
 	}
 
-	endpoint, err := consulContainer.ApiEndpoint(ctx)
+	endpoint, err := consulContainer.APIEndpoint(ctx)
 	if err != nil {
 		log.Printf("failed to get endpoint: %s", err)
 		return
