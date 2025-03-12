@@ -54,13 +54,19 @@ func TestRun_local(t *testing.T) {
 		require.NoError(t, err)
 		require.NotEmpty(t, state.StartedAt)
 		require.NotEqual(t, zeroTime, state.StartedAt)
+
+		startedAt, err := time.Parse(time.RFC3339Nano, state.StartedAt)
+		require.NoError(t, err)
+
+		finishedAt, err := time.Parse(time.RFC3339Nano, state.FinishedAt)
+		require.NoError(t, err)
+
 		require.NotZero(t, state.Pid)
 		require.Equal(t, &container.State{
-			Status:     "running",
 			Running:    true,
 			Pid:        state.Pid,
-			StartedAt:  state.StartedAt,
-			FinishedAt: time.Time{}.Format(time.RFC3339Nano),
+			StartedAt:  startedAt,
+			FinishedAt: finishedAt,
 		}, state)
 	})
 
@@ -264,10 +270,17 @@ func TestRun_local(t *testing.T) {
 		require.NotEqual(t, zeroTime, state.StartedAt)
 		require.NotEmpty(t, state.FinishedAt)
 		require.NotEqual(t, zeroTime, state.FinishedAt)
+
+		startedAt, err := time.Parse(time.RFC3339Nano, state.StartedAt)
+		require.NoError(t, err)
+
+		finishedAt, err := time.Parse(time.RFC3339Nano, state.FinishedAt)
+		require.NoError(t, err)
+
 		require.Equal(t, &container.State{
-			Status:     "exited",
-			StartedAt:  state.StartedAt,
-			FinishedAt: state.FinishedAt,
+			Running:    false,
+			StartedAt:  startedAt,
+			FinishedAt: finishedAt,
 		}, state)
 	})
 
