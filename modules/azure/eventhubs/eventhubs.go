@@ -13,6 +13,7 @@ import (
 
 const (
 	defaultAMPQPort        = "5672/tcp"
+	defaultHTTPPort        = "5300/tcp"
 	connectionStringFormat = "Endpoint=sb://%s;SharedAccessKeyName=%s;SharedAccessKey=%s;UseDevelopmentEmulator=true;"
 
 	// aliasEventhubs is the alias for the eventhubs container in the network
@@ -67,11 +68,13 @@ func (c *Container) Terminate(ctx context.Context, opts ...testcontainers.Termin
 // Run creates an instance of the Azure Event Hubs container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	req := testcontainers.ContainerRequest{
-		Image: img,
-		Env:   make(map[string]string),
+		Image:        img,
+		ExposedPorts: []string{defaultAMPQPort, defaultHTTPPort},
+		Env:          make(map[string]string),
 		WaitingFor: wait.ForAll(
 			wait.ForListeningPort(defaultAMPQPort),
-			wait.ForLog(".*Emulator Service is Successfully Up.*").AsRegexp(),
+			wait.ForListeningPort(defaultHTTPPort),
+			wait.ForHTTP("/health").WithPort(defaultHTTPPort),
 		),
 	}
 

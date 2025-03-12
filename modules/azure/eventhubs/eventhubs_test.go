@@ -23,7 +23,7 @@ func TestEventHubs_topology(t *testing.T) {
 
 	ctr, err := eventhubs.Run(
 		ctx,
-		"mcr.microsoft.com/azure-messaging/eventhubs-emulator:2.0.1",
+		"mcr.microsoft.com/azure-messaging/eventhubs-emulator:2.1.0",
 		eventhubs.WithAcceptEULA(),
 		eventhubs.WithAzurite(azuriteImage, testcontainers.WithEnv(map[string]string{"TESTCONTAINERS_TEST_VAR": "test"})),
 	)
@@ -56,7 +56,7 @@ func TestEventHubs_withConfig(t *testing.T) {
 
 	ctr, err := eventhubs.Run(
 		ctx,
-		"mcr.microsoft.com/azure-messaging/eventhubs-emulator:2.0.1",
+		"mcr.microsoft.com/azure-messaging/eventhubs-emulator:2.1.0",
 		eventhubs.WithAcceptEULA(),
 		eventhubs.WithAzurite(azuriteImage),
 		eventhubs.WithConfig(strings.NewReader(eventhubsConfig)),
@@ -77,7 +77,7 @@ func TestEventHubs_withConfig(t *testing.T) {
 func TestEventHubs_noEULA(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := eventhubs.Run(ctx, "mcr.microsoft.com/azure-messaging/eventhubs-emulator:2.0.1")
+	ctr, err := eventhubs.Run(ctx, "mcr.microsoft.com/azure-messaging/eventhubs-emulator:2.1.0")
 	require.Error(t, err)
 	require.Nil(t, ctr)
 }

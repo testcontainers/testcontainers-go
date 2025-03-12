@@ -162,7 +162,7 @@ When starting the EventHubs container, you can pass options in a variadic way to
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "mcr.microsoft.com/azure-storage/azurite:3.28.0")`.
+In example: `Run(context.Background(), "mcr.microsoft.com/azure-messaging/eventhubs-emulator:2.0.1")`.
 
 {% include "../features/common_functional_options.md" %}
 

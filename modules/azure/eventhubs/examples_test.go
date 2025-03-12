@@ -18,7 +18,7 @@ import (
 func ExampleRun() {
 	ctx := context.Background()
 
-	eventHubsCtr, err := eventhubs.Run(ctx, "mcr.microsoft.com/azure-messaging/eventhubs-emulator:2.0.1", eventhubs.WithAcceptEULA())
+	eventHubsCtr, err := eventhubs.Run(ctx, "mcr.microsoft.com/azure-messaging/eventhubs-emulator:2.1.0", eventhubs.WithAcceptEULA())
 	defer func() {
 		if err := testcontainers.TerminateContainer(eventHubsCtr); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -73,7 +73,7 @@ func ExampleRun_sendEventsToEventHub() {
 	// }
 
 	// runEventHubsContainer {
-	eventHubsCtr, err := eventhubs.Run(ctx, "mcr.microsoft.com/azure-messaging/eventhubs-emulator:2.0.1", eventhubs.WithAcceptEULA(), eventhubs.WithConfig(strings.NewReader(cfg)))
+	eventHubsCtr, err := eventhubs.Run(ctx, "mcr.microsoft.com/azure-messaging/eventhubs-emulator:2.1.0", eventhubs.WithAcceptEULA(), eventhubs.WithConfig(strings.NewReader(cfg)))
 	defer func() {
 		if err := testcontainers.TerminateContainer(eventHubsCtr); err != nil {
 			log.Printf("failed to terminate container: %s", err)
