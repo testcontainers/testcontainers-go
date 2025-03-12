@@ -33,12 +33,12 @@ type Container struct {
 	azuriteOptions *options
 }
 
+// AzuriteContainer returns the azurite container that is used by the eventhubs container
 func (c *Container) AzuriteContainer() *azurite.AzuriteContainer {
 	return c.azuriteOptions.azuriteContainer
 }
 
-// Terminate terminates the etcd container, its child nodes, and the network in which the cluster is running
-// to communicate between the nodes.
+// Terminate terminates the eventhubs container, the azurite container, and the network to communicate between them.
 func (c *Container) Terminate(ctx context.Context, opts ...testcontainers.TerminateOption) error {
 	var errs []error
 

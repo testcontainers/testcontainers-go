@@ -32,7 +32,7 @@ const (
 	containerConfigFile = "/ServiceBus_Emulator/ConfigFiles/Config.json"
 )
 
-// Container represents the Azure Event Hubs container type used in the module
+// Container represents the Azure ServiceBus container type used in the module
 type Container struct {
 	testcontainers.Container
 	mssqlOptions *options
@@ -42,13 +42,12 @@ func (c *Container) MSSQLContainer() *mssql.MSSQLServerContainer {
 	return c.mssqlOptions.mssqlContainer
 }
 
-// Terminate terminates the etcd container, its child nodes, and the network in which the cluster is running
-// to communicate between the nodes.
+// Terminate terminates the servicebus container, the mssql container, and the network to communicate between them.
 func (c *Container) Terminate(ctx context.Context, opts ...testcontainers.TerminateOption) error {
 	var errs []error
 
 	if c.Container != nil {
-		// terminate the eventhubs container
+		// terminate the servicebus container
 		if err := c.Container.Terminate(ctx, opts...); err != nil {
 			errs = append(errs, fmt.Errorf("terminate eventhubs container: %w", err))
 		}
