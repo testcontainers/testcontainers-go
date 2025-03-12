@@ -124,3 +124,27 @@ func TestMultiStrategy_WaitUntilReady(t *testing.T) {
 		})
 	}
 }
+
+func TestMultiStrategy_handleNils(t *testing.T) {
+	t.Run("nil-strategy", func(t *testing.T) {
+		strategy := ForAll(nil)
+		err := strategy.WaitUntilReady(context.Background(), NopStrategyTarget{})
+		require.NoError(t, err)
+	})
+
+	t.Run("nil-strategy-in-the-middle", func(t *testing.T) {
+		strategy := ForAll(nil, ForLog("docker"))
+		err := strategy.WaitUntilReady(context.Background(), NopStrategyTarget{
+			ReaderCloser: io.NopCloser(bytes.NewReader([]byte("docker"))),
+		})
+		require.NoError(t, err)
+	})
+
+	t.Run("nil-strategy-last", func(t *testing.T) {
+		strategy := ForAll(ForLog("docker"), nil)
+		err := strategy.WaitUntilReady(context.Background(), NopStrategyTarget{
+			ReaderCloser: io.NopCloser(bytes.NewReader([]byte("docker"))),
+		})
+		require.NoError(t, err)
+	})
+}
