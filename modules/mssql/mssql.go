@@ -2,6 +2,7 @@ package mssql
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -128,6 +129,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		if err := opt.Customize(&genericContainerReq); err != nil {
 			return nil, fmt.Errorf("customize: %w", err)
 		}
+	}
+
+	if strings.ToUpper(genericContainerReq.Env["ACCEPT_EULA"]) != "Y" {
+		return nil, errors.New("EULA not accepted. Please use the WithAcceptEULA option to accept the EULA")
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)

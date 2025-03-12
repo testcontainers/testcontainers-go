@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/mssql"
@@ -100,7 +101,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	if genericContainerReq.Env["ACCEPT_EULA"] == "" {
+	if strings.ToUpper(genericContainerReq.Env["ACCEPT_EULA"]) != "Y" {
 		return nil, errors.New("EULA not accepted. Please use the WithAcceptEULA option to accept the EULA")
 	}
 
