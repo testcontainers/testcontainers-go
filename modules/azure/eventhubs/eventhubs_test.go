@@ -25,7 +25,7 @@ func TestEventHubs_topology(t *testing.T) {
 		ctx,
 		"mcr.microsoft.com/azure-messaging/eventhubs-emulator:2.0.1",
 		eventhubs.WithAcceptEULA(),
-		eventhubs.WithAzuriteImage(azuriteImage),
+		eventhubs.WithAzurite(azuriteImage, testcontainers.WithEnv(map[string]string{"TESTCONTAINERS_TEST_VAR": "test"})),
 	)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
@@ -42,10 +42,11 @@ func TestEventHubs_topology(t *testing.T) {
 
 	require.Equal(t, azuriteNetworks[0], eventHubsNetworks[0])
 
-	// azurite image version
+	// azurite image version and custom options
 	inspect, err := azuriteContainer.Inspect(ctx)
 	require.NoError(t, err)
 	require.Equal(t, azuriteImage, inspect.Config.Image)
+	require.Contains(t, inspect.Config.Env, "TESTCONTAINERS_TEST_VAR=test")
 }
 
 func TestEventHubs_withConfig(t *testing.T) {
@@ -57,7 +58,7 @@ func TestEventHubs_withConfig(t *testing.T) {
 		ctx,
 		"mcr.microsoft.com/azure-messaging/eventhubs-emulator:2.0.1",
 		eventhubs.WithAcceptEULA(),
-		eventhubs.WithAzuriteImage(azuriteImage),
+		eventhubs.WithAzurite(azuriteImage),
 		eventhubs.WithConfig(strings.NewReader(eventhubsConfig)),
 	)
 	testcontainers.CleanupContainer(t, ctr)

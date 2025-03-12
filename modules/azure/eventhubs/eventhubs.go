@@ -103,8 +103,13 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 		defaultOptions.network = azuriteNetwork
 
+		azuriteOpts := []testcontainers.ContainerCustomizer{
+			network.WithNetwork([]string{aliasAzurite}, azuriteNetwork),
+		}
+		azuriteOpts = append(azuriteOpts, defaultOptions.azuriteOptions...)
+
 		// start the azurite container first
-		azuriteContainer, err := azurite.Run(ctx, defaultOptions.azuriteImage, network.WithNetwork([]string{aliasAzurite}, azuriteNetwork))
+		azuriteContainer, err := azurite.Run(ctx, defaultOptions.azuriteImage, azuriteOpts...)
 		if err != nil {
 			return nil, fmt.Errorf("run azurite container: %w", err)
 		}

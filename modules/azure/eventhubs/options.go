@@ -9,6 +9,7 @@ import (
 
 type options struct {
 	azuriteImage     string
+	azuriteOptions   []testcontainers.ContainerCustomizer
 	azuriteContainer *azurite.AzuriteContainer
 	network          *testcontainers.DockerNetwork
 }
@@ -32,11 +33,12 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 	return nil
 }
 
-// WithAzuriteImage sets the image for the Azurite container.
+// WithAzurite sets the image and options for the Azurite container.
 // By default, the image is "mcr.microsoft.com/azure-storage/azurite:3.33.0".
-func WithAzuriteImage(img string) Option {
+func WithAzurite(img string, opts ...testcontainers.ContainerCustomizer) Option {
 	return func(o *options) {
 		o.azuriteImage = img
+		o.azuriteOptions = opts
 	}
 }
 
