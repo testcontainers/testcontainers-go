@@ -16,7 +16,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/errdefs"
@@ -451,7 +450,7 @@ func (c *localProcess) Inspect(ctx context.Context) (*container.InspectResponse,
 					},
 				},
 			},
-			DefaultNetworkSettings: types.DefaultNetworkSettings{
+			DefaultNetworkSettings: container.DefaultNetworkSettings{
 				IPAddress: c.host,
 			},
 		},
