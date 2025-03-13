@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/strslice"
-	"github.com/docker/docker/container"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -54,19 +54,12 @@ func TestRun_local(t *testing.T) {
 		require.NoError(t, err)
 		require.NotEmpty(t, state.StartedAt)
 		require.NotEqual(t, zeroTime, state.StartedAt)
-
-		startedAt, err := time.Parse(time.RFC3339Nano, state.StartedAt)
-		require.NoError(t, err)
-
-		finishedAt, err := time.Parse(time.RFC3339Nano, state.FinishedAt)
-		require.NoError(t, err)
-
 		require.NotZero(t, state.Pid)
 		require.Equal(t, &container.State{
 			Running:    true,
 			Pid:        state.Pid,
-			StartedAt:  startedAt,
-			FinishedAt: finishedAt,
+			StartedAt:  state.StartedAt,
+			FinishedAt: state.FinishedAt,
 		}, state)
 	})
 
@@ -270,17 +263,10 @@ func TestRun_local(t *testing.T) {
 		require.NotEqual(t, zeroTime, state.StartedAt)
 		require.NotEmpty(t, state.FinishedAt)
 		require.NotEqual(t, zeroTime, state.FinishedAt)
-
-		startedAt, err := time.Parse(time.RFC3339Nano, state.StartedAt)
-		require.NoError(t, err)
-
-		finishedAt, err := time.Parse(time.RFC3339Nano, state.FinishedAt)
-		require.NoError(t, err)
-
 		require.Equal(t, &container.State{
-			Running:    false,
-			StartedAt:  startedAt,
-			FinishedAt: finishedAt,
+			// zero values are not needed to be set
+			StartedAt:  state.StartedAt,
+			FinishedAt: state.FinishedAt,
 		}, state)
 	})
 
