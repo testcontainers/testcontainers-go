@@ -71,7 +71,6 @@ func Refresh(ctx context.Context) error {
 		mkdocs.Generator{},     // update examples in mkdocs
 		dependabot.Generator{}, // update examples in dependabot
 		vscode.Generator{},     // update vscode workspace
-		sonar.Generator{},      // update sonar-project.properties
 	}
 
 	for _, generator := range generators {
