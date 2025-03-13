@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -75,7 +76,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		WaitingFor: wait.ForAll(
 			wait.ForListeningPort(defaultAMPQPort),
 			wait.ForListeningPort(defaultHTTPPort),
-			wait.ForHTTP("/health").WithPort(defaultHTTPPort),
+			wait.ForHTTP("/health").WithPort(defaultHTTPPort).WithStatusCodeMatcher(func(status int) bool {
+				return status == http.StatusOK
+			}),
 		),
 	}
 
