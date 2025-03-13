@@ -81,7 +81,13 @@ func ExampleRun_blobOperations() {
 
 	// create an azblob.Client for the specified storage account that uses the above credentials
 	// createClient {
-	blobServiceURL := fmt.Sprintf("%s/%s", azuriteContainer.MustServiceURL(ctx, azurite.BlobService), azurite.AccountName)
+	serviceURL, err := azuriteContainer.ServiceURL(ctx, azurite.BlobService)
+	if err != nil {
+		log.Printf("failed to get service URL: %s", err)
+		return
+	}
+
+	blobServiceURL := serviceURL + "/" + azurite.AccountName
 
 	client, err := azblob.NewClientWithSharedKeyCredential(blobServiceURL, cred, nil)
 	if err != nil {
@@ -215,7 +221,12 @@ func ExampleRun_queueOperations() {
 
 	// create an azqueue.Client for the specified storage account that uses the above credentials
 	// queueOperations_createClient {
-	queueServiceURL := fmt.Sprintf("%s/%s", azuriteContainer.MustServiceURL(ctx, azurite.QueueService), azurite.AccountName)
+	serviceURL, err := azuriteContainer.ServiceURL(ctx, azurite.QueueService)
+	if err != nil {
+		log.Printf("failed to get service URL: %s", err)
+		return
+	}
+	queueServiceURL := serviceURL + "/" + azurite.AccountName
 
 	client, err := azqueue.NewServiceClientWithSharedKeyCredential(queueServiceURL, cred, nil)
 	if err != nil {
@@ -304,7 +315,12 @@ func ExampleRun_tableOperations() {
 
 	// create an aztables.Client for the specified storage account that uses the above credentials
 	// tableOperations_createClient {
-	tablesServiceURL := fmt.Sprintf("%s/%s", azuriteContainer.MustServiceURL(ctx, azurite.TableService), azurite.AccountName)
+	serviceURL, err := azuriteContainer.ServiceURL(ctx, azurite.TableService)
+	if err != nil {
+		log.Printf("failed to get service URL: %s", err)
+		return
+	}
+	tablesServiceURL := serviceURL + "/" + azurite.AccountName
 
 	client, err := aztables.NewServiceClientWithSharedKey(tablesServiceURL, cred, nil)
 	if err != nil {

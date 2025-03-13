@@ -87,7 +87,13 @@ func ExampleRun_sendEventsToEventHub() {
 
 	// ===== 1. Create an Event Hubs producer client using a connection string to the namespace and the event hub =====
 	// createProducerClient {
-	producerClient, err := azeventhubs.NewProducerClientFromConnectionString(eventHubsCtr.MustConnectionString(ctx), "eh1", nil)
+	connectionString, err := eventHubsCtr.ConnectionString(ctx)
+	if err != nil {
+		log.Printf("failed to get connection string: %s", err)
+		return
+	}
+
+	producerClient, err := azeventhubs.NewProducerClientFromConnectionString(connectionString, "eh1", nil)
 	if err != nil {
 		log.Printf("failed to create producer client: %s", err)
 		return

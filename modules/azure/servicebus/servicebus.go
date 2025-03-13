@@ -161,14 +161,3 @@ func (c *Container) ConnectionString(ctx context.Context) (string, error) {
 
 	return fmt.Sprintf(connectionStringFormat, hostPort, defaultSharedAccessKeyName, defaultSharedAccessKey), nil
 }
-
-// MustConnectionString returns the connection string for the eventhubs container,
-// calling [Container.ConnectionString] and panicking if it returns an error.
-func (c *Container) MustConnectionString(ctx context.Context) string {
-	url, err := c.ConnectionString(ctx)
-	if err != nil {
-		panic(err)
-	}
-
-	return url
-}

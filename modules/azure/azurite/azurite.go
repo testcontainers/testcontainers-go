@@ -60,16 +60,6 @@ func (c *AzuriteContainer) ServiceURL(ctx context.Context, srv Service) (string,
 	return fmt.Sprintf("http://%s:%d", hostname, mappedPort.Int()), nil
 }
 
-// MustServiceURL returns the URL of the given service, panics if an error occurs
-func (c *AzuriteContainer) MustServiceURL(ctx context.Context, srv Service) string {
-	url, err := c.ServiceURL(ctx, srv)
-	if err != nil {
-		panic(err)
-	}
-
-	return url
-}
-
 // Run creates an instance of the Azurite container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*AzuriteContainer, error) {
 	req := testcontainers.ContainerRequest{

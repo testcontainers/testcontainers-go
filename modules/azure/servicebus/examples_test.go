@@ -96,7 +96,13 @@ func ExampleRun_authenticateCreateClient() {
 
 	// ===== 2. Create a Service Bus client using a connection string to the namespace =====
 	// createClient {
-	client, err := azservicebus.NewClientFromConnectionString(serviceBusContainer.MustConnectionString(ctx), nil)
+	connectionString, err := serviceBusContainer.ConnectionString(ctx)
+	if err != nil {
+		log.Printf("failed to get connection string: %s", err)
+		return
+	}
+
+	client, err := azservicebus.NewClientFromConnectionString(connectionString, nil)
 	if err != nil {
 		log.Printf("failed to create client: %s", err)
 		return

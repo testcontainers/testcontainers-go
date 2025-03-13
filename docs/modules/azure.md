@@ -84,12 +84,6 @@ The Azurite container exposes the following methods:
 
 Returns the service URL to connect to the Azurite container and an error, passing the Go context and the service name as parameters.
 
-#### MustServiceURL
-
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
-
-Returns the service URL to connect to the Azurite container, passing the Go context and the service name as parameters. If an error occurs, it will panic.
-
 ### Examples
 
 #### Blob Operations
@@ -200,12 +194,6 @@ The EventHubs container exposes the following methods:
 
 Returns the connection string to connect to the EventHubs container and an error, passing the Go context as parameter.
 
-#### MustConnectionString
-
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
-
-Returns the connection string to connect to the EventHubs container, passing the Go context as parameter. If an error occurs, it panics.
-
 ### Examples
 
 #### Send events to EventHubs
@@ -288,12 +276,6 @@ The ServiceBus container exposes the following methods:
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 Returns the connection string to connect to the ServiceBus container and an error, passing the Go context as parameter.
-
-#### MustConnectionString
-
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
-
-Returns the connection string to connect to the ServiceBus container, passing the Go context as parameter. If an error occurs, it panics.
 
 ### Examples
 
