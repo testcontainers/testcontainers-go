@@ -32,7 +32,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Image:        img,
 		ExposedPorts: []string{defaultPort + "/tcp"},
 		HostConfigModifier: func(hc *container.HostConfig) {
-			hc.CapAdd = []string{"IPC_LOCK"}
+			hc.CapAdd = []string{"CAP_IPC_LOCK"}
 		},
 		WaitingFor: wait.ForHTTP("/v1/sys/health").WithPort(defaultPort),
 		Env: map[string]string{

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
@@ -15,12 +15,12 @@ var ErrPortNotFound = errors.New("port not found")
 
 type MockStrategyTarget struct {
 	HostImpl                  func(context.Context) (string, error)
-	InspectImpl               func(context.Context) (*types.ContainerJSON, error)
+	InspectImpl               func(context.Context) (*container.InspectResponse, error)
 	PortsImpl                 func(context.Context) (nat.PortMap, error)
 	MappedPortImpl            func(context.Context, nat.Port) (nat.Port, error)
 	LogsImpl                  func(context.Context) (io.ReadCloser, error)
 	ExecImpl                  func(context.Context, []string, ...tcexec.ProcessOption) (int, io.Reader, error)
-	StateImpl                 func(context.Context) (*types.ContainerState, error)
+	StateImpl                 func(context.Context) (*container.State, error)
 	CopyFileFromContainerImpl func(context.Context, string) (io.ReadCloser, error)
 }
 
@@ -28,7 +28,7 @@ func (st MockStrategyTarget) Host(ctx context.Context) (string, error) {
 	return st.HostImpl(ctx)
 }
 
-func (st MockStrategyTarget) Inspect(ctx context.Context) (*types.ContainerJSON, error) {
+func (st MockStrategyTarget) Inspect(ctx context.Context) (*container.InspectResponse, error) {
 	return st.InspectImpl(ctx)
 }
 
@@ -54,7 +54,7 @@ func (st MockStrategyTarget) Exec(ctx context.Context, cmd []string, options ...
 	return st.ExecImpl(ctx, cmd, options...)
 }
 
-func (st MockStrategyTarget) State(ctx context.Context) (*types.ContainerState, error) {
+func (st MockStrategyTarget) State(ctx context.Context) (*container.State, error) {
 	return st.StateImpl(ctx)
 }
 

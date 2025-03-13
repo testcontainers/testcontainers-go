@@ -42,7 +42,7 @@ type Container interface {
 	Endpoint(context.Context, string) (string, error)                              // get proto://ip:port string for the lowest exposed port
 	PortEndpoint(ctx context.Context, port nat.Port, proto string) (string, error) // get proto://ip:port string for the given exposed port
 	Host(context.Context) (string, error)                                          // get host where the container port is exposed
-	Inspect(context.Context) (*types.ContainerJSON, error)                         // get container info
+	Inspect(context.Context) (*container.InspectResponse, error)                   // get container info
 	MappedPort(context.Context, nat.Port) (nat.Port, error)                        // get externally mapped port for a container port
 	Ports(context.Context) (nat.PortMap, error)                                    // Deprecated: Use c.Inspect(ctx).NetworkSettings.Ports instead
 	SessionID() string                                                             // get session id
@@ -58,7 +58,7 @@ type Container interface {
 	StartLogProducer(context.Context, ...LogProductionOption) error // Deprecated: Use the ContainerRequest instead
 	StopLogProducer() error                                         // Deprecated: it will be removed in the next major release
 	Name(context.Context) (string, error)                           // Deprecated: Use c.Inspect(ctx).Name instead
-	State(context.Context) (*types.ContainerState, error)           // returns container's running state
+	State(context.Context) (*container.State, error)                // returns container's running state
 	Networks(context.Context) ([]string, error)                     // get container networks
 	NetworkAliases(context.Context) (map[string][]string, error)    // get container network aliases for a network
 	Exec(ctx context.Context, cmd []string, options ...tcexec.ProcessOption) (int, io.Reader, error)

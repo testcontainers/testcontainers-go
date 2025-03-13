@@ -38,7 +38,7 @@ func TestBuildImageFromDockerfile(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "test-repo:test-tag", tag)
 
-	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
+	_, err = cli.ImageInspect(ctx, tag)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -69,7 +69,7 @@ func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, strings.HasPrefix(tag, "test-repo:"))
 
-	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
+	_, err = cli.ImageInspect(ctx, tag)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -122,7 +122,7 @@ func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, strings.HasSuffix(tag, ":test-tag"))
 
-	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
+	_, err = cli.ImageInspect(ctx, tag)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {

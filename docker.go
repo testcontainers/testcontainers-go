@@ -171,7 +171,7 @@ func (c *DockerContainer) Host(ctx context.Context) (string, error) {
 }
 
 // Inspect gets the raw container info
-func (c *DockerContainer) Inspect(ctx context.Context) (*types.ContainerJSON, error) {
+func (c *DockerContainer) Inspect(ctx context.Context) (*container.InspectResponse, error) {
 	jsonRaw, err := c.inspectRawContainer(ctx)
 	if err != nil {
 		return nil, err
@@ -351,7 +351,7 @@ func (c *DockerContainer) Terminate(ctx context.Context, opts ...TerminateOption
 }
 
 // update container raw info
-func (c *DockerContainer) inspectRawContainer(ctx context.Context) (*types.ContainerJSON, error) {
+func (c *DockerContainer) inspectRawContainer(ctx context.Context) (*container.InspectResponse, error) {
 	defer c.provider.Close()
 	inspect, err := c.provider.client.ContainerInspect(ctx, c.ID)
 	if err != nil {
@@ -437,7 +437,7 @@ func (c *DockerContainer) Name(ctx context.Context) (string, error) {
 }
 
 // State returns container's running state.
-func (c *DockerContainer) State(ctx context.Context) (*types.ContainerState, error) {
+func (c *DockerContainer) State(ctx context.Context) (*container.State, error) {
 	inspect, err := c.inspectRawContainer(ctx)
 	if err != nil {
 		return nil, err
@@ -1119,7 +1119,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		if req.AlwaysPullImage {
 			shouldPullImage = true // If requested always attempt to pull image
 		} else {
-			img, _, err := p.client.ImageInspectWithRaw(ctx, imageName)
+			img, err := p.client.ImageInspect(ctx, imageName)
 			if err != nil {
 				if !client.IsErrNotFound(err) {
 					return nil, err
@@ -1264,7 +1264,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	return ctr, nil
 }
 
-func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (*types.Container, error) {
+func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (*container.Summary, error) {
 	if name == "" {
 		return nil, nil
 	}
@@ -1283,9 +1283,9 @@ func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (
 	return nil, nil
 }
 
-func (p *DockerProvider) waitContainerCreation(ctx context.Context, name string) (*types.Container, error) {
+func (p *DockerProvider) waitContainerCreation(ctx context.Context, name string) (*container.Summary, error) {
 	return backoff.RetryNotifyWithData(
-		func() (*types.Container, error) {
+		func() (*container.Summary, error) {
 			c, err := p.findContainerByName(ctx, name)
 			if err != nil {
 				if !errdefs.IsNotFound(err) && isPermanentClientError(err) {
@@ -1681,7 +1681,7 @@ func (p *DockerProvider) ensureDefaultNetworkLocked(ctx context.Context) (string
 }
 
 // ContainerFromType builds a Docker container struct from the response of the Docker API
-func (p *DockerProvider) ContainerFromType(ctx context.Context, response types.Container) (ctr *DockerContainer, err error) {
+func (p *DockerProvider) ContainerFromType(ctx context.Context, response container.Summary) (ctr *DockerContainer, err error) {
 	exposedPorts := make([]string, len(response.Ports))
 	for i, port := range response.Ports {
 		exposedPorts[i] = fmt.Sprintf("%d/%s", port.PublicPort, port.Type)

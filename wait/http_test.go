@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/require"
 
@@ -410,15 +410,15 @@ func TestHttpStrategyFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) 
 			}
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				OOMKilled: true,
 			}, nil
 		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
+		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
+			return &container.InspectResponse{
+				NetworkSettings: &container.NetworkSettings{
+					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/tcp": []nat.PortBinding{
 								{
@@ -455,16 +455,16 @@ func TestHttpStrategyFailsWhileGettingPortDueToExitedContainer(t *testing.T) {
 			}
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Status:   "exited",
 				ExitCode: 1,
 			}, nil
 		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
+		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
+			return &container.InspectResponse{
+				NetworkSettings: &container.NetworkSettings{
+					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/tcp": []nat.PortBinding{
 								{
@@ -501,15 +501,15 @@ func TestHttpStrategyFailsWhileGettingPortDueToUnexpectedContainerStatus(t *test
 			}
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Status: "dead",
 			}, nil
 		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
+		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
+			return &container.InspectResponse{
+				NetworkSettings: &container.NetworkSettings{
+					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/tcp": []nat.PortBinding{
 								{
@@ -541,15 +541,15 @@ func TestHTTPStrategyFailsWhileRequestSendingDueToOOMKilledContainer(t *testing.
 		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				OOMKilled: true,
 			}, nil
 		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
+		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
+			return &container.InspectResponse{
+				NetworkSettings: &container.NetworkSettings{
+					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/tcp": []nat.PortBinding{
 								{
@@ -581,16 +581,16 @@ func TestHttpStrategyFailsWhileRequestSendingDueToExitedContainer(t *testing.T) 
 		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Status:   "exited",
 				ExitCode: 1,
 			}, nil
 		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
+		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
+			return &container.InspectResponse{
+				NetworkSettings: &container.NetworkSettings{
+					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/tcp": []nat.PortBinding{
 								{
@@ -622,15 +622,15 @@ func TestHttpStrategyFailsWhileRequestSendingDueToUnexpectedContainerStatus(t *t
 		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Status: "dead",
 			}, nil
 		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
+		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
+			return &container.InspectResponse{
+				NetworkSettings: &container.NetworkSettings{
+					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/tcp": []nat.PortBinding{
 								{
@@ -667,16 +667,16 @@ func TestHttpStrategyFailsWhileGettingPortDueToNoExposedPorts(t *testing.T) {
 			}
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Status:  "running",
 				Running: true,
 			}, nil
 		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
+		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
+			return &container.InspectResponse{
+				NetworkSettings: &container.NetworkSettings{
+					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{},
 					},
 				},
@@ -706,16 +706,16 @@ func TestHttpStrategyFailsWhileGettingPortDueToOnlyUDPPorts(t *testing.T) {
 			}
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Running: true,
 				Status:  "running",
 			}, nil
 		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
+		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
+			return &container.InspectResponse{
+				NetworkSettings: &container.NetworkSettings{
+					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/udp": []nat.PortBinding{
 								{
@@ -752,16 +752,16 @@ func TestHttpStrategyFailsWhileGettingPortDueToExposedPortNoBindings(t *testing.
 			}
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Running: true,
 				Status:  "running",
 			}, nil
 		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
+		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
+			return &container.InspectResponse{
+				NetworkSettings: &container.NetworkSettings{
+					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/tcp": []nat.PortBinding{},
 						},
