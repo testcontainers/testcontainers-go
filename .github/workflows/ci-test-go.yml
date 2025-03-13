@@ -103,10 +103,17 @@ jobs:
         if: always()
 
 
-      - name: Extract Testcontainers Go version from mkdocs.yml
+      - name: Set Sonar Cloud environment variables
         if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' }}
         run: |
           echo "PROJECT_VERSION=$(grep 'latest_version' mkdocs.yml | cut -d':' -f2 | tr -d ' ')" >> $GITHUB_ENV
+          if [ "${{ inputs.project-directory }}" = "." ]; then
+            echo "PROJECT_KEY=testcontainers_testcontainers-go" >> $GITHUB_ENV
+            echo "PROJECT_NAME=testcontainers-go" >> $GITHUB_ENV
+          else
+            echo "PROJECT_KEY=testcontainers_testcontainers-go_$(echo ${{ inputs.project-directory }} | tr '/' '_')" >> $GITHUB_ENV
+            echo "PROJECT_NAME=testcontainers-go-$(echo ${{ inputs.project-directory }} | tr '/' '-')" >> $GITHUB_ENV
+          fi
 
       - name: SonarQube Scan
         if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' }}
@@ -117,8 +124,8 @@ jobs:
           projectBaseDir: "${{ inputs.project-directory == '.' && 'testcontainers-go' || inputs.project-directory }}"
           args: >
             -Dsonar.organization=testcontainers
-            -Dsonar.projectKey=${{ inputs.project-directory == '.' && 'testcontainers_testcontainers-go' || format('testcontainers_testcontainers-go_%s', inputs.project-directory) }}
-            -Dsonar.projectName=${{ inputs.project-directory == '.' && 'testcontainers-go' || 'testcontainers-go/'inputs.project-directory }}
+            -Dsonar.projectKey=${{ env.PROJECT_KEY }}
+            -Dsonar.projectName=${{ env.PROJECT_NAME }}
             -Dsonar.projectVersion=${{ env.PROJECT_VERSION }}
             -Dsonar.project.monorepo.enabled=true
             -Dsonar.sources=.
