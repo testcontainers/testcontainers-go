@@ -1706,7 +1706,7 @@ func TestContainerCapAdd(t *testing.T) {
 
 	ctx := context.Background()
 
-	expected := "IPC_LOCK"
+	expected := "CAP_IPC_LOCK"
 
 	nginx, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
