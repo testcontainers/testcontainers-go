@@ -92,16 +92,6 @@ jobs:
         run: |
           echo "ARTIFACT_NAME=$(basename ${{ inputs.project-directory == '.' && 'core' || inputs.project-directory }})-${{ inputs.go-version }}-${{ matrix.platform }}" >> $GITHUB_ENV
 
-      - name: Upload SonarCloud files
-        if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && matrix.platform == 'ubuntu-latest' && !inputs.rootless-docker && !inputs.ryuk-disabled }}
-        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
-        with:
-          name: sonarcloud-${{ env.ARTIFACT_NAME }}
-          path: |
-            ./sonar-project.properties
-            ${{ inputs.project-directory }}/TEST-unit.xml
-            ${{ inputs.project-directory }}/coverage.out
-
       - name: Run checker
         run: |
             ./scripts/check_environment.sh
