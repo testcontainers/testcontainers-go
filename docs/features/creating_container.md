@@ -53,7 +53,7 @@ func setupNginx(ctx context.Context, networkName string) (*nginxContainer, error
 	})
 	var nginxC *nginxContainer
 	if container != nil {
-		nginxC = &nginxContainer{Container: c}
+		nginxC = &nginxContainer{Container: container}
 	}
 	if err != nil {
 		return nginxC, err

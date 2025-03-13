@@ -74,7 +74,7 @@ readonly ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 readonly excluded_modules=(".devcontainer" ".vscode" "docs")
 
 # define an array of files that won't be included in the list
-readonly excluded_files=("mkdocs.yml" "sonar-project.properties")
+readonly excluded_files=("mkdocs.yml" ".github/dependabot.yml" "sonar-project.properties")
 
 # define an array of modules that won't be part of the build
 readonly no_build_modules=("modules/k6")

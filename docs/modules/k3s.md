@@ -51,8 +51,8 @@ When starting the K3s container, you can pass options in a variadic way to confi
 
 #### Image
 
-If you need to set a different K3s Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "rancher/k3s:v1.27.1-k3s1")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "rancher/k3s:v1.27.1-k3s1")`.
 
 {% include "../features/common_functional_options.md" %}
 

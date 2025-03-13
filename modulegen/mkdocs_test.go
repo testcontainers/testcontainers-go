@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
@@ -25,18 +24,13 @@ func TestGetMkDocsConfigFile(t *testing.T) {
 	file := tmpCtx.MkdocsConfigFile()
 	require.NotNil(t, file)
 
-	assert.True(t, strings.HasSuffix(file, filepath.Join("testcontainers-go", "mkdocs.yml")))
+	require.True(t, strings.HasSuffix(file, filepath.Join("testcontainers-go", "mkdocs.yml")))
 }
 
 func TestReadMkDocsConfig(t *testing.T) {
-	tmpCtx := context.New(filepath.Join(t.TempDir(), "testcontainers-go"))
-	err := os.MkdirAll(tmpCtx.RootDir, 0o777)
-	require.NoError(t, err)
+	testProject := copyInitialProject(t)
 
-	err = copyInitialMkdocsConfig(t, tmpCtx)
-	require.NoError(t, err)
-
-	config, err := mkdocs.ReadConfig(tmpCtx.MkdocsConfigFile())
+	config, err := mkdocs.ReadConfig(testProject.ctx.MkdocsConfigFile())
 	require.NoError(t, err)
 	require.NotNil(t, config)
 
@@ -46,21 +40,22 @@ func TestReadMkDocsConfig(t *testing.T) {
 
 	// theme
 	theme := config.Theme
-	assert.Equal(t, "material", theme.Name)
+	require.Equal(t, "material", theme.Name)
 
 	// nav bar
 	nav := config.Nav
-	assert.Equal(t, "index.md", nav[0].Home)
+	require.Equal(t, "index.md", nav[0].Home)
 	require.NotEmpty(t, nav[2].Features)
 	require.NotEmpty(t, nav[3].Modules)
 	require.NotEmpty(t, nav[4].Examples)
 }
 
 func TestNavItems(t *testing.T) {
-	ctx := getTestRootContext(t)
-	examples, err := ctx.GetExamples()
+	testProject := copyInitialProject(t)
+
+	examples, err := testProject.ctx.GetExamples()
 	require.NoError(t, err)
-	examplesDocs, err := ctx.GetExamplesDocs()
+	examplesDocs, err := testProject.ctx.GetExamplesDocs()
 	require.NoError(t, err)
 
 	// we have to remove the index.md file from the examples docs
@@ -77,12 +72,6 @@ func TestNavItems(t *testing.T) {
 				continue
 			}
 		}
-		assert.True(t, found, "example %s is not present in the docs", example)
+		require.True(t, found, "example %s is not present in the docs", example)
 	}
-}
-
-func copyInitialMkdocsConfig(t *testing.T, tmpCtx context.Context) error {
-	t.Helper()
-	ctx := getTestRootContext(t)
-	return mkdocs.CopyConfig(ctx.MkdocsConfigFile(), tmpCtx.MkdocsConfigFile())
 }
