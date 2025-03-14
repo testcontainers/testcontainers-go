@@ -113,7 +113,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          projectBaseDir: "${{ inputs.project-directory == '' && 'testcontainers-go' || inputs.project-directory }}"
+          projectBaseDir: "${{ inputs.project-directory == '' && '.' || inputs.project-directory }}"
           args: >
             -Dsonar.organization=testcontainers
             -Dsonar.projectKey=${{ env.PROJECT_KEY }}
