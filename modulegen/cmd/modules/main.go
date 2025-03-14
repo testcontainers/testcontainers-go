@@ -20,7 +20,7 @@ var NewCmd = &cobra.Command{
 var RefreshModulesCmd = &cobra.Command{
 	Use:   "refresh",
 	Short: "Refresh the module and example files",
-	Long:  "Refresh the module and example files, including the dependabot config, mkdocs config, sonar properties, vscode settings and makefiles for all the modules and examples",
+	Long:  "Refresh the module and example files, including the dependabot config, mkdocs config, vscode settings and makefiles for all the modules and examples",
 	RunE: func(_ *cobra.Command, _ []string) error {
 		ctx, err := context.GetRootContext()
 		if err != nil {
