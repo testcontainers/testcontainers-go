@@ -42,6 +42,7 @@ jobs:
       TESTCONTAINERS_RYUK_DISABLED: "${{ inputs.ryuk-disabled }}"
       RYUK_CONNECTION_TIMEOUT: "${{ inputs.project-directory == 'modules/compose' && '5m' || '60s' }}"
       RYUK_RECONNECTION_TIMEOUT: "${{ inputs.project-directory == 'modules/compose' && '30s' || '10s' }}"
+      SHOULD_RUN_SONAR: "false"
     strategy:
       matrix:
         platform: ${{ fromJSON(inputs.platforms) }}
@@ -96,16 +97,14 @@ jobs:
         if: always()
 
       - name: Decide if Sonar must be run
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: |
-          if [[ "ubuntu-latest" == "${{ matrix.platform }}" ]] && \
-             [[ "1.23.x" == "${{ inputs.go-version }}" ]] && \
+          if [[ "1.23.x" == "${{ inputs.go-version }}" ]] && \
              [[ "true" != "${{ inputs.rootless-docker }}" ]] && \
              [[ "true" != "${{ inputs.ryuk-disabled }}" ]] && \
              [[ "main" == "${{ github.ref_name }}" ]] && \
              [[ "testcontainers" == "${{ github.repository_owner }}" ]]; then
             echo "SHOULD_RUN_SONAR=true" >> $GITHUB_ENV
-          else
-            echo "SHOULD_RUN_SONAR=false" >> $GITHUB_ENV
           fi
 
       - name: Set Sonar Cloud environment variables
