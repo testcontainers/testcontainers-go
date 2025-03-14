@@ -99,7 +99,7 @@ jobs:
         if: ${{ !inputs.rootless-docker && !inputs.ryuk-disabled && github.ref_name == 'main' && github.repository_owner == 'testcontainers' }}
         run: |
           echo "PROJECT_VERSION=$(grep 'latest_version' mkdocs.yml | cut -d':' -f2 | tr -d ' ')" >> $GITHUB_ENV
-          if [ "${{ inputs.project-directory }}" = "." ]; then
+          if [ "${{ inputs.project-directory }}" == "" ]; then
             echo "PROJECT_KEY=testcontainers_testcontainers-go" >> $GITHUB_ENV
             echo "PROJECT_NAME=testcontainers-go" >> $GITHUB_ENV
           else
@@ -113,7 +113,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          projectBaseDir: "${{ inputs.project-directory == '.' && 'testcontainers-go' || inputs.project-directory }}"
+          projectBaseDir: "${{ inputs.project-directory == '' && 'testcontainers-go' || inputs.project-directory }}"
           args: >
             -Dsonar.organization=testcontainers
             -Dsonar.projectKey=${{ env.PROJECT_KEY }}
