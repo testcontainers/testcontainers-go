@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/testcontainers/testcontainers-go"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
@@ -117,7 +118,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Env: map[string]string{
 			"MSSQL_SA_PASSWORD": defaultPassword,
 		},
-		WaitingFor: wait.ForLog("Recovery is complete."),
+		WaitingFor: wait.ForAll(
+			wait.ForListeningPort(defaultPort).WithStartupTimeout(time.Minute),
+			wait.ForLog("Recovery is complete."),
+		),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
