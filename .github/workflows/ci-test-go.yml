@@ -96,7 +96,7 @@ jobs:
         if: always()
 
       - name: Set Sonar Cloud environment variables
-        if: ${{ !inputs.rootless-docker && !inputs.ryuk-disabled && github.ref_name == 'main' && github.repository_owner == 'testcontainers' }}
+        if: ${{ matrix.platform == 'ubuntu-latest' && inputs.go-version == '1.23.x' && !inputs.rootless-docker && !inputs.ryuk-disabled && github.ref_name == 'main' && github.repository_owner == 'testcontainers' }}
         run: |
           echo "PROJECT_VERSION=$(grep 'latest_version' mkdocs.yml | cut -d':' -f2 | tr -d ' ')" >> $GITHUB_ENV
           if [ "${{ inputs.project-directory }}" == "" ]; then
@@ -108,7 +108,7 @@ jobs:
           fi
 
       - name: SonarQube Scan
-        if: ${{ !inputs.rootless-docker && !inputs.ryuk-disabled && github.ref_name == 'main' && github.repository_owner == 'testcontainers' }}
+        if: ${{ matrix.platform == 'ubuntu-latest' && inputs.go-version == '1.23.x' && !inputs.rootless-docker && !inputs.ryuk-disabled && github.ref_name == 'main' && github.repository_owner == 'testcontainers' }}
         uses: SonarSource/sonarqube-scan-action@0303d6b62e310685c0e34d0b9cde218036885c4d # v5.0.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
