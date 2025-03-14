@@ -102,9 +102,13 @@ jobs:
           if [ "${{ inputs.project-directory }}" == "" ]; then
             echo "PROJECT_KEY=testcontainers_testcontainers-go" >> $GITHUB_ENV
             echo "PROJECT_NAME=testcontainers-go" >> $GITHUB_ENV
+            echo "PROJECT_SRC_EXCLUSIONS=**/*_test.go,**/vendor/**,**/testdata/**,modules/**,examples/**,modulegen/**" >> $GITHUB_ENV
+            echo "PROJECT_TEST_EXCLUSIONS=**/vendor/**,modules/**,examples/**,modulegen/**" >> $GITHUB_ENV
           else
             echo "PROJECT_KEY=testcontainers_testcontainers-go_$(echo ${{ inputs.project-directory }} | tr '/' '_')" >> $GITHUB_ENV
             echo "PROJECT_NAME=testcontainers-go-$(echo ${{ inputs.project-directory }} | tr '/' '-')" >> $GITHUB_ENV
+            echo "PROJECT_SRC_EXCLUSIONS=**/*_test.go,**/vendor/**,**/testdata/**" >> $GITHUB_ENV
+            echo "PROJECT_TEST_EXCLUSIONS=**/vendor/**" >> $GITHUB_ENV
           fi
 
       - name: SonarQube Scan
@@ -121,9 +125,9 @@ jobs:
             -Dsonar.projectVersion=${{ env.PROJECT_VERSION }}
             -Dsonar.project.monorepo.enabled=true
             -Dsonar.sources=.
-            -Dsonar.exclusions=**/*_test.go,**/vendor/**,**/testdata/**
+            -Dsonar.exclusions=${{ env.PROJECT_SRC_EXCLUSIONS }}
             -Dsonar.tests=.
             -Dsonar.test.inclusions=**/*_test.go
-            -Dsonar.test.exclusions=**/vendor/**
+            -Dsonar.test.exclusions=${{ env.PROJECT_TEST_EXCLUSIONS }}
             -Dsonar.go.coverage.reportPaths=coverage.out
             -Dsonar.go.tests.reportPaths=TEST-unit.xml
