@@ -68,6 +68,8 @@ jobs:
       pull-requests: read  # for sonarsource/sonarcloud-github-action to determine which PR to decorate
     uses: ./.github/workflows/ci-test-go.yml
     with:
+      # Only pass the SONAR_TOKEN for the modules
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       go-version: ${{ matrix.go-version }}
       platforms: ${{ matrix.module == 'modulegen' && '["ubuntu-latest", "macos-latest", "windows-latest"]' || '["ubuntu-latest"]' }}
       project-directory: "${{ matrix.module }}"
