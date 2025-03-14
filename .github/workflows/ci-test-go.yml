@@ -95,7 +95,6 @@ jobs:
             paths: "**/${{ inputs.project-directory }}/TEST-unit*.xml"
         if: always()
 
-
       - name: Set Sonar Cloud environment variables
         if: ${{ !inputs.rootless-docker && !inputs.ryuk-disabled && github.ref_name == 'main' && github.repository_owner == 'testcontainers' }}
         run: |

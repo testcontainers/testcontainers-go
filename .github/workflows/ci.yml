@@ -73,6 +73,7 @@ jobs:
       project-directory: "${{ matrix.module }}"
       rootless-docker: false
       ryuk-disabled: false
+    secrets: inherit
 
   # The job below is a copy of the job above, but with ryuk disabled.
   # It's executed in the first stage to avoid concurrency issues.
