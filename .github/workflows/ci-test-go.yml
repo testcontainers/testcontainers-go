@@ -3,10 +3,6 @@ run-name: "${{ inputs.project-directory }} ${{ inputs.go-version }} ${{ inputs.p
 
 on:
   workflow_call:
-    secrets:
-      SONAR_TOKEN:
-        required: false
-        description: "Sonar token used to connect to SonarCloud"
     inputs:
       go-version:
         required: true
@@ -100,7 +96,7 @@ jobs:
         if: always()
 
       - name: Set Sonar Cloud environment variables
-        if: ${{ secrets.SONAR_TOKEN != '' && github.ref_name == 'main' && github.repository_owner == 'testcontainers' }}
+        if: ${{ !inputs.rootless-docker && !inputs.ryuk-disabled && github.ref_name == 'main' && github.repository_owner == 'testcontainers' }}
         run: |
           echo "PROJECT_VERSION=$(grep 'latest_version' mkdocs.yml | cut -d':' -f2 | tr -d ' ')" >> $GITHUB_ENV
           if [ "${{ inputs.project-directory }}" = "." ]; then
@@ -112,7 +108,7 @@ jobs:
           fi
 
       - name: SonarQube Scan
-        if: ${{ secrets.SONAR_TOKEN != '' && github.ref_name == 'main' && github.repository_owner == 'testcontainers' }}
+        if: ${{ !inputs.rootless-docker && !inputs.ryuk-disabled && github.ref_name == 'main' && github.repository_owner == 'testcontainers' }}
         uses: SonarSource/sonarqube-scan-action@0303d6b62e310685c0e34d0b9cde218036885c4d # v5.0.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

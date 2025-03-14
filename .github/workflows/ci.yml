@@ -73,9 +73,7 @@ jobs:
       project-directory: "${{ matrix.module }}"
       rootless-docker: false
       ryuk-disabled: false
-    secrets:
-      # Only pass the SONAR_TOKEN for the modules
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    secrets: inherit
 
   # The job below is a copy of the job above, but with ryuk disabled.
   # It's executed in the first stage to avoid concurrency issues.
