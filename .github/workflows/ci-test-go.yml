@@ -42,6 +42,7 @@ jobs:
       TESTCONTAINERS_RYUK_DISABLED: "${{ inputs.ryuk-disabled }}"
       RYUK_CONNECTION_TIMEOUT: "${{ inputs.project-directory == 'modules/compose' && '5m' || '60s' }}"
       RYUK_RECONNECTION_TIMEOUT: "${{ inputs.project-directory == 'modules/compose' && '30s' || '10s' }}"
+      SHOULD_RUN_SONAR: "false"
     strategy:
       matrix:
         platform: ${{ fromJSON(inputs.platforms) }}
@@ -95,20 +96,35 @@ jobs:
             paths: "**/${{ inputs.project-directory }}/TEST-unit*.xml"
         if: always()
 
+      - name: Decide if Sonar must be run
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        run: |
+          if [[ "1.23.x" == "${{ inputs.go-version }}" ]] && \
+             [[ "true" != "${{ inputs.rootless-docker }}" ]] && \
+             [[ "true" != "${{ inputs.ryuk-disabled }}" ]] && \
+             [[ "main" == "${{ github.ref_name }}" ]] && \
+             [[ "testcontainers" == "${{ github.repository_owner }}" ]]; then
+            echo "SHOULD_RUN_SONAR=true" >> $GITHUB_ENV
+          fi
+
       - name: Set Sonar Cloud environment variables
-        if: ${{ !inputs.rootless-docker && !inputs.ryuk-disabled && github.ref_name == 'main' && github.repository_owner == 'testcontainers' }}
+        if: ${{ env.SHOULD_RUN_SONAR == 'true' }}
         run: |
           echo "PROJECT_VERSION=$(grep 'latest_version' mkdocs.yml | cut -d':' -f2 | tr -d ' ')" >> $GITHUB_ENV
           if [ "${{ inputs.project-directory }}" == "" ]; then
             echo "PROJECT_KEY=testcontainers_testcontainers-go" >> $GITHUB_ENV
             echo "PROJECT_NAME=testcontainers-go" >> $GITHUB_ENV
+            echo "PROJECT_SRC_EXCLUSIONS=**/*_test.go,**/vendor/**,**/testdata/**,modules/**,examples/**,modulegen/**" >> $GITHUB_ENV
+            echo "PROJECT_TEST_EXCLUSIONS=**/vendor/**,modules/**,examples/**,modulegen/**" >> $GITHUB_ENV
           else
             echo "PROJECT_KEY=testcontainers_testcontainers-go_$(echo ${{ inputs.project-directory }} | tr '/' '_')" >> $GITHUB_ENV
             echo "PROJECT_NAME=testcontainers-go-$(echo ${{ inputs.project-directory }} | tr '/' '-')" >> $GITHUB_ENV
+            echo "PROJECT_SRC_EXCLUSIONS=**/*_test.go,**/vendor/**,**/testdata/**" >> $GITHUB_ENV
+            echo "PROJECT_TEST_EXCLUSIONS=**/vendor/**" >> $GITHUB_ENV
           fi
 
       - name: SonarQube Scan
-        if: ${{ !inputs.rootless-docker && !inputs.ryuk-disabled && github.ref_name == 'main' && github.repository_owner == 'testcontainers' }}
+        if: ${{ env.SHOULD_RUN_SONAR == 'true' }}
         uses: SonarSource/sonarqube-scan-action@0303d6b62e310685c0e34d0b9cde218036885c4d # v5.0.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -121,9 +137,9 @@ jobs:
             -Dsonar.projectVersion=${{ env.PROJECT_VERSION }}
             -Dsonar.project.monorepo.enabled=true
             -Dsonar.sources=.
-            -Dsonar.exclusions=**/*_test.go,**/vendor/**,**/testdata/**
+            -Dsonar.exclusions=${{ env.PROJECT_SRC_EXCLUSIONS }}
             -Dsonar.tests=.
             -Dsonar.test.inclusions=**/*_test.go
-            -Dsonar.test.exclusions=**/vendor/**
+            -Dsonar.test.exclusions=${{ env.PROJECT_TEST_EXCLUSIONS }}
             -Dsonar.go.coverage.reportPaths=coverage.out
             -Dsonar.go.tests.reportPaths=TEST-unit.xml
