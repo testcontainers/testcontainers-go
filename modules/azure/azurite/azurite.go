@@ -1,0 +1,122 @@
+package azurite
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/docker/go-connections/nat"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
+)
+
+const (
+	// BlobPort is the default port used by Azurite
+	BlobPort = "10000/tcp"
+	// QueuePort is the default port used by Azurite
+	QueuePort = "10001/tcp"
+	// TablePort is the default port used by Azurite
+	TablePort = "10002/tcp"
+
+	// defaultCredentials {
+	// AccountName is the default testing account name used by Azurite
+	AccountName string = "devstoreaccount1"
+
+	// AccountKey is the default testing account key used by Azurite
+	AccountKey string = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
+	// }
+)
+
+// AzuriteContainer represents the Azurite container type used in the module
+type AzuriteContainer struct {
+	testcontainers.Container
+	opts options
+}
+
+// ServiceURL returns the URL of the given service
+func (c *AzuriteContainer) ServiceURL(ctx context.Context, srv Service) (string, error) {
+	hostname, err := c.Host(ctx)
+	if err != nil {
+		return "", fmt.Errorf("host: %w", err)
+	}
+
+	var port nat.Port
+	switch srv {
+	case BlobService:
+		port = BlobPort
+	case QueueService:
+		port = QueuePort
+	case TableService:
+		port = TablePort
+	default:
+		return "", fmt.Errorf("unknown service: %s", srv)
+	}
+
+	mappedPort, err := c.MappedPort(ctx, port)
+	if err != nil {
+		return "", fmt.Errorf("mapped port: %w", err)
+	}
+
+	return fmt.Sprintf("http://%s:%d", hostname, mappedPort.Int()), nil
+}
+
+// Run creates an instance of the Azurite container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*AzuriteContainer, error) {
+	req := testcontainers.ContainerRequest{
+		Image:        img,
+		ExposedPorts: []string{BlobPort, QueuePort, TablePort},
+		Env:          map[string]string{},
+		Entrypoint:   []string{"azurite"},
+		Cmd:          []string{},
+	}
+
+	genericContainerReq := testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	}
+
+	// 1. Gather all config options (defaults and then apply provided options)
+	settings := defaultOptions()
+	for _, opt := range opts {
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, fmt.Errorf("customize: %w", err)
+		}
+	}
+
+	// 2. evaluate the enabled services to apply the right wait strategy and Cmd options
+	enabledServices := settings.EnabledServices
+	if len(enabledServices) > 0 {
+		waitingFor := make([]wait.Strategy, 0, len(enabledServices))
+		for _, srv := range enabledServices {
+			switch srv {
+			case BlobService:
+				genericContainerReq.Cmd = append(genericContainerReq.Cmd, "--blobHost", "0.0.0.0")
+				waitingFor = append(waitingFor, wait.ForListeningPort(BlobPort))
+			case QueueService:
+				genericContainerReq.Cmd = append(genericContainerReq.Cmd, "--queueHost", "0.0.0.0")
+				waitingFor = append(waitingFor, wait.ForListeningPort(QueuePort))
+			case TableService:
+				genericContainerReq.Cmd = append(genericContainerReq.Cmd, "--tableHost", "0.0.0.0")
+				waitingFor = append(waitingFor, wait.ForListeningPort(TablePort))
+			}
+		}
+
+		if genericContainerReq.WaitingFor != nil {
+			genericContainerReq.WaitingFor = wait.ForAll(genericContainerReq.WaitingFor, wait.ForAll(waitingFor...))
+		} else {
+			genericContainerReq.WaitingFor = wait.ForAll(waitingFor...)
+		}
+	}
+
+	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	var c *AzuriteContainer
+	if container != nil {
+		c = &AzuriteContainer{Container: container, opts: settings}
+	}
+
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
+}
