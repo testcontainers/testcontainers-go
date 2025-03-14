@@ -136,6 +136,7 @@ jobs:
             -Dsonar.projectName=${{ env.PROJECT_NAME }}
             -Dsonar.projectVersion=${{ env.PROJECT_VERSION }}
             -Dsonar.project.monorepo.enabled=true
+            -Dsonar.branch.name=main
             -Dsonar.sources=.
             -Dsonar.exclusions=${{ env.PROJECT_SRC_EXCLUSIONS }}
             -Dsonar.tests=.
