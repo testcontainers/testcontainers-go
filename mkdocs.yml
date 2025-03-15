@@ -77,6 +77,7 @@ nav:
         - modules/consul.md
         - modules/couchbase.md
         - modules/databend.md
+        - modules/dind.md
         - modules/dolt.md
         - modules/dynamodb.md
         - modules/elasticsearch.md
@@ -111,6 +112,7 @@ nav:
         - modules/redis.md
         - modules/redpanda.md
         - modules/registry.md
+        - modules/scylladb.md
         - modules/surrealdb.md
         - modules/valkey.md
         - modules/vault.md

@@ -23,7 +23,7 @@ type WeaviateContainer struct {
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Weaviate container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*WeaviateContainer, error) {
-	return Run(ctx, "semitechnologies/weaviate:1.25.5", opts...)
+	return Run(ctx, "semitechnologies/weaviate:1.29.0", opts...)
 }
 
 // Run creates an instance of the Weaviate container type
