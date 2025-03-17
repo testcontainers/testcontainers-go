@@ -130,11 +130,6 @@ func (ctx Context) MkdocsConfigFile() string {
 	return filepath.Join(ctx.RootDir, "mkdocs.yml")
 }
 
-// SonarProjectFile returns, from the root directory, the relative path to the sonar project file, "/sonar-project.properties".
-func (ctx Context) SonarProjectFile() string {
-	return filepath.Join(ctx.RootDir, "sonar-project.properties")
-}
-
 // VSCodeWorkspaceFile returns, from the root directory, the relative path to the vscode workspace file, "/.vscode/.testcontainers-go.code-workspace".
 func (ctx Context) VSCodeWorkspaceFile() string {
 	return filepath.Join(ctx.RootDir, ".vscode", ".testcontainers-go.code-workspace")

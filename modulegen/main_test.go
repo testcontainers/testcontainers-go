@@ -580,13 +580,6 @@ func copyInitialProject(t *testing.T) testProject {
 	err = os.WriteFile(tmpCtx.GoModFile(), goModFile, 0o777)
 	require.NoError(t, err)
 
-	// sonar-project.properties
-	sonarProjectFile, err := os.ReadFile(ctx.SonarProjectFile())
-	require.NoError(t, err)
-
-	err = os.WriteFile(tmpCtx.SonarProjectFile(), sonarProjectFile, 0o777)
-	require.NoError(t, err)
-
 	// .vscode/testcontainers-go.code-workspace
 	err = os.MkdirAll(filepath.Dir(tmpCtx.VSCodeWorkspaceFile()), 0o777)
 	require.NoError(t, err)

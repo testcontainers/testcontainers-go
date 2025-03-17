@@ -42,6 +42,7 @@ jobs:
       TESTCONTAINERS_RYUK_DISABLED: "${{ inputs.ryuk-disabled }}"
       RYUK_CONNECTION_TIMEOUT: "${{ inputs.project-directory == 'modules/compose' && '5m' || '60s' }}"
       RYUK_RECONNECTION_TIMEOUT: "${{ inputs.project-directory == 'modules/compose' && '30s' || '10s' }}"
+      SHOULD_RUN_SONAR: "false"
     strategy:
       matrix:
         platform: ${{ fromJSON(inputs.platforms) }}
@@ -55,6 +56,9 @@ jobs:
 
       - name: Check out code into the Go module directory
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # Disabling shallow clone is recommended for improving relevancy of reporting
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
@@ -82,23 +86,6 @@ jobs:
         timeout-minutes: 30
         run: make test-unit
 
-      - name: Set sonar artifact name
-        # For the core library, where the project directory is '.', we'll use "core" as artifact name.
-        # For the modules, we'll remove the slashes, keeping the name of the module
-        if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && matrix.platform == 'ubuntu-latest' && !inputs.rootless-docker && !inputs.ryuk-disabled }}
-        run: |
-          echo "ARTIFACT_NAME=$(basename ${{ inputs.project-directory == '.' && 'core' || inputs.project-directory }})-${{ inputs.go-version }}-${{ matrix.platform }}" >> $GITHUB_ENV
-
-      - name: Upload SonarCloud files
-        if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && matrix.platform == 'ubuntu-latest' && !inputs.rootless-docker && !inputs.ryuk-disabled }}
-        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
-        with:
-          name: sonarcloud-${{ env.ARTIFACT_NAME }}
-          path: |
-            ./sonar-project.properties
-            ${{ inputs.project-directory }}/TEST-unit.xml
-            ${{ inputs.project-directory }}/coverage.out
-
       - name: Run checker
         run: |
             ./scripts/check_environment.sh
@@ -108,3 +95,52 @@ jobs:
         with:
             paths: "**/${{ inputs.project-directory }}/TEST-unit*.xml"
         if: always()
+
+      - name: Decide if Sonar must be run
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        run: |
+          if [[ "1.23.x" == "${{ inputs.go-version }}" ]] && \
+             [[ "true" != "${{ inputs.rootless-docker }}" ]] && \
+             [[ "true" != "${{ inputs.ryuk-disabled }}" ]] && \
+             [[ "main" == "${{ github.ref_name }}" ]] && \
+             [[ "testcontainers" == "${{ github.repository_owner }}" ]]; then
+            echo "SHOULD_RUN_SONAR=true" >> $GITHUB_ENV
+          fi
+
+      - name: Set Sonar Cloud environment variables
+        if: ${{ env.SHOULD_RUN_SONAR == 'true' }}
+        run: |
+          echo "PROJECT_VERSION=$(grep 'latest_version' mkdocs.yml | cut -d':' -f2 | tr -d ' ')" >> $GITHUB_ENV
+          if [ "${{ inputs.project-directory }}" == "" ]; then
+            echo "PROJECT_KEY=testcontainers_testcontainers-go" >> $GITHUB_ENV
+            echo "PROJECT_NAME=testcontainers-go" >> $GITHUB_ENV
+            echo "PROJECT_SRC_EXCLUSIONS=**/*_test.go,**/vendor/**,**/testdata/**,modules/**,examples/**,modulegen/**" >> $GITHUB_ENV
+            echo "PROJECT_TEST_EXCLUSIONS=**/vendor/**,modules/**,examples/**,modulegen/**" >> $GITHUB_ENV
+          else
+            echo "PROJECT_KEY=testcontainers_testcontainers-go_$(echo ${{ inputs.project-directory }} | tr '/' '_')" >> $GITHUB_ENV
+            echo "PROJECT_NAME=testcontainers-go-$(echo ${{ inputs.project-directory }} | tr '/' '-')" >> $GITHUB_ENV
+            echo "PROJECT_SRC_EXCLUSIONS=**/*_test.go,**/vendor/**,**/testdata/**" >> $GITHUB_ENV
+            echo "PROJECT_TEST_EXCLUSIONS=**/vendor/**" >> $GITHUB_ENV
+          fi
+
+      - name: SonarQube Scan
+        if: ${{ env.SHOULD_RUN_SONAR == 'true' }}
+        uses: SonarSource/sonarqube-scan-action@0303d6b62e310685c0e34d0b9cde218036885c4d # v5.0.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: "${{ inputs.project-directory == '' && '.' || inputs.project-directory }}"
+          args: >
+            -Dsonar.organization=testcontainers
+            -Dsonar.projectKey=${{ env.PROJECT_KEY }}
+            -Dsonar.projectName=${{ env.PROJECT_NAME }}
+            -Dsonar.projectVersion=${{ env.PROJECT_VERSION }}
+            -Dsonar.project.monorepo.enabled=true
+            -Dsonar.branch.name=main
+            -Dsonar.sources=.
+            -Dsonar.exclusions=${{ env.PROJECT_SRC_EXCLUSIONS }}
+            -Dsonar.tests=.
+            -Dsonar.test.inclusions=**/*_test.go
+            -Dsonar.test.exclusions=${{ env.PROJECT_TEST_EXCLUSIONS }}
+            -Dsonar.go.coverage.reportPaths=coverage.out
+            -Dsonar.go.tests.reportPaths=TEST-unit.xml
