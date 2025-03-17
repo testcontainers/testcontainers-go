@@ -56,6 +56,7 @@ func TestRun_local(t *testing.T) {
 		require.NotEqual(t, zeroTime, state.StartedAt)
 		require.NotZero(t, state.Pid)
 		require.Equal(t, &container.State{
+			Status:     "running",
 			Running:    true,
 			Pid:        state.Pid,
 			StartedAt:  state.StartedAt,
@@ -265,6 +266,7 @@ func TestRun_local(t *testing.T) {
 		require.NotEqual(t, zeroTime, state.FinishedAt)
 		require.Equal(t, &container.State{
 			// zero values are not needed to be set
+			Status:     "exited",
 			StartedAt:  state.StartedAt,
 			FinishedAt: state.FinishedAt,
 		}, state)
