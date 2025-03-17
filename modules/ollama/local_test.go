@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/stretchr/testify/require"
 
@@ -55,12 +55,12 @@ func TestRun_local(t *testing.T) {
 		require.NotEmpty(t, state.StartedAt)
 		require.NotEqual(t, zeroTime, state.StartedAt)
 		require.NotZero(t, state.Pid)
-		require.Equal(t, &types.ContainerState{
+		require.Equal(t, &container.State{
 			Status:     "running",
 			Running:    true,
 			Pid:        state.Pid,
 			StartedAt:  state.StartedAt,
-			FinishedAt: time.Time{}.Format(time.RFC3339Nano),
+			FinishedAt: state.FinishedAt,
 		}, state)
 	})
 
@@ -264,7 +264,8 @@ func TestRun_local(t *testing.T) {
 		require.NotEqual(t, zeroTime, state.StartedAt)
 		require.NotEmpty(t, state.FinishedAt)
 		require.NotEqual(t, zeroTime, state.FinishedAt)
-		require.Equal(t, &types.ContainerState{
+		require.Equal(t, &container.State{
+			// zero values are not needed to be set
 			Status:     "exited",
 			StartedAt:  state.StartedAt,
 			FinishedAt: state.FinishedAt,

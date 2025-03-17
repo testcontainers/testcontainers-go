@@ -57,11 +57,11 @@ set -euxo pipefail
 #    The output should be: no modules.
 #
 # 14. A excluded file and a file from the core module are modified:
-#    ALL_CHANGED_FILES="mkdocs.yml sonar-project.properties go.mod" ./scripts/changed-modules.sh
+#    ALL_CHANGED_FILES="mkdocs.yml go.mod" ./scripts/changed-modules.sh
 #    The output should be: all modules.
 #
 # 15. Only excluded files are modified:
-#    ALL_CHANGED_FILES="mkdocs.yml sonar-project.properties" ./scripts/changed-modules.sh
+#    ALL_CHANGED_FILES="mkdocs.yml" ./scripts/changed-modules.sh
 #    The output should be: no modules.
 #
 # There is room for improvement in this script. For example, it could detect if the changes applied to the docs or the .github dirs, and then do not include any module in the list.
@@ -74,7 +74,7 @@ readonly ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 readonly excluded_modules=(".devcontainer" ".vscode" "docs")
 
 # define an array of files that won't be included in the list
-readonly excluded_files=("mkdocs.yml" ".github/dependabot.yml" "sonar-project.properties")
+readonly excluded_files=("mkdocs.yml" ".github/dependabot.yml")
 
 # define an array of modules that won't be part of the build
 readonly no_build_modules=("modules/k6")

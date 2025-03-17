@@ -9,7 +9,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/make"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/mkdocs"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/module"
-	"github.com/testcontainers/testcontainers-go/modulegen/internal/sonar"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/tools"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/vscode"
 )
@@ -72,7 +71,6 @@ func Refresh(ctx context.Context) error {
 		mkdocs.Generator{},     // update examples in mkdocs
 		dependabot.Generator{}, // update examples in dependabot
 		vscode.Generator{},     // update vscode workspace
-		sonar.Generator{},      // update sonar-project.properties
 	}
 
 	for _, generator := range generators {
@@ -122,7 +120,6 @@ func GenerateFiles(ctx context.Context, tcModule context.TestcontainersModule) e
 	// module generation
 	projectGenerators := []ProjectGenerator{
 		vscode.Generator{}, // update vscode workspace
-		sonar.Generator{},  // update sonar-project.properties
 	}
 
 	examples, err := ctx.GetExamples()
