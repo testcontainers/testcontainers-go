@@ -22,4 +22,4 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           chmod +x .github/scripts/.sonar-manager.sh
-          .github/scripts/.sonar-manager.sh -a "${{ inputs.operation }}"
+          .github/scripts/sonar-manager.sh -a "${{ inputs.operation }}"
