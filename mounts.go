@@ -2,7 +2,6 @@ package testcontainers
 
 import (
 	"errors"
-	"fmt"
 	"path/filepath"
 )
 
@@ -180,7 +179,7 @@ func (GenericImageMountSource) Type() MountType {
 // Validate validates the source of the mount
 func (s GenericImageMountSource) Validate() error {
 	if !filepath.IsLocal(s.Subpath) {
-		return fmt.Errorf("image mount source must be a local path")
+		return errors.New("image mount source must be a local path")
 	}
 	return nil
 }

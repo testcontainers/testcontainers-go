@@ -1,7 +1,7 @@
 package testcontainers
 
 import (
-	"fmt"
+	"errors"
 	"path/filepath"
 
 	"github.com/docker/docker/api/types/mount"
@@ -112,7 +112,7 @@ type DockerImageMountSource struct {
 // Validate validates the source of the mount, ensuring that the subpath is a relative path
 func (s DockerImageMountSource) Validate() error {
 	if !filepath.IsLocal(s.Subpath) {
-		return fmt.Errorf("image mount source must be a local path")
+		return errors.New("image mount source must be a local path")
 	}
 	return nil
 }
