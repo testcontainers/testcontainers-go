@@ -521,6 +521,17 @@ func (c ContainerLifecycleHooks) Terminated(ctx context.Context) func(container 
 }
 
 func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req ContainerRequest, dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) error {
+	var mountErrors []error
+	for _, m := range req.Mounts {
+		if err := m.Source.Validate(); err != nil {
+			mountErrors = append(mountErrors, err)
+		}
+	}
+
+	if len(mountErrors) > 0 {
+		return errors.Join(mountErrors...)
+	}
+
 	// prepare mounts
 	hostConfig.Mounts = mapToDockerMounts(req.Mounts)
 
