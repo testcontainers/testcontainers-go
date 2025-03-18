@@ -241,7 +241,6 @@ func TestWithHostPortAccess(t *testing.T) {
 
 func TestWithImageMount(t *testing.T) {
 	t.Run("valid", func(t *testing.T) {
-
 		req := testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: "alpine",
