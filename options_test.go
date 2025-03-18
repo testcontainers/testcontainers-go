@@ -238,3 +238,53 @@ func TestWithHostPortAccess(t *testing.T) {
 		})
 	}
 }
+
+func TestWithImageMount(t *testing.T) {
+	t.Run("valid", func(t *testing.T) {
+
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: "alpine",
+			},
+		}
+
+		err := testcontainers.WithImageMount("alpine", "root/.ollama/models/", "/root/.ollama/models/")(&req)
+		require.NoError(t, err)
+
+		require.Len(t, req.Mounts, 1)
+
+		src := req.Mounts[0].Source
+
+		require.Equal(t, testcontainers.DockerImageMountSource{
+			ImageName: "alpine",
+			Subpath:   "root/.ollama/models/",
+		}, src)
+		require.Equal(t, "alpine", src.Source())
+		require.Equal(t, testcontainers.MountTypeImage, src.Type())
+
+		dst := req.Mounts[0].Target
+		require.Equal(t, testcontainers.ContainerMountTarget("/root/.ollama/models/"), dst)
+	})
+
+	t.Run("invalid", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: "alpine",
+			},
+		}
+
+		err := testcontainers.WithImageMount("alpine", "/root/.ollama/models/", "/root/.ollama/models/")(&req)
+		require.Error(t, err)
+	})
+
+	t.Run("invalid-dots", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: "alpine",
+			},
+		}
+
+		err := testcontainers.WithImageMount("alpine", "../root/.ollama/models/", "/root/.ollama/models/")(&req)
+		require.Error(t, err)
+	})
+}

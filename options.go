@@ -334,3 +334,26 @@ func WithWaitStrategyAndDeadline(deadline time.Duration, strategies ...wait.Stra
 		return nil
 	}
 }
+
+// WithImageMount mounts an image to a container, passing the source image name,
+// the relative subpath to mount in that image, and the mount point in the target container.
+// This option validates that the subpath is a relative path, raising an error otherwise.
+func WithImageMount(source string, subpath string, target ContainerMountTarget) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		src := DockerImageMountSource{
+			ImageName: source,
+			Subpath:   subpath,
+		}
+
+		if err := src.Validate(); err != nil {
+			return fmt.Errorf("validate image mount source: %w", err)
+		}
+
+		req.Mounts = append(req.Mounts, ContainerMount{
+			Source: src,
+			Target: target,
+		})
+
+		return nil
+	}
+}

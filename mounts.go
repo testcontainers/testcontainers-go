@@ -1,12 +1,17 @@
 package testcontainers
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+	"path/filepath"
+)
 
 const (
 	MountTypeBind MountType = iota // Deprecated: Use MountTypeVolume instead
 	MountTypeVolume
 	MountTypeTmpfs
 	MountTypePipe
+	MountTypeImage
 )
 
 var (
@@ -18,6 +23,7 @@ var (
 	_ ContainerMountSource = (*GenericBindMountSource)(nil) // Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
 	_ ContainerMountSource = (*GenericVolumeMountSource)(nil)
 	_ ContainerMountSource = (*GenericTmpfsMountSource)(nil)
+	_ ContainerMountSource = (*GenericImageMountSource)(nil)
 )
 
 type (
@@ -35,6 +41,9 @@ type ContainerMountSource interface {
 	// Type determines the final mount type
 	// possible options are limited by the Docker API
 	Type() MountType
+
+	// Validate validates the source of the mount
+	Validate() error
 }
 
 // Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
@@ -56,6 +65,11 @@ func (GenericBindMountSource) Type() MountType {
 	return MountTypeBind
 }
 
+// Validate validates the source of the mount
+func (s GenericBindMountSource) Validate() error {
+	return nil
+}
+
 // GenericVolumeMountSource implements ContainerMountSource and represents a volume mount
 type GenericVolumeMountSource struct {
 	// Name refers to the name of the volume to be mounted
@@ -71,6 +85,11 @@ func (GenericVolumeMountSource) Type() MountType {
 	return MountTypeVolume
 }
 
+// Validate validates the source of the mount
+func (s GenericVolumeMountSource) Validate() error {
+	return nil
+}
+
 // GenericTmpfsMountSource implements ContainerMountSource and represents a TmpFS mount
 // Optionally mount.TmpfsOptions might be added for advanced scenarios
 type GenericTmpfsMountSource struct{}
@@ -81,6 +100,11 @@ func (s GenericTmpfsMountSource) Source() string {
 
 func (GenericTmpfsMountSource) Type() MountType {
 	return MountTypeTmpfs
+}
+
+// Validate validates the source of the mount
+func (s GenericTmpfsMountSource) Validate() error {
+	return nil
 }
 
 // ContainerMountTarget represents the target path within a container where the mount will be available
@@ -110,6 +134,15 @@ func VolumeMount(volumeName string, mountTarget ContainerMountTarget) ContainerM
 	}
 }
 
+// ImageMount returns a new ContainerMount with a GenericImageMountSource as source
+// This is a convenience method to cover typical use cases.
+func ImageMount(imageName string, subpath string, mountTarget ContainerMountTarget) ContainerMount {
+	return ContainerMount{
+		Source: GenericImageMountSource{ImageName: imageName, Subpath: subpath},
+		Target: mountTarget,
+	}
+}
+
 // Mounts returns a ContainerMounts to support a more fluent API
 func Mounts(mounts ...ContainerMount) ContainerMounts {
 	return mounts
@@ -123,4 +156,31 @@ type ContainerMount struct {
 	Target ContainerMountTarget
 	// ReadOnly determines if the mount should be read-only
 	ReadOnly bool
+}
+
+// GenericImageMountSource implements ContainerMountSource and represents an image mount
+type GenericImageMountSource struct {
+	// ImageName refers to the name of the image to be mounted
+	// the same image might be mounted to multiple locations within a single container
+	ImageName string
+	// Subpath is the path within the image to be mounted
+	Subpath string
+}
+
+// Source returns the name of the image to be mounted
+func (s GenericImageMountSource) Source() string {
+	return s.ImageName
+}
+
+// Type returns the type of the mount
+func (GenericImageMountSource) Type() MountType {
+	return MountTypeImage
+}
+
+// Validate validates the source of the mount
+func (s GenericImageMountSource) Validate() error {
+	if !filepath.IsLocal(s.Subpath) {
+		return fmt.Errorf("image mount source must be a local path")
+	}
+	return nil
 }

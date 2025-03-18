@@ -42,6 +42,38 @@ func TestVolumeMount(t *testing.T) {
 	}
 }
 
+func TestImageMount(t *testing.T) {
+	t.Parallel()
+
+	t.Run("valid-image-mount", func(t *testing.T) {
+		t.Parallel()
+		m := testcontainers.ImageMount("nginx:latest", "var/www/html", "/var/www/html")
+		require.NoError(t, m.Source.Validate())
+
+		require.Equal(t, testcontainers.ContainerMount{
+			Source: testcontainers.GenericImageMountSource{
+				ImageName: "nginx:latest",
+				Subpath:   "var/www/html",
+			},
+			Target: "/var/www/html",
+		}, m)
+	})
+
+	t.Run("invalid-image-mount", func(t *testing.T) {
+		t.Parallel()
+		m := testcontainers.ImageMount("nginx:latest", "../var/www/html", "/var/www/invalid")
+		require.Error(t, m.Source.Validate())
+
+		require.Equal(t, testcontainers.ContainerMount{
+			Source: testcontainers.GenericImageMountSource{
+				ImageName: "nginx:latest",
+				Subpath:   "../var/www/html",
+			},
+			Target: "/var/www/invalid",
+		}, m)
+	})
+}
+
 func TestContainerMounts_PrepareMounts(t *testing.T) {
 	volumeOptions := &mount.VolumeOptions{
 		Labels: testcontainers.GenericLabels(),
@@ -156,6 +188,28 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 					TmpfsOptions: &mount.TmpfsOptions{
 						SizeBytes: 50 * 1024 * 1024,
 						Mode:      0o644,
+					},
+				},
+			},
+		},
+		{
+			name: "Image mount",
+			mounts: testcontainers.ContainerMounts{
+				{
+					Source: testcontainers.DockerImageMountSource{
+						ImageName: "my-custom-image:latest",
+						Subpath:   "data",
+					},
+					Target: "/data",
+				},
+			},
+			want: []mount.Mount{
+				{
+					Source: "my-custom-image:latest",
+					Type:   mount.TypeImage,
+					Target: "/data",
+					ImageOptions: &mount.ImageOptions{
+						Subpath: "data",
 					},
 				},
 			},

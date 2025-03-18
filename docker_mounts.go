@@ -1,6 +1,9 @@
 package testcontainers
 
 import (
+	"fmt"
+	"path/filepath"
+
 	"github.com/docker/docker/api/types/mount"
 
 	"github.com/testcontainers/testcontainers-go/log"
@@ -11,6 +14,7 @@ var mountTypeMapping = map[MountType]mount.Type{
 	MountTypeVolume: mount.TypeVolume,
 	MountTypeTmpfs:  mount.TypeTmpfs,
 	MountTypePipe:   mount.TypeNamedPipe,
+	MountTypeImage:  mount.TypeImage,
 }
 
 // Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
@@ -30,6 +34,12 @@ type VolumeMounter interface {
 // to support advanced scenarios based on mount.TmpfsOptions
 type TmpfsMounter interface {
 	GetTmpfsOptions() *mount.TmpfsOptions
+}
+
+// ImageMounter can optionally be implemented by mount sources
+// to support advanced scenarios based on mount.ImageOptions
+type ImageMounter interface {
+	ImageOptions() *mount.ImageOptions
 }
 
 // Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
@@ -72,6 +82,11 @@ func (DockerVolumeMountSource) Type() MountType {
 	return MountTypeVolume
 }
 
+// Validate validates the source of the mount
+func (s DockerVolumeMountSource) Validate() error {
+	return nil
+}
+
 func (s DockerVolumeMountSource) GetVolumeOptions() *mount.VolumeOptions {
 	return s.VolumeOptions
 }
@@ -83,6 +98,40 @@ type DockerTmpfsMountSource struct {
 
 func (s DockerTmpfsMountSource) GetTmpfsOptions() *mount.TmpfsOptions {
 	return s.TmpfsOptions
+}
+
+// DockerImageMountSource is a mount source for an image
+type DockerImageMountSource struct {
+	// ImageName is the image name
+	ImageName string
+
+	// Subpath is the subpath to mount the image into
+	Subpath string
+}
+
+// Validate validates the source of the mount, ensuring that the subpath is a relative path
+func (s DockerImageMountSource) Validate() error {
+	if !filepath.IsLocal(s.Subpath) {
+		return fmt.Errorf("image mount source must be a local path")
+	}
+	return nil
+}
+
+// ImageOptions returns the image options for the image mount
+func (s DockerImageMountSource) ImageOptions() *mount.ImageOptions {
+	return &mount.ImageOptions{
+		Subpath: s.Subpath,
+	}
+}
+
+// Source returns the image name for the image mount
+func (s DockerImageMountSource) Source() string {
+	return s.ImageName
+}
+
+// Type returns the mount type for the image mount
+func (s DockerImageMountSource) Type() MountType {
+	return MountTypeImage
 }
 
 // PrepareMounts maps the given []ContainerMount to the corresponding
@@ -118,6 +167,8 @@ func mapToDockerMounts(containerMounts ContainerMounts) []mount.Mount {
 			containerMount.VolumeOptions = typedMounter.GetVolumeOptions()
 		case TmpfsMounter:
 			containerMount.TmpfsOptions = typedMounter.GetTmpfsOptions()
+		case ImageMounter:
+			containerMount.ImageOptions = typedMounter.ImageOptions()
 		case BindMounter:
 			log.Printf("Mount type %s is not supported by Testcontainers for Go", m.Source.Type())
 		default:
