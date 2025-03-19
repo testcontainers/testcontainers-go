@@ -33,7 +33,7 @@ const (
 
 // Deprecated: This type is deprecated in favor of the one in "modules/azure/azurite".
 // AzuriteContainer represents the Azurite container type used in the module
-type AzuriteContainer = azurite.AzuriteContainer
+type AzuriteContainer = azurite.Container
 
 // Deprecated: This function is deprecated in favor of the one in "modules/azure/azurite".
 // RunContainer creates an instance of the Azurite container type

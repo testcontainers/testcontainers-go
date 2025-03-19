@@ -10,7 +10,7 @@ import (
 type options struct {
 	azuriteImage     string
 	azuriteOptions   []testcontainers.ContainerCustomizer
-	azuriteContainer *azurite.AzuriteContainer
+	azuriteContainer *azurite.Container
 	network          *testcontainers.DockerNetwork
 }
 

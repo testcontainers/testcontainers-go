@@ -35,7 +35,7 @@ type Container struct {
 }
 
 // AzuriteContainer returns the azurite container that is used by the eventhubs container
-func (c *Container) AzuriteContainer() *azurite.AzuriteContainer {
+func (c *Container) AzuriteContainer() *azurite.Container {
 	return c.azuriteOptions.azuriteContainer
 }
 

@@ -27,14 +27,14 @@ const (
 	// }
 )
 
-// AzuriteContainer represents the Azurite container type used in the module
-type AzuriteContainer struct {
+// Container represents the Azurite container type used in the module
+type Container struct {
 	testcontainers.Container
 	opts options
 }
 
 // ServiceURL returns the URL of the given service
-func (c *AzuriteContainer) ServiceURL(ctx context.Context, srv Service) (string, error) {
+func (c *Container) ServiceURL(ctx context.Context, srv Service) (string, error) {
 	hostname, err := c.Host(ctx)
 	if err != nil {
 		return "", fmt.Errorf("host: %w", err)
@@ -61,7 +61,7 @@ func (c *AzuriteContainer) ServiceURL(ctx context.Context, srv Service) (string,
 }
 
 // Run creates an instance of the Azurite container type
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*AzuriteContainer, error) {
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        img,
 		ExposedPorts: []string{BlobPort, QueuePort, TablePort},
@@ -109,9 +109,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	var c *AzuriteContainer
+	var c *Container
 	if container != nil {
-		c = &AzuriteContainer{Container: container, opts: settings}
+		c = &Container{Container: container, opts: settings}
 	}
 
 	if err != nil {
