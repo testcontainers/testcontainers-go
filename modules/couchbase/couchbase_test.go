@@ -64,6 +64,56 @@ func TestCouchbaseWithEnterpriseContainer(t *testing.T) {
 	testBucketUsage(t, cluster.Bucket(bucketName))
 }
 
+type reusableCouchbase struct{}
+
+func (c *reusableCouchbase) Customize(req *testcontainers.GenericContainerRequest) error {
+	// Enable container reuse
+	req.Reuse = true
+	req.Name = "couchbase"
+	return nil
+}
+
+func TestCouchbaseWithReuse(t *testing.T) {
+	ctx := context.Background()
+
+	bucketName := "testBucket"
+	bucket := tccouchbase.NewBucket(bucketName).
+		WithQuota(100).
+		WithReplicas(0).
+		WithFlushEnabled(true).
+		WithPrimaryIndex(true)
+	ctr, err := tccouchbase.Run(ctx,
+		enterpriseEdition,
+		tccouchbase.WithBuckets(bucket),
+		&reusableCouchbase{},
+	)
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	cluster, err := connectCluster(ctx, ctr)
+	require.NoError(t, err)
+
+	testBucketUsage(t, cluster.Bucket(bucketName))
+
+	// Test reuse when first container has had time to fully start up and be configured with auth
+	// Without enabling auth on the initCluster functions the reuse of this container fails with
+	// "init cluster: context deadline exceeded".
+	// This is due to the management endpoints requiring the Basic Auth headers once configureAdminUser
+	// has completed.
+	reusedCtr, err := tccouchbase.Run(ctx,
+		enterpriseEdition,
+		&reusableCouchbase{},
+	)
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+	require.Equal(t, ctr.GetContainerID(), reusedCtr.GetContainerID())
+
+	cluster, err = connectCluster(ctx, reusedCtr)
+	require.NoError(t, err)
+
+	testBucketUsage(t, cluster.Bucket(bucketName))
+}
+
 func TestWithCredentials(t *testing.T) {
 	ctx := context.Background()
 
