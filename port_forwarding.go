@@ -172,7 +172,7 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, ports ...int) (
 				return sshdContainer.exposeHostPort(ctx, req.HostAccessPorts...)
 			},
 		},
-		PreStops:      stopHooks,
+		PostStops:     stopHooks,
 		PreTerminates: stopHooks,
 	}
 
