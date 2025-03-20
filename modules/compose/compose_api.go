@@ -331,7 +331,7 @@ func (d *DockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err erro
 
 	var termSignals []chan bool
 	var reaper *testcontainers.Reaper
-	if !d.provider.Config().Config.RyukDisabled {
+	if !d.provider.Config().RyukDisabled {
 		// NewReaper is deprecated: we need to find a way to create the reaper for compose
 		// bypassing the deprecation.
 		reaper, err = testcontainers.NewReaper(ctx, testcontainers.SessionID(), d.provider, "")
