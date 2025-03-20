@@ -114,6 +114,7 @@ nav:
         - modules/redpanda.md
         - modules/registry.md
         - modules/scylladb.md
+        - modules/socat.md
         - modules/surrealdb.md
         - modules/valkey.md
         - modules/vault.md
