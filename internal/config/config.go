@@ -52,6 +52,13 @@ type Config struct {
 	// Environment variable: TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX
 	HubImageNamePrefix string `properties:"hub.image.name.prefix,default="`
 
+	// SessionID is the ID of the testing session.
+	// Setting this value will preclude runs from creating more than one reaper. Therefore,
+	// changes to ryuk settings past its creation will be ignored.
+	//
+	// Environment variable: TESTCONTAINERS_SESSION_ID
+	SessionID string `properties:"session.id,default="`
+
 	// RyukDisabled is a flag to enable or disable the Garbage Collector.
 	// Setting this to true will prevent testcontainers from automatically cleaning up
 	// resources, which is particularly important in tests which timeout as they
@@ -111,6 +118,11 @@ func read() Config {
 	config := Config{}
 
 	applyEnvironmentConfiguration := func(config Config) Config {
+		sessionID := os.Getenv("TESTCONTAINERS_SESSION_ID")
+		if sessionID != "" {
+			config.SessionID = sessionID
+		}
+
 		ryukDisabledEnv := os.Getenv("TESTCONTAINERS_RYUK_DISABLED")
 		if parseBool(ryukDisabledEnv) {
 			config.RyukDisabled = ryukDisabledEnv == "true"
