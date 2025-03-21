@@ -19,3 +19,6 @@ tcvenv
 
 # VS Code settings
 .vscode
+
+# Environment variables
+.env
