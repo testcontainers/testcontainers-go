@@ -84,10 +84,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	// 2. evaluate the enabled services to apply the right wait strategy and Cmd options
-	enabledServices := settings.EnabledServices
-	if len(enabledServices) > 0 {
-		waitingFor := make([]wait.Strategy, 0, len(enabledServices))
-		for _, srv := range enabledServices {
+	if len(settings.EnabledServices) > 0 {
+		waitingFor := make([]wait.Strategy, 0, len(settings.EnabledServices))
+		for _, srv := range settings.EnabledServices {
 			switch srv {
 			case BlobService:
 				genericContainerReq.Cmd = append(genericContainerReq.Cmd, "--blobHost", "0.0.0.0")
