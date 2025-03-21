@@ -8,12 +8,12 @@ import (
 
 type options struct {
 	// EnabledServices is a list of services that should be enabled
-	EnabledServices []Service
+	EnabledServices []service
 }
 
 func defaultOptions() options {
 	return options{
-		EnabledServices: []Service{BlobService, QueueService, TableService},
+		EnabledServices: []service{blobService, queueService, tableService},
 	}
 }
 

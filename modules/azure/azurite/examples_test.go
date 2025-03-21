@@ -81,7 +81,7 @@ func ExampleRun_blobOperations() {
 
 	// create an azblob.Client for the specified storage account that uses the above credentials
 	// createClient {
-	serviceURL, err := azuriteContainer.ServiceURL(ctx, azurite.BlobService)
+	serviceURL, err := azuriteContainer.BlobServiceURL(ctx)
 	if err != nil {
 		log.Printf("failed to get service URL: %s", err)
 		return
@@ -221,7 +221,7 @@ func ExampleRun_queueOperations() {
 
 	// create an azqueue.Client for the specified storage account that uses the above credentials
 	// queueOperations_createClient {
-	serviceURL, err := azuriteContainer.ServiceURL(ctx, azurite.QueueService)
+	serviceURL, err := azuriteContainer.QueueServiceURL(ctx)
 	if err != nil {
 		log.Printf("failed to get service URL: %s", err)
 		return
@@ -315,7 +315,7 @@ func ExampleRun_tableOperations() {
 
 	// create an aztables.Client for the specified storage account that uses the above credentials
 	// tableOperations_createClient {
-	serviceURL, err := azuriteContainer.ServiceURL(ctx, azurite.TableService)
+	serviceURL, err := azuriteContainer.TableServiceURL(ctx)
 	if err != nil {
 		log.Printf("failed to get service URL: %s", err)
 		return

@@ -33,8 +33,28 @@ type Container struct {
 	opts options
 }
 
+// Deprecated: Use [azure.BlobServiceURL], [azure.QueueServiceURL], or [azure.TableServiceURL] methods instead.
 // ServiceURL returns the URL of the given service
 func (c *Container) ServiceURL(ctx context.Context, srv Service) (string, error) {
+	return c.serviceURL(ctx, srv)
+}
+
+// BlobServiceURL returns the URL of the Blob service
+func (c *Container) BlobServiceURL(ctx context.Context) (string, error) {
+	return c.serviceURL(ctx, blobService)
+}
+
+// QueueServiceURL returns the URL of the Queue service
+func (c *Container) QueueServiceURL(ctx context.Context) (string, error) {
+	return c.serviceURL(ctx, queueService)
+}
+
+// TableServiceURL returns the URL of the Table service
+func (c *Container) TableServiceURL(ctx context.Context) (string, error) {
+	return c.serviceURL(ctx, tableService)
+}
+
+func (c *Container) serviceURL(ctx context.Context, srv service) (string, error) {
 	hostname, err := c.Host(ctx)
 	if err != nil {
 		return "", fmt.Errorf("host: %w", err)
@@ -42,11 +62,11 @@ func (c *Container) ServiceURL(ctx context.Context, srv Service) (string, error)
 
 	var port nat.Port
 	switch srv {
-	case BlobService:
+	case blobService:
 		port = BlobPort
-	case QueueService:
+	case queueService:
 		port = QueuePort
-	case TableService:
+	case tableService:
 		port = TablePort
 	default:
 		return "", fmt.Errorf("unknown service: %s", srv)

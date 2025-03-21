@@ -44,22 +44,17 @@ func TestAzurite_serviceURL(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("blob", func(t *testing.T) {
-		_, err := ctr.ServiceURL(ctx, azurite.BlobService)
+		_, err := ctr.BlobServiceURL(ctx)
 		require.NoError(t, err)
 	})
 
 	t.Run("queue", func(t *testing.T) {
-		_, err := ctr.ServiceURL(ctx, azurite.QueueService)
+		_, err := ctr.QueueServiceURL(ctx)
 		require.NoError(t, err)
 	})
 
 	t.Run("table", func(t *testing.T) {
-		_, err := ctr.ServiceURL(ctx, azurite.TableService)
+		_, err := ctr.TableServiceURL(ctx)
 		require.NoError(t, err)
-	})
-
-	t.Run("unknown-service", func(t *testing.T) {
-		_, err := ctr.ServiceURL(ctx, "unknown")
-		require.Error(t, err)
 	})
 }

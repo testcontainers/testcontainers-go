@@ -72,17 +72,29 @@ If you want to use in-memory persistence, you can use `WithInMemoryPersistence(m
 Please read the [Azurite documentation](https://github.com/Azure/Azurite?tab=readme-ov-file#use-in-memory-storage) for more information.
 
 !!! warning
-    This option is only available in Azurite versions 3.28.0 and later.
+    This option is only available in Azurite versions `3.28.0` and later.
 
 ### Container Methods
 
 The Azurite container exposes the following methods:
 
-#### ServiceURL
+#### BlobServiceURL
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-Returns the service URL to connect to the Azurite container and an error, passing the Go context and the service name as parameters.
+Returns the service URL to connect to the Blob service of the Azurite container and an error, passing the Go context as parameter.
+
+#### QueueServiceURL
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+Returns the service URL to connect to the Queue service of the Azurite container and an error, passing the Go context as parameter.
+
+#### TableServiceURL
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+Returns the service URL to connect to the Table service of the Azurite container and an error, passing the Go context as parameter.
 
 ### Examples
 
