@@ -62,11 +62,14 @@ function bumpCIMatrix() {
   if [[ "${DRY_RUN}" == "true" ]]; then
     echo "sed \"s/go-version: \[${oldGoVersion}/go-version: \[${newGoVersion}/g\" ${file} > ${file}.tmp"
     echo "sed \"s/go-version: \\"${oldGoVersion}.x\"/go-version: \\"${newGoVersion}.x\"/g\" ${file}.tmp > ${file}.tmp"
+    echo "sed \"s/go-version == '\"${oldGoVersion}\.x\"'/go-version == '\"${newGoVersion}\.x\"'/g\" ${file}.tmp > ${file}.tmp"
     echo "mv ${file}.tmp ${file}"
   else
     sed "s/go-version: \[${oldGoVersion}/go-version: \[${newGoVersion}/g" ${file} > ${file}.tmp
     mv ${file}.tmp ${file}
     sed "s/go-version: \"${oldGoVersion}\.x\"/go-version: \"${newGoVersion}\.x\"/g" ${file} > ${file}.tmp
+    mv ${file}.tmp ${file}
+    sed "s/go-version == '\"${oldGoVersion}\.x\"'/go-version == '\"${newGoVersion}\.x\"'/g" ${file} > ${file}.tmp
     mv ${file}.tmp ${file}
   fi
 }

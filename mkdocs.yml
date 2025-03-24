@@ -69,6 +69,7 @@ nav:
     - Modules:
         - modules/index.md
         - modules/artemis.md
+        - modules/azure.md
         - modules/azurite.md
         - modules/cassandra.md
         - modules/chroma.md
