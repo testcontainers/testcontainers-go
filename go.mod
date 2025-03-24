@@ -12,7 +12,7 @@ require (
 	github.com/docker/docker v28.0.1+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/google/uuid v1.6.0
-	github.com/magiconair/properties v1.8.7
+	github.com/magiconair/properties v1.8.9
 	github.com/moby/patternmatcher v0.6.0
 	github.com/moby/term v0.5.0
 	github.com/opencontainers/image-spec v1.1.1
