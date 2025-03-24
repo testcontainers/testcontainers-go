@@ -2,9 +2,11 @@ package mssql
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/testcontainers/testcontainers-go"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
@@ -24,6 +26,12 @@ type MSSQLServerContainer struct {
 	username string
 }
 
+// Password returns the password for the MSSQLServer container
+func (c *MSSQLServerContainer) Password() string {
+	return c.password
+}
+
+// WithAcceptEULA sets the ACCEPT_EULA environment variable to "Y"
 func WithAcceptEULA() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["ACCEPT_EULA"] = "Y"
@@ -32,6 +40,7 @@ func WithAcceptEULA() testcontainers.CustomizeRequestOption {
 	}
 }
 
+// WithPassword sets the MSSQL_SA_PASSWORD environment variable to the provided password
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		if password == "" {
@@ -109,7 +118,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Env: map[string]string{
 			"MSSQL_SA_PASSWORD": defaultPassword,
 		},
-		WaitingFor: wait.ForLog("Recovery is complete."),
+		WaitingFor: wait.ForAll(
+			wait.ForListeningPort(defaultPort).WithStartupTimeout(time.Minute),
+			wait.ForLog("Recovery is complete."),
+		),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
@@ -119,8 +131,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	for _, opt := range opts {
 		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("customize: %w", err)
 		}
+	}
+
+	if strings.ToUpper(genericContainerReq.Env["ACCEPT_EULA"]) != "Y" {
+		return nil, errors.New("EULA not accepted. Please use the WithAcceptEULA option to accept the EULA")
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
@@ -136,15 +152,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
+// ConnectionString returns the connection string for the MSSQLServer container
 func (c *MSSQLServerContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("host: %w", err)
 	}
 
 	containerPort, err := c.MappedPort(ctx, defaultPort)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("mapped port: %w", err)
 	}
 
 	extraArgs := strings.Join(args, "&")

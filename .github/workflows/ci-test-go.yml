@@ -69,7 +69,7 @@ jobs:
 
       - name: ensure compilation
         working-directory: ./${{ inputs.project-directory }}
-        run: go build
+        run: go build ./...
 
       - name: Install dependencies
         shell: bash
