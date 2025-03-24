@@ -61,7 +61,7 @@ var (
 // The ContainerProvider interface should usually satisfy this as well, so it is pluggable
 type ReaperProvider interface {
 	RunContainer(ctx context.Context, req ContainerRequest) (Container, error)
-	Config() TestcontainersConfig
+	Config() config.Config
 }
 
 // NewReaper creates a Reaper with a sessionID to identify containers and a provider to use
@@ -377,7 +377,7 @@ func (r *reaperSpawner) newReaper(ctx context.Context, sessionID string, provide
 	dockerHostMount := core.MustExtractDockerSocket(ctx)
 
 	port := r.port()
-	tcConfig := provider.Config().Config
+	tcConfig := provider.Config()
 	req := ContainerRequest{
 		Image:        config.ReaperDefaultImage,
 		ExposedPorts: []string{string(port)},
