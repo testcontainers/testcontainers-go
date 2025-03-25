@@ -17,6 +17,7 @@ updates:
         - /examples/toxiproxy
         - /modulegen
         - /modules/artemis
+        - /modules/azure
         - /modules/azurite
         - /modules/cassandra
         - /modules/chroma
