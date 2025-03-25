@@ -33,7 +33,6 @@ linters-settings:
   nakedret:
     max-func-lines: 0
   revive:
-    min-confidence: 0.8
     rules:
       - name: blank-imports
       - name: context-as-argument
