@@ -67,7 +67,7 @@ The Grafana LGTM container exposes the following methods:
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.33.0"><span class="tc-version">:material-tag: v0.33.0</span></a>
 
-The `HttpEndpoint(ctx)` method returns the HTTP endpoint to connect to Grafana, using the default `3000` port. The same method with the `Must` prefix returns just the endpoint, and panics if an error occurs.
+The `HTTPEndpoint(ctx)` method returns the HTTP endpoint to connect to Grafana, using the default `3000` port. The same method with the `Must` prefix returns just the endpoint, and panics if an error occurs.
 
 #### Loki Endpoint
 
@@ -97,7 +97,7 @@ The `OtelGRPCEndpoint(ctx)` method returns the endpoint to connect to Otel using
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.33.0"><span class="tc-version">:material-tag: v0.33.0</span></a>
 
-The `PrometheusHttpEndpoint(ctx)` method returns the endpoint to connect to Prometheus, using the default `9090` port. The same method with the `Must` prefix returns just the endpoint, and panics if an error occurs.
+The `PrometheusHTTPEndpoint(ctx)` method returns the endpoint to connect to Prometheus, using the default `9090` port. The same method with the `Must` prefix returns just the endpoint, and panics if an error occurs.
 
 ## Examples
 

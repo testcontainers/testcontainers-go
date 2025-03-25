@@ -137,7 +137,7 @@ func setupNeo4j(ctx context.Context) (*neo4j.Neo4jContainer, error) {
 func createDriver(t *testing.T, ctx context.Context, container *neo4j.Neo4jContainer) neo.DriverWithContext {
 	t.Helper()
 	// boltURL {
-	boltURL, err := container.BoltUrl(ctx)
+	boltURL, err := container.BoltURL(ctx)
 	// }
 	require.NoError(t, err)
 	driver, err := neo.NewDriverWithContext(boltURL, neo.BasicAuth("neo4j", testPassword, ""))

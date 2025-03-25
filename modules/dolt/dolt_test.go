@@ -64,7 +64,7 @@ func TestDoltWithPublicRemoteCloneUrl(t *testing.T) {
 		dolt.WithUsername("test"),
 		dolt.WithPassword("test"),
 		dolt.WithScripts(filepath.Join("testdata", "check_clone_public.sh")),
-		dolt.WithDoltCloneRemoteUrl("fake-remote-url"))
+		dolt.WithDoltCloneRemoteURL("fake-remote-url"))
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 }
@@ -89,7 +89,7 @@ func TestDoltWithPrivateRemoteCloneUrl(t *testing.T) {
 		dolt.WithUsername("test"),
 		dolt.WithPassword("test"),
 		dolt.WithScripts(filepath.Join("testdata", "check_clone_private.sh")),
-		dolt.WithDoltCloneRemoteUrl("fake-remote-url"),
+		dolt.WithDoltCloneRemoteURL("fake-remote-url"),
 		dolt.WithDoltCredsPublicKey("fake-public-key"),
 		dolt.WithCredsFile(filename))
 	testcontainers.CleanupContainer(t, ctr)
