@@ -1271,7 +1271,7 @@ func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (
 
 	// Note that, 'name' filter will use regex to find the containers
 	filter := filters.NewArgs(filters.Arg("name", fmt.Sprintf("^%s$", name)))
-	containers, err := p.client.ContainerList(ctx, container.ListOptions{Filters: filter})
+	containers, err := p.client.ContainerList(ctx, container.ListOptions{All: true, Filters: filter})
 	if err != nil {
 		return nil, fmt.Errorf("container list: %w", err)
 	}
@@ -1367,6 +1367,16 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		terminationSignal: termSignal,
 		logger:            p.Logger,
 		lifecycleHooks:    []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)},
+	}
+
+	if p.config.RyukDisabled {
+		// ryuk disabled, ensure the container we are about to reuse is started
+		if !dc.IsRunning() {
+			// found container to reuse, but it was not started
+			if err := dc.Start(ctx); err != nil {
+				return dc, fmt.Errorf("start container %s in state %s: %w", req.Name, c.State, err)
+			}
+		}
 	}
 
 	err = dc.startedHook(ctx)
