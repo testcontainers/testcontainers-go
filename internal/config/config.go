@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,11 +12,20 @@ import (
 	"github.com/magiconair/properties"
 )
 
-const ReaperDefaultImage = "testcontainers/ryuk:0.11.0"
+const (
+	// ReaperDefaultImage is the default image used for Ryuk, the resource reaper.
+	ReaperDefaultImage = "testcontainers/ryuk:0.11.0"
+
+	// testcontainersProperties is the name of the properties file used to configure Testcontainers.
+	testcontainersProperties = ".testcontainers.properties"
+)
 
 var (
 	tcConfig     Config
 	tcConfigOnce = new(sync.Once)
+
+	// errEmptyValue is returned when the value is empty. Needed when parsing boolean values that are not set.
+	errEmptyValue = errors.New("empty value")
 )
 
 // testcontainersConfig {
@@ -89,14 +99,73 @@ type Config struct {
 
 // }
 
+func applyEnvironmentConfiguration(config Config) (Config, error) {
+	ryukDisabledEnv := os.Getenv("TESTCONTAINERS_RYUK_DISABLED")
+	if value, err := parseBool(ryukDisabledEnv); err != nil {
+		if !errors.Is(err, errEmptyValue) {
+			return config, fmt.Errorf("invalid TESTCONTAINERS_RYUK_DISABLED environment variable: %s", ryukDisabledEnv)
+		}
+	} else {
+		config.RyukDisabled = value
+	}
+
+	hubImageNamePrefix := os.Getenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX")
+	if hubImageNamePrefix != "" {
+		config.HubImageNamePrefix = hubImageNamePrefix
+	}
+
+	ryukPrivilegedEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED")
+	if value, err := parseBool(ryukPrivilegedEnv); err != nil {
+		if !errors.Is(err, errEmptyValue) {
+			return config, fmt.Errorf("invalid TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED environment variable: %s", ryukPrivilegedEnv)
+		}
+	} else {
+		config.RyukPrivileged = value
+	}
+
+	ryukVerboseEnv := readTestcontainersEnv("RYUK_VERBOSE")
+	if value, err := parseBool(ryukVerboseEnv); err != nil {
+		if !errors.Is(err, errEmptyValue) {
+			return config, fmt.Errorf("invalid RYUK_VERBOSE environment variable: %s", ryukVerboseEnv)
+		}
+	} else {
+		config.RyukVerbose = value
+	}
+
+	ryukReconnectionTimeoutEnv := readTestcontainersEnv("RYUK_RECONNECTION_TIMEOUT")
+	if ryukReconnectionTimeoutEnv != "" {
+		var timeout time.Duration
+		var err error
+		if timeout, err = time.ParseDuration(ryukReconnectionTimeoutEnv); err != nil {
+			return config, fmt.Errorf("invalid RYUK_RECONNECTION_TIMEOUT environment variable: %w", err)
+		}
+
+		config.RyukReconnectionTimeout = timeout
+	}
+
+	ryukConnectionTimeoutEnv := readTestcontainersEnv("RYUK_CONNECTION_TIMEOUT")
+	if ryukConnectionTimeoutEnv != "" {
+		var timeout time.Duration
+		var err error
+		if timeout, err = time.ParseDuration(ryukConnectionTimeoutEnv); err != nil {
+			return config, fmt.Errorf("invalid RYUK_CONNECTION_TIMEOUT environment variable: %w", err)
+		}
+
+		config.RyukConnectionTimeout = timeout
+	}
+
+	return config, nil
+}
+
 // Read reads from testcontainers properties file, if it exists
 // it is possible that certain values get overridden when set as environment variables
-func Read() Config {
+func Read() (Config, error) {
+	var err error
 	tcConfigOnce.Do(func() {
-		tcConfig = read()
+		tcConfig, err = read()
 	})
 
-	return tcConfig
+	return tcConfig, err
 }
 
 // Reset resets the singleton instance of the Config struct,
@@ -107,66 +176,44 @@ func Reset() {
 	tcConfigOnce = new(sync.Once)
 }
 
-func read() Config {
-	config := Config{}
-
-	applyEnvironmentConfiguration := func(config Config) Config {
-		ryukDisabledEnv := os.Getenv("TESTCONTAINERS_RYUK_DISABLED")
-		if parseBool(ryukDisabledEnv) {
-			config.RyukDisabled = ryukDisabledEnv == "true"
-		}
-
-		hubImageNamePrefix := os.Getenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX")
-		if hubImageNamePrefix != "" {
-			config.HubImageNamePrefix = hubImageNamePrefix
-		}
-
-		ryukPrivilegedEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED")
-		if parseBool(ryukPrivilegedEnv) {
-			config.RyukPrivileged = ryukPrivilegedEnv == "true"
-		}
-
-		ryukVerboseEnv := readTestcontainersEnv("RYUK_VERBOSE")
-		if parseBool(ryukVerboseEnv) {
-			config.RyukVerbose = ryukVerboseEnv == "true"
-		}
-
-		ryukReconnectionTimeoutEnv := readTestcontainersEnv("RYUK_RECONNECTION_TIMEOUT")
-		if timeout, err := time.ParseDuration(ryukReconnectionTimeoutEnv); err == nil {
-			config.RyukReconnectionTimeout = timeout
-		}
-
-		ryukConnectionTimeoutEnv := readTestcontainersEnv("RYUK_CONNECTION_TIMEOUT")
-		if timeout, err := time.ParseDuration(ryukConnectionTimeoutEnv); err == nil {
-			config.RyukConnectionTimeout = timeout
-		}
-
-		return config
-	}
+func read() (Config, error) {
+	var config Config
 
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return applyEnvironmentConfiguration(config)
 	}
 
-	tcProp := filepath.Join(home, ".testcontainers.properties")
-	// init from a file
-	properties, err := properties.LoadFile(tcProp, properties.UTF8)
+	tcProp := filepath.Join(home, testcontainersProperties)
+	// Init from a file, ignore if it doesn't exist, which is the case for most users.
+	// The properties library will return the default values for the struct.
+	props, err := properties.LoadFiles([]string{tcProp}, properties.UTF8, true)
 	if err != nil {
 		return applyEnvironmentConfiguration(config)
 	}
 
-	if err := properties.Decode(&config); err != nil {
-		fmt.Printf("invalid testcontainers properties file, returning an empty Testcontainers configuration: %v\n", err)
-		return applyEnvironmentConfiguration(config)
+	if err := props.Decode(&config); err != nil {
+		cfg, envErr := applyEnvironmentConfiguration(config)
+		if envErr != nil {
+			return cfg, envErr
+		}
+		return cfg, fmt.Errorf("invalid testcontainers properties file: %w", err)
 	}
 
 	return applyEnvironmentConfiguration(config)
 }
 
-func parseBool(input string) bool {
-	_, err := strconv.ParseBool(input)
-	return err == nil
+func parseBool(input string) (bool, error) {
+	if input == "" {
+		return false, errEmptyValue
+	}
+
+	value, err := strconv.ParseBool(input)
+	if err != nil {
+		return false, fmt.Errorf("invalid boolean value: %w", err)
+	}
+
+	return value, nil
 }
 
 // readTestcontainersEnv reads the environment variable with the given name.

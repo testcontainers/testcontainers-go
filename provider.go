@@ -2,12 +2,8 @@ package testcontainers
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"os"
-	"strings"
 
-	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/log"
 )
@@ -16,7 +12,7 @@ import (
 const (
 	ProviderDefault ProviderType = iota // default will auto-detect provider from DOCKER_HOST environment variable
 	ProviderDocker
-	ProviderPodman
+	ProviderPodman // Deprecated: Podman is supported through the current Docker context
 )
 
 type (
@@ -40,7 +36,6 @@ type (
 
 	// DockerProviderOptions defines options applicable to DockerProvider
 	DockerProviderOptions struct {
-		defaultBridgeNetworkName string
 		*GenericProviderOptions
 	}
 
@@ -74,9 +69,10 @@ func Generic2DockerOptions(opts ...GenericProviderOption) []DockerProviderOption
 	return converted
 }
 
-func WithDefaultBridgeNetwork(bridgeNetworkName string) DockerProviderOption {
-	return DockerProviderOptionFunc(func(opts *DockerProviderOptions) {
-		opts.defaultBridgeNetworkName = bridgeNetworkName
+// Deprecated: WithDefaultNetwork is deprecated and will be removed in the next major version
+func WithDefaultBridgeNetwork(_ string) DockerProviderOption {
+	return DockerProviderOptionFunc(func(_ *DockerProviderOptions) {
+		// NOOP
 	})
 }
 
@@ -91,6 +87,8 @@ type ContainerProvider interface {
 	ReuseOrCreateContainer(context.Context, ContainerRequest) (Container, error) // reuses a container if it exists or creates a container without starting
 	RunContainer(context.Context, ContainerRequest) (Container, error)           // create a container and start it
 	Health(context.Context) error
+
+	// Deprecated: use [testcontainers.NewConfig] instead
 	Config() TestcontainersConfig
 }
 
@@ -104,28 +102,11 @@ func (t ProviderType) GetProvider(opts ...GenericProviderOption) (GenericProvide
 		o.ApplyGenericTo(opt)
 	}
 
-	pt := t
-	if pt == ProviderDefault && strings.Contains(os.Getenv("DOCKER_HOST"), "podman.sock") {
-		pt = ProviderPodman
+	provider, err := NewDockerProvider(Generic2DockerOptions(opts...)...)
+	if err != nil {
+		return nil, fmt.Errorf("%w, failed to create Docker provider", err)
 	}
-
-	switch pt {
-	case ProviderDefault, ProviderDocker:
-		providerOptions := append(Generic2DockerOptions(opts...), WithDefaultBridgeNetwork(Bridge))
-		provider, err := NewDockerProvider(providerOptions...)
-		if err != nil {
-			return nil, fmt.Errorf("%w, failed to create Docker provider", err)
-		}
-		return provider, nil
-	case ProviderPodman:
-		providerOptions := append(Generic2DockerOptions(opts...), WithDefaultBridgeNetwork(Podman))
-		provider, err := NewDockerProvider(providerOptions...)
-		if err != nil {
-			return nil, fmt.Errorf("%w, failed to create Docker provider", err)
-		}
-		return provider, nil
-	}
-	return nil, errors.New("unknown provider")
+	return provider, nil
 }
 
 // NewDockerProvider creates a Docker provider with the EnvClient
@@ -146,10 +127,15 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		return nil, err
 	}
 
+	cfg, err := NewConfig()
+	if err != nil {
+		return nil, fmt.Errorf("read config: %w", err)
+	}
+
 	return &DockerProvider{
 		DockerProviderOptions: o,
 		host:                  core.MustExtractDockerHost(ctx),
 		client:                c,
-		config:                config.Read(),
+		config:                cfg,
 	}, nil
 }
