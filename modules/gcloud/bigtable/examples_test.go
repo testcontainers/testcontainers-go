@@ -1,4 +1,4 @@
-package gcloud_test
+package bigtable_test
 
 import (
 	"context"
@@ -11,17 +11,17 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/gcloud"
+	tcbigtable "github.com/testcontainers/testcontainers-go/modules/gcloud/bigtable"
 )
 
-func ExampleRunBigTableContainer() {
+func ExampleRun() {
 	// runBigTableContainer {
 	ctx := context.Background()
 
-	bigTableContainer, err := gcloud.RunBigTable(
+	bigTableContainer, err := tcbigtable.Run(
 		ctx,
 		"gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
-		gcloud.WithProjectID("bigtable-project"),
+		tcbigtable.WithProjectID("bigtable-project"),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(bigTableContainer); err != nil {
@@ -35,7 +35,7 @@ func ExampleRunBigTableContainer() {
 	// }
 
 	// bigTableAdminClient {
-	projectId := bigTableContainer.Settings.ProjectID
+	projectId := bigTableContainer.ProjectID()
 
 	const (
 		instanceId = "test-instance"
@@ -43,7 +43,7 @@ func ExampleRunBigTableContainer() {
 	)
 
 	options := []option.ClientOption{
-		option.WithEndpoint(bigTableContainer.URI),
+		option.WithEndpoint(bigTableContainer.URI()),
 		option.WithoutAuthentication(),
 		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
 	}

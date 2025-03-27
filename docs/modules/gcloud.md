@@ -19,6 +19,7 @@ go get github.com/testcontainers/testcontainers-go/modules/gcloud
 The Google Cloud module exposes the following Go packages:
 
 - [BigQuery](#bigquery): `github.com/testcontainers/testcontainers-go/modules/gcloud/bigquery`.
+- [BigTable](#bigtable): `github.com/testcontainers/testcontainers-go/modules/gcloud/bigtable`.
 
 !!!info
     By default, the all the emulators use `gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators` as the default Docker image, except for the BigQuery emulator, which uses `ghcr.io/goccy/bigquery-emulator:0.6.1`, and Spanner, which uses `gcr.io/cloud-spanner-emulator/emulator:1.4.0`.
@@ -74,10 +75,37 @@ It's important to set the `option.WithEndpoint()` option using the container's U
 
 ## BigTable
 
+### Run function
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The BigQuery module exposes one entrypoint function to create the BigQuery container, and this function receives three parameters:
+
+```golang
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)
+```
+
+- `context.Context`, the Go context.
+- `string`, the Docker image to use.
+- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+
+### Container Options
+
+When starting the BigQuery container, you can pass options in a variadic way to configure it.
+
+#### Image
+
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "ghcr.io/goccy/bigquery-emulator:0.6.1")`.
+
+{% include "../features/common_functional_options.md" %}
+
+### Examples
+
 <!--codeinclude-->
-[Creating a BigTable container](../../modules/gcloud/bigtable_test.go) inside_block:runBigTableContainer
-[Obtaining a BigTable Admin client](../../modules/gcloud/bigtable_test.go) inside_block:bigTableAdminClient
-[Obtaining a BigTable client](../../modules/gcloud/bigtable_test.go) inside_block:bigTableClient
+[Creating a BigTable container](../../modules/gcloud/bigtable/examples_test.go) inside_block:runBigTableContainer
+[Obtaining a BigTable Admin client](../../modules/gcloud/bigtable/examples_test.go) inside_block:bigTableAdminClient
+[Obtaining a BigTable client](../../modules/gcloud/bigtable/examples_test.go) inside_block:bigTableClient
 <!--/codeinclude-->
 
 It's important to set the `option.WithEndpoint()` option using the container's URI, as shown in the Admin client example above.
