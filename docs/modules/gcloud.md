@@ -23,6 +23,7 @@ The Google Cloud module exposes the following Go packages:
 - [Datastore](#datastore): `github.com/testcontainers/testcontainers-go/modules/gcloud/datastore`.
 - [Firestore](#firestore): `github.com/testcontainers/testcontainers-go/modules/gcloud/firestore`.
 - [Pubsub](#pubsub): `github.com/testcontainers/testcontainers-go/modules/gcloud/pubsub`.
+- [Spanner](#spanner): `github.com/testcontainers/testcontainers-go/modules/gcloud/spanner`.
 !!!info
     By default, the all the emulators use `gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators` as the default Docker image, except for the BigQuery emulator, which uses `ghcr.io/goccy/bigquery-emulator:0.6.1`, and Spanner, which uses `gcr.io/cloud-spanner-emulator/emulator:1.4.0`.
 
@@ -223,32 +224,14 @@ It's important to set the target string of the `grpc.NewClient` method using the
 
 ## Spanner
 
-<!--codeinclude-->
-[Creating a Spanner container](../../modules/gcloud/spanner_test.go) inside_block:runSpannerContainer
-[Obtaining a Spanner Admin client](../../modules/gcloud/spanner_test.go) inside_block:spannerAdminClient
-[Obtaining a Spanner Database Admin client](../../modules/gcloud/spanner_test.go) inside_block:spannerDBAdminClient
-<!--/codeinclude-->
-
-It's important to set the `option.WithEndpoint()` option using the container's URI, as shown in the Admin client example above.
-
-## Module Reference
-
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-!!!info
-    The `RunXXXContainer(ctx, opts...)` functions are deprecated and will be removed in the next major release of _Testcontainers for Go_.
-
-The GCloud module exposes one entrypoint function to create the different GCloud emulators, and each function receives three parameters:
+The Spanner module exposes one entrypoint function to create the Spanner container, and this function receives three parameters:
 
 ```golang
-func RunBigQuery(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*BigQueryContainer, error)
-func RunBigTable(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*BigTableContainer, error)
-func RunDatastore(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*DatastoreContainer, error)
-func RunFirestore(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*FirestoreContainer, error)
-func RunPubsub(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*PubsubContainer, error)
-func RunSpanner(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*SpannerContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)
 ```
 
 - `context.Context`, the Go context.
@@ -257,15 +240,21 @@ func RunSpanner(ctx context.Context, img string, opts ...testcontainers.Containe
 
 ### Container Options
 
-When starting any of the GCloud containers, you can pass options in a variadic way to configure it.
+When starting the Spanner container, you can pass options in a variadic way to configure it.
 
 #### Image
 
-Use the second argument in the `RunXXX` function (`RunBigQuery, RunDatastore`, ...) to set a valid Docker image.
-In example: `RunXXX(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators")`.
 
 {% include "../features/common_functional_options.md" %}
 
-### Container Methods
+### Examples
 
-The GCloud container exposes the following methods:
+<!--codeinclude-->
+[Creating a Spanner container](../../modules/gcloud/spanner/examples_test.go) inside_block:runSpannerContainer
+[Obtaining a Spanner Admin client](../../modules/gcloud/spanner/examples_test.go) inside_block:spannerAdminClient
+[Obtaining a Spanner Database Admin client](../../modules/gcloud/spanner/examples_test.go) inside_block:spannerDBAdminClient
+<!--/codeinclude-->
+
+It's important to set the `option.WithEndpoint()` option using the container's URI, as shown in the Admin client example above.
