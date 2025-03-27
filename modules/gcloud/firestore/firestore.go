@@ -1,4 +1,4 @@
-package bigtable
+package firestore
 
 import (
 	"context"
@@ -9,35 +9,35 @@ import (
 )
 
 const (
-	// DefaultProjectID is the default project ID for the BigTable container.
+	// DefaultProjectID is the default project ID for the Firestore container.
 	DefaultProjectID = "test-project"
 )
 
-// Container represents the BigTable container type used in the module
+// Container represents the Firestore container type used in the module
 type Container struct {
 	testcontainers.Container
 	settings options
 }
 
-// ProjectID returns the project ID of the BigTable container.
+// ProjectID returns the project ID of the Firestore container.
 func (c *Container) ProjectID() string {
 	return c.settings.ProjectID
 }
 
-// URI returns the URI of the BigTable container.
+// URI returns the URI of the Firestore container.
 func (c *Container) URI() string {
 	return c.settings.URI
 }
 
-// Run creates an instance of the BigTable GCloud container type.
+// Run creates an instance of the Firestore GCloud container type.
 // The URI uses the empty string as the protocol.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:        img,
-			ExposedPorts: []string{"9000/tcp"},
+			ExposedPorts: []string{"8080/tcp"},
 			WaitingFor: wait.ForAll(
-				wait.ForListeningPort("9000/tcp"),
+				wait.ForListeningPort("8080/tcp"),
 				wait.ForLog("running"),
 			),
 		},
@@ -59,7 +59,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	req.Cmd = []string{
 		"/bin/sh",
 		"-c",
-		"gcloud beta emulators bigtable start --host-port 0.0.0.0:9000 --project=" + settings.ProjectID,
+		"gcloud beta emulators firestore start --host-port 0.0.0.0:8080 --project=" + settings.ProjectID,
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, req)
@@ -71,7 +71,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return c, fmt.Errorf("generic container: %w", err)
 	}
 
-	portEndpoint, err := c.PortEndpoint(ctx, "9000/tcp", "")
+	portEndpoint, err := c.PortEndpoint(ctx, "8080/tcp", "")
 	if err != nil {
 		return c, fmt.Errorf("port endpoint: %w", err)
 	}

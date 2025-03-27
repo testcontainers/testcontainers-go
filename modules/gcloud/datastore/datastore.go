@@ -30,7 +30,7 @@ func (c *Container) URI() string {
 }
 
 // Run creates an instance of the Datastore GCloud container type.
-// The URI will always use the empty string as the protocol.
+// The URI uses the empty string as the protocol.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{

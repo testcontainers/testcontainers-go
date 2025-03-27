@@ -34,7 +34,7 @@ func (c *Container) URI() string {
 }
 
 // Run creates an instance of the BigQuery GCloud container type.
-// The URI will always use http:// as the protocol.
+// The URI uses http:// as the protocol.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{

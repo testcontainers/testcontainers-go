@@ -16,7 +16,7 @@ func RunBigQueryContainer(ctx context.Context, opts ...testcontainers.ContainerC
 
 // Deprecated: use [bigquery.Run] instead.
 // RunBigQuery creates an instance of the GCloud container type for BigQuery.
-// The URI will always use http:// as the protocol.
+// The URI uses http:// as the protocol.
 func RunBigQuery(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
