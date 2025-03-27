@@ -1,39 +1,17 @@
 package firestore
 
-import (
-	"github.com/testcontainers/testcontainers-go"
-)
+import "github.com/testcontainers/testcontainers-go/modules/gcloud/internal/shared"
 
-// Options represents the options for the different GCloud containers.
-// This type must contain all the options that are common to all the GCloud containers.
-type options struct {
-	ProjectID string
-	URI       string
-}
+// Options aliases the common GCloud options
+type options = shared.Options
 
-// Compiler check to ensure that Option implements the testcontainers.ContainerCustomizer interface.
-var _ testcontainers.ContainerCustomizer = (*Option)(nil)
-
-// Option is an option for the GCloud container.
-type Option func(*options) error
-
-// Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
-func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
-	// NOOP to satisfy interface.
-	return nil
-}
+// Option aliases the common GCloud option type
+type Option = shared.Option
 
 // defaultOptions returns a new Options instance with the default project ID.
 func defaultOptions() options {
-	return options{
-		ProjectID: DefaultProjectID,
-	}
+	return shared.DefaultOptions()
 }
 
-// WithProjectID sets the project ID for the GCloud container.
-func WithProjectID(projectID string) Option {
-	return func(o *options) error {
-		o.ProjectID = projectID
-		return nil
-	}
-}
+// WithProjectID re-exports the common GCloud WithProjectID option
+var WithProjectID = shared.WithProjectID

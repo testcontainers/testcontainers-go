@@ -52,7 +52,7 @@ When starting the BigQuery container, you can pass options in a variadic way to 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "ghcr.io/goccy/bigquery-emulator:0.6.1")`.
 
-{% include "../features/common_functional_options.md" %}
+{% include "gcloud-shared.md" %}
 
 #### Data YAML (Seed File)
 
@@ -101,7 +101,7 @@ When starting the BigTable container, you can pass options in a variadic way to 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators")`.
 
-{% include "../features/common_functional_options.md" %}
+{% include "gcloud-shared.md" %}
 
 ### Examples
 
@@ -114,7 +114,6 @@ In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk
 It's important to set the `option.WithEndpoint()` option using the container's URI, as shown in the Admin client example above.
 
 ## Datastore
-
 
 ### Run function
 
@@ -139,7 +138,7 @@ When starting the Datastore container, you can pass options in a variadic way to
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators")`.
 
-{% include "../features/common_functional_options.md" %}
+{% include "gcloud-shared.md" %}
 
 ### Examples
 
@@ -175,7 +174,7 @@ When starting the Firestore container, you can pass options in a variadic way to
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators")`.
 
-{% include "../features/common_functional_options.md" %}
+{% include "gcloud-shared.md" %}
 
 ### Examples
 
@@ -211,7 +210,7 @@ When starting the Pubsub container, you can pass options in a variadic way to co
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators")`.
 
-{% include "../features/common_functional_options.md" %}
+{% include "gcloud-shared.md" %}
 
 ### Examples
 
@@ -247,7 +246,7 @@ When starting the Spanner container, you can pass options in a variadic way to c
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators")`.
 
-{% include "../features/common_functional_options.md" %}
+{% include "gcloud-shared.md" %}
 
 ### Examples
 
