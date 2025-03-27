@@ -7,7 +7,7 @@ toolchain go1.23.6
 require (
 	github.com/qdrant/go-client v1.7.0
 	github.com/stretchr/testify v1.10.0
-	github.com/testcontainers/testcontainers-go v0.35.0
+	github.com/testcontainers/testcontainers-go v0.36.0
 	google.golang.org/grpc v1.64.1
 )
 

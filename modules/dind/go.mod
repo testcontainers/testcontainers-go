@@ -7,7 +7,7 @@ toolchain go1.23.6
 require (
 	github.com/docker/docker v28.0.1+incompatible
 	github.com/stretchr/testify v1.10.0
-	github.com/testcontainers/testcontainers-go v0.35.0
+	github.com/testcontainers/testcontainers-go v0.36.0
 )
 
 require (

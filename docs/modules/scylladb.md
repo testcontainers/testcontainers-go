@@ -1,6 +1,6 @@
 # ScyllaDB
 
-Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 ## Introduction
 
@@ -25,7 +25,7 @@ go get github.com/testcontainers/testcontainers-go/modules/scylladb
 
 ### Run function
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 The ScyllaDB module exposes one entrypoint function to create the ScyllaDB container, and this function receives three parameters:
 
@@ -63,7 +63,7 @@ scylladb.Run(context.Background(), "scylladb/scylla:5.6")
 
 #### With Database Configuration File (scylla.yaml)
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 In the case you have a custom config file for ScyllaDB, it's possible to copy that file into the container before it's
 started, using the `WithConfig(r io.Reader)` function.
@@ -78,7 +78,7 @@ started, using the `WithConfig(r io.Reader)` function.
 
 #### With Shard Awareness
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 If you want to test ScyllaDB with shard awareness, you can use the `WithShardAwareness` function. This function will
 configure the ScyllaDB container to use the `19042` port and ask the container to wait until the port is ready.
@@ -89,7 +89,7 @@ configure the ScyllaDB container to use the `19042` port and ask the container t
 
 #### With Alternator (DynamoDB Compatible API)
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 If you want to test ScyllaDB with the Alternator API, you can use the `WithAlternator` function. This function will
 configure the ScyllaDB container to use the port any port you want and ask the container to wait until the port is
@@ -102,7 +102,7 @@ By default, you can choose the port `8000`.
 
 #### With Custom Commands
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 If you need to pass any flag to the ScyllaDB container, you can use the `WithCustomCommand` function. This also rewrites
 predefined commands like `--developer-mode=1`. You can check
@@ -118,7 +118,7 @@ The ScyllaDB container exposes the following methods:
 
 #### ConnectionHost methods
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 There exist three methods to get the host and port of the ScyllaDB container, depending on the feature you want.
 

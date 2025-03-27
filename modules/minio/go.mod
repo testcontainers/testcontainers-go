@@ -7,7 +7,7 @@ toolchain go1.23.6
 require (
 	github.com/minio/minio-go/v7 v7.0.68
 	github.com/stretchr/testify v1.10.0
-	github.com/testcontainers/testcontainers-go v0.35.0
+	github.com/testcontainers/testcontainers-go v0.36.0
 )
 
 require (
