@@ -8,12 +8,13 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// Deprecated: use RunBigQuery instead
+// Deprecated: use [RunBigQuery] instead
 // RunBigQueryContainer creates an instance of the GCloud container type for BigQuery.
 func RunBigQueryContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	return RunBigQuery(ctx, "ghcr.io/goccy/bigquery-emulator:0.6.1", opts...)
 }
 
+// Deprecated: use [bigquery.Run] instead.
 // RunBigQuery creates an instance of the GCloud container type for BigQuery.
 // The URI will always use http:// as the protocol.
 func RunBigQuery(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
