@@ -96,6 +96,25 @@ func WithHostPortAccess(ports ...int) CustomizeRequestOption {
 	}
 }
 
+// WithReuse will mark a container to be reused if it exists or create a new one if it doesn't.
+// It is used in conjunction with WithContainerName to ensure that the container is reused.
+func WithReuse() CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.Reuse = true
+		return nil
+	}
+}
+
+// WithContainerName sets the name for the container request.
+func WithContainerName(name string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		if name != "" {
+			req.Name = name
+		}
+		return nil
+	}
+}
+
 // Deprecated: the modules API forces passing the image as part of the signature of the Run function.
 // WithImage sets the image for a container
 func WithImage(image string) CustomizeRequestOption {

@@ -238,3 +238,17 @@ func TestWithHostPortAccess(t *testing.T) {
 		})
 	}
 }
+
+func TestWithReuse(t *testing.T) {
+	req := &testcontainers.GenericContainerRequest{}
+	opt := testcontainers.WithReuse()
+	require.NoError(t, opt.Customize(req))
+	require.True(t, req.Reuse)
+}
+
+func TestWithName(t *testing.T) {
+	req := &testcontainers.GenericContainerRequest{}
+	opt := testcontainers.WithContainerName("cname")
+	require.NoError(t, opt.Customize(req))
+	require.Equal(t, "cname", req.Name)
+}
