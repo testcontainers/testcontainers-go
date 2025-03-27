@@ -22,7 +22,7 @@ The Google Cloud module exposes the following Go packages:
 - [BigTable](#bigtable): `github.com/testcontainers/testcontainers-go/modules/gcloud/bigtable`.
 - [Datastore](#datastore): `github.com/testcontainers/testcontainers-go/modules/gcloud/datastore`.
 - [Firestore](#firestore): `github.com/testcontainers/testcontainers-go/modules/gcloud/firestore`.
-
+- [Pubsub](#pubsub): `github.com/testcontainers/testcontainers-go/modules/gcloud/pubsub`.
 !!!info
     By default, the all the emulators use `gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators` as the default Docker image, except for the BigQuery emulator, which uses `ghcr.io/goccy/bigquery-emulator:0.6.1`, and Spanner, which uses `gcr.io/cloud-spanner-emulator/emulator:1.4.0`.
 
@@ -187,9 +187,36 @@ It's important to set the target string of the `grpc.NewClient` method using the
 
 ## Pubsub
 
+### Run function
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The Pubsub module exposes one entrypoint function to create the Pubsub container, and this function receives three parameters:
+
+```golang
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)
+```
+
+- `context.Context`, the Go context.
+- `string`, the Docker image to use.
+- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+
+### Container Options
+
+When starting the Pubsub container, you can pass options in a variadic way to configure it.
+
+#### Image
+
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators")`.
+
+{% include "../features/common_functional_options.md" %}
+
+### Examples
+
 <!--codeinclude-->
-[Creating a Pubsub container](../../modules/gcloud/pubsub_test.go) inside_block:runPubsubContainer
-[Obtaining a Pubsub client](../../modules/gcloud/pubsub_test.go) inside_block:pubsubClient
+[Creating a Pubsub container](../../modules/gcloud/pubsub/examples_test.go) inside_block:runPubsubContainer
+[Obtaining a Pubsub client](../../modules/gcloud/pubsub/examples_test.go) inside_block:pubsubClient
 <!--/codeinclude-->
 
 It's important to set the target string of the `grpc.NewClient` method using the container's URI, as shown in the client example above.

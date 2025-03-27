@@ -18,6 +18,7 @@ const defaultProjectID = "test-project"
 // - [bigtable.Container]
 // - [datastore.Container]
 // - [firestore.Container]
+// - [pubsub.Container]
 type GCloudContainer struct {
 	testcontainers.Container
 	Settings options
