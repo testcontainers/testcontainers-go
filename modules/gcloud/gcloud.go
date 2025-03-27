@@ -16,6 +16,7 @@ const defaultProjectID = "test-project"
 // Deprecated: use the specialized containers instead:
 // - [bigquery.Container]
 // - [bigtable.Container]
+// - [datastore.Container]
 type GCloudContainer struct {
 	testcontainers.Container
 	Settings options
