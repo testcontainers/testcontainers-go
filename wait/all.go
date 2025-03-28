@@ -3,6 +3,7 @@ package wait
 import (
 	"context"
 	"errors"
+	"reflect"
 	"time"
 )
 
@@ -62,7 +63,7 @@ func (ms *MultiStrategy) WaitUntilReady(ctx context.Context, target StrategyTarg
 	}
 
 	for _, strategy := range ms.Strategies {
-		if strategy == nil {
+		if strategy == nil || reflect.ValueOf(strategy).IsNil() {
 			// A module could be appending strategies after part of the container initialization,
 			// and use wait.ForAll on a not initialized strategy.
 			// In this case, we just skip the nil strategy.

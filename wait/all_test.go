@@ -147,4 +147,34 @@ func TestMultiStrategy_handleNils(t *testing.T) {
 		})
 		require.NoError(t, err)
 	})
+
+	t.Run("nil-type-implements-strategy", func(t *testing.T) {
+		var nilStrategy Strategy = nil
+
+		strategy := ForAll(ForLog("docker"), nilStrategy)
+		err := strategy.WaitUntilReady(context.Background(), NopStrategyTarget{
+			ReaderCloser: io.NopCloser(bytes.NewReader([]byte("docker"))),
+		})
+		require.NoError(t, err)
+	})
+
+	t.Run("nil-concrete-value-implements-strategy", func(t *testing.T) {
+		// Create a nil pointer to a type that implements Strategy
+		var nilPointerStrategy *nilWaitStrategy
+		// When we assign it to the interface, the type information is preserved
+		// but the concrete value is nil
+		var strategyInterface Strategy = nilPointerStrategy
+
+		strategy := ForAll(ForLog("docker"), strategyInterface)
+		err := strategy.WaitUntilReady(context.Background(), NopStrategyTarget{
+			ReaderCloser: io.NopCloser(bytes.NewReader([]byte("docker"))),
+		})
+		require.NoError(t, err)
+	})
+}
+
+type nilWaitStrategy struct{}
+
+func (s *nilWaitStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) error {
+	return nil
 }
