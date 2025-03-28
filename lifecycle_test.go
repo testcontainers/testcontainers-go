@@ -35,10 +35,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 			// three mounts, one valid and two invalid
 			Mounts: ContainerMounts{
 				{
-					Source: DockerImageMountSource{
-						ImageName: "nginx:latest",
-						Subpath:   "var/www/html",
-					},
+					Source: NewDockerImageMountSource("nginx:latest", "var/www/html"),
 					Target: "/var/www/valid",
 				},
 				ImageMount("nginx:latest", "../var/www/html", "/var/www/invalid1"),

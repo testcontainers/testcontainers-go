@@ -340,10 +340,7 @@ func WithWaitStrategyAndDeadline(deadline time.Duration, strategies ...wait.Stra
 // This option validates that the subpath is a relative path, raising an error otherwise.
 func WithImageMount(source string, subpath string, target ContainerMountTarget) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {
-		src := DockerImageMountSource{
-			ImageName: source,
-			Subpath:   subpath,
-		}
+		src := NewDockerImageMountSource(source, subpath)
 
 		if err := src.Validate(); err != nil {
 			return fmt.Errorf("validate image mount source: %w", err)

@@ -119,7 +119,7 @@ func VolumeMount(volumeName string, mountTarget ContainerMountTarget) ContainerM
 // This is a convenience method to cover typical use cases.
 func ImageMount(imageName string, subpath string, mountTarget ContainerMountTarget) ContainerMount {
 	return ContainerMount{
-		Source: GenericImageMountSource{ImageName: imageName, Subpath: subpath},
+		Source: NewGenericImageMountSource(imageName, subpath),
 		Target: mountTarget,
 	}
 }
@@ -141,16 +141,24 @@ type ContainerMount struct {
 
 // GenericImageMountSource implements ContainerMountSource and represents an image mount
 type GenericImageMountSource struct {
-	// ImageName refers to the name of the image to be mounted
+	// imageName refers to the name of the image to be mounted
 	// the same image might be mounted to multiple locations within a single container
-	ImageName string
-	// Subpath is the path within the image to be mounted
-	Subpath string
+	imageName string
+	// subpath is the path within the image to be mounted
+	subpath string
+}
+
+// NewGenericImageMountSource creates a new GenericImageMountSource
+func NewGenericImageMountSource(imageName string, subpath string) GenericImageMountSource {
+	return GenericImageMountSource{
+		imageName: imageName,
+		subpath:   subpath,
+	}
 }
 
 // Source returns the name of the image to be mounted
 func (s GenericImageMountSource) Source() string {
-	return s.ImageName
+	return s.imageName
 }
 
 // Type returns the type of the mount
@@ -160,7 +168,7 @@ func (GenericImageMountSource) Type() MountType {
 
 // Validate validates the source of the mount
 func (s GenericImageMountSource) Validate() error {
-	if !filepath.IsLocal(s.Subpath) {
+	if !filepath.IsLocal(s.subpath) {
 		return errors.New("image mount source must be a local path")
 	}
 	return nil

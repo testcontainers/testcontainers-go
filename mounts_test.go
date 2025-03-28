@@ -54,10 +54,7 @@ func TestImageMount(t *testing.T) {
 		}
 
 		require.Equal(t, testcontainers.ContainerMount{
-			Source: testcontainers.GenericImageMountSource{
-				ImageName: "nginx:latest",
-				Subpath:   "var/www/html",
-			},
+			Source: testcontainers.NewGenericImageMountSource("nginx:latest", "var/www/html"),
 			Target: "/var/www/html",
 		}, m)
 	})
@@ -65,16 +62,13 @@ func TestImageMount(t *testing.T) {
 	t.Run("invalid-image-mount", func(t *testing.T) {
 		t.Parallel()
 		m := testcontainers.ImageMount("nginx:latest", "../var/www/html", "/var/www/invalid")
-		// the source is a GenericImageMountSource, which does implement the Validator interface// the source is a GenericImageMountSource, which does implement the Validator interface
+		// the source is a GenericImageMountSource, which does implement the Validator interface
 		if v, ok := m.Source.(testcontainers.Validator); ok {
 			require.Error(t, v.Validate())
 		}
 
 		require.Equal(t, testcontainers.ContainerMount{
-			Source: testcontainers.GenericImageMountSource{
-				ImageName: "nginx:latest",
-				Subpath:   "../var/www/html",
-			},
+			Source: testcontainers.NewGenericImageMountSource("nginx:latest", "../var/www/html"),
 			Target: "/var/www/invalid",
 		}, m)
 	})
@@ -202,10 +196,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 			name: "Image mount",
 			mounts: testcontainers.ContainerMounts{
 				{
-					Source: testcontainers.DockerImageMountSource{
-						ImageName: "my-custom-image:latest",
-						Subpath:   "data",
-					},
+					Source: testcontainers.NewDockerImageMountSource("my-custom-image:latest", "data"),
 					Target: "/data",
 				},
 			},

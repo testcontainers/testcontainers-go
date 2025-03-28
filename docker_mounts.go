@@ -97,16 +97,24 @@ func (s DockerTmpfsMountSource) GetTmpfsOptions() *mount.TmpfsOptions {
 
 // DockerImageMountSource is a mount source for an image
 type DockerImageMountSource struct {
-	// ImageName is the image name
-	ImageName string
+	// imageName is the image name
+	imageName string
 
-	// Subpath is the subpath to mount the image into
-	Subpath string
+	// subpath is the subpath to mount the image into
+	subpath string
+}
+
+// NewDockerImageMountSource creates a new DockerImageMountSource
+func NewDockerImageMountSource(imageName string, subpath string) DockerImageMountSource {
+	return DockerImageMountSource{
+		imageName: imageName,
+		subpath:   subpath,
+	}
 }
 
 // Validate validates the source of the mount, ensuring that the subpath is a relative path
 func (s DockerImageMountSource) Validate() error {
-	if !filepath.IsLocal(s.Subpath) {
+	if !filepath.IsLocal(s.subpath) {
 		return errors.New("image mount source must be a local path")
 	}
 	return nil
@@ -115,13 +123,13 @@ func (s DockerImageMountSource) Validate() error {
 // ImageOptions returns the image options for the image mount
 func (s DockerImageMountSource) ImageOptions() *mount.ImageOptions {
 	return &mount.ImageOptions{
-		Subpath: s.Subpath,
+		Subpath: s.subpath,
 	}
 }
 
 // Source returns the image name for the image mount
 func (s DockerImageMountSource) Source() string {
-	return s.ImageName
+	return s.imageName
 }
 
 // Type returns the mount type for the image mount

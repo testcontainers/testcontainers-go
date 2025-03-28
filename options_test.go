@@ -254,10 +254,7 @@ func TestWithImageMount(t *testing.T) {
 
 		src := req.Mounts[0].Source
 
-		require.Equal(t, testcontainers.DockerImageMountSource{
-			ImageName: "alpine",
-			Subpath:   "root/.ollama/models/",
-		}, src)
+		require.Equal(t, testcontainers.NewDockerImageMountSource("alpine", "root/.ollama/models/"), src)
 		require.Equal(t, "alpine", src.Source())
 		require.Equal(t, testcontainers.MountTypeImage, src.Type())
 
