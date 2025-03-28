@@ -1,4 +1,4 @@
-package gcloud_test
+package pubsub_test
 
 import (
 	"context"
@@ -11,17 +11,17 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/gcloud"
+	tcpubsub "github.com/testcontainers/testcontainers-go/modules/gcloud/pubsub"
 )
 
-func ExampleRunPubsubContainer() {
+func ExampleRun() {
 	// runPubsubContainer {
 	ctx := context.Background()
 
-	pubsubContainer, err := gcloud.RunPubsub(
+	pubsubContainer, err := tcpubsub.Run(
 		ctx,
 		"gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
-		gcloud.WithProjectID("pubsub-project"),
+		tcpubsub.WithProjectID("pubsub-project"),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(pubsubContainer); err != nil {
@@ -35,9 +35,9 @@ func ExampleRunPubsubContainer() {
 	// }
 
 	// pubsubClient {
-	projectID := pubsubContainer.Settings.ProjectID
+	projectID := pubsubContainer.ProjectID()
 
-	conn, err := grpc.NewClient(pubsubContainer.URI, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(pubsubContainer.URI(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Printf("failed to dial: %v", err)
 		return
