@@ -149,7 +149,7 @@ func TestMultiStrategy_handleNils(t *testing.T) {
 	})
 
 	t.Run("nil-type-implements-strategy", func(t *testing.T) {
-		var nilStrategy Strategy = nil
+		var nilStrategy Strategy
 
 		strategy := ForAll(ForLog("docker"), nilStrategy)
 		err := strategy.WaitUntilReady(context.Background(), NopStrategyTarget{
@@ -175,6 +175,6 @@ func TestMultiStrategy_handleNils(t *testing.T) {
 
 type nilWaitStrategy struct{}
 
-func (s *nilWaitStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) error {
+func (s *nilWaitStrategy) WaitUntilReady(_ context.Context, _ StrategyTarget) error {
 	return nil
 }
