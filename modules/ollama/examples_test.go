@@ -2,6 +2,7 @@ package ollama_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -240,6 +241,106 @@ func ExampleRun_withLocal() {
 			fmt.Println(true)
 		}
 	}
+
+	// Intentionally not asserting the output, as we don't want to run this example in the tests.
+}
+
+func ExampleRun_withImageMount() {
+	cli, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	if err != nil {
+		log.Printf("failed to create docker client: %s", err)
+		return
+	}
+
+	info, err := cli.Info(context.Background())
+	if err != nil {
+		log.Printf("failed to get docker info: %s", err)
+		return
+	}
+
+	// skip if the major version of the server is not v28 or greater
+	if info.ServerVersion < "28.0.0" {
+		log.Printf("skipping test because the server version is not v28 or greater")
+		return
+	}
+
+	ctx := context.Background()
+
+	ollamaContainer, err := tcollama.Run(ctx, "ollama/ollama:0.5.12")
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
+	defer func() {
+		if err := testcontainers.TerminateContainer(ollamaContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
+
+	code, _, err := ollamaContainer.Exec(ctx, []string{"ollama", "pull", "all-minilm"})
+	if err != nil {
+		log.Printf("failed to pull model %s: %s", "all-minilm", err)
+		return
+	}
+
+	fmt.Println(code)
+
+	targetImage := "testcontainers/ollama:tc-model-all-minilm"
+
+	err = ollamaContainer.Commit(ctx, targetImage)
+	if err != nil {
+		log.Printf("failed to commit container: %s", err)
+		return
+	}
+
+	// start a new fresh ollama container mounting the target image
+	// mountImage {
+	newOllamaContainer, err := tcollama.Run(
+		ctx,
+		"ollama/ollama:0.5.12",
+		testcontainers.WithImageMount(targetImage, "root/.ollama/models/", "/root/.ollama/models/"),
+	)
+	// }
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
+	defer func() {
+		if err := testcontainers.TerminateContainer(newOllamaContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
+
+	// perform an HTTP request to the ollama container to verify the model is available
+
+	connectionStr, err := newOllamaContainer.ConnectionString(ctx)
+	if err != nil {
+		log.Printf("failed to get connection string: %s", err)
+		return
+	}
+
+	resp, err := http.Get(connectionStr + "/api/tags")
+	if err != nil {
+		log.Printf("failed to get request: %s", err)
+		return
+	}
+
+	fmt.Println(resp.StatusCode)
+
+	type tagsResponse struct {
+		Models []struct {
+			Name string `json:"name"`
+		} `json:"models"`
+	}
+
+	var tags tagsResponse
+	err = json.NewDecoder(resp.Body).Decode(&tags)
+	if err != nil {
+		log.Printf("failed to decode response: %s", err)
+		return
+	}
+
+	fmt.Println(tags.Models[0].Name)
 
 	// Intentionally not asserting the output, as we don't want to run this example in the tests.
 }

@@ -20,6 +20,20 @@ It is possible to map a Docker volume into the container using the `Mounts` attr
     It is recommended to copy data from your local host machine to a test container using the file copy API 
     described below, as it is much more portable.
 
+## Mounting images
+
+Since Docker v28, it is possible to mount the file system of an image into a container using the `Mounts` attribute at the `ContainerRequest` struct. For that, use the `DockerImageMountSource` type, which allows you to specify the name of the image to be mounted, and the subpath inside the container where it should be mounted, or simply call the `ImageMount` function, which does exactly that:
+
+<!--codeinclude-->
+[Image mounts](../../lifecycle_test.go) inside_block:imageMounts
+<!--/codeinclude-->
+
+!!!warning
+    If the subpath is not a relative path, the creation of the container will fail.
+
+!!!info
+    Mounting images fails the creation of the container if the underlying container runtime does not support the `image mount` feature, which is available since Docker v28.
+
 ## Copying files to a container
 
 If you would like to copy a file to a container, you can do it in two different manners:

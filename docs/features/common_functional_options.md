@@ -15,6 +15,23 @@ _Testcontainers for Go_ exposes an interface to perform this operation: `ImageSu
 
 Using the `WithImageSubstitutors` options, you could define your own substitutions to the container images. E.g. adding a prefix to the images so that they can be pulled from a Docker registry other than Docker Hub. This is the usual mechanism for using Docker image proxies, caches, etc.
 
+#### WithImageMount
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+Since Docker v28, it's possible to mount an image to a container, passing the source image name, the relative subpath to mount in that image, and the mount point in the target container.
+
+This option validates that the subpath is a relative path, raising an error otherwise.
+
+<!--codeinclude-->
+[Image Mount](../../modules/ollama/examples_test.go) inside_block:mountImage
+<!--/codeinclude-->
+
+In the code above, which mounts the directory in which Ollama models are stored, the `targetImage` is the name of the image containing the models (an Ollama image where the models are already pulled).
+
+!!!warning
+    Using this option fails the creation of the container if the underlying container runtime does not support the `image mount` feature.
+
 #### WithEnv
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
