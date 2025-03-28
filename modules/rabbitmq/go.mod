@@ -8,7 +8,7 @@ require (
 	github.com/docker/go-connections v0.5.0
 	github.com/rabbitmq/amqp091-go v1.9.0
 	github.com/stretchr/testify v1.10.0
-	github.com/testcontainers/testcontainers-go v0.35.0
+	github.com/testcontainers/testcontainers-go v0.36.0
 )
 
 require (

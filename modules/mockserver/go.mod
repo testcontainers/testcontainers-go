@@ -6,7 +6,7 @@ toolchain go1.23.6
 
 require (
 	github.com/BraspagDevelopers/mock-server-client v0.2.2
-	github.com/testcontainers/testcontainers-go v0.35.0
+	github.com/testcontainers/testcontainers-go v0.36.0
 )
 
 require (

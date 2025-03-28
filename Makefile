@@ -23,25 +23,20 @@ tidy-all:
 
 ## --------------------------------------
 
-TCENV=tcvenv
-PYTHONBIN=./$(TCENV)/bin
+DOCS_CONTAINER=mkdocs-container
+DOCS_IMAGE=python:3.8
 
-tcvenv: tcvenv/touchfile
-
-tcvenv/touchfile:
-	@echo "Creating docs $(TCENV)..."
-	test -d $(TCENV) || python3 -m venv $(TCENV)
-	@echo "Installing requirements..."
-	. $(PYTHONBIN)/activate; pip install -Ur requirements.txt
-	touch $(TCENV)/touchfile
-
+.PHONY: clean-docs
 clean-docs:
-	@echo "Destroying docs $(TCENV)..."
-	rm -rf $(TCENV)
+	@echo "Destroying docs"
+	docker rm -f $(DOCS_CONTAINER) || true
 
 .PHONY: serve-docs
-serve-docs: tcvenv
-	. $(PYTHONBIN)/activate; $(PYTHONBIN)/mkdocs serve
+serve-docs:
+	docker run --rm --name $(DOCS_CONTAINER) -it -p 8000:8000 \
+		-v $(PWD):/testcontainers-go \
+		-w /testcontainers-go \
+		$(DOCS_IMAGE) bash -c "pip install -Ur requirements.txt && mkdocs serve -f mkdocs.yml -a 0.0.0.0:8000"
 
 ## --------------------------------------
 

@@ -55,7 +55,7 @@ In example: `Run(context.Background(), "mcr.microsoft.com/mssql/server:2022-RTM-
 
 #### Init Scripts
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 If you need to execute SQL files when the container starts, you can use `mssql.WithInitSQL(files
 ...io.Reader)` with one or more `*.sql` files. The files will be executed in order after the
