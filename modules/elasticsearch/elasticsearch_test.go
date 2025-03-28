@@ -40,32 +40,32 @@ func TestElasticsearch(t *testing.T) {
 		passwordCustomiser testcontainers.ContainerCustomizer
 	}{
 		{
-			name:               "Elasticsearch 6 without password should allow access using unauthenticated HTTP requests",
+			name:               "Elasticsearch_6_without_password_should_allow_access_using_unauthenticated_HTTP_requests",
 			image:              baseImage6,
 			passwordCustomiser: nil,
 		},
 		{
-			name:               "Elasticsearch 6 with password should allow access using authenticated HTTP requests",
+			name:               "Elasticsearch_6_with_password_should_allow_access_using_authenticated_HTTP_requests",
 			image:              baseImage6,
 			passwordCustomiser: elasticsearch.WithPassword(password),
 		},
 		{
-			name:               "Elasticsearch 7 without password should allow access using unauthenticated HTTP requests",
+			name:               "Elasticsearch_7_without_password_should_allow_access_using_unauthenticated_HTTP_requests",
 			image:              baseImage7,
 			passwordCustomiser: nil,
 		},
 		{
-			name:               "Elasticsearch 7 with password should allow access using authenticated HTTP requests",
+			name:               "Elasticsearch_7_with_password_should_allow_access_using_authenticated_HTTP_requests",
 			image:              baseImage7,
 			passwordCustomiser: elasticsearch.WithPassword(password),
 		},
 		{
-			name:               "Elasticsearch 8 without password should not allow access with unauthenticated HTTPS requests",
+			name:               "Elasticsearch_8_without_password_should_not_allow_access_with_unauthenticated_HTTPS_requests",
 			image:              baseImage8,
 			passwordCustomiser: nil,
 		},
 		{
-			name:               "Elasticsearch 8 with password should allow access using authenticated HTTPS requests",
+			name:               "Elasticsearch_8_with_password_should_allow_access_using_authenticated_HTTPS_requests",
 			image:              baseImage8,
 			passwordCustomiser: elasticsearch.WithPassword(password),
 		},
@@ -137,15 +137,15 @@ func TestElasticsearch8WithoutSSL(t *testing.T) {
 		configKey string
 	}{
 		{
-			name:      "security disabled",
+			name:      "security_disabled",
 			configKey: "xpack.security.enabled",
 		},
 		{
-			name:      "transport ssl disabled",
+			name:      "transport_ssl_disabled",
 			configKey: "xpack.security.transport.ssl.enabled",
 		},
 		{
-			name:      "http ssl disabled",
+			name:      "http_ssl_disabled",
 			configKey: "xpack.security.http.ssl.enabled",
 		},
 	}
