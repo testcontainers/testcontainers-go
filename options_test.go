@@ -240,6 +240,17 @@ func TestWithHostPortAccess(t *testing.T) {
 }
 
 func TestWithImageMount(t *testing.T) {
+	cli, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	require.NoError(t, err)
+
+	info, err := cli.Info(context.Background())
+	require.NoError(t, err)
+
+	// skip if the major version of the server is not v28 or greater
+	if info.ServerVersion < "28.0.0" {
+		t.Skipf("skipping test because the server version is not v28 or greater")
+	}
+
 	t.Run("valid", func(t *testing.T) {
 		req := testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
