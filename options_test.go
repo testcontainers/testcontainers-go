@@ -239,16 +239,28 @@ func TestWithHostPortAccess(t *testing.T) {
 	}
 }
 
-func TestWithReuse(t *testing.T) {
+func TestWithReuse_Succeeds(t *testing.T) {
+	t.Parallel()
 	req := &testcontainers.GenericContainerRequest{}
-	opt := testcontainers.WithReuse()
-	require.NoError(t, opt.Customize(req))
+	containerName := "pg-test"
+
+	opt := testcontainers.WithReuse(containerName)
+	err := opt.Customize(req)
+
+	require.NoError(t, err)
 	require.True(t, req.Reuse)
+	require.Equal(t, containerName, req.Name)
 }
 
-func TestWithName(t *testing.T) {
+func TestWithReuse_ErrorsWithoutContainerNameProvided(t *testing.T) {
+	t.Parallel()
 	req := &testcontainers.GenericContainerRequest{}
-	opt := testcontainers.WithContainerName("cname")
-	require.NoError(t, opt.Customize(req))
-	require.Equal(t, "cname", req.Name)
+
+	opt := testcontainers.WithReuse("")
+	err := opt.Customize(req)
+
+	require.Error(t, err)
+	require.ErrorContains(t, err, "container name must be provided for reuse")
+	require.False(t, req.Reuse)
+	require.Equal(t, "", req.Name)
 }
