@@ -7,7 +7,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// Deprecated: use [RunPubsub] instead
+// Deprecated: use [pubsub.Run] instead
 // RunPubsubContainer creates an instance of the GCloud container type for Pubsub.
 func RunPubsubContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	return RunPubsub(ctx, "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators", opts...)
