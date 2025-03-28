@@ -336,7 +336,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 		err = ctr.Terminate(ctx)
 		require.NoError(t, err)
 
-		_, _, err = dockerClient.ImageInspectWithRaw(ctx, nginxAlpineImage)
+		_, err = dockerClient.ImageInspect(ctx, nginxAlpineImage)
 		require.NoErrorf(t, err, "nginx image should not have been removed")
 	})
 
@@ -368,7 +368,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 		err = ctr.Terminate(ctx)
 		require.NoError(t, err)
 
-		_, _, err = dockerClient.ImageInspectWithRaw(ctx, imageID)
+		_, err = dockerClient.ImageInspect(ctx, imageID)
 		require.Errorf(t, err, "custom built image should have been removed")
 	})
 }
@@ -1279,7 +1279,7 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 		ctr, err := dockerCli.ContainerInspect(ctx, c.GetContainerID())
 		require.NoError(t, err)
 
-		img, _, err := dockerCli.ImageInspectWithRaw(ctx, ctr.Image)
+		img, err := dockerCli.ImageInspect(ctx, ctr.Image)
 		require.NoError(t, err)
 		assert.Equal(t, "linux", img.Os)
 		assert.Equal(t, "amd64", img.Architecture)
@@ -1706,7 +1706,7 @@ func TestContainerCapAdd(t *testing.T) {
 
 	ctx := context.Background()
 
-	expected := "IPC_LOCK"
+	expected := "CAP_IPC_LOCK"
 
 	nginx, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
@@ -1984,7 +1984,7 @@ func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 			// Now, we terminate the container and check whether the image still exists.
 			err = c.Terminate(ctx)
 			require.NoError(t, err, "terminate container should not fail")
-			_, _, err = cli.ImageInspectWithRaw(ctx, containerImage)
+			_, err = cli.ImageInspect(ctx, containerImage)
 			if tt.keepBuiltImage {
 				require.NoError(t, err, "image should still exist")
 			} else {
@@ -2010,9 +2010,9 @@ func (f *errMockCli) ImageBuild(_ context.Context, _ io.Reader, _ types.ImageBui
 	return types.ImageBuildResponse{Body: io.NopCloser(&bytes.Buffer{})}, f.err
 }
 
-func (f *errMockCli) ContainerList(_ context.Context, _ container.ListOptions) ([]types.Container, error) {
+func (f *errMockCli) ContainerList(_ context.Context, _ container.ListOptions) ([]container.Summary, error) {
 	f.containerListCount++
-	return []types.Container{{}}, f.err
+	return []container.Summary{{}}, f.err
 }
 
 func (f *errMockCli) ImagePull(_ context.Context, _ string, _ image.PullOptions) (io.ReadCloser, error) {

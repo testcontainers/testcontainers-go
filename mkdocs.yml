@@ -69,6 +69,7 @@ nav:
     - Modules:
         - modules/index.md
         - modules/artemis.md
+        - modules/azure.md
         - modules/azurite.md
         - modules/cassandra.md
         - modules/chroma.md
@@ -143,4 +144,4 @@ nav:
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: v0.35.0
+    latest_version: v0.36.0

@@ -13,9 +13,10 @@ src/pip-delete-this-directory.txt
 
 TEST-*.xml
 
-tcvenv
-
 **/go.work
 
 # VS Code settings
 .vscode
+
+# Environment variables
+.env

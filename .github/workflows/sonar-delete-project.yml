@@ -1,0 +1,22 @@
+name: Delete Sonar Project
+
+on:
+  workflow_dispatch:
+    inputs:
+      project_name:
+        description: 'Name of the project (without type prefix)'
+        required: true
+        type: string
+
+jobs:
+  delete-project:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Delete Sonar Project for module
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          chmod +x .github/scripts/sonar-manager.sh
+          .github/scripts/sonar-manager.sh -a "delete" -p "modules_${{ inputs.project_name }}"

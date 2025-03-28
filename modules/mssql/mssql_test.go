@@ -47,20 +47,26 @@ func TestMSSQLServer(t *testing.T) {
 func TestMSSQLServerWithMissingEulaOption(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := mssql.Run(ctx,
-		"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("The SQL Server End-User License Agreement (EULA) must be accepted")),
-	)
-	testcontainers.CleanupContainer(t, ctr)
-	require.NoError(t, err)
+	t.Run("empty", func(t *testing.T) {
+		ctr, err := mssql.Run(ctx,
+			"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
+			testcontainers.WithWaitStrategy(
+				wait.ForLog("The SQL Server End-User License Agreement (EULA) must be accepted")),
+		)
+		testcontainers.CleanupContainer(t, ctr)
+		require.Error(t, err)
+	})
 
-	state, err := ctr.State(ctx)
-	require.NoError(t, err)
-
-	if !state.Running {
-		t.Log("Success: Confirmed proper handling of missing EULA, so container is not running.")
-	}
+	t.Run("not-y", func(t *testing.T) {
+		ctr, err := mssql.Run(ctx,
+			"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
+			testcontainers.WithEnv(map[string]string{"ACCEPT_EULA": "yes"}),
+			testcontainers.WithWaitStrategy(
+				wait.ForLog("The SQL Server End-User License Agreement (EULA) must be accepted")),
+		)
+		testcontainers.CleanupContainer(t, ctr)
+		require.Error(t, err)
+	})
 }
 
 func TestMSSQLServerWithConnectionStringParameters(t *testing.T) {
