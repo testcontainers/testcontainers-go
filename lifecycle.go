@@ -523,8 +523,11 @@ func (c ContainerLifecycleHooks) Terminated(ctx context.Context) func(container 
 func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req ContainerRequest, dockerInput *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) error {
 	var mountErrors []error
 	for _, m := range req.Mounts {
-		if err := m.Source.Validate(); err != nil {
-			mountErrors = append(mountErrors, err)
+		// validate only the mount sources that implement the Validator interface
+		if v, ok := m.Source.(Validator); ok {
+			if err := v.Validate(); err != nil {
+				mountErrors = append(mountErrors, err)
+			}
 		}
 	}
 

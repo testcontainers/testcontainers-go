@@ -40,9 +40,6 @@ type ContainerMountSource interface {
 	// Type determines the final mount type
 	// possible options are limited by the Docker API
 	Type() MountType
-
-	// Validate validates the source of the mount
-	Validate() error
 }
 
 // Deprecated: use Files or HostConfigModifier in the ContainerRequest, or copy files container APIs to make containers portable across Docker environments
@@ -64,11 +61,6 @@ func (GenericBindMountSource) Type() MountType {
 	return MountTypeBind
 }
 
-// Validate validates the source of the mount
-func (s GenericBindMountSource) Validate() error {
-	return nil
-}
-
 // GenericVolumeMountSource implements ContainerMountSource and represents a volume mount
 type GenericVolumeMountSource struct {
 	// Name refers to the name of the volume to be mounted
@@ -84,11 +76,6 @@ func (GenericVolumeMountSource) Type() MountType {
 	return MountTypeVolume
 }
 
-// Validate validates the source of the mount
-func (s GenericVolumeMountSource) Validate() error {
-	return nil
-}
-
 // GenericTmpfsMountSource implements ContainerMountSource and represents a TmpFS mount
 // Optionally mount.TmpfsOptions might be added for advanced scenarios
 type GenericTmpfsMountSource struct{}
@@ -99,11 +86,6 @@ func (s GenericTmpfsMountSource) Source() string {
 
 func (GenericTmpfsMountSource) Type() MountType {
 	return MountTypeTmpfs
-}
-
-// Validate validates the source of the mount
-func (s GenericTmpfsMountSource) Validate() error {
-	return nil
 }
 
 // ContainerMountTarget represents the target path within a container where the mount will be available

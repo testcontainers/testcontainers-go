@@ -82,11 +82,6 @@ func (DockerVolumeMountSource) Type() MountType {
 	return MountTypeVolume
 }
 
-// Validate validates the source of the mount
-func (s DockerVolumeMountSource) Validate() error {
-	return nil
-}
-
 func (s DockerVolumeMountSource) GetVolumeOptions() *mount.VolumeOptions {
 	return s.VolumeOptions
 }

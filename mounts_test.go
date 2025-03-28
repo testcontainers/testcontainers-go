@@ -48,7 +48,10 @@ func TestImageMount(t *testing.T) {
 	t.Run("valid-image-mount", func(t *testing.T) {
 		t.Parallel()
 		m := testcontainers.ImageMount("nginx:latest", "var/www/html", "/var/www/html")
-		require.NoError(t, m.Source.Validate())
+		// the source is a GenericImageMountSource, which does implement the Validator interface
+		if v, ok := m.Source.(testcontainers.Validator); ok {
+			require.NoError(t, v.Validate())
+		}
 
 		require.Equal(t, testcontainers.ContainerMount{
 			Source: testcontainers.GenericImageMountSource{
@@ -62,7 +65,10 @@ func TestImageMount(t *testing.T) {
 	t.Run("invalid-image-mount", func(t *testing.T) {
 		t.Parallel()
 		m := testcontainers.ImageMount("nginx:latest", "../var/www/html", "/var/www/invalid")
-		require.Error(t, m.Source.Validate())
+		// the source is a GenericImageMountSource, which does implement the Validator interface// the source is a GenericImageMountSource, which does implement the Validator interface
+		if v, ok := m.Source.(testcontainers.Validator); ok {
+			require.Error(t, v.Validate())
+		}
 
 		require.Equal(t, testcontainers.ContainerMount{
 			Source: testcontainers.GenericImageMountSource{
