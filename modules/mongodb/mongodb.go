@@ -191,26 +191,15 @@ func initiateReplicaSet(req *testcontainers.GenericContainerRequest, cli mongoCl
 		req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
 			PostStarts: []testcontainers.ContainerHook{
 				func(ctx context.Context, c testcontainers.Container) error {
-					// Wait for MongoDB to be ready
-					if err := waitForMongoReady(ctx, c, cli); err != nil {
-						return fmt.Errorf("wait for mongo: %w", err)
-					}
-
-					// Initiate replica set
-					host, err := c.Host(ctx)
+					ip, err := c.ContainerIP(ctx)
 					if err != nil {
-						return fmt.Errorf("get host: %w", err)
-					}
-					mappedPort, err := c.MappedPort(ctx, "27017/tcp")
-					if err != nil {
-						return fmt.Errorf("get mapped port: %w", err)
+						return fmt.Errorf("container ip: %w", err)
 					}
 
 					cmd := cli.eval(
-						"rs.initiate({ _id: '%s', members: [ { _id: 0, host: '%s:%s' } ] })",
+						"rs.initiate({ _id: '%s', members: [ { _id: 0, host: '%s:27017' } ] })",
 						replSetName,
-						host,
-						mappedPort.Port(),
+						ip,
 					)
 					return wait.ForExec(cmd).WaitUntilReady(ctx, c)
 				},
