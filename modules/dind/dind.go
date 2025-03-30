@@ -21,7 +21,7 @@ type Container struct {
 	testcontainers.Container
 }
 
-// Run creates an instance of the K3s container type
+// Run creates an instance of the Docker in Docker container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	req := testcontainers.ContainerRequest{
 		Image: img,
