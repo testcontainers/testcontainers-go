@@ -67,8 +67,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			defaultKubeSecurePort,
 			defaultRancherWebhookPort,
 		},
-		Privileged: true,
 		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.Privileged = true
 			hc.CgroupnsMode = "host"
 			hc.Tmpfs = map[string]string{
 				"/run":     "",
