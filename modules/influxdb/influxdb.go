@@ -118,6 +118,62 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+type InfluxDBV2Config struct {
+	Username     *string // Username for the initial user
+	Password     *string // Password for the initial user
+	UsernameFile *string // File containing the usernames (e.g., /run/secrets/username)
+	PasswordFile *string // File containing the passwords (e.g., /run/secrets/password)
+	TokenFile    *string // File containing the token (e.g., /run/secrets/token)
+	Org          string  // Organization name
+	Bucket       string  // Bucket name
+	Retention    *string // Retention policy (e.g., "30d" for 30 days)
+	Token        *string // Admin token
+	AuthEnabled  *bool   // Enable authentication (true/false); defaults to false.
+}
+
+func WithV2Env(config InfluxDBV2Config) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		req.Env["DOCKER_INFLUXDB_INIT_ORG"] = config.Org
+		req.Env["DOCKER_INFLUXDB_INIT_BUCKET"] = config.Bucket
+		req.Env["DOCKER_INFLUXDB_INIT_AUTH_ENABLED"] = "false" // Disable auth by default
+		req.Env["DOCKER_INFLUXDB_INIT_MODE"] = "setup"         // Always setup, we wont be migrating from v1 to v2
+
+		if config.Username != nil {
+			req.Env["DOCKER_INFLUXDB_INIT_USERNAME"] = *config.Username
+		}
+
+		if config.Password != nil {
+			req.Env["DOCKER_INFLUXDB_INIT_PASSWORD"] = *config.Password
+		}
+
+		if config.Token != nil {
+			req.Env["DOCKER_INFLUXDB_INIT_ADMIN_TOKEN"] = *config.Token
+		}
+
+		if config.AuthEnabled != nil {
+			req.Env["DOCKER_INFLUXDB_INIT_AUTH_ENABLED"] = fmt.Sprintf("%t", *config.AuthEnabled)
+		}
+
+		if config.Retention != nil {
+			req.Env["DOCKER_INFLUXDB_INIT_RETENTION"] = *config.Retention
+		}
+
+		if config.UsernameFile != nil {
+			req.Env["DOCKER_INFLUXDB_INIT_USERNAME_FILE"] = *config.UsernameFile
+		}
+
+		if config.PasswordFile != nil {
+			req.Env["DOCKER_INFLUXDB_INIT_PASSWORD_FILE"] = *config.PasswordFile
+		}
+
+		if config.TokenFile != nil {
+			req.Env["DOCKER_INFLUXDB_INIT_ADMIN_TOKEN_FILE"] = *config.TokenFile
+		}
+
+		return nil
+	}
+}
+
 // WithInitDb returns a request customizer that initialises the database using the file `docker-entrypoint-initdb.d`
 // located in `srcPath` directory.
 func WithInitDb(srcPath string) testcontainers.CustomizeRequestOption {

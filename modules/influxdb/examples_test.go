@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/influxdb"
 )
@@ -40,4 +41,68 @@ func ExampleRun() {
 
 	// Output:
 	// true
+}
+
+func ExampleRun_V2() {
+	// runInfluxV2Container {
+	ctx := context.Background()
+
+	username := "username"
+	password := "password"
+	org := "org"
+	bucket := "bucket"
+	authEnabled := true
+	token := "influxdbv2token"
+
+	influxdbContainer, err := influxdb.Run(ctx,
+		"influxdb:2.7.11",
+		influxdb.WithV2Env(influxdb.InfluxDBV2Config{
+			Username:    &username,
+			Password:    &password,
+			Org:         org,
+			Bucket:      bucket,
+			Token:       &token,
+			AuthEnabled: &authEnabled,
+		}),
+	)
+	defer func() {
+		if err := testcontainers.TerminateContainer(influxdbContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
+	// }
+
+	state, err := influxdbContainer.State(ctx)
+	if err != nil {
+		log.Printf("failed to get container state: %s", err)
+		return
+	}
+
+	fmt.Println(state.Running)
+	// Output:
+	// true
+
+	// Query the InfluxDB API to verify the setup
+	url, err := influxdbContainer.ConnectionUrl(ctx)
+	if err != nil {
+		log.Printf("failed to get host: %s", err)
+		return
+	}
+
+	// Initialize a new InfluxDB client
+	client := influxdb2.NewClientWithOptions(url, token, influxdb2.DefaultOptions())
+	defer client.Close()
+
+	// Get the bucket
+	influxBucket, err := client.BucketsAPI().FindBucketByName(ctx, bucket)
+	if err != nil {
+		log.Printf("failed to get bucket: %s", err)
+		return
+	}
+
+	log.Printf("Got bucket: %s", influxBucket.Name)
 }

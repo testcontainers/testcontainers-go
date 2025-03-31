@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	influxclient "github.com/influxdata/influxdb1-client/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,6 +43,54 @@ func TestV2Container(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Truef(t, state.Running, "InfluxDB container is not running")
+}
+
+func TestV2Container_WithOptions(t *testing.T) {
+	ctx := context.Background()
+
+	username := "username"
+	password := "password"
+	org := "org"
+	bucket := "bucket"
+	authEnabled := true
+	token := "influxdbv2token"
+
+	influxdbContainer, err := influxdb.Run(ctx, "influxdb:2.7.11",
+		influxdb.WithV2Env(influxdb.InfluxDBV2Config{
+			Username:    &username,
+			Password:    &password,
+			Org:         org,
+			Bucket:      bucket,
+			Token:       &token,
+			AuthEnabled: &authEnabled,
+		}),
+	)
+	testcontainers.CleanupContainer(t, influxdbContainer)
+
+	state, err := influxdbContainer.State(ctx)
+	require.NoError(t, err)
+	assert.True(t, state.Running)
+
+	// Query the InfluxDB API to verify the setup
+	url, err := influxdbContainer.ConnectionUrl(ctx)
+	require.NoError(t, err)
+
+	// Initialize a new InfluxDB client
+	client := influxdb2.NewClientWithOptions(url, token, influxdb2.DefaultOptions())
+	defer client.Close()
+
+	// Get the bucket
+	influxBucket, err := client.BucketsAPI().FindBucketByName(ctx, bucket)
+	require.NoError(t, err)
+
+	assert.Equal(t, bucket, influxBucket.Name)
+
+	// Try to connect without authentication
+	clientWithoutToken := influxdb2.NewClientWithOptions(url, "", influxdb2.DefaultOptions())
+	defer clientWithoutToken.Close()
+
+	_, err = clientWithoutToken.BucketsAPI().CreateBucketWithNameWithID(ctx, org, "example")
+	assert.Error(t, err, "Expected error when trying to create a bucket without authentication")
 }
 
 func TestWithInitDb(t *testing.T) {
