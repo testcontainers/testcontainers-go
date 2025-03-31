@@ -23,7 +23,7 @@ func defaultOptions() options {
 var _ testcontainers.ContainerCustomizer = (Option)(nil)
 
 // Option is an option for the Redpanda container.
-type Option func(*options)
+type Option func(*options) error
 
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
 func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
@@ -57,7 +57,7 @@ func NewTargetWithInternalPort(exposedPort int, internalPort int, host string) T
 // WithTargets sets the targets for the socat container.
 // The host of each target must be without the port, as it is internally mapped to the exposed port.
 func WithTargets(targets ...Target) Option {
-	return func(o *options) {
+	return func(o *options) error {
 		cmds := make([]string, 0, len(targets))
 
 		// If the internal port is not set, use the exposed port
@@ -72,5 +72,7 @@ func WithTargets(targets ...Target) Option {
 		}
 
 		o.targetsCmd = strings.Join(cmds, " & ")
+
+		return nil
 	}
 }

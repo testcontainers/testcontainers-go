@@ -33,7 +33,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	settings := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
-			apply(&settings)
+			if err := apply(&settings); err != nil {
+				return nil, err
+			}
 		}
 		if err := opt.Customize(&req); err != nil {
 			return nil, err
