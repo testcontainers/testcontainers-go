@@ -25,6 +25,102 @@ If you need to either pass additional environment variables to a container or ov
 postgres, err = postgresModule.Run(ctx, "postgres:15-alpine", testcontainers.WithEnv(map[string]string{"POSTGRES_INITDB_ARGS": "--no-sync"}))
 ```
 
+#### WithExposedPorts
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to expose additional ports from the container, you can use `testcontainers.WithExposedPorts`. For example:
+
+```golang
+ctr, err := aModule.Run(ctx, "image:tag", 
+    testcontainers.WithExposedPorts("8080/tcp", "9090/tcp"))
+```
+
+#### WithEntrypoint
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to append commands to the container's entrypoint, you can use `testcontainers.WithEntrypoint`. For example:
+
+```golang
+ctr, err := aModule.Run(ctx, "image:tag", 
+    testcontainers.WithEntrypoint("/bin/sh", "-c", "echo hello"))
+```
+
+#### WithCmd
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to append commands to the container's command, you can use `testcontainers.WithCmd`. For example:
+
+```golang
+ctr, err := aModule.Run(ctx, "image:tag", 
+    testcontainers.WithCmd("echo", "hello"))
+```
+
+#### WithLabels
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to add Docker labels to the container, you can use `testcontainers.WithLabels`. For example:
+
+```golang
+ctr, err := aModule.Run(ctx, "image:tag", 
+    testcontainers.WithLabels(map[string]string{
+        "environment": "testing",
+        "project":     "myapp",
+    }))
+```
+
+#### WithFiles
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to copy files into the container, you can use `testcontainers.WithFiles`. For example:
+
+```golang
+ctr, err := aModule.Run(ctx, "image:tag", 
+    testcontainers.WithFiles([]testcontainers.ContainerFile{
+        {
+            HostFilePath:      "/path/to/local/file.txt",
+            ContainerFilePath: "/container/file.txt",
+            FileMode:          0o644,
+        },
+    }))
+```
+
+This option allows you to copy files from the host into the container at creation time.
+
+#### WithMounts
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to add volume mounts to the container, you can use `testcontainers.WithMounts`. For example:
+
+```golang
+ctr, err := aModule.Run(ctx, "image:tag", 
+    testcontainers.WithMounts([]testcontainers.ContainerMount{
+        {
+            Source: testcontainers.GenericVolumeMountSource{Name: "appdata"},
+            Target: "/app/data",
+        },
+    }))
+```
+
+#### WithTmpfs
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to add tmpfs mounts to the container, you can use `testcontainers.WithTmpfs`. For example:
+
+```golang
+ctr, err := aModule.Run(ctx, "image:tag", 
+    testcontainers.WithTmpfs(map[string]string{
+        "/tmp": "size=100m",
+        "/run": "size=100m",
+    }))
+```
+
 #### WithHostPortAccess
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.31.0"><span class="tc-version">:material-tag: v0.31.0</span></a>
