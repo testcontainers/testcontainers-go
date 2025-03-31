@@ -32,7 +32,7 @@ func Test_LoadImages(t *testing.T) {
 	require.NoError(t, err)
 
 	// ensure nginx image is available locally
-	err = provider.PullImage(ctx, "nginx")
+	err = provider.PullImage(ctx, "nginx:1.27")
 	require.NoError(t, err)
 
 	t.Run("not-available", func(t *testing.T) {
