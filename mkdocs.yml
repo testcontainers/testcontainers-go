@@ -69,6 +69,7 @@ nav:
     - Modules:
         - modules/index.md
         - modules/artemis.md
+        - modules/azure.md
         - modules/azurite.md
         - modules/cassandra.md
         - modules/chroma.md
@@ -77,6 +78,7 @@ nav:
         - modules/consul.md
         - modules/couchbase.md
         - modules/databend.md
+        - modules/dind.md
         - modules/dolt.md
         - modules/dynamodb.md
         - modules/elasticsearch.md
@@ -111,6 +113,7 @@ nav:
         - modules/redis.md
         - modules/redpanda.md
         - modules/registry.md
+        - modules/scylladb.md
         - modules/surrealdb.md
         - modules/valkey.md
         - modules/vault.md
@@ -141,4 +144,4 @@ nav:
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: v0.35.0
+    latest_version: v0.36.0

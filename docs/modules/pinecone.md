@@ -1,6 +1,6 @@
 # Pinecone
 
-Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/pinecone
 
 ### Run function
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
@@ -45,8 +45,8 @@ When starting the Pinecone container, you can pass options in a variadic way to 
 
 #### Image
 
-If you need to set a different Pinecone Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "ghcr.io/pinecone-io/pinecone-local:latest")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "ghcr.io/pinecone-io/pinecone-local:latest")`.
 
 {% include "../features/common_functional_options.md" %}
 
@@ -56,7 +56,7 @@ The Pinecone container exposes the following methods:
 
 #### HttpEndpoint
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 The `HttpEndpoint` method returns the location where the Pinecone container is listening.
 It returns a string with the format `http://<host>:<port>`.

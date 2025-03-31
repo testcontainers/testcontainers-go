@@ -19,6 +19,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/internal/config"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -141,6 +142,7 @@ func TestDockerComposeAPIWithProfiles(t *testing.T) {
 
 	for name, test := range testcases {
 		t.Run(name, func(t *testing.T) {
+			var compose ComposeStack
 			compose, err := NewDockerComposeWith(WithStackFiles(path), WithProfiles(test.withProfiles...))
 			require.NoError(t, err, "NewDockerCompose()")
 
@@ -148,7 +150,7 @@ func TestDockerComposeAPIWithProfiles(t *testing.T) {
 			t.Cleanup(cancel)
 
 			for _, service := range test.wantServices {
-				compose = compose.WaitForService(service, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).(*dockerCompose)
+				compose = compose.WaitForService(service, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second))
 			}
 			err = compose.Up(ctx, Wait(true))
 			cleanup(t, compose)
@@ -254,7 +256,7 @@ func TestDockerComposeAPIWithStopServices(t *testing.T) {
 	path, _ := RenderComposeComplex(t)
 	compose, err := NewDockerComposeWith(
 		WithStackFiles(path),
-		WithLogger(testcontainers.TestLogger(t)))
+		WithLogger(log.TestLogger(t)))
 	require.NoError(t, err, "NewDockerCompose()")
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -694,7 +696,7 @@ func testNameHash(name string) StackIdentifier {
 }
 
 // cleanup is a helper function that schedules the compose stack to be stopped when the test ends.
-func cleanup(t *testing.T, compose *dockerCompose) {
+func cleanup(t *testing.T, compose ComposeStack) {
 	t.Helper()
 	t.Cleanup(func() {
 		require.NoError(t, compose.Down(

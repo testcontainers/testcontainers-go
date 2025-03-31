@@ -17,6 +17,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -31,7 +32,7 @@ type composeStackOptions struct {
 	Identifier     string
 	Paths          []string
 	temporaryPaths map[string]bool
-	Logger         testcontainers.Logging
+	Logger         log.Logger
 	Profiles       []string
 }
 
@@ -77,16 +78,16 @@ type ComposeStack interface {
 	ServiceContainer(ctx context.Context, svcName string) (*testcontainers.DockerContainer, error)
 }
 
-// Deprecated: DockerCompose is the old shell escape based API
+// Deprecated: DockerComposer is the old shell escape based API
 // use ComposeStack instead
-// DockerCompose defines the contract for running Docker Compose
-type DockerCompose interface {
+// DockerComposer defines the contract for running Docker Compose
+type DockerComposer interface {
 	Down() ExecError
 	Invoke() ExecError
-	WaitForService(string, wait.Strategy) DockerCompose
-	WithCommand([]string) DockerCompose
-	WithEnv(map[string]string) DockerCompose
-	WithExposedService(string, int, wait.Strategy) DockerCompose
+	WaitForService(string, wait.Strategy) DockerComposer
+	WithCommand([]string) DockerComposer
+	WithEnv(map[string]string) DockerComposer
+	WithExposedService(string, int, wait.Strategy) DockerComposer
 }
 
 type waitService struct {
@@ -122,15 +123,15 @@ func WithProfiles(profiles ...string) ComposeStackOption {
 	return ComposeProfiles(profiles)
 }
 
-func NewDockerCompose(filePaths ...string) (*dockerCompose, error) {
+func NewDockerCompose(filePaths ...string) (*DockerCompose, error) {
 	return NewDockerComposeWith(WithStackFiles(filePaths...))
 }
 
-func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
+func NewDockerComposeWith(opts ...ComposeStackOption) (*DockerCompose, error) {
 	composeOptions := composeStackOptions{
 		Identifier:     uuid.New().String(),
 		temporaryPaths: make(map[string]bool),
-		Logger:         testcontainers.Logger,
+		Logger:         log.Default(),
 		Profiles:       nil,
 	}
 
@@ -161,7 +162,7 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 	dockerClient := dockerCli.Client()
 	provider.SetClient(dockerClient)
 
-	composeAPI := &dockerCompose{
+	composeAPI := &DockerCompose{
 		name:             composeOptions.Identifier,
 		configs:          composeOptions.Paths,
 		temporaryConfigs: composeOptions.temporaryPaths,
@@ -179,7 +180,7 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 	return composeAPI, nil
 }
 
-// Deprecated: NewLocalDockerCompose returns a DockerCompose compatible instance which is superseded
+// Deprecated: NewLocalDockerCompose returns a DockerComposer compatible instance which is superseded
 // by ComposeStack use NewDockerCompose instead to get a ComposeStack compatible instance
 //
 // NewLocalDockerCompose returns an instance of the local Docker Compose, using an
@@ -192,7 +193,7 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalDockerComposeOption) *LocalDockerCompose {
 	dc := &LocalDockerCompose{
 		LocalDockerComposeOptions: &LocalDockerComposeOptions{
-			Logger: testcontainers.Logger,
+			Logger: log.Default(),
 		},
 	}
 

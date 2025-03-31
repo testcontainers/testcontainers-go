@@ -18,6 +18,10 @@
             "path": "../modules/artemis"
         },
         {
+            "name": "module / azure",
+            "path": "../modules/azure"
+        },
+        {
             "name": "module / azurite",
             "path": "../modules/azurite"
         },
@@ -52,6 +56,10 @@
         {
             "name": "module / databend",
             "path": "../modules/databend"
+        },
+        {
+            "name": "module / dind",
+            "path": "../modules/dind"
         },
         {
             "name": "module / dolt",
@@ -188,6 +196,10 @@
         {
             "name": "module / registry",
             "path": "../modules/registry"
+        },
+        {
+            "name": "module / scylladb",
+            "path": "../modules/scylladb"
         },
         {
             "name": "module / surrealdb",

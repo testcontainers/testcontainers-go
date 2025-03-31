@@ -205,8 +205,6 @@ In order to simplify the creation of the container for a given module, `Testcont
 - `testcontainers.WithConfigModifier`: a function that sets the config Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
 - `testcontainers.WithEndpointSettingsModifier`: a function that sets the endpoint settings Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
 - `testcontainers.WithHostConfigModifier`: a function that sets the host config Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
-- `testcontainers.WithWaitStrategy`: a function that sets the wait strategy for the container request, adding all the passed wait strategies to the container request, using a `testcontainers.MultiStrategy` with 60 seconds of deadline. Please see [Wait strategies](../features/wait/multi.md) for more information.
-- `testcontainers.WithWaitStrategyAndDeadline`: a function that sets the wait strategy for the container request, adding all the passed wait strategies to the container request, using a `testcontainers.MultiStrategy` with the passed deadline. Please see [Wait strategies](../features/wait/multi.md) for more information.
 - `testcontainers.CustomizeRequest`: a function that merges the default options with the ones provided by the user. Recommended for completely customizing the container request.
 
 ### Update Go dependencies in the modules
@@ -217,6 +215,24 @@ To update the Go dependencies in the modules, please run:
 $ cd modules
 $ make tidy-examples
 ```
+
+## Refreshing the modules
+
+To refresh the modules, please run:
+
+```shell
+$ cd modulegen
+$ go run . refresh
+```
+
+This command recreates all the project files for the modules and examples, including:
+
+- the mkdocs.yml file, including all the modules and examples, excluding the `compose` module, as it has its own docs page.
+- the dependabot config file, including all the modules, the examples and the modulegen module.
+- the VSCode project file, including all the modules, the examples and the modulegen module.
+- the Sonar properties file, including all the modules, the examples and the modulegen module.
+
+Executing this command in a well-known state of the project, must not produce any changes in the project files.
 
 ## Interested in converting an example into a module?
 

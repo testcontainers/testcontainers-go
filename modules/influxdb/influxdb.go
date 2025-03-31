@@ -11,7 +11,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// InfluxDbContainer represents the MySQL container type used in the module
+// InfluxDbContainer represents the InfluxDB container type used in the module
 type InfluxDbContainer struct {
 	testcontainers.Container
 }

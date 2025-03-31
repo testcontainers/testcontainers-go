@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/require"
 
@@ -22,7 +22,7 @@ func (st exitStrategyTarget) Host(_ context.Context) (string, error) {
 	return "", nil
 }
 
-func (st exitStrategyTarget) Inspect(_ context.Context) (*types.ContainerJSON, error) {
+func (st exitStrategyTarget) Inspect(_ context.Context) (*container.InspectResponse, error) {
 	return nil, nil
 }
 
@@ -43,8 +43,8 @@ func (st exitStrategyTarget) Exec(_ context.Context, _ []string, _ ...tcexec.Pro
 	return 0, nil, nil
 }
 
-func (st exitStrategyTarget) State(_ context.Context) (*types.ContainerState, error) {
-	return &types.ContainerState{Running: st.isRunning}, nil
+func (st exitStrategyTarget) State(_ context.Context) (*container.State, error) {
+	return &container.State{Running: st.isRunning}, nil
 }
 
 func (st exitStrategyTarget) CopyFileFromContainer(context.Context, string) (io.ReadCloser, error) {
