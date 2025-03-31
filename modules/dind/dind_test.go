@@ -2,7 +2,6 @@ package dind_test
 
 import (
 	"context"
-	"slices"
 	"testing"
 	"time"
 
@@ -33,7 +32,7 @@ func Test_LoadImages(t *testing.T) {
 	require.NoError(t, err)
 
 	// ensure nginx image is available locally
-	err = provider.PullImage(ctx, "nginx")
+	err = provider.PullImage(ctx, "nginx:1.27")
 	require.NoError(t, err)
 
 	t.Run("not-available", func(t *testing.T) {
@@ -42,16 +41,21 @@ func Test_LoadImages(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		err := dindContainer.LoadImage(ctx, "nginx")
+		err := dindContainer.LoadImage(ctx, "nginx:1.27")
 		require.NoError(t, err)
 
 		images, err := cli.ImageList(ctx, image.ListOptions{})
 		require.NoError(t, err)
 
-		found := slices.ContainsFunc(images, func(img image.Summary) bool {
-			return len(img.RepoTags) > 0 && img.RepoTags[0] == "nginx:latest"
-		})
+		if len(images) == 0 || len(images) > 1 {
+			t.Fatalf("got %d images, expected 1", len(images))
+		}
 
-		require.True(t, found)
+		img, err := cli.ImageInspect(ctx, images[0].ID)
+		require.NoError(t, err)
+
+		require.Equal(t, "nginx:1.27", img.RepoTags[0])
+		require.Equal(t, []string{"/docker-entrypoint.sh"}, []string(img.Config.Entrypoint))
+		require.Equal(t, []string{"nginx", "-g", "daemon off;"}, []string(img.Config.Cmd))
 	})
 }
