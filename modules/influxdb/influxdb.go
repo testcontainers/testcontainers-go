@@ -121,8 +121,8 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 type InfluxDBV2Config struct {
 	Username     *string // Username for the initial user
 	Password     *string // Password for the initial user
-	UsernameFile *string // File containing the usernames (e.g., /run/secrets/username)
-	PasswordFile *string // File containing the passwords (e.g., /run/secrets/password)
+	UsernameFile *string // File containing the username (e.g., /run/secrets/username)
+	PasswordFile *string // File containing the password (e.g., /run/secrets/password)
 	TokenFile    *string // File containing the token (e.g., /run/secrets/token)
 	Org          string  // Organization name
 	Bucket       string  // Bucket name
