@@ -15,6 +15,7 @@ import (
 func ExampleRun() {
 	ctx := context.Background()
 
+	// createNetwork {
 	nw, err := network.New(ctx)
 	if err != nil {
 		log.Printf("failed to create network: %v", err)
@@ -25,7 +26,9 @@ func ExampleRun() {
 			log.Printf("failed to remove network: %s", err)
 		}
 	}()
+	// }
 
+	// createHelloWorldContainer {
 	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:        "testcontainers/helloworld:1.2.0",
@@ -46,8 +49,12 @@ func ExampleRun() {
 			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	// }
 
-	target := socat.NewTarget(8080, "helloworld")
+	// createSocatContainer {
+	const exposedPort = 8080
+
+	target := socat.NewTarget(exposedPort, "helloworld")
 
 	socatContainer, err := socat.Run(
 		ctx, "alpine/socat:1.8.0.1",
@@ -63,16 +70,20 @@ func ExampleRun() {
 			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	// }
 
+	// readFromSocat {
 	httpClient := http.DefaultClient
 
-	baseURI := socatContainer.TargetURL(target)
+	baseURI := socatContainer.TargetURL(exposedPort)
 
 	resp, err := httpClient.Get(baseURI.String() + "/ping")
 	if err != nil {
 		log.Printf("failed to get response: %v", err)
 		return
 	}
+	defer resp.Body.Close()
+	// }
 
 	fmt.Printf("%d\n", resp.StatusCode)
 

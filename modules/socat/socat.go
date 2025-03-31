@@ -79,7 +79,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
-// TargetURL returns the URL for the target's exposed port, nil if the port is not mapped
-func (c *Container) TargetURL(t Target) *url.URL {
-	return c.targetURLs[t.exposedPort]
+// TargetURL returns the URL for the exposed port of a target, nil if the port is not mapped
+func (c *Container) TargetURL(exposedPort int) *url.URL {
+	return c.targetURLs[exposedPort]
 }

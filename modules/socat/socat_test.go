@@ -44,7 +44,9 @@ func TestRun_helloWorld(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	target := socat.NewTarget(8080, "helloworld")
+	const exposedPort = 8080
+
+	target := socat.NewTarget(exposedPort, "helloworld")
 
 	socatContainer, err := socat.Run(
 		ctx, "alpine/socat:1.8.0.1",
@@ -56,7 +58,7 @@ func TestRun_helloWorld(t *testing.T) {
 
 	httpClient := http.DefaultClient
 
-	baseURI := socatContainer.TargetURL(target)
+	baseURI := socatContainer.TargetURL(exposedPort)
 	require.NotNil(t, baseURI)
 
 	resp, err := httpClient.Get(baseURI.String() + "/ping")
@@ -90,7 +92,12 @@ func TestRun_helloWorldDifferentPort(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	target := socat.NewTargetWithInternalPort(8080, 8081, "helloworld")
+	const (
+		exposedPort  = 8080
+		internalPort = 8081
+	)
+
+	target := socat.NewTargetWithInternalPort(exposedPort, internalPort, "helloworld")
 
 	socatContainer, err := socat.Run(
 		ctx, "alpine/socat:1.8.0.1",
@@ -102,7 +109,7 @@ func TestRun_helloWorldDifferentPort(t *testing.T) {
 
 	httpClient := http.DefaultClient
 
-	baseURI := socatContainer.TargetURL(target)
+	baseURI := socatContainer.TargetURL(exposedPort)
 	require.NotNil(t, baseURI)
 
 	resp, err := httpClient.Get(baseURI.String() + "/ping")

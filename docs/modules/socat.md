@@ -17,7 +17,10 @@ go get github.com/testcontainers/testcontainers-go/modules/socat
 ## Usage example
 
 <!--codeinclude-->
-[Creating a Socat container](../../modules/socat/examples_test.go) inside_block:ExampleRun
+[Create a Network](../../modules/socat/examples_test.go) inside_block:createNetwork
+[Create a Hello World Container](../../modules/socat/examples_test.go) inside_block:createHelloWorldContainer
+[Create a Socat Container](../../modules/socat/examples_test.go) inside_block:createSocatContainer
+[Read from Socat Container](../../modules/socat/examples_test.go) inside_block:readFromSocat
 <!--/codeinclude-->
 
 ## Module Reference
