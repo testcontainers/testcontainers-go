@@ -131,6 +131,8 @@ type InfluxDBV2Config struct {
 	AuthEnabled  *bool   // Enable authentication (true/false); defaults to false.
 }
 
+// WithV2Env sets up the container with the environment variables compatible with InfluxDB v2.
+// Allows for setting up the initial user, password, organization, bucket, retention and authentication options.
 func WithV2Env(config InfluxDBV2Config) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["DOCKER_INFLUXDB_INIT_ORG"] = config.Org
