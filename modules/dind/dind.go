@@ -21,7 +21,7 @@ type Container struct {
 	testcontainers.Container
 }
 
-// Run creates an instance of the K3s container type
+// Run creates an instance of the Docker in Docker container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	req := testcontainers.ContainerRequest{
 		Image: img,
@@ -91,7 +91,7 @@ func (c *Container) LoadImage(ctx context.Context, image string) (err error) {
 		err = errors.Join(err, os.Remove(imagesTar.Name()))
 	}()
 
-	if err = provider.SaveImages(context.Background(), imagesTar.Name(), image); err != nil {
+	if err = provider.SaveImages(ctx, imagesTar.Name(), image); err != nil {
 		return fmt.Errorf("save images: %w", err)
 	}
 
@@ -100,7 +100,7 @@ func (c *Container) LoadImage(ctx context.Context, image string) (err error) {
 		return fmt.Errorf("copy image to container: %w", err)
 	}
 
-	if _, _, err = c.Container.Exec(ctx, []string{"docker", "image", "import", containerPath, image}); err != nil {
+	if _, _, err = c.Container.Exec(ctx, []string{"docker", "image", "load", "-i", containerPath}); err != nil {
 		return fmt.Errorf("import image: %w", err)
 	}
 
