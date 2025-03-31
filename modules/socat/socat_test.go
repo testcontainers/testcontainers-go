@@ -56,10 +56,10 @@ func TestRun_helloWorld(t *testing.T) {
 
 	httpClient := http.DefaultClient
 
-	baseUri := socatContainer.TargetURL(target)
-	require.NotNil(t, baseUri)
+	baseURI := socatContainer.TargetURL(target)
+	require.NotNil(t, baseURI)
 
-	resp, err := httpClient.Get(baseUri.String() + "/ping")
+	resp, err := httpClient.Get(baseURI.String() + "/ping")
 	require.NoError(t, err)
 
 	require.Equal(t, 200, resp.StatusCode)
@@ -102,10 +102,10 @@ func TestRun_helloWorldDifferentPort(t *testing.T) {
 
 	httpClient := http.DefaultClient
 
-	baseUri := socatContainer.TargetURL(target)
-	require.NotNil(t, baseUri)
+	baseURI := socatContainer.TargetURL(target)
+	require.NotNil(t, baseURI)
 
-	resp, err := httpClient.Get(baseUri.String() + "/ping")
+	resp, err := httpClient.Get(baseURI.String() + "/ping")
 	require.NoError(t, err)
 
 	require.Equal(t, 200, resp.StatusCode)

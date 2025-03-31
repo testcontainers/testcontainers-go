@@ -66,9 +66,9 @@ func ExampleRun() {
 
 	httpClient := http.DefaultClient
 
-	baseUri := socatContainer.TargetURL(target)
+	baseURI := socatContainer.TargetURL(target)
 
-	resp, err := httpClient.Get(baseUri.String() + "/ping")
+	resp, err := httpClient.Get(baseURI.String() + "/ping")
 	if err != nil {
 		log.Printf("failed to get response: %v", err)
 		return

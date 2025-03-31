@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/docker/go-connections/nat"
+
 	"github.com/testcontainers/testcontainers-go"
 )
 
