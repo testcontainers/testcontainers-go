@@ -43,7 +43,7 @@ func ExampleRun() {
 	// true
 }
 
-func ExampleRun_V2() {
+func ExampleRun_v2() {
 	// runInfluxV2Container {
 	ctx := context.Background()
 
