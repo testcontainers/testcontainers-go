@@ -41,9 +41,8 @@ type Target struct {
 
 func NewTarget(exposedPort int, host string) Target {
 	return Target{
-		exposedPort:  exposedPort,
-		internalPort: exposedPort,
-		host:         host,
+		exposedPort: exposedPort,
+		host:        host,
 	}
 }
 
