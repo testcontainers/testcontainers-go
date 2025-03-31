@@ -8,14 +8,14 @@ import (
 )
 
 type options struct {
-	// Targets is the map of targets of the socat container
-	Targets    map[int]Target
+	// targets is the map of targets of the socat container
+	targets    map[int]Target
 	targetsCmd string
 }
 
 func defaultOptions() options {
 	return options{
-		Targets: map[int]Target{},
+		targets: map[int]Target{},
 	}
 }
 
@@ -66,7 +66,7 @@ func WithTargets(targets ...Target) Option {
 				target.internalPort = target.exposedPort
 			}
 
-			o.Targets[target.exposedPort] = target
+			o.targets[target.exposedPort] = target
 
 			cmds = append(cmds, fmt.Sprintf("socat TCP-LISTEN:%d,fork,reuseaddr TCP:%s:%d", target.exposedPort, target.host, target.internalPort))
 		}

@@ -40,7 +40,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	for k := range settings.Targets {
+	for k := range settings.targets {
 		req.ExposedPorts = append(req.ExposedPorts, fmt.Sprintf("%d/tcp", k))
 	}
 
@@ -59,7 +59,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	targetURLs := map[int]*url.URL{}
-	for k := range settings.Targets {
+	for k := range settings.targets {
 		hostPort, err := c.PortEndpoint(ctx, nat.Port(fmt.Sprintf("%d/tcp", k)), "http")
 		if err != nil {
 			return c, fmt.Errorf("mapped port: %w", err)
