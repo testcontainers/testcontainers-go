@@ -53,3 +53,11 @@ In example: `Run(context.Background(), "alpine/socat:1.8.0.1")`.
 ### Container Methods
 
 The Socat container exposes the following methods:
+
+#### TargetURL
+
+The `TargetURL(port int)` method returns the URL for the exposed port of a target, nil if the port is not mapped.
+
+<!--codeinclude-->
+[Read from Socat using TargetURL](../../modules/socat/examples_test.go) inside_block:readFromSocat
+<!--/codeinclude-->

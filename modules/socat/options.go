@@ -39,6 +39,10 @@ type Target struct {
 	host         string
 }
 
+// NewTarget creates a new target for the socat container.
+// The host of the target must be without the port,
+// as it is internally mapped to the exposed port.
+// The exposed port is exposed by the socat container.
 func NewTarget(exposedPort int, host string) Target {
 	return Target{
 		exposedPort: exposedPort,
@@ -46,6 +50,11 @@ func NewTarget(exposedPort int, host string) Target {
 	}
 }
 
+// NewTargetWithInternalPort creates a new target for the socat container.
+// The host of the target must be without the port,
+// as it is internally mapped to the exposed port.
+// The exposed port is the port of the socat container, and
+// the internal port is the port of the target container.
 func NewTargetWithInternalPort(exposedPort int, internalPort int, host string) Target {
 	return Target{
 		exposedPort:  exposedPort,

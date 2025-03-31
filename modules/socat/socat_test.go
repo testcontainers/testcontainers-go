@@ -93,6 +93,7 @@ func TestRun_helloWorldDifferentPort(t *testing.T) {
 	require.NoError(t, err)
 
 	const (
+		// The helloworld container is listening on both ports: 8080 and 8081
 		exposedPort  = 8080
 		internalPort = 8081
 	)
