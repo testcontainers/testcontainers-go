@@ -35,6 +35,7 @@ type Config struct {
 		Examples           []string `yaml:"Examples,omitempty"`
 		Modules            []string `yaml:"Modules,omitempty"`
 		SystemRequirements []any    `yaml:"System Requirements,omitempty"`
+		Dependabot         string   `yaml:"Dependabot,omitempty"`
 		Contributing       string   `yaml:"Contributing,omitempty"`
 		GettingHelp        string   `yaml:"Getting help,omitempty"`
 	} `yaml:"nav"`
