@@ -69,7 +69,7 @@ func TestV2Container_WithOptions(t *testing.T) {
 
 	state, err := influxdbContainer.State(ctx)
 	require.NoError(t, err)
-	assert.True(t, state.Running)
+	require.True(t, state.Running)
 
 	// Query the InfluxDB API to verify the setup
 	url, err := influxdbContainer.ConnectionUrl(ctx)
@@ -83,14 +83,14 @@ func TestV2Container_WithOptions(t *testing.T) {
 	influxBucket, err := client.BucketsAPI().FindBucketByName(ctx, bucket)
 	require.NoError(t, err)
 
-	assert.Equal(t, bucket, influxBucket.Name)
+	require.Equal(t, bucket, influxBucket.Name)
 
 	// Try to connect without authentication
 	clientWithoutToken := influxdb2.NewClientWithOptions(url, "", influxdb2.DefaultOptions())
 	defer clientWithoutToken.Close()
 
 	_, err = clientWithoutToken.BucketsAPI().CreateBucketWithNameWithID(ctx, org, "example")
-	assert.Error(t, err, "Expected error when trying to create a bucket without authentication")
+	require.Error(t, err, "Expected error when trying to create a bucket without authentication")
 }
 
 func TestWithInitDb(t *testing.T) {
