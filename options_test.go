@@ -238,3 +238,230 @@ func TestWithHostPortAccess(t *testing.T) {
 		})
 	}
 }
+
+func TestWithEntrypoint(t *testing.T) {
+	testEntrypoint := func(t *testing.T, initial []string, add []string, expected []string) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Entrypoint: initial,
+			},
+		}
+		opt := testcontainers.WithEntrypoint(add...)
+		require.NoError(t, opt.Customize(req))
+		require.Equal(t, expected, req.Entrypoint)
+	}
+
+	t.Run("add-to-existing", func(t *testing.T) {
+		testEntrypoint(t,
+			[]string{"/bin/sh"},
+			[]string{"-c", "echo hello"},
+			[]string{"/bin/sh", "-c", "echo hello"},
+		)
+	})
+
+	t.Run("add-to-nil", func(t *testing.T) {
+		testEntrypoint(t,
+			nil,
+			[]string{"/bin/sh", "-c"},
+			[]string{"/bin/sh", "-c"},
+		)
+	})
+}
+
+func TestWithExposedPorts(t *testing.T) {
+	testPorts := func(t *testing.T, initial []string, add []string, expected []string) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				ExposedPorts: initial,
+			},
+		}
+		opt := testcontainers.WithExposedPorts(add...)
+		require.NoError(t, opt.Customize(req))
+		require.Equal(t, expected, req.ExposedPorts)
+	}
+
+	t.Run("add-to-existing", func(t *testing.T) {
+		testPorts(t,
+			[]string{"8080/tcp"},
+			[]string{"9090/tcp"},
+			[]string{"8080/tcp", "9090/tcp"},
+		)
+	})
+
+	t.Run("add-to-nil", func(t *testing.T) {
+		testPorts(t,
+			nil,
+			[]string{"8080/tcp"},
+			[]string{"8080/tcp"},
+		)
+	})
+}
+
+func TestWithCmd(t *testing.T) {
+	testCmd := func(t *testing.T, initial []string, add []string, expected []string) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Cmd: initial,
+			},
+		}
+		opt := testcontainers.WithCmd(add...)
+		require.NoError(t, opt.Customize(req))
+		require.Equal(t, expected, req.Cmd)
+	}
+
+	t.Run("add-to-existing", func(t *testing.T) {
+		testCmd(t,
+			[]string{"echo"},
+			[]string{"hello", "world"},
+			[]string{"echo", "hello", "world"},
+		)
+	})
+
+	t.Run("add-to-nil", func(t *testing.T) {
+		testCmd(t,
+			nil,
+			[]string{"echo", "hello"},
+			[]string{"echo", "hello"},
+		)
+	})
+}
+
+func TestWithLabels(t *testing.T) {
+	testLabels := func(t *testing.T, initial map[string]string, add map[string]string, expected map[string]string) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Labels: initial,
+			},
+		}
+		opt := testcontainers.WithLabels(add)
+		require.NoError(t, opt.Customize(req))
+		require.Equal(t, expected, req.Labels)
+	}
+
+	t.Run("add-to-existing", func(t *testing.T) {
+		testLabels(t,
+			map[string]string{"key1": "value1"},
+			map[string]string{"key2": "value2"},
+			map[string]string{"key1": "value1", "key2": "value2"},
+		)
+	})
+
+	t.Run("add-to-nil", func(t *testing.T) {
+		testLabels(t,
+			nil,
+			map[string]string{"key1": "value1"},
+			map[string]string{"key1": "value1"},
+		)
+	})
+}
+
+func TestWithMounts(t *testing.T) {
+	testMounts := func(t *testing.T, initial []testcontainers.ContainerMount, add []testcontainers.ContainerMount, expected testcontainers.ContainerMounts) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Mounts: initial,
+			},
+		}
+		opt := testcontainers.WithMounts(add...)
+		require.NoError(t, opt.Customize(req))
+		require.Equal(t, expected, req.Mounts)
+	}
+
+	t.Run("add-to-existing", func(t *testing.T) {
+		testMounts(t,
+			[]testcontainers.ContainerMount{
+				{Source: testcontainers.GenericVolumeMountSource{Name: "source1"}, Target: "/tmp/target1"}},
+			[]testcontainers.ContainerMount{
+				{Source: testcontainers.GenericVolumeMountSource{Name: "source2"}, Target: "/tmp/target2"}},
+			testcontainers.ContainerMounts{
+				{Source: testcontainers.GenericVolumeMountSource{Name: "source1"}, Target: "/tmp/target1"},
+				{Source: testcontainers.GenericVolumeMountSource{Name: "source2"}, Target: "/tmp/target2"},
+			},
+		)
+	})
+
+	t.Run("add-to-nil", func(t *testing.T) {
+		testMounts(t,
+			nil,
+			[]testcontainers.ContainerMount{
+				{Source: testcontainers.GenericVolumeMountSource{Name: "source1"}, Target: "/tmp/target1"}},
+			testcontainers.ContainerMounts{
+				{Source: testcontainers.GenericVolumeMountSource{Name: "source1"}, Target: "/tmp/target1"}},
+		)
+	})
+}
+
+func TestWithTmpfs(t *testing.T) {
+	testTmpfs := func(t *testing.T, initial map[string]string, add map[string]string, expected map[string]string) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Tmpfs: initial,
+			},
+		}
+		opt := testcontainers.WithTmpfs(add)
+		require.NoError(t, opt.Customize(req))
+		require.Equal(t, expected, req.Tmpfs)
+	}
+
+	t.Run("add-to-existing", func(t *testing.T) {
+		testTmpfs(t,
+			map[string]string{"/tmp1": "size=100m"},
+			map[string]string{"/tmp2": "size=200m"},
+			map[string]string{"/tmp1": "size=100m", "/tmp2": "size=200m"},
+		)
+	})
+
+	t.Run("add-to-nil", func(t *testing.T) {
+		testTmpfs(t,
+			nil,
+			map[string]string{"/tmp1": "size=100m"},
+			map[string]string{"/tmp1": "size=100m"},
+		)
+	})
+}
+
+func TestWithFiles(t *testing.T) {
+	testFiles := func(t *testing.T, initial []testcontainers.ContainerFile, add []testcontainers.ContainerFile, expected []testcontainers.ContainerFile) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Files: initial,
+			},
+		}
+		opt := testcontainers.WithFiles(add...)
+		require.NoError(t, opt.Customize(req))
+		require.Equal(t, expected, req.Files)
+	}
+
+	t.Run("add-to-existing", func(t *testing.T) {
+		testFiles(t,
+			[]testcontainers.ContainerFile{{HostFilePath: "/tmp/file1", ContainerFilePath: "/container/file1"}},
+			[]testcontainers.ContainerFile{{HostFilePath: "/tmp/file2", ContainerFilePath: "/container/file2"}},
+			[]testcontainers.ContainerFile{
+				{HostFilePath: "/tmp/file1", ContainerFilePath: "/container/file1"},
+				{HostFilePath: "/tmp/file2", ContainerFilePath: "/container/file2"},
+			},
+		)
+	})
+
+	t.Run("add-to-nil", func(t *testing.T) {
+		testFiles(t,
+			nil,
+			[]testcontainers.ContainerFile{{HostFilePath: "/tmp/file1", ContainerFilePath: "/container/file1"}},
+			[]testcontainers.ContainerFile{{HostFilePath: "/tmp/file1", ContainerFilePath: "/container/file1"}},
+		)
+	})
+}
