@@ -29,7 +29,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Started: true,
 	}
 
-	// 2. Gather all config options (defaults and then apply provided options)
+	// Gather all config options (defaults and then apply provided options)
 	settings := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
