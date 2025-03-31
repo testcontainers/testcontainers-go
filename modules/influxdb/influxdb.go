@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"strconv"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -153,7 +154,7 @@ func WithV2Env(config InfluxDBV2Config) testcontainers.CustomizeRequestOption {
 		}
 
 		if config.AuthEnabled != nil {
-			req.Env["DOCKER_INFLUXDB_INIT_AUTH_ENABLED"] = fmt.Sprintf("%t", *config.AuthEnabled)
+			req.Env["DOCKER_INFLUXDB_INIT_AUTH_ENABLED"] = strconv.FormatBool(*config.AuthEnabled)
 		}
 
 		if config.Retention != nil {

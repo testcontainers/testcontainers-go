@@ -66,6 +66,7 @@ func TestV2Container_WithOptions(t *testing.T) {
 		}),
 	)
 	testcontainers.CleanupContainer(t, influxdbContainer)
+	require.NoError(t, err)
 
 	state, err := influxdbContainer.State(ctx)
 	require.NoError(t, err)
@@ -82,7 +83,6 @@ func TestV2Container_WithOptions(t *testing.T) {
 	// Get the bucket
 	influxBucket, err := client.BucketsAPI().FindBucketByName(ctx, bucket)
 	require.NoError(t, err)
-
 	require.Equal(t, bucket, influxBucket.Name)
 
 	// Try to connect without authentication

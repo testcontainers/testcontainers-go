@@ -6,6 +6,7 @@ import (
 	"log"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/influxdb"
 )
@@ -83,8 +84,6 @@ func ExampleRun_v2() {
 	}
 
 	fmt.Println(state.Running)
-	// Output:
-	// true
 
 	// Query the InfluxDB API to verify the setup
 	url, err := influxdbContainer.ConnectionUrl(ctx)
@@ -105,4 +104,8 @@ func ExampleRun_v2() {
 	}
 
 	log.Printf("Got bucket: %s", influxBucket.Name)
+
+	// Output:
+	// true
+	// Got bucket: bucket
 }
