@@ -140,6 +140,7 @@ nav:
         - system_requirements/using_colima.md
         - system_requirements/using_podman.md
         - system_requirements/rancher.md
+    - Dependabot: dependabot.md
     - Contributing: contributing.md
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
