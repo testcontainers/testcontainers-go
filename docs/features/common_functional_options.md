@@ -229,7 +229,7 @@ df := testcontainers.FromDockerfile{
 	BuildArgs:  map[string]*string{"ARG1": nil, "ARG2": nil},
 }   
 
-ctr, err := aModule.Run(ctx, "image:tag", testcontainers.BuildFromDockerfile(ctx, df))
+ctr, err := aModule.Run(ctx, "image:tag", testcontainers.BuildFromDockerfile(df))
 ```
 
 #### WithNetwork

@@ -42,7 +42,7 @@ func CustomizeRequest(src GenericContainerRequest) CustomizeRequestOption {
 }
 
 // BuildFromDockerfile allows to build a container from a Dockerfile
-func BuildFromDockerfile(ctx context.Context, df FromDockerfile) CustomizeRequestOption {
+func BuildFromDockerfile(df FromDockerfile) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {
 		req.FromDockerfile = df
 
