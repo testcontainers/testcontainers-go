@@ -50,6 +50,20 @@ In example: `Run(context.Background(), "alpine/socat:1.8.0.1")`.
 
 {% include "../features/common_functional_options.md" %}
 
+#### WithTarget
+
+The `WithTarget` function sets a single target for the Socat container, defined by the `Target` struct.
+This struct can be built using the the following functions:
+
+- `NewTarget(exposedPort int, host string)`: Creates a new target for the Socat container. The target's internal port is set to the same value as the exposed port.
+- `NewTargetWithInternalPort(exposedPort int, internalPort int, host string)`: Creates a new target for the Socat container with an internal port. Use this function when you want to map a container to a different port than the default one.
+
+<!--codeinclude-->
+[Passing a target](../../modules/socat/examples_test.go) inside_block:createSocatContainer
+<!--/codeinclude-->
+
+In the above example, there is a `helloworld` container thatis listening on port `8080` and `8081`. Please check [the helloworld container source code](https://github.com/testcontainers/helloworld/blob/141af7909907e04b124e691d3cd6fc7c32da2207/internal/server/server.go#L26-L27) for more details.
+
 ### Container Methods
 
 The Socat container exposes the following methods:

@@ -50,7 +50,7 @@ func TestRun_helloWorld(t *testing.T) {
 
 	socatContainer, err := socat.Run(
 		ctx, "alpine/socat:1.8.0.1",
-		socat.WithTargets(target),
+		socat.WithTarget(target),
 		network.WithNetwork([]string{"socat"}, nw),
 	)
 	testcontainers.CleanupContainer(t, socatContainer)
@@ -102,7 +102,7 @@ func TestRun_helloWorldDifferentPort(t *testing.T) {
 
 	socatContainer, err := socat.Run(
 		ctx, "alpine/socat:1.8.0.1",
-		socat.WithTargets(target),
+		socat.WithTarget(target),
 		network.WithNetwork([]string{"socat"}, nw),
 	)
 	testcontainers.CleanupContainer(t, socatContainer)

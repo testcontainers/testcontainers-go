@@ -2,7 +2,6 @@ package socat
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -39,15 +38,16 @@ type Target struct {
 	host         string
 }
 
+func (t Target) toCmd() string {
+	return fmt.Sprintf("socat TCP-LISTEN:%d,fork,reuseaddr TCP:%s:%d", t.exposedPort, t.host, t.internalPort)
+}
+
 // NewTarget creates a new target for the socat container.
 // The host of the target must be without the port,
 // as it is internally mapped to the exposed port.
 // The exposed port is exposed by the socat container.
 func NewTarget(exposedPort int, host string) Target {
-	return Target{
-		exposedPort: exposedPort,
-		host:        host,
-	}
+	return NewTargetWithInternalPort(exposedPort, exposedPort, host)
 }
 
 // NewTargetWithInternalPort creates a new target for the socat container.
@@ -56,6 +56,11 @@ func NewTarget(exposedPort int, host string) Target {
 // The exposed port is the port of the socat container, and
 // the internal port is the port of the target container.
 func NewTargetWithInternalPort(exposedPort int, internalPort int, host string) Target {
+	// If the internal port is not set, use the exposed port
+	if internalPort == 0 {
+		internalPort = exposedPort
+	}
+
 	return Target{
 		exposedPort:  exposedPort,
 		internalPort: internalPort,
@@ -63,24 +68,20 @@ func NewTargetWithInternalPort(exposedPort int, internalPort int, host string) T
 	}
 }
 
-// WithTargets sets the targets for the socat container.
-// The host of each target must be without the port, as it is internally mapped to the exposed port.
-func WithTargets(targets ...Target) Option {
+// WithTarget sets a single target for the socat container.
+// The host of the target must be without the port, as it is internally mapped to the exposed port.
+// Multiple calls to WithTarget will accumulate targets.
+func WithTarget(target Target) Option {
 	return func(o *options) error {
-		cmds := make([]string, 0, len(targets))
+		o.targets[target.exposedPort] = target
 
-		// If the internal port is not set, use the exposed port
-		for _, target := range targets {
-			if target.internalPort == 0 {
-				target.internalPort = target.exposedPort
-			}
+		newCmd := target.toCmd()
 
-			o.targets[target.exposedPort] = target
-
-			cmds = append(cmds, fmt.Sprintf("socat TCP-LISTEN:%d,fork,reuseaddr TCP:%s:%d", target.exposedPort, target.host, target.internalPort))
+		if o.targetsCmd == "" {
+			o.targetsCmd = newCmd
+		} else {
+			o.targetsCmd += " & " + newCmd
 		}
-
-		o.targetsCmd = strings.Join(cmds, " & ")
 
 		return nil
 	}

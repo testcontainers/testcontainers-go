@@ -58,7 +58,7 @@ func ExampleRun() {
 
 	socatContainer, err := socat.Run(
 		ctx, "alpine/socat:1.8.0.1",
-		socat.WithTargets(target),
+		socat.WithTarget(target),
 		network.WithNetwork([]string{"socat"}, nw),
 	)
 	if err != nil {
