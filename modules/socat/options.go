@@ -78,6 +78,10 @@ func NewTargetWithInternalPort(exposedPort int, internalPort int, host string) T
 // Multiple calls to WithTarget will accumulate targets.
 func WithTarget(target Target) Option {
 	return func(o *options) error {
+		if target.exposedPort == 0 {
+			return fmt.Errorf("exposed port cannot be 0")
+		}
+
 		o.targets[target.exposedPort] = target
 
 		newCmd := target.toCmd()
