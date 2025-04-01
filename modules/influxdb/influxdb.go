@@ -119,14 +119,15 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// InfluxDBV2Config contains the configuration for InfluxDB v2.
 type InfluxDBV2Config struct {
 	Username     *string // Username for the initial user
 	Password     *string // Password for the initial user
 	UsernameFile *string // File containing the username (e.g., /run/secrets/username)
 	PasswordFile *string // File containing the password (e.g., /run/secrets/password)
 	TokenFile    *string // File containing the token (e.g., /run/secrets/token)
-	Org          string  // Organization name
-	Bucket       string  // Bucket name
+	Org          string  // Organization name (required)
+	Bucket       string  // Bucket name (required)
 	Retention    *string // Retention policy (e.g., "30d" for 30 days)
 	Token        *string // Admin token
 	AuthEnabled  *bool   // Enable authentication (true/false); defaults to false.
