@@ -4,7 +4,9 @@ Not available until the next release of testcontainers-go <a href="https://githu
 
 ## Introduction
 
-The Testcontainers module for Socat.
+The Testcontainers module for Socat, a utility container that provides TCP port forwarding and network tunneling between services, enabling transparent communication between containers and networks.
+
+This is particularly useful in testing scenarios where you need to simulate network connections or provide transparent access to services running in different containers.
 
 ## Adding this module to your project dependencies
 
