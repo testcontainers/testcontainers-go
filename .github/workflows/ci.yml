@@ -22,7 +22,7 @@ jobs:
 
       - id: changed-files
         name: Get changed files
-        uses: tj-actions/changed-files@4edd678ac3f81e2dc578756871e4d00c19191daf # v45.0.4
+        uses: tj-actions/changed-files@823fcebdb31bb35fdf2229d9f769b400309430d0 # v46.0.3
 
       - id: set-modified-modules
         name: Set all modified modules
