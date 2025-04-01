@@ -213,6 +213,25 @@ It leverages the `Executable` interface to represent the command and positional 
 
 You could use this feature to run a custom script, or to run a command that is not supported by the module right after the container is ready.
 
+#### Build from Dockerfile
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+Testcontainers exposes the `testcontainers.BuildFromDockerfile` option to build a container from a Dockerfile.
+The functional option receives a `testcontainers.FromDockerfile` struct that is applied to the container request before starting the container. As a result, the container is built and started in one go.
+
+```golang
+df := testcontainers.FromDockerfile{
+	Context:    ".",
+	Dockerfile: "Dockerfile",
+	Repo:       "testcontainers",
+	Tag:        "latest",
+	BuildArgs:  map[string]*string{"ARG1": nil, "ARG2": nil},
+}   
+
+ctr, err := aModule.Run(ctx, "image:tag", testcontainers.BuildFromDockerfile(ctx, df))
+```
+
 #### WithNetwork
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>

@@ -467,3 +467,26 @@ func TestWithFiles(t *testing.T) {
 		)
 	})
 }
+
+func TestBuildFromDockerfile(t *testing.T) {
+	df := testcontainers.FromDockerfile{
+		Context:    ".",
+		Dockerfile: "Dockerfile",
+		Repo:       "testcontainers",
+		Tag:        "latest",
+		BuildArgs:  map[string]*string{"ARG1": nil, "ARG2": nil},
+	}
+
+	req := &testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{},
+	}
+
+	opt := testcontainers.BuildFromDockerfile(context.Background(), df)
+	require.NoError(t, opt.Customize(req))
+	require.Equal(t, df, req.FromDockerfile)
+	require.Equal(t, ".", req.FromDockerfile.Context)
+	require.Equal(t, "Dockerfile", req.FromDockerfile.Dockerfile)
+	require.Equal(t, "testcontainers", req.FromDockerfile.Repo)
+	require.Equal(t, "latest", req.FromDockerfile.Tag)
+	require.Equal(t, map[string]*string{"ARG1": nil, "ARG2": nil}, req.FromDockerfile.BuildArgs)
+}

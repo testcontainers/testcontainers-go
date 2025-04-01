@@ -41,6 +41,15 @@ func CustomizeRequest(src GenericContainerRequest) CustomizeRequestOption {
 	}
 }
 
+// BuildFromDockerfile allows to build a container from a Dockerfile
+func BuildFromDockerfile(ctx context.Context, df FromDockerfile) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.FromDockerfile = df
+
+		return nil
+	}
+}
+
 // WithConfigModifier allows to override the default container config
 func WithConfigModifier(modifier func(config *container.Config)) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {
