@@ -95,7 +95,9 @@ func TestRun_helloWorldDifferentPort(t *testing.T) {
 	const (
 		// The helloworld container is listening on both ports: 8080 and 8081
 		port1 = 8080
-		port2 = 8081
+		// The helloworld container is not listening on this port,
+		// but the socat container will forward the traffic to the correct port
+		port2 = 9080
 	)
 
 	target := socat.NewTargetWithInternalPort(port2, port1, "helloworld")
@@ -148,17 +150,25 @@ func TestRun_multipleTargets(t *testing.T) {
 		// The helloworld container is listening on both ports: 8080 and 8081
 		port1 = 8080
 		port2 = 8081
+		// The helloworld container is not listening on these ports,
+		// but the socat container will forward the traffic to the correct port
+		port3 = 9080
+		port4 = 9081
 	)
 
 	targets := []socat.Target{
-		socat.NewTarget(port1, "helloworld"),
-		socat.NewTargetWithInternalPort(port2, port1, "helloworld"),
+		socat.NewTarget(port1, "helloworld"),                        // using a default port
+		socat.NewTarget(port2, "helloworld"),                        // using a default port
+		socat.NewTargetWithInternalPort(port3, port1, "helloworld"), // using a different port
+		socat.NewTargetWithInternalPort(port4, port2, "helloworld"), // using a different port
 	}
 
 	socatContainer, err := socat.Run(
 		ctx, "alpine/socat:1.8.0.1",
 		socat.WithTarget(targets[0]),
 		socat.WithTarget(targets[1]),
+		socat.WithTarget(targets[2]),
+		socat.WithTarget(targets[3]),
 		network.WithNetwork([]string{"socat"}, nw),
 	)
 	testcontainers.CleanupContainer(t, socatContainer)
