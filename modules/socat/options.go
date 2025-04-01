@@ -1,6 +1,7 @@
 package socat
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -79,7 +80,7 @@ func NewTargetWithInternalPort(exposedPort int, internalPort int, host string) T
 func WithTarget(target Target) Option {
 	return func(o *options) error {
 		if target.exposedPort == 0 {
-			return fmt.Errorf("exposed port cannot be 0")
+			return errors.New("exposed port cannot be 0")
 		}
 
 		o.targets[target.exposedPort] = target
