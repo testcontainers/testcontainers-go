@@ -1,10 +1,8 @@
 package mkdocs
 
 import (
-	"sort"
+	"slices"
 	"strings"
-
-	"golang.org/x/exp/slices"
 )
 
 type Config struct {
@@ -66,7 +64,7 @@ func (c *Config) addModule(isModule bool, moduleMd string, indexMd string) {
 		}
 
 		navItems = append(navItems, moduleMd)
-		sort.Strings(navItems)
+		slices.Sort(navItems)
 
 		// prepend the index.md file
 		navItems = append([]string{indexMd}, navItems...)
