@@ -1764,7 +1764,7 @@ func TestContainerRunningCheckingStatusCode(t *testing.T) {
 }
 
 func TestContainerWithUserID(t *testing.T) {
-	expectedUserID := "60125"
+	const expectedUserID = "60125"
 
 	ctx := context.Background()
 	req := ContainerRequest{
@@ -1789,7 +1789,7 @@ func TestContainerWithUserID(t *testing.T) {
 	b, err := io.ReadAll(r)
 	require.NoError(t, err)
 	actual := regexp.MustCompile(`\D+`).ReplaceAllString(string(b), "")
-	assert.Equal(t, expectedUserID, actual)
+	require.Equal(t, expectedUserID, actual)
 }
 
 func TestContainerWithNoUserID(t *testing.T) {
