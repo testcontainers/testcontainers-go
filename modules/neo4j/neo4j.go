@@ -24,10 +24,8 @@ type Neo4jContainer struct {
 	testcontainers.Container
 }
 
-// BoltUrl returns the bolt url for the Neo4j container, using the bolt port, in the format of neo4j://host:port
-//
-//nolint:revive //FIXME
-func (c Neo4jContainer) BoltUrl(ctx context.Context) (string, error) {
+// BoltURL returns the bolt url for the Neo4j container, using the bolt port, in the format of neo4j://host:port
+func (c Neo4jContainer) BoltURL(ctx context.Context) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
 		return "", err

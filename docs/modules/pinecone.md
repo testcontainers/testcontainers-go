@@ -54,11 +54,11 @@ In example: `Run(context.Background(), "ghcr.io/pinecone-io/pinecone-local:lates
 
 The Pinecone container exposes the following methods:
 
-#### HttpEndpoint
+#### HTTPEndpoint
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
-The `HttpEndpoint` method returns the location where the Pinecone container is listening.
+The `HTTPEndpoint` method returns the location where the Pinecone container is listening.
 It returns a string with the format `http://<host>:<port>`.
 
 <!--codeinclude-->
