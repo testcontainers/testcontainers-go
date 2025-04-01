@@ -22,7 +22,7 @@ Using the `WithImageSubstitutors` options, you could define your own substitutio
 If you need to either pass additional environment variables to a container or override them, you can use `testcontainers.WithEnv` for example:
 
 ```golang
-ctr, err = aModule.Run(ctx, "image:tag", testcontainers.WithEnv(map[string]string{"FOO": "BAR"}))
+ctr, err = mymodule.Run(ctx, "docker.io/myservice:1.2.3", testcontainers.WithEnv(map[string]string{"FOO": "BAR"}))
 ```
 
 #### WithExposedPorts
@@ -32,7 +32,7 @@ ctr, err = aModule.Run(ctx, "image:tag", testcontainers.WithEnv(map[string]strin
 If you need to expose additional ports from the container, you can use `testcontainers.WithExposedPorts`. For example:
 
 ```golang
-ctr, err := aModule.Run(ctx, "image:tag", 
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", 
     testcontainers.WithExposedPorts("8080/tcp", "9090/tcp"))
 ```
 
@@ -43,7 +43,7 @@ ctr, err := aModule.Run(ctx, "image:tag",
 If you need to append commands to the container's entrypoint, you can use `testcontainers.WithEntrypoint`. For example:
 
 ```golang
-ctr, err := aModule.Run(ctx, "image:tag", 
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", 
     testcontainers.WithEntrypoint("/bin/sh", "-c", "echo hello"))
 ```
 
@@ -54,7 +54,7 @@ ctr, err := aModule.Run(ctx, "image:tag",
 If you need to append commands to the container's command, you can use `testcontainers.WithCmd`. For example:
 
 ```golang
-ctr, err := aModule.Run(ctx, "image:tag", 
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", 
     testcontainers.WithCmd("echo", "hello"))
 ```
 
@@ -65,7 +65,7 @@ ctr, err := aModule.Run(ctx, "image:tag",
 If you need to add Docker labels to the container, you can use `testcontainers.WithLabels`. For example:
 
 ```golang
-ctr, err := aModule.Run(ctx, "image:tag", 
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", 
     testcontainers.WithLabels(map[string]string{
         "environment": "testing",
         "project":     "myapp",
@@ -79,7 +79,7 @@ ctr, err := aModule.Run(ctx, "image:tag",
 If you need to copy files into the container, you can use `testcontainers.WithFiles`. For example:
 
 ```golang
-ctr, err := aModule.Run(ctx, "image:tag", 
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", 
     testcontainers.WithFiles([]testcontainers.ContainerFile{
         {
             HostFilePath:      "/path/to/local/file.txt",
@@ -98,7 +98,7 @@ This option allows you to copy files from the host into the container at creatio
 If you need to add volume mounts to the container, you can use `testcontainers.WithMounts`. For example:
 
 ```golang
-ctr, err := aModule.Run(ctx, "image:tag", 
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", 
     testcontainers.WithMounts([]testcontainers.ContainerMount{
         {
             Source: testcontainers.GenericVolumeMountSource{Name: "appdata"},
@@ -114,7 +114,7 @@ ctr, err := aModule.Run(ctx, "image:tag",
 If you need to add tmpfs mounts to the container, you can use `testcontainers.WithTmpfs`. For example:
 
 ```golang
-ctr, err := aModule.Run(ctx, "image:tag", 
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", 
     testcontainers.WithTmpfs(map[string]string{
         "/tmp": "size=100m",
         "/run": "size=100m",
@@ -128,7 +128,7 @@ ctr, err := aModule.Run(ctx, "image:tag",
 If you need to access a port that is already running in the host, you can use `testcontainers.WithHostPortAccess` for example:
 
 ```golang
-ctr, err = aModule.Run(ctx, "image:tag", testcontainers.WithHostPortAccess(8080))
+ctr, err = mymodule.Run(ctx, "docker.io/myservice:1.2.3", testcontainers.WithHostPortAccess(8080))
 ```
 
 To understand more about this feature, please read the [Exposing host ports to the container](/features/networking/#exposing-host-ports-to-the-container) documentation.
@@ -166,7 +166,7 @@ useful context instead of appearing out of band.
 ```golang
 func TestHandler(t *testing.T) {
     logger := log.TestLogger(t)
-    ctr, err := aModule.Run(ctx, "image:tag", testcontainers.WithLogger(logger))
+    ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", testcontainers.WithLogger(logger))
     CleanupContainer(t, ctr)
     require.NoError(t, err)
     // Do something with container.
@@ -229,7 +229,7 @@ df := testcontainers.FromDockerfile{
 	BuildArgs:  map[string]*string{"ARG1": nil, "ARG2": nil},
 }   
 
-ctr, err := aModule.Run(ctx, "image:tag", testcontainers.BuildFromDockerfile(df))
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", testcontainers.BuildFromDockerfile(df))
 ```
 
 #### WithNetwork
@@ -266,7 +266,7 @@ Please read the [Create containers: Advanced Settings](/features/creating_contai
 This option will merge the customized request into the module's own `ContainerRequest`.
 
 ```go
-ctr, err := aModule.Run(ctx, "image:tag",
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3",
     /* Other module options */
     testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
         ContainerRequest: testcontainers.ContainerRequest{
