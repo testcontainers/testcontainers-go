@@ -94,11 +94,11 @@ func TestRun_helloWorldDifferentPort(t *testing.T) {
 
 	const (
 		// The helloworld container is listening on both ports: 8080 and 8081
-		exposedPort  = 8080
-		internalPort = 8081
+		port1 = 8080
+		port2 = 8081
 	)
 
-	target := socat.NewTargetWithInternalPort(exposedPort, internalPort, "helloworld")
+	target := socat.NewTargetWithInternalPort(port2, port1, "helloworld")
 
 	socatContainer, err := socat.Run(
 		ctx, "alpine/socat:1.8.0.1",
@@ -110,7 +110,7 @@ func TestRun_helloWorldDifferentPort(t *testing.T) {
 
 	httpClient := http.DefaultClient
 
-	baseURI := socatContainer.TargetURL(exposedPort)
+	baseURI := socatContainer.TargetURL(target.ExposedPort())
 	require.NotNil(t, baseURI)
 
 	resp, err := httpClient.Get(baseURI.String() + "/ping")
@@ -121,4 +121,62 @@ func TestRun_helloWorldDifferentPort(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	require.Equal(t, "PONG", string(body))
+}
+
+func TestRun_multipleTargets(t *testing.T) {
+	ctx := context.Background()
+
+	nw, err := network.New(ctx)
+	testcontainers.CleanupNetwork(t, nw)
+	require.NoError(t, err)
+
+	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:        "testcontainers/helloworld:1.2.0",
+			ExposedPorts: []string{"8080/tcp"},
+			Networks:     []string{nw.Name},
+			NetworkAliases: map[string][]string{
+				nw.Name: {"helloworld"},
+			},
+		},
+		Started: true,
+	})
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	const (
+		// The helloworld container is listening on both ports: 8080 and 8081
+		port1 = 8080
+		port2 = 8081
+	)
+
+	targets := []socat.Target{
+		socat.NewTarget(port1, "helloworld"),
+		socat.NewTargetWithInternalPort(port2, port1, "helloworld"),
+	}
+
+	socatContainer, err := socat.Run(
+		ctx, "alpine/socat:1.8.0.1",
+		socat.WithTarget(targets[0]),
+		socat.WithTarget(targets[1]),
+		network.WithNetwork([]string{"socat"}, nw),
+	)
+	testcontainers.CleanupContainer(t, socatContainer)
+	require.NoError(t, err)
+
+	httpClient := http.DefaultClient
+
+	for _, target := range targets {
+		baseURI := socatContainer.TargetURL(target.ExposedPort())
+		require.NotNil(t, baseURI)
+
+		resp, err := httpClient.Get(baseURI.String() + "/ping")
+		require.NoError(t, err)
+
+		require.Equal(t, 200, resp.StatusCode)
+
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		require.Equal(t, "PONG", string(body))
+	}
 }

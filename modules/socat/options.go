@@ -38,6 +38,11 @@ type Target struct {
 	host         string
 }
 
+// ExposedPort returns the exposed port of the target.
+func (t Target) ExposedPort() int {
+	return t.exposedPort
+}
+
 func (t Target) toCmd() string {
 	return fmt.Sprintf("socat TCP-LISTEN:%d,fork,reuseaddr TCP:%s:%d", t.exposedPort, t.host, t.internalPort)
 }
