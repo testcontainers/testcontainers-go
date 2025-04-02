@@ -564,7 +564,7 @@ func TestRun_localValidateRequest(t *testing.T) {
 			}),
 		)
 		testcontainers.CleanupContainer(t, ollamaContainer)
-		require.EqualError(t, err, "validate request: Started must be true")
+		require.EqualError(t, err, "validate request: started must be true")
 	})
 
 	t.Run("exposed-ports-empty", func(t *testing.T) {

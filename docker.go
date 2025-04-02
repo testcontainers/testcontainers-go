@@ -1619,7 +1619,7 @@ func (p *DockerProvider) getGatewayIP(ctx context.Context, defaultNetwork string
 		}
 	}
 	if ip == "" {
-		return "", errors.New("Failed to get gateway IP from network settings")
+		return "", errors.New("failed to get gateway IP from network settings")
 	}
 
 	return ip, nil

@@ -127,7 +127,7 @@ func (c *localProcess) validateRequest(req testcontainers.GenericContainerReques
 	}
 
 	if !req.Started {
-		errs = append(errs, errors.New("Started must be true"))
+		errs = append(errs, errors.New("started must be true"))
 	}
 
 	if !reflect.DeepEqual(req.ExposedPorts, []string{localPort + "/tcp"}) {

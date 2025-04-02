@@ -208,7 +208,7 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 		}
 
 		if lowestPort == "" {
-			return errors.New("No exposed tcp ports or mapped ports - cannot wait for status")
+			return errors.New("no exposed tcp ports or mapped ports - cannot wait for status")
 		}
 
 		mappedPort, _ = nat.NewPort(lowestPort.Proto(), hostPort)
@@ -229,7 +229,7 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 		}
 
 		if mappedPort.Proto() != "tcp" {
-			return errors.New("Cannot use HTTP client on non-TCP ports")
+			return errors.New("cannot use HTTP client on non-TCP ports")
 		}
 	}
 
