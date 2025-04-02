@@ -468,7 +468,7 @@ func TestWithFiles(t *testing.T) {
 	})
 }
 
-func TestBuildFromDockerfile(t *testing.T) {
+func TestWithDockerfile(t *testing.T) {
 	df := testcontainers.FromDockerfile{
 		Context:    ".",
 		Dockerfile: "Dockerfile",
@@ -481,7 +481,7 @@ func TestBuildFromDockerfile(t *testing.T) {
 		ContainerRequest: testcontainers.ContainerRequest{},
 	}
 
-	opt := testcontainers.BuildFromDockerfile(df)
+	opt := testcontainers.WithDockerfile(df)
 	require.NoError(t, opt.Customize(req))
 	require.Equal(t, df, req.FromDockerfile)
 	require.Equal(t, ".", req.FromDockerfile.Context)

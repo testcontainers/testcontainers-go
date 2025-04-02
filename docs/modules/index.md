@@ -207,7 +207,7 @@ In order to simplify the creation of the container for a given module, `Testcont
 - `testcontainers.WithWaitStrategyAndDeadline`: a function that sets the wait strategy for the container request with a deadline.
 - `testcontainers.WithStartupCommand`: a function that sets the execution of a command when the container starts.
 - `testcontainers.WithAfterReadyCommand`: a function that sets the execution of a command right after the container is ready (its wait strategy is satisfied).
-- `testcontainers.BuildFromDockerfile`: a function that sets the build from a Dockerfile for the container request.
+- `testcontainers.WithDockerfile`: a function that sets the build from a Dockerfile for the container request.
 - `testcontainers.WithNetwork`: a function that sets the network and the network aliases for the container request.
 - `testcontainers.WithNewNetwork`: a function that sets the network aliases for a throw-away network for the container request.
 - `testcontainers.WithConfigModifier`: a function that sets the config Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
