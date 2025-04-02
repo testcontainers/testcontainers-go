@@ -7,12 +7,13 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// Deprecated: use RunBigTable instead
+// Deprecated: use [bigtable.Run] instead
 // RunBigTableContainer creates an instance of the GCloud container type for BigTable.
 func RunBigTableContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	return RunBigQuery(ctx, "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators", opts...)
 }
 
+// Deprecated: use [bigtable.Run] instead
 // RunBigTable creates an instance of the GCloud container type for BigTable.
 func RunBigTable(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	req := testcontainers.GenericContainerRequest{
