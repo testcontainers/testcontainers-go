@@ -149,7 +149,7 @@ func configureRequestForReplicaset(
 	replicaSet string,
 	genericContainerReq *testcontainers.GenericContainerRequest,
 ) error {
-	if !(username != "" && password != "") {
+	if username == "" || password == "" {
 		return noAuthReplicaSet(replicaSet)(genericContainerReq)
 	}
 
