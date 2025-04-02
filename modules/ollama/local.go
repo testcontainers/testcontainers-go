@@ -705,7 +705,7 @@ func (c *localProcess) Customize(req *testcontainers.GenericContainerRequest) er
 	// and extracts the host, port and version from it.
 	if err := wait.Walk(&req.WaitingFor, func(w wait.Strategy) error {
 		if _, ok := w.(*wait.HostPortStrategy); ok {
-			return wait.VisitRemove
+			return wait.ErrVisitRemove
 		}
 
 		return nil
