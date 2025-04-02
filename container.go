@@ -416,6 +416,8 @@ func (c *ContainerRequest) ShouldKeepBuiltImage() bool {
 // a Dockerfile. It returns the BuildLogWriter from the ContainerRequest, defaults to io.Discard.
 // For backward compatibility, if BuildLogWriter is default and PrintBuildLog is true,
 // the function returns os.Stderr.
+//
+//nolint:staticcheck //FIXME
 func (c *ContainerRequest) BuildLogWriter() io.Writer {
 	if c.FromDockerfile.BuildLogWriter != nil {
 		return c.FromDockerfile.BuildLogWriter
