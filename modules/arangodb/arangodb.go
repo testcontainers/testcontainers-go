@@ -31,7 +31,7 @@ func (c *Container) Credentials() (string, string) {
 	return DefaultUser, c.password
 }
 
-// HTTPEndpoint returns the transport address of the ArangoDB container
+// HTTPEndpoint returns the HTTP endpoint of the ArangoDB container, using the following format: `http://$host:$port`.
 func (c *Container) HTTPEndpoint(ctx context.Context) (string, error) {
 	hostPort, err := c.PortEndpoint(ctx, defaultPort, "http")
 	if err != nil {
