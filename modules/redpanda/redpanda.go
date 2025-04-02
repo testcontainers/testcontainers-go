@@ -106,7 +106,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	// 2.1. If the image is not at least v23.3, disable wasm transform
-	if !isAtLeastVersion(req.ContainerRequest.Image, "23.3") {
+	if !isAtLeastVersion(req.Image, "23.3") {
 		settings.EnableWasmTransform = false
 	}
 

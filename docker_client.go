@@ -76,7 +76,7 @@ func (c *DockerClient) Info(ctx context.Context) (system.Info, error) {
 
 	log.Printf(infoMessage, packagePath,
 		dockerInfo.ServerVersion,
-		c.Client.ClientVersion(),
+		c.ClientVersion(),
 		dockerInfo.OperatingSystem, dockerInfo.MemTotal/1024/1024,
 		infoLabels,
 		internal.Version,
