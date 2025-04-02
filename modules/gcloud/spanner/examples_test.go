@@ -1,4 +1,4 @@
-package gcloud_test
+package spanner_test
 
 import (
 	"context"
@@ -16,17 +16,17 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/gcloud"
+	tcspanner "github.com/testcontainers/testcontainers-go/modules/gcloud/spanner"
 )
 
-func ExampleRunSpannerContainer() {
+func ExampleRun() {
 	// runSpannerContainer {
 	ctx := context.Background()
 
-	spannerContainer, err := gcloud.RunSpanner(
+	spannerContainer, err := tcspanner.Run(
 		ctx,
 		"gcr.io/cloud-spanner-emulator/emulator:1.4.0",
-		gcloud.WithProjectID("spanner-project"),
+		tcspanner.WithProjectID("spanner-project"),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(spannerContainer); err != nil {
@@ -40,7 +40,7 @@ func ExampleRunSpannerContainer() {
 	// }
 
 	// spannerAdminClient {
-	projectID := spannerContainer.Settings.ProjectID
+	projectID := spannerContainer.ProjectID()
 
 	const (
 		instanceID   = "test-instance"
@@ -48,7 +48,7 @@ func ExampleRunSpannerContainer() {
 	)
 
 	options := []option.ClientOption{
-		option.WithEndpoint(spannerContainer.URI),
+		option.WithEndpoint(spannerContainer.URI()),
 		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
 		option.WithoutAuthentication(),
 		internaloption.SkipDialSettingsValidation(),
