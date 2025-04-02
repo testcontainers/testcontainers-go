@@ -61,14 +61,14 @@ func ExampleRun_usingClient() {
 	}
 	// }
 
-	transportAddress, err := arangodbContainer.TransportAddress(ctx)
+	httpAddress, err := arangodbContainer.HTTPEndpoint(ctx)
 	if err != nil {
 		log.Printf("failed to get transport address: %s", err)
 		return
 	}
 
 	// Create an HTTP connection to the database
-	endpoint := connection.NewRoundRobinEndpoints([]string{transportAddress})
+	endpoint := connection.NewRoundRobinEndpoints([]string{httpAddress})
 	conn := connection.NewHttp2Connection(connection.DefaultHTTP2ConfigurationWrapper(endpoint, true))
 
 	// Add authentication

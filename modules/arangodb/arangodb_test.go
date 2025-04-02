@@ -21,10 +21,10 @@ func TestArangoDB(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	transportAddress, err := ctr.TransportAddress(ctx)
+	httpAddress, err := ctr.HTTPEndpoint(ctx)
 	require.NoError(t, err)
 
-	endpoint := connection.NewRoundRobinEndpoints([]string{transportAddress})
+	endpoint := connection.NewRoundRobinEndpoints([]string{httpAddress})
 	conn := connection.NewHttp2Connection(connection.DefaultHTTP2ConfigurationWrapper(endpoint, true))
 
 	auth := connection.NewBasicAuth(ctr.Credentials())

@@ -31,8 +31,8 @@ func (c *Container) Credentials() (string, string) {
 	return DefaultUser, c.password
 }
 
-// TransportAddress returns the transport address of the ArangoDB container
-func (c *Container) TransportAddress(ctx context.Context) (string, error) {
+// HTTPEndpoint returns the transport address of the ArangoDB container
+func (c *Container) HTTPEndpoint(ctx context.Context) (string, error) {
 	hostPort, err := c.PortEndpoint(ctx, defaultPort, "http")
 	if err != nil {
 		return "", fmt.Errorf("port endpoint: %w", err)
