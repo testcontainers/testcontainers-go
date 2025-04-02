@@ -222,7 +222,3 @@ func withAuthReplicaset(
 		return nil
 	}
 }
-
-func waitForMongoReady(ctx context.Context, c testcontainers.Container, cli mongoCli) error {
-	return wait.ForExec(cli.eval("db.runCommand({ ping: 1 })")).WaitUntilReady(ctx, c)
-}
