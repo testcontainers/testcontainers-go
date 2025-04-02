@@ -25,10 +25,10 @@ func TestRun(t *testing.T) {
 	testcontainers.CleanupContainer(t, bigTableContainer)
 	require.NoError(t, err)
 
-	projectId := bigTableContainer.ProjectID()
+	projectID := bigTableContainer.ProjectID()
 
 	const (
-		instanceId = "test-instance"
+		instanceID = "test-instance"
 		tableName  = "test-table"
 	)
 
@@ -37,7 +37,7 @@ func TestRun(t *testing.T) {
 		option.WithoutAuthentication(),
 		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
 	}
-	adminClient, err := bigtable.NewAdminClient(ctx, projectId, instanceId, options...)
+	adminClient, err := bigtable.NewAdminClient(ctx, projectID, instanceID, options...)
 	require.NoError(t, err)
 	defer adminClient.Close()
 
@@ -47,7 +47,7 @@ func TestRun(t *testing.T) {
 	err = adminClient.CreateColumnFamily(ctx, tableName, "name")
 	require.NoError(t, err)
 
-	client, err := bigtable.NewClient(ctx, projectId, instanceId, options...)
+	client, err := bigtable.NewClient(ctx, projectID, instanceID, options...)
 	require.NoError(t, err)
 	defer client.Close()
 

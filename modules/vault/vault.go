@@ -92,7 +92,7 @@ func WithInitCommand(commands ...string) testcontainers.CustomizeRequestOption {
 // HttpHostAddress returns the http host address of Vault.
 // It returns a string with the format http://<host>:<port>
 //
-//nolint:revive //FIXME
+//nolint:revive,staticcheck //FIXME
 func (v *VaultContainer) HttpHostAddress(ctx context.Context) (string, error) {
 	host, err := v.Host(ctx)
 	if err != nil {
