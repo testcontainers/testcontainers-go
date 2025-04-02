@@ -89,7 +89,7 @@ func ExampleRun_usingClient() {
 		return
 	}
 
-	fmt.Printf(versionInfo.Server)
+	fmt.Println(versionInfo.Server)
 
 	// Output:
 	// arango
