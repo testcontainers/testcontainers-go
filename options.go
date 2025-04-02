@@ -11,6 +11,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -142,12 +143,12 @@ func (c CustomHubSubstitutor) Description() string {
 //   - if the HubImageNamePrefix configuration value is set, the image is returned as is.
 func (c CustomHubSubstitutor) Substitute(image string) (string, error) {
 	registry := core.ExtractRegistry(image, "")
-	cfg := ReadConfig()
+	cfg := config.Read()
 
 	exclusions := []func() bool{
 		func() bool { return c.hub == "" },
 		func() bool { return registry != "" },
-		func() bool { return cfg.Config.HubImageNamePrefix != "" },
+		func() bool { return cfg.HubImageNamePrefix != "" },
 	}
 
 	for _, exclusion := range exclusions {
