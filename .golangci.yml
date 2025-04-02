@@ -1,9 +1,13 @@
-version: "2"
-output:
-  formats:
-    text:
-      path: stdout
-  path-prefix: .
+formatters:
+  enable:
+    - gci
+    - gofumpt
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/testcontainers)
 linters:
   enable:
     - errorlint
@@ -16,12 +20,18 @@ linters:
     - testifylint
     - thelper
     - usestdlibvars
+  exclusions:
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
   settings:
     errorlint:
-      errorf: true
-      errorf-multi: true
       asserts: true
       comparison: true
+      errorf: true
+      errorf-multi: true
     revive:
       rules:
         - name: blank-imports
@@ -67,34 +77,13 @@ linters:
       checks:
         - all
     testifylint:
-      enable-all: true
       disable:
         - float-compare
         - go-require
-  exclusions:
-    generated: lax
-    presets:
-      - comments
-      - common-false-positives
-      - legacy
-      - std-error-handling
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
-formatters:
-  enable:
-    - gci
-    - gofumpt
-  settings:
-    gci:
-      sections:
-        - standard
-        - default
-        - prefix(github.com/testcontainers)
-  exclusions:
-    generated: lax
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
+      enable-all: true
+output:
+  formats:
+    text:
+      path: stdout
+  path-prefix: .
+version: "2"
