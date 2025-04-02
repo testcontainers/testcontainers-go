@@ -10,14 +10,25 @@ import (
 )
 
 const (
-	defaultPort     = "8529/tcp"
-	defaultUser     = "root"
+	defaultPort = "8529/tcp"
+
+	// DefaultUser is the default username for the ArangoDB container.
+	// This is the username to be used when connecting to the ArangoDB instance.
+	DefaultUser = "root"
+
 	defaultPassword = "root"
 )
 
 // Container represents the ArangoDB container type used in the module
 type Container struct {
 	testcontainers.Container
+	password string
+}
+
+// Credentials returns the credentials for the ArangoDB container:
+// first return value is the username, second is the password.
+func (c *Container) Credentials() (string, string) {
+	return DefaultUser, c.password
 }
 
 // TransportAddress returns the transport address of the ArangoDB container
@@ -37,7 +48,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		ExposedPorts: []string{defaultPort},
 		Env: map[string]string{
 			"ARANGO_ROOT_PASSWORD": defaultPassword,
-			"ARANGO_ROOT_USERNAME": defaultUser,
 		},
 	}
 
@@ -57,7 +67,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		wait.ForListeningPort(defaultPort),
 		wait.ForHTTP("/_admin/status").
 			WithPort(defaultPort).
-			WithBasicAuth(defaultUser, req.Env["ARANGO_ROOT_PASSWORD"]).
+			WithBasicAuth(DefaultUser, req.Env["ARANGO_ROOT_PASSWORD"]).
 			WithHeaders(map[string]string{
 				"Accept": "application/json",
 			}).
@@ -69,7 +79,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	var c *Container
 	if container != nil {
-		c = &Container{Container: container}
+		c = &Container{Container: container, password: req.Env["ARANGO_ROOT_PASSWORD"]}
 	}
 
 	if err != nil {

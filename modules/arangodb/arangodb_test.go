@@ -27,7 +27,7 @@ func TestArangoDB(t *testing.T) {
 	endpoint := connection.NewRoundRobinEndpoints([]string{transportAddress})
 	conn := connection.NewHttp2Connection(connection.DefaultHTTP2ConfigurationWrapper(endpoint, true))
 
-	auth := connection.NewBasicAuth("root", password)
+	auth := connection.NewBasicAuth(ctr.Credentials())
 	err = conn.SetAuthentication(auth)
 	require.NoError(t, err)
 

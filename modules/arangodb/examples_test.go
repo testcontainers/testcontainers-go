@@ -72,7 +72,7 @@ func ExampleRun_usingClient() {
 	conn := connection.NewHttp2Connection(connection.DefaultHTTP2ConfigurationWrapper(endpoint, true))
 
 	// Add authentication
-	auth := connection.NewBasicAuth("root", password)
+	auth := connection.NewBasicAuth(arangodbContainer.Credentials())
 	err = conn.SetAuthentication(auth)
 	if err != nil {
 		log.Printf("Failed to set authentication: %v", err)

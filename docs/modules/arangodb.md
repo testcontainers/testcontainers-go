@@ -47,6 +47,28 @@ In example: `Run(context.Background(), "arangodb:3.11.5")`.
 
 {% include "../features/common_functional_options.md" %}
 
+#### WithRootPassword
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The `WithRootPassword` function sets the root password for the ArangoDB container.
+
 ### Container Methods
 
 The ArangoDB container exposes the following methods:
+
+#### Credentials
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The `Credentials` method returns the credentials for the ArangoDB container, in the form of a tuple of two strings: the username and the password.
+
+```golang
+func (c *Container) Credentials() (string, string)
+```
+
+#### TransportAddress
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The `TransportAddress` method returns the transport address of the ArangoDB container, using the following format: `http://$host:$port`.
