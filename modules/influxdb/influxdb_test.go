@@ -53,12 +53,12 @@ func TestWithV2Env(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		influxConfig   influxdb.InfluxDBV2Config
+		influxConfig   influxdb.ConfigV2
 		expectedEnvMap map[string]string
 	}{
 		{
-			name: "With required only",
-			influxConfig: influxdb.InfluxDBV2Config{
+			name: "with-required-only",
+			influxConfig: influxdb.ConfigV2{
 				Org:    "Org",
 				Bucket: "Bucket",
 			},
@@ -76,8 +76,8 @@ func TestWithV2Env(t *testing.T) {
 			},
 		},
 		{
-			name: "With username and password",
-			influxConfig: influxdb.InfluxDBV2Config{
+			name: "with-username-and-password",
+			influxConfig: influxdb.ConfigV2{
 				Org:      "Org",
 				Bucket:   "Bucket",
 				Username: &username,
@@ -99,8 +99,8 @@ func TestWithV2Env(t *testing.T) {
 			},
 		},
 		{
-			name: "With token",
-			influxConfig: influxdb.InfluxDBV2Config{
+			name: "with-token",
+			influxConfig: influxdb.ConfigV2{
 				Org:    "Org",
 				Bucket: "Bucket",
 				Token:  &token,
@@ -120,8 +120,8 @@ func TestWithV2Env(t *testing.T) {
 			},
 		},
 		{
-			name: "With retention",
-			influxConfig: influxdb.InfluxDBV2Config{
+			name: "with-retention",
+			influxConfig: influxdb.ConfigV2{
 				Org:       "Org",
 				Bucket:    "Bucket",
 				Retention: &retention,
@@ -141,8 +141,8 @@ func TestWithV2Env(t *testing.T) {
 			},
 		},
 		{
-			name: "With files",
-			influxConfig: influxdb.InfluxDBV2Config{
+			name: "with-files",
+			influxConfig: influxdb.ConfigV2{
 				Org:          "Org",
 				Bucket:       "Bucket",
 				UsernameFile: &usernameFile,
@@ -191,7 +191,7 @@ func TestWithV2Env(t *testing.T) {
 	}
 }
 
-func TestV2Container_WithOptions(t *testing.T) {
+func TestRun_V2WithOptions(t *testing.T) {
 	ctx := context.Background()
 
 	username := "username"
@@ -202,7 +202,7 @@ func TestV2Container_WithOptions(t *testing.T) {
 	token := "influxdbv2token"
 
 	influxdbContainer, err := influxdb.Run(ctx, "influxdb:2.7.11",
-		influxdb.WithV2Env(influxdb.InfluxDBV2Config{
+		influxdb.WithV2Env(influxdb.ConfigV2{
 			Username:    &username,
 			Password:    &password,
 			Org:         org,

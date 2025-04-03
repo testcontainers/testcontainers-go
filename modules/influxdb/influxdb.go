@@ -119,8 +119,8 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// InfluxDBV2Config contains the configuration for InfluxDB v2.
-type InfluxDBV2Config struct {
+// ConfigV2 contains the configuration for InfluxDB v2.
+type ConfigV2 struct {
 	Username     *string // Username for the initial user
 	Password     *string // Password for the initial user
 	UsernameFile *string // File containing the username (e.g., /run/secrets/username)
@@ -135,7 +135,7 @@ type InfluxDBV2Config struct {
 
 // WithV2Env sets up the container with the environment variables compatible with InfluxDB v2.
 // Allows for setting up the initial user, password, organization, bucket, retention and authentication options.
-func WithV2Env(config InfluxDBV2Config) testcontainers.CustomizeRequestOption {
+func WithV2Env(config ConfigV2) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["DOCKER_INFLUXDB_INIT_ORG"] = config.Org
 		req.Env["DOCKER_INFLUXDB_INIT_BUCKET"] = config.Bucket

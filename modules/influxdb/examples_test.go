@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	influxclient2 "github.com/influxdata/influxdb-client-go/v2"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/influxdb"
@@ -57,7 +57,7 @@ func ExampleRun_v2() {
 
 	influxdbContainer, err := influxdb.Run(ctx,
 		"influxdb:2.7.11",
-		influxdb.WithV2Env(influxdb.InfluxDBV2Config{
+		influxdb.WithV2Env(influxdb.ConfigV2{
 			Username:    &username,
 			Password:    &password,
 			Org:         org,
@@ -93,7 +93,7 @@ func ExampleRun_v2() {
 	}
 
 	// Initialize a new InfluxDB client
-	client := influxdb2.NewClientWithOptions(url, token, influxdb2.DefaultOptions())
+	client := influxclient2.NewClientWithOptions(url, token, influxclient2.DefaultOptions())
 	defer client.Close()
 
 	// Get the bucket
@@ -103,9 +103,9 @@ func ExampleRun_v2() {
 		return
 	}
 
-	log.Printf("Got bucket: %s", influxBucket.Name)
+	fmt.Println(influxBucket.Name)
 
 	// Output:
 	// true
-	// Got bucket: bucket
+	// bucket
 }
