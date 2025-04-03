@@ -35,10 +35,10 @@ func ExampleRun() {
 	// }
 
 	// bigTableAdminClient {
-	projectId := bigTableContainer.ProjectID()
+	projectID := bigTableContainer.ProjectID()
 
 	const (
-		instanceId = "test-instance"
+		instanceID = "test-instance"
 		tableName  = "test-table"
 	)
 
@@ -47,7 +47,7 @@ func ExampleRun() {
 		option.WithoutAuthentication(),
 		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
 	}
-	adminClient, err := bigtable.NewAdminClient(ctx, projectId, instanceId, options...)
+	adminClient, err := bigtable.NewAdminClient(ctx, projectID, instanceID, options...)
 	if err != nil {
 		log.Printf("failed to create admin client: %v", err)
 		return
@@ -67,7 +67,7 @@ func ExampleRun() {
 	}
 
 	// bigTableClient {
-	client, err := bigtable.NewClient(ctx, projectId, instanceId, options...)
+	client, err := bigtable.NewClient(ctx, projectID, instanceID, options...)
 	if err != nil {
 		log.Printf("failed to create client: %v", err)
 		return

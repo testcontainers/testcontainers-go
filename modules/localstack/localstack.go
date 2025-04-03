@@ -103,7 +103,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	if err != nil {
 		return nil, err
 	}
-	localStackReq.GenericContainerRequest.Logger.Printf("Setting %s to %s (%s)\n", envVar, req.Env[envVar], hostnameExternalReason)
+	localStackReq.Logger.Printf("Setting %s to %s (%s)\n", envVar, req.Env[envVar], hostnameExternalReason)
 
 	container, err := testcontainers.GenericContainer(ctx, localStackReq.GenericContainerRequest)
 	var c *LocalStackContainer

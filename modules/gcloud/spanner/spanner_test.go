@@ -32,10 +32,10 @@ func TestRun(t *testing.T) {
 	testcontainers.CleanupContainer(t, spannerContainer)
 	require.NoError(t, err)
 
-	projectId := spannerContainer.ProjectID()
+	projectID := spannerContainer.ProjectID()
 
 	const (
-		instanceId   = "test-instance"
+		instanceID   = "test-instance"
 		databaseName = "test-db"
 	)
 
@@ -54,10 +54,10 @@ func TestRun(t *testing.T) {
 	defer instanceAdmin.Close()
 
 	instanceOp, err := instanceAdmin.CreateInstance(ctx, &instancepb.CreateInstanceRequest{
-		Parent:     "projects/" + projectId,
-		InstanceId: instanceId,
+		Parent:     "projects/" + projectID,
+		InstanceId: instanceID,
 		Instance: &instancepb.Instance{
-			DisplayName: instanceId,
+			DisplayName: instanceID,
 		},
 	})
 	require.NoError(t, err)
@@ -70,7 +70,7 @@ func TestRun(t *testing.T) {
 	defer c.Close()
 
 	databaseOp, err := c.CreateDatabase(ctx, &databasepb.CreateDatabaseRequest{
-		Parent:          fmt.Sprintf("projects/%s/instances/%s", projectId, instanceId),
+		Parent:          fmt.Sprintf("projects/%s/instances/%s", projectID, instanceID),
 		CreateStatement: fmt.Sprintf("CREATE DATABASE `%s`", databaseName),
 		ExtraStatements: []string{
 			"CREATE TABLE Languages (Language STRING(MAX), Mascot STRING(MAX)) PRIMARY KEY (Language)",
@@ -81,7 +81,7 @@ func TestRun(t *testing.T) {
 	_, err = databaseOp.Wait(ctx)
 	require.NoError(t, err)
 
-	db := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectId, instanceId, databaseName)
+	db := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectID, instanceID, databaseName)
 	client, err := spanner.NewClient(ctx, db, options...)
 	require.NoError(t, err)
 	defer client.Close()

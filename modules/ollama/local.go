@@ -127,7 +127,7 @@ func (c *localProcess) validateRequest(req testcontainers.GenericContainerReques
 	}
 
 	if !req.Started {
-		errs = append(errs, errors.New("Started must be true"))
+		errs = append(errs, errors.New("started must be true"))
 	}
 
 	if !reflect.DeepEqual(req.ExposedPorts, []string{localPort + "/tcp"}) {
@@ -705,7 +705,7 @@ func (c *localProcess) Customize(req *testcontainers.GenericContainerRequest) er
 	// and extracts the host, port and version from it.
 	if err := wait.Walk(&req.WaitingFor, func(w wait.Strategy) error {
 		if _, ok := w.(*wait.HostPortStrategy); ok {
-			return wait.VisitRemove
+			return wait.ErrVisitRemove
 		}
 
 		return nil

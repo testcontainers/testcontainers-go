@@ -40,10 +40,10 @@ func ExampleRun() {
 	// }
 
 	// spannerAdminClient {
-	projectId := spannerContainer.ProjectID()
+	projectID := spannerContainer.ProjectID()
 
 	const (
-		instanceId   = "test-instance"
+		instanceID   = "test-instance"
 		databaseName = "test-db"
 	)
 
@@ -63,10 +63,10 @@ func ExampleRun() {
 	// }
 
 	instanceOp, err := instanceAdmin.CreateInstance(ctx, &instancepb.CreateInstanceRequest{
-		Parent:     "projects/" + projectId,
-		InstanceId: instanceId,
+		Parent:     "projects/" + projectID,
+		InstanceId: instanceID,
 		Instance: &instancepb.Instance{
-			DisplayName: instanceId,
+			DisplayName: instanceID,
 		},
 	})
 	if err != nil {
@@ -90,7 +90,7 @@ func ExampleRun() {
 	// }
 
 	databaseOp, err := c.CreateDatabase(ctx, &databasepb.CreateDatabaseRequest{
-		Parent:          fmt.Sprintf("projects/%s/instances/%s", projectId, instanceId),
+		Parent:          fmt.Sprintf("projects/%s/instances/%s", projectID, instanceID),
 		CreateStatement: fmt.Sprintf("CREATE DATABASE `%s`", databaseName),
 		ExtraStatements: []string{
 			"CREATE TABLE Languages (Language STRING(MAX), Mascot STRING(MAX)) PRIMARY KEY (Language)",
@@ -106,7 +106,7 @@ func ExampleRun() {
 		return
 	}
 
-	db := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectId, instanceId, databaseName)
+	db := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectID, instanceID, databaseName)
 	client, err := spanner.NewClient(ctx, db, options...)
 	if err != nil {
 		log.Printf("failed to create client: %v", err)

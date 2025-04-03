@@ -49,7 +49,7 @@ func TestBigQueryWithDataYAML(t *testing.T) {
 		defer client.Close()
 
 		selectQuery := client.Query("SELECT * FROM dataset1.table_a where name = @name")
-		selectQuery.QueryConfig.Parameters = []bigquery.QueryParameter{
+		selectQuery.Parameters = []bigquery.QueryParameter{
 			{Name: "name", Value: "bob"},
 		}
 		it, err := selectQuery.Read(ctx)
