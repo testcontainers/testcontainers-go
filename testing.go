@@ -53,6 +53,21 @@ func SkipIfDockerDesktop(t *testing.T, ctx context.Context) {
 	}
 }
 
+// SkipIfNotDockerDesktop is a utility function capable of skipping tests
+// if tests are not run using Docker Desktop.
+func SkipIfNotDockerDesktop(t *testing.T, ctx context.Context) {
+	t.Helper()
+	cli, err := NewDockerClientWithOpts(ctx)
+	require.NoErrorf(t, err, "failed to create docker client: %s", err)
+
+	info, err := cli.Info(ctx)
+	require.NoErrorf(t, err, "failed to get docker info: %s", err)
+
+	if info.OperatingSystem != "Docker Desktop" {
+		t.Skip("Skipping test that needs Docker Desktop")
+	}
+}
+
 // exampleLogConsumer {
 
 // StdoutLogConsumer is a LogConsumer that prints the log to stdout
