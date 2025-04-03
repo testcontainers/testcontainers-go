@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/arangodb
 ## Usage example
 
 <!--codeinclude-->
-[Creating a ArangoDB container](../../modules/arangodb/examples_test.go) inside_block:ExampleRun
+[Creating a ArangoDB container](../../modules/arangodb/examples_test.go) inside_block:runArangoDBContainer
 <!--/codeinclude-->
 
 ## Module Reference

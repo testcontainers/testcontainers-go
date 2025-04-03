@@ -13,6 +13,7 @@ import (
 )
 
 func ExampleRun() {
+	// runArangoDBContainer {
 	ctx := context.Background()
 
 	const password = "t3stc0ntain3rs!"
