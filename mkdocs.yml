@@ -68,6 +68,7 @@ nav:
             - Walk: features/wait/walk.md
     - Modules:
         - modules/index.md
+        - modules/arangodb.md
         - modules/artemis.md
         - modules/azure.md
         - modules/azurite.md
