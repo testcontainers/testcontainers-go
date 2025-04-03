@@ -16,7 +16,7 @@ const (
 	LokiPort       = "3100/tcp"
 	TempoPort      = "3200/tcp"
 	OtlpGrpcPort   = "4317/tcp"
-	OtlpHttpPort   = "4318/tcp" //nolint:revive //FIXME
+	OtlpHttpPort   = "4318/tcp" //nolint:revive,staticcheck //FIXME
 	PrometheusPort = "9090/tcp"
 )
 
@@ -112,7 +112,7 @@ func (c *GrafanaLGTMContainer) MustTempoEndpoint(ctx context.Context) string {
 
 // HttpEndpoint returns the HTTP URL
 //
-//nolint:revive //FIXME
+//nolint:revive,staticcheck //FIXME
 func (c *GrafanaLGTMContainer) HttpEndpoint(ctx context.Context) (string, error) {
 	url, err := baseEndpoint(ctx, c, GrafanaPort)
 	if err != nil {
@@ -124,7 +124,7 @@ func (c *GrafanaLGTMContainer) HttpEndpoint(ctx context.Context) (string, error)
 
 // MustHttpEndpoint returns the HTTP endpoint or panics if an error occurs
 //
-//nolint:revive //FIXME
+//nolint:revive,staticcheck //FIXME
 func (c *GrafanaLGTMContainer) MustHttpEndpoint(ctx context.Context) string {
 	url, err := c.HttpEndpoint(ctx)
 	if err != nil {
@@ -136,7 +136,7 @@ func (c *GrafanaLGTMContainer) MustHttpEndpoint(ctx context.Context) string {
 
 // OtlpHttpEndpoint returns the OTLP HTTP endpoint
 //
-//nolint:revive //FIXME
+//nolint:revive,staticcheck //FIXME
 func (c *GrafanaLGTMContainer) OtlpHttpEndpoint(ctx context.Context) (string, error) {
 	url, err := baseEndpoint(ctx, c, OtlpHttpPort)
 	if err != nil {
@@ -148,7 +148,7 @@ func (c *GrafanaLGTMContainer) OtlpHttpEndpoint(ctx context.Context) (string, er
 
 // MustOtlpHttpEndpoint returns the OTLP HTTP endpoint or panics if an error occurs
 //
-//nolint:revive //FIXME
+//nolint:revive,staticcheck //FIXME
 func (c *GrafanaLGTMContainer) MustOtlpHttpEndpoint(ctx context.Context) string {
 	url, err := c.OtlpHttpEndpoint(ctx)
 	if err != nil {
@@ -180,7 +180,7 @@ func (c *GrafanaLGTMContainer) MustOtlpGrpcEndpoint(ctx context.Context) string 
 
 // PrometheusHttpEndpoint returns the Prometheus HTTP endpoint
 //
-//nolint:revive //FIXME
+//nolint:revive,staticcheck //FIXME
 func (c *GrafanaLGTMContainer) PrometheusHttpEndpoint(ctx context.Context) (string, error) {
 	url, err := baseEndpoint(ctx, c, PrometheusPort)
 	if err != nil {
@@ -192,7 +192,7 @@ func (c *GrafanaLGTMContainer) PrometheusHttpEndpoint(ctx context.Context) (stri
 
 // MustPrometheusHttpEndpoint returns the Prometheus HTTP endpoint or panics if an error occurs
 //
-//nolint:revive //FIXME
+//nolint:revive,staticcheck //FIXME
 func (c *GrafanaLGTMContainer) MustPrometheusHttpEndpoint(ctx context.Context) string {
 	url, err := c.PrometheusHttpEndpoint(ctx)
 	if err != nil {

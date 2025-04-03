@@ -1,6 +1,6 @@
 # Azure
 
-Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 ## Introduction
 
@@ -32,7 +32,7 @@ The Azure module exposes the following Go packages:
 
 ### Run function
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 The Azurite module exposes one entrypoint function to create the Azurite container, and this function receives three parameters:
 
@@ -65,7 +65,7 @@ In example: `Run(context.Background(), "mcr.microsoft.com/azure-storage/azurite:
 
 #### WithInMemoryPersistence
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 If you want to use in-memory persistence, you can use `WithInMemoryPersistence(megabytes float64)`. E.g. `azurite.WithInMemoryPersistence(64.0)`.
 
@@ -80,19 +80,19 @@ The Azurite container exposes the following methods:
 
 #### BlobServiceURL
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 Returns the service URL to connect to the Blob service of the Azurite container and an error, passing the Go context as parameter.
 
 #### QueueServiceURL
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 Returns the service URL to connect to the Queue service of the Azurite container and an error, passing the Go context as parameter.
 
 #### TableServiceURL
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 Returns the service URL to connect to the Table service of the Azurite container and an error, passing the Go context as parameter.
 
@@ -146,7 +146,7 @@ credentials, we will create a table, list the tables, and finally we will remove
 
 ### Run function
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 The EventHubs module exposes one entrypoint function to create the EventHubs container, and this function receives three parameters:
 
@@ -174,19 +174,19 @@ In example: `Run(context.Background(), "mcr.microsoft.com/azure-messaging/eventh
 
 #### WithAzurite
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 This option allows you to set a different Azurite Docker image, instead of the default one, and also pass options to the Azurite container, in the form of a variadic argument of `testcontainers.ContainerCustomizer`.
 
 #### WithAcceptEULA
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 This option allows you to accept the EULA for the EventHubs container.
 
 #### WithConfig
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 This option allows you to set a custom EventHubs config file for the EventHubs container.
 
@@ -202,7 +202,7 @@ The EventHubs container exposes the following methods:
 
 #### ConnectionString
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 Returns the connection string to connect to the EventHubs container and an error, passing the Go context as parameter.
 
@@ -225,7 +225,7 @@ In the following example, inspired by the [Azure Event Hubs Go SDK](https://lear
 
 ### Run function
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 The ServiceBus module exposes one entrypoint function to create the ServiceBus container, and this function receives three parameters:
 
@@ -257,19 +257,19 @@ In example: `Run(context.Background(), "mcr.microsoft.com/azure-messaging/servic
 
 #### WithMSSQL
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 This option allows you to set a different MSSQL Server Docker image, instead of the default one, and also pass options to the MSSQL container, in the form of a variadic argument of `testcontainers.ContainerCustomizer`.
 
 #### WithAcceptEULA
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 This option allows you to accept the EULA for the ServiceBus container.
 
 #### WithConfig
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 This option allows you to set a custom ServiceBus config file for the ServiceBus container.
 
@@ -285,7 +285,7 @@ The ServiceBus container exposes the following methods:
 
 #### ConnectionString
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 Returns the connection string to connect to the ServiceBus container and an error, passing the Go context as parameter.
 

@@ -1,4 +1,4 @@
-package gcloud_test
+package firestore_test
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/gcloud"
+	tcfirestore "github.com/testcontainers/testcontainers-go/modules/gcloud/firestore"
 )
 
 type emulatorCreds struct{}
@@ -24,14 +24,14 @@ func (ec emulatorCreds) RequireTransportSecurity() bool {
 	return false
 }
 
-func ExampleRunFirestoreContainer() {
+func ExampleRun() {
 	// runFirestoreContainer {
 	ctx := context.Background()
 
-	firestoreContainer, err := gcloud.RunFirestore(
+	firestoreContainer, err := tcfirestore.Run(
 		ctx,
 		"gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
-		gcloud.WithProjectID("firestore-project"),
+		tcfirestore.WithProjectID("firestore-project"),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(firestoreContainer); err != nil {
@@ -45,9 +45,9 @@ func ExampleRunFirestoreContainer() {
 	// }
 
 	// firestoreClient {
-	projectID := firestoreContainer.Settings.ProjectID
+	projectID := firestoreContainer.ProjectID()
 
-	conn, err := grpc.NewClient(firestoreContainer.URI, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithPerRPCCredentials(emulatorCreds{}))
+	conn, err := grpc.NewClient(firestoreContainer.URI(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithPerRPCCredentials(emulatorCreds{}))
 	if err != nil {
 		log.Printf("failed to dial: %v", err)
 		return

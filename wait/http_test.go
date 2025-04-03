@@ -689,7 +689,7 @@ func TestHttpStrategyFailsWhileGettingPortDueToNoExposedPorts(t *testing.T) {
 		WithPollInterval(100 * time.Millisecond)
 
 	err := wg.WaitUntilReady(context.Background(), target)
-	expected := "No exposed tcp ports or mapped ports - cannot wait for status"
+	expected := "no exposed tcp ports or mapped ports - cannot wait for status"
 	require.EqualError(t, err, expected)
 }
 
@@ -735,7 +735,7 @@ func TestHttpStrategyFailsWhileGettingPortDueToOnlyUDPPorts(t *testing.T) {
 		WithPollInterval(100 * time.Millisecond)
 
 	err := wg.WaitUntilReady(context.Background(), target)
-	expected := "No exposed tcp ports or mapped ports - cannot wait for status"
+	expected := "no exposed tcp ports or mapped ports - cannot wait for status"
 	require.EqualError(t, err, expected)
 }
 
@@ -776,6 +776,6 @@ func TestHttpStrategyFailsWhileGettingPortDueToExposedPortNoBindings(t *testing.
 		WithPollInterval(100 * time.Millisecond)
 
 	err := wg.WaitUntilReady(context.Background(), target)
-	expected := "No exposed tcp ports or mapped ports - cannot wait for status"
+	expected := "no exposed tcp ports or mapped ports - cannot wait for status"
 	require.EqualError(t, err, expected)
 }
