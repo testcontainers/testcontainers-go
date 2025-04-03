@@ -202,6 +202,10 @@
             "path": "../modules/scylladb"
         },
         {
+            "name": "module / socat",
+            "path": "../modules/socat"
+        },
+        {
             "name": "module / surrealdb",
             "path": "../modules/surrealdb"
         },
