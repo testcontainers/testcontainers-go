@@ -17,11 +17,11 @@ import (
 
 func TestV1Container(t *testing.T) {
 	ctx := context.Background()
-	influxDbContainer, err := influxdb.Run(ctx, "influxdb:1.8.10")
-	testcontainers.CleanupContainer(t, influxDbContainer)
+	influxDBContainer, err := influxdb.Run(ctx, "influxdb:1.8.10")
+	testcontainers.CleanupContainer(t, influxDBContainer)
 	require.NoError(t, err)
 
-	state, err := influxDbContainer.State(ctx)
+	state, err := influxDBContainer.State(ctx)
 	require.NoError(t, err)
 
 	require.Truef(t, state.Running, "InfluxDB container is not running")
@@ -29,16 +29,16 @@ func TestV1Container(t *testing.T) {
 
 func TestV2Container(t *testing.T) {
 	ctx := context.Background()
-	influxDbContainer, err := influxdb.Run(ctx,
+	influxDBContainer, err := influxdb.Run(ctx,
 		"influxdb:2.7.5-alpine",
 		influxdb.WithDatabase("foo"),
 		influxdb.WithUsername("root"),
 		influxdb.WithPassword("password"),
 	)
-	testcontainers.CleanupContainer(t, influxDbContainer)
+	testcontainers.CleanupContainer(t, influxDBContainer)
 	require.NoError(t, err)
 
-	state, err := influxDbContainer.State(ctx)
+	state, err := influxDBContainer.State(ctx)
 	require.NoError(t, err)
 
 	require.Truef(t, state.Running, "InfluxDB container is not running")
@@ -46,19 +46,19 @@ func TestV2Container(t *testing.T) {
 
 func TestWithInitDb(t *testing.T) {
 	ctx := context.Background()
-	influxDbContainer, err := influxdb.Run(ctx,
+	influxDBContainer, err := influxdb.Run(ctx,
 		"influxdb:1.8.10",
 		influxdb.WithInitDb("testdata"),
 	)
-	testcontainers.CleanupContainer(t, influxDbContainer)
+	testcontainers.CleanupContainer(t, influxDBContainer)
 	require.NoError(t, err)
 
-	if state, err := influxDbContainer.State(ctx); err != nil || !state.Running {
+	if state, err := influxDBContainer.State(ctx); err != nil || !state.Running {
 		require.NoError(t, err)
 	}
 
 	cli, err := influxclient.NewHTTPClient(influxclient.HTTPConfig{
-		Addr: influxDbContainer.MustConnectionUrl(ctx),
+		Addr: influxDBContainer.MustConnectionUrl(ctx),
 	})
 	require.NoError(t, err)
 	defer cli.Close()
@@ -78,20 +78,20 @@ func TestWithInitDb(t *testing.T) {
 func TestWithConfigFile(t *testing.T) {
 	influxVersion := "1.8.10"
 
-	influxDbContainer, err := influxdb.Run(context.Background(),
+	influxDBContainer, err := influxdb.Run(context.Background(),
 		"influxdb:"+influxVersion,
 		influxdb.WithConfigFile(filepath.Join("testdata", "influxdb.conf")),
 	)
-	testcontainers.CleanupContainer(t, influxDbContainer)
+	testcontainers.CleanupContainer(t, influxDBContainer)
 	require.NoError(t, err)
 
-	if state, err := influxDbContainer.State(context.Background()); err != nil || !state.Running {
+	if state, err := influxDBContainer.State(context.Background()); err != nil || !state.Running {
 		require.NoError(t, err)
 	}
 
 	/// influxConnectionUrl {
 	cli, err := influxclient.NewHTTPClient(influxclient.HTTPConfig{
-		Addr: influxDbContainer.MustConnectionUrl(context.Background()),
+		Addr: influxDBContainer.MustConnectionUrl(context.Background()),
 	})
 	// }
 	require.NoError(t, err)
