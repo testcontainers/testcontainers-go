@@ -64,6 +64,7 @@ updates:
         - /modules/redpanda
         - /modules/registry
         - /modules/scylladb
+        - /modules/socat
         - /modules/surrealdb
         - /modules/valkey
         - /modules/vault
