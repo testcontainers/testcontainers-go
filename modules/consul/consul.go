@@ -25,7 +25,7 @@ type ConsulContainer struct {
 
 // ApiEndpoint returns host:port for the HTTP API endpoint.
 //
-//nolint:revive //FIXME
+//nolint:revive,staticcheck //FIXME
 func (c *ConsulContainer) ApiEndpoint(ctx context.Context) (string, error) {
 	mappedPort, err := c.MappedPort(ctx, defaultHTTPAPIPort)
 	if err != nil {

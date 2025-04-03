@@ -53,7 +53,7 @@ func TestMeilisearch_WithDataDump(t *testing.T) {
 	require.NoError(t, err)
 	resp.Body.Close() // not closing the body in a defer as it's not used anymore
 
-	require.EqualValues(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	path, err := url.JoinPath(address, "/indexes/movies/documents/1212")
 	require.NoError(t, err)
@@ -67,7 +67,7 @@ func TestMeilisearch_WithDataDump(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	require.EqualValues(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)

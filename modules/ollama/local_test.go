@@ -138,9 +138,9 @@ func TestRun_local(t *testing.T) {
 		inspect, err := ollamaContainer.Inspect(ctx)
 		require.NoError(t, err)
 
-		require.Equal(t, "local-ollama-"+testcontainers.SessionID(), inspect.ContainerJSONBase.ID)
-		require.Equal(t, "local-ollama-"+testcontainers.SessionID(), inspect.ContainerJSONBase.Name)
-		require.True(t, inspect.ContainerJSONBase.State.Running)
+		require.Equal(t, "local-ollama-"+testcontainers.SessionID(), inspect.ID)
+		require.Equal(t, "local-ollama-"+testcontainers.SessionID(), inspect.Name)
+		require.True(t, inspect.State.Running)
 
 		require.NotEmpty(t, inspect.Config.Image)
 		_, exists := inspect.Config.ExposedPorts[testNatPort]
@@ -149,9 +149,9 @@ func TestRun_local(t *testing.T) {
 		require.Equal(t, strslice.StrSlice(strslice.StrSlice{testBinary, "serve"}), inspect.Config.Entrypoint)
 
 		require.Empty(t, inspect.NetworkSettings.Networks)
-		require.Equal(t, "bridge", inspect.NetworkSettings.NetworkSettingsBase.Bridge)
+		require.Equal(t, "bridge", inspect.NetworkSettings.Bridge)
 
-		ports := inspect.NetworkSettings.NetworkSettingsBase.Ports
+		ports := inspect.NetworkSettings.Ports
 		port, exists := ports[testNatPort]
 		require.True(t, exists)
 		require.Len(t, port, 1)
@@ -401,9 +401,9 @@ func testRunLocalWithCustomHost(ctx context.Context, t *testing.T, ollamaContain
 		require.Equal(t, strslice.StrSlice(strslice.StrSlice{testBinary, "serve"}), inspect.Config.Entrypoint)
 
 		require.Empty(t, inspect.NetworkSettings.Networks)
-		require.Equal(t, "bridge", inspect.NetworkSettings.NetworkSettingsBase.Bridge)
+		require.Equal(t, "bridge", inspect.NetworkSettings.Bridge)
 
-		ports := inspect.NetworkSettings.NetworkSettingsBase.Ports
+		ports := inspect.NetworkSettings.Ports
 		port, exists := ports[testNatPort]
 		require.True(t, exists)
 		require.Len(t, port, 1)
@@ -564,7 +564,7 @@ func TestRun_localValidateRequest(t *testing.T) {
 			}),
 		)
 		testcontainers.CleanupContainer(t, ollamaContainer)
-		require.EqualError(t, err, "validate request: Started must be true")
+		require.EqualError(t, err, "validate request: started must be true")
 	})
 
 	t.Run("exposed-ports-empty", func(t *testing.T) {

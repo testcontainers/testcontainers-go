@@ -12,6 +12,8 @@ import (
 )
 
 // InfluxDbContainer represents the InfluxDB container type used in the module
+//
+//nolint:staticcheck //FIXME
 type InfluxDbContainer struct {
 	testcontainers.Container
 }
@@ -61,7 +63,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
-//nolint:revive //FIXME
+//nolint:revive,staticcheck //FIXME
 func (c *InfluxDbContainer) MustConnectionUrl(ctx context.Context) string {
 	connectionString, err := c.ConnectionUrl(ctx)
 	if err != nil {
@@ -70,7 +72,7 @@ func (c *InfluxDbContainer) MustConnectionUrl(ctx context.Context) string {
 	return connectionString
 }
 
-//nolint:revive //FIXME
+//nolint:revive,staticcheck //FIXME
 func (c *InfluxDbContainer) ConnectionUrl(ctx context.Context) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "8086/tcp")
 	if err != nil {
@@ -120,6 +122,8 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 
 // WithInitDb returns a request customizer that initialises the database using the file `docker-entrypoint-initdb.d`
 // located in `srcPath` directory.
+//
+//nolint:staticcheck //FIXME
 func WithInitDb(srcPath string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		cf := testcontainers.ContainerFile{
