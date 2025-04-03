@@ -186,7 +186,7 @@ func (c *DockerContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Po
 	if err != nil {
 		return "", fmt.Errorf("inspect: %w", err)
 	}
-	if inspect.ContainerJSONBase.HostConfig.NetworkMode == "host" {
+	if inspect.HostConfig.NetworkMode == "host" {
 		return port, nil
 	}
 
@@ -1619,7 +1619,7 @@ func (p *DockerProvider) getGatewayIP(ctx context.Context, defaultNetwork string
 		}
 	}
 	if ip == "" {
-		return "", errors.New("Failed to get gateway IP from network settings")
+		return "", errors.New("failed to get gateway IP from network settings")
 	}
 
 	return ip, nil

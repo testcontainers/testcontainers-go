@@ -72,7 +72,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // Host returns the endpoint to connect to the Docker daemon running inside the DinD container.
 func (c *Container) Host(ctx context.Context) (string, error) {
-	return c.Container.PortEndpoint(ctx, "2375/tcp", "http")
+	return c.PortEndpoint(ctx, "2375/tcp", "http")
 }
 
 // LoadImage loads an image into the DinD container.
@@ -91,16 +91,16 @@ func (c *Container) LoadImage(ctx context.Context, image string) (err error) {
 		err = errors.Join(err, os.Remove(imagesTar.Name()))
 	}()
 
-	if err = provider.SaveImages(context.Background(), imagesTar.Name(), image); err != nil {
+	if err = provider.SaveImages(ctx, imagesTar.Name(), image); err != nil {
 		return fmt.Errorf("save images: %w", err)
 	}
 
 	containerPath := "/image/" + filepath.Base(imagesTar.Name())
-	if err = c.Container.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0o644); err != nil {
+	if err = c.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0o644); err != nil {
 		return fmt.Errorf("copy image to container: %w", err)
 	}
 
-	if _, _, err = c.Container.Exec(ctx, []string{"docker", "image", "import", containerPath, image}); err != nil {
+	if _, _, err = c.Exec(ctx, []string{"docker", "image", "load", "-i", containerPath}); err != nil {
 		return fmt.Errorf("import image: %w", err)
 	}
 

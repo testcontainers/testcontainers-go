@@ -1,4 +1,4 @@
-package gcloud_test
+package bigtable_test
 
 import (
 	"context"
@@ -11,17 +11,17 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/gcloud"
+	tcbigtable "github.com/testcontainers/testcontainers-go/modules/gcloud/bigtable"
 )
 
-func ExampleRunBigTableContainer() {
+func ExampleRun() {
 	// runBigTableContainer {
 	ctx := context.Background()
 
-	bigTableContainer, err := gcloud.RunBigTable(
+	bigTableContainer, err := tcbigtable.Run(
 		ctx,
 		"gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
-		gcloud.WithProjectID("bigtable-project"),
+		tcbigtable.WithProjectID("bigtable-project"),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(bigTableContainer); err != nil {
@@ -35,19 +35,19 @@ func ExampleRunBigTableContainer() {
 	// }
 
 	// bigTableAdminClient {
-	projectId := bigTableContainer.Settings.ProjectID
+	projectID := bigTableContainer.ProjectID()
 
 	const (
-		instanceId = "test-instance"
+		instanceID = "test-instance"
 		tableName  = "test-table"
 	)
 
 	options := []option.ClientOption{
-		option.WithEndpoint(bigTableContainer.URI),
+		option.WithEndpoint(bigTableContainer.URI()),
 		option.WithoutAuthentication(),
 		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
 	}
-	adminClient, err := bigtable.NewAdminClient(ctx, projectId, instanceId, options...)
+	adminClient, err := bigtable.NewAdminClient(ctx, projectID, instanceID, options...)
 	if err != nil {
 		log.Printf("failed to create admin client: %v", err)
 		return
@@ -67,7 +67,7 @@ func ExampleRunBigTableContainer() {
 	}
 
 	// bigTableClient {
-	client, err := bigtable.NewClient(ctx, projectId, instanceId, options...)
+	client, err := bigtable.NewClient(ctx, projectID, instanceID, options...)
 	if err != nil {
 		log.Printf("failed to create client: %v", err)
 		return
