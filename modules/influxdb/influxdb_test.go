@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	influxclient "github.com/influxdata/influxdb1-client/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,6 +43,200 @@ func TestV2Container(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Truef(t, state.Running, "InfluxDB container is not running")
+}
+
+func TestWithV2Env(t *testing.T) {
+	username, password := "root", "password"
+	token := "token"
+	retention := "30d"
+	usernameFile, passwordFile, tokenFile := "username.txt", "password.txt", "token.txt"
+
+	tests := []struct {
+		name           string
+		influxConfig   influxdb.ConfigV2
+		expectedEnvMap map[string]string
+	}{
+		{
+			name: "with-required-only",
+			influxConfig: influxdb.ConfigV2{
+				Org:    "Org",
+				Bucket: "Bucket",
+			},
+			expectedEnvMap: map[string]string{
+				"DOCKER_INFLUXDB_INIT_MODE":         "setup",
+				"DOCKER_INFLUXDB_INIT_ORG":          "Org",
+				"DOCKER_INFLUXDB_INIT_BUCKET":       "Bucket",
+				"DOCKER_INFLUXDB_INIT_AUTH_ENABLED": "false",
+				"INFLUXDB_BIND_ADDRESS":             ":8088",
+				"INFLUXDB_HTTP_BIND_ADDRESS":        ":8086",
+				"INFLUXDB_REPORTING_DISABLED":       "true",
+				"INFLUXDB_MONITOR_STORE_ENABLED":    "false",
+				"INFLUXDB_HTTP_HTTPS_ENABLED":       "false",
+				"INFLUXDB_HTTP_AUTH_ENABLED":        "false",
+			},
+		},
+		{
+			name: "with-username-and-password",
+			influxConfig: influxdb.ConfigV2{
+				Org:      "Org",
+				Bucket:   "Bucket",
+				Username: &username,
+				Password: &password,
+			},
+			expectedEnvMap: map[string]string{
+				"DOCKER_INFLUXDB_INIT_MODE":         "setup",
+				"DOCKER_INFLUXDB_INIT_ORG":          "Org",
+				"DOCKER_INFLUXDB_INIT_BUCKET":       "Bucket",
+				"DOCKER_INFLUXDB_INIT_AUTH_ENABLED": "false",
+				"DOCKER_INFLUXDB_INIT_USERNAME":     username,
+				"DOCKER_INFLUXDB_INIT_PASSWORD":     password,
+				"INFLUXDB_BIND_ADDRESS":             ":8088",
+				"INFLUXDB_HTTP_BIND_ADDRESS":        ":8086",
+				"INFLUXDB_REPORTING_DISABLED":       "true",
+				"INFLUXDB_MONITOR_STORE_ENABLED":    "false",
+				"INFLUXDB_HTTP_HTTPS_ENABLED":       "false",
+				"INFLUXDB_HTTP_AUTH_ENABLED":        "false",
+			},
+		},
+		{
+			name: "with-token",
+			influxConfig: influxdb.ConfigV2{
+				Org:    "Org",
+				Bucket: "Bucket",
+				Token:  &token,
+			},
+			expectedEnvMap: map[string]string{
+				"DOCKER_INFLUXDB_INIT_MODE":         "setup",
+				"DOCKER_INFLUXDB_INIT_ORG":          "Org",
+				"DOCKER_INFLUXDB_INIT_BUCKET":       "Bucket",
+				"DOCKER_INFLUXDB_INIT_AUTH_ENABLED": "false",
+				"DOCKER_INFLUXDB_INIT_ADMIN_TOKEN":  token,
+				"INFLUXDB_BIND_ADDRESS":             ":8088",
+				"INFLUXDB_HTTP_BIND_ADDRESS":        ":8086",
+				"INFLUXDB_REPORTING_DISABLED":       "true",
+				"INFLUXDB_MONITOR_STORE_ENABLED":    "false",
+				"INFLUXDB_HTTP_HTTPS_ENABLED":       "false",
+				"INFLUXDB_HTTP_AUTH_ENABLED":        "false",
+			},
+		},
+		{
+			name: "with-retention",
+			influxConfig: influxdb.ConfigV2{
+				Org:       "Org",
+				Bucket:    "Bucket",
+				Retention: &retention,
+			},
+			expectedEnvMap: map[string]string{
+				"DOCKER_INFLUXDB_INIT_MODE":         "setup",
+				"DOCKER_INFLUXDB_INIT_ORG":          "Org",
+				"DOCKER_INFLUXDB_INIT_BUCKET":       "Bucket",
+				"DOCKER_INFLUXDB_INIT_AUTH_ENABLED": "false",
+				"DOCKER_INFLUXDB_INIT_RETENTION":    retention,
+				"INFLUXDB_BIND_ADDRESS":             ":8088",
+				"INFLUXDB_HTTP_BIND_ADDRESS":        ":8086",
+				"INFLUXDB_REPORTING_DISABLED":       "true",
+				"INFLUXDB_MONITOR_STORE_ENABLED":    "false",
+				"INFLUXDB_HTTP_HTTPS_ENABLED":       "false",
+				"INFLUXDB_HTTP_AUTH_ENABLED":        "false",
+			},
+		},
+		{
+			name: "with-files",
+			influxConfig: influxdb.ConfigV2{
+				Org:          "Org",
+				Bucket:       "Bucket",
+				UsernameFile: &usernameFile,
+				PasswordFile: &passwordFile,
+				TokenFile:    &tokenFile,
+			},
+			expectedEnvMap: map[string]string{
+				"DOCKER_INFLUXDB_INIT_MODE":             "setup",
+				"DOCKER_INFLUXDB_INIT_ORG":              "Org",
+				"DOCKER_INFLUXDB_INIT_BUCKET":           "Bucket",
+				"DOCKER_INFLUXDB_INIT_AUTH_ENABLED":     "false",
+				"DOCKER_INFLUXDB_INIT_USERNAME_FILE":    usernameFile,
+				"DOCKER_INFLUXDB_INIT_PASSWORD_FILE":    passwordFile,
+				"DOCKER_INFLUXDB_INIT_ADMIN_TOKEN_FILE": tokenFile,
+				"INFLUXDB_BIND_ADDRESS":                 ":8088",
+				"INFLUXDB_HTTP_BIND_ADDRESS":            ":8086",
+				"INFLUXDB_REPORTING_DISABLED":           "true",
+				"INFLUXDB_MONITOR_STORE_ENABLED":        "false",
+				"INFLUXDB_HTTP_HTTPS_ENABLED":           "false",
+				"INFLUXDB_HTTP_AUTH_ENABLED":            "false",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			genericReq := &testcontainers.GenericContainerRequest{
+				ContainerRequest: testcontainers.ContainerRequest{
+					Image:        "influxdb:2.7.5-alpine",
+					ExposedPorts: []string{"8086/tcp", "8088/tcp"},
+					Env: map[string]string{
+						"INFLUXDB_BIND_ADDRESS":          ":8088",
+						"INFLUXDB_HTTP_BIND_ADDRESS":     ":8086",
+						"INFLUXDB_REPORTING_DISABLED":    "true",
+						"INFLUXDB_MONITOR_STORE_ENABLED": "false",
+						"INFLUXDB_HTTP_HTTPS_ENABLED":    "false",
+						"INFLUXDB_HTTP_AUTH_ENABLED":     "false",
+					},
+				},
+			}
+
+			opt := influxdb.WithV2Env(test.influxConfig)
+			_ = opt(genericReq)
+
+			assert.Equal(t, test.expectedEnvMap, genericReq.Env)
+		})
+	}
+}
+
+func TestRun_V2WithOptions(t *testing.T) {
+	ctx := context.Background()
+
+	username := "username"
+	password := "password"
+	org := "org"
+	bucket := "bucket"
+	authEnabled := true
+	token := "influxdbv2token"
+
+	influxdbContainer, err := influxdb.Run(ctx, "influxdb:2.7.11",
+		influxdb.WithV2Env(influxdb.ConfigV2{
+			Username:    &username,
+			Password:    &password,
+			Org:         org,
+			Bucket:      bucket,
+			Token:       &token,
+			AuthEnabled: &authEnabled,
+		}),
+	)
+	testcontainers.CleanupContainer(t, influxdbContainer)
+	require.NoError(t, err)
+
+	state, err := influxdbContainer.State(ctx)
+	require.NoError(t, err)
+	require.True(t, state.Running)
+
+	// Query the InfluxDB API to verify the setup
+	url, err := influxdbContainer.ConnectionUrl(ctx)
+	require.NoError(t, err)
+
+	// Initialize a new InfluxDB client
+	client := influxdb2.NewClientWithOptions(url, token, influxdb2.DefaultOptions())
+	defer client.Close()
+
+	// Get the bucket
+	influxBucket, err := client.BucketsAPI().FindBucketByName(ctx, bucket)
+	require.NoError(t, err)
+	require.Equal(t, bucket, influxBucket.Name)
+
+	// Try to connect without authentication
+	clientWithoutToken := influxdb2.NewClientWithOptions(url, "", influxdb2.DefaultOptions())
+	defer clientWithoutToken.Close()
+
+	_, err = clientWithoutToken.BucketsAPI().CreateBucketWithNameWithID(ctx, org, "example")
+	require.Error(t, err, "Expected error when trying to create a bucket without authentication")
 }
 
 func TestWithInitDb(t *testing.T) {

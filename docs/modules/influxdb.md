@@ -4,7 +4,7 @@ Since testcontainers-go <a href="https://github.com/testcontainers/testcontainer
 
 ## Introduction
 
-A testcontainers module for InfluxDB.  This module supports v1.x of InfluxDB.   
+A testcontainers module for InfluxDB V1 and V2.
 
 ## Adding this module to your project dependencies
 
@@ -16,8 +16,11 @@ go get github.com/testcontainers/testcontainers-go/modules/influxdb
 
 ## Usage example
 
+### InfluxDB
+
 <!--codeinclude--> 
-[Creating an InfluxDB container](../../modules/influxdb/examples_test.go) inside_block:runInfluxContainer
+[Creating an InfluxDB V1 container](../../modules/influxdb/examples_test.go) inside_block:runInfluxContainer
+[Creating an InfluxDB V2 container](../../modules/influxdb/examples_test.go) inside_block:runInfluxV2Container
 <!--/codeinclude-->
 
 ## Module Reference
@@ -54,7 +57,7 @@ Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "influxdb:1.8.0")`.
 
 !!!info
-    Note that `influxdb:latest` will get you a version 2 image which is not supported by this module.
+    Note that `influxdb:latest` will pull a version 2 image.
 
 {% include "../features/common_functional_options.md" %}
 
@@ -62,6 +65,22 @@ In example: `Run(context.Background(), "influxdb:1.8.0")`.
 
 By default, authentication is disabled and no credentials are needed to use the Influx API against the test container.
 If you want to test with credentials, include the appropriate environment variables to do so.
+
+#### Configuring InfluxDB V2
+
+When running the InfluxDB V2 image, you can override the default setup configuration by using the `WithV2Env` option.
+The `WithV2Env` option receives a `ConfigV2` struct, which contains the following fields:
+
+```go
+    influxdb.WithV2Env(influxdb.ConfigV2{
+    Username:    &username, // Optional
+    Password:    &password, // Optional
+    Org:         org, // Required
+    Bucket:      bucket, // Required
+    Token:       &token, // Optional
+    AuthEnabled: &authEnabled, // False by default, optional
+    }),
+```
 
 #### Init Scripts
 
