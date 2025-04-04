@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -255,7 +256,9 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 			ExposedPorts: []string{"2375/tcp"},
 			Env:          map[string]string{"DOCKER_TLS_CERTDIR": ""},
 			WaitingFor:   wait.ForListeningPort("2375/tcp"),
-			Privileged:   true,
+			HostConfigModifier: func(hc *container.HostConfig) {
+				hc.Privileged = true
+			},
 		},
 	})
 	CleanupContainer(t, dind)

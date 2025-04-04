@@ -142,16 +142,12 @@ func ExampleRun_usingLambdas() {
 			"SERVICES":            "lambda",
 			"LAMBDA_DOCKER_FLAGS": flagsFn(),
 		}),
-		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
-			ContainerRequest: testcontainers.ContainerRequest{
-				Files: []testcontainers.ContainerFile{
-					{
-						HostFilePath:      filepath.Join("testdata", "function.zip"),
-						ContainerFilePath: "/tmp/function.zip",
-					},
-				},
+		testcontainers.WithFiles(
+			testcontainers.ContainerFile{
+				HostFilePath:      filepath.Join("testdata", "function.zip"),
+				ContainerFilePath: "/tmp/function.zip",
 			},
-		}),
+		),
 	)
 	// }
 	defer func() {

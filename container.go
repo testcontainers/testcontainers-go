@@ -141,17 +141,17 @@ type ContainerRequest struct {
 	Tmpfs                    map[string]string
 	RegistryCred             string // Deprecated: Testcontainers will detect registry credentials automatically
 	WaitingFor               wait.Strategy
-	Name                     string // for specifying container name
-	Hostname                 string
-	WorkingDir               string                                     // specify the working directory of the container
+	Name                     string                                     // for specifying container name
+	Hostname                 string                                     // Deprecated: Use [ConfigModifier] instead. S
+	WorkingDir               string                                     // Deprecated: Use [ConfigModifier] instead. Specify the working directory of the container
 	ExtraHosts               []string                                   // Deprecated: Use HostConfigModifier instead
-	Privileged               bool                                       // For starting privileged container
+	Privileged               bool                                       // Deprecated: Use [HostConfigModifier] instead. For starting privileged container
 	Networks                 []string                                   // for specifying network names
 	NetworkAliases           map[string][]string                        // for specifying network aliases
 	NetworkMode              container.NetworkMode                      // Deprecated: Use HostConfigModifier instead
 	Resources                container.Resources                        // Deprecated: Use HostConfigModifier instead
 	Files                    []ContainerFile                            // files which will be copied when container starts
-	User                     string                                     // for specifying uid:gid
+	User                     string                                     // Deprecated: Use [ConfigModifier] instead. For specifying uid:gid
 	SkipReaper               bool                                       // Deprecated: The reaper is globally controlled by the .testcontainers.properties file or the TESTCONTAINERS_RYUK_DISABLED environment variable
 	ReaperImage              string                                     // Deprecated: use WithImageName ContainerOption instead. Alternative reaper image
 	ReaperOptions            []ContainerOption                          // Deprecated: the reaper is configured at the properties level, for an entire test session
@@ -159,7 +159,7 @@ type ContainerRequest struct {
 	AlwaysPullImage          bool                                       // Always pull image
 	ImagePlatform            string                                     // ImagePlatform describes the platform which the image runs on.
 	Binds                    []string                                   // Deprecated: Use HostConfigModifier instead
-	ShmSize                  int64                                      // Amount of memory shared with the host (in bytes)
+	ShmSize                  int64                                      // Deprecated: Use [HostConfigModifier] instead. Amount of memory shared with the host (in bytes)
 	CapAdd                   []string                                   // Deprecated: Use HostConfigModifier instead. Add Linux capabilities
 	CapDrop                  []string                                   // Deprecated: Use HostConfigModifier instead. Drop Linux capabilities
 	ConfigModifier           func(*container.Config)                    // Modifier for the config before container creation

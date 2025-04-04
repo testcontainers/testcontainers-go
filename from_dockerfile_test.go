@@ -167,19 +167,16 @@ func ExampleGenericContainer_buildFromDockerfile() {
 	ctx := context.Background()
 
 	// buildFromDockerfileWithModifier {
-	c, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
-			FromDockerfile: FromDockerfile{
-				Context:    "testdata",
-				Dockerfile: "target.Dockerfile",
-				KeepImage:  false,
-				BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
-					buildOptions.Target = "target2"
-				},
+	c, err := Run(ctx, "",
+		WithDockerfile(FromDockerfile{
+			Context:    "testdata",
+			Dockerfile: "target.Dockerfile",
+			KeepImage:  false,
+			BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
+				buildOptions.Target = "target2"
 			},
-		},
-		Started: true,
-	})
+		}),
+	)
 	// }
 	defer func() {
 		if err := TerminateContainer(c); err != nil {

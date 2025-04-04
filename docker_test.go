@@ -72,10 +72,10 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 			ExposedPorts: []string{
 				nginxHighPort,
 			},
-			Privileged: true,
 			WaitingFor: wait.ForHTTP("/").WithPort(nginxHighPort),
 			HostConfigModifier: func(hc *container.HostConfig) {
 				hc.NetworkMode = "host"
+				hc.Privileged = true
 			},
 		},
 		Started: true,
@@ -97,8 +97,10 @@ func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testi
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
 			Image:      "nginx",
-			Privileged: true,
 			WaitingFor: wait.ForExposedPort(),
+			HostConfigModifier: func(hc *container.HostConfig) {
+				hc.Privileged = true
+			},
 		},
 		Started: true,
 	}
@@ -874,7 +876,9 @@ func TestWorkingDir(t *testing.T) {
 			wait.ForLog("/var/tmp/test"),
 		),
 		Entrypoint: []string{"pwd"},
-		WorkingDir: "/var/tmp/test",
+		ConfigModifier: func(c *container.Config) {
+			c.WorkingDir = "/var/tmp/test"
+		},
 	}
 
 	c, err := GenericContainer(ctx, GenericContainerRequest{
@@ -1291,9 +1295,11 @@ func TestContainerWithCustomHostname(t *testing.T) {
 	name := fmt.Sprintf("some-nginx-%s-%d", t.Name(), rand.Int())
 	hostname := fmt.Sprintf("my-nginx-%s-%d", t.Name(), rand.Int())
 	req := ContainerRequest{
-		Name:     name,
-		Image:    nginxImage,
-		Hostname: hostname,
+		Name:  name,
+		Image: nginxImage,
+		ConfigModifier: func(c *container.Config) {
+			c.Hostname = hostname
+		},
 	}
 	ctr, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType:     providerType,
@@ -1758,12 +1764,16 @@ func TestContainerRunningCheckingStatusCode(t *testing.T) {
 }
 
 func TestContainerWithUserID(t *testing.T) {
+	const expectedUserID = "60125"
+
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:      "alpine:latest",
-		User:       "60125",
 		Cmd:        []string{"sh", "-c", "id -u"},
 		WaitingFor: wait.ForExit(),
+		ConfigModifier: func(c *container.Config) {
+			c.User = expectedUserID
+		},
 	}
 	ctr, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType:     providerType,
@@ -1779,7 +1789,7 @@ func TestContainerWithUserID(t *testing.T) {
 	b, err := io.ReadAll(r)
 	require.NoError(t, err)
 	actual := regexp.MustCompile(`\D+`).ReplaceAllString(string(b), "")
-	assert.Equal(t, req.User, actual)
+	require.Equal(t, expectedUserID, actual)
 }
 
 func TestContainerWithNoUserID(t *testing.T) {
