@@ -214,6 +214,10 @@
             "path": "../modules/surrealdb"
         },
         {
+            "name": "module / toxiproxy",
+            "path": "../modules/toxiproxy"
+        },
+        {
             "name": "module / valkey",
             "path": "../modules/valkey"
         },

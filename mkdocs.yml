@@ -117,6 +117,7 @@ nav:
         - modules/scylladb.md
         - modules/socat.md
         - modules/surrealdb.md
+        - modules/toxiproxy.md
         - modules/valkey.md
         - modules/vault.md
         - modules/vearch.md
