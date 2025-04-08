@@ -83,20 +83,15 @@ func Load() (Config, error) {
 		return cfg, fmt.Errorf("config path: %w", err)
 	}
 
-	return cfg, LoadFromFilepath(p, &cfg)
-}
-
-// LoadFromFilepath loads config from the specified path into cfg.
-func LoadFromFilepath(configPath string, cfg *Config) error {
-	f, err := os.Open(configPath)
+	f, err := os.Open(p)
 	if err != nil {
-		return fmt.Errorf("open config: %w", err)
+		return cfg, fmt.Errorf("open config: %w", err)
 	}
 	defer f.Close()
 
 	if err = json.NewDecoder(f).Decode(&cfg); err != nil {
-		return fmt.Errorf("decode config: %w", err)
+		return cfg, fmt.Errorf("decode config: %w", err)
 	}
 
-	return nil
+	return cfg, nil
 }
