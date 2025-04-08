@@ -31,7 +31,7 @@ func TestRun_withPortRange(t *testing.T) {
 		require.NoError(t, err)
 		jsonInspect, err := ctr.Inspect(ctx)
 		require.NoError(t, err)
-		require.Equal(t, portsCount+1, len(jsonInspect.HostConfig.PortBindings))
+		require.Len(t, jsonInspect.HostConfig.PortBindings, portsCount+1)
 	})
 
 	t.Run("negative-port", func(t *testing.T) {
@@ -61,7 +61,7 @@ func TestRun_withPortRange(t *testing.T) {
 
 		jsonInspect, err := ctr.Inspect(ctx)
 		require.NoError(t, err)
-		require.Equal(t, portsCount+1, len(jsonInspect.HostConfig.PortBindings))
+		require.Len(t, jsonInspect.HostConfig.PortBindings, portsCount+1)
 	})
 
 	t.Run("more-than-default-port", func(t *testing.T) {
@@ -73,6 +73,6 @@ func TestRun_withPortRange(t *testing.T) {
 
 		jsonInspect, err := ctr.Inspect(ctx)
 		require.NoError(t, err)
-		require.Equal(t, portsCount+1, len(jsonInspect.HostConfig.PortBindings))
+		require.Len(t, jsonInspect.HostConfig.PortBindings, portsCount+1)
 	})
 }
