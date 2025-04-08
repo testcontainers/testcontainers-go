@@ -105,7 +105,7 @@ func (s *store) findMetadataDirs(root string) ([]string, error) {
 		}
 		return nil
 	})
-	return dirs, fmt.Errorf("walk metadata dirs: %w", err)
+	return dirs, err
 }
 
 func hasMetaFile(dir string) bool {
