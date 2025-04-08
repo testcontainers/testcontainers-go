@@ -61,7 +61,7 @@ func (s *store) list() ([]*metadata, error) {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("find contexts: %w", err)
+		return nil, fmt.Errorf("find metadata dirs: %w", err)
 	}
 
 	var contexts []*metadata
@@ -81,7 +81,7 @@ func (s *store) list() ([]*metadata, error) {
 func (s *store) load(dir string) (*metadata, error) {
 	data, err := os.ReadFile(filepath.Join(dir, metaFile))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read metadata: %w", err)
 	}
 
 	var meta metadata
@@ -95,7 +95,7 @@ func (s *store) findMetadataDirs(root string) ([]string, error) {
 	var dirs []string
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return err
+			return fmt.Errorf("walk: %w", err)
 		}
 		if info.IsDir() {
 			if hasMetaFile(path) {
@@ -105,7 +105,7 @@ func (s *store) findMetadataDirs(root string) ([]string, error) {
 		}
 		return nil
 	})
-	return dirs, err
+	return dirs, fmt.Errorf("walk metadata dirs: %w", err)
 }
 
 func hasMetaFile(dir string) bool {
