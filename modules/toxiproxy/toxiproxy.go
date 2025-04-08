@@ -10,8 +10,13 @@ import (
 )
 
 const (
-	ControlPort      = "8474/tcp"
+	// ControlPort is the port of the Toxiproxy control API
+	ControlPort = "8474/tcp"
+
+	// firstProxiedPort is the first port of the range of ports that will be proxied
 	firstProxiedPort = 8666
+
+	// defaultPortRange is the default range of ports that will be proxied
 	defaultPortRange = 31
 )
 
