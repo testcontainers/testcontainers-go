@@ -10,10 +10,6 @@
             "path": "../examples/nginx"
         },
         {
-            "name": "example / toxiproxy",
-            "path": "../examples/toxiproxy"
-        },
-        {
             "name": "module / arangodb",
             "path": "../modules/arangodb"
         },

@@ -126,7 +126,6 @@ nav:
     - Examples:
         - examples/index.md
         - examples/nginx.md
-        - examples/toxiproxy.md
     - System Requirements:
         - system_requirements/index.md
         - system_requirements/docker.md
