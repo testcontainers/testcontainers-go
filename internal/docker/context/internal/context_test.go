@@ -88,7 +88,7 @@ func TestStore_load(t *testing.T) {
 		nonExistentDir := filepath.Join(tmpDir, "does-not-exist")
 		_, err := s.load(nonExistentDir)
 		require.Error(t, err)
-		require.True(t, os.IsNotExist(err))
+		require.ErrorIs(t, err, os.ErrNotExist)
 	})
 
 	t.Run("meta-json-does-not-exist", func(t *testing.T) {
@@ -100,7 +100,7 @@ func TestStore_load(t *testing.T) {
 
 		_, err := s.load(contextDir)
 		require.Error(t, err)
-		require.True(t, os.IsNotExist(err))
+		require.ErrorIs(t, err, os.ErrNotExist)
 	})
 
 	t.Run("invalid-json", func(t *testing.T) {
