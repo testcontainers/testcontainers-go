@@ -93,6 +93,7 @@ func ExampleRun_addLatency() {
 		return
 	}
 
+	// createToxiproxyClient {
 	toxiURI, err := toxiproxyContainer.URI(ctx)
 	if err != nil {
 		log.Printf("failed to get toxiproxy container uri: %s", err)
@@ -100,7 +101,9 @@ func ExampleRun_addLatency() {
 	}
 
 	toxiproxyClient := toxiproxy.NewClient(toxiURI)
+	// }
 
+	// createProxy {
 	// Create the proxy using the network alias of the redis container,
 	// as they run on the same network.
 	proxy, err := toxiproxyClient.CreateProxy("redis", "0.0.0.0:8666", "redis:6379")
@@ -108,6 +111,7 @@ func ExampleRun_addLatency() {
 		log.Printf("failed to create proxy: %s", err)
 		return
 	}
+	// }
 
 	toxiproxyProxyPort, err := toxiproxyContainer.MappedPort(ctx, "8666/tcp")
 	if err != nil {
@@ -121,9 +125,10 @@ func ExampleRun_addLatency() {
 		return
 	}
 
+	// createRedisClient {
 	// Create a redis client that connects to the toxiproxy container.
 	// We are defining a read timeout of 2 seconds, because we are adding
-	// a latency toxic of 1.1 seconds to the request.
+	// a latency toxic of 1 second to the request.
 	redisURI := fmt.Sprintf("redis://%s:%s?read_timeout=2s", toxiproxyProxyHostIP, toxiproxyProxyPort.Port())
 
 	options, err := redis.ParseURL(redisURI)
@@ -138,6 +143,7 @@ func ExampleRun_addLatency() {
 			log.Printf("failed to flush redis: %s", err)
 		}
 	}()
+	// }
 
 	key := fmt.Sprintf("{user.%s}.favoritefood", uuid.NewString())
 	value := "Cabbage Biscuits"
@@ -153,6 +159,7 @@ func ExampleRun_addLatency() {
 		return
 	}
 
+	// addLatencyToxic {
 	// Add a latency toxic to the proxy
 	_, err = proxy.AddToxic("latency_down", "latency", "downstream", 1.0, toxiproxy.Attributes{
 		"latency": 1_000,
@@ -162,6 +169,7 @@ func ExampleRun_addLatency() {
 		log.Printf("failed to add toxic: %s", err)
 		return
 	}
+	// }
 
 	start := time.Now()
 	// Get data

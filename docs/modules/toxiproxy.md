@@ -71,8 +71,28 @@ The Toxiproxy container exposes the following methods:
 
 #### URI
 
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
 The `URI` method returns the URI of the Toxiproxy container, used to create a new Toxiproxy client.
 
 ```golang
 func (c *ToxiproxyContainer) URI() string
 ```
+
+<!--codeinclude-->
+[Creating a Toxiproxy client](../../modules/toxiproxy/examples_test.go) inside_block:createToxiproxyClient
+<!--/codeinclude-->
+
+- the `toxiproxy` package comes from the `github.com/Shopify/toxiproxy/v2/client` package.
+- the `toxiproxyContainer` variable has been created by the `Run` function.
+
+### Examples
+
+#### Adding a latency toxic to the proxy
+
+<!--codeinclude-->
+[Creating a proxy](../../modules/toxiproxy/examples_test.go) inside_block:createProxy
+[Creating a Redis client](../../modules/toxiproxy/examples_test.go) inside_block:createRedisClient
+[Adding a latency toxic](../../modules/toxiproxy/examples_test.go) inside_block:addLatencyToxic
+
+<!--/codeinclude-->
