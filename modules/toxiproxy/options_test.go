@@ -13,7 +13,8 @@ func TestWithPortRange(t *testing.T) {
 		opt := WithPortRange(portsCount)
 
 		var opts options
-		opt(&opts)
+		err := opt(&opts)
+		require.NoError(t, err)
 
 		require.Equal(t, portsCount, opts.portRange)
 	})
