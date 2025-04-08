@@ -94,22 +94,40 @@ func WithDatabase(dbName string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithInitScripts sets the init scripts to be run when the container starts
+// WithInitScripts sets the init scripts to be run when the container starts.
+// These init scripts will be executed in sorted name order as defined by the current locale, which defaults to en_US.utf8.
+// If you need to run your scripts in a specific order, consider using `WithOrderedInitScripts` instead.
 func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		initScripts := []testcontainers.ContainerFile{}
 		for _, script := range scripts {
-			cf := testcontainers.ContainerFile{
-				HostFilePath:      script,
-				ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
-				FileMode:          0o755,
-			}
-			initScripts = append(initScripts, cf)
+			filename := filepath.Base(script)
+			appendInitScript(req, script, filename)
 		}
-		req.Files = append(req.Files, initScripts...)
-
 		return nil
 	}
+}
+
+// WithOrderedInitScripts sets the init scripts to be run when the container starts.
+// The scripts will be run in the order that they are provided in this function.
+func WithOrderedInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		for idx, script := range scripts {
+			filename := filepath.Base(script)
+			containerFilePath := fmt.Sprintf("%06d-%s", idx, filename)
+			appendInitScript(req, script, containerFilePath)
+		}
+		return nil
+	}
+}
+
+// Adds an initialization script to the Postgres container
+func appendInitScript(req *testcontainers.GenericContainerRequest, hostFilePath string, containerFilePath string) {
+	cf := testcontainers.ContainerFile{
+		HostFilePath:      hostFilePath,
+		ContainerFilePath: "/docker-entrypoint-initdb.d/" + containerFilePath,
+		FileMode:          0o755,
+	}
+	req.Files = append(req.Files, cf)
 }
 
 // WithPassword sets the initial password of the user to be created when the container starts
