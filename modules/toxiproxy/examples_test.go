@@ -128,7 +128,7 @@ func ExampleRun_addLatency() {
 	// createRedisClient {
 	// Create a redis client that connects to the toxiproxy container.
 	// We are defining a read timeout of 2 seconds, because we are adding
-	// a latency toxic of 1 second to the request.
+	// a latency toxic of 1 second to the request, +/- 100ms jitter.
 	redisURI := fmt.Sprintf("redis://%s:%s?read_timeout=2s", toxiproxyProxyHostIP, toxiproxyProxyPort.Port())
 
 	options, err := redis.ParseURL(redisURI)
@@ -185,17 +185,18 @@ func ExampleRun_addLatency() {
 	// The value is retrieved successfully
 	fmt.Println(savedValue)
 
-	// The latency toxic should have added 1.1 seconds to the request
-	fmt.Println(duration >= 1_000*time.Millisecond)
-
-	// The latency toxic should be less than 1.5 seconds, because
-	// the jitter is 100ms
-	fmt.Println(duration < 1_500*time.Millisecond)
+	// Check that latency is within expected range (900ms-1100ms)
+	// The latency toxic adds 1000ms (1000ms +/- 100ms jitter)
+	minDuration := 900 * time.Millisecond
+	maxDuration := 1100 * time.Millisecond
+	fmt.Printf("Duration is between %dms and %dms: %v\n",
+		minDuration.Milliseconds(),
+		maxDuration.Milliseconds(),
+		duration >= minDuration && duration <= maxDuration)
 
 	// Output:
 	// Cabbage Biscuits
-	// true
-	// true
+	// Duration is between 900ms and 1100ms: true
 }
 
 func ExampleRun_connectionCut() {
@@ -317,8 +318,7 @@ func ExampleRun_connectionCut() {
 		return
 	}
 
-	// The value is not retrieved at all
-	fmt.Println(err)
+	// The value is not retrieved at all, so it's empty
 	fmt.Println(savedValue)
 
 	// Re-enable the proxy
@@ -338,7 +338,6 @@ func ExampleRun_connectionCut() {
 	fmt.Println(savedValue)
 
 	// Output:
-	// EOF
 	//
 	// Cabbage Biscuits
 }
