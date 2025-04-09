@@ -2,6 +2,7 @@ package toxiproxy
 
 import (
 	"errors"
+	"io"
 
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -37,6 +38,24 @@ func WithPortRange(portRange int) Option {
 		}
 
 		o.portRange = portRange
+		return nil
+	}
+}
+
+// WithConfigFile sets the config file for the Toxiproxy container, copying
+// the file to the "/tmp/tc-toxiproxy.json" path. It also appends the "-host=0.0.0.0"
+// and "-config=/tmp/tc-toxiproxy.json" flags to the command line.
+// The config file is a JSON file that contains the configuration for the Toxiproxy container,
+// and it is not validated by the Toxiproxy container.
+func WithConfigFile(r io.Reader) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		req.Files = append(req.Files, testcontainers.ContainerFile{
+			Reader:            r,
+			ContainerFilePath: "/tmp/tc-toxiproxy.json",
+			FileMode:          0o644,
+		})
+
+		req.Cmd = append(req.Cmd, "-host=0.0.0.0", "-config=/tmp/tc-toxiproxy.json")
 		return nil
 	}
 }

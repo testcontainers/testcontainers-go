@@ -65,6 +65,20 @@ you to create a unique proxy for each container. The default port range is `31`.
 func WithPortRange(portRange int) Option
 ```
 
+#### WithConfigFile
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The `WithConfigFile` option allows you to specify a config file for the Toxiproxy container, in the form of an `io.Reader` representing
+the JSON file with the Toxiproxy configuration.
+
+!!! warning
+    The config file is not validated by the Toxiproxy container.
+
+```golang
+func WithConfigFile(r io.Reader) testcontainers.CustomizeRequestOption
+```
+
 ### Container Methods
 
 The Toxiproxy container exposes the following methods:
