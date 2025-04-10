@@ -23,7 +23,6 @@ func ExampleRun() {
 	toxiproxyContainer, err := tctoxiproxy.Run(
 		ctx,
 		"ghcr.io/shopify/toxiproxy:2.12.0",
-		tctoxiproxy.WithPortRange(31),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(toxiproxyContainer); err != nil {
@@ -77,11 +76,21 @@ func ExampleRun_addLatency() {
 		return
 	}
 
+	const proxyPort = "8666"
+
+	// No need to create a proxy, as we are programmatically adding it below.
 	toxiproxyContainer, err := tctoxiproxy.Run(
 		ctx,
 		"ghcr.io/shopify/toxiproxy:2.12.0",
-		tctoxiproxy.WithPortRange(31),
 		network.WithNetwork([]string{"toxiproxy"}, nw),
+		// explicitly expose the ports that will be proxied using the programmatic API
+		// of the toxiproxy client. Otherwise, the ports will not be exposed and the
+		// toxiproxy client will not be able to connect to the proxy.
+		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				ExposedPorts: []string{proxyPort + "/tcp"},
+			},
+		}),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(toxiproxyContainer); err != nil {
@@ -106,14 +115,14 @@ func ExampleRun_addLatency() {
 	// createProxy {
 	// Create the proxy using the network alias of the redis container,
 	// as they run on the same network.
-	proxy, err := toxiproxyClient.CreateProxy("redis", "0.0.0.0:8666", "redis:6379")
+	proxy, err := toxiproxyClient.CreateProxy("redis", "0.0.0.0:"+proxyPort, "redis:6379")
 	if err != nil {
 		log.Printf("failed to create proxy: %s", err)
 		return
 	}
 	// }
 
-	toxiproxyProxyPort, err := toxiproxyContainer.MappedPort(ctx, "8666/tcp")
+	toxiproxyProxyPort, err := toxiproxyContainer.MappedPort(ctx, proxyPort+"/tcp")
 	if err != nil {
 		log.Printf("failed to get toxiproxy container port: %s", err)
 		return
@@ -160,10 +169,14 @@ func ExampleRun_addLatency() {
 	}
 
 	// addLatencyToxic {
+	const (
+		latency = 1_000
+		jitter  = 100
+	)
 	// Add a latency toxic to the proxy
 	_, err = proxy.AddToxic("latency_down", "latency", "downstream", 1.0, toxiproxy.Attributes{
-		"latency": 1_000,
-		"jitter":  100,
+		"latency": latency,
+		"jitter":  jitter,
 	})
 	if err != nil {
 		log.Printf("failed to add toxic: %s", err)
@@ -187,8 +200,8 @@ func ExampleRun_addLatency() {
 
 	// Check that latency is within expected range (900ms-1100ms)
 	// The latency toxic adds 1000ms (1000ms +/- 100ms jitter)
-	minDuration := 900 * time.Millisecond
-	maxDuration := 1100 * time.Millisecond
+	minDuration := (latency - jitter) * time.Millisecond
+	maxDuration := (latency + jitter) * time.Millisecond
 	fmt.Printf("Duration is between %dms and %dms: %v\n",
 		minDuration.Milliseconds(),
 		maxDuration.Milliseconds(),
@@ -231,7 +244,8 @@ func ExampleRun_connectionCut() {
 	toxiproxyContainer, err := tctoxiproxy.Run(
 		ctx,
 		"ghcr.io/shopify/toxiproxy:2.12.0",
-		tctoxiproxy.WithPortRange(31),
+		// We create a proxy named "redis" that points to the redis container.
+		tctoxiproxy.WithProxy("redis", "redis:6379"),
 		network.WithNetwork([]string{"toxiproxy"}, nw),
 	)
 	defer func() {
@@ -244,17 +258,13 @@ func ExampleRun_connectionCut() {
 		return
 	}
 
-	toxiproxyProxyPort, err := toxiproxyContainer.MappedPort(ctx, "8666/tcp")
+	// getProxiedEndpoint {
+	proxiedRedisHost, proxiedRedisPort, err := toxiproxyContainer.ProxiedEndpoint(8666)
 	if err != nil {
 		log.Printf("failed to get toxiproxy container port: %s", err)
 		return
 	}
-
-	toxiproxyProxyHostIP, err := toxiproxyContainer.Host(ctx)
-	if err != nil {
-		log.Printf("failed to get toxiproxy container host: %s", err)
-		return
-	}
+	// }
 
 	toxiURI, err := toxiproxyContainer.URI(ctx)
 	if err != nil {
@@ -264,18 +274,21 @@ func ExampleRun_connectionCut() {
 
 	toxiproxyClient := toxiproxy.NewClient(toxiURI)
 
-	// Create the proxy using the network alias of the redis container,
-	// as they run on the same network.
-	proxy, err := toxiproxyClient.CreateProxy("redis", "0.0.0.0:8666", "redis:6379")
+	// Retrieve the existing proxy
+	proxies, err := toxiproxyClient.Proxies()
 	if err != nil {
-		log.Printf("failed to create proxy: %s", err)
+		log.Printf("failed to get proxies: %s", err)
 		return
 	}
 
+	proxy := proxies["redis"]
+
+	// readProxiedEndpoint {
 	// Create a redis client that connects to the toxiproxy container.
 	// We are defining a read timeout of 2 seconds, because we are adding
 	// a latency toxic of 1.1 seconds to the request.
-	redisURI := fmt.Sprintf("redis://%s:%s?read_timeout=2s", toxiproxyProxyHostIP, toxiproxyProxyPort.Port())
+	redisURI := fmt.Sprintf("redis://%s:%s?read_timeout=2s", proxiedRedisHost, proxiedRedisPort)
+	// }
 
 	options, err := redis.ParseURL(redisURI)
 	if err != nil {

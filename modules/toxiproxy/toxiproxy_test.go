@@ -29,63 +29,6 @@ func TestRun(t *testing.T) {
 	// perform assertions
 }
 
-func TestRun_withPortRange(t *testing.T) {
-	ctx := context.Background()
-
-	t.Run("no-port-range", func(t *testing.T) {
-		portsCount := 31 // default port range is 31 (not exposed)
-
-		ctr, err := tctoxiproxy.Run(ctx, "ghcr.io/shopify/toxiproxy:2.12.0")
-		testcontainers.CleanupContainer(t, ctr)
-		require.NoError(t, err)
-		jsonInspect, err := ctr.Inspect(ctx)
-		require.NoError(t, err)
-		require.Len(t, jsonInspect.HostConfig.PortBindings, portsCount+1)
-	})
-
-	t.Run("negative-port", func(t *testing.T) {
-		portsCount := -1
-
-		ctr, err := tctoxiproxy.Run(ctx, "ghcr.io/shopify/toxiproxy:2.12.0", tctoxiproxy.WithPortRange(portsCount))
-		testcontainers.CleanupContainer(t, ctr)
-		require.Error(t, err)
-		require.Nil(t, ctr)
-	})
-
-	t.Run("zero-port", func(t *testing.T) {
-		portsCount := 0
-
-		ctr, err := tctoxiproxy.Run(ctx, "ghcr.io/shopify/toxiproxy:2.12.0", tctoxiproxy.WithPortRange(portsCount))
-		testcontainers.CleanupContainer(t, ctr)
-		require.Error(t, err)
-		require.Nil(t, ctr)
-	})
-
-	t.Run("one-port", func(t *testing.T) {
-		portsCount := 1
-
-		ctr, err := tctoxiproxy.Run(ctx, "ghcr.io/shopify/toxiproxy:2.12.0", tctoxiproxy.WithPortRange(portsCount))
-		testcontainers.CleanupContainer(t, ctr)
-		require.NoError(t, err)
-
-		jsonInspect, err := ctr.Inspect(ctx)
-		require.NoError(t, err)
-		require.Len(t, jsonInspect.HostConfig.PortBindings, portsCount+1)
-	})
-
-	t.Run("more-than-default-port", func(t *testing.T) {
-		portsCount := 75
-
-		ctr, err := tctoxiproxy.Run(ctx, "ghcr.io/shopify/toxiproxy:2.12.0", tctoxiproxy.WithPortRange(portsCount))
-		testcontainers.CleanupContainer(t, ctr)
-		require.NoError(t, err)
-
-		jsonInspect, err := ctr.Inspect(ctx)
-		require.NoError(t, err)
-		require.Len(t, jsonInspect.HostConfig.PortBindings, portsCount+1)
-	})
-}
-
 //go:embed testdata/toxiproxy.json
 var configFile []byte
 
@@ -109,7 +52,6 @@ func TestRun_withConfigFile(t *testing.T) {
 	toxiproxyContainer, err := tctoxiproxy.Run(
 		ctx,
 		"ghcr.io/shopify/toxiproxy:2.12.0",
-		tctoxiproxy.WithPortRange(31),
 		tctoxiproxy.WithConfigFile(bytes.NewReader(configFile)),
 		network.WithNetwork([]string{"toxiproxy"}, nw),
 	)

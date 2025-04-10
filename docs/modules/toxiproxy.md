@@ -53,35 +53,63 @@ In example: `Run(context.Background(), "shopify/toxiproxy:2.12.0")`.
 
 {% include "../features/common_functional_options.md" %}
 
-#### WithPortRange
+#### WithProxy
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-The `WithPortRange` option allows you to specify the number of ports to expose on the Toxiproxy container.
-This option allocates a range of ports on the host and exposes them to the Toxiproxy container, allowing
-you to create a unique proxy for each container. The default port range is `31`.
+The `WithProxy` option allows you to specify a proxy to be created on the Toxiproxy container.
+This option allocates a random port on the host and exposes it to the Toxiproxy container, allowing
+you to create a unique proxy for a given service, starting from the `8666/tcp` port.
 
 ```golang
-func WithPortRange(portRange int) Option
+func WithProxy(name string, upstream string) Option
 ```
+
+If this option is used in combination with the `WithConfigFile` option, the proxy defined in this option
+is added to the proxies defined in the config file.
+
+!!!info
+    If you add proxies in a programmatic manner using the Toxiproxy client, then you need to manually
+    add exposed ports in the Toxiproxy container.
 
 #### WithConfigFile
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 The `WithConfigFile` option allows you to specify a config file for the Toxiproxy container, in the form of an `io.Reader` representing
-the JSON file with the Toxiproxy configuration.
+the JSON file with the Toxiproxy configuration, in the valid format of the Toxiproxy configuration file.
 
-!!! warning
-    The config file is not validated by the Toxiproxy container.
+<!--codeinclude-->
+[Configuration file](../../modules/toxiproxy/testdata/toxiproxy.json)
+<!--/codeinclude-->
 
 ```golang
 func WithConfigFile(r io.Reader) testcontainers.CustomizeRequestOption
 ```
 
+If this option is used in combination with the `WithProxy` option, the proxies defined in this option
+are added to the proxies defined with the `WithProxy` option.
+
 ### Container Methods
 
 The Toxiproxy container exposes the following methods:
+
+#### ProxiedEndpoint
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The `ProxiedEndpoint` method returns the host and port of the proxy for a given port. It's used to create new connections to the proxied service, and it returns an error in case the port has no proxy.
+
+```golang
+func (c *Container) ProxiedEndpoint(port int) (string, string, error)
+```
+
+<!--codeinclude-->
+[Get Proxied Endpoint](../../modules/toxiproxy/examples_test.go) inside_block:getProxiedEndpoint
+[Read Proxied Endpoint](../../modules/toxiproxy/examples_test.go) inside_block:readProxiedEndpoint
+<!--/codeinclude-->
+
+The above examples show how to get the proxied endpoint and use it to create a new connection to the proxied service, in this case a Redis client.
 
 #### URI
 
@@ -90,7 +118,7 @@ The Toxiproxy container exposes the following methods:
 The `URI` method returns the URI of the Toxiproxy container, used to create a new Toxiproxy client.
 
 ```golang
-func (c *ToxiproxyContainer) URI() string
+func (c *Container) URI() string
 ```
 
 <!--codeinclude-->

@@ -1,19 +1,20 @@
 package toxiproxy
 
 import (
-	"errors"
+	"encoding/json"
+	"fmt"
 	"io"
 
 	"github.com/testcontainers/testcontainers-go"
 )
 
 type options struct {
-	portRange int
+	proxies []*proxy
 }
 
 func defaultOptions() options {
 	return options{
-		portRange: defaultPortRange,
+		proxies: []*proxy{},
 	}
 }
 
@@ -29,15 +30,18 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 	return nil
 }
 
-// WithPortRange sets the port range for the Toxiproxy container.
-// Default port range is 31.
-func WithPortRange(portRange int) Option {
+// WithProxy creates a new proxy configuration for the given name and upstream.
+// If the upstream is not a valid IP address and port, it returns an error.
+// If this option is used in combination with the [WithConfigFile] option, the proxy defined in this option
+// is added to the existing proxies.
+func WithProxy(name string, upstream string) Option {
 	return func(o *options) error {
-		if portRange < 1 {
-			return errors.New("port range must be greater than 0")
+		proxy, err := newProxy(name, upstream)
+		if err != nil {
+			return fmt.Errorf("newProxy: %w", err)
 		}
 
-		o.portRange = portRange
+		o.proxies = append(o.proxies, &proxy)
 		return nil
 	}
 }
@@ -47,15 +51,26 @@ func WithPortRange(portRange int) Option {
 // and "-config=/tmp/tc-toxiproxy.json" flags to the command line.
 // The config file is a JSON file that contains the configuration for the Toxiproxy container,
 // and it is not validated by the Toxiproxy container.
-func WithConfigFile(r io.Reader) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Files = append(req.Files, testcontainers.ContainerFile{
-			Reader:            r,
-			ContainerFilePath: "/tmp/tc-toxiproxy.json",
-			FileMode:          0o644,
-		})
+// If this option is used in combination with the [WithProxy] option, the proxies defined in this option
+// are added to the existing proxies.
+func WithConfigFile(r io.Reader) Option {
+	return func(o *options) error {
+		// unmarshal the config file
+		var config []proxy
+		err := json.NewDecoder(r).Decode(&config)
+		if err != nil {
+			return fmt.Errorf("unmarshal: %w", err)
+		}
 
-		req.Cmd = append(req.Cmd, "-host=0.0.0.0", "-config=/tmp/tc-toxiproxy.json")
+		for _, proxy := range config {
+			proxy, err := newProxy(proxy.Name, proxy.Upstream)
+			if err != nil {
+				return fmt.Errorf("newProxy: %w", err)
+			}
+
+			o.proxies = append(o.proxies, &proxy)
+		}
+
 		return nil
 	}
 }
