@@ -97,7 +97,7 @@ func TestRun_withConfigFile(t *testing.T) {
 		ToxicType: "latency",
 		Toxicity:  1.0,
 		Stream:    "downstream",
-		Attributes: map[string]interface{}{
+		Attributes: map[string]any{
 			"latency": 1_000,
 			"jitter":  100,
 		},

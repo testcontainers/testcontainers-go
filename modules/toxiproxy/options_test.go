@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
 	"github.com/testcontainers/testcontainers-go"
 	tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
 	"github.com/testcontainers/testcontainers-go/network"
@@ -49,7 +50,7 @@ func TestWithConfigFile(t *testing.T) {
 		var opts options
 		err := opt(&opts)
 		require.NoError(t, err)
-		require.Equal(t, 0, len(opts.proxies))
+		require.Empty(t, opts.proxies)
 	})
 
 	t.Run("config-file-is-invalid", func(t *testing.T) {
@@ -78,7 +79,7 @@ func TestWithConfigFile(t *testing.T) {
 		var opts options
 		err := opt(&opts)
 		require.NoError(t, err)
-		require.Equal(t, 2, len(opts.proxies))
+		require.Len(t, opts.proxies, 2)
 		require.Equal(t, "redis", opts.proxies[0].Name)
 		require.Equal(t, "redis:6379", opts.proxies[0].Upstream)
 		require.Empty(t, opts.proxies[0].Listen) // listen is set by the container, as it knows the port
@@ -143,7 +144,7 @@ func TestRun_withConfigFile_and_proxy(t *testing.T) {
 		var config []proxy
 		err = json.NewDecoder(rc).Decode(&config)
 		require.NoError(t, err)
-		require.Equal(t, 2, len(config))
+		require.Len(t, config, 2)
 
 		require.Contains(t, config, proxy{
 			Name:     "redis",
