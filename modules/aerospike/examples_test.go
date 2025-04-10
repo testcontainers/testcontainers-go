@@ -12,7 +12,7 @@ import (
 )
 
 func ExampleRun() {
-
+	// runAerospikeContainer {
 	ctx := context.Background()
 
 	aerospikedbContainer, err := as.Run(ctx, "aerospike/aerospike-server:latest")
@@ -25,7 +25,7 @@ func ExampleRun() {
 		log.Printf("failed to start container: %s", err)
 		return
 	}
-
+	// }
 	state, err := aerospikedbContainer.State(ctx)
 	if err != nil {
 		log.Printf("failed to get container state: %s", err)

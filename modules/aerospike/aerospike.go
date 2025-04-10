@@ -20,22 +20,6 @@ type AerospikeContainer struct {
 	Port int
 }
 
-// ConnectionHost returns the host and port of the cassandra container, using the default, native 9000 port, and
-// obtaining the host and exposed port from the container
-// func (c *AerospikeContainer) ConnectionHost(ctx context.Context) (string, error) {
-// 	host, err := c.Host(ctx)
-// 	if err != nil {
-// 		return "", err
-// 	}
-
-// 	port, err := c.MappedPort(ctx, port)
-// 	if err != nil {
-// 		return "", err
-// 	}
-
-// 	return host + ":" + port.Port(), nil
-// }
-
 // Run creates an instance of the Aerospike container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*AerospikeContainer, error) {
 	req := testcontainers.ContainerRequest{
