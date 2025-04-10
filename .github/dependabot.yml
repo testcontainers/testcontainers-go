@@ -16,6 +16,7 @@ updates:
         - /examples/nginx
         - /examples/toxiproxy
         - /modulegen
+        - /modules/aerospike
         - /modules/arangodb
         - /modules/artemis
         - /modules/azure
