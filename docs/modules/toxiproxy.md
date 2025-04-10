@@ -130,9 +130,10 @@ func (c *Container) URI() string
 
 ### Examples
 
-#### Adding a latency toxic to the proxy
+#### Programmatically create a proxy
 
 <!--codeinclude-->
+[Expose port manually](../../modules/toxiproxy/examples_test.go) inside_block:defineContainerExposingPort
 [Creating a proxy](../../modules/toxiproxy/examples_test.go) inside_block:createProxy
 [Creating a Redis client](../../modules/toxiproxy/examples_test.go) inside_block:createRedisClient
 [Adding a latency toxic](../../modules/toxiproxy/examples_test.go) inside_block:addLatencyToxic

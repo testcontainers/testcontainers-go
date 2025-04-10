@@ -76,6 +76,7 @@ func ExampleRun_addLatency() {
 		return
 	}
 
+	// defineContainerExposingPort {
 	const proxyPort = "8666"
 
 	// No need to create a proxy, as we are programmatically adding it below.
@@ -101,6 +102,7 @@ func ExampleRun_addLatency() {
 		log.Printf("failed to start container: %s", err)
 		return
 	}
+	// }
 
 	// createToxiproxyClient {
 	toxiURI, err := toxiproxyContainer.URI(ctx)
