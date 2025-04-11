@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
-	tcaerospike "github.com/testcontainers/testcontainers-go/modules/aerospike"
+	"github.com/testcontainers/testcontainers-go/modules/aerospike"
 )
 
 const (
@@ -23,35 +23,36 @@ const (
 func TestAeroSpike(t *testing.T) {
 	t.Run("invalid-image-fails", func(t *testing.T) {
 		ctx := context.Background()
-		_, err := tcaerospike.Run(ctx, "invalid-aerospike-image")
+		container, err := aerospike.Run(ctx, "invalid-aerospike-image")
+		testcontainers.CleanupContainer(t, container)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "failed to start Aerospike container")
 	})
 
 	t.Run("valid-image-succeeds", func(t *testing.T) {
 		ctx := context.Background()
-		container, err := tcaerospike.Run(ctx, aerospikeImage)
+		container, err := aerospike.Run(ctx, aerospikeImage)
+		testcontainers.CleanupContainer(t, container)
 		require.NoError(t, err)
 		require.NotNil(t, container)
-
-		testcontainers.CleanupContainer(t, container)
 	})
 
 	t.Run("applies-container-customizations", func(t *testing.T) {
 		ctx := context.Background()
 		customEnv := "TEST_ENV=value"
-		container, err := tcaerospike.Run(ctx, aerospikeImage,
+		container, err := aerospike.Run(ctx, aerospikeImage,
 			testcontainers.WithEnv(map[string]string{"CUSTOM_ENV": customEnv}))
+		testcontainers.CleanupContainer(t, container)
 		require.NoError(t, err)
 		require.NotNil(t, container)
-		testcontainers.CleanupContainer(t, container)
+
 	})
 
 	t.Run("respects-context-cancellation", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 		defer cancel()
-
-		_, err := tcaerospike.Run(ctx, aerospikeImage)
+		container, err := aerospike.Run(ctx, aerospikeImage)
+		testcontainers.CleanupContainer(t, container)
 		require.Error(t, err)
 	})
 }

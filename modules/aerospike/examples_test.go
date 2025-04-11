@@ -9,16 +9,16 @@ import (
 	aero "github.com/aerospike/aerospike-client-go/v8"
 
 	"github.com/testcontainers/testcontainers-go"
-	tcaerospike "github.com/testcontainers/testcontainers-go/modules/aerospike"
+	"github.com/testcontainers/testcontainers-go/modules/aerospike"
 )
 
 func ExampleRun() {
 	// runAerospikeContainer {
 	ctx := context.Background()
 
-	aerospikedbContainer, err := tcaerospike.Run(ctx, "aerospike/aerospike-server:latest")
+	aerospikeContainer, err := aerospike.Run(ctx, "aerospike/aerospike-server:latest")
 	defer func() {
-		if err := testcontainers.TerminateContainer(aerospikedbContainer.Container); err != nil {
+		if err := testcontainers.TerminateContainer(aerospikeContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
@@ -27,7 +27,7 @@ func ExampleRun() {
 		return
 	}
 	// }
-	state, err := aerospikedbContainer.State(ctx)
+	state, err := aerospikeContainer.State(ctx)
 	if err != nil {
 		log.Printf("failed to get container state: %s", err)
 		return
@@ -42,11 +42,11 @@ func ExampleRun() {
 func ExampleRun_usingClient() {
 	ctx := context.Background()
 
-	aerospikedbContainer, err := tcaerospike.Run(
+	aerospikeContainer, err := aerospike.Run(
 		ctx, "aerospike/aerospike-server:latest",
 	)
 	defer func() {
-		if err := testcontainers.TerminateContainer(aerospikedbContainer.Container); err != nil {
+		if err := testcontainers.TerminateContainer(aerospikeContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
@@ -56,14 +56,14 @@ func ExampleRun_usingClient() {
 	}
 
 	// Get the host and port
-	host, err := aerospikedbContainer.Host(ctx)
+	host, err := aerospikeContainer.Host(ctx)
 	if err != nil {
 		log.Printf("failed to get container host: %s", err)
 		return
 	}
 
 	// Get the mapped port
-	port, err := aerospikedbContainer.MappedPort(ctx, "3000/tcp")
+	port, err := aerospikeContainer.MappedPort(ctx, "3000/tcp")
 	if err != nil {
 		log.Printf("failed to get container port: %s", err)
 		return
