@@ -1,4 +1,4 @@
-package gcloud_test
+package datastore_test
 
 import (
 	"context"
@@ -11,17 +11,17 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/gcloud"
+	tcdatastore "github.com/testcontainers/testcontainers-go/modules/gcloud/datastore"
 )
 
-func ExampleRunDatastoreContainer() {
+func ExampleRun() {
 	// runDatastoreContainer {
 	ctx := context.Background()
 
-	datastoreContainer, err := gcloud.RunDatastore(
+	datastoreContainer, err := tcdatastore.Run(
 		ctx,
 		"gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
-		gcloud.WithProjectID("datastore-project"),
+		tcdatastore.WithProjectID("datastore-project"),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(datastoreContainer); err != nil {
@@ -35,10 +35,10 @@ func ExampleRunDatastoreContainer() {
 	// }
 
 	// datastoreClient {
-	projectID := datastoreContainer.Settings.ProjectID
+	projectID := datastoreContainer.ProjectID()
 
 	options := []option.ClientOption{
-		option.WithEndpoint(datastoreContainer.URI),
+		option.WithEndpoint(datastoreContainer.URI()),
 		option.WithoutAuthentication(),
 		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
 	}

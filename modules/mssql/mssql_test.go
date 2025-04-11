@@ -188,7 +188,7 @@ func TestMSSQLServerWithScriptsDDL(t *testing.T) {
 			got = append(got, p)
 		}
 
-		require.EqualValues(t, want, got)
+		require.Equal(t, want, got)
 	}
 
 	ctx := context.Background()

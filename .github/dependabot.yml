@@ -16,6 +16,7 @@ updates:
         - /examples/nginx
         - /examples/toxiproxy
         - /modulegen
+        - /modules/arangodb
         - /modules/artemis
         - /modules/azure
         - /modules/azurite
@@ -63,6 +64,7 @@ updates:
         - /modules/redpanda
         - /modules/registry
         - /modules/scylladb
+        - /modules/socat
         - /modules/surrealdb
         - /modules/valkey
         - /modules/vault

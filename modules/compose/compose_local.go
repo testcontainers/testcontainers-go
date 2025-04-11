@@ -372,7 +372,7 @@ func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
 	if which(dc.Executable) != nil {
 		return ExecError{
 			Command: []string{dc.Executable},
-			Error:   fmt.Errorf("Local Docker not found. Is %s on the PATH?", dc.Executable),
+			Error:   fmt.Errorf("local Docker not found. Is %s on the PATH?", dc.Executable),
 		}
 	}
 
@@ -401,7 +401,7 @@ func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
 		args := strings.Join(dc.Cmd, " ")
 		return ExecError{
 			Command: []string{dc.Executable, args},
-			Error:   fmt.Errorf("Local Docker compose exited abnormally whilst running %s: [%v]. %s", dc.Executable, args, err.Error()),
+			Error:   fmt.Errorf("local Docker compose exited abnormally whilst running %s: [%v]. %s", dc.Executable, args, err.Error()),
 		}
 	}
 

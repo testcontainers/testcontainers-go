@@ -14,6 +14,10 @@
             "path": "../examples/toxiproxy"
         },
         {
+            "name": "module / arangodb",
+            "path": "../modules/arangodb"
+        },
+        {
             "name": "module / artemis",
             "path": "../modules/artemis"
         },
@@ -200,6 +204,10 @@
         {
             "name": "module / scylladb",
             "path": "../modules/scylladb"
+        },
+        {
+            "name": "module / socat",
+            "path": "../modules/socat"
         },
         {
             "name": "module / surrealdb",
