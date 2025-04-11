@@ -53,8 +53,23 @@ func ExampleRun_usingClient() {
 		log.Printf("failed to start container: %s", err)
 		return
 	}
+	// }
 
-	aeroHost := []*aerospike.Host{aerospike.NewHost(aerospikedbContainer.Host, aerospikedbContainer.Port)}
+	// Get the host and port
+	host, err := aerospikedbContainer.Host(ctx)
+	if err != nil {
+		log.Printf("failed to get container host: %s", err)
+		return
+	}
+
+	// Get the mapped port
+	port, err := aerospikedbContainer.MappedPort(ctx, "3000/tcp")
+	if err != nil {
+		log.Printf("failed to get container port: %s", err)
+		return
+	}
+
+	aeroHost := []*aerospike.Host{aerospike.NewHost(host, port.Int())}
 
 	// connect to the host
 	cp := aerospike.NewClientPolicy()
