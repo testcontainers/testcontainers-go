@@ -194,8 +194,10 @@ In order to simplify the creation of the container for a given module, `Testcont
 - `testcontainers.WithImageSubstitutors`: a function that sets your own substitutions to the container images.
 - `testcontainers.WithEnv`: a function that sets the environment variables for the container request.
 - `testcontainers.WithExposedPorts`: a function that exposes additional ports from the container.
-- `testcontainers.WithEntrypoint`: a function that appends commands to the container's entrypoint.
-- `testcontainers.WithCmd`: a function that appends commands to the container's command.
+- `testcontainers.WithEntrypoint`: a function that completely replaces the container's entrypoint.
+- `testcontainers.WithEntrypointArgs`: a function that appends commands to the container's entrypoint.
+- `testcontainers.WithCmd`: a function that completely replaces the container's command.
+- `testcontainers.WithCmdArgs`: a function that appends commands to the container's command.
 - `testcontainers.WithLabels`: a function that adds Docker labels to the container.
 - `testcontainers.WithFiles`: a function that copies files from the host into the container at creation time.
 - `testcontainers.WithMounts`: a function that adds volume mounts to the container.

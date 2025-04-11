@@ -344,10 +344,18 @@ func WithWaitStrategyAndDeadline(deadline time.Duration, strategies ...wait.Stra
 	}
 }
 
-// WithEntrypoint appends the entrypoint to the entrypoint for a container
+// WithEntrypoint completely replaces the entrypoint of a container
 func WithEntrypoint(entrypoint ...string) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {
-		req.Entrypoint = append(req.Entrypoint, entrypoint...)
+		req.Entrypoint = entrypoint
+		return nil
+	}
+}
+
+// WithEntrypointArgs appends the entrypoint arguments to the entrypoint of a container
+func WithEntrypointArgs(entrypointArgs ...string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.Entrypoint = append(req.Entrypoint, entrypointArgs...)
 		return nil
 	}
 }
@@ -360,10 +368,18 @@ func WithExposedPorts(ports ...string) CustomizeRequestOption {
 	}
 }
 
-// WithCmd appends the command to the command for a container
+// WithCmd completely replaces the command for a container
 func WithCmd(cmd ...string) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {
-		req.Cmd = append(req.Cmd, cmd...)
+		req.Cmd = cmd
+		return nil
+	}
+}
+
+// WithCmdArgs appends the command arguments to the command for a container
+func WithCmdArgs(cmdArgs ...string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.Cmd = append(req.Cmd, cmdArgs...)
 		return nil
 	}
 }

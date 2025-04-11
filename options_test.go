@@ -250,6 +250,37 @@ func TestWithEntrypoint(t *testing.T) {
 		require.Equal(t, expected, req.Entrypoint)
 	}
 
+	t.Run("replace-existing", func(t *testing.T) {
+		testEntrypoint(t,
+			[]string{"/bin/sh"},
+			[]string{"pwd"},
+			[]string{"pwd"},
+		)
+	})
+
+	t.Run("replace-nil", func(t *testing.T) {
+		testEntrypoint(t,
+			nil,
+			[]string{"/bin/sh", "-c"},
+			[]string{"/bin/sh", "-c"},
+		)
+	})
+}
+
+func TestWithEntrypointArgs(t *testing.T) {
+	testEntrypoint := func(t *testing.T, initial []string, add []string, expected []string) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Entrypoint: initial,
+			},
+		}
+		opt := testcontainers.WithEntrypointArgs(add...)
+		require.NoError(t, opt.Customize(req))
+		require.Equal(t, expected, req.Entrypoint)
+	}
+
 	t.Run("add-to-existing", func(t *testing.T) {
 		testEntrypoint(t,
 			[]string{"/bin/sh"},
@@ -308,6 +339,37 @@ func TestWithCmd(t *testing.T) {
 			},
 		}
 		opt := testcontainers.WithCmd(add...)
+		require.NoError(t, opt.Customize(req))
+		require.Equal(t, expected, req.Cmd)
+	}
+
+	t.Run("replace-existing", func(t *testing.T) {
+		testCmd(t,
+			[]string{"echo"},
+			[]string{"hello", "world"},
+			[]string{"hello", "world"},
+		)
+	})
+
+	t.Run("replace-nil", func(t *testing.T) {
+		testCmd(t,
+			nil,
+			[]string{"echo", "hello"},
+			[]string{"echo", "hello"},
+		)
+	})
+}
+
+func TestWithCmdArgs(t *testing.T) {
+	testCmd := func(t *testing.T, initial []string, add []string, expected []string) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Cmd: initial,
+			},
+		}
+		opt := testcontainers.WithCmdArgs(add...)
 		require.NoError(t, opt.Customize(req))
 		require.Equal(t, expected, req.Cmd)
 	}
