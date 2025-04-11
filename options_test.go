@@ -158,82 +158,396 @@ func TestWithAfterReadyCommand(t *testing.T) {
 }
 
 func TestWithEnv(t *testing.T) {
-	tests := map[string]struct {
-		req    *testcontainers.GenericContainerRequest
-		env    map[string]string
-		expect map[string]string
-	}{
-		"add": {
-			req: &testcontainers.GenericContainerRequest{
-				ContainerRequest: testcontainers.ContainerRequest{
-					Env: map[string]string{"KEY1": "VAL1"},
-				},
+	testEnv := func(t *testing.T, initial map[string]string, add map[string]string, expected map[string]string) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Env: initial,
 			},
-			env: map[string]string{"KEY2": "VAL2"},
-			expect: map[string]string{
+		}
+		opt := testcontainers.WithEnv(add)
+		require.NoError(t, opt.Customize(req))
+		require.Equal(t, expected, req.Env)
+	}
+
+	t.Run("add-to-existing", func(t *testing.T) {
+		testEnv(t,
+			map[string]string{"KEY1": "VAL1"},
+			map[string]string{"KEY2": "VAL2"},
+			map[string]string{
 				"KEY1": "VAL1",
 				"KEY2": "VAL2",
 			},
-		},
-		"add-nil": {
-			req:    &testcontainers.GenericContainerRequest{},
-			env:    map[string]string{"KEY2": "VAL2"},
-			expect: map[string]string{"KEY2": "VAL2"},
-		},
-		"override": {
-			req: &testcontainers.GenericContainerRequest{
-				ContainerRequest: testcontainers.ContainerRequest{
-					Env: map[string]string{
-						"KEY1": "VAL1",
-						"KEY2": "VAL2",
-					},
-				},
+		)
+	})
+
+	t.Run("add-to-nil", func(t *testing.T) {
+		testEnv(t,
+			nil,
+			map[string]string{"KEY2": "VAL2"},
+			map[string]string{"KEY2": "VAL2"},
+		)
+	})
+
+	t.Run("override-existing", func(t *testing.T) {
+		testEnv(t,
+			map[string]string{
+				"KEY1": "VAL1",
+				"KEY2": "VAL2",
 			},
-			env: map[string]string{"KEY2": "VAL3"},
-			expect: map[string]string{
+			map[string]string{"KEY2": "VAL3"},
+			map[string]string{
 				"KEY1": "VAL1",
 				"KEY2": "VAL3",
 			},
-		},
-	}
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			opt := testcontainers.WithEnv(tc.env)
-			require.NoError(t, opt.Customize(tc.req))
-			require.Equal(t, tc.expect, tc.req.Env)
-		})
-	}
+		)
+	})
 }
 
 func TestWithHostPortAccess(t *testing.T) {
-	tests := []struct {
-		name      string
-		req       *testcontainers.GenericContainerRequest
-		hostPorts []int
-		expect    []int
-	}{
-		{
-			name: "add to existing",
-			req: &testcontainers.GenericContainerRequest{
-				ContainerRequest: testcontainers.ContainerRequest{
-					HostAccessPorts: []int{1, 2},
-				},
+	testHostPorts := func(t *testing.T, initial []int, add []int, expected []int) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				HostAccessPorts: initial,
 			},
-			hostPorts: []int{3, 4},
-			expect:    []int{1, 2, 3, 4},
-		},
-		{
-			name:      "add to nil",
-			req:       &testcontainers.GenericContainerRequest{},
-			hostPorts: []int{3, 4},
-			expect:    []int{3, 4},
-		},
+		}
+		opt := testcontainers.WithHostPortAccess(add...)
+		require.NoError(t, opt.Customize(req))
+		require.Equal(t, expected, req.HostAccessPorts)
 	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			opt := testcontainers.WithHostPortAccess(tc.hostPorts...)
-			require.NoError(t, opt.Customize(tc.req))
-			require.Equal(t, tc.expect, tc.req.HostAccessPorts)
-		})
+
+	t.Run("add-to-existing", func(t *testing.T) {
+		testHostPorts(t,
+			[]int{1, 2},
+			[]int{3, 4},
+			[]int{1, 2, 3, 4},
+		)
+	})
+
+	t.Run("add-to-nil", func(t *testing.T) {
+		testHostPorts(t,
+			nil,
+			[]int{3, 4},
+			[]int{3, 4},
+		)
+	})
+}
+
+func TestWithEntrypoint(t *testing.T) {
+	testEntrypoint := func(t *testing.T, initial []string, add []string, expected []string) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Entrypoint: initial,
+			},
+		}
+		opt := testcontainers.WithEntrypoint(add...)
+		require.NoError(t, opt.Customize(req))
+		require.Equal(t, expected, req.Entrypoint)
 	}
+
+	t.Run("replace-existing", func(t *testing.T) {
+		testEntrypoint(t,
+			[]string{"/bin/sh"},
+			[]string{"pwd"},
+			[]string{"pwd"},
+		)
+	})
+
+	t.Run("replace-nil", func(t *testing.T) {
+		testEntrypoint(t,
+			nil,
+			[]string{"/bin/sh", "-c"},
+			[]string{"/bin/sh", "-c"},
+		)
+	})
+}
+
+func TestWithEntrypointArgs(t *testing.T) {
+	testEntrypoint := func(t *testing.T, initial []string, add []string, expected []string) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Entrypoint: initial,
+			},
+		}
+		opt := testcontainers.WithEntrypointArgs(add...)
+		require.NoError(t, opt.Customize(req))
+		require.Equal(t, expected, req.Entrypoint)
+	}
+
+	t.Run("add-to-existing", func(t *testing.T) {
+		testEntrypoint(t,
+			[]string{"/bin/sh"},
+			[]string{"-c", "echo hello"},
+			[]string{"/bin/sh", "-c", "echo hello"},
+		)
+	})
+
+	t.Run("add-to-nil", func(t *testing.T) {
+		testEntrypoint(t,
+			nil,
+			[]string{"/bin/sh", "-c"},
+			[]string{"/bin/sh", "-c"},
+		)
+	})
+}
+
+func TestWithExposedPorts(t *testing.T) {
+	testPorts := func(t *testing.T, initial []string, add []string, expected []string) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				ExposedPorts: initial,
+			},
+		}
+		opt := testcontainers.WithExposedPorts(add...)
+		require.NoError(t, opt.Customize(req))
+		require.Equal(t, expected, req.ExposedPorts)
+	}
+
+	t.Run("add-to-existing", func(t *testing.T) {
+		testPorts(t,
+			[]string{"8080/tcp"},
+			[]string{"9090/tcp"},
+			[]string{"8080/tcp", "9090/tcp"},
+		)
+	})
+
+	t.Run("add-to-nil", func(t *testing.T) {
+		testPorts(t,
+			nil,
+			[]string{"8080/tcp"},
+			[]string{"8080/tcp"},
+		)
+	})
+}
+
+func TestWithCmd(t *testing.T) {
+	testCmd := func(t *testing.T, initial []string, add []string, expected []string) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Cmd: initial,
+			},
+		}
+		opt := testcontainers.WithCmd(add...)
+		require.NoError(t, opt.Customize(req))
+		require.Equal(t, expected, req.Cmd)
+	}
+
+	t.Run("replace-existing", func(t *testing.T) {
+		testCmd(t,
+			[]string{"echo"},
+			[]string{"hello", "world"},
+			[]string{"hello", "world"},
+		)
+	})
+
+	t.Run("replace-nil", func(t *testing.T) {
+		testCmd(t,
+			nil,
+			[]string{"echo", "hello"},
+			[]string{"echo", "hello"},
+		)
+	})
+}
+
+func TestWithCmdArgs(t *testing.T) {
+	testCmd := func(t *testing.T, initial []string, add []string, expected []string) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Cmd: initial,
+			},
+		}
+		opt := testcontainers.WithCmdArgs(add...)
+		require.NoError(t, opt.Customize(req))
+		require.Equal(t, expected, req.Cmd)
+	}
+
+	t.Run("add-to-existing", func(t *testing.T) {
+		testCmd(t,
+			[]string{"echo"},
+			[]string{"hello", "world"},
+			[]string{"echo", "hello", "world"},
+		)
+	})
+
+	t.Run("add-to-nil", func(t *testing.T) {
+		testCmd(t,
+			nil,
+			[]string{"echo", "hello"},
+			[]string{"echo", "hello"},
+		)
+	})
+}
+
+func TestWithLabels(t *testing.T) {
+	testLabels := func(t *testing.T, initial map[string]string, add map[string]string, expected map[string]string) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Labels: initial,
+			},
+		}
+		opt := testcontainers.WithLabels(add)
+		require.NoError(t, opt.Customize(req))
+		require.Equal(t, expected, req.Labels)
+	}
+
+	t.Run("add-to-existing", func(t *testing.T) {
+		testLabels(t,
+			map[string]string{"key1": "value1"},
+			map[string]string{"key2": "value2"},
+			map[string]string{"key1": "value1", "key2": "value2"},
+		)
+	})
+
+	t.Run("add-to-nil", func(t *testing.T) {
+		testLabels(t,
+			nil,
+			map[string]string{"key1": "value1"},
+			map[string]string{"key1": "value1"},
+		)
+	})
+}
+
+func TestWithMounts(t *testing.T) {
+	testMounts := func(t *testing.T, initial []testcontainers.ContainerMount, add []testcontainers.ContainerMount, expected testcontainers.ContainerMounts) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Mounts: initial,
+			},
+		}
+		opt := testcontainers.WithMounts(add...)
+		require.NoError(t, opt.Customize(req))
+		require.Equal(t, expected, req.Mounts)
+	}
+
+	t.Run("add-to-existing", func(t *testing.T) {
+		testMounts(t,
+			[]testcontainers.ContainerMount{
+				{Source: testcontainers.GenericVolumeMountSource{Name: "source1"}, Target: "/tmp/target1"},
+			},
+			[]testcontainers.ContainerMount{
+				{Source: testcontainers.GenericVolumeMountSource{Name: "source2"}, Target: "/tmp/target2"},
+			},
+			testcontainers.ContainerMounts{
+				{Source: testcontainers.GenericVolumeMountSource{Name: "source1"}, Target: "/tmp/target1"},
+				{Source: testcontainers.GenericVolumeMountSource{Name: "source2"}, Target: "/tmp/target2"},
+			},
+		)
+	})
+
+	t.Run("add-to-nil", func(t *testing.T) {
+		testMounts(t,
+			nil,
+			[]testcontainers.ContainerMount{
+				{Source: testcontainers.GenericVolumeMountSource{Name: "source1"}, Target: "/tmp/target1"},
+			},
+			testcontainers.ContainerMounts{
+				{Source: testcontainers.GenericVolumeMountSource{Name: "source1"}, Target: "/tmp/target1"},
+			},
+		)
+	})
+}
+
+func TestWithTmpfs(t *testing.T) {
+	testTmpfs := func(t *testing.T, initial map[string]string, add map[string]string, expected map[string]string) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Tmpfs: initial,
+			},
+		}
+		opt := testcontainers.WithTmpfs(add)
+		require.NoError(t, opt.Customize(req))
+		require.Equal(t, expected, req.Tmpfs)
+	}
+
+	t.Run("add-to-existing", func(t *testing.T) {
+		testTmpfs(t,
+			map[string]string{"/tmp1": "size=100m"},
+			map[string]string{"/tmp2": "size=200m"},
+			map[string]string{"/tmp1": "size=100m", "/tmp2": "size=200m"},
+		)
+	})
+
+	t.Run("add-to-nil", func(t *testing.T) {
+		testTmpfs(t,
+			nil,
+			map[string]string{"/tmp1": "size=100m"},
+			map[string]string{"/tmp1": "size=100m"},
+		)
+	})
+}
+
+func TestWithFiles(t *testing.T) {
+	testFiles := func(t *testing.T, initial []testcontainers.ContainerFile, add []testcontainers.ContainerFile, expected []testcontainers.ContainerFile) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Files: initial,
+			},
+		}
+		opt := testcontainers.WithFiles(add...)
+		require.NoError(t, opt.Customize(req))
+		require.Equal(t, expected, req.Files)
+	}
+
+	t.Run("add-to-existing", func(t *testing.T) {
+		testFiles(t,
+			[]testcontainers.ContainerFile{{HostFilePath: "/tmp/file1", ContainerFilePath: "/container/file1"}},
+			[]testcontainers.ContainerFile{{HostFilePath: "/tmp/file2", ContainerFilePath: "/container/file2"}},
+			[]testcontainers.ContainerFile{
+				{HostFilePath: "/tmp/file1", ContainerFilePath: "/container/file1"},
+				{HostFilePath: "/tmp/file2", ContainerFilePath: "/container/file2"},
+			},
+		)
+	})
+
+	t.Run("add-to-nil", func(t *testing.T) {
+		testFiles(t,
+			nil,
+			[]testcontainers.ContainerFile{{HostFilePath: "/tmp/file1", ContainerFilePath: "/container/file1"}},
+			[]testcontainers.ContainerFile{{HostFilePath: "/tmp/file1", ContainerFilePath: "/container/file1"}},
+		)
+	})
+}
+
+func TestWithDockerfile(t *testing.T) {
+	df := testcontainers.FromDockerfile{
+		Context:    ".",
+		Dockerfile: "Dockerfile",
+		Repo:       "testcontainers",
+		Tag:        "latest",
+		BuildArgs:  map[string]*string{"ARG1": nil, "ARG2": nil},
+	}
+
+	req := &testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{},
+	}
+
+	opt := testcontainers.WithDockerfile(df)
+	require.NoError(t, opt.Customize(req))
+	require.Equal(t, df, req.FromDockerfile)
+	require.Equal(t, ".", req.Context)
+	require.Equal(t, "Dockerfile", req.Dockerfile)
+	require.Equal(t, "testcontainers", req.Repo)
+	require.Equal(t, "latest", req.Tag)
+	require.Equal(t, map[string]*string{"ARG1": nil, "ARG2": nil}, req.BuildArgs)
 }

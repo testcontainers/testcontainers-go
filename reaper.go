@@ -382,13 +382,13 @@ func (r *reaperSpawner) newReaper(ctx context.Context, sessionID string, provide
 		Image:        config.ReaperDefaultImage,
 		ExposedPorts: []string{string(port)},
 		Labels:       core.DefaultLabels(sessionID),
-		Privileged:   tcConfig.RyukPrivileged,
 		WaitingFor:   wait.ForListeningPort(port),
 		Name:         reaperContainerNameFromSessionID(sessionID),
 		HostConfigModifier: func(hc *container.HostConfig) {
 			hc.AutoRemove = true
 			hc.Binds = []string{dockerHostMount + ":/var/run/docker.sock"}
 			hc.NetworkMode = Bridge
+			hc.Privileged = tcConfig.RyukPrivileged
 		},
 		Env: map[string]string{},
 	}
