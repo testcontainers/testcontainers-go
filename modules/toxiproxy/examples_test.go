@@ -87,11 +87,7 @@ func ExampleRun_addLatency() {
 		// explicitly expose the ports that will be proxied using the programmatic API
 		// of the toxiproxy client. Otherwise, the ports will not be exposed and the
 		// toxiproxy client will not be able to connect to the proxy.
-		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
-			ContainerRequest: testcontainers.ContainerRequest{
-				ExposedPorts: []string{proxyPort + "/tcp"},
-			},
-		}),
+		testcontainers.WithExposedPorts(proxyPort+"/tcp"),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(toxiproxyContainer); err != nil {
