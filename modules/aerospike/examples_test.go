@@ -6,16 +6,17 @@ import (
 	"log"
 	"time"
 
-	"github.com/aerospike/aerospike-client-go/v8"
+	aero "github.com/aerospike/aerospike-client-go/v8"
+
 	"github.com/testcontainers/testcontainers-go"
-	as "github.com/testcontainers/testcontainers-go/modules/aerospike"
+	tcaerospike "github.com/testcontainers/testcontainers-go/modules/aerospike"
 )
 
 func ExampleRun() {
 	// runAerospikeContainer {
 	ctx := context.Background()
 
-	aerospikedbContainer, err := as.Run(ctx, "aerospike/aerospike-server:latest")
+	aerospikedbContainer, err := tcaerospike.Run(ctx, "aerospike/aerospike-server:latest")
 	defer func() {
 		if err := testcontainers.TerminateContainer(aerospikedbContainer.Container); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -41,7 +42,7 @@ func ExampleRun() {
 func ExampleRun_usingClient() {
 	ctx := context.Background()
 
-	aerospikedbContainer, err := as.Run(
+	aerospikedbContainer, err := tcaerospike.Run(
 		ctx, "aerospike/aerospike-server:latest",
 	)
 	defer func() {
@@ -69,14 +70,14 @@ func ExampleRun_usingClient() {
 		return
 	}
 
-	aeroHost := []*aerospike.Host{aerospike.NewHost(host, port.Int())}
+	aeroHost := []*aero.Host{aero.NewHost(host, port.Int())}
 
 	// connect to the host
-	cp := aerospike.NewClientPolicy()
+	cp := aero.NewClientPolicy()
 	cp.Timeout = 10 * time.Second
 
 	// Create a client
-	client, err := aerospike.NewClientWithPolicyAndHost(cp, aeroHost...)
+	client, err := aero.NewClientWithPolicyAndHost(cp, aeroHost...)
 	if err != nil {
 		log.Printf("Failed to create aerospike client: %v", err)
 		return
@@ -86,7 +87,7 @@ func ExampleRun_usingClient() {
 	defer client.Close()
 
 	// Create a key
-	schemaKey, err := aerospike.NewKey("test", "test", "_schema_info")
+	schemaKey, err := aero.NewKey("test", "test", "_schema_info")
 	if err != nil {
 		log.Printf("Failed to create key: %v", err)
 		return
@@ -97,7 +98,7 @@ func ExampleRun_usingClient() {
 	nowStr := time.Now().Format(time.RFC3339)
 
 	// Create schema record
-	bins := aerospike.BinMap{
+	bins := aero.BinMap{
 		"version":     version,
 		"created_at":  nowStr,
 		"updated_at":  nowStr,
@@ -105,7 +106,7 @@ func ExampleRun_usingClient() {
 	}
 
 	// Never expire the schema info
-	writePolicy := aerospike.NewWritePolicy(0, 0)
+	writePolicy := aero.NewWritePolicy(0, 0)
 
 	// Store in Aerospike
 	err = client.Put(writePolicy, schemaKey, bins)
