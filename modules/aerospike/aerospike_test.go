@@ -34,10 +34,7 @@ func TestAeroSpike(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, container)
 
-		defer func() {
-			err := container.Terminate(ctx)
-			require.NoError(t, err)
-		}()
+		testcontainers.CleanupContainer(t, container)
 
 		host, err := container.Host(ctx)
 		require.NoError(t, err)
@@ -56,11 +53,7 @@ func TestAeroSpike(t *testing.T) {
 			testcontainers.WithEnv(map[string]string{"CUSTOM_ENV": customEnv}))
 		require.NoError(t, err)
 		require.NotNil(t, container)
-
-		defer func() {
-			err := container.Terminate(ctx)
-			require.NoError(t, err)
-		}()
+		testcontainers.CleanupContainer(t, container)
 	})
 
 	t.Run("respects-context-cancellation", func(t *testing.T) {
