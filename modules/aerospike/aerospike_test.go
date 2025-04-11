@@ -34,10 +34,10 @@ func TestAeroSpike(t *testing.T) {
 		require.NotNil(t, container)
 		defer container.Container.Terminate(ctx)
 
-		host, err := container.GetHost()
+		host, err := container.Host(ctx)
 		require.NoError(t, err)
 
-		port, err := container.GetPort()
+		port, err := container.MappedPort(ctx, "3000/tcp")
 		require.NoError(t, err)
 
 		require.NotEmpty(t, host)
