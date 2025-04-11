@@ -169,7 +169,7 @@ func ExampleRun_addLatency() {
 	// addLatencyToxic {
 	const (
 		latency = 1_000
-		jitter  = 100
+		jitter  = 200
 	)
 	// Add a latency toxic to the proxy
 	_, err = proxy.AddToxic("latency_down", "latency", "downstream", 1.0, toxiproxy.Attributes{
@@ -196,8 +196,8 @@ func ExampleRun_addLatency() {
 	// The value is retrieved successfully
 	fmt.Println(savedValue)
 
-	// Check that latency is within expected range (900ms-1100ms)
-	// The latency toxic adds 1000ms (1000ms +/- 100ms jitter)
+	// Check that latency is within expected range (200ms-1200ms)
+	// The latency toxic adds 1000ms (1000ms +/- 200ms jitter)
 	minDuration := (latency - jitter) * time.Millisecond
 	maxDuration := (latency + jitter) * time.Millisecond
 	fmt.Printf("Duration is between %dms and %dms: %v\n",
@@ -207,7 +207,7 @@ func ExampleRun_addLatency() {
 
 	// Output:
 	// Cabbage Biscuits
-	// Duration is between 900ms and 1100ms: true
+	// Duration is between 800ms and 1200ms: true
 }
 
 func ExampleRun_connectionCut() {

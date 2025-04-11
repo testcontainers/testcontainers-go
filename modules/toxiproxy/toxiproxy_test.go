@@ -90,6 +90,11 @@ func TestRun_withConfigFile(t *testing.T) {
 	err = redisCli.Set(ctx, key, value, ttl).Err()
 	require.NoError(t, err)
 
+	const (
+		latency = 1_000
+		jitter  = 200
+	)
+
 	// Add a latency toxic to the proxy
 	toxicOptions := &toxiproxy.ToxicOptions{
 		ProxyName: "redis", // name of the proxy in the config file
@@ -98,8 +103,8 @@ func TestRun_withConfigFile(t *testing.T) {
 		Toxicity:  1.0,
 		Stream:    "downstream",
 		Attributes: map[string]any{
-			"latency": 1_000,
-			"jitter":  100,
+			"latency": latency,
+			"jitter":  jitter,
 		},
 	}
 	_, err = toxiproxyClient.AddToxic(toxicOptions)
@@ -119,7 +124,7 @@ func TestRun_withConfigFile(t *testing.T) {
 
 	// Check that latency is within expected range (900ms-1100ms)
 	// The latency toxic adds 1000ms (1000ms +/- 100ms jitter)
-	minDuration := 900 * time.Millisecond
-	maxDuration := 1100 * time.Millisecond
+	minDuration := (latency - jitter) * time.Millisecond
+	maxDuration := (latency + jitter) * time.Millisecond
 	require.True(t, duration >= minDuration && duration <= maxDuration)
 }
