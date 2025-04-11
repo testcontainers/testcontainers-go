@@ -15,6 +15,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 	"golang.org/x/mod/semver"
 
@@ -68,7 +69,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: img,
-			User:  "root:root",
+			ConfigModifier: func(c *container.Config) {
+				c.User = "root:root"
+			},
 			// Files: Will be added later after we've rendered our YAML templates.
 			ExposedPorts: []string{
 				defaultKafkaAPIPort,
