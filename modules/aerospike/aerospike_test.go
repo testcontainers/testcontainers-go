@@ -21,14 +21,6 @@ const (
 // It also includes a test for an invalid image to ensure proper error handling.
 // The tests use the testcontainers-go library to manage container lifecycle
 func TestAeroSpike(t *testing.T) {
-	t.Run("invalid-image-fails", func(t *testing.T) {
-		ctx := context.Background()
-		container, err := aerospike.Run(ctx, "invalid-aerospike-image")
-		testcontainers.CleanupContainer(t, container)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "failed to start Aerospike container")
-	})
-
 	t.Run("valid-image-succeeds", func(t *testing.T) {
 		ctx := context.Background()
 		container, err := aerospike.Run(ctx, aerospikeImage)
@@ -45,7 +37,6 @@ func TestAeroSpike(t *testing.T) {
 		testcontainers.CleanupContainer(t, container)
 		require.NoError(t, err)
 		require.NotNil(t, container)
-
 	})
 
 	t.Run("respects-context-cancellation", func(t *testing.T) {

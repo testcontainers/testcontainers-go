@@ -36,6 +36,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"AEROSPIKE_CONFIG_FILE": "/etc/aerospike/aerospike.conf",
 		},
 		WaitingFor: wait.ForAll(
+			wait.ForLog("migrations: complete"),
 			wait.ForListeningPort(port).WithStartupTimeout(10*time.Second),
 			wait.ForListeningPort(fabricPort).WithStartupTimeout(10*time.Second),
 			wait.ForListeningPort(heartbeatPort).WithStartupTimeout(10*time.Second),
