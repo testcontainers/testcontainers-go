@@ -297,7 +297,8 @@ func TestWithOrderedInitScript(t *testing.T) {
 	ctr, err := postgres.Run(ctx,
 		"postgres:15.2-alpine",
 		// Executes first the init-user-db shell-script, then the do-insert-user SQL script
-		// Using WithInitScripts, this would not work as
+		// Using WithInitScripts, this would not work.
+		// This is because aaaa-insert-user would get executed first, but requires init-user-db to be executed before.
 		postgres.WithOrderedInitScripts(
 			filepath.Join("testdata", "init-user-db.sh"),
 			filepath.Join("testdata", "aaaa-insert-user.sql"),
@@ -320,8 +321,8 @@ func TestWithOrderedInitScript(t *testing.T) {
 	require.NoError(t, err)
 
 	initScripts := buf.String()
-	strings.Contains(initScripts, "000000-init-user-db.sh")
-	strings.Contains(initScripts, "000001-aaaa-insert-user.sql")
+	strings.Contains(initScripts, "000-init-user-db.sh")
+	strings.Contains(initScripts, "001-aaaa-insert-user.sql")
 
 	// explicitly set sslmode=disable because the container is not configured to use TLS
 	connStr, err := ctr.ConnectionString(ctx, "sslmode=disable")

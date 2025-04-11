@@ -95,13 +95,12 @@ func WithDatabase(dbName string) testcontainers.CustomizeRequestOption {
 }
 
 // WithInitScripts sets the init scripts to be run when the container starts.
-// These init scripts will be executed in sorted name order as defined by the current locale, which defaults to en_US.utf8.
+// These init scripts will be executed in sorted name order as defined by the container's current locale, which defaults to en_US.utf8.
 // If you need to run your scripts in a specific order, consider using `WithOrderedInitScripts` instead.
 func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		for _, script := range scripts {
-			filename := filepath.Base(script)
-			appendInitScript(req, script, filename)
+			appendInitScript(req, script, filepath.Base(script))
 		}
 		return nil
 	}
@@ -112,8 +111,7 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 func WithOrderedInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		for idx, script := range scripts {
-			filename := filepath.Base(script)
-			containerFilePath := fmt.Sprintf("%06d-%s", idx, filename)
+			containerFilePath := fmt.Sprintf("%03d-%s", idx, filepath.Base(script))
 			appendInitScript(req, script, containerFilePath)
 		}
 		return nil
