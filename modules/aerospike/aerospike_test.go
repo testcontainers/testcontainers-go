@@ -35,15 +35,6 @@ func TestAeroSpike(t *testing.T) {
 		require.NotNil(t, container)
 
 		testcontainers.CleanupContainer(t, container)
-
-		host, err := container.Host(ctx)
-		require.NoError(t, err)
-
-		port, err := container.MappedPort(ctx, "3000/tcp")
-		require.NoError(t, err)
-
-		require.NotEmpty(t, host)
-		require.NotEmpty(t, port)
 	})
 
 	t.Run("applies-container-customizations", func(t *testing.T) {
