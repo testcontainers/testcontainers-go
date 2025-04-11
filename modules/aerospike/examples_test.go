@@ -54,7 +54,6 @@ func ExampleRun_usingClient() {
 		log.Printf("failed to start container: %s", err)
 		return
 	}
-	// }
 
 	// Get the host and port
 	host, err := aerospikedbContainer.Host(ctx)
