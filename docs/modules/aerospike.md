@@ -45,3 +45,10 @@ When starting the Aerospike container, you can pass options in a variadic way to
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "aerospike/aerospike-server:latest")`.
 
+## Examples
+
+### Aerospike Client
+
+<!--codeinclude-->
+[Aerospike Client](../../modules/aerospike/examples_test.go) inside_block:usingClient
+<!--/codeinclude-->
