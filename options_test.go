@@ -575,5 +575,5 @@ func TestWithReuse_ErrorsWithoutContainerNameProvided(t *testing.T) {
 	require.Error(t, err)
 	require.ErrorContains(t, err, "container name must be provided for reuse")
 	require.False(t, req.Reuse)
-	require.Equal(t, "", req.Name)
+	require.Empty(t, req.Name)
 }
