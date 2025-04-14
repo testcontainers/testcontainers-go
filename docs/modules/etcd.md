@@ -29,7 +29,7 @@ go get github.com/testcontainers/testcontainers-go/modules/etcd
 The etcd module exposes one entrypoint function to create the etcd container, and this function receives three parameters:
 
 ```golang
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*etcdContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*EtcdContainer, error)
 ```
 
 - `context.Context`, the Go context.
