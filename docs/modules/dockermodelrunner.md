@@ -74,3 +74,9 @@ Use the `PullModel` method to pull a model from the Docker Model Runner.
 
 !!! info
      You can find a curated collection of cutting-edge AI models as OCI Artifacts, from lightweight on-device models to high-performance LLMs on Docker Hub: https://hub.docker.com/u/ai.
+
+#### ListModels
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+Use the `ListModels` method to list all models that are already pulled locally, using the Docker Model Runner format.

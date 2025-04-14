@@ -38,4 +38,22 @@ func TestRun_client(t *testing.T) {
 			require.Error(t, err)
 		})
 	})
+
+	t.Run("list-models", func(t *testing.T) {
+		err := ctr.PullModel(ctx, "ai/llama3.2:latest")
+		require.NoError(t, err)
+
+		t.Run("success", func(t *testing.T) {
+			models, err := ctr.ListModels(ctx)
+			require.NoError(t, err)
+			require.NotEmpty(t, models)
+
+			allTags := []string{}
+			for _, model := range models {
+				allTags = append(allTags, model.Tags...)
+			}
+
+			require.Contains(t, allTags, "ai/llama3.2:latest")
+		})
+	})
 }

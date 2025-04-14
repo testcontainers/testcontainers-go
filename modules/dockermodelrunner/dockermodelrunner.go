@@ -77,6 +77,21 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
+// ListModels lists all models that are already pulled using the Docker Model Runner format.
+func (c *Container) ListModels(ctx context.Context) ([]types.ModelResponse, error) {
+	dmrClient := client.NewClient(c.baseURL)
+
+	var models []types.ModelResponse
+	var err error
+
+	models, err = dmrClient.ListModels(ctx)
+	if err != nil {
+		return models, fmt.Errorf("list models: %w", err)
+	}
+
+	return models, nil
+}
+
 // PullModel pulls a model from the Docker Model Runner
 func (c *Container) PullModel(ctx context.Context, model string) error {
 	log.Default().Printf("🙏 Pulling model %s. Please be patient, no progress bar yet!", model)
