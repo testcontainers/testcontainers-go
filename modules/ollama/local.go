@@ -16,7 +16,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/errdefs"
@@ -128,7 +127,7 @@ func (c *localProcess) validateRequest(req testcontainers.GenericContainerReques
 	}
 
 	if !req.Started {
-		errs = append(errs, errors.New("Started must be true"))
+		errs = append(errs, errors.New("started must be true"))
 	}
 
 	if !reflect.DeepEqual(req.ExposedPorts, []string{localPort + "/tcp"}) {
@@ -421,14 +420,14 @@ func (c *localProcess) validateExecOptions(options container.ExecOptions) error 
 
 // Inspect implements testcontainers.Container interface for the local Ollama binary.
 // It returns a ContainerJSON with the state of the local Ollama binary.
-func (c *localProcess) Inspect(ctx context.Context) (*types.ContainerJSON, error) {
+func (c *localProcess) Inspect(ctx context.Context) (*container.InspectResponse, error) {
 	state, err := c.State(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("state: %w", err)
 	}
 
-	return &types.ContainerJSON{
-		ContainerJSONBase: &types.ContainerJSONBase{
+	return &container.InspectResponse{
+		ContainerJSONBase: &container.ContainerJSONBase{
 			ID:    c.GetContainerID(),
 			Name:  localNamePrefix + "-" + c.sessionID,
 			State: state,
@@ -441,9 +440,9 @@ func (c *localProcess) Inspect(ctx context.Context) (*types.ContainerJSON, error
 			Hostname:   c.host,
 			Entrypoint: []string{c.binary, localServeArg},
 		},
-		NetworkSettings: &types.NetworkSettings{
+		NetworkSettings: &container.NetworkSettings{
 			Networks: map[string]*network.EndpointSettings{},
-			NetworkSettingsBase: types.NetworkSettingsBase{
+			NetworkSettingsBase: container.NetworkSettingsBase{
 				Bridge: "bridge",
 				Ports: nat.PortMap{
 					nat.Port(localPort + "/tcp"): {
@@ -451,7 +450,7 @@ func (c *localProcess) Inspect(ctx context.Context) (*types.ContainerJSON, error
 					},
 				},
 			},
-			DefaultNetworkSettings: types.DefaultNetworkSettings{
+			DefaultNetworkSettings: container.DefaultNetworkSettings{
 				IPAddress: c.host,
 			},
 		},
@@ -489,12 +488,12 @@ func (c *localProcess) Logs(_ context.Context) (io.ReadCloser, error) {
 
 // State implements testcontainers.Container interface for the local Ollama binary.
 // It returns the current state of the Ollama process, simulating a container state.
-func (c *localProcess) State(_ context.Context) (*types.ContainerState, error) {
+func (c *localProcess) State(_ context.Context) (*container.State, error) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
 	if !c.IsRunning() {
-		state := &types.ContainerState{
+		state := &container.State{
 			Status:     "exited",
 			ExitCode:   c.cmd.ProcessState.ExitCode(),
 			StartedAt:  c.startedAt.Format(time.RFC3339Nano),
@@ -509,7 +508,7 @@ func (c *localProcess) State(_ context.Context) (*types.ContainerState, error) {
 
 	// Setting the Running field because it's required by the wait strategy
 	// to check if the given log message is present.
-	return &types.ContainerState{
+	return &container.State{
 		Status:     "running",
 		Running:    true,
 		Pid:        c.cmd.Process.Pid,
@@ -706,7 +705,7 @@ func (c *localProcess) Customize(req *testcontainers.GenericContainerRequest) er
 	// and extracts the host, port and version from it.
 	if err := wait.Walk(&req.WaitingFor, func(w wait.Strategy) error {
 		if _, ok := w.(*wait.HostPortStrategy); ok {
-			return wait.VisitRemove
+			return wait.ErrVisitRemove
 		}
 
 		return nil

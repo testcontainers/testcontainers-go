@@ -45,8 +45,8 @@ When starting the MockServer container, you can pass options in a variadic way t
 
 #### Image
 
-If you need to set a different MockServer Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "mockserver/mockserver:5.15.0")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "mockserver/mockserver:5.15.0")`.
 
 {% include "../features/common_functional_options.md" %}
 

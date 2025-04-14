@@ -50,8 +50,8 @@ When starting the Redpanda container, you can pass options in a variadic way to 
 
 #### Image
 
-If you need to set a different Redpanda Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "docker.redpanda.com/redpandadata/redpanda:v23.1.7")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "docker.redpanda.com/redpandadata/redpanda:v23.1.7")`.
 
 {% include "../features/common_functional_options.md" %}
 
@@ -182,3 +182,8 @@ is an HTTP-based API and thus the returned format will be: http://host:port.
 <!--codeinclude-->
 [Get admin API address](../../modules/redpanda/redpanda_test.go) inside_block:adminAPIAddress
 <!--/codeinclude-->
+
+#### WithAdminAPIAuthentication
+
+Enables Admin API Authentication by setting [`admin_api_require_auth`](https://docs.redpanda.com/current/reference/properties/cluster-properties/#admin_api_require_auth) cluster configuration property to `true`. 
+It also configures a bootstrap superuser account via [`RP_BOOTSTRAP_USER`](https://docs.redpanda.com/current/deploy/deployment-option/self-hosted/manual/production/production-deployment/#bootstrap-a-user-account) environment variable.

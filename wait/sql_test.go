@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +18,7 @@ func Test_waitForSql_WithQuery(t *testing.T) {
 			return "fake-url"
 		})
 
-		require.Equal(t, defaultForSqlQuery, w.query)
+		require.Equal(t, defaultForSQLQuery, w.query)
 	})
 	t.Run("custom query", func(t *testing.T) {
 		const q = "SELECT 100;"
@@ -88,8 +88,8 @@ func TestWaitForSQLSucceeds(t *testing.T) {
 			}
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Running: true,
 			}, nil
 		},
@@ -116,8 +116,8 @@ func TestWaitForSQLFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) {
 			}
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				OOMKilled: true,
 			}, nil
 		},
@@ -146,8 +146,8 @@ func TestWaitForSQLFailsWhileGettingPortDueToExitedContainer(t *testing.T) {
 			}
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Status:   "exited",
 				ExitCode: 1,
 			}, nil
@@ -177,8 +177,8 @@ func TestWaitForSQLFailsWhileGettingPortDueToUnexpectedContainerStatus(t *testin
 			}
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Status: "dead",
 			}, nil
 		},
@@ -202,8 +202,8 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToOOMKilledContainer(t *testing.T)
 		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				OOMKilled: true,
 			}, nil
 		},
@@ -227,8 +227,8 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToExitedContainer(t *testing.T) {
 		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Status:   "exited",
 				ExitCode: 1,
 			}, nil
@@ -253,8 +253,8 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToUnexpectedContainerStatus(t *tes
 		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Status: "dead",
 			}, nil
 		},

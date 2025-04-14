@@ -1,10 +1,8 @@
 package mkdocs
 
 import (
-	"sort"
+	"slices"
 	"strings"
-
-	"golang.org/x/exp/slices"
 )
 
 type Config struct {
@@ -35,6 +33,7 @@ type Config struct {
 		Examples           []string `yaml:"Examples,omitempty"`
 		Modules            []string `yaml:"Modules,omitempty"`
 		SystemRequirements []any    `yaml:"System Requirements,omitempty"`
+		Dependabot         string   `yaml:"Dependabot,omitempty"`
 		Contributing       string   `yaml:"Contributing,omitempty"`
 		GettingHelp        string   `yaml:"Getting help,omitempty"`
 	} `yaml:"nav"`
@@ -65,7 +64,7 @@ func (c *Config) addModule(isModule bool, moduleMd string, indexMd string) {
 		}
 
 		navItems = append(navItems, moduleMd)
-		sort.Strings(navItems)
+		slices.Sort(navItems)
 
 		// prepend the index.md file
 		navItems = append([]string{indexMd}, navItems...)

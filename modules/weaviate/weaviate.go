@@ -23,7 +23,7 @@ type WeaviateContainer struct {
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Weaviate container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*WeaviateContainer, error) {
-	return Run(ctx, "semitechnologies/weaviate:1.25.5", opts...)
+	return Run(ctx, "semitechnologies/weaviate:1.29.0", opts...)
 }
 
 // Run creates an instance of the Weaviate container type
@@ -69,6 +69,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // HttpHostAddress returns the schema and host of the Weaviate container.
 // At the moment, it only supports the http scheme.
+//
+//nolint:revive,staticcheck //FIXME
 func (c *WeaviateContainer) HttpHostAddress(ctx context.Context) (string, string, error) {
 	port, err := c.MappedPort(ctx, httpPort)
 	if err != nil {

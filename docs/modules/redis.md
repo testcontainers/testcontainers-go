@@ -48,8 +48,8 @@ When starting the Redis container, you can pass options in a variadic way to con
 
 #### Image
 
-If you need to set a different Redis Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "redis:7")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "redis:7")`.
 
 {% include "../features/common_functional_options.md" %}
 

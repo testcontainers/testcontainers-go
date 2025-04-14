@@ -14,8 +14,16 @@
             "path": "../examples/toxiproxy"
         },
         {
+            "name": "module / arangodb",
+            "path": "../modules/arangodb"
+        },
+        {
             "name": "module / artemis",
             "path": "../modules/artemis"
+        },
+        {
+            "name": "module / azure",
+            "path": "../modules/azure"
         },
         {
             "name": "module / azurite",
@@ -52,6 +60,10 @@
         {
             "name": "module / databend",
             "path": "../modules/databend"
+        },
+        {
+            "name": "module / dind",
+            "path": "../modules/dind"
         },
         {
             "name": "module / dolt",
@@ -162,6 +174,10 @@
             "path": "../modules/opensearch"
         },
         {
+            "name": "module / pinecone",
+            "path": "../modules/pinecone"
+        },
+        {
             "name": "module / postgres",
             "path": "../modules/postgres"
         },
@@ -188,6 +204,14 @@
         {
             "name": "module / registry",
             "path": "../modules/registry"
+        },
+        {
+            "name": "module / scylladb",
+            "path": "../modules/scylladb"
+        },
+        {
+            "name": "module / socat",
+            "path": "../modules/socat"
         },
         {
             "name": "module / surrealdb",

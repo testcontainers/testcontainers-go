@@ -57,7 +57,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	req := testcontainers.ContainerRequest{
 		Image:        img,
 		ExposedPorts: []string{"6379/tcp"},
-		WaitingFor:   wait.ForLog("* Ready to accept connections"),
+		WaitingFor:   wait.ForListeningPort("6379/tcp"),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{

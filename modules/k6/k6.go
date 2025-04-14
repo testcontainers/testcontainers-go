@@ -26,7 +26,7 @@ type K6Container struct {
 }
 
 type DownloadableFile struct {
-	Uri         url.URL
+	Uri         url.URL //nolint:revive,staticcheck //FIXME
 	DownloadDir string
 	User        string
 	Password    string

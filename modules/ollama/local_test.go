@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/stretchr/testify/require"
 
@@ -55,12 +55,12 @@ func TestRun_local(t *testing.T) {
 		require.NotEmpty(t, state.StartedAt)
 		require.NotEqual(t, zeroTime, state.StartedAt)
 		require.NotZero(t, state.Pid)
-		require.Equal(t, &types.ContainerState{
+		require.Equal(t, &container.State{
 			Status:     "running",
 			Running:    true,
 			Pid:        state.Pid,
 			StartedAt:  state.StartedAt,
-			FinishedAt: time.Time{}.Format(time.RFC3339Nano),
+			FinishedAt: state.FinishedAt,
 		}, state)
 	})
 
@@ -138,9 +138,9 @@ func TestRun_local(t *testing.T) {
 		inspect, err := ollamaContainer.Inspect(ctx)
 		require.NoError(t, err)
 
-		require.Equal(t, "local-ollama-"+testcontainers.SessionID(), inspect.ContainerJSONBase.ID)
-		require.Equal(t, "local-ollama-"+testcontainers.SessionID(), inspect.ContainerJSONBase.Name)
-		require.True(t, inspect.ContainerJSONBase.State.Running)
+		require.Equal(t, "local-ollama-"+testcontainers.SessionID(), inspect.ID)
+		require.Equal(t, "local-ollama-"+testcontainers.SessionID(), inspect.Name)
+		require.True(t, inspect.State.Running)
 
 		require.NotEmpty(t, inspect.Config.Image)
 		_, exists := inspect.Config.ExposedPorts[testNatPort]
@@ -149,9 +149,9 @@ func TestRun_local(t *testing.T) {
 		require.Equal(t, strslice.StrSlice(strslice.StrSlice{testBinary, "serve"}), inspect.Config.Entrypoint)
 
 		require.Empty(t, inspect.NetworkSettings.Networks)
-		require.Equal(t, "bridge", inspect.NetworkSettings.NetworkSettingsBase.Bridge)
+		require.Equal(t, "bridge", inspect.NetworkSettings.Bridge)
 
-		ports := inspect.NetworkSettings.NetworkSettingsBase.Ports
+		ports := inspect.NetworkSettings.Ports
 		port, exists := ports[testNatPort]
 		require.True(t, exists)
 		require.Len(t, port, 1)
@@ -264,7 +264,8 @@ func TestRun_local(t *testing.T) {
 		require.NotEqual(t, zeroTime, state.StartedAt)
 		require.NotEmpty(t, state.FinishedAt)
 		require.NotEqual(t, zeroTime, state.FinishedAt)
-		require.Equal(t, &types.ContainerState{
+		require.Equal(t, &container.State{
+			// zero values are not needed to be set
 			Status:     "exited",
 			StartedAt:  state.StartedAt,
 			FinishedAt: state.FinishedAt,
@@ -362,7 +363,7 @@ func TestRun_localWithCustomHost(t *testing.T) {
 		testcontainers.CleanupContainer(t, ollamaContainer)
 		require.NoError(t, err)
 
-		testRun_localWithCustomHost(ctx, t, ollamaContainer)
+		testRunLocalWithCustomHost(ctx, t, ollamaContainer)
 	})
 
 	t.Run("local-env", func(t *testing.T) {
@@ -370,11 +371,11 @@ func TestRun_localWithCustomHost(t *testing.T) {
 		testcontainers.CleanupContainer(t, ollamaContainer)
 		require.NoError(t, err)
 
-		testRun_localWithCustomHost(ctx, t, ollamaContainer)
+		testRunLocalWithCustomHost(ctx, t, ollamaContainer)
 	})
 }
 
-func testRun_localWithCustomHost(ctx context.Context, t *testing.T, ollamaContainer *ollama.OllamaContainer) {
+func testRunLocalWithCustomHost(ctx context.Context, t *testing.T, ollamaContainer *ollama.OllamaContainer) {
 	t.Helper()
 
 	t.Run("connection-string", func(t *testing.T) {
@@ -400,9 +401,9 @@ func testRun_localWithCustomHost(ctx context.Context, t *testing.T, ollamaContai
 		require.Equal(t, strslice.StrSlice(strslice.StrSlice{testBinary, "serve"}), inspect.Config.Entrypoint)
 
 		require.Empty(t, inspect.NetworkSettings.Networks)
-		require.Equal(t, "bridge", inspect.NetworkSettings.NetworkSettingsBase.Bridge)
+		require.Equal(t, "bridge", inspect.NetworkSettings.Bridge)
 
-		ports := inspect.NetworkSettings.NetworkSettingsBase.Ports
+		ports := inspect.NetworkSettings.Ports
 		port, exists := ports[testNatPort]
 		require.True(t, exists)
 		require.Len(t, port, 1)
@@ -563,7 +564,7 @@ func TestRun_localValidateRequest(t *testing.T) {
 			}),
 		)
 		testcontainers.CleanupContainer(t, ollamaContainer)
-		require.EqualError(t, err, "validate request: Started must be true")
+		require.EqualError(t, err, "validate request: started must be true")
 	})
 
 	t.Run("exposed-ports-empty", func(t *testing.T) {

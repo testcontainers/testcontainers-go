@@ -14,8 +14,8 @@ import (
 const (
 	// containerPorts {
 	defaultBoltPort  = "7687"
-	defaultHttpPort  = "7474"
-	defaultHttpsPort = "7473"
+	defaultHTTPPort  = "7474"
+	defaultHTTPSPort = "7473"
 	// }
 )
 
@@ -25,6 +25,8 @@ type Neo4jContainer struct {
 }
 
 // BoltUrl returns the bolt url for the Neo4j container, using the bolt port, in the format of neo4j://host:port
+//
+//nolint:revive,staticcheck //FIXME
 func (c Neo4jContainer) BoltUrl(ctx context.Context) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
@@ -49,7 +51,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Neo4j container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Neo4jContainer, error) {
-	httpPort, _ := nat.NewPort("tcp", defaultHttpPort)
+	httpPort, _ := nat.NewPort("tcp", defaultHTTPPort)
 	request := testcontainers.ContainerRequest{
 		Image: img,
 		Env: map[string]string{
@@ -57,15 +59,15 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		},
 		ExposedPorts: []string{
 			defaultBoltPort + "/tcp",
-			defaultHttpPort + "/tcp",
-			defaultHttpsPort + "/tcp",
+			defaultHTTPPort + "/tcp",
+			defaultHTTPSPort + "/tcp",
 		},
 		WaitingFor: &wait.MultiStrategy{
 			Strategies: []wait.Strategy{
 				wait.NewLogStrategy("Bolt enabled on"),
 				&wait.HTTPStrategy{
 					Port:              httpPort,
-					StatusCodeMatcher: isHttpOk(),
+					StatusCodeMatcher: isHTTPOk(),
 				},
 			},
 		},
@@ -73,7 +75,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: request,
-		Logger:           testcontainers.Logger,
 		Started:          true,
 	}
 
@@ -85,11 +86,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		if err := option.Customize(&genericContainerReq); err != nil {
 			return nil, err
 		}
-	}
-
-	err := validate(&genericContainerReq)
-	if err != nil {
-		return nil, err
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
@@ -105,7 +101,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
-func isHttpOk() func(status int) bool {
+func isHTTPOk() func(status int) bool {
 	return func(status int) bool {
 		return status == http.StatusOK
 	}

@@ -13,6 +13,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -66,8 +67,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			defaultKubeSecurePort,
 			defaultRancherWebhookPort,
 		},
-		Privileged: true,
 		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.Privileged = true
 			hc.CgroupnsMode = "host"
 			hc.Tmpfs = map[string]string{
 				"/run":     "",
@@ -121,7 +122,7 @@ func getContainerHost(ctx context.Context, opts ...testcontainers.ContainerCusto
 
 	logging := req.Logger
 	if logging == nil {
-		logging = testcontainers.Logger
+		logging = log.Default()
 	}
 	p, err := req.ProviderType.GetProvider(testcontainers.WithLogger(logging))
 	if err != nil {
@@ -159,7 +160,7 @@ func (c *K3sContainer) GetKubeConfig(ctx context.Context) ([]byte, error) {
 	}
 
 	server := "https://" + fmt.Sprintf("%v:%d", hostIP, mappedPort.Int())
-	newKubeConfig, err := kubeConfigWithServerUrl(string(kubeConfigYaml), server)
+	newKubeConfig, err := kubeConfigWithServerURL(string(kubeConfigYaml), server)
 	if err != nil {
 		return nil, fmt.Errorf("failed to modify kubeconfig with server url: %w", err)
 	}
@@ -167,7 +168,7 @@ func (c *K3sContainer) GetKubeConfig(ctx context.Context) ([]byte, error) {
 	return newKubeConfig, nil
 }
 
-func kubeConfigWithServerUrl(kubeConfigYaml, server string) ([]byte, error) {
+func kubeConfigWithServerURL(kubeConfigYaml, server string) ([]byte, error) {
 	kubeConfig, err := unmarshal([]byte(kubeConfigYaml))
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal kubeconfig: %w", err)
@@ -221,12 +222,12 @@ func (c *K3sContainer) LoadImages(ctx context.Context, images ...string) error {
 	}
 
 	containerPath := "/tmp/" + filepath.Base(imagesTar.Name())
-	err = c.Container.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0x644)
+	err = c.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0x644)
 	if err != nil {
 		return fmt.Errorf("copying image to container %w", err)
 	}
 
-	_, _, err = c.Container.Exec(ctx, []string{"ctr", "-n=k8s.io", "images", "import", containerPath})
+	_, _, err = c.Exec(ctx, []string{"ctr", "-n=k8s.io", "images", "import", containerPath})
 	if err != nil {
 		return fmt.Errorf("importing image %w", err)
 	}

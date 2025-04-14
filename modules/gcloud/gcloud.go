@@ -13,6 +13,13 @@ import (
 
 const defaultProjectID = "test-project"
 
+// Deprecated: use the specialized containers instead:
+// - [bigquery.Container]
+// - [bigtable.Container]
+// - [datastore.Container]
+// - [firestore.Container]
+// - [pubsub.Container]
+// - [spanner.Container]
 type GCloudContainer struct {
 	testcontainers.Container
 	Settings options
@@ -76,6 +83,7 @@ func WithProjectID(projectID string) Option {
 	}
 }
 
+// Deprecated: Use [bigquery.WithDataYAML] instead.
 // WithDataYAML seeds the BigQuery project for the GCloud container with an [io.Reader] representing
 // the data yaml file, which is used to copy the file to the container, and then processed to seed
 // the BigQuery project.

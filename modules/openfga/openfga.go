@@ -24,6 +24,8 @@ func (c *OpenFGAContainer) GrpcEndpoint(ctx context.Context) (string, error) {
 
 // HttpEndpoint returns the HTTP endpoint for the OpenFGA container,
 // which uses the 8080/tcp port.
+//
+//nolint:revive,staticcheck //FIXME
 func (c *OpenFGAContainer) HttpEndpoint(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, "8080/tcp", "http")
 }

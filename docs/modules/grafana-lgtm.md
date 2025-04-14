@@ -11,7 +11,7 @@ The Testcontainers module for Grafana LGTM.
 Please run the following command to add the Grafana module to your Go dependencies:
 
 ```
-go get github.com/testcontainers/testcontainers-go/modules/grafanalgtm
+go get github.com/testcontainers/testcontainers-go/modules/grafana-lgtm
 ```
 
 ## Usage example
@@ -45,8 +45,8 @@ When starting the Grafana LGTM container, you can pass options in a variadic way
 
 #### Image
 
-If you need to set a different Grafana LGTM Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "grafana/otel-lgtm:0.6.0")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "grafana/otel-lgtm:0.6.0")`.
 
 #### Admin Credentials
 

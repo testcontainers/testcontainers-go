@@ -1,8 +1,10 @@
 package mssql_test
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	_ "embed"
 	"testing"
 
 	_ "github.com/microsoft/go-mssqldb"
@@ -45,20 +47,26 @@ func TestMSSQLServer(t *testing.T) {
 func TestMSSQLServerWithMissingEulaOption(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := mssql.Run(ctx,
-		"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("The SQL Server End-User License Agreement (EULA) must be accepted")),
-	)
-	testcontainers.CleanupContainer(t, ctr)
-	require.NoError(t, err)
+	t.Run("empty", func(t *testing.T) {
+		ctr, err := mssql.Run(ctx,
+			"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
+			testcontainers.WithWaitStrategy(
+				wait.ForLog("The SQL Server End-User License Agreement (EULA) must be accepted")),
+		)
+		testcontainers.CleanupContainer(t, ctr)
+		require.Error(t, err)
+	})
 
-	state, err := ctr.State(ctx)
-	require.NoError(t, err)
-
-	if !state.Running {
-		t.Log("Success: Confirmed proper handling of missing EULA, so container is not running.")
-	}
+	t.Run("not-y", func(t *testing.T) {
+		ctr, err := mssql.Run(ctx,
+			"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
+			testcontainers.WithEnv(map[string]string{"ACCEPT_EULA": "yes"}),
+			testcontainers.WithWaitStrategy(
+				wait.ForLog("The SQL Server End-User License Agreement (EULA) must be accepted")),
+		)
+		testcontainers.CleanupContainer(t, ctr)
+		require.Error(t, err)
+	})
 }
 
 func TestMSSQLServerWithConnectionStringParameters(t *testing.T) {
@@ -127,4 +135,85 @@ func TestMSSQLServerWithInvalidPassword(t *testing.T) {
 	)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
+}
+
+//go:embed testdata/seed.sql
+var seedSQLContent []byte
+
+// tests that a container can be created with a DDL script
+func TestMSSQLServerWithScriptsDDL(t *testing.T) {
+	const password = "MyCustom@Passw0rd"
+
+	// assertContainer contains the logic for asserting the test
+	assertContainer := func(t *testing.T, ctx context.Context, image string, options ...testcontainers.ContainerCustomizer) {
+		t.Helper()
+
+		ctr, err := mssql.Run(ctx,
+			image,
+			append([]testcontainers.ContainerCustomizer{mssql.WithAcceptEULA()}, options...)...,
+		)
+		testcontainers.CleanupContainer(t, ctr)
+		require.NoError(t, err)
+
+		connectionString, err := ctr.ConnectionString(ctx)
+		require.NoError(t, err)
+
+		db, err := sql.Open("sqlserver", connectionString)
+		require.NoError(t, err)
+		defer db.Close()
+
+		err = db.PingContext(ctx)
+		require.NoError(t, err)
+
+		rows, err := db.QueryContext(ctx, "SELECT * FROM pizza_palace.pizzas")
+		require.NoError(t, err)
+		defer rows.Close()
+
+		type Pizza struct {
+			ID            int
+			ToppingName   string
+			Deliciousness string
+		}
+
+		want := []Pizza{
+			{1, "Pineapple", "Controversial but tasty"},
+			{2, "Pepperoni", "Classic never fails"},
+		}
+		got := make([]Pizza, 0, len(want))
+
+		for rows.Next() {
+			var p Pizza
+			err := rows.Scan(&p.ID, &p.ToppingName, &p.Deliciousness)
+			require.NoError(t, err)
+			got = append(got, p)
+		}
+
+		require.Equal(t, want, got)
+	}
+
+	ctx := context.Background()
+
+	t.Run("WithPassword/beforeWithScripts", func(t *testing.T) {
+		assertContainer(t, ctx,
+			"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
+			mssql.WithPassword(password),
+			mssql.WithInitSQL(bytes.NewReader(seedSQLContent)),
+		)
+	})
+
+	t.Run("WithPassword/afterWithScripts", func(t *testing.T) {
+		assertContainer(t, ctx,
+			"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
+			mssql.WithInitSQL(bytes.NewReader(seedSQLContent)),
+			mssql.WithPassword(password),
+		)
+	})
+
+	t.Run("2019-CU30-ubuntu-20.04/oldSQLCmd", func(t *testing.T) {
+		assertContainer(t, ctx,
+			"mcr.microsoft.com/mssql/server:2019-CU30-ubuntu-20.04",
+			mssql.WithPassword(password),
+			mssql.WithInitSQL(bytes.NewReader(seedSQLContent)),
+		)
+	})
 }

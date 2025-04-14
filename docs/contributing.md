@@ -81,23 +81,21 @@ Please refer to the [codeinclude plugin documentation](https://github.com/rnorth
 
 ### Previewing rendered content
 
-#### Using Python locally
-
 From the root directory of the repository, you can use the following command to build and serve the documentation locally:
 
 ```shell
 make serve-docs
 ```
 
-It will use a Python's virtual environment to install the required dependencies and start a local server at `http://localhost:8000`.
+It will use a Docker container to install the required dependencies and start a local server at `http://localhost:8000`.
 
-Once finished, you can destroy the virtual environment with the following command:
+Once finished, you can destroy the container with the following command:
 
 ```shell
 make clean-docs
 ```
 
-#### PR Preview deployments
+### PR Preview deployments
 
 Note that documentation for pull requests will automatically be published by Netlify as 'deploy previews'.
 These deployment previews can be accessed via the `deploy/netlify` check that appears for each pull request.

@@ -1,0 +1,25 @@
+name: Sonar Bulk Operations
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'Operation to perform'
+        required: true
+        type: choice
+        options:
+          - createAll
+          - deleteAll
+
+jobs:
+  bulk-operation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Execute Bulk Operation
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          chmod +x .github/scripts/sonar-manager.sh
+          .github/scripts/sonar-manager.sh -a "${{ inputs.operation }}"

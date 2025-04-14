@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/google/uuid"
-	"github.com/shirou/gopsutil/v3/process"
+	"github.com/shirou/gopsutil/v4/process"
 )
 
 // sessionID returns a unique session ID for the current test session. Because each Go package
@@ -84,7 +84,7 @@ func init() {
 	}
 
 	hasher := sha256.New()
-	_, err = hasher.Write([]byte(fmt.Sprintf(sessionIDPlaceholder, parentPid, createTime)))
+	_, err = fmt.Fprintf(hasher, sessionIDPlaceholder, parentPid, createTime)
 	if err != nil {
 		sessionID = uuid.New().String()
 		return

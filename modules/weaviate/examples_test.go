@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/weaviate/weaviate-go-client/v4/weaviate"
-	"github.com/weaviate/weaviate-go-client/v4/weaviate/grpc"
+	"github.com/weaviate/weaviate-go-client/v5/weaviate"
+	"github.com/weaviate/weaviate-go-client/v5/weaviate/grpc"
 
 	"github.com/testcontainers/testcontainers-go"
 	tcweaviate "github.com/testcontainers/testcontainers-go/modules/weaviate"
@@ -19,7 +19,7 @@ func ExampleRun() {
 	// runWeaviateContainer {
 	ctx := context.Background()
 
-	weaviateContainer, err := tcweaviate.Run(ctx, "semitechnologies/weaviate:1.24.5")
+	weaviateContainer, err := tcweaviate.Run(ctx, "semitechnologies/weaviate:1.29.0")
 	defer func() {
 		if err := testcontainers.TerminateContainer(weaviateContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -47,7 +47,7 @@ func ExampleRun_connectWithClient() {
 	// createClientNoModules {
 	ctx := context.Background()
 
-	weaviateContainer, err := tcweaviate.Run(ctx, "semitechnologies/weaviate:1.23.9")
+	weaviateContainer, err := tcweaviate.Run(ctx, "semitechnologies/weaviate:1.28.7")
 	defer func() {
 		if err := testcontainers.TerminateContainer(weaviateContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)

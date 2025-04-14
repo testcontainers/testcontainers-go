@@ -50,8 +50,8 @@ When starting the Ollama container, you can pass options in a variadic way to co
 
 #### Image
 
-If you need to set a different Ollama Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "ollama/ollama:0.1.25")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "ollama/ollama:0.5.7")`.
 
 #### Use Local
 
@@ -65,7 +65,7 @@ E.g. `Run(context.Background(), "ollama/ollama:0.1.25")`.
 If you need to run the local Ollama binary, you can set the `UseLocal` option in the `Run` function.
 This option accepts a list of environment variables as a string, that will be applied to the Ollama binary when executing commands.
 
-E.g. `Run(context.Background(), "ollama/ollama:0.1.25", WithUseLocal("OLLAMA_DEBUG=true"))`.
+E.g. `Run(context.Background(), "ollama/ollama:0.5.7", WithUseLocal("OLLAMA_DEBUG=true"))`.
 
 All the container methods are available when using the local Ollama binary, but will be executed locally instead of inside the container.
 Please consider the following differences when using the local Ollama binary:

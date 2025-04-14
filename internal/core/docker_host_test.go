@@ -104,7 +104,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 		host, err := extractDockerHost(context.Background())
 		require.Error(t, err)
-		require.Equal(t, "", host)
+		require.Empty(t, host)
 	})
 
 	t.Run("Docker Host as environment variable", func(t *testing.T) {
@@ -122,7 +122,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 		host, err := extractDockerHost(context.WithValue(ctx, DockerHostContextKey, "path-to-docker-sock"))
 		require.Error(t, err)
-		require.Equal(t, "", host)
+		require.Empty(t, host)
 	})
 
 	t.Run("Malformed Schema Docker Host is passed in context", func(t *testing.T) {
@@ -132,7 +132,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 		host, err := extractDockerHost(context.WithValue(ctx, DockerHostContextKey, "http://path to docker sock"))
 		require.Error(t, err)
-		require.Equal(t, "", host)
+		require.Empty(t, host)
 	})
 
 	t.Run("Unix Docker Host is passed in context", func(t *testing.T) {
@@ -169,7 +169,7 @@ func TestExtractDockerHost(t *testing.T) {
 		setupRootlessNotFound(t)
 		host, err := extractDockerHost(context.Background())
 		require.Error(t, err)
-		require.Equal(t, "", host)
+		require.Empty(t, host)
 	})
 
 	t.Run("Extract Docker socket", func(t *testing.T) {

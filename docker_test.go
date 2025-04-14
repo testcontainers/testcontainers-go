@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -26,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -72,10 +72,10 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 			ExposedPorts: []string{
 				nginxHighPort,
 			},
-			Privileged: true,
 			WaitingFor: wait.ForHTTP("/").WithPort(nginxHighPort),
 			HostConfigModifier: func(hc *container.HostConfig) {
 				hc.NetworkMode = "host"
+				hc.Privileged = true
 			},
 		},
 		Started: true,
@@ -97,8 +97,10 @@ func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testi
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
 			Image:      "nginx",
-			Privileged: true,
 			WaitingFor: wait.ForExposedPort(),
+			HostConfigModifier: func(hc *container.HostConfig) {
+				hc.Privileged = true
+			},
 		},
 		Started: true,
 	}
@@ -336,7 +338,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 		err = ctr.Terminate(ctx)
 		require.NoError(t, err)
 
-		_, _, err = dockerClient.ImageInspectWithRaw(ctx, nginxAlpineImage)
+		_, err = dockerClient.ImageInspect(ctx, nginxAlpineImage)
 		require.NoErrorf(t, err, "nginx image should not have been removed")
 	})
 
@@ -368,7 +370,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 		err = ctr.Terminate(ctx)
 		require.NoError(t, err)
 
-		_, _, err = dockerClient.ImageInspectWithRaw(ctx, imageID)
+		_, err = dockerClient.ImageInspect(ctx, imageID)
 		require.Errorf(t, err, "custom built image should have been removed")
 	})
 }
@@ -874,7 +876,9 @@ func TestWorkingDir(t *testing.T) {
 			wait.ForLog("/var/tmp/test"),
 		),
 		Entrypoint: []string{"pwd"},
-		WorkingDir: "/var/tmp/test",
+		ConfigModifier: func(c *container.Config) {
+			c.WorkingDir = "/var/tmp/test"
+		},
 	}
 
 	c, err := GenericContainer(ctx, GenericContainerRequest{
@@ -1279,7 +1283,7 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 		ctr, err := dockerCli.ContainerInspect(ctx, c.GetContainerID())
 		require.NoError(t, err)
 
-		img, _, err := dockerCli.ImageInspectWithRaw(ctx, ctr.Image)
+		img, err := dockerCli.ImageInspect(ctx, ctr.Image)
 		require.NoError(t, err)
 		assert.Equal(t, "linux", img.Os)
 		assert.Equal(t, "amd64", img.Architecture)
@@ -1291,9 +1295,11 @@ func TestContainerWithCustomHostname(t *testing.T) {
 	name := fmt.Sprintf("some-nginx-%s-%d", t.Name(), rand.Int())
 	hostname := fmt.Sprintf("my-nginx-%s-%d", t.Name(), rand.Int())
 	req := ContainerRequest{
-		Name:     name,
-		Image:    nginxImage,
-		Hostname: hostname,
+		Name:  name,
+		Image: nginxImage,
+		ConfigModifier: func(c *container.Config) {
+			c.Hostname = hostname
+		},
 	}
 	ctr, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType:     providerType,
@@ -1325,13 +1331,13 @@ func TestContainerInspect_RawInspectIsCleanedOnStop(t *testing.T) {
 	require.NoError(t, ctr.Stop(context.Background(), nil))
 }
 
-func readHostname(tb testing.TB, containerId string) string {
+func readHostname(tb testing.TB, containerID string) string {
 	tb.Helper()
 	containerClient, err := NewDockerClientWithOpts(context.Background())
 	require.NoErrorf(tb, err, "Failed to create Docker client")
 	defer containerClient.Close()
 
-	containerDetails, err := containerClient.ContainerInspect(context.Background(), containerId)
+	containerDetails, err := containerClient.ContainerInspect(context.Background(), containerID)
 	require.NoErrorf(tb, err, "Failed to inspect container")
 
 	return containerDetails.Config.Hostname
@@ -1706,7 +1712,7 @@ func TestContainerCapAdd(t *testing.T) {
 
 	ctx := context.Background()
 
-	expected := "IPC_LOCK"
+	expected := "CAP_IPC_LOCK"
 
 	nginx, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
@@ -1758,12 +1764,16 @@ func TestContainerRunningCheckingStatusCode(t *testing.T) {
 }
 
 func TestContainerWithUserID(t *testing.T) {
+	const expectedUserID = "60125"
+
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:      "alpine:latest",
-		User:       "60125",
 		Cmd:        []string{"sh", "-c", "id -u"},
 		WaitingFor: wait.ForExit(),
+		ConfigModifier: func(c *container.Config) {
+			c.User = expectedUserID
+		},
 	}
 	ctr, err := GenericContainer(ctx, GenericContainerRequest{
 		ProviderType:     providerType,
@@ -1779,7 +1789,7 @@ func TestContainerWithUserID(t *testing.T) {
 	b, err := io.ReadAll(r)
 	require.NoError(t, err)
 	actual := regexp.MustCompile(`\D+`).ReplaceAllString(string(b), "")
-	assert.Equal(t, req.User, actual)
+	require.Equal(t, expectedUserID, actual)
 }
 
 func TestContainerWithNoUserID(t *testing.T) {
@@ -1809,7 +1819,7 @@ func TestContainerWithNoUserID(t *testing.T) {
 func TestGetGatewayIP(t *testing.T) {
 	// When using docker compose with DinD mode, and using host port or http wait strategy
 	// It's need to invoke GetGatewayIP for get the host
-	provider, err := providerType.GetProvider(WithLogger(TestLogger(t)))
+	provider, err := providerType.GetProvider(WithLogger(log.TestLogger(t)))
 	require.NoError(t, err)
 	defer provider.Close()
 
@@ -1898,7 +1908,7 @@ func assertExtractedFiles(t *testing.T, ctx context.Context, container Container
 
 func TestDockerProviderFindContainerByName(t *testing.T) {
 	ctx := context.Background()
-	provider, err := NewDockerProvider(WithLogger(TestLogger(t)))
+	provider, err := NewDockerProvider(WithLogger(log.TestLogger(t)))
 	require.NoError(t, err)
 	defer provider.Close()
 
@@ -1984,7 +1994,7 @@ func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 			// Now, we terminate the container and check whether the image still exists.
 			err = c.Terminate(ctx)
 			require.NoError(t, err, "terminate container should not fail")
-			_, _, err = cli.ImageInspectWithRaw(ctx, containerImage)
+			_, err = cli.ImageInspect(ctx, containerImage)
 			if tt.keepBuiltImage {
 				require.NoError(t, err, "image should still exist")
 			} else {
@@ -2010,9 +2020,9 @@ func (f *errMockCli) ImageBuild(_ context.Context, _ io.Reader, _ types.ImageBui
 	return types.ImageBuildResponse{Body: io.NopCloser(&bytes.Buffer{})}, f.err
 }
 
-func (f *errMockCli) ContainerList(_ context.Context, _ container.ListOptions) ([]types.Container, error) {
+func (f *errMockCli) ContainerList(_ context.Context, _ container.ListOptions) ([]container.Summary, error) {
 	f.containerListCount++
-	return []types.Container{{}}, f.err
+	return []container.Summary{{}}, f.err
 }
 
 func (f *errMockCli) ImagePull(_ context.Context, _ string, _ image.PullOptions) (io.ReadCloser, error) {

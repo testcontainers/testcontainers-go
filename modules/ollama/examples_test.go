@@ -18,7 +18,7 @@ func ExampleRun() {
 	// runOllamaContainer {
 	ctx := context.Background()
 
-	ollamaContainer, err := tcollama.Run(ctx, "ollama/ollama:0.1.25")
+	ollamaContainer, err := tcollama.Run(ctx, "ollama/ollama:0.5.7")
 	defer func() {
 		if err := testcontainers.TerminateContainer(ollamaContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -46,7 +46,7 @@ func ExampleRun_withModel_llama2_http() {
 	// withHTTPModelLlama2 {
 	ctx := context.Background()
 
-	ollamaContainer, err := tcollama.Run(ctx, "ollama/ollama:0.1.25")
+	ollamaContainer, err := tcollama.Run(ctx, "ollama/ollama:0.5.7")
 	defer func() {
 		if err := testcontainers.TerminateContainer(ollamaContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -107,7 +107,7 @@ func ExampleRun_withModel_llama2_langchain() {
 	// withLangchainModelLlama2 {
 	ctx := context.Background()
 
-	ollamaContainer, err := tcollama.Run(ctx, "ollama/ollama:0.1.25")
+	ollamaContainer, err := tcollama.Run(ctx, "ollama/ollama:0.5.7")
 	defer func() {
 		if err := testcontainers.TerminateContainer(ollamaContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)

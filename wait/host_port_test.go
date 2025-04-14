@@ -10,11 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/exec"
+	tclog "github.com/testcontainers/testcontainers-go/log"
 )
 
 func TestWaitForListeningPortSucceeds(t *testing.T) {
@@ -38,8 +39,8 @@ func TestWaitForListeningPortSucceeds(t *testing.T) {
 			}
 			return port, nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Running: true,
 			}, nil
 		},
@@ -74,10 +75,10 @@ func TestWaitForExposedPortSucceeds(t *testing.T) {
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
+		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
+			return &container.InspectResponse{
+				NetworkSettings: &container.NetworkSettings{
+					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"80": []nat.PortBinding{
 								{
@@ -97,8 +98,8 @@ func TestWaitForExposedPortSucceeds(t *testing.T) {
 			}
 			return port, nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Running: true,
 			}, nil
 		},
@@ -132,8 +133,8 @@ func TestHostPortStrategyFailsWhileGettingPortDueToOOMKilledContainer(t *testing
 			}
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				OOMKilled: true,
 			}, nil
 		},
@@ -162,8 +163,8 @@ func TestHostPortStrategyFailsWhileGettingPortDueToExitedContainer(t *testing.T)
 			}
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Status:   "exited",
 				ExitCode: 1,
 			}, nil
@@ -193,8 +194,8 @@ func TestHostPortStrategyFailsWhileGettingPortDueToUnexpectedContainerStatus(t *
 			}
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Status: "dead",
 			}, nil
 		},
@@ -218,8 +219,8 @@ func TestHostPortStrategyFailsWhileExternalCheckingDueToOOMKilledContainer(t *te
 		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				OOMKilled: true,
 			}, nil
 		},
@@ -243,8 +244,8 @@ func TestHostPortStrategyFailsWhileExternalCheckingDueToExitedContainer(t *testi
 		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Status:   "exited",
 				ExitCode: 1,
 			}, nil
@@ -269,8 +270,8 @@ func TestHostPortStrategyFailsWhileExternalCheckingDueToUnexpectedContainerStatu
 		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Status: "dead",
 			}, nil
 		},
@@ -303,14 +304,14 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToOOMKilledContainer(t *te
 		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
 			return port, nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
+		StateImpl: func(_ context.Context) (*container.State, error) {
 			defer func() { stateCount++ }()
 			if stateCount == 0 {
-				return &types.ContainerState{
+				return &container.State{
 					Running: true,
 				}, nil
 			}
-			return &types.ContainerState{
+			return &container.State{
 				OOMKilled: true,
 			}, nil
 		},
@@ -343,14 +344,14 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToExitedContainer(t *testi
 		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
 			return port, nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
+		StateImpl: func(_ context.Context) (*container.State, error) {
 			defer func() { stateCount++ }()
 			if stateCount == 0 {
-				return &types.ContainerState{
+				return &container.State{
 					Running: true,
 				}, nil
 			}
-			return &types.ContainerState{
+			return &container.State{
 				Status:   "exited",
 				ExitCode: 1,
 			}, nil
@@ -384,14 +385,14 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToUnexpectedContainerStatu
 		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
 			return port, nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
+		StateImpl: func(_ context.Context) (*container.State, error) {
 			defer func() { stateCount++ }()
 			if stateCount == 0 {
-				return &types.ContainerState{
+				return &container.State{
 					Running: true,
 				}, nil
 			}
-			return &types.ContainerState{
+			return &container.State{
 				Status: "dead",
 			}, nil
 		},
@@ -420,10 +421,10 @@ func TestHostPortStrategySucceedsGivenShellIsNotInstalled(t *testing.T) {
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
+		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
+			return &container.InspectResponse{
+				NetworkSettings: &container.NetworkSettings{
+					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"80": []nat.PortBinding{
 								{
@@ -439,8 +440,8 @@ func TestHostPortStrategySucceedsGivenShellIsNotInstalled(t *testing.T) {
 		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
 			return port, nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Running: true,
 			}, nil
 		},
@@ -454,11 +455,14 @@ func TestHostPortStrategySucceedsGivenShellIsNotInstalled(t *testing.T) {
 		WithStartupTimeout(5 * time.Second).
 		WithPollInterval(100 * time.Millisecond)
 
-	oldWriter := log.Default().Writer()
+	oldLogger := tclog.Default()
+
 	var buf bytes.Buffer
-	log.Default().SetOutput(&buf)
+	logger := log.New(&buf, "test", log.LstdFlags)
+
+	tclog.SetDefault(logger)
 	t.Cleanup(func() {
-		log.Default().SetOutput(oldWriter)
+		tclog.SetDefault(oldLogger)
 	})
 
 	err = wg.WaitUntilReady(context.Background(), target)
@@ -480,10 +484,10 @@ func TestHostPortStrategySucceedsGivenShellIsNotFound(t *testing.T) {
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		InspectImpl: func(_ context.Context) (*types.ContainerJSON, error) {
-			return &types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
+		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
+			return &container.InspectResponse{
+				NetworkSettings: &container.NetworkSettings{
+					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"80": []nat.PortBinding{
 								{
@@ -499,8 +503,8 @@ func TestHostPortStrategySucceedsGivenShellIsNotFound(t *testing.T) {
 		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
 			return port, nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Running: true,
 			}, nil
 		},
@@ -514,11 +518,14 @@ func TestHostPortStrategySucceedsGivenShellIsNotFound(t *testing.T) {
 		WithStartupTimeout(5 * time.Second).
 		WithPollInterval(100 * time.Millisecond)
 
-	oldWriter := log.Default().Writer()
+	oldLogger := tclog.Default()
+
 	var buf bytes.Buffer
-	log.Default().SetOutput(&buf)
+	logger := log.New(&buf, "test", log.LstdFlags)
+
+	tclog.SetDefault(logger)
 	t.Cleanup(func() {
-		log.Default().SetOutput(oldWriter)
+		tclog.SetDefault(oldLogger)
 	})
 
 	err = wg.WaitUntilReady(context.Background(), target)

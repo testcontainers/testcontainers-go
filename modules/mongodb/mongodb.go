@@ -6,6 +6,8 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"net"
+	"net/url"
 	"time"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -125,10 +127,23 @@ func (c *MongoDBContainer) ConnectionString(ctx context.Context) (string, error)
 	if err != nil {
 		return "", err
 	}
-	if c.username != "" && c.password != "" {
-		return fmt.Sprintf("mongodb://%s:%s@%s:%s", c.username, c.password, host, port.Port()), nil
+	u := url.URL{
+		Scheme: "mongodb",
+		Host:   net.JoinHostPort(host, port.Port()),
+		Path:   "/",
 	}
-	return c.Endpoint(ctx, "mongodb")
+
+	if c.username != "" && c.password != "" {
+		u.User = url.UserPassword(c.username, c.password)
+	}
+
+	if c.replicaSet != "" {
+		q := url.Values{}
+		q.Add("replicaSet", c.replicaSet)
+		u.RawQuery = q.Encode()
+	}
+
+	return u.String(), nil
 }
 
 func setupEntrypointForAuth(req *testcontainers.GenericContainerRequest) {
@@ -149,7 +164,7 @@ func configureRequestForReplicaset(
 	replicaSet string,
 	genericContainerReq *testcontainers.GenericContainerRequest,
 ) error {
-	if !(username != "" && password != "") {
+	if username == "" || password == "" {
 		return noAuthReplicaSet(replicaSet)(genericContainerReq)
 	}
 
@@ -186,7 +201,6 @@ func initiateReplicaSet(req *testcontainers.GenericContainerRequest, cli mongoCl
 						replSetName,
 						ip,
 					)
-
 					return wait.ForExec(cmd).WaitUntilReady(ctx, c)
 				},
 			},

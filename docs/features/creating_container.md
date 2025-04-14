@@ -2,12 +2,45 @@
 
 Testcontainers are a wrapper around the Docker daemon designed for tests. Anything you can run in Docker, you can spin
 up with Testcontainers and integrate into your tests:
+
 * NoSQL databases or other data stores (e.g. Redis, ElasticSearch, MongoDB)
 * Web servers/proxies (e.g. NGINX, Apache)
 * Log services (e.g. Logstash, Kibana)
 * Other services developed by your team/organization which are already dockerized
 
+## Run
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+`testcontainers.Run` defines the container that should be run, similar to the `docker run` command.
+
+```golang
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*DockerContainer, error)
+```
+
+- `context.Context`, the Go context.
+- `string`, the Docker image to use.
+- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+
+The following test creates an NGINX container on both the `bridge` (docker default
+network) and the `foo` network and validates that it returns 200 for the status code.
+
+It also demonstrates how to use `CleanupContainer`, that ensures that nginx container
+is removed when the test ends even if the underlying container errored,
+as well as the `CleanupNetwork` which does the same for networks.
+
+The alternatives for these outside of tests as a `defer` are `TerminateContainer`
+and `Network.Remove` which can be seen in the examples.
+
+<!--codeinclude-->
+[Creating a container](../../examples_test.go) inside_block:ExampleRun
+<!--/codeinclude-->
+
 ## GenericContainer
+
+!!!warning
+	`GenericContainer` is the old way to create a container, and we recommend using `Run` instead,
+	as it could be deprecated in the future.
 
 `testcontainers.GenericContainer` defines the container that should be run, similar to the `docker run` command.
 
@@ -53,7 +86,7 @@ func setupNginx(ctx context.Context, networkName string) (*nginxContainer, error
 	})
 	var nginxC *nginxContainer
 	if container != nil {
-		nginxC = &nginxContainer{Container: c}
+		nginxC = &nginxContainer{Container: container}
 	}
 	if err != nil {
 		return nginxC, err
@@ -81,14 +114,11 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 
 	ctx := context.Background()
 
-	networkName := "foo"
-	net, err := provider.CreateNetwork(ctx, NetworkRequest{
-		Name: networkName,
-	})
+	nw, err := network.New(ctx)
 	require.NoError(t, err)
-	CleanupNetwork(t, net)
+	testcontainers.CleanupNetwork(t, nw)
 
-	nginxC, err := setupNginx(ctx, networkName)
+	nginxC, err := setupNginx(ctx, nw.Name)
 	testcontainers.CleanupContainer(t, nginxC)
 	require.NoError(t, err)
 

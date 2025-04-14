@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	wvt "github.com/weaviate/weaviate-go-client/v4/weaviate"
-	wvtgrpc "github.com/weaviate/weaviate-go-client/v4/weaviate/grpc"
+	wvt "github.com/weaviate/weaviate-go-client/v5/weaviate"
+	wvtgrpc "github.com/weaviate/weaviate-go-client/v5/weaviate/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -20,7 +20,7 @@ import (
 func TestWeaviate(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := weaviate.Run(ctx, "semitechnologies/weaviate:1.25.5")
+	ctr, err := weaviate.Run(ctx, "semitechnologies/weaviate:1.29.0")
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 

@@ -14,7 +14,7 @@ func ExampleRun() {
 	ctx := context.Background()
 
 	firebaseContainer, err := firebase.Run(ctx, "ghcr.io/u-health/docker-firebase-emulator:13.29.2",
-		firebase.WithRoot(filepath.Join(".", "firebase")),
+		firebase.WithRoot(filepath.Join("testdata", "firebase")),
 		firebase.WithCache(),
 	)
 	defer func() {

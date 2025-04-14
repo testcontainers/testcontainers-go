@@ -1,0 +1,135 @@
+name: Tests against Latest Docker Projects
+
+on:
+  schedule:
+    # nightly build, at 23:59 CEST
+    - cron:  '59 23 * * *'
+
+jobs:
+  test_latest_moby:
+    strategy:
+      matrix:
+        rootless-docker: [true, false]
+        containerd-integration: [true, false]
+
+    name: "Core tests using latest moby/moby"
+    runs-on: 'ubuntu-latest'
+    continue-on-error: true
+    steps:
+      - name: Set the Docker Install type
+        run: |
+          echo "docker_install_type=${{ matrix.rootless-docker == true && 'Rootless' || 'Rootful' }}" >> "$GITHUB_ENV"
+          echo "containerd_integration=${{ matrix.containerd-integration == true && 'containerd' || '' }}" >> "$GITHUB_ENV"
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Go
+        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+        with:
+            go-version-file: 'go.mod'
+            cache-dependency-path: 'go.sum'
+        id: go
+
+      - name: modTidy
+        run: go mod tidy
+
+      - name: Install Nightly Docker
+        uses: docker/setup-docker-action@master
+        with:
+          rootless: ${{ matrix.rootless-docker }}
+          version: type=image,tag=master
+          daemon-config: |
+            {
+              "debug": true,
+              "features": {
+                "containerd-snapshotter": ${{ matrix.containerd-integration }}
+              }
+            }
+
+      - name: go test
+        timeout-minutes: 30
+        run: make test-unit
+
+      - name: Create slack payload file
+        if: failure()
+        run: |
+          cat <<EOF > ./payload-slack-content.json
+          {
+              "tc_project": "testcontainers-go",
+              "tc_docker_install_type": "${docker_install_type}",
+              "tc_containerd_integration": "${containerd_integration}",
+              "tc_github_action_url": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/attempts/${GITHUB_RUN_ATTEMPT}",
+              "tc_github_action_status": "FAILED",
+              "tc_slack_channel_id": "${{ secrets.SLACK_DOCKER_LATEST_CHANNEL_ID }}"
+          }
+
+      - name: Notify to Slack on failures
+        if: failure()
+        id: slack
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          payload-templated: true
+          payload-file-path: "./payload-slack-content.json"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_DOCKER_LATEST_WEBHOOK }}
+
+  test_latest_compose:
+    strategy:
+      matrix:
+        latest_compose_version: [true, false]
+        latest_compose-spec_version: [true, false]
+        exclude:
+          - latest_compose_version: false
+            latest_compose-spec_version: false
+
+    name: "Compose tests using a local copy of the compose and compose-spec projects"
+    runs-on: 'ubuntu-latest'
+    continue-on-error: true
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Go
+        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+        with:
+            go-version-file: 'modules/compose/go.mod'
+            cache-dependency-path: 'modules/compose/go.sum'
+        id: go
+
+      - name: Decide which make goal to use
+        run: |
+          if [ "${{ matrix.latest_compose_version }}" = "true" ] && [ "${{ matrix.latest_compose-spec_version }}" = "true" ]; then
+            echo "make_goal=compose-test-all-latest" >> $GITHUB_ENV
+          elif [ "${{ matrix.latest_compose_version }}" = "true" ] && [ "${{ matrix.latest_compose-spec_version }}" = "false" ]; then
+            echo "make_goal=compose-test-latest" >> $GITHUB_ENV
+          elif [ "${{ matrix.latest_compose_version }}" = "false" ] && [ "${{ matrix.latest_compose-spec_version }}" = "true" ]; then
+            echo "make_goal=compose-test-spec-latest" >> $GITHUB_ENV
+          fi
+
+      - name: "Run the tests"
+        timeout-minutes: 30
+        run: make ${make_goal}
+
+      - name: Create slack payload file
+        if: failure()
+        run: |
+          cat <<EOF > ./payload-slack-content.json
+          {
+              "tc_project": "testcontainers-go",
+              "compose_version": "${latest_compose_version}",
+              "compose-spec_version": "${latest_compose-spec_version}",
+              "tc_github_action_url": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/attempts/${GITHUB_RUN_ATTEMPT}",
+              "tc_github_action_status": "FAILED",
+              "tc_slack_channel_id": "${{ secrets.SLACK_DOCKER_LATEST_CHANNEL_ID }}"
+          }
+
+      - name: Notify to Slack on failures
+        if: failure()
+        id: slack
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          payload-templated: true
+          payload-file-path: "./payload-slack-content.json"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_COMPOSE_LATEST_WEBHOOK }}

@@ -193,6 +193,15 @@ In order to simplify the creation of the container for a given module, `Testcont
 
 - `testcontainers.WithImageSubstitutors`: a function that sets your own substitutions to the container images.
 - `testcontainers.WithEnv`: a function that sets the environment variables for the container request.
+- `testcontainers.WithExposedPorts`: a function that exposes additional ports from the container.
+- `testcontainers.WithEntrypoint`: a function that completely replaces the container's entrypoint.
+- `testcontainers.WithEntrypointArgs`: a function that appends commands to the container's entrypoint.
+- `testcontainers.WithCmd`: a function that completely replaces the container's command.
+- `testcontainers.WithCmdArgs`: a function that appends commands to the container's command.
+- `testcontainers.WithLabels`: a function that adds Docker labels to the container.
+- `testcontainers.WithFiles`: a function that copies files from the host into the container at creation time.
+- `testcontainers.WithMounts`: a function that adds volume mounts to the container.
+- `testcontainers.WithTmpfs`: a function that adds tmpfs mounts to the container.
 - `testcontainers.WithHostPortAccess`: a function that enables the container to access a port that is already running in the host.
 - `testcontainers.WithLogConsumers`: a function that sets the log consumers for the container request.
 - `testcontainers.WithLogger`: a function that sets the logger for the container request.
@@ -200,13 +209,12 @@ In order to simplify the creation of the container for a given module, `Testcont
 - `testcontainers.WithWaitStrategyAndDeadline`: a function that sets the wait strategy for the container request with a deadline.
 - `testcontainers.WithStartupCommand`: a function that sets the execution of a command when the container starts.
 - `testcontainers.WithAfterReadyCommand`: a function that sets the execution of a command right after the container is ready (its wait strategy is satisfied).
+- `testcontainers.WithDockerfile`: a function that sets the build from a Dockerfile for the container request.
 - `testcontainers.WithNetwork`: a function that sets the network and the network aliases for the container request.
 - `testcontainers.WithNewNetwork`: a function that sets the network aliases for a throw-away network for the container request.
 - `testcontainers.WithConfigModifier`: a function that sets the config Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
-- `testcontainers.WithEndpointSettingsModifier`: a function that sets the endpoint settings Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
 - `testcontainers.WithHostConfigModifier`: a function that sets the host config Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
-- `testcontainers.WithWaitStrategy`: a function that sets the wait strategy for the container request, adding all the passed wait strategies to the container request, using a `testcontainers.MultiStrategy` with 60 seconds of deadline. Please see [Wait strategies](../features/wait/multi.md) for more information.
-- `testcontainers.WithWaitStrategyAndDeadline`: a function that sets the wait strategy for the container request, adding all the passed wait strategies to the container request, using a `testcontainers.MultiStrategy` with the passed deadline. Please see [Wait strategies](../features/wait/multi.md) for more information.
+- `testcontainers.WithEndpointSettingsModifier`: a function that sets the endpoint settings Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
 - `testcontainers.CustomizeRequest`: a function that merges the default options with the ones provided by the user. Recommended for completely customizing the container request.
 
 ### Update Go dependencies in the modules
@@ -217,6 +225,24 @@ To update the Go dependencies in the modules, please run:
 $ cd modules
 $ make tidy-examples
 ```
+
+## Refreshing the modules
+
+To refresh the modules, please run:
+
+```shell
+$ cd modulegen
+$ go run . refresh
+```
+
+This command recreates all the project files for the modules and examples, including:
+
+- the mkdocs.yml file, including all the modules and examples, excluding the `compose` module, as it has its own docs page.
+- the dependabot config file, including all the modules, the examples and the modulegen module.
+- the VSCode project file, including all the modules, the examples and the modulegen module.
+- the Sonar properties file, including all the modules, the examples and the modulegen module.
+
+Executing this command in a well-known state of the project, must not produce any changes in the project files.
 
 ## Interested in converting an example into a module?
 

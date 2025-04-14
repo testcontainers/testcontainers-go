@@ -17,6 +17,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -63,7 +64,7 @@ type (
 	// Deprecated: it will be removed in the next major release
 	// LocalDockerComposeOptions defines options applicable to LocalDockerCompose
 	LocalDockerComposeOptions struct {
-		Logger testcontainers.Logging
+		Logger log.Logger
 	}
 
 	// Deprecated: it will be removed in the next major release
@@ -79,13 +80,13 @@ type (
 )
 
 type ComposeLoggerOption struct {
-	logger testcontainers.Logging
+	logger log.Logger
 }
 
 // WithLogger is a generic option that implements LocalDockerComposeOption
 // It replaces the global Logging implementation with a user defined one e.g. to aggregate logs from testcontainers
 // with the logs of specific test case
-func WithLogger(logger testcontainers.Logging) ComposeLoggerOption {
+func WithLogger(logger log.Logger) ComposeLoggerOption {
 	return ComposeLoggerOption{
 		logger: logger,
 	}
@@ -189,7 +190,7 @@ func (dc *LocalDockerCompose) Invoke() ExecError {
 
 // Deprecated: it will be removed in the next major release
 // WaitForService sets the strategy for the service that is to be waited on
-func (dc *LocalDockerCompose) WaitForService(service string, strategy wait.Strategy) DockerCompose {
+func (dc *LocalDockerCompose) WaitForService(service string, strategy wait.Strategy) DockerComposer {
 	dc.waitStrategySupplied = true
 	dc.WaitStrategyMap[waitService{service: service}] = strategy
 	return dc
@@ -197,14 +198,14 @@ func (dc *LocalDockerCompose) WaitForService(service string, strategy wait.Strat
 
 // Deprecated: it will be removed in the next major release
 // WithCommand assigns the command
-func (dc *LocalDockerCompose) WithCommand(cmd []string) DockerCompose {
+func (dc *LocalDockerCompose) WithCommand(cmd []string) DockerComposer {
 	dc.Cmd = cmd
 	return dc
 }
 
 // Deprecated: it will be removed in the next major release
 // WithEnv assigns the environment
-func (dc *LocalDockerCompose) WithEnv(env map[string]string) DockerCompose {
+func (dc *LocalDockerCompose) WithEnv(env map[string]string) DockerComposer {
 	dc.Env = env
 	return dc
 }
@@ -212,7 +213,7 @@ func (dc *LocalDockerCompose) WithEnv(env map[string]string) DockerCompose {
 // Deprecated: it will be removed in the next major release
 // WithExposedService sets the strategy for the service that is to be waited on. If multiple strategies
 // are given for a single service running on different ports, both strategies will be applied on the same container
-func (dc *LocalDockerCompose) WithExposedService(service string, port int, strategy wait.Strategy) DockerCompose {
+func (dc *LocalDockerCompose) WithExposedService(service string, port int, strategy wait.Strategy) DockerComposer {
 	dc.waitStrategySupplied = true
 	dc.WaitStrategyMap[waitService{service: service, publishedPort: port}] = strategy
 	return dc
@@ -371,7 +372,7 @@ func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
 	if which(dc.Executable) != nil {
 		return ExecError{
 			Command: []string{dc.Executable},
-			Error:   fmt.Errorf("Local Docker not found. Is %s on the PATH?", dc.Executable),
+			Error:   fmt.Errorf("local Docker not found. Is %s on the PATH?", dc.Executable),
 		}
 	}
 
@@ -400,7 +401,7 @@ func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
 		args := strings.Join(dc.Cmd, " ")
 		return ExecError{
 			Command: []string{dc.Executable, args},
-			Error:   fmt.Errorf("Local Docker compose exited abnormally whilst running %s: [%v]. %s", dc.Executable, args, err.Error()),
+			Error:   fmt.Errorf("local Docker compose exited abnormally whilst running %s: [%v]. %s", dc.Executable, args, err.Error()),
 		}
 	}
 

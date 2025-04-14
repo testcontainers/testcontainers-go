@@ -42,9 +42,9 @@ func TestToxiproxy(t *testing.T) {
 	toxiproxyProxyHostIP, err := toxiproxyContainer.Host(ctx)
 	require.NoError(t, err)
 
-	redisUri := fmt.Sprintf("redis://%s:%s?read_timeout=2s", toxiproxyProxyHostIP, toxiproxyProxyPort.Port())
+	redisURI := fmt.Sprintf("redis://%s:%s?read_timeout=2s", toxiproxyProxyHostIP, toxiproxyProxyPort.Port())
 
-	options, err := redis.ParseURL(redisUri)
+	options, err := redis.ParseURL(redisURI)
 	require.NoError(t, err)
 	redisClient := redis.NewClient(options)
 

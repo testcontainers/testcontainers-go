@@ -55,8 +55,8 @@ When starting the Neo4j container, you can pass options in a variadic way to con
 
 #### Image
 
-If you need to set a different Neo4j Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "neo4j:4.4")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "neo4j:4.4")`.
 
 {% include "../features/common_functional_options.md" %}
 
@@ -65,7 +65,7 @@ E.g. `Run(context.Background(), "neo4j:4.4")`.
 This option sets a custom logger to be used by the container. Consider calling this before other `With` functions as these may generate logs.
 
 !!!info
-    The logger must implement the `testcontainers.Logger` interface.
+    The logger must implement the testcontainers-go `log.Logger` interface.
 
 <!--codeinclude-->
 [Including a custom logger](../../modules/neo4j/neo4j_test.go) inside_block:withSettings

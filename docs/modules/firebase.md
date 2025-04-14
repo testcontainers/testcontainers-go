@@ -26,9 +26,6 @@ go get github.com/testcontainers/testcontainers-go/modules/firebase
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-!!!info
-    The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
-
 The Firebase module exposes one entrypoint function to create the Firebase container, and this function receives three parameters:
 
 ```golang
@@ -49,6 +46,24 @@ If you need to set a different Firebase Docker image, you can set a valid Docker
 E.g. `Run(context.Background(), "ghcr.io/u-health/docker-firebase-emulator:13.29.2")`.
 
 {% include "../features/common_functional_options.md" %}
+
+#### WithRoot
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to set a different Firebase root directory, you can use the `WithRoot` option.
+E.g. `firebase.Run(context.Background(), "ghcr.io/u-health/docker-firebase-emulator:13.29.2", firebase.WithRoot("testdata/firebase"))`.
+
+!!! warning
+    The root directory must be a valid Firebase project directory, including the `firebase.json` file.
+
+#### WithCache
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to enable the Firebase cache, you can use the `WithCache` option, which enables the binary cache based on the Testcontainers SessionID (meaningful only when multiple tests are used).
+
+E.g. `firebase.Run(context.Background(), "ghcr.io/u-health/docker-firebase-emulator:13.29.2", firebase.WithCache())`.
 
 ### Container Methods
 

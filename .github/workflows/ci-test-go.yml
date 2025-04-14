@@ -1,5 +1,5 @@
 name: Run tests for a Go project
-run-name: "${{ inputs.project-directory }} ${{ inputs.go-version }} ${{ inputs.platform }}"
+run-name: "${{ inputs.project-directory }} ${{ inputs.go-version }} ${{ inputs.platforms }}"
 
 on:
   workflow_call:
@@ -8,15 +8,11 @@ on:
         required: true
         type: string
         description: "The version of Go to use for the test."
-      platform:
+      platforms:
         required: true
         type: string
-        description: "The platform to run the test on."
-      fail-fast:
-        required: false
-        type: boolean
-        default: true
-        description: "Fail the workflow if any of the jobs fail."
+        default: "ubuntu-latest"
+        description: "The platforms in which the project will be run"
       project-directory:
         required: true
         type: string
@@ -27,11 +23,6 @@ on:
         type: boolean
         default: false
         description: "Run the test with rootless docker."
-      run-tests:
-        required: false
-        type: boolean
-        default: true
-        description: "Run the tests under conditions controlled by the caller workflow."
       ryuk-disabled:
         required: false
         type: boolean
@@ -45,67 +36,40 @@ permissions:
 
 jobs:
   test-go-project:
-    name: "${{ inputs.project-directory }}/${{ inputs.platform }}/${{ inputs.go-version }}"
-    runs-on: ${{ inputs.platform }}
-    continue-on-error: ${{ !inputs.fail-fast }}
+    name: "test: ${{ inputs.project-directory }}/${{ inputs.go-version }}"
+    # Modulegen can run the tests on all platforms
     env:
       TESTCONTAINERS_RYUK_DISABLED: "${{ inputs.ryuk-disabled }}"
       RYUK_CONNECTION_TIMEOUT: "${{ inputs.project-directory == 'modules/compose' && '5m' || '60s' }}"
       RYUK_RECONNECTION_TIMEOUT: "${{ inputs.project-directory == 'modules/compose' && '30s' || '10s' }}"
+      SHOULD_RUN_SONAR: "false"
+    strategy:
+      matrix:
+        platform: ${{ fromJSON(inputs.platforms) }}
+    runs-on: ${{ matrix.platform }}
     steps:
       - name: Setup rootless Docker
         if: ${{ inputs.rootless-docker }}
-        uses: docker/setup-docker-action@01efb57f882e3b1a22e7cf3501dbe51287b0ecb4 # v4
+        uses: docker/setup-docker-action@b60f85385d03ac8acfca6d9996982511d8620a19 # v4
         with:
           rootless: true
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # Disabling shallow clone is recommended for improving relevancy of reporting
+          fetch-depth: 0
 
       - name: Set up Go
-        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5
+        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
         with:
             go-version: '${{ inputs.go-version }}'
             cache-dependency-path: '${{ inputs.project-directory }}/go.sum'
         id: go
 
-      - name: golangci-lint
-        if: ${{ inputs.platform == 'ubuntu-latest' }}
-        uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
-        with:
-          # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
-          version: v1.61.0
-          # Optional: working directory, useful for monorepos
-          working-directory: ${{ inputs.project-directory }}
-          # Optional: golangci-lint command line arguments.
-          args: --verbose
-          # Optional: if set to true then the all caching functionality will be complete disabled,
-          #           takes precedence over all other caching options.
-          skip-cache: true
-
-      - name: generate
-        if: ${{ inputs.platform == 'ubuntu-latest' }}
-        working-directory: ./${{ inputs.project-directory }}
-        shell: bash
-        run: |
-          make generate
-          git --no-pager diff && [[ 0 -eq $(git status --porcelain | wc -l) ]]
-
-      - name: modVerify
-        working-directory: ./${{ inputs.project-directory }}
-        run: go mod verify
-
-      - name: modTidy
-        if: ${{ inputs.platform == 'ubuntu-latest' }}
-        working-directory: ./${{ inputs.project-directory }}
-        shell: bash
-        run: |
-          make tidy
-          git --no-pager diff && [[ 0 -eq $(git status --porcelain | wc -l) ]]
-
       - name: ensure compilation
         working-directory: ./${{ inputs.project-directory }}
-        run: go build
+        run: go build ./...
 
       - name: Install dependencies
         shell: bash
@@ -118,31 +82,9 @@ jobs:
           fi
 
       - name: go test
-        # only run tests on linux, there are a number of things that won't allow the tests to run on anything else
-        # many (maybe, all?) images used can only be build on Linux, they don't have Windows in their manifest, and
-        # we can't put Windows Server in "Linux Mode" in GitHub actions
-        # another, host mode is only available on Linux, and we have tests around that, do we skip them?
-        if: ${{ inputs.run-tests }}
         working-directory: ./${{ inputs.project-directory }}
         timeout-minutes: 30
         run: make test-unit
-
-      - name: Set sonar artifact name
-        # For the core library, where the project directory is '.', we'll use "core" as artifact name.
-        # For the modules, we'll remove the slashes, keeping the name of the module
-        if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && inputs.platform == 'ubuntu-latest' && inputs.run-tests && !inputs.rootless-docker && !inputs.ryuk-disabled }}
-        run: |
-          echo "ARTIFACT_NAME=$(basename ${{ inputs.project-directory == '.' && 'core' || inputs.project-directory }})-${{ inputs.go-version }}-${{ inputs.platform }}" >> $GITHUB_ENV
-
-      - name: Upload SonarCloud files
-        if: ${{ github.ref_name == 'main' && github.repository_owner == 'testcontainers' && inputs.platform == 'ubuntu-latest' && inputs.run-tests && !inputs.rootless-docker && !inputs.ryuk-disabled }}
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
-        with:
-          name: sonarcloud-${{ env.ARTIFACT_NAME }}
-          path: |
-            ./sonar-project.properties
-            ${{ inputs.project-directory }}/TEST-unit.xml
-            ${{ inputs.project-directory }}/coverage.out
 
       - name: Run checker
         run: |
@@ -153,3 +95,52 @@ jobs:
         with:
             paths: "**/${{ inputs.project-directory }}/TEST-unit*.xml"
         if: always()
+
+      - name: Decide if Sonar must be run
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        run: |
+          if [[ "1.23.x" == "${{ inputs.go-version }}" ]] && \
+             [[ "true" != "${{ inputs.rootless-docker }}" ]] && \
+             [[ "true" != "${{ inputs.ryuk-disabled }}" ]] && \
+             [[ "main" == "${{ github.ref_name }}" ]] && \
+             [[ "testcontainers" == "${{ github.repository_owner }}" ]]; then
+            echo "SHOULD_RUN_SONAR=true" >> $GITHUB_ENV
+          fi
+
+      - name: Set Sonar Cloud environment variables
+        if: ${{ env.SHOULD_RUN_SONAR == 'true' }}
+        run: |
+          echo "PROJECT_VERSION=$(grep 'latest_version' mkdocs.yml | cut -d':' -f2 | tr -d ' ')" >> $GITHUB_ENV
+          if [ "${{ inputs.project-directory }}" == "" ]; then
+            echo "PROJECT_KEY=testcontainers_testcontainers-go" >> $GITHUB_ENV
+            echo "PROJECT_NAME=testcontainers-go" >> $GITHUB_ENV
+            echo "PROJECT_SRC_EXCLUSIONS=**/*_test.go,**/vendor/**,**/testdata/**,modules/**,examples/**,modulegen/**" >> $GITHUB_ENV
+            echo "PROJECT_TEST_EXCLUSIONS=**/vendor/**,modules/**,examples/**,modulegen/**" >> $GITHUB_ENV
+          else
+            echo "PROJECT_KEY=testcontainers_testcontainers-go_$(echo ${{ inputs.project-directory }} | tr '/' '_')" >> $GITHUB_ENV
+            echo "PROJECT_NAME=testcontainers-go-$(echo ${{ inputs.project-directory }} | tr '/' '-')" >> $GITHUB_ENV
+            echo "PROJECT_SRC_EXCLUSIONS=**/*_test.go,**/vendor/**,**/testdata/**" >> $GITHUB_ENV
+            echo "PROJECT_TEST_EXCLUSIONS=**/vendor/**" >> $GITHUB_ENV
+          fi
+
+      - name: SonarQube Scan
+        if: ${{ env.SHOULD_RUN_SONAR == 'true' }}
+        uses: SonarSource/sonarqube-scan-action@aa494459d7c39c106cc77b166de8b4250a32bb97 # v5.1.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: "${{ inputs.project-directory == '' && '.' || inputs.project-directory }}"
+          args: >
+            -Dsonar.organization=testcontainers
+            -Dsonar.projectKey=${{ env.PROJECT_KEY }}
+            -Dsonar.projectName=${{ env.PROJECT_NAME }}
+            -Dsonar.projectVersion=${{ env.PROJECT_VERSION }}
+            -Dsonar.project.monorepo.enabled=true
+            -Dsonar.branch.name=main
+            -Dsonar.sources=.
+            -Dsonar.exclusions=${{ env.PROJECT_SRC_EXCLUSIONS }}
+            -Dsonar.tests=.
+            -Dsonar.test.inclusions=**/*_test.go
+            -Dsonar.test.exclusions=${{ env.PROJECT_TEST_EXCLUSIONS }}
+            -Dsonar.go.coverage.reportPaths=coverage.out
+            -Dsonar.go.tests.reportPaths=TEST-unit.xml

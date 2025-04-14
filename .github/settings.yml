@@ -182,8 +182,8 @@ branches:
       required_status_checks:
         # Required. Require branches to be up to date before merging.
         strict: true
-        # Required. The list of status checks to require in order to merge into this branch
-        contexts: ["test (1.x, ubuntu-latest) / ./ubuntu-latest/1.x"]
+        # Required. The list of status checks to require in order to merge into this branch. Please see ci.yml for the "end" job that runs after the tests jobs.
+        contexts: ["end"]
       # Required. Enforce all configured restrictions for administrators. Set to true to enforce required status checks for repository administrators. Set to null to disable.
       enforce_admins: false
       # Prevent merge commits from being pushed to matching branches

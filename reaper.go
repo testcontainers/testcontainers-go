@@ -22,6 +22,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -345,7 +346,7 @@ func (r *reaperSpawner) reuseOrCreate(ctx context.Context, sessionID string, pro
 
 // fromContainer constructs a Reaper from an already running reaper DockerContainer.
 func (r *reaperSpawner) fromContainer(ctx context.Context, sessionID string, provider ReaperProvider, dockerContainer *DockerContainer) (*Reaper, error) {
-	Logger.Printf("⏳ Waiting for Reaper %q to be ready", dockerContainer.ID[:8])
+	log.Printf("⏳ Waiting for Reaper %q to be ready", dockerContainer.ID[:8])
 
 	// Reusing an existing container so we determine the port from the container's exposed ports.
 	if err := wait.ForExposedPort().
@@ -360,7 +361,7 @@ func (r *reaperSpawner) fromContainer(ctx context.Context, sessionID string, pro
 		return nil, fmt.Errorf("port endpoint: %w", err)
 	}
 
-	Logger.Printf("🔥 Reaper obtained from Docker for this test session %s", dockerContainer.ID[:8])
+	log.Printf("🔥 Reaper obtained from Docker for this test session %s", dockerContainer.ID[:8])
 
 	return &Reaper{
 		Provider:  provider,
@@ -381,13 +382,13 @@ func (r *reaperSpawner) newReaper(ctx context.Context, sessionID string, provide
 		Image:        config.ReaperDefaultImage,
 		ExposedPorts: []string{string(port)},
 		Labels:       core.DefaultLabels(sessionID),
-		Privileged:   tcConfig.RyukPrivileged,
 		WaitingFor:   wait.ForListeningPort(port),
 		Name:         reaperContainerNameFromSessionID(sessionID),
 		HostConfigModifier: func(hc *container.HostConfig) {
 			hc.AutoRemove = true
 			hc.Binds = []string{dockerHostMount + ":/var/run/docker.sock"}
 			hc.NetworkMode = Bridge
+			hc.Privileged = tcConfig.RyukPrivileged
 		},
 		Env: map[string]string{},
 	}
@@ -533,7 +534,7 @@ func (r *Reaper) connect(ctx context.Context) (chan bool, error) {
 	go func() {
 		defer conn.Close()
 		if err := r.handshake(conn); err != nil {
-			Logger.Printf("Reaper handshake failed: %s", err)
+			log.Printf("Reaper handshake failed: %s", err)
 		}
 		<-terminationSignal
 	}()

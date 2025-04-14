@@ -3,14 +3,13 @@ package firebase
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path"
 	"reflect"
 	"slices"
-
-	"github.com/docker/docker/api/types/mount"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -23,49 +22,8 @@ type Container struct {
 
 const rootFilePath = "/srv/firebase"
 
-// WithRoot sets the directory which is copied to the destination container as firebase root
-func WithRoot(rootPath string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Files = append(req.Files, testcontainers.ContainerFile{
-			HostFilePath:      rootPath,
-			ContainerFilePath: rootFilePath,
-			FileMode:          0o775,
-		})
-
-		return nil
-	}
-}
-
-// WithData names the data directory (by default under firebase root), can be used as a way of setting up fixtures.
-// Usage of absolute path will imply that the user knows how to mount external directory into the container.
-func WithData(dataPath string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["DATA_DIRECTORY"] = dataPath
-		return nil
-	}
-}
-
-const cacheFilePath = "/root/.cache/firebase"
-
-// WithCache enables firebase binary cache based on session (meaningful only when multiple tests are used)
-func WithCache() testcontainers.CustomizeRequestOption {
-	volumeName := fmt.Sprintf("firestore-cache-%s", testcontainers.SessionID())
-	volumeOptions := &mount.VolumeOptions{
-		Labels: testcontainers.GenericLabels(),
-	}
-
-	return func(req *testcontainers.GenericContainerRequest) error {
-		m := testcontainers.ContainerMount{
-			Source: testcontainers.DockerVolumeMountSource{
-				Name:          volumeName,
-				VolumeOptions: volumeOptions,
-			},
-			Target: cacheFilePath,
-		}
-		req.Mounts = append(req.Mounts, m)
-		return nil
-	}
-}
+// ErrRootNotProvided is returned when the root path is not provided
+var ErrRootNotProvided = errors.New("firebase root not provided (WithRoot is required)")
 
 func gatherPorts(config partialFirebaseConfig) ([]string, error) {
 	var ports []string
@@ -128,8 +86,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return file.ContainerFilePath == rootFilePath
 	})
 	if rootPathIdx == -1 {
-		return nil, fmt.Errorf("firebase root not provided (WithRoot is required)")
+		return nil, ErrRootNotProvided
 	}
+
 	// Parse expected emulators from the root:
 	userRoot := req.ContainerRequest.Files[rootPathIdx].HostFilePath
 	cfg, err := os.Open(path.Join(userRoot, "firebase.json"))
@@ -137,17 +96,20 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return nil, fmt.Errorf("open firebase.json: %w", err)
 	}
 	defer cfg.Close()
+
 	bytes, err := io.ReadAll(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("read firebase.json: %w", err)
 	}
+
 	var parsed partialFirebaseConfig
 	if err := json.Unmarshal(bytes, &parsed); err != nil {
 		return nil, fmt.Errorf("parse firebase.json: %w", err)
 	}
+
 	expectedExposedPorts, err := gatherPorts(parsed)
 	if err != nil {
-		return nil, fmt.Errorf("invalid config: %w", err)
+		return nil, fmt.Errorf("gather ports: %w", err)
 	}
 	req.ExposedPorts = expectedExposedPorts
 

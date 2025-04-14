@@ -36,6 +36,7 @@ import (
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -89,14 +90,14 @@ type DockerContainer struct {
 	logProductionCtx    context.Context
 
 	logProductionTimeout *time.Duration
-	logger               Logging
+	logger               log.Logger
 	lifecycleHooks       []ContainerLifecycleHooks
 
 	healthStatus string // container health status, will default to healthStatusNone if no healthcheck is present
 }
 
 // SetLogger sets the logger for the container
-func (c *DockerContainer) SetLogger(logger Logging) {
+func (c *DockerContainer) SetLogger(logger log.Logger) {
 	c.logger = logger
 }
 
@@ -170,7 +171,7 @@ func (c *DockerContainer) Host(ctx context.Context) (string, error) {
 }
 
 // Inspect gets the raw container info
-func (c *DockerContainer) Inspect(ctx context.Context) (*types.ContainerJSON, error) {
+func (c *DockerContainer) Inspect(ctx context.Context) (*container.InspectResponse, error) {
 	jsonRaw, err := c.inspectRawContainer(ctx)
 	if err != nil {
 		return nil, err
@@ -185,7 +186,7 @@ func (c *DockerContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Po
 	if err != nil {
 		return "", fmt.Errorf("inspect: %w", err)
 	}
-	if inspect.ContainerJSONBase.HostConfig.NetworkMode == "host" {
+	if inspect.HostConfig.NetworkMode == "host" {
 		return port, nil
 	}
 
@@ -350,7 +351,7 @@ func (c *DockerContainer) Terminate(ctx context.Context, opts ...TerminateOption
 }
 
 // update container raw info
-func (c *DockerContainer) inspectRawContainer(ctx context.Context) (*types.ContainerJSON, error) {
+func (c *DockerContainer) inspectRawContainer(ctx context.Context) (*container.InspectResponse, error) {
 	defer c.provider.Close()
 	inspect, err := c.provider.client.ContainerInspect(ctx, c.ID)
 	if err != nil {
@@ -436,7 +437,7 @@ func (c *DockerContainer) Name(ctx context.Context) (string, error) {
 }
 
 // State returns container's running state.
-func (c *DockerContainer) State(ctx context.Context) (*types.ContainerState, error) {
+func (c *DockerContainer) State(ctx context.Context) (*container.State, error) {
 	inspect, err := c.inspectRawContainer(ctx)
 	if err != nil {
 		return nil, err
@@ -817,7 +818,7 @@ func (c *DockerContainer) copyLogsTimeout(stdout, stderr io.Writer, options *con
 		// Timeout or client connection closed, retry.
 	default:
 		// Unexpected error, retry.
-		Logger.Printf("Unexpected error reading logs: %v", err)
+		c.logger.Printf("Unexpected error reading logs: %v", err)
 	}
 
 	// Retry from the last log received.
@@ -1118,7 +1119,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		if req.AlwaysPullImage {
 			shouldPullImage = true // If requested always attempt to pull image
 		} else {
-			img, _, err := p.client.ImageInspectWithRaw(ctx, imageName)
+			img, err := p.client.ImageInspect(ctx, imageName)
 			if err != nil {
 				if !client.IsErrNotFound(err) {
 					return nil, err
@@ -1152,15 +1153,10 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		Env:        env,
 		Labels:     req.Labels,
 		Cmd:        req.Cmd,
-		Hostname:   req.Hostname,
-		User:       req.User,
-		WorkingDir: req.WorkingDir,
 	}
 
 	hostConfig := &container.HostConfig{
-		Privileged: req.Privileged,
-		ShmSize:    req.ShmSize,
-		Tmpfs:      req.Tmpfs,
+		Tmpfs: req.Tmpfs,
 	}
 
 	networkingConfig := &network.NetworkingConfig{}
@@ -1263,7 +1259,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	return ctr, nil
 }
 
-func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (*types.Container, error) {
+func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (*container.Summary, error) {
 	if name == "" {
 		return nil, nil
 	}
@@ -1282,9 +1278,9 @@ func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (
 	return nil, nil
 }
 
-func (p *DockerProvider) waitContainerCreation(ctx context.Context, name string) (*types.Container, error) {
+func (p *DockerProvider) waitContainerCreation(ctx context.Context, name string) (*container.Summary, error) {
 	return backoff.RetryNotifyWithData(
-		func() (*types.Container, error) {
+		func() (*container.Summary, error) {
 			c, err := p.findContainerByName(ctx, name)
 			if err != nil {
 				if !errdefs.IsNotFound(err) && isPermanentClientError(err) {
@@ -1618,7 +1614,7 @@ func (p *DockerProvider) getGatewayIP(ctx context.Context, defaultNetwork string
 		}
 	}
 	if ip == "" {
-		return "", errors.New("Failed to get gateway IP from network settings")
+		return "", errors.New("failed to get gateway IP from network settings")
 	}
 
 	return ip, nil
@@ -1680,7 +1676,7 @@ func (p *DockerProvider) ensureDefaultNetworkLocked(ctx context.Context) (string
 }
 
 // ContainerFromType builds a Docker container struct from the response of the Docker API
-func (p *DockerProvider) ContainerFromType(ctx context.Context, response types.Container) (ctr *DockerContainer, err error) {
+func (p *DockerProvider) ContainerFromType(ctx context.Context, response container.Summary) (ctr *DockerContainer, err error) {
 	exposedPorts := make([]string, len(response.Ports))
 	for i, port := range response.Ports {
 		exposedPorts[i] = fmt.Sprintf("%d/%s", port.PublicPort, port.Type)

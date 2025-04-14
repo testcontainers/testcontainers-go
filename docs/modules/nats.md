@@ -45,8 +45,8 @@ When starting the NATS container, you can pass options in a variadic way to conf
 
 #### Image
 
-If you need to set a different NATS Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "nats:2.9")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "nats:2.9")`.
 
 {% include "../features/common_functional_options.md" %}
 
@@ -93,7 +93,6 @@ The NATS container exposes the following methods:
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.24.0"><span class="tc-version">:material-tag: v0.24.0</span></a>
 
 This method returns the connection string to connect to the NATS container, using the default `4222` port.
-It's possible to pass extra parameters to the connection string, in a variadic way.
 
 <!--codeinclude-->
 [Get connection string](../../modules/nats/nats_test.go) inside_block:connectionString

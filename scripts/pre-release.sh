@@ -14,7 +14,6 @@ readonly DRY_RUN="${DRY_RUN:-true}"
 readonly CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly ROOT_DIR="$(dirname "$CURRENT_DIR")"
 readonly MKDOCS_FILE="${ROOT_DIR}/mkdocs.yml"
-readonly SONARCLOUD_FILE="${ROOT_DIR}/sonar-project.properties"
 readonly VERSION_FILE="${ROOT_DIR}/internal/version.go"
 
 readonly REPOSITORY="github.com/testcontainers/testcontainers-go"
@@ -40,15 +39,6 @@ function bumpVersion() {
   else
     sed "s/latest_version: .*/latest_version: ${versionToBump}/g" ${MKDOCS_FILE} > ${MKDOCS_FILE}.tmp
     mv ${MKDOCS_FILE}.tmp ${MKDOCS_FILE}
-  fi
-
-  # Bump version in the sonarcloud properties file
-  if [[ "${DRY_RUN}" == "true" ]]; then
-    echo "sed \"s/sonar\.projectVersion=.*/sonar\.projectVersion=${versionToBump}/g\" ${SONARCLOUD_FILE} > ${SONARCLOUD_FILE}.tmp"
-    echo "mv ${SONARCLOUD_FILE}.tmp ${SONARCLOUD_FILE}"
-  else
-    sed "s/sonar\.projectVersion=.*/sonar\.projectVersion=${versionToBump}/g" ${SONARCLOUD_FILE} > ${SONARCLOUD_FILE}.tmp
-    mv ${SONARCLOUD_FILE}.tmp ${SONARCLOUD_FILE}
   fi
 
   # Bump version across all modules, in their go.mod files

@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/log"
 )
 
 const (
@@ -312,7 +313,7 @@ func (c *PostgresContainer) checkSnapshotConfig(opts []SnapshotOption) (string, 
 func (c *PostgresContainer) execCommandsSQL(ctx context.Context, cmds ...string) error {
 	conn, cleanup, err := c.snapshotConnection(ctx)
 	if err != nil {
-		testcontainers.Logger.Printf("Could not connect to database to restore snapshot, falling back to `docker exec psql`: %v", err)
+		log.Printf("Could not connect to database to restore snapshot, falling back to `docker exec psql`: %v", err)
 		return c.execCommandsFallback(ctx, cmds)
 	}
 	if cleanup != nil {
@@ -349,7 +350,7 @@ func (c *PostgresContainer) snapshotConnection(ctx context.Context) (*sql.Conn, 
 
 	cleanupPool := func() {
 		if err := pool.Close(); err != nil {
-			testcontainers.Logger.Printf("Could not close database connection pool after restoring snapshot: %v", err)
+			log.Printf("Could not close database connection pool after restoring snapshot: %v", err)
 		}
 	}
 

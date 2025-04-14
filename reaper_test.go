@@ -74,6 +74,7 @@ func expectedReaperRequest(customize ...func(*ContainerRequest)) ContainerReques
 		Labels:       core.DefaultLabels(testSessionID),
 		HostConfigModifier: func(hostConfig *container.HostConfig) {
 			hostConfig.Binds = []string{core.MustExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
+			hostConfig.Privileged = true
 		},
 		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),
 		Env: map[string]string{
@@ -238,6 +239,7 @@ func Test_NewReaper(t *testing.T) {
 				RyukReconnectionTimeout: 10 * time.Second,
 			},
 			expectedReaperRequest(),
+			false,
 		)
 	})
 
@@ -249,6 +251,7 @@ func Test_NewReaper(t *testing.T) {
 				RyukReconnectionTimeout: 10 * time.Second,
 			},
 			expectedReaperRequest(),
+			true,
 		)
 	})
 
@@ -265,6 +268,7 @@ func Test_NewReaper(t *testing.T) {
 					"RYUK_RECONNECTION_TIMEOUT": "20s",
 				}
 			}),
+			true,
 		)
 	})
 
@@ -279,6 +283,7 @@ func Test_NewReaper(t *testing.T) {
 					"RYUK_VERBOSE": "true",
 				}
 			}),
+			true,
 		)
 	})
 
@@ -293,6 +298,7 @@ func Test_NewReaper(t *testing.T) {
 					hostConfig.Binds = []string{core.MustExtractDockerSocket(ctx) + ":/var/run/docker.sock"}
 				}
 			}),
+			false,
 		)
 	})
 
@@ -306,8 +312,11 @@ func Test_NewReaper(t *testing.T) {
 			},
 			expectedReaperRequest(func(req *ContainerRequest) {
 				req.Image = config.ReaperDefaultImage
-				req.Privileged = true
+				req.HostConfigModifier = func(hc *container.HostConfig) {
+					hc.Privileged = true
+				}
 			}),
+			true,
 		)
 	})
 
@@ -324,13 +333,16 @@ func Test_NewReaper(t *testing.T) {
 			},
 			expectedReaperRequest(func(req *ContainerRequest) {
 				req.Image = config.ReaperDefaultImage
-				req.Privileged = true
+				req.HostConfigModifier = func(hc *container.HostConfig) {
+					hc.Privileged = true
+				}
 			}),
+			true,
 		)
 	})
 }
 
-func testNewReaper(ctx context.Context, t *testing.T, cfg config.Config, expected ContainerRequest) {
+func testNewReaper(ctx context.Context, t *testing.T, cfg config.Config, expected ContainerRequest, privileged bool) {
 	t.Helper()
 
 	if prefix := os.Getenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX"); prefix != "" {
@@ -357,6 +369,7 @@ func testNewReaper(ctx context.Context, t *testing.T, cfg config.Config, expecte
 	// checks for reaper's preCreationCallback fields
 	require.Equal(t, container.NetworkMode(Bridge), provider.hostConfig.NetworkMode, "expected networkMode doesn't match the submitted request")
 	require.True(t, provider.hostConfig.AutoRemove, "expected networkMode doesn't match the submitted request")
+	require.Equal(t, privileged, provider.hostConfig.Privileged, "expected privileged doesn't match the submitted request")
 }
 
 func Test_ReaperReusedIfHealthy(t *testing.T) {

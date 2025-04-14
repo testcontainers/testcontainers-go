@@ -13,6 +13,8 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
+
+	"github.com/testcontainers/testcontainers-go/log"
 )
 
 // ContainerRequestHook is a hook that will be called before a container is created.
@@ -54,7 +56,7 @@ type ContainerLifecycleHooks struct {
 }
 
 // DefaultLoggingHook is a hook that will log the container lifecycle events
-var DefaultLoggingHook = func(logger Logging) ContainerLifecycleHooks {
+var DefaultLoggingHook = func(logger log.Logger) ContainerLifecycleHooks {
 	shortContainerID := func(c Container) string {
 		return c.GetContainerID()[:12]
 	}
@@ -546,9 +548,10 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 		}
 	}
 
-	if req.ConfigModifier != nil {
-		req.ConfigModifier(dockerInput)
+	if req.ConfigModifier == nil {
+		req.ConfigModifier = defaultConfigModifier(req)
 	}
+	req.ConfigModifier(dockerInput)
 
 	if req.HostConfigModifier == nil {
 		req.HostConfigModifier = defaultHostConfigModifier(req)
@@ -564,7 +567,7 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 	exposedPorts := req.ExposedPorts
 	// this check must be done after the pre-creation Modifiers are called, so the network mode is already set
 	if len(exposedPorts) == 0 && !hostConfig.NetworkMode.IsContainer() {
-		image, _, err := p.client.ImageInspectWithRaw(ctx, dockerInput.Image)
+		image, err := p.client.ImageInspect(ctx, dockerInput.Image)
 		if err != nil {
 			return err
 		}
@@ -656,6 +659,15 @@ func mergePortBindings(configPortMap, exposedPortMap nat.PortMap, exposedPorts [
 }
 
 // defaultHostConfigModifier provides a default modifier including the deprecated fields
+func defaultConfigModifier(req ContainerRequest) func(config *container.Config) {
+	return func(config *container.Config) {
+		config.Hostname = req.Hostname
+		config.WorkingDir = req.WorkingDir
+		config.User = req.User
+	}
+}
+
+// defaultHostConfigModifier provides a default modifier including the deprecated fields
 func defaultHostConfigModifier(req ContainerRequest) func(hostConfig *container.HostConfig) {
 	return func(hostConfig *container.HostConfig) {
 		hostConfig.AutoRemove = req.AutoRemove
@@ -665,5 +677,7 @@ func defaultHostConfigModifier(req ContainerRequest) func(hostConfig *container.
 		hostConfig.ExtraHosts = req.ExtraHosts
 		hostConfig.NetworkMode = req.NetworkMode
 		hostConfig.Resources = req.Resources
+		hostConfig.Privileged = req.Privileged
+		hostConfig.ShmSize = req.ShmSize
 	}
 }

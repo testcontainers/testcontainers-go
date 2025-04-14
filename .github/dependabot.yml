@@ -3,14 +3,83 @@
 version: 2
 updates:
     - package-ecosystem: github-actions
-      directory: /
+      directories:
+        - /
+      schedule:
+        interval: monthly
+        day: sunday
+      open-pull-requests-limit: 3
+      rebase-strategy: disabled
+    - package-ecosystem: gomod
+      directories:
+        - /
+        - /examples/nginx
+        - /examples/toxiproxy
+        - /modulegen
+        - /modules/aerospike
+        - /modules/arangodb
+        - /modules/artemis
+        - /modules/azure
+        - /modules/azurite
+        - /modules/cassandra
+        - /modules/chroma
+        - /modules/clickhouse
+        - /modules/cockroachdb
+        - /modules/compose
+        - /modules/consul
+        - /modules/couchbase
+        - /modules/databend
+        - /modules/dind
+        - /modules/dolt
+        - /modules/dynamodb
+        - /modules/elasticsearch
+        - /modules/etcd
+        - /modules/gcloud
+        - /modules/grafana-lgtm
+        - /modules/inbucket
+        - /modules/influxdb
+        - /modules/k3s
+        - /modules/k6
+        - /modules/kafka
+        - /modules/localstack
+        - /modules/mariadb
+        - /modules/meilisearch
+        - /modules/milvus
+        - /modules/minio
+        - /modules/mockserver
+        - /modules/mongodb
+        - /modules/mssql
+        - /modules/mysql
+        - /modules/nats
+        - /modules/neo4j
+        - /modules/ollama
+        - /modules/openfga
+        - /modules/openldap
+        - /modules/opensearch
+        - /modules/pinecone
+        - /modules/postgres
+        - /modules/pulsar
+        - /modules/qdrant
+        - /modules/rabbitmq
+        - /modules/redis
+        - /modules/redpanda
+        - /modules/registry
+        - /modules/scylladb
+        - /modules/socat
+        - /modules/surrealdb
+        - /modules/valkey
+        - /modules/vault
+        - /modules/vearch
+        - /modules/weaviate
+        - /modules/yugabytedb
       schedule:
         interval: monthly
         day: sunday
       open-pull-requests-limit: 3
       rebase-strategy: disabled
     - package-ecosystem: pip
-      directory: /
+      directories:
+        - /
       schedule:
         interval: monthly
         day: sunday

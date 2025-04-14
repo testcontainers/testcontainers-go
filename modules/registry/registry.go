@@ -51,7 +51,7 @@ func (c *RegistryContainer) HostAddress(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("mapped port: %w", err)
 	}
 
-	host, err := c.Container.Host(ctx)
+	host, err := c.Host(ctx)
 	if err != nil {
 		return "", fmt.Errorf("host: %w", err)
 	}

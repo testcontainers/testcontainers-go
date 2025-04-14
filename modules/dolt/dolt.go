@@ -218,6 +218,7 @@ func WithDoltCredsPublicKey(key string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+//nolint:revive,staticcheck //FIXME
 func WithDoltCloneRemoteUrl(url string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["DOLT_REMOTE_CLONE_URL"] = url

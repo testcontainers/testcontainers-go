@@ -6,16 +6,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -65,7 +65,7 @@ func (st mockExecTarget) Host(_ context.Context) (string, error) {
 	return "", errors.New("not implemented")
 }
 
-func (st mockExecTarget) Inspect(_ context.Context) (*types.ContainerJSON, error) {
+func (st mockExecTarget) Inspect(_ context.Context) (*container.InspectResponse, error) {
 	return nil, errors.New("not implemented")
 }
 
@@ -101,7 +101,7 @@ func (st mockExecTarget) Exec(ctx context.Context, _ []string, _ ...tcexec.Proce
 	return st.exitCode, reader, st.failure
 }
 
-func (st mockExecTarget) State(_ context.Context) (*types.ContainerState, error) {
+func (st mockExecTarget) State(_ context.Context) (*container.State, error) {
 	return nil, errors.New("not implemented")
 }
 

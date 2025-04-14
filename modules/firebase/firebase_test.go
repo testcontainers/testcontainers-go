@@ -18,7 +18,7 @@ func TestFirebase(t *testing.T) {
 	defer cancel()
 
 	ctr, err := firebase.Run(ctx, "ghcr.io/u-health/docker-firebase-emulator:13.29.2",
-		firebase.WithRoot(filepath.Join(".", "firebase")),
+		firebase.WithRoot(filepath.Join("testdata", "firebase")),
 	)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
@@ -54,14 +54,14 @@ func TestFirebaseBadDirectory(t *testing.T) {
 	defer cancel()
 
 	ctr, err := firebase.Run(ctx, "ghcr.io/u-health/docker-firebase-emulator:13.29.2",
-		firebase.WithRoot(filepath.Join(".", "failure")),
+		firebase.WithRoot(filepath.Join("testdata", "failure")),
 	)
 	// In this case, the file gets copied over at /srv/failure (instead of /srv/firebase)
 	// and this stops working.
 	// What would be a solution here? Previously I just added an requireion that the root must
 	// end in "/firebase"... I could do the same.
 	testcontainers.CleanupContainer(t, ctr)
-	require.NoError(t, err)
+	require.Error(t, err)
 }
 
 func TestFirebaseRequiresRoot(t *testing.T) {
@@ -70,5 +70,5 @@ func TestFirebaseRequiresRoot(t *testing.T) {
 
 	ctr, err := firebase.Run(ctx, "ghcr.io/u-health/docker-firebase-emulator:13.29.2")
 	testcontainers.CleanupContainer(t, ctr)
-	require.ErrorContains(t, err, "unable to boot without configuration root")
+	require.ErrorIs(t, err, firebase.ErrRootNotProvided)
 }

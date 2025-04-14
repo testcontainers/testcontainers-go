@@ -48,7 +48,6 @@ function main() {
   for f in $(find "${ROOT_DIR}/.github/workflows" -name "*.yml"); do
     bumpCIMatrix "${f}" "${escapedCurrentGoVersion}" "${escapedGoVersion}"
   done
-  bumpCIMatrix "${ROOT_DIR}/modulegen/_template/ci.yml.tmpl" "${escapedCurrentGoVersion}" "${escapedGoVersion}"
 
   # bump devcontainer file
   bumpDevcontainer "${ROOT_DIR}/.devcontainer/devcontainer.json" "${escapedCurrentGoVersion}" "${escapedGoVersion}"
@@ -63,11 +62,14 @@ function bumpCIMatrix() {
   if [[ "${DRY_RUN}" == "true" ]]; then
     echo "sed \"s/go-version: \[${oldGoVersion}/go-version: \[${newGoVersion}/g\" ${file} > ${file}.tmp"
     echo "sed \"s/go-version: \\"${oldGoVersion}.x\"/go-version: \\"${newGoVersion}.x\"/g\" ${file}.tmp > ${file}.tmp"
+    echo "sed \"s/go-version == '\"${oldGoVersion}\.x\"'/go-version == '\"${newGoVersion}\.x\"'/g\" ${file}.tmp > ${file}.tmp"
     echo "mv ${file}.tmp ${file}"
   else
     sed "s/go-version: \[${oldGoVersion}/go-version: \[${newGoVersion}/g" ${file} > ${file}.tmp
     mv ${file}.tmp ${file}
     sed "s/go-version: \"${oldGoVersion}\.x\"/go-version: \"${newGoVersion}\.x\"/g" ${file} > ${file}.tmp
+    mv ${file}.tmp ${file}
+    sed "s/go-version == '\"${oldGoVersion}\.x\"'/go-version == '\"${newGoVersion}\.x\"'/g" ${file} > ${file}.tmp
     mv ${file}.tmp ${file}
   fi
 }

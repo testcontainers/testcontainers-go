@@ -301,7 +301,7 @@ func (c *CockroachDBContainer) configure(req *testcontainers.GenericContainerReq
 		if cert, ok := strategy.(*wait.TLSStrategy); ok {
 			if insecure {
 				// If insecure mode is enabled, the certificate strategy is removed.
-				return errors.Join(wait.VisitRemove, wait.VisitStop)
+				return errors.Join(wait.ErrVisitRemove, wait.ErrVisitStop)
 			}
 
 			// Update the client certificate files to match the user which may have changed.
@@ -310,7 +310,7 @@ func (c *CockroachDBContainer) configure(req *testcontainers.GenericContainerReq
 			c.tlsStrategy = cert
 
 			// Stop the walk as the certificate strategy has been found.
-			return wait.VisitStop
+			return wait.ErrVisitStop
 		}
 		return nil
 	}); err != nil {

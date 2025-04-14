@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -13,6 +12,8 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/image"
 	"github.com/stretchr/testify/require"
+
+	"github.com/testcontainers/testcontainers-go/log"
 )
 
 func TestBuildImageFromDockerfile(t *testing.T) {
@@ -37,7 +38,7 @@ func TestBuildImageFromDockerfile(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "test-repo:test-tag", tag)
 
-	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
+	_, err = cli.ImageInspect(ctx, tag)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -68,7 +69,7 @@ func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, strings.HasPrefix(tag, "test-repo:"))
 
-	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
+	_, err = cli.ImageInspect(ctx, tag)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -121,7 +122,7 @@ func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, strings.HasSuffix(tag, ":test-tag"))
 
-	_, _, err = cli.ImageInspectWithRaw(ctx, tag)
+	_, err = cli.ImageInspect(ctx, tag)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -166,19 +167,16 @@ func ExampleGenericContainer_buildFromDockerfile() {
 	ctx := context.Background()
 
 	// buildFromDockerfileWithModifier {
-	c, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
-			FromDockerfile: FromDockerfile{
-				Context:    "testdata",
-				Dockerfile: "target.Dockerfile",
-				KeepImage:  false,
-				BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
-					buildOptions.Target = "target2"
-				},
+	c, err := Run(ctx, "",
+		WithDockerfile(FromDockerfile{
+			Context:    "testdata",
+			Dockerfile: "target.Dockerfile",
+			KeepImage:  false,
+			BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
+				buildOptions.Target = "target2"
 			},
-		},
-		Started: true,
-	})
+		}),
+	)
 	// }
 	defer func() {
 		if err := TerminateContainer(c); err != nil {

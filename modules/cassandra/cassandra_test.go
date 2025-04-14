@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/gocql/gocql"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -14,7 +13,7 @@ import (
 )
 
 type Test struct {
-	Id   uint64
+	ID   uint64
 	Name string
 }
 
@@ -45,9 +44,9 @@ func TestCassandra(t *testing.T) {
 	require.NoError(t, err)
 
 	var test Test
-	err = session.Query("SELECT id, name FROM test_keyspace.test_table WHERE id=1").Scan(&test.Id, &test.Name)
+	err = session.Query("SELECT id, name FROM test_keyspace.test_table WHERE id=1").Scan(&test.ID, &test.Name)
 	require.NoError(t, err)
-	assert.Equal(t, Test{Id: 1, Name: "NAME"}, test)
+	require.Equal(t, Test{ID: 1, Name: "NAME"}, test)
 }
 
 func TestCassandraWithConfigFile(t *testing.T) {
@@ -68,7 +67,7 @@ func TestCassandraWithConfigFile(t *testing.T) {
 	var result string
 	err = session.Query("SELECT cluster_name FROM system.local").Scan(&result)
 	require.NoError(t, err)
-	assert.Equal(t, "My Cluster", result)
+	require.Equal(t, "My Cluster", result)
 }
 
 func TestCassandraWithInitScripts(t *testing.T) {
@@ -92,9 +91,9 @@ func TestCassandraWithInitScripts(t *testing.T) {
 		defer session.Close()
 
 		var test Test
-		err = session.Query("SELECT id, name FROM test_keyspace.test_table WHERE id=1").Scan(&test.Id, &test.Name)
+		err = session.Query("SELECT id, name FROM test_keyspace.test_table WHERE id=1").Scan(&test.ID, &test.Name)
 		require.NoError(t, err)
-		assert.Equal(t, Test{Id: 1, Name: "NAME"}, test)
+		require.Equal(t, Test{ID: 1, Name: "NAME"}, test)
 	})
 
 	t.Run("with init bash script", func(t *testing.T) {
@@ -113,8 +112,8 @@ func TestCassandraWithInitScripts(t *testing.T) {
 		defer session.Close()
 
 		var test Test
-		err = session.Query("SELECT id, name FROM init_sh_keyspace.test_table WHERE id=1").Scan(&test.Id, &test.Name)
+		err = session.Query("SELECT id, name FROM init_sh_keyspace.test_table WHERE id=1").Scan(&test.ID, &test.Name)
 		require.NoError(t, err)
-		assert.Equal(t, Test{Id: 1, Name: "NAME"}, test)
+		require.Equal(t, Test{ID: 1, Name: "NAME"}, test)
 	})
 }

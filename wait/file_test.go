@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/errdefs"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -26,7 +26,7 @@ var anyContext = mock.MatchedBy(func(_ context.Context) bool { return true })
 func newRunningTarget() *mockStrategyTarget {
 	target := &mockStrategyTarget{}
 	target.EXPECT().State(anyContext).
-		Return(&types.ContainerState{Running: true}, nil)
+		Return(&container.State{Running: true}, nil)
 
 	return target
 }
