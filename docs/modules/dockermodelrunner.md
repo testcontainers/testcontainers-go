@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/dockermodelrunner
 ## Usage example
 
 <!--codeinclude-->
-[Creating a DockerModelRunner container](../../modules/dockermodelrunner/examples_test.go) inside_block:ExampleRun
+[Creating a DockerModelRunner container](../../modules/dockermodelrunner/examples_test.go) inside_block:runWithModel
 <!--/codeinclude-->
 
 ## Module Reference
@@ -72,6 +72,10 @@ The Docker Model Runner container exposes the following methods:
 
 Use the `PullModel` method to pull a model from the Docker Model Runner.
 
+<!--codeinclude-->
+[Pulling a model at runtime](../../modules/dockermodelrunner/examples_test.go) inside_block:runPullModel
+<!--/codeinclude-->
+
 !!! info
      You can find a curated collection of cutting-edge AI models as OCI Artifacts, from lightweight on-device models to high-performance LLMs on [Docker Hub](https://hub.docker.com/u/ai).
 
@@ -81,8 +85,16 @@ Use the `PullModel` method to pull a model from the Docker Model Runner.
 
 Use the `GetModel` method to get a model from the Docker Model Runner, by providing the model namespace and name.
 
+<!--codeinclude-->
+[Getting a model at runtime](../../modules/dockermodelrunner/examples_test.go) inside_block:runGetModel
+<!--/codeinclude-->
+
 #### ListModels
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 Use the `ListModels` method to list all models that are already pulled locally, using the Docker Model Runner format.
+
+<!--codeinclude-->
+[Listing all models](../../modules/dockermodelrunner/examples_test.go) inside_block:runListModels
+<!--/codeinclude-->

@@ -4,28 +4,30 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"slices"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner"
 )
 
-func ExampleRun_pullModel() {
+func ExampleRun_withModel() {
+	// runWithModel {
 	ctx := context.Background()
 
 	const (
 		modelNamespace = "ai"
-		modelName      = "llama3.2"
-		modelTag       = "latest"
+		modelName      = "smollm2"
+		modelTag       = "360M-Q4_K_M"
 		fqModelName    = modelNamespace + "/" + modelName + ":" + modelTag
 	)
 
-	dockermodelrunnerContainer, err := dockermodelrunner.Run(
+	dmrCtr, err := dockermodelrunner.Run(
 		ctx,
 		"alpine/socat:1.8.0.1",
 		dockermodelrunner.WithModel(fqModelName),
 	)
 	defer func() {
-		if err := testcontainers.TerminateContainer(dockermodelrunnerContainer); err != nil {
+		if err := testcontainers.TerminateContainer(dmrCtr); err != nil {
 			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
@@ -35,7 +37,7 @@ func ExampleRun_pullModel() {
 	}
 	// }
 
-	state, err := dockermodelrunnerContainer.State(ctx)
+	state, err := dmrCtr.State(ctx)
 	if err != nil {
 		log.Printf("failed to get container state: %s", err)
 		return
@@ -45,4 +47,140 @@ func ExampleRun_pullModel() {
 
 	// Output:
 	// true
+}
+
+func ExampleRun_pullModel() {
+	ctx := context.Background()
+
+	dmrCtr, err := dockermodelrunner.Run(
+		ctx,
+		"alpine/socat:1.8.0.1",
+	)
+	defer func() {
+		if err := testcontainers.TerminateContainer(dmrCtr); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
+
+	state, err := dmrCtr.State(ctx)
+	if err != nil {
+		log.Printf("failed to get container state: %s", err)
+		return
+	}
+
+	fmt.Println(state.Running)
+
+	// runPullModel {
+	const (
+		modelNamespace = "ai"
+		modelName      = "smollm2"
+		modelTag       = "360M-Q4_K_M"
+		fqModelName    = modelNamespace + "/" + modelName + ":" + modelTag
+	)
+
+	err = dmrCtr.PullModel(ctx, fqModelName)
+	if err != nil {
+		log.Printf("failed to pull model: %s", err)
+		return
+	}
+	// }
+	fmt.Println("model pulled")
+
+	// Output:
+	// true
+	// model pulled
+}
+
+func ExampleRun_getModel() {
+	ctx := context.Background()
+
+	dmrCtr, err := dockermodelrunner.Run(
+		ctx,
+		"alpine/socat:1.8.0.1",
+	)
+	defer func() {
+		if err := testcontainers.TerminateContainer(dmrCtr); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
+
+	// runGetModel {
+	const (
+		modelNamespace = "ai"
+		modelName      = "smollm2"
+	)
+
+	err = dmrCtr.PullModel(ctx, modelNamespace+"/"+modelName)
+	if err != nil {
+		log.Printf("failed to pull model: %s", err)
+		return
+	}
+
+	model, err := dmrCtr.GetModel(ctx, modelNamespace, modelName)
+	if err != nil {
+		log.Printf("failed to get model: %s", err)
+		return
+	}
+	// }
+	fmt.Println(model.Tags[0])
+	fmt.Println(model.Tags[1])
+
+	// Output:
+	// ai/smollm2
+	// ai/smollm2:360M-Q4_K_M
+}
+
+func ExampleRun_listModels() {
+	ctx := context.Background()
+
+	dmrCtr, err := dockermodelrunner.Run(
+		ctx,
+		"alpine/socat:1.8.0.1",
+	)
+	defer func() {
+		if err := testcontainers.TerminateContainer(dmrCtr); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
+
+	// runListModels {
+	const (
+		modelNamespace = "ai"
+		modelName      = "smollm2"
+	)
+
+	err = dmrCtr.PullModel(ctx, modelNamespace+"/"+modelName)
+	if err != nil {
+		log.Printf("failed to pull model: %s", err)
+		return
+	}
+
+	models, err := dmrCtr.ListModels(ctx)
+	if err != nil {
+		log.Printf("failed to get model: %s", err)
+		return
+	}
+	// }
+	for _, model := range models {
+		if slices.Contains(model.Tags, modelNamespace+"/"+modelName) {
+			fmt.Println(model.Tags[0])
+			fmt.Println(model.Tags[1])
+		}
+	}
+
+	// Output:
+	// ai/smollm2
+	// ai/smollm2:360M-Q4_K_M
 }
