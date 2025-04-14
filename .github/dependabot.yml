@@ -30,6 +30,7 @@ updates:
         - /modules/couchbase
         - /modules/databend
         - /modules/dind
+        - /modules/dockermodelrunner
         - /modules/dolt
         - /modules/dynamodb
         - /modules/elasticsearch

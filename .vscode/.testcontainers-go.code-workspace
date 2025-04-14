@@ -66,6 +66,10 @@
             "path": "../modules/dind"
         },
         {
+            "name": "module / dockermodelrunner",
+            "path": "../modules/dockermodelrunner"
+        },
+        {
             "name": "module / dolt",
             "path": "../modules/dolt"
         },
