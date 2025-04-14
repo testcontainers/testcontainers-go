@@ -34,7 +34,7 @@ go get github.com/testcontainers/testcontainers-go/modules/socat
 The Socat module exposes one entrypoint function to create the Socat container, and this function receives three parameters:
 
 ```golang
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*SocatContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)
 ```
 
 - `context.Context`, the Go context.

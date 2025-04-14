@@ -32,7 +32,7 @@ go get github.com/testcontainers/testcontainers-go/modules/pinecone
 The Pinecone module exposes one entrypoint function to create the Pinecone container, and this function receives three parameters:
 
 ```golang
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*PineconeContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)
 ```
 
 - `context.Context`, the Go context.
