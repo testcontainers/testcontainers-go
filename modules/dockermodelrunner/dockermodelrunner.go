@@ -77,6 +77,18 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
+// GetModel returns a model that is already pulled using the Docker Model Runner format.
+func (c *Container) GetModel(ctx context.Context, namespace string, name string) (types.ModelResponse, error) {
+	dmrClient := client.NewClient(c.baseURL)
+
+	modelResponse, err := dmrClient.GetModel(ctx, namespace, name)
+	if err != nil {
+		return modelResponse, fmt.Errorf("list models: %w", err)
+	}
+
+	return modelResponse, nil
+}
+
 // ListModels lists all models that are already pulled using the Docker Model Runner format.
 func (c *Container) ListModels(ctx context.Context) ([]types.ModelResponse, error) {
 	dmrClient := client.NewClient(c.baseURL)

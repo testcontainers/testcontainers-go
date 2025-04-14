@@ -60,7 +60,7 @@ dockermodelrunner.WithModel("ai/llama3.2:latest")
 !!! warning
     Multiple calls to this function overrides the previous value.
 
- You can find a curated collection of cutting-edge AI models as OCI Artifacts, from lightweight on-device models to high-performance LLMs on Docker Hub: https://hub.docker.com/u/ai.
+ You can find a curated collection of cutting-edge AI models as OCI Artifacts, from lightweight on-device models to high-performance LLMs on [Docker Hub](https://hub.docker.com/u/ai).
 
 ### Container Methods
 
@@ -73,7 +73,13 @@ The Docker Model Runner container exposes the following methods:
 Use the `PullModel` method to pull a model from the Docker Model Runner.
 
 !!! info
-     You can find a curated collection of cutting-edge AI models as OCI Artifacts, from lightweight on-device models to high-performance LLMs on Docker Hub: https://hub.docker.com/u/ai.
+     You can find a curated collection of cutting-edge AI models as OCI Artifacts, from lightweight on-device models to high-performance LLMs on [Docker Hub](https://hub.docker.com/u/ai).
+
+#### GetModel
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+Use the `GetModel` method to get a model from the Docker Model Runner, by providing the model namespace and name.
 
 #### ListModels
 

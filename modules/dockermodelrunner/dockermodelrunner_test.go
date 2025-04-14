@@ -10,6 +10,15 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner"
 )
 
+const (
+	testModelNamespace       = "ai"
+	testModelName            = "llama3.2"
+	testModelTag             = "latest"
+	testModelFQMN            = testModelNamespace + "/" + testModelName + ":" + testModelTag
+	testModelNameNonExistent = "non-existent"
+	testNonExistentFQMN      = testModelNamespace + "/" + testModelNameNonExistent + ":" + testModelTag
+)
+
 func TestDockerModelRunner(t *testing.T) {
 	ctx := context.Background()
 
@@ -29,18 +38,34 @@ func TestRun_client(t *testing.T) {
 
 	t.Run("model-pull", func(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
-			err := ctr.PullModel(ctx, "ai/llama3.2:latest")
+			err := ctr.PullModel(ctx, testModelFQMN)
 			require.NoError(t, err)
 		})
 
 		t.Run("failure", func(t *testing.T) {
-			err := ctr.PullModel(ctx, "ai/non-existent:latest")
+			err := ctr.PullModel(ctx, testNonExistentFQMN)
+			require.Error(t, err)
+		})
+	})
+
+	t.Run("model-get", func(t *testing.T) {
+		err := ctr.PullModel(ctx, testModelFQMN)
+		require.NoError(t, err)
+
+		t.Run("success", func(t *testing.T) {
+			model, err := ctr.GetModel(ctx, testModelNamespace, testModelName)
+			require.NoError(t, err)
+			require.NotEmpty(t, model)
+		})
+
+		t.Run("failure", func(t *testing.T) {
+			_, err := ctr.GetModel(ctx, testModelNamespace, testModelNameNonExistent)
 			require.Error(t, err)
 		})
 	})
 
 	t.Run("list-models", func(t *testing.T) {
-		err := ctr.PullModel(ctx, "ai/llama3.2:latest")
+		err := ctr.PullModel(ctx, testModelFQMN)
 		require.NoError(t, err)
 
 		t.Run("success", func(t *testing.T) {
@@ -53,7 +78,7 @@ func TestRun_client(t *testing.T) {
 				allTags = append(allTags, model.Tags...)
 			}
 
-			require.Contains(t, allTags, "ai/llama3.2:latest")
+			require.Contains(t, allTags, testModelFQMN)
 		})
 	})
 }
