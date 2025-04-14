@@ -9,10 +9,21 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner"
 )
 
-func ExampleRun() {
+func ExampleRun_pullModel() {
 	ctx := context.Background()
 
-	dockermodelrunnerContainer, err := dockermodelrunner.Run(ctx, "alpine/socat:1.8.0.1")
+	const (
+		modelNamespace = "ai"
+		modelName      = "llama3.2"
+		modelTag       = "latest"
+		fqModelName    = modelNamespace + "/" + modelName + ":" + modelTag
+	)
+
+	dockermodelrunnerContainer, err := dockermodelrunner.Run(
+		ctx,
+		"alpine/socat:1.8.0.1",
+		dockermodelrunner.WithModel(fqModelName),
+	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(dockermodelrunnerContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
