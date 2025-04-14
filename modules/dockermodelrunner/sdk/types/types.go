@@ -8,8 +8,8 @@ type ModelResponse struct {
 	// Tags are the tags of the model
 	Tags []string `json:"tags"`
 
-	// Files are the files of the model
-	Files []string `json:"files"`
+	// Config is the config of the model
+	Config map[string]string `json:"config"`
 
 	// Created is the creation time of the model
 	Created int64 `json:"created"`
