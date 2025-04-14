@@ -10,6 +10,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner/sdk/client"
+	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner/sdk/types"
 	"github.com/testcontainers/testcontainers-go/modules/socat"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -17,14 +18,13 @@ import (
 const (
 	modelRunnerEntrypoint = "model-runner.docker.internal"
 	modelRunnerPort       = 80
-	openAIEndpointSuffix  = "/engines/v1"
 )
 
 // Container represents the DockerModelRunner container type used in the module
 type Container struct {
 	*socat.Container
-	model          string
-	openAIEndpoint string
+	model   string
+	baseURL string
 }
 
 // Run creates an instance of the DockerModelRunner container type
@@ -65,7 +65,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return c, fmt.Errorf("socat run: %w", err)
 	}
 
-	c.openAIEndpoint = socatCtr.TargetURL(modelRunnerPort).String() + openAIEndpointSuffix
+	c.baseURL = socatCtr.TargetURL(modelRunnerPort).String()
 
 	if settings.model != "" {
 		err := c.PullModel(ctx, settings.model)
@@ -82,7 +82,7 @@ func (c *Container) PullModel(ctx context.Context, model string) error {
 	log.Default().Printf("🙏 Pulling model %s. Please be patient, no progress bar yet!", model)
 
 	// create a new client for the Docker Model Runner using the OpenAI endpoint
-	dmrClient := client.NewClient(c.openAIEndpoint)
+	dmrClient := client.NewClient(c.baseURL)
 
 	_, err := dmrClient.CreateModel(ctx, model)
 	if err != nil {
@@ -96,5 +96,7 @@ func (c *Container) PullModel(ctx context.Context, model string) error {
 
 // OpenAIEndpoint returns the OpenAI endpoint for the Docker Model Runner
 func (c *Container) OpenAIEndpoint(ctx context.Context) string {
-	return c.openAIEndpoint
+	dmrClient := client.NewClient(c.baseURL)
+
+	return dmrClient.OpenAIEndpoint()
 }

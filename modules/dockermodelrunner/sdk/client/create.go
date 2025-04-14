@@ -28,6 +28,11 @@ func (c *Client) CreateModel(ctx context.Context, fqmn string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
+	// The Docker Model Runner returns a 200 status code for a successful pull
+	if resp.StatusCode != http.StatusOK {
+		return bytes, fmt.Errorf("status code: %d", resp.StatusCode)
+	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return bytes, fmt.Errorf("read all: %w", err)
