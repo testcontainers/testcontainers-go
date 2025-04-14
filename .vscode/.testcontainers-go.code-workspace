@@ -14,6 +14,10 @@
             "path": "../examples/toxiproxy"
         },
         {
+            "name": "module / aerospike",
+            "path": "../modules/aerospike"
+        },
+        {
             "name": "module / arangodb",
             "path": "../modules/arangodb"
         },
