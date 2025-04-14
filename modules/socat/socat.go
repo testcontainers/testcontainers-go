@@ -8,6 +8,7 @@ import (
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // Container represents the Socat container type used in the module.
@@ -25,6 +26,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:      img,
 			Entrypoint: []string{"/bin/sh"},
+			WaitingFor: wait.ForExec([]string{"socat", "-V"}).WithExitCodeMatcher(func(exitCode int) bool {
+				return exitCode == 0
+			}),
 		},
 		Started: true,
 	}
