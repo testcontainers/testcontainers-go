@@ -3,6 +3,9 @@ package dockermodelrunner
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/log"
@@ -38,7 +41,18 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	// Add socat options, which are applied to the socat container.
-	opts = append(opts, testcontainers.WithWaitStrategy(wait.ForListeningPort("80/tcp")))
+	opts = append(opts, testcontainers.WithWaitStrategy(
+		wait.ForListeningPort("80/tcp"),
+		wait.ForHTTP("/").WithPort("80/tcp").WithStatusCodeMatcher(func(status int) bool {
+			return status == http.StatusOK
+		}).WithResponseMatcher(func(body io.Reader) bool {
+			bodyBytes, err := io.ReadAll(body)
+			if err != nil {
+				return false
+			}
+			return strings.Contains(string(bodyBytes), "The service is running")
+		}),
+	))
 	opts = append(opts, socat.WithTarget(socat.NewTarget(modelRunnerPort, modelRunnerEntrypoint)))
 
 	socatCtr, err := socat.Run(ctx, img, opts...)
