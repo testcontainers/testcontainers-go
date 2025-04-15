@@ -10,7 +10,7 @@ import (
 
 // CreateModel creates a model
 func (c *Client) CreateModel(ctx context.Context, fqmn string) ([]byte, error) {
-	payload := fmt.Sprintf(`{"from": "%q"}`, fqmn)
+	payload := fmt.Sprintf(`{"from": "%s"}`, fqmn)
 	reqURL := c.baseURL + "/models/create"
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, strings.NewReader(payload))
