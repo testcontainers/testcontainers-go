@@ -8,6 +8,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner"
+	"github.com/testcontainers/testcontainers-go/modules/socat"
 )
 
 const (
@@ -22,7 +23,7 @@ const (
 func TestDockerModelRunner(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := dockermodelrunner.Run(ctx, "alpine/socat:1.8.0.1")
+	ctr, err := dockermodelrunner.Run(ctx, socat.DefaultImage)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -32,7 +33,7 @@ func TestDockerModelRunner(t *testing.T) {
 func TestRun_client(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := dockermodelrunner.Run(ctx, "alpine/socat:1.8.0.1")
+	ctr, err := dockermodelrunner.Run(ctx, socat.DefaultImage)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 

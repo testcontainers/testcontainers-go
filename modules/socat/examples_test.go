@@ -50,7 +50,7 @@ func ExampleRun() {
 	target := socat.NewTarget(8080, "helloworld")
 
 	socatContainer, err := socat.Run(
-		ctx, "alpine/socat:1.8.0.1",
+		ctx, socat.DefaultImage,
 		socat.WithTarget(target),
 		network.WithNetwork([]string{"socat"}, nw),
 	)
@@ -147,7 +147,7 @@ func ExampleRun_multipleTargets() {
 	}
 
 	socatContainer, err := socat.Run(
-		ctx, "alpine/socat:1.8.0.1",
+		ctx, socat.DefaultImage,
 		socat.WithTarget(targets[0]),
 		socat.WithTarget(targets[1]),
 		socat.WithTarget(targets[2]),

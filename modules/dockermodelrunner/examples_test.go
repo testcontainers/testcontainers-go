@@ -14,6 +14,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner"
+	"github.com/testcontainers/testcontainers-go/modules/socat"
 )
 
 func ExampleRun_withModel() {
@@ -29,7 +30,7 @@ func ExampleRun_withModel() {
 
 	dmrCtr, err := dockermodelrunner.Run(
 		ctx,
-		"alpine/socat:1.8.0.1",
+		socat.DefaultImage,
 		dockermodelrunner.WithModel(fqModelName),
 	)
 	defer func() {
@@ -60,7 +61,7 @@ func ExampleRun_pullModel() {
 
 	dmrCtr, err := dockermodelrunner.Run(
 		ctx,
-		"alpine/socat:1.8.0.1",
+		socat.DefaultImage,
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(dmrCtr); err != nil {
@@ -106,7 +107,7 @@ func ExampleRun_inspectModel() {
 
 	dmrCtr, err := dockermodelrunner.Run(
 		ctx,
-		"alpine/socat:1.8.0.1",
+		socat.DefaultImage,
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(dmrCtr); err != nil {
@@ -149,7 +150,7 @@ func ExampleRun_listModels() {
 
 	dmrCtr, err := dockermodelrunner.Run(
 		ctx,
-		"alpine/socat:1.8.0.1",
+		socat.DefaultImage,
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(dmrCtr); err != nil {
@@ -196,7 +197,7 @@ func ExampleRun_openAI() {
 
 	dmrCtr, err := dockermodelrunner.Run(
 		ctx,
-		"alpine/socat:1.8.0.1",
+		socat.DefaultImage,
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(dmrCtr); err != nil {
@@ -256,7 +257,7 @@ func ExampleRun_langchaingo() {
 
 	dmrCtr, err := dockermodelrunner.Run(
 		ctx,
-		"alpine/socat:1.8.0.1",
+		socat.DefaultImage,
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(dmrCtr); err != nil {

@@ -16,7 +16,7 @@ import (
 func TestSocat(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := socat.Run(ctx, "alpine/socat:1.8.0.1")
+	ctr, err := socat.Run(ctx, socat.DefaultImage)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -49,7 +49,7 @@ func TestRun_helloWorld(t *testing.T) {
 	target := socat.NewTarget(exposedPort, "helloworld")
 
 	socatContainer, err := socat.Run(
-		ctx, "alpine/socat:1.8.0.1",
+		ctx, socat.DefaultImage,
 		socat.WithTarget(target),
 		network.WithNetwork([]string{"socat"}, nw),
 	)
@@ -103,7 +103,7 @@ func TestRun_helloWorldDifferentPort(t *testing.T) {
 	target := socat.NewTargetWithInternalPort(port2, port1, "helloworld")
 
 	socatContainer, err := socat.Run(
-		ctx, "alpine/socat:1.8.0.1",
+		ctx, socat.DefaultImage,
 		socat.WithTarget(target),
 		network.WithNetwork([]string{"socat"}, nw),
 	)
@@ -164,7 +164,7 @@ func TestRun_multipleTargets(t *testing.T) {
 	}
 
 	socatContainer, err := socat.Run(
-		ctx, "alpine/socat:1.8.0.1",
+		ctx, socat.DefaultImage,
 		socat.WithTarget(targets[0]),
 		socat.WithTarget(targets[1]),
 		socat.WithTarget(targets[2]),

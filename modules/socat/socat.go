@@ -11,6 +11,13 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+const (
+	// defaultImage {
+	// DefaultImage is the default image used by the Socat container.
+	DefaultImage = "alpine/socat:1.8.0.1"
+	// }
+)
+
 // Container represents the Socat container type used in the module.
 // A socat container is used as a TCP proxy, enabling any TCP port
 // of another container to be exposed publicly, even if that container
