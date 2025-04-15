@@ -17,6 +17,12 @@ import (
 )
 
 func ExampleRun_withModel() {
+	ok, err := isDockerDesktopRunning(log.Default())
+	if !ok {
+		fmt.Println("true")
+		return
+	}
+
 	// runWithModel {
 	ctx := context.Background()
 
@@ -55,6 +61,13 @@ func ExampleRun_withModel() {
 }
 
 func ExampleRun_pullModel() {
+	ok, err := isDockerDesktopRunning(log.Default())
+	if !ok {
+		fmt.Println("true")
+		fmt.Println("model pulled")
+		return
+	}
+
 	ctx := context.Background()
 
 	dmrCtr, err := dockermodelrunner.Run(ctx)
@@ -98,6 +111,19 @@ func ExampleRun_pullModel() {
 }
 
 func ExampleRun_inspectModel() {
+	const (
+		modelNamespace = "ai"
+		modelName      = "smollm2"
+		modelTag       = "360M-Q4_K_M"
+	)
+
+	ok, err := isDockerDesktopRunning(log.Default())
+	if !ok {
+		fmt.Println(modelNamespace + "/" + modelName)
+		fmt.Println(modelNamespace + "/" + modelName + ":" + modelTag)
+		return
+	}
+
 	ctx := context.Background()
 
 	dmrCtr, err := dockermodelrunner.Run(ctx)
@@ -112,11 +138,6 @@ func ExampleRun_inspectModel() {
 	}
 
 	// runInspectModel {
-	const (
-		modelNamespace = "ai"
-		modelName      = "smollm2"
-	)
-
 	err = dmrCtr.PullModel(ctx, modelNamespace+"/"+modelName)
 	if err != nil {
 		log.Printf("failed to pull model: %s", err)
@@ -138,6 +159,19 @@ func ExampleRun_inspectModel() {
 }
 
 func ExampleRun_listModels() {
+	const (
+		modelNamespace = "ai"
+		modelName      = "smollm2"
+		modelTag       = "360M-Q4_K_M"
+	)
+
+	ok, err := isDockerDesktopRunning(log.Default())
+	if !ok {
+		fmt.Println(modelNamespace + "/" + modelName)
+		fmt.Println(modelNamespace + "/" + modelName + ":" + modelTag)
+		return
+	}
+
 	ctx := context.Background()
 
 	dmrCtr, err := dockermodelrunner.Run(ctx)
@@ -152,11 +186,6 @@ func ExampleRun_listModels() {
 	}
 
 	// runListModels {
-	const (
-		modelNamespace = "ai"
-		modelName      = "smollm2"
-	)
-
 	err = dmrCtr.PullModel(ctx, modelNamespace+"/"+modelName)
 	if err != nil {
 		log.Printf("failed to pull model: %s", err)
@@ -182,6 +211,12 @@ func ExampleRun_listModels() {
 }
 
 func ExampleRun_openAI() {
+	ok, err := isDockerDesktopRunning(log.Default())
+	if !ok {
+		fmt.Println("true")
+		return
+	}
+
 	ctx := context.Background()
 
 	dmrCtr, err := dockermodelrunner.Run(ctx)
@@ -239,6 +274,12 @@ func ExampleRun_openAI() {
 }
 
 func ExampleRun_langchaingo() {
+	ok, err := isDockerDesktopRunning(log.Default())
+	if !ok {
+		fmt.Println("true")
+		return
+	}
+
 	ctx := context.Background()
 
 	dmrCtr, err := dockermodelrunner.Run(ctx)

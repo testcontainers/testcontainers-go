@@ -21,6 +21,8 @@ const (
 )
 
 func TestRun(t *testing.T) {
+	skipIfDockerDesktopNotRunning(t)
+
 	ctx := context.Background()
 
 	t.Run("success", func(t *testing.T) {
@@ -43,6 +45,7 @@ func TestRun(t *testing.T) {
 }
 
 func TestRun_client(t *testing.T) {
+	skipIfDockerDesktopNotRunning(t)
 	ctx := context.Background()
 
 	ctr, err := dockermodelrunner.Run(ctx)
