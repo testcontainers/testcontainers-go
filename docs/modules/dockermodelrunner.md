@@ -69,7 +69,7 @@ In example: `Run(context.Background(), "alpine/socat:1.8.0.1")`.
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-Use the `WithModel` option to set the model to pull when the container is started.
+Use the `WithModel` option to set the model to pull when the container is started. Please be aware, that only Models as OCI Artifacts are compatible with Docker Model Runner.
 
 ```golang
 dockermodelrunner.WithModel("ai/llama3.2:latest")
