@@ -16,7 +16,7 @@ func (c *Client) InspectModel(ctx context.Context, namespace string, name string
 
 	httpClient := http.Client{}
 
-	reqURL := c.BaseURL + "/models/" + namespace + "/" + name
+	reqURL := c.baseURL + "/models/" + namespace + "/" + name
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {

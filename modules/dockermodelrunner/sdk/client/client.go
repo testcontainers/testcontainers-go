@@ -5,14 +5,14 @@ const openAIEndpointSuffix = "/engines/v1"
 
 // Client is the client for the Docker Model Runner
 type Client struct {
-	BaseURL        string
+	baseURL        string
 	openAIEndpoint string
 }
 
 // NewClient creates a new client for the Docker Model Runner
 func NewClient(baseURL string) *Client {
 	return &Client{
-		BaseURL:        baseURL,
+		baseURL:        baseURL,
 		openAIEndpoint: baseURL + openAIEndpointSuffix,
 	}
 }

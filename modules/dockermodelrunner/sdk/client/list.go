@@ -16,7 +16,7 @@ func (c *Client) ListModels(ctx context.Context) ([]types.ModelResponse, error) 
 
 	httpClient := http.Client{}
 
-	reqURL := c.BaseURL + "/models"
+	reqURL := c.baseURL + "/models"
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {

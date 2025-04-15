@@ -13,7 +13,7 @@ func (c *Client) CreateModel(ctx context.Context, fqmn string) ([]byte, error) {
 	var bytes []byte
 
 	payload := fmt.Sprintf(`{"from": "%s"}`, fqmn)
-	reqURL := c.BaseURL + "/models/create"
+	reqURL := c.baseURL + "/models/create"
 
 	httpClient := http.Client{}
 
