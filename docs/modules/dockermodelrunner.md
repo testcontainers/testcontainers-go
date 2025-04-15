@@ -79,14 +79,14 @@ Use the `PullModel` method to pull a model from the Docker Model Runner.
 !!! info
      You can find a curated collection of cutting-edge AI models as OCI Artifacts, from lightweight on-device models to high-performance LLMs on [Docker Hub](https://hub.docker.com/u/ai).
 
-#### GetModel
+#### InspectModel
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-Use the `GetModel` method to get a model from the Docker Model Runner, by providing the model namespace and name.
+Use the `InspectModel` method to get a model from the Docker Model Runner, by providing the model namespace and name.
 
 <!--codeinclude-->
-[Getting a model at runtime](../../modules/dockermodelrunner/examples_test.go) inside_block:runGetModel
+[Getting a model at runtime](../../modules/dockermodelrunner/examples_test.go) inside_block:runInspectModel
 <!--/codeinclude-->
 
 #### ListModels

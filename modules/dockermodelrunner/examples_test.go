@@ -101,7 +101,7 @@ func ExampleRun_pullModel() {
 	// model pulled
 }
 
-func ExampleRun_getModel() {
+func ExampleRun_inspectModel() {
 	ctx := context.Background()
 
 	dmrCtr, err := dockermodelrunner.Run(
@@ -118,7 +118,7 @@ func ExampleRun_getModel() {
 		return
 	}
 
-	// runGetModel {
+	// runInspectModel {
 	const (
 		modelNamespace = "ai"
 		modelName      = "smollm2"
@@ -130,7 +130,7 @@ func ExampleRun_getModel() {
 		return
 	}
 
-	model, err := dmrCtr.GetModel(ctx, modelNamespace, modelName)
+	model, err := dmrCtr.InspectModel(ctx, modelNamespace, modelName)
 	if err != nil {
 		log.Printf("failed to get model: %s", err)
 		return

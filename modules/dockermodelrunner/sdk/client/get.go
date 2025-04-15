@@ -10,8 +10,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner/sdk/types"
 )
 
-// GetModel gets a model by namespace and name
-func (c *Client) GetModel(ctx context.Context, namespace string, name string) (types.ModelResponse, error) {
+// InspectModel returns a model by namespace and name
+func (c *Client) InspectModel(ctx context.Context, namespace string, name string) (types.ModelResponse, error) {
 	var model types.ModelResponse
 
 	httpClient := http.Client{}
