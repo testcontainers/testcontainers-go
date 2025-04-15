@@ -13,8 +13,8 @@ import (
 
 const (
 	testModelNamespace       = "ai"
-	testModelName            = "llama3.2"
-	testModelTag             = "latest"
+	testModelName            = "smollm2"
+	testModelTag             = "360M-Q4_K_M"
 	testModelFQMN            = testModelNamespace + "/" + testModelName + ":" + testModelTag
 	testModelNameNonExistent = "non-existent"
 	testNonExistentFQMN      = testModelNamespace + "/" + testModelNameNonExistent + ":" + testModelTag
