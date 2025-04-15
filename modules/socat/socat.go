@@ -26,9 +26,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:      img,
 			Entrypoint: []string{"/bin/sh"},
-			WaitingFor: wait.ForExec([]string{"socat", "-V"}).WithExitCodeMatcher(func(exitCode int) bool {
-				return exitCode == 0
-			}),
 		},
 		Started: true,
 	}
@@ -62,6 +59,17 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	if err != nil {
 		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	// Only check if the socat binary is available if there are targets to expose.
+	// This is because the socat container exits otherwise.
+	if len(settings.targets) > 0 {
+		err = wait.ForExec([]string{"socat", "-V"}).WithExitCodeMatcher(func(exitCode int) bool {
+			return exitCode == 0
+		}).WaitUntilReady(ctx, c)
+		if err != nil {
+			return c, fmt.Errorf("wait for exec: %w", err)
+		}
 	}
 
 	targetURLs := map[int]*url.URL{}
