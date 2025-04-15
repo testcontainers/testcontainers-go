@@ -51,3 +51,8 @@ jobs:
         run: |
           make tidy
           git --no-pager diff && [[ 0 -eq $(git status --porcelain | wc -l) ]]
+
+      - name: codeql
+        uses: ./.github/workflows/codeql.yml
+        with:
+          project-directory: "${{ matrix.module }}"
