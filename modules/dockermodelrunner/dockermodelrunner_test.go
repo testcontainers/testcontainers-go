@@ -69,7 +69,7 @@ func TestRun_client(t *testing.T) {
 		require.NoError(t, err)
 
 		t.Run("success", func(t *testing.T) {
-			model, err := ctr.InspectModel(ctx, testModelNamespace, testModelName)
+			model, err := ctr.InspectModel(ctx, testModelNamespace, testModelName+":"+testModelTag)
 			require.NoError(t, err)
 			require.NotNil(t, model)
 		})

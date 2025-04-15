@@ -83,6 +83,7 @@ func RunWithImage(ctx context.Context, img string, opts ...testcontainers.Contai
 }
 
 // InspectModel returns a model that is already pulled using the Docker Model Runner format.
+// The name of the model is in the format of <name>:<tag>.
 func (c *Container) InspectModel(ctx context.Context, namespace string, name string) (*types.ModelResponse, error) {
 	dmrClient := client.NewClient(c.baseURL)
 

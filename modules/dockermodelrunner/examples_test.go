@@ -131,7 +131,6 @@ func ExampleRun_inspectModel() {
 		return
 	}
 	if !ok {
-		fmt.Println(modelNamespace + "/" + modelName)
 		fmt.Println(modelNamespace + "/" + modelName + ":" + modelTag)
 		return
 	}
@@ -150,23 +149,21 @@ func ExampleRun_inspectModel() {
 	}
 
 	// runInspectModel {
-	err = dmrCtr.PullModel(ctx, modelNamespace+"/"+modelName)
+	err = dmrCtr.PullModel(ctx, modelNamespace+"/"+modelName+":"+modelTag)
 	if err != nil {
 		log.Printf("failed to pull model: %s", err)
 		return
 	}
 
-	model, err := dmrCtr.InspectModel(ctx, modelNamespace, modelName)
+	model, err := dmrCtr.InspectModel(ctx, modelNamespace, modelName+":"+modelTag)
 	if err != nil {
 		log.Printf("failed to get model: %s", err)
 		return
 	}
 	// }
 	fmt.Println(model.Tags[0])
-	fmt.Println(model.Tags[1])
 
 	// Output:
-	// ai/smollm2
 	// ai/smollm2:360M-Q4_K_M
 }
 
@@ -183,7 +180,6 @@ func ExampleRun_listModels() {
 		return
 	}
 	if !ok {
-		fmt.Println(modelNamespace + "/" + modelName)
 		fmt.Println(modelNamespace + "/" + modelName + ":" + modelTag)
 		return
 	}
@@ -202,7 +198,7 @@ func ExampleRun_listModels() {
 	}
 
 	// runListModels {
-	err = dmrCtr.PullModel(ctx, modelNamespace+"/"+modelName)
+	err = dmrCtr.PullModel(ctx, modelNamespace+"/"+modelName+":"+modelTag)
 	if err != nil {
 		log.Printf("failed to pull model: %s", err)
 		return
@@ -215,14 +211,12 @@ func ExampleRun_listModels() {
 	}
 	// }
 	for _, model := range models {
-		if slices.Contains(model.Tags, modelNamespace+"/"+modelName) {
+		if slices.Contains(model.Tags, modelNamespace+"/"+modelName+":"+modelTag) {
 			fmt.Println(model.Tags[0])
-			fmt.Println(model.Tags[1])
 		}
 	}
 
 	// Output:
-	// ai/smollm2
 	// ai/smollm2:360M-Q4_K_M
 }
 
@@ -253,9 +247,10 @@ func ExampleRun_openAI() {
 	const (
 		modelNamespace = "ai"
 		modelName      = "smollm2"
+		modelTag       = "360M-Q4_K_M"
 	)
 
-	err = dmrCtr.PullModel(ctx, modelNamespace+"/"+modelName)
+	err = dmrCtr.PullModel(ctx, modelNamespace+"/"+modelName+":"+modelTag)
 	if err != nil {
 		log.Printf("failed to pull model: %s", err)
 		return
@@ -320,9 +315,10 @@ func ExampleRun_langchaingo() {
 	const (
 		modelNamespace = "ai"
 		modelName      = "smollm2"
+		modelTag       = "360M-Q4_K_M"
 	)
 
-	err = dmrCtr.PullModel(ctx, modelNamespace+"/"+modelName)
+	err = dmrCtr.PullModel(ctx, modelNamespace+"/"+modelName+":"+modelTag)
 	if err != nil {
 		log.Printf("failed to pull model: %s", err)
 		return
