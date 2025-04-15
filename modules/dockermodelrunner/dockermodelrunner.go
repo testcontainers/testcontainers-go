@@ -98,12 +98,9 @@ func (c *Container) InspectModel(ctx context.Context, namespace string, name str
 func (c *Container) ListModels(ctx context.Context) ([]types.ModelResponse, error) {
 	dmrClient := client.NewClient(c.baseURL)
 
-	var models []types.ModelResponse
-	var err error
-
-	models, err = dmrClient.ListModels(ctx)
+	models, err := dmrClient.ListModels(ctx)
 	if err != nil {
-		return models, fmt.Errorf("list models: %w", err)
+		return nil, fmt.Errorf("list models: %w", err)
 	}
 
 	return models, nil
