@@ -15,6 +15,7 @@ updates:
         - /
         - /examples/nginx
         - /modulegen
+        - /modules/aerospike
         - /modules/arangodb
         - /modules/artemis
         - /modules/azure
