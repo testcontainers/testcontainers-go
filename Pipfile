@@ -13,4 +13,4 @@ mkdocs-material = "==9.5.18"
 mkdocs-markdownextradata-plugin = "==0.2.6"
 
 [requires]
-python_version = "3.8"
+python_version = "3.13"
