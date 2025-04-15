@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner/sdk/types"
@@ -25,15 +24,11 @@ func (c *Client) InspectModel(ctx context.Context, namespace string, name string
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("read all: %w", err)
-	}
-
 	var model types.ModelResponse
-	err = json.Unmarshal(body, &model)
+	decoder := json.NewDecoder(resp.Body)
+	err = decoder.Decode(&model)
 	if err != nil {
-		return nil, fmt.Errorf("json unmarshal: %w", err)
+		return nil, fmt.Errorf("decode json: %w", err)
 	}
 
 	return &model, nil

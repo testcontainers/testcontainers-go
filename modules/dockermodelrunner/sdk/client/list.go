@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner/sdk/types"
@@ -27,14 +26,10 @@ func (c *Client) ListModels(ctx context.Context) ([]types.ModelResponse, error) 
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	decoder := json.NewDecoder(resp.Body)
+	err = decoder.Decode(&models)
 	if err != nil {
-		return models, fmt.Errorf("read all: %w", err)
-	}
-
-	err = json.Unmarshal(body, &models)
-	if err != nil {
-		return models, fmt.Errorf("json unmarshal: %w", err)
+		return nil, fmt.Errorf("decode json: %w", err)
 	}
 
 	return models, nil
