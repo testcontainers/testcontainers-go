@@ -71,12 +71,13 @@ func TestRun_client(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
 			model, err := ctr.InspectModel(ctx, testModelNamespace, testModelName)
 			require.NoError(t, err)
-			require.NotEmpty(t, model)
+			require.NotNil(t, model)
 		})
 
 		t.Run("failure", func(t *testing.T) {
-			_, err := ctr.InspectModel(ctx, testModelNamespace, testModelNameNonExistent)
+			model, err := ctr.InspectModel(ctx, testModelNamespace, testModelNameNonExistent)
 			require.Error(t, err)
+			require.Nil(t, model)
 		})
 	})
 

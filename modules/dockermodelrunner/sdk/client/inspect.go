@@ -11,30 +11,29 @@ import (
 )
 
 // InspectModel returns a model by namespace and name
-func (c *Client) InspectModel(ctx context.Context, namespace string, name string) (types.ModelResponse, error) {
-	var model types.ModelResponse
-
+func (c *Client) InspectModel(ctx context.Context, namespace string, name string) (*types.ModelResponse, error) {
 	reqURL := c.baseURL + "/models/" + namespace + "/" + name
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
-		return model, fmt.Errorf("new get request (%s): %w", reqURL, err)
+		return nil, fmt.Errorf("new get request (%s): %w", reqURL, err)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return model, fmt.Errorf("http get: %w", err)
+		return nil, fmt.Errorf("http get: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return model, fmt.Errorf("read all: %w", err)
+		return nil, fmt.Errorf("read all: %w", err)
 	}
 
-	err = json.Unmarshal(body, &model)
+	var model *types.ModelResponse
+	err = json.Unmarshal(body, model)
 	if err != nil {
-		return model, fmt.Errorf("json unmarshal: %w", err)
+		return nil, fmt.Errorf("json unmarshal: %w", err)
 	}
 
 	return model, nil
