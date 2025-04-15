@@ -18,8 +18,8 @@ require (
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/shirou/gopsutil/v4 v4.25.1
 	github.com/stretchr/testify v1.10.0
-	golang.org/x/crypto v0.31.0
-	golang.org/x/sys v0.31.0
+	golang.org/x/crypto v0.37.0
+	golang.org/x/sys v0.32.0
 )
 
 require (
