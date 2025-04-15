@@ -122,7 +122,7 @@ func (c *Container) PullModel(ctx context.Context, model string) error {
 }
 
 // OpenAIEndpoint returns the OpenAI endpoint for the Docker Model Runner
-func (c *Container) OpenAIEndpoint(ctx context.Context) string {
+func (c *Container) OpenAIEndpoint() string {
 	dmrClient := client.NewClient(c.baseURL)
 
 	return dmrClient.OpenAIEndpoint()
