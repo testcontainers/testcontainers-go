@@ -219,7 +219,7 @@ func ExampleRun_openAI() {
 		return
 	}
 
-	llmURL := dmrCtr.OpenAIEndpoint(ctx)
+	llmURL := dmrCtr.OpenAIEndpoint()
 
 	client := openai.NewClient(
 		option.WithBaseURL(llmURL),
@@ -240,7 +240,8 @@ func ExampleRun_openAI() {
 
 	completion, err := client.Chat.Completions.New(ctx, param)
 	if err != nil {
-		log.Fatalln("😡:", err)
+		log.Println("😡:", err)
+		return
 	}
 
 	log.Println(completion.Choices[0].Message.Content)
@@ -278,7 +279,7 @@ func ExampleRun_langchaingo() {
 		return
 	}
 
-	llmURL := dmrCtr.OpenAIEndpoint(ctx)
+	llmURL := dmrCtr.OpenAIEndpoint()
 
 	opts := []langchainopenai.Option{
 		langchainopenai.WithBaseURL(llmURL),
@@ -288,7 +289,8 @@ func ExampleRun_langchaingo() {
 
 	llm, err := langchainopenai.New(opts...)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
 
 	content := []llms.MessageContent{
@@ -300,12 +302,13 @@ func ExampleRun_langchaingo() {
 	_, err = llm.GenerateContent(ctx, content,
 		llms.WithMaxTokens(1024),
 		llms.WithTemperature(0.8),
-		llms.WithStreamingFunc(func(ctx context.Context, chunk []byte) error {
+		llms.WithStreamingFunc(func(_ context.Context, chunk []byte) error {
 			streamingStrings = append(streamingStrings, string(chunk))
 			return nil
 		}))
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
 
 	log.Println(strings.Join(streamingStrings, ""))
