@@ -88,7 +88,7 @@ func (c *Container) InspectModel(ctx context.Context, namespace string, name str
 
 	modelResponse, err := dmrClient.InspectModel(ctx, namespace, name)
 	if err != nil {
-		return nil, fmt.Errorf("list models: %w", err)
+		return nil, fmt.Errorf("inspect model: %w", err)
 	}
 
 	return modelResponse, nil
