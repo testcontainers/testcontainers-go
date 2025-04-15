@@ -36,7 +36,8 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("failure/with-image", func(t *testing.T) {
-		_, err := dockermodelrunner.RunWithImage(ctx, "alpine:latest")
+		ctr, err := dockermodelrunner.RunWithImage(ctx, "alpine:latest")
+		testcontainers.CleanupContainer(t, ctr)
 		require.Error(t, err)
 	})
 }
