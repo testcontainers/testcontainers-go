@@ -20,20 +20,31 @@ const (
 	testNonExistentFQMN      = testModelNamespace + "/" + testModelNameNonExistent + ":" + testModelTag
 )
 
-func TestDockerModelRunner(t *testing.T) {
+func TestRun(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := dockermodelrunner.Run(ctx, socat.DefaultImage)
-	testcontainers.CleanupContainer(t, ctr)
-	require.NoError(t, err)
+	t.Run("success", func(t *testing.T) {
+		ctr, err := dockermodelrunner.Run(ctx)
+		testcontainers.CleanupContainer(t, ctr)
+		require.NoError(t, err)
+	})
 
-	// perform assertions
+	t.Run("success/with-image", func(t *testing.T) {
+		ctr, err := dockermodelrunner.RunWithImage(ctx, socat.DefaultImage)
+		testcontainers.CleanupContainer(t, ctr)
+		require.NoError(t, err)
+	})
+
+	t.Run("failure/with-image", func(t *testing.T) {
+		_, err := dockermodelrunner.RunWithImage(ctx, "alpine:latest")
+		require.Error(t, err)
+	})
 }
 
 func TestRun_client(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := dockermodelrunner.Run(ctx, socat.DefaultImage)
+	ctr, err := dockermodelrunner.Run(ctx)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 

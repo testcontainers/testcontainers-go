@@ -26,14 +26,32 @@ go get github.com/testcontainers/testcontainers-go/modules/dockermodelrunner
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-The Docker Model Runner module exposes one entrypoint function to create the Docker Model Runner container, and this function receives three parameters:
+The Docker Model Runner module exposes two entrypoint functions to create the Docker Model Runner container:
+
+#### Run
+
+This function receives two parameters:
 
 ```golang
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)
+func Run(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error)
 ```
 
 - `context.Context`, the Go context.
-- `string`, the Docker image to use.
+- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+
+!!! info
+    This function will use the default `socat` image under the hood. Please refer to the [socat module](../socat.md) for more information.
+
+#### RunWithImage
+
+This function receives three parameters:
+
+```golang
+func RunWithImage(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)
+```
+
+- `context.Context`, the Go context.
+- `string`, the Docker image to use. This image must have `socat` installed in order to work.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Options

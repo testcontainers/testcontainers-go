@@ -27,8 +27,13 @@ type Container struct {
 	baseURL string
 }
 
-// Run creates an instance of the DockerModelRunner container type
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+// Run creates an instance of the DockerModelRunner container type.
+func Run(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+	return RunWithImage(ctx, socat.DefaultImage, opts...)
+}
+
+// RunWithImage creates an instance of the DockerModelRunner container type, using a specific image for the socat container.
+func RunWithImage(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	settings := defaultOptions()
 
 	// Process model runner options.

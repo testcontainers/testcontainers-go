@@ -125,6 +125,41 @@ func TestRun_helloWorldDifferentPort(t *testing.T) {
 	require.Equal(t, "PONG", string(body))
 }
 
+func TestRun_helloWorld_WrongImage(t *testing.T) {
+	ctx := context.Background()
+
+	nw, err := network.New(ctx)
+	testcontainers.CleanupNetwork(t, nw)
+	require.NoError(t, err)
+
+	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:        "testcontainers/helloworld:1.2.0",
+			ExposedPorts: []string{"8080/tcp"},
+			Networks:     []string{nw.Name},
+			NetworkAliases: map[string][]string{
+				nw.Name: {"helloworld"},
+			},
+		},
+		Started: true,
+	})
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	const exposedPort = 8080
+
+	target := socat.NewTarget(exposedPort, "helloworld")
+
+	// Because the image does not have socat, the wait strategy will fail.
+	socatContainer, err := socat.Run(
+		ctx, "alpine:latest",
+		socat.WithTarget(target),
+		network.WithNetwork([]string{"socat"}, nw),
+	)
+	testcontainers.CleanupContainer(t, socatContainer)
+	require.Error(t, err)
+}
+
 func TestRun_multipleTargets(t *testing.T) {
 	ctx := context.Background()
 

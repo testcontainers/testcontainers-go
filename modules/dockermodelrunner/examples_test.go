@@ -14,7 +14,6 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner"
-	"github.com/testcontainers/testcontainers-go/modules/socat"
 )
 
 func ExampleRun_withModel() {
@@ -30,7 +29,6 @@ func ExampleRun_withModel() {
 
 	dmrCtr, err := dockermodelrunner.Run(
 		ctx,
-		socat.DefaultImage,
 		dockermodelrunner.WithModel(fqModelName),
 	)
 	defer func() {
@@ -59,10 +57,7 @@ func ExampleRun_withModel() {
 func ExampleRun_pullModel() {
 	ctx := context.Background()
 
-	dmrCtr, err := dockermodelrunner.Run(
-		ctx,
-		socat.DefaultImage,
-	)
+	dmrCtr, err := dockermodelrunner.Run(ctx)
 	defer func() {
 		if err := testcontainers.TerminateContainer(dmrCtr); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -105,10 +100,7 @@ func ExampleRun_pullModel() {
 func ExampleRun_inspectModel() {
 	ctx := context.Background()
 
-	dmrCtr, err := dockermodelrunner.Run(
-		ctx,
-		socat.DefaultImage,
-	)
+	dmrCtr, err := dockermodelrunner.Run(ctx)
 	defer func() {
 		if err := testcontainers.TerminateContainer(dmrCtr); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -148,10 +140,7 @@ func ExampleRun_inspectModel() {
 func ExampleRun_listModels() {
 	ctx := context.Background()
 
-	dmrCtr, err := dockermodelrunner.Run(
-		ctx,
-		socat.DefaultImage,
-	)
+	dmrCtr, err := dockermodelrunner.Run(ctx)
 	defer func() {
 		if err := testcontainers.TerminateContainer(dmrCtr); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -195,10 +184,7 @@ func ExampleRun_listModels() {
 func ExampleRun_openAI() {
 	ctx := context.Background()
 
-	dmrCtr, err := dockermodelrunner.Run(
-		ctx,
-		socat.DefaultImage,
-	)
+	dmrCtr, err := dockermodelrunner.Run(ctx)
 	defer func() {
 		if err := testcontainers.TerminateContainer(dmrCtr); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -255,10 +241,7 @@ func ExampleRun_openAI() {
 func ExampleRun_langchaingo() {
 	ctx := context.Background()
 
-	dmrCtr, err := dockermodelrunner.Run(
-		ctx,
-		socat.DefaultImage,
-	)
+	dmrCtr, err := dockermodelrunner.Run(ctx)
 	defer func() {
 		if err := testcontainers.TerminateContainer(dmrCtr); err != nil {
 			log.Printf("failed to terminate container: %s", err)
