@@ -30,11 +30,11 @@ func (c *Client) InspectModel(ctx context.Context, namespace string, name string
 		return nil, fmt.Errorf("read all: %w", err)
 	}
 
-	var model *types.ModelResponse
-	err = json.Unmarshal(body, model)
+	var model types.ModelResponse
+	err = json.Unmarshal(body, &model)
 	if err != nil {
 		return nil, fmt.Errorf("json unmarshal: %w", err)
 	}
 
-	return model, nil
+	return &model, nil
 }
