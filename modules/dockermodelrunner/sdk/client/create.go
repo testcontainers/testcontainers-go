@@ -12,17 +12,15 @@ import (
 func (c *Client) CreateModel(ctx context.Context, fqmn string) ([]byte, error) {
 	var bytes []byte
 
-	payload := fmt.Sprintf(`{"from": "%s"}`, fqmn)
+	payload := fmt.Sprintf(`{"from": "%q"}`, fqmn)
 	reqURL := c.baseURL + "/models/create"
-
-	httpClient := http.Client{}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, strings.NewReader(payload))
 	if err != nil {
 		return bytes, fmt.Errorf("new post request (%s): %w", reqURL, err)
 	}
 
-	resp, err := httpClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return bytes, fmt.Errorf("http post: %w", err)
 	}

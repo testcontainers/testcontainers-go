@@ -14,8 +14,6 @@ import (
 func (c *Client) InspectModel(ctx context.Context, namespace string, name string) (types.ModelResponse, error) {
 	var model types.ModelResponse
 
-	httpClient := http.Client{}
-
 	reqURL := c.baseURL + "/models/" + namespace + "/" + name
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
@@ -23,7 +21,7 @@ func (c *Client) InspectModel(ctx context.Context, namespace string, name string
 		return model, fmt.Errorf("new get request (%s): %w", reqURL, err)
 	}
 
-	resp, err := httpClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return model, fmt.Errorf("http get: %w", err)
 	}

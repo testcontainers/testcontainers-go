@@ -14,8 +14,6 @@ import (
 func (c *Client) ListModels(ctx context.Context) ([]types.ModelResponse, error) {
 	var models []types.ModelResponse
 
-	httpClient := http.Client{}
-
 	reqURL := c.baseURL + "/models"
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
@@ -23,7 +21,7 @@ func (c *Client) ListModels(ctx context.Context) ([]types.ModelResponse, error) 
 		return models, fmt.Errorf("new get request (%s): %w", reqURL, err)
 	}
 
-	resp, err := httpClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return models, fmt.Errorf("http get: %w", err)
 	}
