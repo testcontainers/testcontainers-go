@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/log"
 )
@@ -13,6 +14,7 @@ import (
 // skipIfDockerDesktopNotRunning skips the test if Docker Desktop is not running,
 // using the testing library and the log.TestLogger of Testcontainers
 func skipIfDockerDesktopNotRunning(t *testing.T) {
+	t.Helper()
 	isDDRunning, err := isDockerDesktopRunning(log.TestLogger(t))
 	require.NoError(t, err)
 

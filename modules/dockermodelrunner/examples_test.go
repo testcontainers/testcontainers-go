@@ -18,6 +18,10 @@ import (
 
 func ExampleRun_withModel() {
 	ok, err := isDockerDesktopRunning(log.Default())
+	if err != nil {
+		log.Printf("failed to check if Docker Desktop is running: %s", err)
+		return
+	}
 	if !ok {
 		fmt.Println("true")
 		return
@@ -62,6 +66,10 @@ func ExampleRun_withModel() {
 
 func ExampleRun_pullModel() {
 	ok, err := isDockerDesktopRunning(log.Default())
+	if err != nil {
+		log.Printf("failed to check if Docker Desktop is running: %s", err)
+		return
+	}
 	if !ok {
 		fmt.Println("true")
 		fmt.Println("model pulled")
@@ -118,6 +126,10 @@ func ExampleRun_inspectModel() {
 	)
 
 	ok, err := isDockerDesktopRunning(log.Default())
+	if err != nil {
+		log.Printf("failed to check if Docker Desktop is running: %s", err)
+		return
+	}
 	if !ok {
 		fmt.Println(modelNamespace + "/" + modelName)
 		fmt.Println(modelNamespace + "/" + modelName + ":" + modelTag)
@@ -166,6 +178,10 @@ func ExampleRun_listModels() {
 	)
 
 	ok, err := isDockerDesktopRunning(log.Default())
+	if err != nil {
+		log.Printf("failed to check if Docker Desktop is running: %s", err)
+		return
+	}
 	if !ok {
 		fmt.Println(modelNamespace + "/" + modelName)
 		fmt.Println(modelNamespace + "/" + modelName + ":" + modelTag)
@@ -212,6 +228,10 @@ func ExampleRun_listModels() {
 
 func ExampleRun_openAI() {
 	ok, err := isDockerDesktopRunning(log.Default())
+	if err != nil {
+		log.Printf("failed to check if Docker Desktop is running: %s", err)
+		return
+	}
 	if !ok {
 		fmt.Println("true")
 		return
@@ -275,6 +295,10 @@ func ExampleRun_openAI() {
 
 func ExampleRun_langchaingo() {
 	ok, err := isDockerDesktopRunning(log.Default())
+	if err != nil {
+		log.Printf("failed to check if Docker Desktop is running: %s", err)
+		return
+	}
 	if !ok {
 		fmt.Println("true")
 		return
