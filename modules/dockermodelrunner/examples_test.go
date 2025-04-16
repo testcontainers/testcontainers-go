@@ -270,7 +270,7 @@ func ExampleRun_openAI() {
 
 	param := openai.ChatCompletionNewParams{
 		Messages:    messages,
-		Model:       modelNamespace + "/" + modelName,
+		Model:       modelNamespace + "/" + modelName + ":" + modelTag,
 		Temperature: openai.Opt(0.8),
 		MaxTokens:   openai.Opt(int64(1024)),
 	}
@@ -328,7 +328,7 @@ func ExampleRun_langchaingo() {
 
 	opts := []langchainopenai.Option{
 		langchainopenai.WithBaseURL(llmURL),
-		langchainopenai.WithModel(modelNamespace + "/" + modelName),
+		langchainopenai.WithModel(modelNamespace + "/" + modelName + ":" + modelTag),
 		langchainopenai.WithToken("foo"), // No API key needed for Model Runner
 	}
 
