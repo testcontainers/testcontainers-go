@@ -99,10 +99,12 @@ func WithDatabase(dbName string) testcontainers.CustomizeRequestOption {
 // If you need to run your scripts in a specific order, consider using `WithOrderedInitScripts` instead.
 func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
+		containerFiles := []testcontainers.ContainerFile{}
 		for _, script := range scripts {
-			appendInitScript(req, script, filepath.Base(script))
+			initScript := buildInitScriptContainerFile(script, filepath.Base(script))
+			containerFiles = append(containerFiles, initScript)
 		}
-		return nil
+		return testcontainers.WithFiles(containerFiles...)(req)
 	}
 }
 
@@ -110,22 +112,23 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 // The scripts will be run in the order that they are provided in this function.
 func WithOrderedInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
+		containerFiles := []testcontainers.ContainerFile{}
 		for idx, script := range scripts {
 			containerFilePath := fmt.Sprintf("%03d-%s", idx, filepath.Base(script))
-			appendInitScript(req, script, containerFilePath)
+			initScript := buildInitScriptContainerFile(script, containerFilePath)
+			containerFiles = append(containerFiles, initScript)
 		}
-		return nil
+		return testcontainers.WithFiles(containerFiles...)(req)
 	}
 }
 
-// Adds an initialization script to the Postgres container
-func appendInitScript(req *testcontainers.GenericContainerRequest, hostFilePath string, containerFilePath string) {
-	cf := testcontainers.ContainerFile{
+// Adds the file located at hostFilePath as an init script that postgres will launch
+func buildInitScriptContainerFile(hostFilePath string, containerFilePath string) testcontainers.ContainerFile {
+	return testcontainers.ContainerFile{
 		HostFilePath:      hostFilePath,
 		ContainerFilePath: "/docker-entrypoint-initdb.d/" + containerFilePath,
 		FileMode:          0o755,
 	}
-	req.Files = append(req.Files, cf)
 }
 
 // WithPassword sets the initial password of the user to be created when the container starts
