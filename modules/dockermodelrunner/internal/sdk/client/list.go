@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner/sdk/types"
+	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner/internal/sdk/types"
 )
 
 // ListModels lists all models

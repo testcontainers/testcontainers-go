@@ -9,8 +9,8 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/log"
-	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner/sdk/client"
-	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner/sdk/types"
+	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner/internal/sdk/client"
+	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner/internal/sdk/types"
 	"github.com/testcontainers/testcontainers-go/modules/socat"
 	"github.com/testcontainers/testcontainers-go/wait"
 )

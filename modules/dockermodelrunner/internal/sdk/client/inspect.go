@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner/sdk/types"
+	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner/internal/sdk/types"
 )
 
 // InspectModel returns a model by namespace and name
