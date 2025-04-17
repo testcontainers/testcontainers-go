@@ -8,14 +8,15 @@ import (
 
 // proxy represents a single proxy configuration in the toxiproxy config file
 type proxy struct {
-	Name         string `json:"name"`
-	Listen       string `json:"listen"`
+	Name     string `json:"name"`
+	Listen   string `json:"listen"`
+	Upstream string `json:"upstream"`
+	Enabled  bool   `json:"enabled"`
+
 	listenIP     string
-	listenPort   int
-	Upstream     string `json:"upstream"`
 	upstreamIP   string
+	listenPort   int
 	upstreamPort int
-	Enabled      bool `json:"enabled"`
 }
 
 // sanitize is a helper function that returns another proxy
