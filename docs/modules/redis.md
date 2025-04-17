@@ -75,9 +75,9 @@ In the case you have a custom config file for Redis, it's possible to copy that 
 
 In the case you want to enable TLS for the Redis container, you can use the `WithTLS` option. E.g. `WithTLS("6380", true, false)`.
 
-- `string`, the port to listen on for TLS connections.
-- `bool`, whether to use a secure URL.
-- `bool`, whether to disable MTLS (mutual TLS).
+- `string`, the port to listen on for TLS connections. No need to specify the `/tcp` suffix.
+- `bool`, whether to use a secure URL (e.g. `rediss://:password@host:port`) or not (e.g. `redis://host:port`).
+- `bool`, whether to disable MTLS (mutual TLS), resulting in adding the `--tls-auth-clients no` flag to the Redis server arguments.
 
 ### Container Methods
 
