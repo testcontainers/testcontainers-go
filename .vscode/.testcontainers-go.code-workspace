@@ -10,10 +10,6 @@
             "path": "../examples/nginx"
         },
         {
-            "name": "example / toxiproxy",
-            "path": "../examples/toxiproxy"
-        },
-        {
             "name": "module / arangodb",
             "path": "../modules/arangodb"
         },
@@ -212,6 +208,10 @@
         {
             "name": "module / surrealdb",
             "path": "../modules/surrealdb"
+        },
+        {
+            "name": "module / toxiproxy",
+            "path": "../modules/toxiproxy"
         },
         {
             "name": "module / valkey",
