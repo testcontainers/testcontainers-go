@@ -1,10 +1,45 @@
 package redis
 
 import (
+	"crypto/tls"
+	"net"
 	"strconv"
+
+	"github.com/mdelapenya/tlscert"
 
 	"github.com/testcontainers/testcontainers-go"
 )
+
+type options struct {
+	tlsPort          string
+	withSecureURL    bool
+	withMTLSDisabled bool
+	tlsConfig        *tls.Config
+}
+
+// Compiler check to ensure that Option implements the testcontainers.ContainerCustomizer interface.
+var _ testcontainers.ContainerCustomizer = (Option)(nil)
+
+// Option is an option for the Redpanda container.
+type Option func(*options) error
+
+// Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
+func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
+	// NOOP to satisfy interface.
+	return nil
+}
+
+// WithTLS sets the TLS configuration for the redis container, setting
+// the port to listen on for TLS connections, whether to use a secure URL,
+// and whether to disable MTLS (mutual TLS).
+func WithTLS(tlsPort string, secureURL bool, mtlsDisabled bool) Option {
+	return func(o *options) error {
+		o.tlsPort = tlsPort
+		o.withSecureURL = secureURL
+		o.withMTLSDisabled = mtlsDisabled
+		return nil
+	}
+}
 
 // WithConfigFile sets the config file to be used for the redis container, and sets the command to run the redis server
 // using the passed config file
@@ -63,4 +98,44 @@ func WithSnapshotting(seconds int, changedKeys int) testcontainers.CustomizeRequ
 		processRedisServerArgs(req, []string{"--save", strconv.Itoa(seconds), strconv.Itoa(changedKeys)})
 		return nil
 	}
+}
+
+// createTLSCerts creates a CA certificate, a client certificate and a Redis certificate,
+// storing them in the given temporary directory.
+func createTLSCerts(tmpDir string) (*tlscert.Certificate, *tlscert.Certificate, *tlscert.Certificate) {
+	// ips is the extra list of IPs to include in the certificates.
+	// It's used to allow the client and Redis certificates to be used in the same host
+	// when the tests are run using a remote docker daemon.
+	ips := []net.IP{net.ParseIP("127.0.0.1")}
+
+	// Generate CA certificate
+	caCert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Host:              "localhost",
+		IPAddresses:       ips,
+		Name:              "ca",
+		SubjectCommonName: "ca",
+		IsCA:              true,
+		ParentDir:         tmpDir,
+	})
+
+	// Generate client certificate
+	clientCert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Host:              "localhost",
+		Name:              "Redis Client",
+		SubjectCommonName: "localhost",
+		IPAddresses:       ips,
+		Parent:            caCert,
+		ParentDir:         tmpDir,
+	})
+
+	// Generate Redis certificate
+	redisCert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Host:        "localhost",
+		IPAddresses: ips,
+		Name:        "Redis Server",
+		Parent:      caCert,
+		ParentDir:   tmpDir,
+	})
+
+	return caCert, clientCert, redisCert
 }

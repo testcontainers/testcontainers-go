@@ -71,6 +71,14 @@ By default Redis saves snapshots of the dataset on disk, in a binary file called
 
 In the case you have a custom config file for Redis, it's possible to copy that file into the container before it's started. E.g. `WithConfigFile(filepath.Join("testdata", "redis7.conf"))`.
 
+#### WithTLS
+
+In the case you want to enable TLS for the Redis container, you can use the `WithTLS` option. E.g. `WithTLS("6380", true, false)`.
+
+- `string`, the port to listen on for TLS connections.
+- `bool`, whether to use a secure URL.
+- `bool`, whether to disable MTLS (mutual TLS).
+
 ### Container Methods
 
 #### ConnectionString
@@ -78,8 +86,26 @@ In the case you have a custom config file for Redis, it's possible to copy that 
 This method returns the connection string to connect to the Redis container, using the default `6379` port.
 
 <!--codeinclude-->
-[Get connection string](../../modules/redis/redis_test.go) inside_block:connectionString
+[Get connection string](../../modules/redis/redis_test.go) inside_block:noTLSconnectionString
 <!--/codeinclude-->
+
+#### ConnectionStringTLS
+
+This method returns the connection string to connect to the Redis container, using the TLS port defined in the `WithTLS` option.
+
+<!--codeinclude-->
+[Get connection string with TLS](../../modules/redis/redis_test.go) inside_block:TLSCconnectionString
+<!--/codeinclude-->
+
+#### TLSConfig
+
+This method returns the TLS configuration for the Redis container, nil if TLS is not enabled.
+
+<!--codeinclude-->
+[Get TLS config](../../modules/redis/redis_test.go) inside_block:tlsConfig
+<!--/codeinclude-->
+
+In the above example, the optins are used to configure a Redis client with TLS enabled.
 
 ### Redis variants
 
