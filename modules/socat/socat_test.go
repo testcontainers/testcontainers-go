@@ -16,7 +16,7 @@ import (
 func TestSocat(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := socat.Run(ctx, "alpine/socat:1.8.0.1")
+	ctr, err := socat.Run(ctx, socat.DefaultImage)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -49,7 +49,7 @@ func TestRun_helloWorld(t *testing.T) {
 	target := socat.NewTarget(exposedPort, "helloworld")
 
 	socatContainer, err := socat.Run(
-		ctx, "alpine/socat:1.8.0.1",
+		ctx, socat.DefaultImage,
 		socat.WithTarget(target),
 		network.WithNetwork([]string{"socat"}, nw),
 	)
@@ -103,7 +103,7 @@ func TestRun_helloWorldDifferentPort(t *testing.T) {
 	target := socat.NewTargetWithInternalPort(port2, port1, "helloworld")
 
 	socatContainer, err := socat.Run(
-		ctx, "alpine/socat:1.8.0.1",
+		ctx, socat.DefaultImage,
 		socat.WithTarget(target),
 		network.WithNetwork([]string{"socat"}, nw),
 	)
@@ -123,6 +123,41 @@ func TestRun_helloWorldDifferentPort(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	require.Equal(t, "PONG", string(body))
+}
+
+func TestRun_helloWorld_WrongImage(t *testing.T) {
+	ctx := context.Background()
+
+	nw, err := network.New(ctx)
+	testcontainers.CleanupNetwork(t, nw)
+	require.NoError(t, err)
+
+	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:        "testcontainers/helloworld:1.2.0",
+			ExposedPorts: []string{"8080/tcp"},
+			Networks:     []string{nw.Name},
+			NetworkAliases: map[string][]string{
+				nw.Name: {"helloworld"},
+			},
+		},
+		Started: true,
+	})
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	const exposedPort = 8080
+
+	target := socat.NewTarget(exposedPort, "helloworld")
+
+	// Because the image does not have socat, the wait strategy will fail.
+	socatContainer, err := socat.Run(
+		ctx, "alpine:latest",
+		socat.WithTarget(target),
+		network.WithNetwork([]string{"socat"}, nw),
+	)
+	testcontainers.CleanupContainer(t, socatContainer)
+	require.Error(t, err)
 }
 
 func TestRun_multipleTargets(t *testing.T) {
@@ -164,7 +199,7 @@ func TestRun_multipleTargets(t *testing.T) {
 	}
 
 	socatContainer, err := socat.Run(
-		ctx, "alpine/socat:1.8.0.1",
+		ctx, socat.DefaultImage,
 		socat.WithTarget(targets[0]),
 		socat.WithTarget(targets[1]),
 		socat.WithTarget(targets[2]),

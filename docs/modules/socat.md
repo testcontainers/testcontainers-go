@@ -47,8 +47,14 @@ When starting the Socat container, you can pass options in a variadic way to con
 
 #### Image
 
+The module exposes a default image:
+
+<!--codeinclude-->
+[Default Image](../../modules/socat/socat.go) inside_block:defaultImage
+<!--/codeinclude-->
+
 Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "alpine/socat:1.8.0.1")`.
+In example: `Run(context.Background(), DefaultImage)`.
 
 {% include "../features/common_functional_options.md" %}
 

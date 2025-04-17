@@ -8,6 +8,14 @@ import (
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
+)
+
+const (
+	// defaultImage {
+	// DefaultImage is the default image used by the Socat container.
+	DefaultImage = "alpine/socat:1.8.0.1"
+	// }
 )
 
 // Container represents the Socat container type used in the module.
@@ -58,6 +66,17 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	if err != nil {
 		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	// Only check if the socat binary is available if there are targets to expose.
+	// This is because the socat container exits otherwise.
+	if len(settings.targets) > 0 {
+		err = wait.ForExec([]string{"socat", "-V"}).WithExitCodeMatcher(func(exitCode int) bool {
+			return exitCode == 0
+		}).WaitUntilReady(ctx, c)
+		if err != nil {
+			return c, fmt.Errorf("wait for exec: %w", err)
+		}
 	}
 
 	targetURLs := map[int]*url.URL{}
