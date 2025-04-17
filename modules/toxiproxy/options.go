@@ -41,7 +41,7 @@ func WithProxy(name string, upstream string) Option {
 			return fmt.Errorf("newProxy: %w", err)
 		}
 
-		o.proxies = append(o.proxies, &proxy)
+		o.proxies = append(o.proxies, proxy)
 		return nil
 	}
 }
@@ -68,7 +68,7 @@ func WithConfigFile(r io.Reader) Option {
 				return fmt.Errorf("newProxy: %w", err)
 			}
 
-			o.proxies = append(o.proxies, &proxy)
+			o.proxies = append(o.proxies, proxy)
 		}
 
 		return nil

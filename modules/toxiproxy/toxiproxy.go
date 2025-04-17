@@ -117,7 +117,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	// Map the ports of the proxies to the container, so that we can use them in the tests
 	for _, proxy := range settings.proxies {
-		p, err := proxy.sanitize()
+		err := proxy.sanitize()
 		if err != nil {
 			return c, fmt.Errorf("sanitize: %w", err)
 		}
@@ -127,12 +127,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			return c, fmt.Errorf("host: %w", err)
 		}
 
-		mappedPort, err := c.MappedPort(ctx, nat.Port(fmt.Sprintf("%d/tcp", p.listenPort)))
+		mappedPort, err := c.MappedPort(ctx, nat.Port(fmt.Sprintf("%d/tcp", proxy.listenPort)))
 		if err != nil {
 			return c, fmt.Errorf("mapped port: %w", err)
 		}
 
-		c.proxiedEndpoints[p.listenPort] = net.JoinHostPort(host, mappedPort.Port())
+		c.proxiedEndpoints[proxy.listenPort] = net.JoinHostPort(host, mappedPort.Port())
 	}
 
 	return c, nil
