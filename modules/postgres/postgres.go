@@ -94,21 +94,40 @@ func WithDatabase(dbName string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithInitScripts sets the init scripts to be run when the container starts
+// WithInitScripts sets the init scripts to be run when the container starts.
+// These init scripts will be executed in sorted name order as defined by the container's current locale, which defaults to en_US.utf8.
+// If you need to run your scripts in a specific order, consider using `WithOrderedInitScripts` instead.
 func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		initScripts := []testcontainers.ContainerFile{}
+		containerFiles := []testcontainers.ContainerFile{}
 		for _, script := range scripts {
-			cf := testcontainers.ContainerFile{
-				HostFilePath:      script,
-				ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
-				FileMode:          0o755,
-			}
-			initScripts = append(initScripts, cf)
+			initScript := buildInitScriptContainerFile(script, filepath.Base(script))
+			containerFiles = append(containerFiles, initScript)
 		}
-		req.Files = append(req.Files, initScripts...)
+		return testcontainers.WithFiles(containerFiles...)(req)
+	}
+}
 
-		return nil
+// WithOrderedInitScripts sets the init scripts to be run when the container starts.
+// The scripts will be run in the order that they are provided in this function.
+func WithOrderedInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		containerFiles := []testcontainers.ContainerFile{}
+		for idx, script := range scripts {
+			containerFilePath := fmt.Sprintf("%03d-%s", idx, filepath.Base(script))
+			initScript := buildInitScriptContainerFile(script, containerFilePath)
+			containerFiles = append(containerFiles, initScript)
+		}
+		return testcontainers.WithFiles(containerFiles...)(req)
+	}
+}
+
+// Adds the file located at hostFilePath as an init script that postgres will launch
+func buildInitScriptContainerFile(hostFilePath string, containerFilePath string) testcontainers.ContainerFile {
+	return testcontainers.ContainerFile{
+		HostFilePath:      hostFilePath,
+		ContainerFilePath: "/docker-entrypoint-initdb.d/" + containerFilePath,
+		FileMode:          0o755,
 	}
 }
 
