@@ -95,18 +95,61 @@ func TestRedisWithSnapshotting(t *testing.T) {
 	assertSetsGets(t, ctx, redisContainer, 10)
 }
 
+func TestRedisWithTLS(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("secure-url/mtls-disabled", func(t *testing.T) {
+		redisContainer, err := tcredis.Run(ctx, "redis:7", tcredis.WithTLS("6380", true, true))
+		testcontainers.CleanupContainer(t, redisContainer)
+		require.NoError(t, err)
+
+		assertSetsGets(t, ctx, redisContainer, 1)
+	})
+
+	t.Run("secure-url/mtls-enabled", func(t *testing.T) {
+		redisContainer, err := tcredis.Run(ctx, "redis:7", tcredis.WithTLS("6380", true, false))
+		testcontainers.CleanupContainer(t, redisContainer)
+		require.NoError(t, err)
+
+		assertSetsGets(t, ctx, redisContainer, 1)
+	})
+
+	t.Run("insecure-url/mtls-disabled", func(t *testing.T) {
+		redisContainer, err := tcredis.Run(ctx, "redis:7", tcredis.WithTLS("6380", false, true))
+		testcontainers.CleanupContainer(t, redisContainer)
+		require.NoError(t, err)
+	})
+
+	t.Run("insecure-url/mtls-enabled", func(t *testing.T) {
+		redisContainer, err := tcredis.Run(ctx, "redis:7", tcredis.WithTLS("6380", false, false))
+		testcontainers.CleanupContainer(t, redisContainer)
+		require.NoError(t, err)
+	})
+}
+
 func assertSetsGets(t *testing.T, ctx context.Context, redisContainer *tcredis.RedisContainer, keyCount int) {
 	t.Helper()
-	// connectionString {
+	// noTLSconnectionString {
 	uri, err := redisContainer.ConnectionString(ctx)
 	// }
 	require.NoError(t, err)
+
+	if redisContainer.TLSConfig() != nil {
+		// TLSCconnectionString {
+		uri, err = redisContainer.ConnectionStringTLS(ctx)
+		// }
+		require.NoError(t, err)
+	}
 
 	// You will likely want to wrap your Redis package of choice in an
 	// interface to aid in unit testing and limit lock-in throughout your
 	// codebase but that's out of scope for this example
 	options, err := redis.ParseURL(uri)
 	require.NoError(t, err)
+
+	// tlsConfig {
+	options.TLSConfig = redisContainer.TLSConfig()
+	// }
 
 	client := redis.NewClient(options)
 	defer func(t *testing.T, ctx context.Context, client *redis.Client) {

@@ -1,9 +1,15 @@
 package redis
 
 import (
+	"bytes"
 	"context"
+	"crypto/tls"
 	"fmt"
-	"strconv"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -27,10 +33,28 @@ const (
 
 type RedisContainer struct {
 	testcontainers.Container
+	settings options
 }
 
+// ConnectionString returns the connection string for the Redis container.
+// It uses the default 6379 port.
 func (c *RedisContainer) ConnectionString(ctx context.Context) (string, error) {
-	mappedPort, err := c.MappedPort(ctx, "6379/tcp")
+	return c.connectionString(ctx, "6379/tcp")
+}
+
+// ConnectionStringTLS returns the connection string for the Redis container using TLS.
+// It uses the TLS port defined in the options.
+func (c *RedisContainer) ConnectionStringTLS(ctx context.Context) (string, error) {
+	return c.connectionString(ctx, nat.Port(c.settings.tlsPort))
+}
+
+// TLSConfig returns the TLS configuration for the Redis container, nil if TLS is not enabled.
+func (c *RedisContainer) TLSConfig() *tls.Config {
+	return c.settings.tlsConfig
+}
+
+func (c *RedisContainer) connectionString(ctx context.Context, port nat.Port) (string, error) {
+	mappedPort, err := c.MappedPort(ctx, port)
 	if err != nil {
 		return "", err
 	}
@@ -40,7 +64,12 @@ func (c *RedisContainer) ConnectionString(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	uri := fmt.Sprintf("redis://%s:%s", hostIP, mappedPort.Port())
+	prefix := "redis://"
+	if c.settings.withSecureURL {
+		prefix = "rediss://"
+	}
+
+	uri := fmt.Sprintf("%s%s:%s", prefix, hostIP, mappedPort.Port())
 	return uri, nil
 }
 
@@ -55,7 +84,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	req := testcontainers.ContainerRequest{
 		Image:        img,
 		ExposedPorts: []string{"6379/tcp"},
-		WaitingFor:   wait.ForLog("* Ready to accept connections"),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
@@ -63,7 +91,78 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Started:          true,
 	}
 
+	settings := options{}
 	for _, opt := range opts {
+		if opt, ok := opt.(Option); ok {
+			if err := opt(&settings); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	tcOpts := []testcontainers.ContainerCustomizer{}
+
+	waitStrategies := []wait.Strategy{
+		wait.ForListeningPort("6379/tcp").WithStartupTimeout(time.Second * 10),
+		wait.ForLog("* Ready to accept connections"),
+	}
+
+	if settings.tlsPort != "" {
+		// wait for the TLS port to be available
+		waitStrategies = append(waitStrategies, wait.ForListeningPort(nat.Port(settings.tlsPort)).WithStartupTimeout(time.Second*10))
+
+		// Create a temporary directory to store the TLS certificates.
+		tmpDir := os.TempDir()
+
+		// Generate TLS certificates in the fly and add them to the container before it starts.
+		// Update the CMD to use the TLS certificates.
+		caCert, clientCert, serverCert := createTLSCerts(tmpDir)
+
+		// Update the CMD to use the TLS certificates.
+		cmds := []string{
+			"--port", "6379",
+			"--tls-port", strings.Replace(settings.tlsPort, "/tcp", "", 1),
+			"--tls-cert-file", "/tls/server.crt",
+			"--tls-key-file", "/tls/server.key",
+			"--tls-ca-cert-file", "/tls/ca.crt",
+			"--tls-auth-clients", "yes",
+		}
+
+		if settings.withMTLSDisabled {
+			cmds = append(cmds, "--tls-auth-clients", "no")
+		}
+
+		tcOpts = append(tcOpts, testcontainers.WithCmd(cmds...)) // Replace the default CMD with the TLS certificates.
+		tcOpts = append(tcOpts, testcontainers.WithExposedPorts(settings.tlsPort))
+		tcOpts = append(tcOpts, testcontainers.WithFiles(
+			testcontainers.ContainerFile{
+				Reader:            bytes.NewReader(caCert.Bytes),
+				ContainerFilePath: "/tls/ca.crt",
+				FileMode:          0o644,
+			},
+			testcontainers.ContainerFile{
+				Reader:            bytes.NewReader(serverCert.Bytes),
+				ContainerFilePath: "/tls/server.crt",
+				FileMode:          0o644,
+			},
+			testcontainers.ContainerFile{
+				Reader:            bytes.NewReader(serverCert.KeyBytes),
+				ContainerFilePath: "/tls/server.key",
+				FileMode:          0o644,
+			}))
+
+		settings.tlsConfig = &tls.Config{
+			MinVersion:   tls.VersionTLS12,
+			RootCAs:      caCert.TLSConfig().RootCAs,
+			Certificates: clientCert.TLSConfig().Certificates,
+			ServerName:   "localhost", // Match the server cert's common name
+		}
+	}
+
+	tcOpts = append(tcOpts, testcontainers.WithWaitStrategy(waitStrategies...))
+
+	// Apply the testcontainers customizers.
+	for _, opt := range tcOpts {
 		if err := opt.Customize(&genericContainerReq); err != nil {
 			return nil, err
 		}
@@ -72,7 +171,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	var c *RedisContainer
 	if container != nil {
-		c = &RedisContainer{Container: container}
+		c = &RedisContainer{Container: container, settings: settings}
 	}
 
 	if err != nil {
@@ -80,65 +179,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	return c, nil
-}
-
-// WithConfigFile sets the config file to be used for the redis container, and sets the command to run the redis server
-// using the passed config file
-func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
-	const defaultConfigFile = "/usr/local/redis.conf"
-
-	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := testcontainers.ContainerFile{
-			HostFilePath:      configFile,
-			ContainerFilePath: defaultConfigFile,
-			FileMode:          0o755,
-		}
-		req.Files = append(req.Files, cf)
-
-		if len(req.Cmd) == 0 {
-			req.Cmd = []string{redisServerProcess, defaultConfigFile}
-			return nil
-		}
-
-		// prepend the command to run the redis server with the config file, which must be the first argument of the redis server process
-		if req.Cmd[0] == redisServerProcess {
-			// just insert the config file, then the rest of the args
-			req.Cmd = append([]string{redisServerProcess, defaultConfigFile}, req.Cmd[1:]...)
-		} else if req.Cmd[0] != redisServerProcess {
-			// prepend the redis server and the config file, then the rest of the args
-			req.Cmd = append([]string{redisServerProcess, defaultConfigFile}, req.Cmd...)
-		}
-
-		return nil
-	}
-}
-
-// WithLogLevel sets the log level for the redis server process
-// See https://redis.io/docs/reference/modules/modules-api-ref/#redismodule_log for more information.
-func WithLogLevel(level LogLevel) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		processRedisServerArgs(req, []string{"--loglevel", string(level)})
-
-		return nil
-	}
-}
-
-// WithSnapshotting sets the snapshotting configuration for the redis server process. You can configure Redis to have it
-// save the dataset every N seconds if there are at least M changes in the dataset.
-// This method allows Redis to benefit from copy-on-write semantics.
-// See https://redis.io/docs/management/persistence/#snapshotting for more information.
-func WithSnapshotting(seconds int, changedKeys int) testcontainers.CustomizeRequestOption {
-	if changedKeys < 1 {
-		changedKeys = 1
-	}
-	if seconds < 1 {
-		seconds = 1
-	}
-
-	return func(req *testcontainers.GenericContainerRequest) error {
-		processRedisServerArgs(req, []string{"--save", strconv.Itoa(seconds), strconv.Itoa(changedKeys)})
-		return nil
-	}
 }
 
 func processRedisServerArgs(req *testcontainers.GenericContainerRequest, args []string) {
