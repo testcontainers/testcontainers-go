@@ -79,6 +79,8 @@ In the case you want to enable TLS for the Redis container, you can use the `Wit
 - `bool`, whether to use a secure URL (e.g. `rediss://host:port`) or not (e.g. `redis://host:port`).
 - `bool`, whether to disable MTLS (mutual TLS), resulting in adding the `--tls-auth-clients no` flag to the Redis server arguments.
 
+The module automatically generates three certificates, a CA certificate, a client certificate and a Redis certificate, using a temporary directory to store them. Please use the `TLSConfig()` method to get the TLS configuration and use it to configure the Redis client. See more details in the [TLSConfig](#tlsconfig) section.
+
 ### Container Methods
 
 #### ConnectionString
