@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
+	dockerconfig "github.com/testcontainers/testcontainers-go/internal/docker/config"
 	"github.com/testcontainers/testcontainers-go/log"
 )
 
@@ -80,7 +81,7 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 		// TODO: Remove this debugging.
 		if strings.Contains(err.Error(), "toomanyrequests") {
 			// Debugging information for rate limiting.
-			cfg, err := getDockerConfig()
+			cfg, err := dockerconfig.Load()
 			if err == nil {
 				fmt.Printf("XXX: too many requests: %+v", cfg)
 			}

@@ -1,0 +1,17 @@
+{
+	"auths": {
+		"userpass.io": {
+			"username": "user",
+			"password": "pass"
+		},
+		"auth.io": {
+			"auth": "YXV0aDphdXRoc2VjcmV0"
+		}
+	},
+	"credHelpers": {
+		"helper.io": "helper",
+		"other.io": "other",
+		"error.io": "error"
+	},
+	"credsStore": "desktop"
+  }

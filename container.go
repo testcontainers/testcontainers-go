@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cpuguy83/dockercfg"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
@@ -23,6 +22,7 @@ import (
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal/core"
+	dockerconfig "github.com/testcontainers/testcontainers-go/internal/docker/config"
 	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -390,7 +390,7 @@ func getAuthConfigsFromDockerfile(c *ContainerRequest) (map[string]registry.Auth
 	for _, image := range images {
 		registry, authConfig, err := dockerImageAuth(context.Background(), image, configs)
 		if err != nil {
-			if !errors.Is(err, dockercfg.ErrCredentialsNotFound) {
+			if !errors.Is(err, dockerconfig.ErrCredentialsNotFound) {
 				return nil, fmt.Errorf("docker image auth %q: %w", image, err)
 			}
 
