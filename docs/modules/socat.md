@@ -54,6 +54,8 @@ In example: `Run(context.Background(), "alpine/socat:1.8.0.1")`.
 
 #### WithTarget
 
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
 The `WithTarget` function sets a single target for the Socat container, defined by the `Target` struct.
 This struct can be built using the the following functions:
 
@@ -71,6 +73,8 @@ In the above example, there is a `helloworld` container thatis listening on port
 The Socat container exposes the following methods:
 
 #### TargetURL
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 The `TargetURL(port int)` method returns the URL for the exposed port of a target, nil if the port is not mapped.
 
