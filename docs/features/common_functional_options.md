@@ -214,6 +214,13 @@ func TestHandler(t *testing.T) {
 
 Please read the [Following Container Logs](/features/follow_logs) documentation for more information about creating log consumers.
 
+#### WithAlwaysPull
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to pull the image before starting the container, you can use `testcontainers.WithAlwaysPull()`.
+
+
 #### Wait Strategies
 
 If you need to set a different wait strategy for the container, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy.

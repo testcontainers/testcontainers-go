@@ -360,6 +360,18 @@ func TestWithCmd(t *testing.T) {
 	})
 }
 
+func TestWithAlwaysPull(t *testing.T) {
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "alpine",
+		},
+	}
+
+	opt := testcontainers.WithAlwaysPull()
+	require.NoError(t, opt.Customize(&req))
+	require.True(t, req.AlwaysPullImage)
+}
+
 func TestWithCmdArgs(t *testing.T) {
 	testCmd := func(t *testing.T, initial []string, add []string, expected []string) {
 		t.Helper()

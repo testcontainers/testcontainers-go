@@ -205,6 +205,7 @@ In order to simplify the creation of the container for a given module, `Testcont
 - `testcontainers.WithHostPortAccess`: a function that enables the container to access a port that is already running in the host.
 - `testcontainers.WithLogConsumers`: a function that sets the log consumers for the container request.
 - `testcontainers.WithLogger`: a function that sets the logger for the container request.
+- `testcontainers.WithAlwaysPull`: a function that pulls the image before starting the container.
 - `testcontainers.WithWaitStrategy`: a function that sets the wait strategy for the container request.
 - `testcontainers.WithWaitStrategyAndDeadline`: a function that sets the wait strategy for the container request with a deadline.
 - `testcontainers.WithStartupCommand`: a function that sets the execution of a command when the container starts.

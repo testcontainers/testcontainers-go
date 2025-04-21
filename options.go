@@ -376,6 +376,14 @@ func WithImageMount(source string, subpath string, target ContainerMountTarget) 
 	}
 }
 
+// WithAlwaysPull will pull the image before starting the container
+func WithAlwaysPull() CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.AlwaysPullImage = true
+		return nil
+	}
+}
+
 // WithEntrypoint completely replaces the entrypoint of a container
 func WithEntrypoint(entrypoint ...string) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {
