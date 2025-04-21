@@ -278,7 +278,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 			ContextArchive: func() (io.ReadSeeker, error) {
 				return nil, nil
 			},
-			ExpectedError: "create container: you must specify either a build context or an image",
+			ExpectedError: "generic container: create container: you must specify either a build context or an image",
 		},
 	}
 
@@ -290,19 +290,15 @@ func Test_BuildImageWithContexts(t *testing.T) {
 			a, err := testCase.ContextArchive()
 			require.NoError(t, err)
 
-			req := testcontainers.ContainerRequest{
-				FromDockerfile: testcontainers.FromDockerfile{
+			c, err := testcontainers.Run(
+				ctx, "",
+				testcontainers.WithDockerfile(testcontainers.FromDockerfile{
 					ContextArchive: a,
 					Context:        testCase.ContextPath,
 					Dockerfile:     testCase.Dockerfile,
-				},
-				WaitingFor: wait.ForLog(testCase.ExpectedEchoOutput).WithStartupTimeout(1 * time.Minute),
-			}
-
-			c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-				ContainerRequest: req,
-				Started:          true,
-			})
+				}),
+				testcontainers.WithWaitStrategy(wait.ForLog(testCase.ExpectedEchoOutput).WithStartupTimeout(1*time.Minute)),
+			)
 			testcontainers.CleanupContainer(t, c)
 
 			if testCase.ExpectedError != "" {
@@ -322,17 +318,10 @@ func TestCustomLabelsImage(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:  "alpine:latest",
-			Labels: map[string]string{myLabelName: myLabelValue},
-		},
-	}
 
-	ctr, err := testcontainers.GenericContainer(ctx, req)
-
+	ctr, err := testcontainers.Run(ctx, "alpine:latest", testcontainers.WithLabels(map[string]string{myLabelName: myLabelValue}))
+	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, ctr.Terminate(ctx)) })
 
 	ctrJSON, err := ctr.Inspect(ctx)
 	require.NoError(t, err)
@@ -348,22 +337,20 @@ func TestCustomLabelsBuildOptionsModifier(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			FromDockerfile: testcontainers.FromDockerfile{
-				Context:    "./testdata",
-				Dockerfile: "Dockerfile",
-				BuildOptionsModifier: func(opts *types.ImageBuildOptions) {
-					opts.Labels = map[string]string{
-						myBuildOptionLabel: myBuildOptionValue,
-					}
-				},
-			},
-			Labels: map[string]string{myLabelName: myLabelValue},
-		},
-	}
 
-	ctr, err := testcontainers.GenericContainer(ctx, req)
+	ctr, err := testcontainers.Run(
+		ctx, "",
+		testcontainers.WithDockerfile(testcontainers.FromDockerfile{
+			Context:    "./testdata",
+			Dockerfile: "Dockerfile",
+			BuildOptionsModifier: func(opts *types.ImageBuildOptions) {
+				opts.Labels = map[string]string{
+					myBuildOptionLabel: myBuildOptionValue,
+				}
+			},
+		}),
+		testcontainers.WithLabels(map[string]string{myLabelName: myLabelValue}),
+	)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -376,17 +363,13 @@ func TestCustomLabelsBuildOptionsModifier(t *testing.T) {
 func Test_GetLogsFromFailedContainer(t *testing.T) {
 	ctx := context.Background()
 	// directDockerHubReference {
-	req := testcontainers.ContainerRequest{
-		Image:      "alpine",
-		Cmd:        []string{"echo", "-n", "I was not expecting this"},
-		WaitingFor: wait.ForLog("I was expecting this").WithStartupTimeout(5 * time.Second),
-	}
+	c, err := testcontainers.Run(
+		ctx, "alpine",
+		testcontainers.WithCmd("echo", "-n", "I was not expecting this"),
+		testcontainers.WithWaitStrategy(wait.ForLog("I was expecting this").WithStartupTimeout(5*time.Second)),
+	)
 	// }
 
-	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
 	testcontainers.CleanupContainer(t, c)
 	require.ErrorContains(t, err, "container exited with code 0")
 
@@ -481,15 +464,7 @@ func TestImageSubstitutors(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := context.Background()
-			req := testcontainers.ContainerRequest{
-				Image:             test.image,
-				ImageSubstitutors: test.substitutors,
-			}
-
-			ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-				ContainerRequest: req,
-				Started:          true,
-			})
+			ctr, err := testcontainers.Run(ctx, test.image, testcontainers.WithImageSubstitutors(test.substitutors...))
 			testcontainers.CleanupContainer(t, ctr)
 			if test.expectedError != nil {
 				require.ErrorIs(t, err, test.expectedError)
@@ -500,8 +475,7 @@ func TestImageSubstitutors(t *testing.T) {
 
 			// enforce the concrete type, as GenericContainer returns an interface,
 			// which will be changed in future implementations of the library
-			dockerContainer := ctr.(*testcontainers.DockerContainer)
-			assert.Equal(t, test.expectedImage, dockerContainer.Image)
+			assert.Equal(t, test.expectedImage, ctr.Image)
 		})
 	}
 }
@@ -515,15 +489,11 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 		t.Run(fmt.Sprintf("iteration_%d", i), func(t *testing.T) {
 			t.Parallel()
 
-			req := testcontainers.ContainerRequest{
-				Image:        nginxAlpineImage,
-				ExposedPorts: []string{nginxDefaultPort},
-				WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
-			}
-			ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-				ContainerRequest: req,
-				Started:          true,
-			})
+			ctr, err := testcontainers.Run(
+				ctx, nginxAlpineImage,
+				testcontainers.WithExposedPorts(nginxDefaultPort),
+				testcontainers.WithWaitStrategy(wait.ForHTTP("/").WithStartupTimeout(10*time.Second)),
+			)
 			testcontainers.CleanupContainer(t, ctr)
 			require.NoError(t, err)
 
@@ -541,13 +511,7 @@ func ExampleGenericContainer_withSubstitutors() {
 	ctx := context.Background()
 
 	// applyImageSubstitutors {
-	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:             "alpine:latest",
-			ImageSubstitutors: []testcontainers.ImageSubstitutor{dockerImageSubstitutor{}},
-		},
-		Started: true,
-	})
+	ctr, err := testcontainers.Run(ctx, "alpine:latest", testcontainers.WithImageSubstitutors(dockerImageSubstitutor{}))
 	defer func() {
 		if err := testcontainers.TerminateContainer(ctr); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -560,11 +524,7 @@ func ExampleGenericContainer_withSubstitutors() {
 		return
 	}
 
-	// enforce the concrete type, as GenericContainer returns an interface,
-	// which will be changed in future implementations of the library
-	dockerContainer := ctr.(*testcontainers.DockerContainer)
-
-	fmt.Println(dockerContainer.Image)
+	fmt.Println(ctr.Image)
 
 	// Output: registry.hub.docker.com/library/alpine:latest
 }

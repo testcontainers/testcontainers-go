@@ -99,22 +99,14 @@ func TestPrependHubRegistrySubstitutor(t *testing.T) {
 }
 
 func TestSubstituteBuiltImage(t *testing.T) {
-	req := GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
-			FromDockerfile: FromDockerfile{
-				Context:    "testdata",
-				Dockerfile: "echo.Dockerfile",
-				Tag:        "my-image",
-				Repo:       "my-repo",
-			},
-			ImageSubstitutors: []ImageSubstitutor{newPrependHubRegistry("my-registry")},
-		},
-		Started: false,
-	}
-
 	t.Run("should not use the properties prefix on built images", func(t *testing.T) {
 		config.Reset()
-		c, err := GenericContainer(context.Background(), req)
+		c, err := Run(context.Background(), "", WithDockerfile(FromDockerfile{
+			Context:    "testdata",
+			Dockerfile: "echo.Dockerfile",
+			Tag:        "my-image",
+			Repo:       "my-repo",
+		}), WithImageSubstitutors(newPrependHubRegistry("my-registry")))
 		CleanupContainer(t, c)
 		require.NoError(t, err)
 
