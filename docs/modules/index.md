@@ -204,6 +204,7 @@ In order to simplify the creation of the container for a given module, `Testcont
 - `testcontainers.WithTmpfs`: a function that adds tmpfs mounts to the container.
 - `testcontainers.WithHostPortAccess`: a function that enables the container to access a port that is already running in the host.
 - `testcontainers.WithLogConsumers`: a function that sets the log consumers for the container request.
+- `testcontainers.WithLogConsumerConfig`: a function that sets the log consumer config for the container request.
 - `testcontainers.WithLogger`: a function that sets the logger for the container request.
 - `testcontainers.WithLifecycleHooks`: a function that sets the lifecycle hooks for the container request.
 - `testcontainers.WithAdditionalLifecycleHooks`: a function that appends lifecycle hooks to the existing ones for the container request.

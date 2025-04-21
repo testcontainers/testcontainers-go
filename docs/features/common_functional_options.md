@@ -188,6 +188,12 @@ func (g *TestLogConsumer) Accept(l Log) {
 }
 ```
 
+#### WithLogConsumerConfig
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to set the log consumer config for the container, you can use `testcontainers.WithLogConsumerConfig`. This option completely replaces the existing log consumer config, including the log consumers and the log production options.
+
 #### WithLogger
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>

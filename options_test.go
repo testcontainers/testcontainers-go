@@ -99,6 +99,43 @@ func TestWithLogConsumers(t *testing.T) {
 	require.NotEmpty(t, lc.msgs)
 }
 
+func TestWithLogConsumerConfig(t *testing.T) {
+	lc := &msgsLogConsumer{}
+
+	t.Run("add-to-nil", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: "alpine",
+			},
+		}
+
+		err := testcontainers.WithLogConsumerConfig(&testcontainers.LogConsumerConfig{
+			Consumers: []testcontainers.LogConsumer{lc},
+		})(&req)
+		require.NoError(t, err)
+
+		require.Equal(t, []testcontainers.LogConsumer{lc}, req.LogConsumerCfg.Consumers)
+	})
+
+	t.Run("replace-existing", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: "alpine",
+				LogConsumerCfg: &testcontainers.LogConsumerConfig{
+					Consumers: []testcontainers.LogConsumer{testcontainers.NewFooLogConsumer(t)},
+				},
+			},
+		}
+
+		err := testcontainers.WithLogConsumerConfig(&testcontainers.LogConsumerConfig{
+			Consumers: []testcontainers.LogConsumer{lc},
+		})(&req)
+		require.NoError(t, err)
+
+		require.Equal(t, []testcontainers.LogConsumer{lc}, req.LogConsumerCfg.Consumers)
+	})
+}
+
 func TestWithStartupCommand(t *testing.T) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{

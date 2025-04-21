@@ -255,6 +255,17 @@ func WithLogConsumers(consumer ...LogConsumer) CustomizeRequestOption {
 	}
 }
 
+// WithLogConsumerConfig sets the log consumer config for a container.
+// Beware that this option completely replaces the existing log consumer config,
+// including the log consumers and the log production options,
+// so it should be used with care.
+func WithLogConsumerConfig(config *LogConsumerConfig) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.LogConsumerCfg = config
+		return nil
+	}
+}
+
 // Executable represents an executable command to be sent to a container, including options,
 // as part of the different lifecycle hooks.
 type Executable interface {
