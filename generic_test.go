@@ -25,7 +25,8 @@ func TestGenericReusableContainer(t *testing.T) {
 
 	reusableContainerName := reusableContainerName + "_" + time.Now().Format("20060102150405")
 
-	n1, err := GenericContainer(ctx, GenericContainerRequest{
+	// TODO: use Run once the WithReuse option is implemented
+	n1, err := genericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image:        nginxAlpineImage,
@@ -82,7 +83,8 @@ func TestGenericReusableContainer(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			n2, err := GenericContainer(ctx, GenericContainerRequest{
+			// TODO: use Run once the WithReuse option is implemented
+			n2, err := genericContainer(ctx, GenericContainerRequest{
 				ProviderType: providerType,
 				ContainerRequest: ContainerRequest{
 					Image:        nginxAlpineImage,
@@ -112,16 +114,11 @@ func TestGenericContainerShouldReturnRefOnError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	c, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image:      nginxAlpineImage,
-			WaitingFor: wait.ForLog("this string should not be present in the logs"),
-		},
-		Started: true,
-	})
+	c, err := Run(ctx, nginxAlpineImage,
+		WithWaitStrategy(wait.ForLog("this string should not be present in the logs")),
+	)
 	require.Error(t, err)
-	require.NotNil(t, c)
+	require.Nil(t, c)
 	CleanupContainer(t, c)
 }
 
@@ -187,7 +184,8 @@ func TestHelperContainerStarterProcess(t *testing.T) {
 
 	ctx := context.Background()
 
-	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+	// TODO: use Run once the WithReuse option is implemented
+	nginxC, err := genericContainer(ctx, GenericContainerRequest{
 		ProviderType: providerType,
 		ContainerRequest: ContainerRequest{
 			Image:        nginxDelayedImage,

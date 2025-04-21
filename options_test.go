@@ -78,26 +78,33 @@ func (lc *msgsLogConsumer) Accept(l testcontainers.Log) {
 }
 
 func TestWithLogConsumers(t *testing.T) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:      "mysql:8.0.36",
-			WaitingFor: wait.ForLog("port: 3306  MySQL Community Server - GPL"),
-		},
-		Started: true,
-	}
-
 	lc := &msgsLogConsumer{}
+	t.Run("unit-test", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image:      "mysql:8.0.36",
+				WaitingFor: wait.ForLog("port: 3306  MySQL Community Server - GPL"),
+			},
+			Started: true,
+		}
 
-	err := testcontainers.WithLogConsumers(lc)(&req)
-	require.NoError(t, err)
+		err := testcontainers.WithLogConsumers(lc)(&req)
+		require.NoError(t, err)
+	})
 
-	ctx := context.Background()
-	c, err := testcontainers.GenericContainer(ctx, req)
-	testcontainers.CleanupContainer(t, c)
-	// we expect an error because the MySQL environment variables are not set
-	// but this is expected because we just want to test the log consumer
-	require.ErrorContains(t, err, "container exited with code 1")
-	require.NotEmpty(t, lc.msgs)
+	t.Run("integration-test", func(t *testing.T) {
+		ctx := context.Background()
+
+		c, err := testcontainers.Run(ctx, "mysql:8.0.36",
+			testcontainers.WithWaitStrategy(wait.ForLog("port: 3306  MySQL Community Server - GPL")),
+			testcontainers.WithLogConsumers(lc),
+		)
+		testcontainers.CleanupContainer(t, c)
+		// we expect an error because the MySQL environment variables are not set
+		// but this is expected because we just want to test the log consumer
+		require.ErrorContains(t, err, "container exited with code 1")
+		require.NotEmpty(t, lc.msgs)
+	})
 }
 
 func TestWithLogConsumerConfig(t *testing.T) {
@@ -138,61 +145,77 @@ func TestWithLogConsumerConfig(t *testing.T) {
 }
 
 func TestWithStartupCommand(t *testing.T) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:      "alpine",
-			Entrypoint: []string{"tail", "-f", "/dev/null"},
-		},
-		Started: true,
-	}
+	t.Run("unit-test", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image:      "alpine",
+				Entrypoint: []string{"tail", "-f", "/dev/null"},
+			},
+			Started: true,
+		}
 
-	testExec := testcontainers.NewRawCommand([]string{"touch", "/tmp/.testcontainers"})
+		testExec := testcontainers.NewRawCommand([]string{"touch", "/tmp/.testcontainers"})
 
-	err := testcontainers.WithStartupCommand(testExec)(&req)
-	require.NoError(t, err)
+		err := testcontainers.WithStartupCommand(testExec)(&req)
+		require.NoError(t, err)
 
-	require.Len(t, req.LifecycleHooks, 1)
-	require.Len(t, req.LifecycleHooks[0].PostStarts, 1)
+		require.Len(t, req.LifecycleHooks, 1)
+		require.Len(t, req.LifecycleHooks[0].PostStarts, 1)
+	})
 
-	c, err := testcontainers.GenericContainer(context.Background(), req)
-	testcontainers.CleanupContainer(t, c)
-	require.NoError(t, err)
+	t.Run("integration-test", func(t *testing.T) {
+		c, err := testcontainers.Run(
+			context.Background(), "alpine",
+			testcontainers.WithEntrypoint("tail", "-f", "/dev/null"),
+			testcontainers.WithStartupCommand(testcontainers.NewRawCommand([]string{"touch", "/tmp/.testcontainers"})),
+		)
+		testcontainers.CleanupContainer(t, c)
+		require.NoError(t, err)
 
-	_, reader, err := c.Exec(context.Background(), []string{"ls", "/tmp/.testcontainers"}, exec.Multiplexed())
-	require.NoError(t, err)
+		_, reader, err := c.Exec(context.Background(), []string{"ls", "/tmp/.testcontainers"}, exec.Multiplexed())
+		require.NoError(t, err)
 
-	content, err := io.ReadAll(reader)
-	require.NoError(t, err)
-	require.Equal(t, "/tmp/.testcontainers\n", string(content))
+		content, err := io.ReadAll(reader)
+		require.NoError(t, err)
+		require.Equal(t, "/tmp/.testcontainers\n", string(content))
+	})
 }
 
 func TestWithAfterReadyCommand(t *testing.T) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:      "alpine",
-			Entrypoint: []string{"tail", "-f", "/dev/null"},
-		},
-		Started: true,
-	}
+	t.Run("unit-test", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image:      "alpine",
+				Entrypoint: []string{"tail", "-f", "/dev/null"},
+			},
+			Started: true,
+		}
 
-	testExec := testcontainers.NewRawCommand([]string{"touch", "/tmp/.testcontainers"})
+		testExec := testcontainers.NewRawCommand([]string{"touch", "/tmp/.testcontainers"})
 
-	err := testcontainers.WithAfterReadyCommand(testExec)(&req)
-	require.NoError(t, err)
+		err := testcontainers.WithAfterReadyCommand(testExec)(&req)
+		require.NoError(t, err)
 
-	require.Len(t, req.LifecycleHooks, 1)
-	require.Len(t, req.LifecycleHooks[0].PostReadies, 1)
+		require.Len(t, req.LifecycleHooks, 1)
+		require.Len(t, req.LifecycleHooks[0].PostReadies, 1)
+	})
 
-	c, err := testcontainers.GenericContainer(context.Background(), req)
-	testcontainers.CleanupContainer(t, c)
-	require.NoError(t, err)
+	t.Run("integration-test", func(t *testing.T) {
+		c, err := testcontainers.Run(
+			context.Background(), "alpine",
+			testcontainers.WithEntrypoint("tail", "-f", "/dev/null"),
+			testcontainers.WithAfterReadyCommand(testcontainers.NewRawCommand([]string{"touch", "/tmp/.testcontainers"})),
+		)
+		testcontainers.CleanupContainer(t, c)
+		require.NoError(t, err)
 
-	_, reader, err := c.Exec(context.Background(), []string{"ls", "/tmp/.testcontainers"}, exec.Multiplexed())
-	require.NoError(t, err)
+		_, reader, err := c.Exec(context.Background(), []string{"ls", "/tmp/.testcontainers"}, exec.Multiplexed())
+		require.NoError(t, err)
 
-	content, err := io.ReadAll(reader)
-	require.NoError(t, err)
-	require.Equal(t, "/tmp/.testcontainers\n", string(content))
+		content, err := io.ReadAll(reader)
+		require.NoError(t, err)
+		require.Equal(t, "/tmp/.testcontainers\n", string(content))
+	})
 }
 
 func TestWithEnv(t *testing.T) {

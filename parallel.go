@@ -45,7 +45,7 @@ func parallelContainersRunner(
 ) {
 	defer wg.Done()
 	for req := range requests {
-		c, err := GenericContainer(ctx, req)
+		c, err := genericContainer(ctx, req)
 		res := parallelContainersResult{Container: c}
 		if err != nil {
 			res.Request = req
