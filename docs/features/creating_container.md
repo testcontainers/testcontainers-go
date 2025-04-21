@@ -68,6 +68,7 @@ import (
 	"testing"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -77,17 +78,13 @@ type nginxContainer struct {
 }
 
 
-func setupNginx(ctx context.Context, networkName string) (*nginxContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        "nginx",
-		ExposedPorts: []string{"80/tcp"},
-		Networks:     []string{"bridge", networkName},
-		WaitingFor:   wait.ForHTTP("/"),
-	}
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+func setupNginx(ctx context.Context, nw *network.DockerNetwork) (*nginxContainer, error) {
+	container, err := testcontainers.Run(
+		ctx, "nginx",
+		testcontainers.WithExposedPorts("80/tcp"),
+		network.WithNetwork([]string{"nginx-alias"}, nw),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/")),
+	)
 	var nginxC *nginxContainer
 	if container != nil {
 		nginxC = &nginxContainer{Container: container}
