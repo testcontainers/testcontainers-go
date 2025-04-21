@@ -434,6 +434,68 @@ func TestWithLabels(t *testing.T) {
 	})
 }
 
+func TestWithLifecycleHooks(t *testing.T) {
+	testHook := testcontainers.DefaultLoggingHook(nil)
+
+	testLifecycleHooks := func(t *testing.T, replace bool, initial []testcontainers.ContainerLifecycleHooks, add []testcontainers.ContainerLifecycleHooks, expected []testcontainers.ContainerLifecycleHooks) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				LifecycleHooks: initial,
+			},
+		}
+
+		var opt testcontainers.CustomizeRequestOption
+		if replace {
+			opt = testcontainers.WithLifecycleHooks(add...)
+		} else {
+			opt = testcontainers.WithAdditionalLifecycleHooks(add...)
+		}
+		require.NoError(t, opt.Customize(req))
+		require.Len(t, req.LifecycleHooks, len(expected))
+		for i, hook := range expected {
+			require.Equal(t, hook, req.LifecycleHooks[i])
+		}
+	}
+
+	t.Run("replace-nil", func(t *testing.T) {
+		testLifecycleHooks(t,
+			true,
+			nil,
+			[]testcontainers.ContainerLifecycleHooks{testHook},
+			[]testcontainers.ContainerLifecycleHooks{testHook},
+		)
+	})
+
+	t.Run("replace-existing", func(t *testing.T) {
+		testLifecycleHooks(t,
+			true,
+			[]testcontainers.ContainerLifecycleHooks{testHook},
+			[]testcontainers.ContainerLifecycleHooks{testHook},
+			[]testcontainers.ContainerLifecycleHooks{testHook},
+		)
+	})
+
+	t.Run("add-to-nil", func(t *testing.T) {
+		testLifecycleHooks(t,
+			false,
+			nil,
+			[]testcontainers.ContainerLifecycleHooks{testHook},
+			[]testcontainers.ContainerLifecycleHooks{testHook},
+		)
+	})
+
+	t.Run("add-to-existing", func(t *testing.T) {
+		testLifecycleHooks(t,
+			false,
+			[]testcontainers.ContainerLifecycleHooks{testHook},
+			[]testcontainers.ContainerLifecycleHooks{testHook},
+			[]testcontainers.ContainerLifecycleHooks{testHook, testHook},
+		)
+	})
+}
+
 func TestWithMounts(t *testing.T) {
 	testMounts := func(t *testing.T, initial []testcontainers.ContainerMount, add []testcontainers.ContainerMount, expected testcontainers.ContainerMounts) {
 		t.Helper()

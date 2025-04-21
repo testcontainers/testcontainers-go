@@ -437,6 +437,22 @@ func WithLabels(labels map[string]string) CustomizeRequestOption {
 	}
 }
 
+// WithLifecycleHooks completely replaces the lifecycle hooks for a container
+func WithLifecycleHooks(hooks ...ContainerLifecycleHooks) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.LifecycleHooks = hooks
+		return nil
+	}
+}
+
+// WithAdditionalLifecycleHooks appends lifecycle hooks to the existing ones for a container
+func WithAdditionalLifecycleHooks(hooks ...ContainerLifecycleHooks) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.LifecycleHooks = append(req.LifecycleHooks, hooks...)
+		return nil
+	}
+}
+
 // WithMounts appends the mounts to the mounts for a container
 func WithMounts(mounts ...ContainerMount) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {

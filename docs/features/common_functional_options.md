@@ -220,6 +220,13 @@ Please read the [Following Container Logs](/features/follow_logs) documentation 
 
 If you need to pull the image before starting the container, you can use `testcontainers.WithAlwaysPull()`.
 
+#### LifecycleHooks
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to set the lifecycle hooks for the container, you can use `testcontainers.WithLifecycleHooks`, which replaces the existing lifecycle hooks with the new ones.
+
+You can also use `testcontainers.WithAdditionalLifecycleHooks`, which appends the new lifecycle hooks to the existing ones.
 
 #### Wait Strategies
 
