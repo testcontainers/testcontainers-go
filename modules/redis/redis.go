@@ -64,12 +64,12 @@ func (c *RedisContainer) connectionString(ctx context.Context, port nat.Port) (s
 		return "", err
 	}
 
-	prefix := "redis://"
+	schema := "redis://"
 	if c.settings.withSecureURL {
-		prefix = "rediss://"
+		schema = "rediss://"
 	}
 
-	uri := fmt.Sprintf("%s%s:%s", prefix, hostIP, mappedPort.Port())
+	uri := fmt.Sprintf("%s%s:%s", schema, hostIP, mappedPort.Port())
 	return uri, nil
 }
 
