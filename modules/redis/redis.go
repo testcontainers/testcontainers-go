@@ -120,7 +120,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 		// Update the CMD to use the TLS certificates.
 		cmds := []string{
-			"--port", "6379",
 			"--tls-port", strings.Replace(settings.tlsPort, "/tcp", "", 1),
 			"--tls-cert-file", "/tls/server.crt",
 			"--tls-key-file", "/tls/server.key",
@@ -132,7 +131,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			cmds = append(cmds, "--tls-auth-clients", "no")
 		}
 
-		tcOpts = append(tcOpts, testcontainers.WithCmd(cmds...)) // Replace the default CMD with the TLS certificates.
+		tcOpts = append(tcOpts, testcontainers.WithCmdArgs(cmds...)) // Append the default CMD with the TLS certificates.
 		tcOpts = append(tcOpts, testcontainers.WithExposedPorts(settings.tlsPort))
 		tcOpts = append(tcOpts, testcontainers.WithFiles(
 			testcontainers.ContainerFile{
