@@ -77,26 +77,24 @@ func TestForFile(t *testing.T) {
 
 func TestFileStrategyWaitUntilReady_WithMatcher(t *testing.T) {
 	// waitForFileWithMatcher {
+	ctx := context.Background()
 	var out bytes.Buffer
-	dockerReq := testcontainers.ContainerRequest{
-		Image: "nginx:latest",
-		WaitingFor: wait.ForFile("/etc/nginx/nginx.conf").
-			WithStartupTimeout(time.Second * 10).
+
+	c, err := testcontainers.Run(ctx, "nginx:latest",
+		testcontainers.WithWaitStrategy(wait.ForFile("/etc/nginx/nginx.conf").
+			WithStartupTimeout(time.Second*10).
 			WithPollInterval(time.Second).
 			WithMatcher(func(r io.Reader) error {
 				if _, err := io.Copy(&out, r); err != nil {
 					return fmt.Errorf("copy: %w", err)
 				}
 				return nil
-			}),
-	}
+			})),
+	)
 	// }
-
-	ctx := context.Background()
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
-	if container != nil {
+	if c != nil {
 		t.Cleanup(func() {
-			require.NoError(t, container.Terminate(context.Background()))
+			require.NoError(t, c.Terminate(context.Background()))
 		})
 	}
 	require.NoError(t, err)
