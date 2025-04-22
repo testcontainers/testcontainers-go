@@ -69,7 +69,7 @@ func ExampleRun_withTLS() {
 		return
 	}
 
-	uri, err := redisContainer.ConnectionStringTLS(ctx)
+	uri, err := redisContainer.ConnectionString(ctx)
 	if err != nil {
 		log.Printf("failed to get connection string: %s", err)
 		return

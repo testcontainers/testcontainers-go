@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -19,9 +18,6 @@ import (
 type LogLevel string
 
 const (
-	// tlsPort is the port for the TLS connection
-	tlsPort = "6380/tcp"
-
 	// redisPort is the port for the Redis connection
 	redisPort = "6379/tcp"
 
@@ -43,27 +39,7 @@ type RedisContainer struct {
 // ConnectionString returns the connection string for the Redis container.
 // It uses the default 6379 port.
 func (c *RedisContainer) ConnectionString(ctx context.Context) (string, error) {
-	return c.connectionString(ctx, nat.Port(redisPort))
-}
-
-// ConnectionStringTLS returns the connection string for the Redis container using TLS.
-// It returns an error if TLS is not enabled, else the TLS port defined in the options
-// is used to build the connection string.
-func (c *RedisContainer) ConnectionStringTLS(ctx context.Context) (string, error) {
-	if !c.settings.tlsEnabled {
-		return "", errors.New("TLS is not enabled")
-	}
-
-	return c.connectionString(ctx, nat.Port(tlsPort))
-}
-
-// TLSConfig returns the TLS configuration for the Redis container, nil if TLS is not enabled.
-func (c *RedisContainer) TLSConfig() *tls.Config {
-	return c.settings.tlsConfig
-}
-
-func (c *RedisContainer) connectionString(ctx context.Context, port nat.Port) (string, error) {
-	mappedPort, err := c.MappedPort(ctx, port)
+	mappedPort, err := c.MappedPort(ctx, redisPort)
 	if err != nil {
 		return "", err
 	}
@@ -80,6 +56,11 @@ func (c *RedisContainer) connectionString(ctx context.Context, port nat.Port) (s
 
 	uri := fmt.Sprintf("%s://%s:%s", schema, hostIP, mappedPort.Port())
 	return uri, nil
+}
+
+// TLSConfig returns the TLS configuration for the Redis container, nil if TLS is not enabled.
+func (c *RedisContainer) TLSConfig() *tls.Config {
+	return c.settings.tlsConfig
 }
 
 // Deprecated: use Run instead
@@ -118,7 +99,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	if settings.tlsEnabled {
 		// wait for the TLS port to be available
-		waitStrategies = append(waitStrategies, wait.ForListeningPort(nat.Port(tlsPort)).WithStartupTimeout(time.Second*10))
+		waitStrategies = append(waitStrategies, wait.ForListeningPort(nat.Port(redisPort)).WithStartupTimeout(time.Second*10))
 
 		// Create a temporary directory to store the TLS certificates.
 		tmpDir := os.TempDir()
@@ -129,7 +110,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 		// Update the CMD to use the TLS certificates.
 		cmds := []string{
-			"--tls-port", strings.Replace(tlsPort, "/tcp", "", 1),
+			"--tls-port", strings.Replace(redisPort, "/tcp", "", 1),
+			// Disable the default port, as described in https://redis.io/docs/latest/operate/oss_and_stack/management/security/encryption/#running-manually
+			"--port", "0",
 			"--tls-cert-file", "/tls/server.crt",
 			"--tls-key-file", "/tls/server.key",
 			"--tls-ca-cert-file", "/tls/ca.crt",
@@ -137,7 +120,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 
 		tcOpts = append(tcOpts, testcontainers.WithCmdArgs(cmds...)) // Append the default CMD with the TLS certificates.
-		tcOpts = append(tcOpts, testcontainers.WithExposedPorts(tlsPort))
 		tcOpts = append(tcOpts, testcontainers.WithFiles(
 			testcontainers.ContainerFile{
 				Reader:            bytes.NewReader(caCert.Bytes),

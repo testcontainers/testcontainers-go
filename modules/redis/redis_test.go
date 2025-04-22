@@ -88,35 +88,15 @@ func TestRedisWithTLS(t *testing.T) {
 
 		assertSetsGets(t, ctx, redisContainer, 1)
 	})
-
-	t.Run("connection-string/error-if-tls-not-enabled", func(t *testing.T) {
-		redisContainer, err := tcredis.Run(ctx, "redis:7")
-		testcontainers.CleanupContainer(t, redisContainer)
-		require.NoError(t, err)
-
-		uri, err := redisContainer.ConnectionStringTLS(ctx)
-		require.Error(t, err)
-		require.Empty(t, uri)
-	})
 }
 
 func assertSetsGets(t *testing.T, ctx context.Context, redisContainer *tcredis.RedisContainer, keyCount int) {
 	t.Helper()
 
-	var uri string
-	var err error
-
-	if redisContainer.TLSConfig() != nil {
-		// TLSCconnectionString {
-		uri, err = redisContainer.ConnectionStringTLS(ctx)
-		// }
-		require.NoError(t, err)
-	} else {
-		// noTLSconnectionString {
-		uri, err = redisContainer.ConnectionString(ctx)
-		// }
-		require.NoError(t, err)
-	}
+	// connectionString {
+	uri, err := redisContainer.ConnectionString(ctx)
+	// }
+	require.NoError(t, err)
 
 	// You will likely want to wrap your Redis package of choice in an
 	// interface to aid in unit testing and limit lock-in throughout your

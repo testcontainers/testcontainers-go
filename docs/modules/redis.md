@@ -84,19 +84,13 @@ The module automatically generates three certificates, a CA certificate, a clien
 
 #### ConnectionString
 
-This method returns the connection string to connect to the Redis container, using the default `6379` port.
+This method returns the connection string to connect to the Redis container, using the default `6379` port, and `redis` schema.
 
 <!--codeinclude-->
-[Get connection string](../../modules/redis/redis_test.go) inside_block:noTLSconnectionString
+[Get connection string](../../modules/redis/redis_test.go) inside_block:connectionString
 <!--/codeinclude-->
 
-#### ConnectionStringTLS
-
-This method returns the connection string to connect to the Redis container, using the TLS port defined in the `WithTLS` option.
-
-<!--codeinclude-->
-[Get connection string with TLS](../../modules/redis/redis_test.go) inside_block:TLSCconnectionString
-<!--/codeinclude-->
+If the container is started with TLS enabled, the connection string will be `rediss://host:port`, using the `rediss` schema.
 
 #### TLSConfig
 
