@@ -221,6 +221,9 @@ In order to simplify the creation of the container for a given module, `Testcont
 - `testcontainers.WithEndpointSettingsModifier`: a function that sets the endpoint settings Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
 - `testcontainers.CustomizeRequest`: a function that merges the default options with the ones provided by the user. Recommended for completely customizing the container request.
 - `testcontainers.WithReuseByName`: a function that marks a container to be reused if it exists or create a new one if it doesn't.
+- `network.WithNetwork`: a function that sets the network and the network aliases for the container request, reusing an already existing network.
+- `network.WithNetworkName`: a function that sets the network aliases for an already existing network, by its name.
+- `network.WithNewNetwork`: a function that sets the network aliases for a throw-away network for the container request.
 
 ### Update Go dependencies in the modules
 

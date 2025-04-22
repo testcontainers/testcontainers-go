@@ -302,6 +302,15 @@ In the case you need to retrieve the network name, you can simply read it from t
 !!!warning
     This option is not checking whether the network exists or not. If you use a network that doesn't exist, the container will start in the default Docker network, as in the default behavior.
 
+#### WithNetworkByName
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you want to attach your containers to an already existing Docker network by its name, you can use the `network.WithNetworkName(aliases []string, networkName string)` option, which receives an alias as parameter and the network name, attaching the container to it, and setting the network alias for that network.
+
+!!!warning
+    In case the network name is `bridge`, no aliases are set. This is because network-scoped alias is supported only for containers in user defined networks.
+
 #### WithNewNetwork
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>

@@ -137,11 +137,21 @@ func WithIPAM(ipam *network.IPAM) CustomizeNetworkOption {
 // WithNetwork reuses an already existing network, attaching the container to it.
 // Finally it sets the network alias on that network to the given alias.
 func WithNetwork(aliases []string, nw *testcontainers.DockerNetwork) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		networkName := nw.Name
+	return WithNetworkName(aliases, nw.Name)
+}
 
+// WithNetworkName attachs a container to an already existing network, by its name.
+// Finally, if the network is not "bridge", it sets the network alias on that network to the given alias.
+// This is because network-scoped alias is supported only for containers in user defined networks.
+func WithNetworkName(aliases []string, networkName string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
 		// attaching to the network because it was created with success or it already existed.
 		req.Networks = append(req.Networks, networkName)
+
+		// network-scoped alias is supported only for containers in user defined networks
+		if networkName == "bridge" {
+			return nil
+		}
 
 		if req.NetworkAliases == nil {
 			req.NetworkAliases = make(map[string][]string)
