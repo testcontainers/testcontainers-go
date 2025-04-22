@@ -11,10 +11,8 @@ import (
 )
 
 type options struct {
-	tlsPort          string
-	withSecureURL    bool
-	withMTLSDisabled bool
-	tlsConfig        *tls.Config
+	tlsEnabled bool
+	tlsConfig  *tls.Config
 }
 
 // Compiler check to ensure that Option implements the testcontainers.ContainerCustomizer interface.
@@ -30,13 +28,10 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 }
 
 // WithTLS sets the TLS configuration for the redis container, setting
-// the port to listen on for TLS connections, whether to use a secure URL,
-// and whether to disable MTLS (mutual TLS).
-func WithTLS(tlsPort string, secureURL bool, mtlsDisabled bool) Option {
+// the 6380/tcp port to listen on for TLS connections and using a secure URL (rediss://).
+func WithTLS() Option {
 	return func(o *options) error {
-		o.tlsPort = tlsPort
-		o.withSecureURL = secureURL
-		o.withMTLSDisabled = mtlsDisabled
+		o.tlsEnabled = true
 		return nil
 	}
 }

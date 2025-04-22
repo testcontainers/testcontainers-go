@@ -52,7 +52,7 @@ func ExampleRun_withTLS() {
 		"redis:7",
 		tcredis.WithSnapshotting(10, 1),
 		tcredis.WithLogLevel(tcredis.LogLevelVerbose),
-		tcredis.WithTLS("6380", true, true),
+		tcredis.WithTLS(),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(redisContainer); err != nil {

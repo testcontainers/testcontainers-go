@@ -98,45 +98,47 @@ func TestRedisWithSnapshotting(t *testing.T) {
 func TestRedisWithTLS(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("secure-url/mtls-disabled", func(t *testing.T) {
-		redisContainer, err := tcredis.Run(ctx, "redis:7", tcredis.WithTLS("6380", true, true))
+	t.Run("mtls-disabled", func(t *testing.T) {
+		redisContainer, err := tcredis.Run(ctx, "redis:7", tcredis.WithTLS())
 		testcontainers.CleanupContainer(t, redisContainer)
 		require.NoError(t, err)
 
 		assertSetsGets(t, ctx, redisContainer, 1)
 	})
 
-	t.Run("secure-url/mtls-enabled", func(t *testing.T) {
-		redisContainer, err := tcredis.Run(ctx, "redis:7", tcredis.WithTLS("6380", true, false))
+	t.Run("mtls-enabled", func(t *testing.T) {
+		redisContainer, err := tcredis.Run(ctx, "redis:7", tcredis.WithTLS(), testcontainers.WithCmdArgs("--tls-auth-clients", "no"))
 		testcontainers.CleanupContainer(t, redisContainer)
 		require.NoError(t, err)
 
 		assertSetsGets(t, ctx, redisContainer, 1)
 	})
 
-	t.Run("insecure-url/mtls-disabled", func(t *testing.T) {
-		redisContainer, err := tcredis.Run(ctx, "redis:7", tcredis.WithTLS("6380", false, true))
+	t.Run("connection-string/error-if-tls-not-enabled", func(t *testing.T) {
+		redisContainer, err := tcredis.Run(ctx, "redis:7")
 		testcontainers.CleanupContainer(t, redisContainer)
 		require.NoError(t, err)
-	})
 
-	t.Run("insecure-url/mtls-enabled", func(t *testing.T) {
-		redisContainer, err := tcredis.Run(ctx, "redis:7", tcredis.WithTLS("6380", false, false))
-		testcontainers.CleanupContainer(t, redisContainer)
-		require.NoError(t, err)
+		uri, err := redisContainer.ConnectionStringTLS(ctx)
+		require.Error(t, err)
+		require.Empty(t, uri)
 	})
 }
 
 func assertSetsGets(t *testing.T, ctx context.Context, redisContainer *tcredis.RedisContainer, keyCount int) {
 	t.Helper()
-	// noTLSconnectionString {
-	uri, err := redisContainer.ConnectionString(ctx)
-	// }
-	require.NoError(t, err)
+
+	var uri string
+	var err error
 
 	if redisContainer.TLSConfig() != nil {
 		// TLSCconnectionString {
 		uri, err = redisContainer.ConnectionStringTLS(ctx)
+		// }
+		require.NoError(t, err)
+	} else {
+		// noTLSconnectionString {
+		uri, err = redisContainer.ConnectionString(ctx)
 		// }
 		require.NoError(t, err)
 	}

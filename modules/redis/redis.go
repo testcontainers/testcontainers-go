@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -15,12 +16,18 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// redisServerProcess is the name of the redis server process
-const redisServerProcess = "redis-server"
-
 type LogLevel string
 
 const (
+	// redisServerProcess is the name of the redis server process
+	redisServerProcess = "redis-server"
+
+	// tlsPort is the port for the TLS connection
+	tlsPort = "6380/tcp"
+
+	// redisPort is the port for the Redis connection
+	redisPort = "6379/tcp"
+
 	// LogLevelDebug is the debug log level
 	LogLevelDebug LogLevel = "debug"
 	// LogLevelVerbose is the verbose log level
@@ -39,13 +46,18 @@ type RedisContainer struct {
 // ConnectionString returns the connection string for the Redis container.
 // It uses the default 6379 port.
 func (c *RedisContainer) ConnectionString(ctx context.Context) (string, error) {
-	return c.connectionString(ctx, "6379/tcp")
+	return c.connectionString(ctx, nat.Port(redisPort))
 }
 
 // ConnectionStringTLS returns the connection string for the Redis container using TLS.
-// It uses the TLS port defined in the options.
+// It returns an error if TLS is not enabled, else the TLS port defined in the options
+// is used to build the connection string.
 func (c *RedisContainer) ConnectionStringTLS(ctx context.Context) (string, error) {
-	return c.connectionString(ctx, nat.Port(c.settings.tlsPort))
+	if !c.settings.tlsEnabled {
+		return "", errors.New("TLS is not enabled")
+	}
+
+	return c.connectionString(ctx, nat.Port(tlsPort))
 }
 
 // TLSConfig returns the TLS configuration for the Redis container, nil if TLS is not enabled.
@@ -64,12 +76,7 @@ func (c *RedisContainer) connectionString(ctx context.Context, port nat.Port) (s
 		return "", err
 	}
 
-	schema := "redis://"
-	if c.settings.withSecureURL {
-		schema = "rediss://"
-	}
-
-	uri := fmt.Sprintf("%s%s:%s", schema, hostIP, mappedPort.Port())
+	uri := fmt.Sprintf("rediss://%s:%s", hostIP, mappedPort.Port())
 	return uri, nil
 }
 
@@ -83,7 +90,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*RedisContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        img,
-		ExposedPorts: []string{"6379/tcp"},
+		ExposedPorts: []string{redisPort},
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
@@ -103,13 +110,13 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	tcOpts := []testcontainers.ContainerCustomizer{}
 
 	waitStrategies := []wait.Strategy{
-		wait.ForListeningPort("6379/tcp").WithStartupTimeout(time.Second * 10),
+		wait.ForListeningPort(redisPort).WithStartupTimeout(time.Second * 10),
 		wait.ForLog("* Ready to accept connections"),
 	}
 
-	if settings.tlsPort != "" {
+	if settings.tlsEnabled {
 		// wait for the TLS port to be available
-		waitStrategies = append(waitStrategies, wait.ForListeningPort(nat.Port(settings.tlsPort)).WithStartupTimeout(time.Second*10))
+		waitStrategies = append(waitStrategies, wait.ForListeningPort(nat.Port(tlsPort)).WithStartupTimeout(time.Second*10))
 
 		// Create a temporary directory to store the TLS certificates.
 		tmpDir := os.TempDir()
@@ -120,19 +127,15 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 		// Update the CMD to use the TLS certificates.
 		cmds := []string{
-			"--tls-port", strings.Replace(settings.tlsPort, "/tcp", "", 1),
+			"--tls-port", strings.Replace(tlsPort, "/tcp", "", 1),
 			"--tls-cert-file", "/tls/server.crt",
 			"--tls-key-file", "/tls/server.key",
 			"--tls-ca-cert-file", "/tls/ca.crt",
 			"--tls-auth-clients", "yes",
 		}
 
-		if settings.withMTLSDisabled {
-			cmds = append(cmds, "--tls-auth-clients", "no")
-		}
-
 		tcOpts = append(tcOpts, testcontainers.WithCmdArgs(cmds...)) // Append the default CMD with the TLS certificates.
-		tcOpts = append(tcOpts, testcontainers.WithExposedPorts(settings.tlsPort))
+		tcOpts = append(tcOpts, testcontainers.WithExposedPorts(tlsPort))
 		tcOpts = append(tcOpts, testcontainers.WithFiles(
 			testcontainers.ContainerFile{
 				Reader:            bytes.NewReader(caCert.Bytes),
