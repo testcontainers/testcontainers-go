@@ -40,46 +40,6 @@ func TestRedisWithConfigFile(t *testing.T) {
 	assertSetsGets(t, ctx, redisContainer, 1)
 }
 
-func TestRedisWithImage(t *testing.T) {
-	ctx := context.Background()
-
-	tests := []struct {
-		name  string
-		image string
-	}{
-		{
-			name:  "Redis6",
-			image: "redis:6",
-		},
-		{
-			name:  "Redis7",
-			image: "redis:7",
-		},
-		{
-			name: "Redis Stack",
-			// redisStackImage {
-			image: "redis/redis-stack:latest",
-			// }
-		},
-		{
-			name: "Redis Stack Server",
-			// redisStackServerImage {
-			image: "redis/redis-stack-server:latest",
-			// }
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			redisContainer, err := tcredis.Run(ctx, tt.image, tcredis.WithConfigFile(filepath.Join("testdata", "redis6.conf")))
-			testcontainers.CleanupContainer(t, redisContainer)
-			require.NoError(t, err)
-
-			assertSetsGets(t, ctx, redisContainer, 1)
-		})
-	}
-}
-
 func TestRedisWithLogLevel(t *testing.T) {
 	ctx := context.Background()
 

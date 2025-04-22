@@ -107,15 +107,3 @@ This method returns the TLS configuration for the Redis container, nil if TLS is
 <!--/codeinclude-->
 
 In the above example, the optins are used to configure a Redis client with TLS enabled.
-
-### Redis variants
-
-It's possible to use the Redis container with Redis-Stack. You simply need to update the image name.
-
-<!--codeinclude-->
-[Image for Redis-Stack](../../modules/redis/redis_test.go) inside_block:redisStackImage
-<!--/codeinclude-->
-
-<!--codeinclude-->
-[Image for Redis-Stack Server](../../modules/redis/redis_test.go) inside_block:redisStackServerImage
-<!--/codeinclude-->
