@@ -42,18 +42,6 @@ func Run(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Cont
 !!! info
     This function will use the default `socat` image under the hood. Please refer to the [socat module](../socat.md) for more information.
 
-#### RunWithImage
-
-This function receives three parameters:
-
-```golang
-func RunWithImage(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)
-```
-
-- `context.Context`, the Go context.
-- `string`, the Docker image to use. This image must have `socat` installed in order to work.
-- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
-
 ### Container Options
 
 When starting the Docker Model Runner container, you can pass options in a variadic way to configure it.

@@ -32,13 +32,13 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("success/with-image", func(t *testing.T) {
-		ctr, err := dockermodelrunner.RunWithImage(ctx, socat.DefaultImage)
+		ctr, err := dockermodelrunner.Run(ctx, testcontainers.WithImage(socat.DefaultImage))
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 	})
 
 	t.Run("failure/with-image", func(t *testing.T) {
-		ctr, err := dockermodelrunner.RunWithImage(ctx, "alpine:latest")
+		ctr, err := dockermodelrunner.Run(ctx, testcontainers.WithImage("alpine:latest"))
 		testcontainers.CleanupContainer(t, ctr)
 		require.Error(t, err)
 	})

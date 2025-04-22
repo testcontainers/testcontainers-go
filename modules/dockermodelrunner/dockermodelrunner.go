@@ -29,11 +29,6 @@ type Container struct {
 
 // Run creates an instance of the DockerModelRunner container type.
 func Run(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	return RunWithImage(ctx, socat.DefaultImage, opts...)
-}
-
-// RunWithImage creates an instance of the DockerModelRunner container type, using a specific image for the socat container.
-func RunWithImage(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	settings := defaultOptions()
 
 	// Process model runner options.
@@ -60,7 +55,7 @@ func RunWithImage(ctx context.Context, img string, opts ...testcontainers.Contai
 	))
 	opts = append(opts, socat.WithTarget(socat.NewTarget(modelRunnerPort, modelRunnerEntrypoint)))
 
-	socatCtr, err := socat.Run(ctx, img, opts...)
+	socatCtr, err := socat.Run(ctx, socat.DefaultImage, opts...)
 	var c *Container
 	if socatCtr != nil {
 		c = &Container{Container: socatCtr, model: settings.model}
