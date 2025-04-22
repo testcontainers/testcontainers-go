@@ -32,6 +32,11 @@ func TestRedisWithConfigFile(t *testing.T) {
 	testcontainers.CleanupContainer(t, redisContainer)
 	require.NoError(t, err)
 
+	jsonInspect, err := redisContainer.Inspect(ctx)
+	require.NoError(t, err)
+
+	require.Contains(t, jsonInspect.Config.Cmd, "/usr/local/redis.conf")
+
 	assertSetsGets(t, ctx, redisContainer, 1)
 }
 

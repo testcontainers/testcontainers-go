@@ -15,19 +15,14 @@ func TestWithConfigFile(t *testing.T) {
 		expectedCmds []string
 	}{
 		{
-			name:         "no existing command",
+			name:         "empty-cmd",
 			cmds:         []string{},
-			expectedCmds: []string{redisServerProcess, "/usr/local/redis.conf"},
+			expectedCmds: []string{"/usr/local/redis.conf"},
 		},
 		{
-			name:         "existing redis-server command as first argument",
-			cmds:         []string{redisServerProcess, "a", "b", "c"},
-			expectedCmds: []string{redisServerProcess, "/usr/local/redis.conf", "a", "b", "c"},
-		},
-		{
-			name:         "non existing redis-server command",
+			name:         "existing-cmd",
 			cmds:         []string{"a", "b", "c"},
-			expectedCmds: []string{redisServerProcess, "/usr/local/redis.conf", "a", "b", "c"},
+			expectedCmds: []string{"/usr/local/redis.conf", "a", "b", "c"},
 		},
 	}
 

@@ -19,9 +19,6 @@ import (
 type LogLevel string
 
 const (
-	// redisServerProcess is the name of the redis server process
-	redisServerProcess = "redis-server"
-
 	// tlsPort is the port for the TLS connection
 	tlsPort = "6380/tcp"
 
