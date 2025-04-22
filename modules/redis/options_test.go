@@ -90,32 +90,18 @@ func TestWithSnapshotting(t *testing.T) {
 		changedKeys  int
 	}{
 		{
-			name:         "no existing command",
+			name:         "empty-cmd",
 			cmds:         []string{},
 			seconds:      60,
 			changedKeys:  100,
-			expectedCmds: []string{redisServerProcess, "--save", "60", "100"},
+			expectedCmds: []string{"--save", "60", "100"},
 		},
 		{
-			name:         "existing redis-server command as first argument",
-			cmds:         []string{redisServerProcess, "a", "b", "c"},
-			seconds:      60,
-			changedKeys:  100,
-			expectedCmds: []string{redisServerProcess, "a", "b", "c", "--save", "60", "100"},
-		},
-		{
-			name:         "non existing redis-server command",
+			name:         "existing-cmd",
 			cmds:         []string{"a", "b", "c"},
 			seconds:      60,
 			changedKeys:  100,
-			expectedCmds: []string{redisServerProcess, "a", "b", "c", "--save", "60", "100"},
-		},
-		{
-			name:         "existing redis-server command as first argument",
-			cmds:         []string{redisServerProcess, "a", "b", "c"},
-			seconds:      0,
-			changedKeys:  0,
-			expectedCmds: []string{redisServerProcess, "a", "b", "c", "--save", "1", "1"},
+			expectedCmds: []string{"a", "b", "c", "--save", "60", "100"},
 		},
 	}
 

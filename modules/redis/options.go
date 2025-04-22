@@ -85,10 +85,7 @@ func WithSnapshotting(seconds int, changedKeys int) testcontainers.CustomizeRequ
 		seconds = 1
 	}
 
-	return func(req *testcontainers.GenericContainerRequest) error {
-		processRedisServerArgs(req, []string{"--save", strconv.Itoa(seconds), strconv.Itoa(changedKeys)})
-		return nil
-	}
+	return testcontainers.WithCmdArgs("--save", strconv.Itoa(seconds), strconv.Itoa(changedKeys))
 }
 
 // createTLSCerts creates a CA certificate, a client certificate and a Redis certificate,
