@@ -2,6 +2,7 @@ package redis
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net"
 	"os"
 	"strconv"
@@ -12,8 +13,9 @@ import (
 )
 
 type options struct {
-	tlsEnabled bool
-	tlsConfig  *tls.Config
+	tlsEnabled   bool
+	tlsConfig    *tls.Config
+	tlsCertsPath string
 }
 
 // Compiler check to ensure that Option implements the testcontainers.ContainerCustomizer interface.
@@ -30,6 +32,8 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 
 // WithTLS sets the TLS configuration for the redis container, setting
 // the 6380/tcp port to listen on for TLS connections and using a secure URL (rediss://).
+// It also creates a temporary directory to store the TLS certificates, which is removed
+// when the container is terminated.
 func WithTLS() Option {
 	return func(o *options) error {
 		o.tlsEnabled = true
@@ -84,10 +88,11 @@ func WithSnapshotting(seconds int, changedKeys int) testcontainers.CustomizeRequ
 
 // createTLSCerts creates a CA certificate, a client certificate and a Redis certificate,
 // storing them in the given temporary directory.
-func createTLSCerts() (*tlscert.Certificate, *tlscert.Certificate, *tlscert.Certificate) {
-	// Create a temporary directory to store the TLS certificates.
-	tmpDir := os.TempDir()
-
+func createTLSCerts() (*tlscert.Certificate, *tlscert.Certificate, *tlscert.Certificate, error) {
+	tmpDir, err := os.MkdirTemp(os.TempDir(), "testcontainers-redis-tls")
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("mkdir temp dir: %w", err)
+	}
 	// ips is the extra list of IPs to include in the certificates.
 	// It's used to allow the client and Redis certificates to be used in the same host
 	// when the tests are run using a remote docker daemon.
@@ -122,5 +127,5 @@ func createTLSCerts() (*tlscert.Certificate, *tlscert.Certificate, *tlscert.Cert
 		ParentDir:   tmpDir,
 	})
 
-	return caCert, clientCert, redisCert
+	return caCert, clientCert, redisCert, nil
 }
