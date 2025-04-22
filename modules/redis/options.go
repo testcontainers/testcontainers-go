@@ -58,7 +58,9 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 }
 
 // WithLogLevel sets the log level for the redis server process
-// See https://redis.io/docs/reference/modules/modules-api-ref/#redismodule_log for more information.
+// See "[RedisModule_Log]" for more information.
+//
+// [RedisModule_Log]: https://redis.io/docs/reference/modules/modules-api-ref/#redismodule_log
 func WithLogLevel(level LogLevel) testcontainers.CustomizeRequestOption {
 	return testcontainers.WithCmdArgs("--loglevel", string(level))
 }
@@ -66,7 +68,9 @@ func WithLogLevel(level LogLevel) testcontainers.CustomizeRequestOption {
 // WithSnapshotting sets the snapshotting configuration for the redis server process. You can configure Redis to have it
 // save the dataset every N seconds if there are at least M changes in the dataset.
 // This method allows Redis to benefit from copy-on-write semantics.
-// See https://redis.io/docs/management/persistence/#snapshotting for more information.
+// See [Snapshotting] for more information.
+//
+// [Snapshotting]: https://redis.io/docs/management/persistence/#snapshotting
 func WithSnapshotting(seconds int, changedKeys int) testcontainers.CustomizeRequestOption {
 	if changedKeys < 1 {
 		changedKeys = 1
