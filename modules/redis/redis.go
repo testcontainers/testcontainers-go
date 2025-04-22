@@ -73,7 +73,12 @@ func (c *RedisContainer) connectionString(ctx context.Context, port nat.Port) (s
 		return "", err
 	}
 
-	uri := fmt.Sprintf("rediss://%s:%s", hostIP, mappedPort.Port())
+	schema := "redis"
+	if c.settings.tlsEnabled {
+		schema = "rediss"
+	}
+
+	uri := fmt.Sprintf("%s://%s:%s", schema, hostIP, mappedPort.Port())
 	return uri, nil
 }
 
