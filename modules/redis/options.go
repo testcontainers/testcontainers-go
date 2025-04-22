@@ -32,8 +32,6 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 
 // WithTLS sets the TLS configuration for the redis container, setting
 // the 6380/tcp port to listen on for TLS connections and using a secure URL (rediss://).
-// It also creates a temporary directory to store the TLS certificates, which is removed
-// when the container is terminated.
 func WithTLS() Option {
 	return func(o *options) error {
 		o.tlsEnabled = true
