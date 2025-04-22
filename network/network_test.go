@@ -2,9 +2,11 @@ package network_test
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	dockernetwork "github.com/docker/docker/api/types/network"
 	"github.com/stretchr/testify/require"
@@ -337,6 +339,31 @@ func TestWithNetworkName(t *testing.T) {
 		require.Len(t, req.NetworkAliases, 1)
 		require.Equal(t, map[string][]string{"user-defined": {"alias"}}, req.NetworkAliases)
 	})
+}
+
+func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
+	if os.Getenv("XDG_RUNTIME_DIR") != "" {
+		t.Skip("Skipping test that requires host network access when running in a container")
+	}
+
+	// skipIfDockerDesktop {
+	ctx := context.Background()
+	testcontainers.SkipIfDockerDesktop(t, ctx)
+	// }
+
+	nginx, err := testcontainers.Run(
+		ctx, nginxAlpineImage,
+		testcontainers.WithWaitStrategy(wait.ForExposedPort()),
+		network.WithNetworkName([]string{"nginx"}, "new-network"),
+		testcontainers.WithHostConfigModifier(func(hc *container.HostConfig) {
+			hc.NetworkMode = "host"
+		}),
+	)
+	testcontainers.CleanupContainer(t, nginx)
+	if err != nil {
+		// Error when NetworkMode = host and Network = []string{"bridge"}
+		t.Logf("Can't use Network and NetworkMode together, %s\n", err)
+	}
 }
 
 func TestWithSyntheticNetwork(t *testing.T) {
