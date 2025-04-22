@@ -90,7 +90,7 @@ This method returns the connection string to connect to the Redis container, usi
 [Get connection string](../../modules/redis/redis_test.go) inside_block:connectionString
 <!--/codeinclude-->
 
-If the container is started with TLS enabled, the connection string will be `rediss://host:port`, using the `rediss` schema.
+If the container is started with TLS enabled, the connection string is `rediss://host:port`, using the `rediss` schema.
 
 #### TLSConfig
 
@@ -100,4 +100,4 @@ This method returns the TLS configuration for the Redis container, nil if TLS is
 [Get TLS config](../../modules/redis/redis_test.go) inside_block:tlsConfig
 <!--/codeinclude-->
 
-In the above example, the optins are used to configure a Redis client with TLS enabled.
+In the above example, the options are used to configure a Redis client with TLS enabled.
