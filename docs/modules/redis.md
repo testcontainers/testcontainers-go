@@ -62,7 +62,7 @@ By default Redis saves snapshots of the dataset on disk, in a binary file called
 
 #### Log Level
 
-By default Redis saves snapshots of the dataset on disk, in a binary file called dump.rdb. You can configure Redis to have it save the dataset every N seconds if there are at least M changes in the dataset. E.g. `WithLogLevel(LogLevelDebug)`.
+By default Redis produces a log message to the standard Redis log, the format accepts printf-alike specifiers, while level is a string describing the log level to use when emitting the log, and must be one of the following: `LogLevelDebug`, `LogLevelVerbose`, `LogLevelNotice`, `LogLevelWarning`. E.g. `WithLogLevel(LogLevelDebug)`. If the specified log level is invalid, verbose is used by default.
 
 !!!tip
     Please check [Redis docs on logging](https://redis.io/docs/reference/modules/modules-api-ref/#redismodule_log) for more information.
