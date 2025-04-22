@@ -70,11 +70,7 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 // WithLogLevel sets the log level for the redis server process
 // See https://redis.io/docs/reference/modules/modules-api-ref/#redismodule_log for more information.
 func WithLogLevel(level LogLevel) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		processRedisServerArgs(req, []string{"--loglevel", string(level)})
-
-		return nil
-	}
+	return testcontainers.WithCmdArgs("--loglevel", string(level))
 }
 
 // WithSnapshotting sets the snapshotting configuration for the redis server process. You can configure Redis to have it

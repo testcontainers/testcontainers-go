@@ -163,6 +163,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	tcOpts = append(tcOpts, testcontainers.WithWaitStrategy(waitStrategies...))
 
+	// Append the customizers passed to the Run function.
+	tcOpts = append(tcOpts, opts...)
+
 	// Apply the testcontainers customizers.
 	for _, opt := range tcOpts {
 		if err := opt.Customize(&genericContainerReq); err != nil {

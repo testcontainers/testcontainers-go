@@ -82,6 +82,11 @@ func TestRedisWithLogLevel(t *testing.T) {
 	testcontainers.CleanupContainer(t, redisContainer)
 	require.NoError(t, err)
 
+	jsonInspect, err := redisContainer.Inspect(ctx)
+	require.NoError(t, err)
+
+	require.Contains(t, jsonInspect.Config.Cmd, "--loglevel", "verbose")
+
 	assertSetsGets(t, ctx, redisContainer, 10)
 }
 

@@ -54,19 +54,14 @@ func TestWithLogLevel(t *testing.T) {
 		expectedCmds []string
 	}{
 		{
-			name:         "no existing command",
+			name:         "empty-cmd",
 			cmds:         []string{},
-			expectedCmds: []string{redisServerProcess, "--loglevel", "debug"},
+			expectedCmds: []string{"--loglevel", "debug"},
 		},
 		{
-			name:         "existing redis-server command as first argument",
-			cmds:         []string{redisServerProcess, "a", "b", "c"},
-			expectedCmds: []string{redisServerProcess, "a", "b", "c", "--loglevel", "debug"},
-		},
-		{
-			name:         "non existing redis-server command",
+			name:         "existing-cmd",
 			cmds:         []string{"a", "b", "c"},
-			expectedCmds: []string{redisServerProcess, "a", "b", "c", "--loglevel", "debug"},
+			expectedCmds: []string{"a", "b", "c", "--loglevel", "debug"},
 		},
 	}
 
