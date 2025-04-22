@@ -185,20 +185,3 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	return c, nil
 }
-
-func processRedisServerArgs(req *testcontainers.GenericContainerRequest, args []string) {
-	if len(req.Cmd) == 0 {
-		req.Cmd = append([]string{redisServerProcess}, args...)
-		return
-	}
-
-	// prepend the command to run the redis server with the config file
-	if req.Cmd[0] == redisServerProcess {
-		// redis server is already set as the first argument, so just append the config file
-		req.Cmd = append(req.Cmd, args...)
-	} else if req.Cmd[0] != redisServerProcess {
-		// redis server is not set as the first argument, so prepend it alongside the config file
-		req.Cmd = append([]string{redisServerProcess}, req.Cmd...)
-		req.Cmd = append(req.Cmd, args...)
-	}
-}
