@@ -100,7 +100,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Started:          true,
 	}
 
-	settings := options{}
+	var settings options
 	for _, opt := range opts {
 		if opt, ok := opt.(Option); ok {
 			if err := opt(&settings); err != nil {
