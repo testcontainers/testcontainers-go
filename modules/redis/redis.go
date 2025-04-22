@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/go-connections/nat"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -98,7 +96,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	if settings.tlsEnabled {
 		// wait for the TLS port to be available
-		waitStrategies = append(waitStrategies, wait.ForListeningPort(nat.Port(redisPort)).WithStartupTimeout(time.Second*10))
+		waitStrategies = append(waitStrategies, wait.ForListeningPort(redisPort).WithStartupTimeout(time.Second*10))
 
 		// Generate TLS certificates in the fly and add them to the container before it starts.
 		// Update the CMD to use the TLS certificates.
