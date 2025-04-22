@@ -3,6 +3,7 @@ package redis
 import (
 	"crypto/tls"
 	"net"
+	"os"
 	"strconv"
 
 	"github.com/mdelapenya/tlscert"
@@ -79,7 +80,10 @@ func WithSnapshotting(seconds int, changedKeys int) testcontainers.CustomizeRequ
 
 // createTLSCerts creates a CA certificate, a client certificate and a Redis certificate,
 // storing them in the given temporary directory.
-func createTLSCerts(tmpDir string) (*tlscert.Certificate, *tlscert.Certificate, *tlscert.Certificate) {
+func createTLSCerts() (*tlscert.Certificate, *tlscert.Certificate, *tlscert.Certificate) {
+	// Create a temporary directory to store the TLS certificates.
+	tmpDir := os.TempDir()
+
 	// ips is the extra list of IPs to include in the certificates.
 	// It's used to allow the client and Redis certificates to be used in the same host
 	// when the tests are run using a remote docker daemon.

@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -101,12 +100,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		// wait for the TLS port to be available
 		waitStrategies = append(waitStrategies, wait.ForListeningPort(nat.Port(redisPort)).WithStartupTimeout(time.Second*10))
 
-		// Create a temporary directory to store the TLS certificates.
-		tmpDir := os.TempDir()
-
 		// Generate TLS certificates in the fly and add them to the container before it starts.
 		// Update the CMD to use the TLS certificates.
-		caCert, clientCert, serverCert := createTLSCerts(tmpDir)
+		caCert, clientCert, serverCert := createTLSCerts()
 
 		// Update the CMD to use the TLS certificates.
 		cmds := []string{
