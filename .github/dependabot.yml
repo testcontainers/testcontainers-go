@@ -14,7 +14,6 @@ updates:
       directories:
         - /
         - /examples/nginx
-        - /examples/toxiproxy
         - /modulegen
         - /modules/aerospike
         - /modules/arangodb
@@ -68,6 +67,7 @@ updates:
         - /modules/scylladb
         - /modules/socat
         - /modules/surrealdb
+        - /modules/toxiproxy
         - /modules/valkey
         - /modules/vault
         - /modules/vearch
