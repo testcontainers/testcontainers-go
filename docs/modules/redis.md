@@ -73,12 +73,12 @@ In the case you have a custom config file for Redis, it's possible to copy that 
 
 #### WithTLS
 
-In the case you want to enable TLS for the Redis container, you can use the `WithTLS` option. E.g. `WithTLS()`. This options enables TLS on the `6380/tcp` port and uses a secure URL (e.g. `rediss://host:port`).
+In the case you want to enable TLS for the Redis container, you can use the `WithTLS()` option. This options enables TLS on the `6379/tcp` port and uses a secure URL (e.g. `rediss://host:port`).
 
 !!!info
     In case you want to use Non-mutual TLS (i.e. client authentication is not required), you can customize the CMD arguments by using the `WithCmdArgs` option. E.g. `WithCmdArgs("--tls-auth-clients no")`.
 
-The module automatically generates three certificates, a CA certificate, a client certificate and a Redis certificate, using a temporary directory to store them. Please use the `TLSConfig()` method to get the TLS configuration and use it to configure the Redis client. See more details in the [TLSConfig](#tlsconfig) section.
+The module automatically generates three certificates, a CA certificate, a client certificate and a Redis certificate. Please use the `TLSConfig()` container method to get the TLS configuration and use it to configure the Redis client. See more details in the [TLSConfig](#tlsconfig) section.
 
 ### Container Methods
 

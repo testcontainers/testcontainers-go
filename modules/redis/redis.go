@@ -5,8 +5,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -33,18 +31,6 @@ const (
 type RedisContainer struct {
 	testcontainers.Container
 	settings options
-}
-
-// Terminate terminates the Redis container, removing the TLS certificates that were created in the fly.
-func (c *RedisContainer) Terminate(ctx context.Context, opts ...testcontainers.TerminateOption) error {
-	if c.settings.tlsEnabled {
-		err := os.RemoveAll(c.settings.tlsCertsPath)
-		if err != nil {
-			return fmt.Errorf("remove tls certs: %w", err)
-		}
-	}
-
-	return c.Container.Terminate(ctx, opts...)
 }
 
 // ConnectionString returns the connection string for the Redis container.
@@ -118,9 +104,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		if err != nil {
 			return nil, fmt.Errorf("create tls certs: %w", err)
 		}
-
-		// Use the directory of the CA certificate as the path to the TLS certificates.
-		settings.tlsCertsPath = filepath.Dir(caCert.CertPath)
 
 		// Update the CMD to use the TLS certificates.
 		cmds := []string{
