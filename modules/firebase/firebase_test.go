@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
+
 	"github.com/testcontainers/testcontainers-go/modules/firebase"
 )
 
@@ -26,11 +27,11 @@ func TestFirebase(t *testing.T) {
 	// perform requireions
 	// Ports are linked to the example config in firebase/firebase.json
 
-	firestoreUrl, err := ctr.ConnectionString(ctx, "8080/tcp")
+	firestoreURL, err := ctr.ConnectionString(ctx, "8080/tcp")
 	require.NoError(t, err)
-	require.NotEmpty(t, firestoreUrl)
+	require.NotEmpty(t, firestoreURL)
 
-	t.Setenv("FIRESTORE_EMULATOR_HOST", firestoreUrl)
+	t.Setenv("FIRESTORE_EMULATOR_HOST", firestoreURL)
 	c, err := firestore.NewClient(ctx, firestore.DetectProjectID)
 	require.NoError(t, err)
 	defer c.Close()

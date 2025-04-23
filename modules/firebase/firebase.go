@@ -82,7 +82,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	// Check if user supplied root:
-	rootPathIdx := slices.IndexFunc(req.ContainerRequest.Files, func(file testcontainers.ContainerFile) bool {
+	rootPathIdx := slices.IndexFunc(req.Files, func(file testcontainers.ContainerFile) bool {
 		return file.ContainerFilePath == rootFilePath
 	})
 	if rootPathIdx == -1 {
@@ -90,7 +90,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	// Parse expected emulators from the root:
-	userRoot := req.ContainerRequest.Files[rootPathIdx].HostFilePath
+	userRoot := req.Files[rootPathIdx].HostFilePath
 	cfg, err := os.Open(path.Join(userRoot, "firebase.json"))
 	if err != nil {
 		return nil, fmt.Errorf("open firebase.json: %w", err)

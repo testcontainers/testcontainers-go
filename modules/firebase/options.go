@@ -5,7 +5,6 @@ import (
 )
 
 type options struct {
-	emulators map[string]string
 }
 
 // Compiler check to ensure that Option implements the testcontainers.ContainerCustomizer interface.
