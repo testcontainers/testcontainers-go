@@ -80,7 +80,6 @@ Use the `PullModel` method to pull a model from the Docker Model Runner.
 
 <!--codeinclude-->
 [Pulling a model at runtime](../../modules/dockermodelrunner/examples_test.go) inside_block:runPullModel
-[Pulling a model with progress bar](../../modules/dockermodelrunner/examples_test.go) inside_block:progressBarRunPullModel
 <!--/codeinclude-->
 
 !!! info
