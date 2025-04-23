@@ -61,7 +61,7 @@ func Run(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Cont
 	c.Client = client.NewClient(c.baseURL)
 
 	if settings.model != "" {
-		_, err := c.PullModel(ctx, settings.model)
+		err := c.PullModel(ctx, settings.model)
 		if err != nil {
 			return c, fmt.Errorf("pull model: %w", err)
 		}

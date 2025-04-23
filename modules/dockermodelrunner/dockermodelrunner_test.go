@@ -54,18 +54,18 @@ func TestRun_client(t *testing.T) {
 
 	t.Run("model-pull", func(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
-			_, err := ctr.PullModel(ctx, testModelFQMN)
+			err := ctr.PullModel(ctx, testModelFQMN)
 			require.NoError(t, err)
 		})
 
 		t.Run("failure", func(t *testing.T) {
-			_, err := ctr.PullModel(ctx, testNonExistentFQMN)
+			err := ctr.PullModel(ctx, testNonExistentFQMN)
 			require.Error(t, err)
 		})
 	})
 
 	t.Run("model-inspect", func(t *testing.T) {
-		_, err := ctr.PullModel(ctx, testModelFQMN)
+		err := ctr.PullModel(ctx, testModelFQMN)
 		require.NoError(t, err)
 
 		t.Run("success", func(t *testing.T) {
@@ -82,7 +82,7 @@ func TestRun_client(t *testing.T) {
 	})
 
 	t.Run("list-models", func(t *testing.T) {
-		_, err := ctr.PullModel(ctx, testModelFQMN)
+		err := ctr.PullModel(ctx, testModelFQMN)
 		require.NoError(t, err)
 
 		t.Run("success", func(t *testing.T) {
