@@ -28,7 +28,7 @@ func (c *Client) PullModel(ctx context.Context, fqmn string) error {
 
 	// The Docker Model Runner returns a 200 status code for a successful pulls
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("status code: %d", resp.StatusCode)
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
 	log.Default().Printf("✅ Model %s pulled successfully!", fqmn)
