@@ -11,8 +11,8 @@ import (
 
 // pullOptions contains options for pulling a model
 type pullOptions struct {
-	// progress is an optional writer to show download progress
-	progress ProgressWriter
+	// Progress is an optional writer to show download progress
+	Progress ProgressWriter
 }
 
 // PullOption is a function that configures PullOptions
@@ -46,15 +46,15 @@ func (c *Client) PullModel(ctx context.Context, fullyQualifiedModelName string, 
 
 	// If progress writer is provided, create a progress reader
 	var reader io.Reader = resp.Body
-	if options.progress != nil {
+	if options.Progress != nil {
 		// If we have Content-Length, use it
 		if resp.ContentLength > 0 {
-			options.progress.SetTotal(resp.ContentLength)
+			options.Progress.SetTotal(resp.ContentLength)
 		} else {
 			// Otherwise use indeterminate progress
-			options.progress.SetTotal(-1)
+			options.Progress.SetTotal(-1)
 		}
-		reader = io.TeeReader(resp.Body, options.progress)
+		reader = io.TeeReader(resp.Body, options.Progress)
 	}
 
 	// Read the response
