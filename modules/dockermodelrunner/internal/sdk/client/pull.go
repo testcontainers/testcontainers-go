@@ -19,7 +19,7 @@ type pullOptions struct {
 type PullOption func(*pullOptions) error
 
 // PullModel creates a model in the Docker Model Runner, by pulling the model from Docker Hub.
-func (c *Client) PullModel(ctx context.Context, fqmn string, opts ...PullOption) error {
+func (c *Client) PullModel(ctx context.Context, fullyQualifiedModelName string, opts ...PullOption) error {
 	options := &pullOptions{}
 	for _, opt := range opts {
 		if err := opt(options); err != nil {
@@ -27,7 +27,7 @@ func (c *Client) PullModel(ctx context.Context, fqmn string, opts ...PullOption)
 		}
 	}
 
-	payload := fmt.Sprintf(`{"from": %q}`, fqmn)
+	payload := fmt.Sprintf(`{"from": %q}`, fullyQualifiedModelName)
 	reqURL := c.baseURL + "/models/create"
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, strings.NewReader(payload))
@@ -65,7 +65,7 @@ func (c *Client) PullModel(ctx context.Context, fqmn string, opts ...PullOption)
 		return fmt.Errorf("copy response: %w", err)
 	}
 
-	log.Default().Printf("✅ Model %s pulled successfully!", fqmn)
+	log.Default().Printf("✅ Model %s pulled successfully!", fullyQualifiedModelName)
 
 	return nil
 }
