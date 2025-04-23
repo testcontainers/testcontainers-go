@@ -21,8 +21,9 @@ const (
 // Container represents the DockerModelRunner container type used in the module
 type Container struct {
 	*socat.Container
-	model   string
-	baseURL string
+	model     string
+	baseURL   string
+	dmrClient *client.Client
 }
 
 // Run creates an instance of the DockerModelRunner container type.
@@ -59,6 +60,8 @@ func Run(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Cont
 
 	c.baseURL = socatCtr.TargetURL(modelRunnerPort).String()
 
+	c.dmrClient = client.NewClient(c.baseURL)
+
 	if settings.model != "" {
 		err := c.PullModel(ctx, settings.model)
 		if err != nil {
@@ -76,9 +79,7 @@ func Run(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Cont
 //
 // [Models_as_OCI_Artifacts]: https://hub.docker.com/u/ai
 func (c *Container) InspectModel(ctx context.Context, namespace string, name string) (*types.ModelResponse, error) {
-	dmrClient := client.NewClient(c.baseURL)
-
-	modelResponse, err := dmrClient.InspectModel(ctx, namespace, name)
+	modelResponse, err := c.dmrClient.InspectModel(ctx, namespace, name)
 	if err != nil {
 		return nil, fmt.Errorf("inspect model: %w", err)
 	}
@@ -88,9 +89,7 @@ func (c *Container) InspectModel(ctx context.Context, namespace string, name str
 
 // ListModels lists all models that are already pulled using the Docker Model Runner format.
 func (c *Container) ListModels(ctx context.Context) ([]types.ModelResponse, error) {
-	dmrClient := client.NewClient(c.baseURL)
-
-	models, err := dmrClient.ListModels(ctx)
+	models, err := c.dmrClient.ListModels(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list models: %w", err)
 	}
@@ -102,10 +101,7 @@ func (c *Container) ListModels(ctx context.Context) ([]types.ModelResponse, erro
 func (c *Container) PullModel(ctx context.Context, model string) error {
 	log.Default().Printf("🙏 Pulling model %s. Please be patient, no progress bar yet!", model)
 
-	// create a new client for the Docker Model Runner using the OpenAI endpoint
-	dmrClient := client.NewClient(c.baseURL)
-
-	_, err := dmrClient.CreateModel(ctx, model)
+	_, err := c.dmrClient.CreateModel(ctx, model)
 	if err != nil {
 		return fmt.Errorf("create model: %w", err)
 	}
@@ -117,7 +113,5 @@ func (c *Container) PullModel(ctx context.Context, model string) error {
 
 // OpenAIEndpoint returns the OpenAI endpoint for the Docker Model Runner
 func (c *Container) OpenAIEndpoint() string {
-	dmrClient := client.NewClient(c.baseURL)
-
-	return dmrClient.OpenAIEndpoint()
+	return c.dmrClient.OpenAIEndpoint()
 }
