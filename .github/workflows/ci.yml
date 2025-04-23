@@ -83,7 +83,7 @@ jobs:
     needs:
       - detect-modules
       - lint
-    name: "Test using Docker Cloud"
+    name: "Test using Testcontainers Cloud"
     strategy:
       matrix:
         go-version: [1.23.x, 1.24.x]
