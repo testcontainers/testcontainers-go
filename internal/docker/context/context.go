@@ -54,11 +54,15 @@ func getContextFromEnv() string {
 	return ""
 }
 
-// Current returns the current context name, based on
-// environment variables and the cli configuration file. It does not
-// validate if the given context exists or if it's valid.
+// Current returns the current context name, based on environment variables
+// and the cli configuration file. If no context is explicitly set, it returns
+// the default context name. The function may return an error if the configuration
+// file exists but cannot be loaded.
 //
-// If the current context is not found, it returns the default context name.
+// The context name is determined in the following order:
+// 1. Environment variables
+// 2. CLI configuration file's "currentContext" field
+// 3. Default context name
 func Current() (string, error) {
 	// Check env vars first (clearer precedence)
 	if ctx := getContextFromEnv(); ctx != "" {
