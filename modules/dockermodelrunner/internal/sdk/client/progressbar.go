@@ -28,7 +28,7 @@ func (p *ProgressBarAdapter) SetTotal(total int64) {
 // WithProgress sets a progress writer for the pull operation
 func WithProgress(w ProgressWriter) PullOption {
 	return func(opts *pullOptions) {
-		opts.Progress = w
+		opts.progress = w
 	}
 }
 
@@ -36,7 +36,7 @@ func WithProgress(w ProgressWriter) PullOption {
 // writer.
 func WithProgressBar(w io.Writer, we io.Writer, total int) PullOption {
 	return func(opts *pullOptions) {
-		opts.Progress = NewProgressBar(w, we, total)
+		opts.progress = NewProgressBar(w, we, total)
 	}
 }
 
@@ -44,7 +44,7 @@ func WithProgressBar(w io.Writer, we io.Writer, total int) PullOption {
 // as the writer.
 func WithStdoutProgressBar(total int) PullOption {
 	return func(opts *pullOptions) {
-		opts.Progress = NewProgressBar(os.Stdout, os.Stderr, total)
+		opts.progress = NewProgressBar(os.Stdout, os.Stderr, total)
 	}
 }
 
