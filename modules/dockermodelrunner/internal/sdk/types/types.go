@@ -2,6 +2,7 @@ package types
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -17,28 +18,36 @@ type ModelResponse struct {
 	Config map[string]string `json:"config"`
 
 	// Created is the creation time of the model
-	Created JSONTime `json:"created"`
+	Created time.Time `json:"created"`
 }
 
-// JSONTime handles Unix timestamp conversion to/from time.Time
-type JSONTime time.Time
+// modelResponseAlias is an alias for ModelResponse to avoid recursion in JSON marshaling/unmarshaling.
+// This is necessary because we want ModelResponse to contain a time.Time field which is not directly
+// compatible with JSON serialization/deserialization.
+type modelResponseAlias ModelResponse
 
-// UnmarshalJSON implements json.Unmarshaler
-func (j *JSONTime) UnmarshalJSON(b []byte) error {
-	var timestamp int64
-	if err := json.Unmarshal(b, &timestamp); err != nil {
-		return err
+// modelResponseJSON is a struct used for JSON marshaling/unmarshaling of ModelResponse.
+// It includes a Unix timestamp for the Created field to ensure compatibility with JSON.
+type modelResponseJSON struct {
+	modelResponseAlias
+	CreatedAt int64 `json:"created"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (mr *ModelResponse) UnmarshalJSON(b []byte) error {
+	var resp modelResponseJSON
+	if err := json.Unmarshal(b, &resp); err != nil {
+		return fmt.Errorf("unmarshal model response: %w", err)
 	}
-	*j = JSONTime(time.Unix(timestamp, 0))
+	*mr = ModelResponse(resp.modelResponseAlias)
+	mr.Created = time.Unix(resp.CreatedAt, 0)
 	return nil
 }
 
-// MarshalJSON implements json.Marshaler
-func (j JSONTime) MarshalJSON() ([]byte, error) {
-	return json.Marshal(time.Time(j).Unix())
-}
-
-// Time returns the time.Time representation
-func (j JSONTime) Time() time.Time {
-	return time.Time(j)
+// MarshalJSON implements json.Marshaler.
+func (mr ModelResponse) MarshalJSON() ([]byte, error) {
+	return json.Marshal(modelResponseJSON{
+		modelResponseAlias: modelResponseAlias(mr),
+		CreatedAt:          mr.Created.Unix(),
+	})
 }
