@@ -97,7 +97,7 @@ func createTLSCerts() (*tlscert.Certificate, *tlscert.Certificate, *tlscert.Cert
 	ips := []net.IP{net.ParseIP("127.0.0.1")}
 
 	// Generate CA certificate
-	caCert := tlscert.SelfSignedFromRequest(tlscert.Request{
+	caCert, err := tlscert.SelfSignedFromRequestE(tlscert.Request{
 		Host:              "localhost",
 		IPAddresses:       ips,
 		Name:              "ca",
@@ -105,9 +105,12 @@ func createTLSCerts() (*tlscert.Certificate, *tlscert.Certificate, *tlscert.Cert
 		IsCA:              true,
 		ParentDir:         tmpDir,
 	})
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("generate CA certificate: %w", err)
+	}
 
 	// Generate client certificate
-	clientCert := tlscert.SelfSignedFromRequest(tlscert.Request{
+	clientCert, err := tlscert.SelfSignedFromRequestE(tlscert.Request{
 		Host:              "localhost",
 		Name:              "Redis Client",
 		SubjectCommonName: "localhost",
@@ -115,15 +118,21 @@ func createTLSCerts() (*tlscert.Certificate, *tlscert.Certificate, *tlscert.Cert
 		Parent:            caCert,
 		ParentDir:         tmpDir,
 	})
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("generate client certificate: %w", err)
+	}
 
 	// Generate Redis certificate
-	redisCert := tlscert.SelfSignedFromRequest(tlscert.Request{
+	redisCert, err := tlscert.SelfSignedFromRequestE(tlscert.Request{
 		Host:        "localhost",
 		IPAddresses: ips,
 		Name:        "Redis Server",
 		Parent:      caCert,
 		ParentDir:   tmpDir,
 	})
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("generate Redis certificate: %w", err)
+	}
 
 	return caCert, clientCert, redisCert, nil
 }
