@@ -6,9 +6,7 @@ import (
 	"net/http"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner/internal/sdk/client"
-	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner/internal/sdk/types"
 	"github.com/testcontainers/testcontainers-go/modules/socat"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -21,9 +19,9 @@ const (
 // Container represents the DockerModelRunner container type used in the module
 type Container struct {
 	*socat.Container
-	model     string
-	baseURL   string
-	dmrClient *client.Client
+	*client.Client
+	model   string
+	baseURL string
 }
 
 // Run creates an instance of the DockerModelRunner container type.
@@ -60,58 +58,14 @@ func Run(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Cont
 
 	c.baseURL = socatCtr.TargetURL(modelRunnerPort).String()
 
-	c.dmrClient = client.NewClient(c.baseURL)
+	c.Client = client.NewClient(c.baseURL)
 
 	if settings.model != "" {
-		err := c.PullModel(ctx, settings.model)
+		_, err := c.PullModel(ctx, settings.model)
 		if err != nil {
 			return c, fmt.Errorf("pull model: %w", err)
 		}
 	}
 
 	return c, nil
-}
-
-// InspectModel returns a model that is already pulled using the Docker Model Runner format.
-// The name of the model is in the format of <name>:<tag>.
-// The namespace and name defines Models as OCI Artifacts in Docker Hub, therefore the namespace is the organization and the name is the repository.
-// E.g. "ai/smollm2:360M-Q4_K_M". See [Models_as_OCI_Artifacts] for more information.
-//
-// [Models_as_OCI_Artifacts]: https://hub.docker.com/u/ai
-func (c *Container) InspectModel(ctx context.Context, namespace string, name string) (*types.ModelResponse, error) {
-	modelResponse, err := c.dmrClient.InspectModel(ctx, namespace, name)
-	if err != nil {
-		return nil, fmt.Errorf("inspect model: %w", err)
-	}
-
-	return modelResponse, nil
-}
-
-// ListModels lists all models that are already pulled using the Docker Model Runner format.
-func (c *Container) ListModels(ctx context.Context) ([]types.ModelResponse, error) {
-	models, err := c.dmrClient.ListModels(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("list models: %w", err)
-	}
-
-	return models, nil
-}
-
-// PullModel pulls a model from the Docker Model Runner
-func (c *Container) PullModel(ctx context.Context, model string) error {
-	log.Default().Printf("🙏 Pulling model %s. Please be patient, no progress bar yet!", model)
-
-	_, err := c.dmrClient.CreateModel(ctx, model)
-	if err != nil {
-		return fmt.Errorf("create model: %w", err)
-	}
-
-	log.Default().Printf("✅ Model %s pulled successfully!", model)
-
-	return nil
-}
-
-// OpenAIEndpoint returns the OpenAI endpoint for the Docker Model Runner
-func (c *Container) OpenAIEndpoint() string {
-	return c.dmrClient.OpenAIEndpoint()
 }

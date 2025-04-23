@@ -9,7 +9,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner/internal/sdk/types"
 )
 
-// ListModels lists all models
+// ListModels lists all models that are already pulled using the Docker Model Runner format.
 func (c *Client) ListModels(ctx context.Context) ([]types.ModelResponse, error) {
 	reqURL := c.baseURL + "/models"
 

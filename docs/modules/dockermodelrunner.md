@@ -89,13 +89,15 @@ Use the `PullModel` method to pull a model from the Docker Model Runner.
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-Use the `InspectModel` method to get a model from the Docker Model Runner, by providing the model namespace and name.
+Use the `InspectModel` method to inspect a model from the Docker Model Runner, by providing the model namespace and name.
 
 <!--codeinclude-->
 [Getting a model at runtime](../../modules/dockermodelrunner/examples_test.go) inside_block:runInspectModel
 <!--/codeinclude-->
 
-The name of the model is in the format of `<name>:<tag>`.
+The namespace and name of the model is in the format of `<name>:<tag>`, which defines Models as OCI Artifacts in Docker Hub, therefore the namespace is the organization and the name is the repository.
+
+E.g. `ai/smollm2:360M-Q4_K_M`. See [Models as OCI Artifacts](https://hub.docker.com/u/ai) for more information.
 
 #### ListModels
 
