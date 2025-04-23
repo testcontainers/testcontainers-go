@@ -83,14 +83,14 @@ func WithSnapshotting(seconds int, changedKeys int) testcontainers.CustomizeRequ
 }
 
 // createTLSCerts creates a CA certificate, a client certificate and a Redis certificate.
-func createTLSCerts() (*tlscert.Certificate, *tlscert.Certificate, *tlscert.Certificate, error) {
+func createTLSCerts() (caCert *tlscert.Certificate, clientCert *tlscert.Certificate, redisCert *tlscert.Certificate, err error) {
 	// ips is the extra list of IPs to include in the certificates.
 	// It's used to allow the client and Redis certificates to be used in the same host
 	// when the tests are run using a remote docker daemon.
 	ips := []net.IP{net.ParseIP("127.0.0.1")}
 
 	// Generate CA certificate
-	caCert, err := tlscert.SelfSignedFromRequestE(tlscert.Request{
+	caCert, err = tlscert.SelfSignedFromRequestE(tlscert.Request{
 		Host:              "localhost",
 		IPAddresses:       ips,
 		Name:              "ca",
@@ -102,7 +102,7 @@ func createTLSCerts() (*tlscert.Certificate, *tlscert.Certificate, *tlscert.Cert
 	}
 
 	// Generate client certificate
-	clientCert, err := tlscert.SelfSignedFromRequestE(tlscert.Request{
+	clientCert, err = tlscert.SelfSignedFromRequestE(tlscert.Request{
 		Host:              "localhost",
 		Name:              "Redis Client",
 		SubjectCommonName: "localhost",
@@ -114,7 +114,7 @@ func createTLSCerts() (*tlscert.Certificate, *tlscert.Certificate, *tlscert.Cert
 	}
 
 	// Generate Redis certificate
-	redisCert, err := tlscert.SelfSignedFromRequestE(tlscert.Request{
+	redisCert, err = tlscert.SelfSignedFromRequestE(tlscert.Request{
 		Host:        "localhost",
 		IPAddresses: ips,
 		Name:        "Redis Server",
