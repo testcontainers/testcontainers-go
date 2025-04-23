@@ -71,9 +71,30 @@ jobs:
       go-version: ${{ matrix.go-version }}
       platforms: ${{ matrix.module == 'modulegen' && '["ubuntu-latest", "macos-latest", "windows-latest"]' || '["ubuntu-latest"]' }}
       project-directory: "${{ matrix.module }}"
+      testcontainers-cloud: false
       rootless-docker: false
       ryuk-disabled: false
     secrets: inherit
+
+  # The job below is a copy of the job above, but using Docker Cloud.
+  test-testcontainers-cloud:
+    # the core module is identified by the empty string (the root path)
+    if: ${{ contains(fromJSON(needs.detect-modules.outputs.modules), '') }}
+    needs:
+      - detect-modules
+      - lint
+    name: "Test using Testcontainers Cloud"
+    strategy:
+      matrix:
+        go-version: [1.23.x, 1.24.x]
+    uses: ./.github/workflows/ci-test-go.yml
+    with:
+      go-version: ${{ matrix.go-version }}
+      platforms: '["ubuntu-latest"]'
+      project-directory: "."
+      testcontainers-cloud: true
+      rootless-docker: false
+      ryuk-disabled: false
 
   # The job below is a copy of the job above, but with ryuk disabled.
   # It's executed in the first stage to avoid concurrency issues.
@@ -92,6 +113,7 @@ jobs:
       go-version: ${{ matrix.go-version }}
       platforms: '["ubuntu-latest"]'
       project-directory: "."
+      testcontainers-cloud: false
       rootless-docker: false
       ryuk-disabled: true
 
@@ -112,6 +134,7 @@ jobs:
       go-version: ${{ matrix.go-version }}
       platforms: '["ubuntu-latest"]'
       project-directory: "."
+      testcontainers-cloud: false
       rootless-docker: true
       ryuk-disabled: false
 
