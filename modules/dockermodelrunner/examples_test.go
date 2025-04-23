@@ -230,6 +230,7 @@ func ExampleRun_openAI() {
 	}
 	if !ok {
 		fmt.Println("true")
+		fmt.Println("true")
 		return
 	}
 
