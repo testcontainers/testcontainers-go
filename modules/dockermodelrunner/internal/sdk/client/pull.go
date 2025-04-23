@@ -16,15 +16,13 @@ type pullOptions struct {
 }
 
 // PullOption is a function that configures PullOptions
-type PullOption func(*pullOptions) error
+type PullOption func(*pullOptions)
 
 // PullModel creates a model in the Docker Model Runner, by pulling the model from Docker Hub.
 func (c *Client) PullModel(ctx context.Context, fullyQualifiedModelName string, opts ...PullOption) error {
 	options := &pullOptions{}
 	for _, opt := range opts {
-		if err := opt(options); err != nil {
-			return fmt.Errorf("apply pull option: %w", err)
-		}
+		opt(options)
 	}
 
 	payload := fmt.Sprintf(`{"from": %q}`, fullyQualifiedModelName)

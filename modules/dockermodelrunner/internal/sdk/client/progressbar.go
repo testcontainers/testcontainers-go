@@ -1,7 +1,6 @@
 package client
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -28,34 +27,24 @@ func (p *ProgressBarAdapter) SetTotal(total int64) {
 
 // WithProgress sets a progress writer for the pull operation
 func WithProgress(w ProgressWriter) PullOption {
-	return func(opts *pullOptions) error {
+	return func(opts *pullOptions) {
 		opts.progress = w
-		return nil
 	}
 }
 
 // WithProgressBar sets a progress writer for the pull operation, using the provided
 // writer.
 func WithProgressBar(w io.Writer, we io.Writer, total int) PullOption {
-	return func(opts *pullOptions) error {
-		if w == nil {
-			return errors.New("writer is nil")
-		}
-		if we == nil {
-			return errors.New("error writer is nil")
-		}
-
+	return func(opts *pullOptions) {
 		opts.progress = NewProgressBar(w, we, total)
-		return nil
 	}
 }
 
 // WithStdoutProgressBar sets a progress writer for the pull operation, using stdout
 // as the writer.
 func WithStdoutProgressBar(total int) PullOption {
-	return func(opts *pullOptions) error {
+	return func(opts *pullOptions) {
 		opts.progress = NewProgressBar(os.Stdout, os.Stderr, total)
-		return nil
 	}
 }
 
