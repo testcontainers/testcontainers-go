@@ -82,8 +82,7 @@ func WithSnapshotting(seconds int, changedKeys int) testcontainers.CustomizeRequ
 	return testcontainers.WithCmdArgs("--save", strconv.Itoa(seconds), strconv.Itoa(changedKeys))
 }
 
-// createTLSCerts creates a CA certificate, a client certificate and a Redis certificate,
-// storing them in the given temporary directory.
+// createTLSCerts creates a CA certificate, a client certificate and a Redis certificate.
 func createTLSCerts() (*tlscert.Certificate, *tlscert.Certificate, *tlscert.Certificate, error) {
 	// ips is the extra list of IPs to include in the certificates.
 	// It's used to allow the client and Redis certificates to be used in the same host
