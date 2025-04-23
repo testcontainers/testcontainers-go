@@ -1,6 +1,7 @@
 package dockermodelrunner_test
 
 import (
+	"bytes"
 	"context"
 	"testing"
 
@@ -8,6 +9,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner"
+	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner/internal/sdk/client"
 	"github.com/testcontainers/testcontainers-go/modules/socat"
 )
 
@@ -53,14 +55,23 @@ func TestRun_client(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("model-pull", func(t *testing.T) {
-		t.Run("success", func(t *testing.T) {
-			err := ctr.PullModel(ctx, testModelFQMN)
-			require.NoError(t, err)
-		})
-
 		t.Run("failure", func(t *testing.T) {
 			err := ctr.PullModel(ctx, testNonExistentFQMN)
 			require.Error(t, err)
+		})
+
+		t.Run("with-progress/stdout", func(t *testing.T) {
+			err := ctr.PullModel(ctx, testModelFQMN, client.WithStdoutProgressBar(100))
+			require.NoError(t, err)
+		})
+
+		t.Run("with-progress/buffer", func(t *testing.T) {
+			w := bytes.NewBuffer(nil)
+			we := bytes.NewBuffer(nil)
+			err := ctr.PullModel(ctx, testModelFQMN, client.WithProgressBar(w, we, 100))
+			require.NoError(t, err)
+			require.Contains(t, w.String(), "Pulling model...")
+			require.Empty(t, we.String())
 		})
 	})
 

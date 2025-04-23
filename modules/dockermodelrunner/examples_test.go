@@ -1,6 +1,7 @@
 package dockermodelrunner_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner"
+	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner/internal/sdk/client"
 )
 
 func ExampleRun_withModel() {
@@ -244,17 +246,23 @@ func ExampleRun_openAI() {
 		return
 	}
 
+	// progressBarRunPullModel {
 	const (
 		modelNamespace = "ai"
 		modelName      = "smollm2"
 		modelTag       = "360M-Q4_K_M"
 	)
 
-	err = dmrCtr.PullModel(ctx, modelNamespace+"/"+modelName+":"+modelTag)
+	w := bytes.NewBuffer(nil)
+	we := bytes.NewBuffer(nil)
+	err = dmrCtr.PullModel(ctx, modelNamespace+"/"+modelName+":"+modelTag, client.WithProgressBar(w, we, 100))
 	if err != nil {
 		log.Printf("failed to pull model: %s", err)
 		return
 	}
+	// }
+
+	fmt.Println(strings.Contains(w.String(), "Pulling model..."))
 
 	llmURL := dmrCtr.OpenAIEndpoint()
 
@@ -285,6 +293,7 @@ func ExampleRun_openAI() {
 	fmt.Println(len(completion.Choices[0].Message.Content) > 0)
 
 	// Output:
+	// true
 	// true
 }
 
