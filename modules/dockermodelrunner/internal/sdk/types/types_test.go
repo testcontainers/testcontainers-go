@@ -33,11 +33,11 @@ func TestUnmarshalJSON(t *testing.T) {
 func TestUnmarshalJSONError(t *testing.T) {
 	// Invalid JSON with malformed created timestamp
 	invalidJSON := `{
-        "id": "model123",
-        "tags": ["tag1", "tag2"],
-        "config": {"key1": "value1"},
-        "created": "not-a-number"
-    }`
+		"id": "model123",
+		"tags": ["tag1", "tag2"],
+		"config": {"key1": "value1"},
+		"created": "not-a-number"
+	}`
 
 	var response ModelResponse
 	err := json.Unmarshal([]byte(invalidJSON), &response)
