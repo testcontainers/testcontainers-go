@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
-
 	"github.com/testcontainers/testcontainers-go/modules/firebase"
 )
 
@@ -24,7 +23,6 @@ func TestFirebase(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	// perform requireions
 	// Ports are linked to the example config in firebase/firebase.json
 
 	firestoreURL, err := ctr.ConnectionString(ctx, "8080/tcp")
@@ -59,7 +57,7 @@ func TestFirebaseBadDirectory(t *testing.T) {
 	)
 	// In this case, the file gets copied over at /srv/failure (instead of /srv/firebase)
 	// and this stops working.
-	// What would be a solution here? Previously I just added an requireion that the root must
+	// What would be a solution here? Previously I just added a check that the root must
 	// end in "/firebase"... I could do the same.
 	testcontainers.CleanupContainer(t, ctr)
 	require.Error(t, err)

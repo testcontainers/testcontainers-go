@@ -4,8 +4,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-type options struct {
-}
+type options struct{}
 
 // Compiler check to ensure that Option implements the testcontainers.ContainerCustomizer interface.
 var _ testcontainers.ContainerCustomizer = (Option)(nil)
