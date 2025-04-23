@@ -3,9 +3,7 @@ package dockermodelrunner
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
-	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/log"
@@ -45,12 +43,6 @@ func Run(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Cont
 		wait.ForListeningPort("80/tcp"),
 		wait.ForHTTP("/").WithPort("80/tcp").WithStatusCodeMatcher(func(status int) bool {
 			return status == http.StatusOK
-		}).WithResponseMatcher(func(body io.Reader) bool {
-			bodyBytes, err := io.ReadAll(body)
-			if err != nil {
-				return false
-			}
-			return strings.Contains(string(bodyBytes), "The service is running")
 		}),
 	))
 	opts = append(opts, socat.WithTarget(socat.NewTarget(modelRunnerPort, modelRunnerEntrypoint)))
