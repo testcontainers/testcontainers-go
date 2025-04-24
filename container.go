@@ -141,17 +141,17 @@ type ContainerRequest struct {
 	Tmpfs                    map[string]string
 	RegistryCred             string // Deprecated: Testcontainers will detect registry credentials automatically
 	WaitingFor               wait.Strategy
-	Name                     string // for specifying container name
-	Hostname                 string
-	WorkingDir               string                                     // specify the working directory of the container
+	Name                     string                                     // for specifying container name
+	Hostname                 string                                     // Deprecated: Use [ConfigModifier] instead. S
+	WorkingDir               string                                     // Deprecated: Use [ConfigModifier] instead. Specify the working directory of the container
 	ExtraHosts               []string                                   // Deprecated: Use HostConfigModifier instead
-	Privileged               bool                                       // For starting privileged container
+	Privileged               bool                                       // Deprecated: Use [HostConfigModifier] instead. For starting privileged container
 	Networks                 []string                                   // for specifying network names
 	NetworkAliases           map[string][]string                        // for specifying network aliases
 	NetworkMode              container.NetworkMode                      // Deprecated: Use HostConfigModifier instead
 	Resources                container.Resources                        // Deprecated: Use HostConfigModifier instead
 	Files                    []ContainerFile                            // files which will be copied when container starts
-	User                     string                                     // for specifying uid:gid
+	User                     string                                     // Deprecated: Use [ConfigModifier] instead. For specifying uid:gid
 	SkipReaper               bool                                       // Deprecated: The reaper is globally controlled by the .testcontainers.properties file or the TESTCONTAINERS_RYUK_DISABLED environment variable
 	ReaperImage              string                                     // Deprecated: use WithImageName ContainerOption instead. Alternative reaper image
 	ReaperOptions            []ContainerOption                          // Deprecated: the reaper is configured at the properties level, for an entire test session
@@ -159,7 +159,7 @@ type ContainerRequest struct {
 	AlwaysPullImage          bool                                       // Always pull image
 	ImagePlatform            string                                     // ImagePlatform describes the platform which the image runs on.
 	Binds                    []string                                   // Deprecated: Use HostConfigModifier instead
-	ShmSize                  int64                                      // Amount of memory shared with the host (in bytes)
+	ShmSize                  int64                                      // Deprecated: Use [HostConfigModifier] instead. Amount of memory shared with the host (in bytes)
 	CapAdd                   []string                                   // Deprecated: Use HostConfigModifier instead. Add Linux capabilities
 	CapDrop                  []string                                   // Deprecated: Use HostConfigModifier instead. Drop Linux capabilities
 	ConfigModifier           func(*container.Config)                    // Modifier for the config before container creation
@@ -285,37 +285,37 @@ func parseDockerIgnore(targetDir string) (bool, []string, error) {
 
 // GetBuildArgs returns the env args to be used when creating from Dockerfile
 func (c *ContainerRequest) GetBuildArgs() map[string]*string {
-	return c.FromDockerfile.BuildArgs
+	return c.BuildArgs
 }
 
 // GetDockerfile returns the Dockerfile from the ContainerRequest, defaults to "Dockerfile".
 // Sets FromDockerfile.Dockerfile to the default if blank.
 func (c *ContainerRequest) GetDockerfile() string {
-	if c.FromDockerfile.Dockerfile == "" {
-		c.FromDockerfile.Dockerfile = "Dockerfile"
+	if c.Dockerfile == "" {
+		c.Dockerfile = "Dockerfile"
 	}
 
-	return c.FromDockerfile.Dockerfile
+	return c.Dockerfile
 }
 
 // GetRepo returns the Repo label for image from the ContainerRequest, defaults to UUID.
 // Sets FromDockerfile.Repo to the default value if blank.
 func (c *ContainerRequest) GetRepo() string {
-	if c.FromDockerfile.Repo == "" {
-		c.FromDockerfile.Repo = uuid.NewString()
+	if c.Repo == "" {
+		c.Repo = uuid.NewString()
 	}
 
-	return strings.ToLower(c.FromDockerfile.Repo)
+	return strings.ToLower(c.Repo)
 }
 
 // GetTag returns the Tag label for image from the ContainerRequest, defaults to UUID.
 // Sets FromDockerfile.Tag to the default value if blank.
 func (c *ContainerRequest) GetTag() string {
-	if c.FromDockerfile.Tag == "" {
-		c.FromDockerfile.Tag = uuid.NewString()
+	if c.Tag == "" {
+		c.Tag = uuid.NewString()
 	}
 
-	return strings.ToLower(c.FromDockerfile.Tag)
+	return strings.ToLower(c.Tag)
 }
 
 // Deprecated: Testcontainers will detect registry credentials automatically, and it will be removed in the next major release.
@@ -343,13 +343,13 @@ func (c *ContainerRequest) dockerFileImages() ([]string, error) {
 
 	// Source is an archive, we need to read it to get the Dockerfile.
 	dockerFile := c.GetDockerfile()
-	tr := tar.NewReader(c.FromDockerfile.ContextArchive)
+	tr := tar.NewReader(c.ContextArchive)
 
 	for {
 		hdr, err := tr.Next()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
-				return nil, fmt.Errorf("Dockerfile %q not found in context archive", dockerFile)
+				return nil, fmt.Errorf("dockerfile %q not found in context archive", dockerFile)
 			}
 
 			return nil, fmt.Errorf("reading tar archive: %w", err)
@@ -405,22 +405,24 @@ func getAuthConfigsFromDockerfile(c *ContainerRequest) (map[string]registry.Auth
 }
 
 func (c *ContainerRequest) ShouldBuildImage() bool {
-	return c.FromDockerfile.Context != "" || c.FromDockerfile.ContextArchive != nil
+	return c.Context != "" || c.ContextArchive != nil
 }
 
 func (c *ContainerRequest) ShouldKeepBuiltImage() bool {
-	return c.FromDockerfile.KeepImage
+	return c.KeepImage
 }
 
 // BuildLogWriter returns the io.Writer for output of log when building a Docker image from
 // a Dockerfile. It returns the BuildLogWriter from the ContainerRequest, defaults to io.Discard.
 // For backward compatibility, if BuildLogWriter is default and PrintBuildLog is true,
 // the function returns os.Stderr.
+//
+//nolint:staticcheck //FIXME
 func (c *ContainerRequest) BuildLogWriter() io.Writer {
 	if c.FromDockerfile.BuildLogWriter != nil {
 		return c.FromDockerfile.BuildLogWriter
 	}
-	if c.FromDockerfile.PrintBuildLog {
+	if c.PrintBuildLog {
 		c.FromDockerfile.BuildLogWriter = os.Stderr
 	} else {
 		c.FromDockerfile.BuildLogWriter = io.Discard
@@ -437,8 +439,8 @@ func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 		ForceRemove: true,
 	}
 
-	if c.FromDockerfile.BuildOptionsModifier != nil {
-		c.FromDockerfile.BuildOptionsModifier(&buildOptions)
+	if c.BuildOptionsModifier != nil {
+		c.BuildOptionsModifier(&buildOptions)
 	}
 
 	// apply mandatory values after the modifier
@@ -505,7 +507,7 @@ func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 }
 
 func (c *ContainerRequest) validateContextAndImage() error {
-	if c.FromDockerfile.Context != "" && c.Image != "" {
+	if c.Context != "" && c.Image != "" {
 		return errors.New("you cannot specify both an Image and Context in a ContainerRequest")
 	}
 
@@ -513,7 +515,7 @@ func (c *ContainerRequest) validateContextAndImage() error {
 }
 
 func (c *ContainerRequest) validateContextOrImageIsSpecified() error {
-	if c.FromDockerfile.Context == "" && c.FromDockerfile.ContextArchive == nil && c.Image == "" {
+	if c.Context == "" && c.ContextArchive == nil && c.Image == "" {
 		return errors.New("you must specify either a build context or an image")
 	}
 

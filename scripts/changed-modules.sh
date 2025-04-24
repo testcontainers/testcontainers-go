@@ -74,7 +74,30 @@ readonly ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 readonly excluded_modules=(".devcontainer" ".vscode" "docs")
 
 # define an array of files that won't be included in the list
-readonly excluded_files=("mkdocs.yml" ".github/dependabot.yml" ".github/workflows/sonar-*.yml")
+readonly excluded_files=(
+    ".github/dependabot.yml"
+    ".github/FUNDING.yml"
+    ".github/PULL_REQUEST_TEMPLATE.md"
+    ".github/release-drafter.yml"
+    ".github/settings.yml"
+    ".github/workflows/codeql.yml"
+    ".github/workflows/conventions.yml"
+    ".github/workflows/docker-projects-latest.yml"
+    ".github/workflows/release-drafter.yml"
+    ".github/workflows/scorecard.yml"
+    ".github/workflows/sonar-*.yml"
+    "scripts/bump-*.sh"
+    "scripts/check_environment.sh"
+    "scripts/*release.sh"
+    "CONTRIBUTING.md"
+    "LICENSE"
+    "mkdocs.yml"
+    "Pipfile*"
+    "README.md"
+    "RELEASING.md"
+    "requirements.txt"
+    "runtime.txt"
+)
 
 # define an array of modules that won't be part of the build
 readonly no_build_modules=("modules/k6")

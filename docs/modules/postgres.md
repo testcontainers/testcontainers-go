@@ -70,6 +70,14 @@ An example of a `*.sh` script that creates a user and database is shown below:
 [Init script content](../../modules/postgres/testdata/init-user-db.sh)
 <!--/codeinclude-->
 
+#### Ordered Init Scripts
+
+If you would like to run the init scripts in a specific order, you can use the `WithOrderedInitScripts` function, which copies the given scripts in the order they are provided to the container, prefixed with the order number so that Postgres executes them in the correct order.
+
+<!--codeinclude-->
+[Ordered init scripts](../../modules/postgres/postgres_test.go) inside_block:orderedInitScripts
+<!--/codeinclude-->
+
 #### Database configuration
 
 In the case you have a custom config file for Postgres, it's possible to copy that file into the container before it's started, using the `WithConfigFile(cfgPath string)` function.

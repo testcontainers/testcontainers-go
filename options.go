@@ -41,6 +41,15 @@ func CustomizeRequest(src GenericContainerRequest) CustomizeRequestOption {
 	}
 }
 
+// WithDockerfile allows to build a container from a Dockerfile
+func WithDockerfile(df FromDockerfile) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.FromDockerfile = df
+
+		return nil
+	}
+}
+
 // WithConfigModifier allows to override the default container config
 func WithConfigModifier(modifier func(config *container.Config)) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {
@@ -96,7 +105,6 @@ func WithHostPortAccess(ports ...int) CustomizeRequestOption {
 	}
 }
 
-// Deprecated: the modules API forces passing the image as part of the signature of the Run function.
 // WithImage sets the image for a container
 func WithImage(image string) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {
@@ -350,7 +358,88 @@ func WithImageMount(source string, subpath string, target ContainerMountTarget) 
 			Source: src,
 			Target: target,
 		})
+		return nil
+	}
+}
 
+// WithEntrypoint completely replaces the entrypoint of a container
+func WithEntrypoint(entrypoint ...string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.Entrypoint = entrypoint
+		return nil
+	}
+}
+
+// WithEntrypointArgs appends the entrypoint arguments to the entrypoint of a container
+func WithEntrypointArgs(entrypointArgs ...string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.Entrypoint = append(req.Entrypoint, entrypointArgs...)
+		return nil
+	}
+}
+
+// WithExposedPorts appends the ports to the exposed ports for a container
+func WithExposedPorts(ports ...string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.ExposedPorts = append(req.ExposedPorts, ports...)
+		return nil
+	}
+}
+
+// WithCmd completely replaces the command for a container
+func WithCmd(cmd ...string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.Cmd = cmd
+		return nil
+	}
+}
+
+// WithCmdArgs appends the command arguments to the command for a container
+func WithCmdArgs(cmdArgs ...string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.Cmd = append(req.Cmd, cmdArgs...)
+		return nil
+	}
+}
+
+// WithLabels appends the labels to the labels for a container
+func WithLabels(labels map[string]string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		if req.Labels == nil {
+			req.Labels = make(map[string]string)
+		}
+		for k, v := range labels {
+			req.Labels[k] = v
+		}
+		return nil
+	}
+}
+
+// WithMounts appends the mounts to the mounts for a container
+func WithMounts(mounts ...ContainerMount) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.Mounts = append(req.Mounts, mounts...)
+		return nil
+	}
+}
+
+// WithTmpfs appends the tmpfs mounts to the tmpfs mounts for a container
+func WithTmpfs(tmpfs map[string]string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		if req.Tmpfs == nil {
+			req.Tmpfs = make(map[string]string)
+		}
+		for k, v := range tmpfs {
+			req.Tmpfs[k] = v
+		}
+		return nil
+	}
+}
+
+// WithFiles appends the files to the files for a container
+func WithFiles(files ...ContainerFile) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.Files = append(req.Files, files...)
 		return nil
 	}
 }

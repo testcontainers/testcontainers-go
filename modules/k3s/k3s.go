@@ -67,8 +67,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			defaultKubeSecurePort,
 			defaultRancherWebhookPort,
 		},
-		Privileged: true,
 		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.Privileged = true
 			hc.CgroupnsMode = "host"
 			hc.Tmpfs = map[string]string{
 				"/run":     "",
@@ -222,12 +222,12 @@ func (c *K3sContainer) LoadImages(ctx context.Context, images ...string) error {
 	}
 
 	containerPath := "/tmp/" + filepath.Base(imagesTar.Name())
-	err = c.Container.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0x644)
+	err = c.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0x644)
 	if err != nil {
 		return fmt.Errorf("copying image to container %w", err)
 	}
 
-	_, _, err = c.Container.Exec(ctx, []string{"ctr", "-n=k8s.io", "images", "import", containerPath})
+	_, _, err = c.Exec(ctx, []string{"ctr", "-n=k8s.io", "images", "import", containerPath})
 	if err != nil {
 		return fmt.Errorf("importing image %w", err)
 	}

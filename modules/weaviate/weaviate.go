@@ -70,7 +70,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // HttpHostAddress returns the schema and host of the Weaviate container.
 // At the moment, it only supports the http scheme.
 //
-//nolint:revive //FIXME
+//nolint:revive,staticcheck //FIXME
 func (c *WeaviateContainer) HttpHostAddress(ctx context.Context) (string, string, error) {
 	port, err := c.MappedPort(ctx, httpPort)
 	if err != nil {
