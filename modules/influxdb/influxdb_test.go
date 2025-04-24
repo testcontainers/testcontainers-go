@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	influxclient2 "github.com/influxdata/influxdb-client-go/v2"
 	influxclient "github.com/influxdata/influxdb1-client/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -438,7 +438,7 @@ func TestRun_V2WithOptions(t *testing.T) {
 	require.NoError(t, err)
 
 	// Initialize a new InfluxDB client
-	client := influxdb2.NewClientWithOptions(url, token, influxdb2.DefaultOptions())
+	client := influxclient2.NewClientWithOptions(url, token, influxclient2.DefaultOptions())
 	defer client.Close()
 
 	// Get the bucket
@@ -447,7 +447,7 @@ func TestRun_V2WithOptions(t *testing.T) {
 	require.Equal(t, bucket, influxBucket.Name)
 
 	// Try to connect without authentication
-	clientWithoutToken := influxdb2.NewClientWithOptions(url, "", influxdb2.DefaultOptions())
+	clientWithoutToken := influxclient2.NewClientWithOptions(url, "", influxclient2.DefaultOptions())
 	defer clientWithoutToken.Close()
 
 	_, err = clientWithoutToken.BucketsAPI().CreateBucketWithNameWithID(ctx, org, "example")
