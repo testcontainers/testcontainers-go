@@ -81,10 +81,12 @@ nav:
         - modules/couchbase.md
         - modules/databend.md
         - modules/dind.md
+        - modules/dockermodelrunner.md
         - modules/dolt.md
         - modules/dynamodb.md
         - modules/elasticsearch.md
         - modules/etcd.md
+        - modules/firebase.md
         - modules/gcloud.md
         - modules/grafana-lgtm.md
         - modules/inbucket.md
@@ -118,6 +120,7 @@ nav:
         - modules/scylladb.md
         - modules/socat.md
         - modules/surrealdb.md
+        - modules/toxiproxy.md
         - modules/valkey.md
         - modules/vault.md
         - modules/vearch.md
@@ -126,7 +129,6 @@ nav:
     - Examples:
         - examples/index.md
         - examples/nginx.md
-        - examples/toxiproxy.md
     - System Requirements:
         - system_requirements/index.md
         - system_requirements/docker.md
