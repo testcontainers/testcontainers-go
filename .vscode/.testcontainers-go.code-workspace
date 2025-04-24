@@ -10,6 +10,10 @@
             "path": "../examples/nginx"
         },
         {
+            "name": "module / aerospike",
+            "path": "../modules/aerospike"
+        },
+        {
             "name": "module / arangodb",
             "path": "../modules/arangodb"
         },
@@ -60,6 +64,10 @@
         {
             "name": "module / dind",
             "path": "../modules/dind"
+        },
+        {
+            "name": "module / dockermodelrunner",
+            "path": "../modules/dockermodelrunner"
         },
         {
             "name": "module / dolt",
