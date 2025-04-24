@@ -84,7 +84,7 @@ readonly excluded_files=(
     ".github/workflows/conventions.yml"
     ".github/workflows/docker-projects-latest.yml"
     ".github/workflows/release-drafter.yml"
-    ".github/workflows/scorecard.yml"
+    ".github/workflows/scorecards.yml"
     ".github/workflows/sonar-*.yml"
     "scripts/bump-*.sh"
     "scripts/check_environment.sh"
