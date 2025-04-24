@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -32,47 +32,12 @@ func TestRedisWithConfigFile(t *testing.T) {
 	testcontainers.CleanupContainer(t, redisContainer)
 	require.NoError(t, err)
 
+	jsonInspect, err := redisContainer.Inspect(ctx)
+	require.NoError(t, err)
+
+	require.Contains(t, jsonInspect.Config.Cmd, "/usr/local/redis.conf")
+
 	assertSetsGets(t, ctx, redisContainer, 1)
-}
-
-func TestRedisWithImage(t *testing.T) {
-	ctx := context.Background()
-
-	tests := []struct {
-		name  string
-		image string
-	}{
-		{
-			name:  "Redis6",
-			image: "redis:6",
-		},
-		{
-			name:  "Redis7",
-			image: "redis:7",
-		},
-		{
-			name: "Redis Stack",
-			// redisStackImage {
-			image: "redis/redis-stack:latest",
-			// }
-		},
-		{
-			name: "Redis Stack Server",
-			// redisStackServerImage {
-			image: "redis/redis-stack-server:latest",
-			// }
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			redisContainer, err := tcredis.Run(ctx, tt.image, tcredis.WithConfigFile(filepath.Join("testdata", "redis6.conf")))
-			testcontainers.CleanupContainer(t, redisContainer)
-			require.NoError(t, err)
-
-			assertSetsGets(t, ctx, redisContainer, 1)
-		})
-	}
 }
 
 func TestRedisWithLogLevel(t *testing.T) {
@@ -81,6 +46,11 @@ func TestRedisWithLogLevel(t *testing.T) {
 	redisContainer, err := tcredis.Run(ctx, "redis:7", tcredis.WithLogLevel(tcredis.LogLevelVerbose))
 	testcontainers.CleanupContainer(t, redisContainer)
 	require.NoError(t, err)
+
+	jsonInspect, err := redisContainer.Inspect(ctx)
+	require.NoError(t, err)
+
+	require.Contains(t, jsonInspect.Config.Cmd, "--loglevel", "verbose")
 
 	assertSetsGets(t, ctx, redisContainer, 10)
 }
@@ -92,11 +62,37 @@ func TestRedisWithSnapshotting(t *testing.T) {
 	testcontainers.CleanupContainer(t, redisContainer)
 	require.NoError(t, err)
 
+	jsonInspect, err := redisContainer.Inspect(ctx)
+	require.NoError(t, err)
+
+	require.Contains(t, jsonInspect.Config.Cmd, "--save", "10", "1")
+
 	assertSetsGets(t, ctx, redisContainer, 10)
+}
+
+func TestRedisWithTLS(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("mtls-disabled", func(t *testing.T) {
+		redisContainer, err := tcredis.Run(ctx, "redis:7", tcredis.WithTLS())
+		testcontainers.CleanupContainer(t, redisContainer)
+		require.NoError(t, err)
+
+		assertSetsGets(t, ctx, redisContainer, 1)
+	})
+
+	t.Run("mtls-enabled", func(t *testing.T) {
+		redisContainer, err := tcredis.Run(ctx, "redis:7", tcredis.WithTLS(), testcontainers.WithCmdArgs("--tls-auth-clients", "no"))
+		testcontainers.CleanupContainer(t, redisContainer)
+		require.NoError(t, err)
+
+		assertSetsGets(t, ctx, redisContainer, 1)
+	})
 }
 
 func assertSetsGets(t *testing.T, ctx context.Context, redisContainer *tcredis.RedisContainer, keyCount int) {
 	t.Helper()
+
 	// connectionString {
 	uri, err := redisContainer.ConnectionString(ctx)
 	// }
@@ -107,6 +103,10 @@ func assertSetsGets(t *testing.T, ctx context.Context, redisContainer *tcredis.R
 	// codebase but that's out of scope for this example
 	options, err := redis.ParseURL(uri)
 	require.NoError(t, err)
+
+	// tlsConfig {
+	options.TLSConfig = redisContainer.TLSConfig()
+	// }
 
 	client := redis.NewClient(options)
 	defer func(t *testing.T, ctx context.Context, client *redis.Client) {
