@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"time"
@@ -101,6 +102,19 @@ func WithHostPortAccess(ports ...int) CustomizeRequestOption {
 		}
 
 		req.HostAccessPorts = append(req.HostAccessPorts, ports...)
+		return nil
+	}
+}
+
+// WithReuseByName will mark a container to be reused if it exists or create a new one if it doesn't.
+// A container name must be provided to identify the container to be reused.
+func WithReuseByName(containerName string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		if containerName == "" {
+			return errors.New("container name must be provided for reuse")
+		}
+		req.Name = containerName
+		req.Reuse = true
 		return nil
 	}
 }
