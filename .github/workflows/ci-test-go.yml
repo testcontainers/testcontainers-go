@@ -18,6 +18,11 @@ on:
         type: string
         default: "."
         description: "The directory where the Go project is located."
+      testcontainers-cloud:
+        required: false
+        type: boolean
+        default: false
+        description: "Run the tests on Testcontainers Cloud"
       rootless-docker:
         required: false
         type: boolean
@@ -81,6 +86,13 @@ jobs:
             echo "No dependencies script found at $SCRIPT_PATH - skipping installation"
           fi
 
+      # Setup Testcontainers Cloud Client right before your Testcontainers tests
+      - name: Setup Testcontainers Cloud Client
+        if: ${{ inputs.testcontainers-cloud }}
+        uses: atomicjar/testcontainers-cloud-setup-action@c335bdbb570ec7c48f72c7d450c077f0a002293e # v1.3
+        with:
+          token: ${{ secrets.TCC_TOKEN }}
+
       - name: go test
         working-directory: ./${{ inputs.project-directory }}
         timeout-minutes: 30
@@ -89,6 +101,13 @@ jobs:
       - name: Run checker
         run: |
             ./scripts/check_environment.sh
+
+      # (Optionally) When you don't need Testcontainers Cloud anymore, you could terminate sessions eagerly
+      - name: Terminate Testcontainers Cloud Client active sessions
+        if: ${{ inputs.testcontainers-cloud }}
+        uses: atomicjar/testcontainers-cloud-setup-action@c335bdbb570ec7c48f72c7d450c077f0a002293e # v1.3
+        with:
+          action: terminate
 
       - name: Test Summary
         uses: test-summary/action@31493c76ec9e7aa675f1585d3ed6f1da69269a86 # v2.4

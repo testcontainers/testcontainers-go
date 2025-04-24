@@ -216,6 +216,7 @@ In order to simplify the creation of the container for a given module, `Testcont
 - `testcontainers.WithHostConfigModifier`: a function that sets the host config Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
 - `testcontainers.WithEndpointSettingsModifier`: a function that sets the endpoint settings Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
 - `testcontainers.CustomizeRequest`: a function that merges the default options with the ones provided by the user. Recommended for completely customizing the container request.
+- `testcontainers.WithReuseByName`: a function that marks a container to be reused if it exists or create a new one if it doesn't.
 
 ### Update Go dependencies in the modules
 
