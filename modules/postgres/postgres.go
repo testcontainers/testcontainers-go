@@ -98,35 +98,33 @@ func WithDatabase(dbName string) testcontainers.CustomizeRequestOption {
 // These init scripts will be executed in sorted name order as defined by the container's current locale, which defaults to en_US.utf8.
 // If you need to run your scripts in a specific order, consider using `WithOrderedInitScripts` instead.
 func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		containerFiles := []testcontainers.ContainerFile{}
-		for _, script := range scripts {
-			initScript := testcontainers.ContainerFile{
-				HostFilePath:      script,
-				ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
-				FileMode:          0o755,
-			}
-			containerFiles = append(containerFiles, initScript)
+	containerFiles := []testcontainers.ContainerFile{}
+	for _, script := range scripts {
+		initScript := testcontainers.ContainerFile{
+			HostFilePath:      script,
+			ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
+			FileMode:          0o755,
 		}
-		return testcontainers.WithFiles(containerFiles...)(req)
+		containerFiles = append(containerFiles, initScript)
 	}
+
+	return testcontainers.WithFiles(containerFiles...)
 }
 
 // WithOrderedInitScripts sets the init scripts to be run when the container starts.
 // The scripts will be run in the order that they are provided in this function.
 func WithOrderedInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		containerFiles := []testcontainers.ContainerFile{}
-		for idx, script := range scripts {
-			initScript := testcontainers.ContainerFile{
-				HostFilePath:      script,
-				ContainerFilePath: "/docker-entrypoint-initdb.d/" + fmt.Sprintf("%03d-%s", idx, filepath.Base(script)),
-				FileMode:          0o755,
-			}
-			containerFiles = append(containerFiles, initScript)
+	containerFiles := []testcontainers.ContainerFile{}
+	for idx, script := range scripts {
+		initScript := testcontainers.ContainerFile{
+			HostFilePath:      script,
+			ContainerFilePath: "/docker-entrypoint-initdb.d/" + fmt.Sprintf("%03d-%s", idx, filepath.Base(script)),
+			FileMode:          0o755,
 		}
-		return testcontainers.WithFiles(containerFiles...)(req)
+		containerFiles = append(containerFiles, initScript)
 	}
+
+	return testcontainers.WithFiles(containerFiles...)
 }
 
 // WithPassword sets the initial password of the user to be created when the container starts
