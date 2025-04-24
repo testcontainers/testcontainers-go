@@ -106,9 +106,9 @@ func WithHostPortAccess(ports ...int) CustomizeRequestOption {
 	}
 }
 
-// WithReuse will mark a container to be reused if it exists or create a new one if it doesn't.
+// WithReuseByName will mark a container to be reused if it exists or create a new one if it doesn't.
 // A container name must be provided to identify the container to be reused.
-func WithReuse(containerName string) CustomizeRequestOption {
+func WithReuseByName(containerName string) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {
 		if containerName == "" {
 			return errors.New("container name must be provided for reuse")

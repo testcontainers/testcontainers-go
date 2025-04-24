@@ -552,12 +552,12 @@ func TestWithDockerfile(t *testing.T) {
 	require.Equal(t, map[string]*string{"ARG1": nil, "ARG2": nil}, req.BuildArgs)
 }
 
-func TestWithReuse_Succeeds(t *testing.T) {
+func TestWithReuseByName_Succeeds(t *testing.T) {
 	t.Parallel()
 	req := &testcontainers.GenericContainerRequest{}
 	containerName := "pg-test"
 
-	opt := testcontainers.WithReuse(containerName)
+	opt := testcontainers.WithReuseByName(containerName)
 	err := opt.Customize(req)
 
 	require.NoError(t, err)
@@ -565,11 +565,11 @@ func TestWithReuse_Succeeds(t *testing.T) {
 	require.Equal(t, containerName, req.Name)
 }
 
-func TestWithReuse_ErrorsWithoutContainerNameProvided(t *testing.T) {
+func TestWithReuseByName_ErrorsWithoutContainerNameProvided(t *testing.T) {
 	t.Parallel()
 	req := &testcontainers.GenericContainerRequest{}
 
-	opt := testcontainers.WithReuse("")
+	opt := testcontainers.WithReuseByName("")
 	err := opt.Customize(req)
 
 	require.Error(t, err)
