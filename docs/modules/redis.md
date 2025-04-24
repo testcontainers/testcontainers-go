@@ -62,7 +62,7 @@ By default Redis saves snapshots of the dataset on disk, in a binary file called
 
 #### Log Level
 
-By default Redis saves snapshots of the dataset on disk, in a binary file called dump.rdb. You can configure Redis to have it save the dataset every N seconds if there are at least M changes in the dataset. E.g. `WithLogLevel(LogLevelDebug)`.
+By default Redis produces a log message to the standard Redis log, the format accepts printf-alike specifiers, while level is a string describing the log level to use when emitting the log, and must be one of the following: `LogLevelDebug`, `LogLevelVerbose`, `LogLevelNotice`, `LogLevelWarning`. E.g. `WithLogLevel(LogLevelDebug)`. If the specified log level is invalid, verbose is used by default.
 
 !!!tip
     Please check [Redis docs on logging](https://redis.io/docs/reference/modules/modules-api-ref/#redismodule_log) for more information.
@@ -71,24 +71,33 @@ By default Redis saves snapshots of the dataset on disk, in a binary file called
 
 In the case you have a custom config file for Redis, it's possible to copy that file into the container before it's started. E.g. `WithConfigFile(filepath.Join("testdata", "redis7.conf"))`.
 
+#### WithTLS
+
+In the case you want to enable TLS for the Redis container, you can use the `WithTLS()` option. This options enables TLS on the `6379/tcp` port and uses a secure URL (e.g. `rediss://host:port`).
+
+!!!info
+    In case you want to use Non-mutual TLS (i.e. client authentication is not required), you can customize the CMD arguments by using the `WithCmdArgs` option. E.g. `WithCmdArgs("--tls-auth-clients no")`.
+
+The module automatically generates three certificates, a CA certificate, a client certificate and a Redis certificate. Please use the `TLSConfig()` container method to get the TLS configuration and use it to configure the Redis client. See more details in the [TLSConfig](#tlsconfig) section.
+
 ### Container Methods
 
 #### ConnectionString
 
-This method returns the connection string to connect to the Redis container, using the default `6379` port.
+This method returns the connection string to connect to the Redis container, using the default `6379` port, and `redis` schema.
 
 <!--codeinclude-->
 [Get connection string](../../modules/redis/redis_test.go) inside_block:connectionString
 <!--/codeinclude-->
 
-### Redis variants
+If the container is started with TLS enabled, the connection string is `rediss://host:port`, using the `rediss` schema.
 
-It's possible to use the Redis container with Redis-Stack. You simply need to update the image name.
+#### TLSConfig
 
-<!--codeinclude-->
-[Image for Redis-Stack](../../modules/redis/redis_test.go) inside_block:redisStackImage
-<!--/codeinclude-->
+This method returns the TLS configuration for the Redis container, nil if TLS is not enabled.
 
 <!--codeinclude-->
-[Image for Redis-Stack Server](../../modules/redis/redis_test.go) inside_block:redisStackServerImage
+[Get TLS config](../../modules/redis/redis_test.go) inside_block:tlsConfig
 <!--/codeinclude-->
+
+In the above example, the options are used to configure a Redis client with TLS enabled.
