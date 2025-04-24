@@ -296,6 +296,7 @@ func TestWithOrderedInitScript(t *testing.T) {
 
 	ctr, err := postgres.Run(ctx,
 		"postgres:15.2-alpine",
+		// orderedInitScripts {
 		// Executes first the init-user-db shell-script, then the do-insert-user SQL script
 		// Using WithInitScripts, this would not work.
 		// This is because aaaa-insert-user would get executed first, but requires init-user-db to be executed before.
@@ -303,6 +304,7 @@ func TestWithOrderedInitScript(t *testing.T) {
 			filepath.Join("testdata", "init-user-db.sh"),
 			filepath.Join("testdata", "aaaa-insert-user.sql"),
 		),
+		// }
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
