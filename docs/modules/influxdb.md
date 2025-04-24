@@ -4,7 +4,7 @@ Since testcontainers-go <a href="https://github.com/testcontainers/testcontainer
 
 ## Introduction
 
-A testcontainers module for InfluxDB.  This module supports v1.x of InfluxDB.   
+A testcontainers module for InfluxDB V1 and V2.
 
 ## Adding this module to your project dependencies
 
@@ -16,8 +16,11 @@ go get github.com/testcontainers/testcontainers-go/modules/influxdb
 
 ## Usage example
 
+### InfluxDB
+
 <!--codeinclude--> 
-[Creating an InfluxDB container](../../modules/influxdb/examples_test.go) inside_block:runInfluxContainer
+[Creating an InfluxDB V1 container](../../modules/influxdb/examples_test.go) inside_block:runInfluxContainer
+[Creating an InfluxDB V2 container](../../modules/influxdb/examples_test.go) inside_block:runInfluxV2Container
 <!--/codeinclude-->
 
 ## Module Reference
@@ -54,7 +57,7 @@ Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "influxdb:1.8.0")`.
 
 !!!info
-    Note that `influxdb:latest` will get you a version 2 image which is not supported by this module.
+    Note that `influxdb:latest` will pull a version 2 image.
 
 {% include "../features/common_functional_options.md" %}
 
@@ -62,6 +65,20 @@ In example: `Run(context.Background(), "influxdb:1.8.0")`.
 
 By default, authentication is disabled and no credentials are needed to use the Influx API against the test container.
 If you want to test with credentials, include the appropriate environment variables to do so.
+
+#### Configuring InfluxDB V2
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+When running the InfluxDB V2 image, you can override the default configuration by using options prefixed by `influxdb.WithV2`.
+The following options are available:
+
+- `WithV2(org, bucket string)`: Configures organization and bucket name. This option is required to run the InfluxDB V2 image.
+- `WithV2Auth(org, bucket, username, password string)`: Sets the username and password for the initial user.
+- `WithV2SecretsAuth(org, bucket, usernameFile, passwordFile string)`: Sets the username and password file path.
+- `WithV2Retention(retention time.Duration)`: Sets the default bucket retention policy.
+- `WithV2AdminToken(token string)`:  Sets the admin token for the initial user.
+- `WithV2SecretsAdminToken(tokenFile string)`: Sets the admin token file path.
 
 #### Init Scripts
 
