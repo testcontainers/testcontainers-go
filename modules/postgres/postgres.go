@@ -101,7 +101,11 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		containerFiles := []testcontainers.ContainerFile{}
 		for _, script := range scripts {
-			initScript := buildInitScriptContainerFile(script, filepath.Base(script))
+			initScript := testcontainers.ContainerFile{
+				HostFilePath:      script,
+				ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
+				FileMode:          0o755,
+			}
 			containerFiles = append(containerFiles, initScript)
 		}
 		return testcontainers.WithFiles(containerFiles...)(req)
@@ -114,20 +118,14 @@ func WithOrderedInitScripts(scripts ...string) testcontainers.CustomizeRequestOp
 	return func(req *testcontainers.GenericContainerRequest) error {
 		containerFiles := []testcontainers.ContainerFile{}
 		for idx, script := range scripts {
-			containerFilePath := fmt.Sprintf("%03d-%s", idx, filepath.Base(script))
-			initScript := buildInitScriptContainerFile(script, containerFilePath)
+			initScript := testcontainers.ContainerFile{
+				HostFilePath:      script,
+				ContainerFilePath: "/docker-entrypoint-initdb.d/" + fmt.Sprintf("%03d-%s", idx, filepath.Base(script)),
+				FileMode:          0o755,
+			}
 			containerFiles = append(containerFiles, initScript)
 		}
 		return testcontainers.WithFiles(containerFiles...)(req)
-	}
-}
-
-// Adds the file located at hostFilePath as an init script that postgres will launch
-func buildInitScriptContainerFile(hostFilePath string, containerFilePath string) testcontainers.ContainerFile {
-	return testcontainers.ContainerFile{
-		HostFilePath:      hostFilePath,
-		ContainerFilePath: "/docker-entrypoint-initdb.d/" + containerFilePath,
-		FileMode:          0o755,
 	}
 }
 
