@@ -1369,8 +1369,12 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 	// a paused container. The Docker Engine returns the "cannot start a paused container,
 	// try unpause instead" error.
 	switch c.State {
-	case "running", "paused":
-		// cannot re-start a paused or running container, but we still need
+	case "running":
+		// cannot re-start a running container, but we still need
+		// to call the startup hooks.
+	case "paused":
+		// TODO: we should unpause the container here.
+		// cannot re-start a paused container, but we still need
 		// to call the startup hooks.
 	default:
 		if err := dc.Start(ctx); err != nil {
