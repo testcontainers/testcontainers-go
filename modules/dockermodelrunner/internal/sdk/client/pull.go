@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+
+	"github.com/testcontainers/testcontainers-go/log"
 )
 
 // PullModel creates a model in the Docker Model Runner, by pulling the model from Docker Hub.
@@ -57,7 +58,7 @@ func (c *Client) PullModel(ctx context.Context, fullyQualifiedModelName string) 
 		},
 		backoff.WithContext(backoff.NewExponentialBackOff(), ctx),
 		func(err error, _ time.Duration) {
-			log.Default().Printf("🙏 Pulling model %s. Please be patient, no progress bar yet!", fullyQualifiedModelName)
+			log.Default().Printf("🙏 Pulling model %s. Please be patient, no progress bar yet! %w", fullyQualifiedModelName, err)
 		},
 	)
 	if err != nil {
