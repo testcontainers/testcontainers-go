@@ -14,8 +14,9 @@ updates:
       directories:
         - /
         - /examples/nginx
-        - /examples/toxiproxy
         - /modulegen
+        - /modules/aerospike
+        - /modules/arangodb
         - /modules/artemis
         - /modules/azure
         - /modules/azurite
@@ -28,6 +29,7 @@ updates:
         - /modules/couchbase
         - /modules/databend
         - /modules/dind
+        - /modules/dockermodelrunner
         - /modules/dolt
         - /modules/dynamodb
         - /modules/elasticsearch
@@ -63,7 +65,9 @@ updates:
         - /modules/redpanda
         - /modules/registry
         - /modules/scylladb
+        - /modules/socat
         - /modules/surrealdb
+        - /modules/toxiproxy
         - /modules/valkey
         - /modules/vault
         - /modules/vearch

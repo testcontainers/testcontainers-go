@@ -552,9 +552,10 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 		}
 	}
 
-	if req.ConfigModifier != nil {
-		req.ConfigModifier(dockerInput)
+	if req.ConfigModifier == nil {
+		req.ConfigModifier = defaultConfigModifier(req)
 	}
+	req.ConfigModifier(dockerInput)
 
 	if req.HostConfigModifier == nil {
 		req.HostConfigModifier = defaultHostConfigModifier(req)
@@ -662,6 +663,15 @@ func mergePortBindings(configPortMap, exposedPortMap nat.PortMap, exposedPorts [
 }
 
 // defaultHostConfigModifier provides a default modifier including the deprecated fields
+func defaultConfigModifier(req ContainerRequest) func(config *container.Config) {
+	return func(config *container.Config) {
+		config.Hostname = req.Hostname
+		config.WorkingDir = req.WorkingDir
+		config.User = req.User
+	}
+}
+
+// defaultHostConfigModifier provides a default modifier including the deprecated fields
 func defaultHostConfigModifier(req ContainerRequest) func(hostConfig *container.HostConfig) {
 	return func(hostConfig *container.HostConfig) {
 		hostConfig.AutoRemove = req.AutoRemove
@@ -671,5 +681,7 @@ func defaultHostConfigModifier(req ContainerRequest) func(hostConfig *container.
 		hostConfig.ExtraHosts = req.ExtraHosts
 		hostConfig.NetworkMode = req.NetworkMode
 		hostConfig.Resources = req.Resources
+		hostConfig.Privileged = req.Privileged
+		hostConfig.ShmSize = req.ShmSize
 	}
 }
