@@ -178,6 +178,9 @@ In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk
 
 ### Datastore mode
 
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+
 Using the `WithDatastoreMode` option will run the Firestore emulator using `Firestore In Datastore` mode allowing you to use Datastore APIs and clients towards the Firestore emulator.
 
 Requires `cloud-sdk:465.0.0` or higher
