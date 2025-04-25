@@ -552,6 +552,63 @@ func TestWithDockerfile(t *testing.T) {
 	require.Equal(t, map[string]*string{"ARG1": nil, "ARG2": nil}, req.BuildArgs)
 }
 
+func TestWithImageMount(t *testing.T) {
+	cli, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	require.NoError(t, err)
+
+	info, err := cli.Info(context.Background())
+	require.NoError(t, err)
+
+	// skip if the major version of the server is not v28 or greater
+	if info.ServerVersion < "28.0.0" {
+		t.Skipf("skipping test because the server version is not v28 or greater")
+	}
+
+	t.Run("valid", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: "alpine",
+			},
+		}
+
+		err := testcontainers.WithImageMount("alpine", "root/.ollama/models/", "/root/.ollama/models/")(&req)
+		require.NoError(t, err)
+
+		require.Len(t, req.Mounts, 1)
+
+		src := req.Mounts[0].Source
+
+		require.Equal(t, testcontainers.NewDockerImageMountSource("alpine", "root/.ollama/models/"), src)
+		require.Equal(t, "alpine", src.Source())
+		require.Equal(t, testcontainers.MountTypeImage, src.Type())
+
+		dst := req.Mounts[0].Target
+		require.Equal(t, testcontainers.ContainerMountTarget("/root/.ollama/models/"), dst)
+	})
+
+	t.Run("invalid", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: "alpine",
+			},
+		}
+
+		err := testcontainers.WithImageMount("alpine", "/root/.ollama/models/", "/root/.ollama/models/")(&req)
+		require.Error(t, err)
+	})
+
+	t.Run("invalid-dots", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: "alpine",
+			},
+		}
+
+		err := testcontainers.WithImageMount("alpine", "../root/.ollama/models/", "/root/.ollama/models/")(&req)
+		require.Error(t, err)
+	})
+}
+
 func TestWithReuseByName_Succeeds(t *testing.T) {
 	t.Parallel()
 	req := &testcontainers.GenericContainerRequest{}
