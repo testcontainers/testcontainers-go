@@ -14,7 +14,7 @@ func (c *Container) ConnectionString(ctx context.Context, portName nat.Port) (st
 	}
 	port, err := c.MappedPort(ctx, portName)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("mapped port: %w", err)
 	}
 	return fmt.Sprintf("%s:%s", host, port.Port()), nil
 }
