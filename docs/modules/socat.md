@@ -1,6 +1,6 @@
 # Socat
 
-Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 ## Introduction
 
@@ -29,7 +29,7 @@ go get github.com/testcontainers/testcontainers-go/modules/socat
 
 ### Run function
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The Socat module exposes one entrypoint function to create the Socat container, and this function receives three parameters:
 
@@ -60,7 +60,7 @@ In example: `Run(context.Background(), DefaultImage)`.
 
 #### WithTarget
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The `WithTarget` function sets a single target for the Socat container, defined by the `Target` struct.
 This struct can be built using the the following functions:
@@ -80,7 +80,7 @@ The Socat container exposes the following methods:
 
 #### TargetURL
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The `TargetURL(port int)` method returns the URL for the exposed port of a target, nil if the port is not mapped.
 

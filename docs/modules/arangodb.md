@@ -1,6 +1,6 @@
 # ArangoDB
 
-Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/arangodb
 
 ### Run function
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The ArangoDB module exposes one entrypoint function to create the ArangoDB container, and this function receives three parameters:
 
@@ -49,7 +49,7 @@ In example: `Run(context.Background(), "arangodb:3.11.5")`.
 
 #### WithRootPassword
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The `WithRootPassword` function sets the root password for the ArangoDB container.
 
@@ -59,7 +59,7 @@ The ArangoDB container exposes the following methods:
 
 #### Credentials
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The `Credentials` method returns the credentials for the ArangoDB container, in the form of a tuple of two strings: the username and the password.
 
@@ -69,6 +69,6 @@ func (c *Container) Credentials() (string, string)
 
 #### HTTPEndpoint
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The `HTTPEndpoint` method returns the HTTP endpoint of the ArangoDB container, using the following format: `http://$host:$port`.

@@ -68,7 +68,7 @@ If you want to test with credentials, include the appropriate environment variab
 
 #### Configuring InfluxDB V2
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 When running the InfluxDB V2 image, you can override the default configuration by using options prefixed by `influxdb.WithV2`.
 The following options are available:

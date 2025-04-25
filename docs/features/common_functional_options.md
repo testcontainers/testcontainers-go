@@ -17,7 +17,7 @@ Using the `WithImageSubstitutors` options, you could define your own substitutio
 
 #### WithImageMount
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 Since Docker v28, it's possible to mount an image to a container, passing the source image name, the relative subpath to mount in that image, and the mount point in the target container.
 
@@ -44,7 +44,7 @@ ctr, err = mymodule.Run(ctx, "docker.io/myservice:1.2.3", testcontainers.WithEnv
 
 #### WithExposedPorts
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 If you need to expose additional ports from the container, you can use `testcontainers.WithExposedPorts`. For example:
 
@@ -55,7 +55,7 @@ ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3",
 
 #### WithEntrypoint
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 If you need to completely replace the container's entrypoint, you can use `testcontainers.WithEntrypoint`. For example:
 
@@ -66,7 +66,7 @@ ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3",
 
 #### WithEntrypointArgs
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 If you need to append commands to the container's entrypoint, you can use `testcontainers.WithEntrypointArgs`. For example:
 
@@ -77,7 +77,7 @@ ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3",
 
 #### WithCmd
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 If you need to completely replace the container's command, you can use `testcontainers.WithCmd`. For example:
 
@@ -88,7 +88,7 @@ ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3",
 
 #### WithCmdArgs
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 If you need to append commands to the container's command, you can use `testcontainers.WithCmdArgs`. For example:
 
@@ -99,7 +99,7 @@ ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3",
 
 #### WithLabels
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 If you need to add Docker labels to the container, you can use `testcontainers.WithLabels`. For example:
 
@@ -113,7 +113,7 @@ ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3",
 
 #### WithFiles
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 If you need to copy files into the container, you can use `testcontainers.WithFiles`. For example:
 
@@ -132,7 +132,7 @@ This option allows you to copy files from the host into the container at creatio
 
 #### WithMounts
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 If you need to add volume mounts to the container, you can use `testcontainers.WithMounts`. For example:
 
@@ -148,7 +148,7 @@ ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3",
 
 #### WithTmpfs
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 If you need to add tmpfs mounts to the container, you can use `testcontainers.WithTmpfs`. For example:
 
@@ -254,7 +254,7 @@ You could use this feature to run a custom script, or to run a command that is n
 
 #### Build from Dockerfile
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 Testcontainers exposes the `testcontainers.WithDockerfile` option to build a container from a Dockerfile.
 The functional option receives a `testcontainers.FromDockerfile` struct that is applied to the container request before starting the container. As a result, the container is built and started in one go.
@@ -322,7 +322,7 @@ The above example is updating the predefined command of the image, **appending**
 
 #### WithReuseByName
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 This option marks a container to be reused if it exists or create a new one if it doesn't.
 With the current implementation, the container name must be provided to identify the container to be reused.

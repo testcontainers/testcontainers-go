@@ -1,6 +1,6 @@
 # Docker Model Runner
 
-Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/dockermodelrunner
 
 ### Run function
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The Docker Model Runner module exposes two entrypoint functions to create the Docker Model Runner container:
 
@@ -55,7 +55,7 @@ In example: `Run(context.Background(), "alpine/socat:1.8.0.1")`.
 
 #### WithModel
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 Use the `WithModel` option to set the model to pull when the container is started. Please be aware, that only Models as OCI Artifacts are compatible with Docker Model Runner.
 
@@ -74,7 +74,7 @@ The Docker Model Runner container exposes the following methods:
 
 #### PullModel
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 Use the `PullModel` method to pull a model from the Docker Model Runner.
 
@@ -87,7 +87,7 @@ Use the `PullModel` method to pull a model from the Docker Model Runner.
 
 #### InspectModel
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 Use the `InspectModel` method to inspect a model from the Docker Model Runner, by providing the model namespace and name.
 
@@ -101,7 +101,7 @@ E.g. `ai/smollm2:360M-Q4_K_M`. See [Models as OCI Artifacts](https://hub.docker.
 
 #### ListModels
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 Use the `ListModels` method to list all models that are already pulled locally, using the Docker Model Runner format.
 
