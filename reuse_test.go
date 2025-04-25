@@ -10,7 +10,7 @@ import (
 )
 
 func TestGenericContainer_stop_start_withReuse(t *testing.T) {
-	containerName := "my-postgres"
+	containerName := "my-nginx"
 
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
