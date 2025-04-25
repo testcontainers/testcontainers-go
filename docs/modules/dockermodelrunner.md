@@ -76,7 +76,7 @@ The Docker Model Runner container exposes the following methods:
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
-Use the `PullModel` method to pull a model from the Docker Model Runner.
+Use the `PullModel` method to pull a model from the Docker Model Runner. Make sure the passed context is not done before the pull operation is completed, so that the pull operation is cancelled.
 
 <!--codeinclude-->
 [Pulling a model at runtime](../../modules/dockermodelrunner/examples_test.go) inside_block:runPullModel
