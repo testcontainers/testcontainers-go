@@ -1364,13 +1364,17 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		lifecycleHooks:    []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)},
 	}
 
-	if p.config.RyukDisabled {
-		// ryuk disabled, ensure the container we are about to reuse is running
-		if c.State != "running" {
-			// found container to reuse, but it is not in state running
-			if err := dc.Start(ctx); err != nil {
-				return dc, fmt.Errorf("start container %s in state %s: %w", req.Name, c.State, err)
-			}
+	// If a container was stopped programmatically, and Ryuk is enabled, we want to
+	// ensure the container is running again, but only if it is not paused, as it's
+	// not possible to start a paused container. The Docker Engine returns the
+	// "cannot start a paused container, try unpause instead" error.
+	switch c.State {
+	case "running", "paused":
+		// cannot re-start a paused or running container, but we still need
+		// to call the startup hooks.
+	default:
+		if err := dc.Start(ctx); err != nil {
+			return dc, fmt.Errorf("start container %s in state %s: %w", req.Name, c.State, err)
 		}
 	}
 
