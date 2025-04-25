@@ -302,3 +302,19 @@ The above example is updating the predefined command of the image, **appending**
 
 !!!info
     This can't be used to replace the command, only to append options.
+
+#### WithReuseByName
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This option marks a container to be reused if it exists or create a new one if it doesn't.
+With the current implementation, the container name must be provided to identify the container to be reused.
+
+```golang
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", 
+    testcontainers.WithReuseByName("my-container-name"),
+)
+```
+
+!!!warning
+    Reusing a container is experimental and the API is subject to change for a more robust implementation that is not based on container names.

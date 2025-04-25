@@ -71,6 +71,38 @@ func TestOllama(t *testing.T) {
 	})
 }
 
+func TestOllama_withReuse(t *testing.T) {
+	ctx := context.Background()
+
+	ctr, err := ollama.Run(ctx, "ollama/ollama:0.5.7", testcontainers.WithReuseByName("ollama-container"))
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	model := "all-minilm"
+
+	_, _, err = ctr.Exec(context.Background(), []string{"ollama", "pull", model})
+	require.NoError(t, err)
+
+	_, _, err = ctr.Exec(context.Background(), []string{"ollama", "run", model})
+	require.NoError(t, err)
+
+	assertLoadedModel(t, ctr)
+
+	t.Run("reuse-container", func(t *testing.T) {
+		ctr2, err := ollama.Run(ctx, "ollama/ollama:0.5.7", testcontainers.WithReuseByName("ollama-container"))
+		testcontainers.CleanupContainer(t, ctr2)
+		require.NoError(t, err)
+
+		_, _, err = ctr2.Exec(context.Background(), []string{"ollama", "pull", model})
+		require.NoError(t, err)
+
+		_, _, err = ctr2.Exec(context.Background(), []string{"ollama", "run", model})
+		require.NoError(t, err)
+
+		assertLoadedModel(t, ctr2)
+	})
+}
+
 // assertLoadedModel checks if the model is loaded in the container.
 // For that, it checks if the response of the /api/tags endpoint
 // contains the model name.
