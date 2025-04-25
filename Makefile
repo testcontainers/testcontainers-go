@@ -24,7 +24,7 @@ tidy-all:
 ## --------------------------------------
 
 DOCS_CONTAINER=mkdocs-container
-DOCS_IMAGE=python:3.8
+DOCS_IMAGE=python:3.13
 
 .PHONY: clean-docs
 clean-docs:

@@ -1,20 +1,23 @@
 package redis
 
 import (
+	"bytes"
 	"context"
+	"crypto/tls"
 	"fmt"
-	"strconv"
+	"strings"
+	"time"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// redisServerProcess is the name of the redis server process
-const redisServerProcess = "redis-server"
-
 type LogLevel string
 
 const (
+	// redisPort is the port for the Redis connection
+	redisPort = "6379/tcp"
+
 	// LogLevelDebug is the debug log level
 	LogLevelDebug LogLevel = "debug"
 	// LogLevelVerbose is the verbose log level
@@ -27,10 +30,13 @@ const (
 
 type RedisContainer struct {
 	testcontainers.Container
+	settings options
 }
 
+// ConnectionString returns the connection string for the Redis container.
+// It uses the default 6379 port.
 func (c *RedisContainer) ConnectionString(ctx context.Context) (string, error) {
-	mappedPort, err := c.MappedPort(ctx, "6379/tcp")
+	mappedPort, err := c.MappedPort(ctx, redisPort)
 	if err != nil {
 		return "", err
 	}
@@ -40,8 +46,18 @@ func (c *RedisContainer) ConnectionString(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	uri := fmt.Sprintf("redis://%s:%s", hostIP, mappedPort.Port())
+	schema := "redis"
+	if c.settings.tlsEnabled {
+		schema = "rediss"
+	}
+
+	uri := fmt.Sprintf("%s://%s:%s", schema, hostIP, mappedPort.Port())
 	return uri, nil
+}
+
+// TLSConfig returns the TLS configuration for the Redis container, nil if TLS is not enabled.
+func (c *RedisContainer) TLSConfig() *tls.Config {
+	return c.settings.tlsConfig
 }
 
 // Deprecated: use Run instead
@@ -54,8 +70,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*RedisContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        img,
-		ExposedPorts: []string{"6379/tcp"},
-		WaitingFor:   wait.ForLog("* Ready to accept connections"),
+		ExposedPorts: []string{redisPort},
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
@@ -63,7 +78,77 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Started:          true,
 	}
 
+	var settings options
 	for _, opt := range opts {
+		if opt, ok := opt.(Option); ok {
+			if err := opt(&settings); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	tcOpts := []testcontainers.ContainerCustomizer{}
+
+	waitStrategies := []wait.Strategy{
+		wait.ForListeningPort(redisPort).WithStartupTimeout(time.Second * 10),
+		wait.ForLog("* Ready to accept connections"),
+	}
+
+	if settings.tlsEnabled {
+		// wait for the TLS port to be available
+		waitStrategies = append(waitStrategies, wait.ForListeningPort(redisPort).WithStartupTimeout(time.Second*10))
+
+		// Generate TLS certificates in the fly and add them to the container before it starts.
+		// Update the CMD to use the TLS certificates.
+		caCert, clientCert, serverCert, err := createTLSCerts()
+		if err != nil {
+			return nil, fmt.Errorf("create tls certs: %w", err)
+		}
+
+		// Update the CMD to use the TLS certificates.
+		cmds := []string{
+			"--tls-port", strings.Replace(redisPort, "/tcp", "", 1),
+			// Disable the default port, as described in https://redis.io/docs/latest/operate/oss_and_stack/management/security/encryption/#running-manually
+			"--port", "0",
+			"--tls-cert-file", "/tls/server.crt",
+			"--tls-key-file", "/tls/server.key",
+			"--tls-ca-cert-file", "/tls/ca.crt",
+			"--tls-auth-clients", "yes",
+		}
+
+		tcOpts = append(tcOpts, testcontainers.WithCmdArgs(cmds...)) // Append the default CMD with the TLS certificates.
+		tcOpts = append(tcOpts, testcontainers.WithFiles(
+			testcontainers.ContainerFile{
+				Reader:            bytes.NewReader(caCert.Bytes),
+				ContainerFilePath: "/tls/ca.crt",
+				FileMode:          0o644,
+			},
+			testcontainers.ContainerFile{
+				Reader:            bytes.NewReader(serverCert.Bytes),
+				ContainerFilePath: "/tls/server.crt",
+				FileMode:          0o644,
+			},
+			testcontainers.ContainerFile{
+				Reader:            bytes.NewReader(serverCert.KeyBytes),
+				ContainerFilePath: "/tls/server.key",
+				FileMode:          0o644,
+			}))
+
+		settings.tlsConfig = &tls.Config{
+			MinVersion:   tls.VersionTLS12,
+			RootCAs:      caCert.TLSConfig().RootCAs,
+			Certificates: clientCert.TLSConfig().Certificates,
+			ServerName:   "localhost", // Match the server cert's common name
+		}
+	}
+
+	tcOpts = append(tcOpts, testcontainers.WithWaitStrategy(waitStrategies...))
+
+	// Append the customizers passed to the Run function.
+	tcOpts = append(tcOpts, opts...)
+
+	// Apply the testcontainers customizers.
+	for _, opt := range tcOpts {
 		if err := opt.Customize(&genericContainerReq); err != nil {
 			return nil, err
 		}
@@ -72,7 +157,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	var c *RedisContainer
 	if container != nil {
-		c = &RedisContainer{Container: container}
+		c = &RedisContainer{Container: container, settings: settings}
 	}
 
 	if err != nil {
@@ -80,80 +165,4 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	return c, nil
-}
-
-// WithConfigFile sets the config file to be used for the redis container, and sets the command to run the redis server
-// using the passed config file
-func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
-	const defaultConfigFile = "/usr/local/redis.conf"
-
-	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := testcontainers.ContainerFile{
-			HostFilePath:      configFile,
-			ContainerFilePath: defaultConfigFile,
-			FileMode:          0o755,
-		}
-		req.Files = append(req.Files, cf)
-
-		if len(req.Cmd) == 0 {
-			req.Cmd = []string{redisServerProcess, defaultConfigFile}
-			return nil
-		}
-
-		// prepend the command to run the redis server with the config file, which must be the first argument of the redis server process
-		if req.Cmd[0] == redisServerProcess {
-			// just insert the config file, then the rest of the args
-			req.Cmd = append([]string{redisServerProcess, defaultConfigFile}, req.Cmd[1:]...)
-		} else if req.Cmd[0] != redisServerProcess {
-			// prepend the redis server and the config file, then the rest of the args
-			req.Cmd = append([]string{redisServerProcess, defaultConfigFile}, req.Cmd...)
-		}
-
-		return nil
-	}
-}
-
-// WithLogLevel sets the log level for the redis server process
-// See https://redis.io/docs/reference/modules/modules-api-ref/#redismodule_log for more information.
-func WithLogLevel(level LogLevel) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		processRedisServerArgs(req, []string{"--loglevel", string(level)})
-
-		return nil
-	}
-}
-
-// WithSnapshotting sets the snapshotting configuration for the redis server process. You can configure Redis to have it
-// save the dataset every N seconds if there are at least M changes in the dataset.
-// This method allows Redis to benefit from copy-on-write semantics.
-// See https://redis.io/docs/management/persistence/#snapshotting for more information.
-func WithSnapshotting(seconds int, changedKeys int) testcontainers.CustomizeRequestOption {
-	if changedKeys < 1 {
-		changedKeys = 1
-	}
-	if seconds < 1 {
-		seconds = 1
-	}
-
-	return func(req *testcontainers.GenericContainerRequest) error {
-		processRedisServerArgs(req, []string{"--save", strconv.Itoa(seconds), strconv.Itoa(changedKeys)})
-		return nil
-	}
-}
-
-func processRedisServerArgs(req *testcontainers.GenericContainerRequest, args []string) {
-	if len(req.Cmd) == 0 {
-		req.Cmd = append([]string{redisServerProcess}, args...)
-		return
-	}
-
-	// prepend the command to run the redis server with the config file
-	if req.Cmd[0] == redisServerProcess {
-		// redis server is already set as the first argument, so just append the config file
-		req.Cmd = append(req.Cmd, args...)
-	} else if req.Cmd[0] != redisServerProcess {
-		// redis server is not set as the first argument, so prepend it alongside the config file
-		req.Cmd = append([]string{redisServerProcess}, req.Cmd...)
-		req.Cmd = append(req.Cmd, args...)
-	}
 }

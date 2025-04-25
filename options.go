@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"time"
@@ -105,7 +106,19 @@ func WithHostPortAccess(ports ...int) CustomizeRequestOption {
 	}
 }
 
-// Deprecated: the modules API forces passing the image as part of the signature of the Run function.
+// WithReuseByName will mark a container to be reused if it exists or create a new one if it doesn't.
+// A container name must be provided to identify the container to be reused.
+func WithReuseByName(containerName string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		if containerName == "" {
+			return errors.New("container name must be provided for reuse")
+		}
+		req.Name = containerName
+		req.Reuse = true
+		return nil
+	}
+}
+
 // WithImage sets the image for a container
 func WithImage(image string) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {

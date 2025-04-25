@@ -30,7 +30,7 @@ go get github.com/testcontainers/testcontainers-go/modules/scylladb
 The ScyllaDB module exposes one entrypoint function to create the ScyllaDB container, and this function receives three parameters:
 
 ```golang
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ScyllaDBContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)
 ```
 
 - `context.Context`, the Go context.
