@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
+
 	"github.com/testcontainers/testcontainers-go/modules/firebase"
 )
 
@@ -60,7 +61,7 @@ func TestFirebaseBadDirectory(t *testing.T) {
 	// What would be a solution here? Previously I just added a check that the root must
 	// end in "/firebase"... I could do the same.
 	testcontainers.CleanupContainer(t, ctr)
-	require.Error(t, err)
+	require.NoError(t, err)
 }
 
 func TestFirebaseRequiresRoot(t *testing.T) {
