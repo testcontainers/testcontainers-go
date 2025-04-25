@@ -47,3 +47,11 @@ jobs:
             docs
             chore
             deps
+
+      - name: Detect if the Pull Request was sent from the main branch
+        if: "${{ github.head_ref == 'main' }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr close --comment "This Pull Request has been automatically closed because it was sent from the fork's main branch. Please use a different branch so that the maintainers can contribute to your Pull Request."
+          exit 1
