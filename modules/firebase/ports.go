@@ -10,7 +10,7 @@ import (
 func (c *Container) ConnectionString(ctx context.Context, portName nat.Port) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("host: %w", err)
 	}
 	port, err := c.MappedPort(ctx, portName)
 	if err != nil {
