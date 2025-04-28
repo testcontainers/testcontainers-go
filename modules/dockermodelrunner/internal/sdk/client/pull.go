@@ -20,12 +20,9 @@ func (c *Client) PullModel(ctx context.Context, fullyQualifiedModelName string) 
 		return fmt.Errorf("new post request (%s): %w", reqURL, err)
 	}
 
-	log.Default().Printf("🙏 Pulling model %s. Please be patient", fullyQualifiedModelName)
+	logger := log.Default()
 
-	// Check context before making request
-	if err := ctx.Err(); err != nil {
-		return fmt.Errorf("context done before request: %w", err)
-	}
+	logger.Printf("🙏 Pulling model %s. Please be patient", fullyQualifiedModelName)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -44,25 +41,16 @@ func (c *Client) PullModel(ctx context.Context, fullyQualifiedModelName string) 
 	}
 
 	scanner := bufio.NewScanner(resp.Body)
-	done := make(chan error, 1)
-
-	go func() {
-		for scanner.Scan() {
-			log.Default().Printf(scanner.Text())
-		}
-		done <- scanner.Err()
-	}()
-
-	select {
-	case <-ctx.Done():
-		return fmt.Errorf("context done: %w", ctx.Err())
-	case err := <-done:
-		if err != nil {
-			return fmt.Errorf("scan error: %w", err)
-		}
+	// TODO: use a progressbar instead of multiple line output.
+	for scanner.Scan() {
+		logger.Printf(scanner.Text())
 	}
 
-	log.Default().Printf("✅ Model %s pulled successfully!", fullyQualifiedModelName)
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("scan error: %w", err)
+	}
+
+	logger.Printf("✅ Model %s pulled successfully!", fullyQualifiedModelName)
 
 	return nil
 }
