@@ -1,14 +1,11 @@
 package client
 
 import (
+	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
-
-	"github.com/cenkalti/backoff/v4"
 
 	"github.com/testcontainers/testcontainers-go/log"
 )
@@ -23,7 +20,12 @@ func (c *Client) PullModel(ctx context.Context, fullyQualifiedModelName string) 
 		return fmt.Errorf("new post request (%s): %w", reqURL, err)
 	}
 
-	log.Default().Printf("🙏 Pulling model %s. Please be patient, no progress bar yet!", fullyQualifiedModelName)
+	log.Default().Printf("🙏 Pulling model %s. Please be patient", fullyQualifiedModelName)
+
+	// Check context before making request
+	if err := ctx.Err(); err != nil {
+		return fmt.Errorf("context done before request: %w", err)
+	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -31,38 +33,33 @@ func (c *Client) PullModel(ctx context.Context, fullyQualifiedModelName string) 
 	}
 	defer resp.Body.Close()
 
+	// Check context after getting response
+	if err := ctx.Err(); err != nil {
+		return fmt.Errorf("context done after response: %w", err)
+	}
+
 	// The Docker Model Runner returns a 200 status code for a successful pulls
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	namespace := strings.Split(fullyQualifiedModelName, "/")[0]
-	modelName := strings.Split(fullyQualifiedModelName, "/")[1]
+	scanner := bufio.NewScanner(resp.Body)
+	done := make(chan error, 1)
 
-	// Verify that the model is pulled successfully, honoring the parent context
-	// This is because the pull cancels when the connection is closed.
-	err = backoff.RetryNotify(
-		func() error {
-			if ctx.Err() != nil {
-				return backoff.Permanent(ctx.Err())
-			}
+	go func() {
+		for scanner.Scan() {
+			log.Default().Printf(scanner.Text())
+		}
+		done <- scanner.Err()
+	}()
 
-			model, err := c.InspectModel(ctx, namespace, modelName)
-			if err != nil {
-				return err
-			}
-			if model == nil {
-				return errors.New("model not found")
-			}
-			return nil
-		},
-		backoff.WithContext(backoff.NewExponentialBackOff(), ctx),
-		func(err error, _ time.Duration) {
-			log.Default().Printf("🙏 Pulling model %s. Please be patient, no progress bar yet! %w", fullyQualifiedModelName, err)
-		},
-	)
-	if err != nil {
-		return fmt.Errorf("pull model: %w", err)
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("context done: %w", ctx.Err())
+	case err := <-done:
+		if err != nil {
+			return fmt.Errorf("scan error: %w", err)
+		}
 	}
 
 	log.Default().Printf("✅ Model %s pulled successfully!", fullyQualifiedModelName)
