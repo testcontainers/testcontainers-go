@@ -30,7 +30,7 @@ var recentVersionTags = []string{
 }
 
 func isMinimumVersion(image string, minVersion string) bool {
-	parts := strings.Split(image, ":")
+	parts := strings.Split(strings.Split(image, "@")[0], ":")
 	version := parts[len(parts)-1]
 
 	if pos := strings.LastIndexByte(version, '-'); pos >= 0 {
