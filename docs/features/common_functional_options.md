@@ -226,6 +226,12 @@ Please read the [Following Container Logs](/features/follow_logs) documentation 
 
 If you need to pull the image before starting the container, you can use `testcontainers.WithAlwaysPull()`.
 
+#### WithImagePlatform
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to set the platform for a container, you can use `testcontainers.WithImagePlatform(platform string)`.
+
 #### LifecycleHooks
 
 - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>

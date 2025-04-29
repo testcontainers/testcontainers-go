@@ -414,6 +414,14 @@ func WithAlwaysPull() CustomizeRequestOption {
 	}
 }
 
+// WithImagePlatform sets the platform for a container
+func WithImagePlatform(platform string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.ImagePlatform = platform
+		return nil
+	}
+}
+
 // WithEntrypoint completely replaces the entrypoint of a container
 func WithEntrypoint(entrypoint ...string) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {

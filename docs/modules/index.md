@@ -209,6 +209,7 @@ In order to simplify the creation of the container for a given module, `Testcont
 - `testcontainers.WithLifecycleHooks`: a function that sets the lifecycle hooks for the container request.
 - `testcontainers.WithAdditionalLifecycleHooks`: a function that appends lifecycle hooks to the existing ones for the container request.
 - `testcontainers.WithAlwaysPull`: a function that pulls the image before starting the container.
+- `testcontainers.WithImagePlatform`: a function that sets the image platform for the container request.
 - `testcontainers.WithWaitStrategy`: a function that sets the wait strategy for the container request.
 - `testcontainers.WithWaitStrategyAndDeadline`: a function that sets the wait strategy for the container request with a deadline.
 - `testcontainers.WithStartupCommand`: a function that sets the execution of a command when the container starts.

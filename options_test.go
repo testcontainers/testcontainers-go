@@ -409,6 +409,18 @@ func TestWithAlwaysPull(t *testing.T) {
 	require.True(t, req.AlwaysPullImage)
 }
 
+func TestWithImagePlatform(t *testing.T) {
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "alpine",
+		},
+	}
+
+	opt := testcontainers.WithImagePlatform("linux/amd64")
+	require.NoError(t, opt.Customize(&req))
+	require.Equal(t, "linux/amd64", req.ImagePlatform)
+}
+
 func TestWithCmdArgs(t *testing.T) {
 	testCmd := func(t *testing.T, initial []string, add []string, expected []string) {
 		t.Helper()
