@@ -744,3 +744,31 @@ func TestWithReuseByName_ErrorsWithoutContainerNameProvided(t *testing.T) {
 	require.False(t, req.Reuse)
 	require.Empty(t, req.Name)
 }
+
+func TestWithName(t *testing.T) {
+	t.Parallel()
+	req := &testcontainers.GenericContainerRequest{}
+
+	opt := testcontainers.WithName("pg-test")
+	err := opt.Customize(req)
+	require.NoError(t, err)
+	require.Equal(t, "pg-test", req.Name)
+
+	t.Run("empty", func(t *testing.T) {
+		req := &testcontainers.GenericContainerRequest{}
+
+		opt := testcontainers.WithName("")
+		err := opt.Customize(req)
+		require.ErrorContains(t, err, "container name must be provided")
+	})
+}
+
+func TestWithNoStart(t *testing.T) {
+	t.Parallel()
+	req := &testcontainers.GenericContainerRequest{}
+
+	opt := testcontainers.WithNoStart()
+	err := opt.Customize(req)
+	require.NoError(t, err)
+	require.False(t, req.Started)
+}

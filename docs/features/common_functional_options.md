@@ -364,3 +364,27 @@ ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3",
 
 !!!warning
     Reusing a container is experimental and the API is subject to change for a more robust implementation that is not based on container names.
+
+#### WithName
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to set the name of the container, you can use the `testcontainers.WithName` option.
+
+```golang
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", 
+    testcontainers.WithName("my-container-name"),
+)
+```
+
+!!!warning
+    This option is not checking whether the container name is already in use. If you use a name that is already in use, an error is returned.
+    At the same time, we discourage using this option as it might lead to unexpected behavior, but we understand that in some cases it might be useful.
+
+#### WithNoStart
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to prevent the container from being started after creation, you can use the `testcontainers.WithNoStart` option.
+
+

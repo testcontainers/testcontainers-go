@@ -106,14 +106,33 @@ func WithHostPortAccess(ports ...int) CustomizeRequestOption {
 	}
 }
 
+// WithName will set the name of the container.
+func WithName(containerName string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		if containerName == "" {
+			return errors.New("container name must be provided")
+		}
+		req.Name = containerName
+		return nil
+	}
+}
+
+// WithNoStart will prevent the container from being started after creation.
+func WithNoStart() CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.Started = false
+		return nil
+	}
+}
+
 // WithReuseByName will mark a container to be reused if it exists or create a new one if it doesn't.
 // A container name must be provided to identify the container to be reused.
 func WithReuseByName(containerName string) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {
-		if containerName == "" {
-			return errors.New("container name must be provided for reuse")
+		if err := WithName(containerName)(req); err != nil {
+			return err
 		}
-		req.Name = containerName
+
 		req.Reuse = true
 		return nil
 	}
