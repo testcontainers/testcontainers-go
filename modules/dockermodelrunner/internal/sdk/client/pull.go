@@ -30,11 +30,6 @@ func (c *Client) PullModel(ctx context.Context, fullyQualifiedModelName string) 
 	}
 	defer resp.Body.Close()
 
-	// Check context after getting response
-	if err := ctx.Err(); err != nil {
-		return fmt.Errorf("context done after response: %w", err)
-	}
-
 	// The Docker Model Runner returns a 200 status code for a successful pulls
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
