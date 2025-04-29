@@ -215,15 +215,12 @@ const (
 func main() {
 	ctx := context.Background()
 
-	n1, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "nginx:1.17.6",
-			ExposedPorts: []string{"80/tcp"},
-			WaitingFor:   wait.ForListeningPort("80/tcp"),
-			Name:         reusableContainerName,
-		},
-		Started: true,
-	})
+	n1, err := testcontainers.Run(
+		ctx, "nginx:1.17.6",
+		testcontainers.WithExposedPorts("80/tcp"),
+		testcontainers.WithReuseByName(reusableContainerName),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort("80/tcp")),
+	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(n1); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -242,16 +239,12 @@ func main() {
 		return
 	}
 
-	n2, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "nginx:1.17.6",
-			ExposedPorts: []string{"80/tcp"},
-			WaitingFor:   wait.ForListeningPort("80/tcp"),
-			Name:         reusableContainerName,
-		},
-		Started: true,
-		Reuse:   true,
-	})
+	n2, err := testcontainers.Run(
+		ctx, "nginx:1.17.6",
+		testcontainers.WithExposedPorts("80/tcp"),
+		testcontainers.WithReuseByName(reusableContainerName),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort("80/tcp")),
+	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(n2); err != nil {
 			log.Printf("failed to terminate container: %s", err)

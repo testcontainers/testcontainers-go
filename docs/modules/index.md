@@ -135,27 +135,15 @@ type Config struct {
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
     cfg := Config{}
 
-    req := testcontainers.ContainerRequest{
-        Image: img,
-        ...
-    }
-    genericContainerReq := testcontainers.GenericContainerRequest{
-        ContainerRequest: req,
-        Started:          true,
-    }
     ...
     for _, opt := range opts {
-        if err := opt.Customize(&genericContainerReq); err != nil {
-            return nil, fmt.Errorf("customise: %w", err)
-        }
-
         // If you need to transfer some state from the options to the container, you can do it here
         if myCustomizer, ok := opt.(MyCustomizer); ok {
             config.data = customizer.data
         }
     }
     ...
-    container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+    container, err := testcontainers.Run(ctx, img, opts...)
     ...
     moduleContainer := &Container{Container: container}
     moduleContainer.initializeState(ctx, cfg)

@@ -72,7 +72,7 @@ As such, Testcontainers provides a convenience function to obtain an address on 
 It is normally advisable to use `Host` and `MappedPort` together when constructing addresses - for example:
 
 <!--codeinclude-->
-[Getting the container host and mapped port](../../docker_test.go) inside_block:buildingAddresses
+[Getting the container host and mapped port](../../docker_test.go) inside_block:containerHost
 <!--/codeinclude-->
 
 !!! info
