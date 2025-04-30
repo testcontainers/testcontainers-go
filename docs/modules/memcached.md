@@ -53,6 +53,8 @@ The Memcached container exposes the following methods:
 
 #### HostPort
 
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
 The `HostPort` method returns the host and port of the Memcached container, in the format `host:port`. Use this method to connect to the Memcached container from your application.
 
 <!--codeinclude-->
