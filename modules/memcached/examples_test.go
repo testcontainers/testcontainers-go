@@ -12,6 +12,7 @@ import (
 )
 
 func ExampleRun() {
+	// runMemcachedContainer {
 	ctx := context.Background()
 
 	memcachedContainer, err := memcached.Run(ctx, "memcached:1.6-alpine")
@@ -24,6 +25,7 @@ func ExampleRun() {
 		log.Printf("failed to start container: %s", err)
 		return
 	}
+	// }
 
 	state, err := memcachedContainer.State(ctx)
 	if err != nil {

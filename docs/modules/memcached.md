@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/memcached
 ## Usage example
 
 <!--codeinclude-->
-[Creating a Memcached container](../../modules/memcached/examples_test.go) inside_block:ExampleRun
+[Creating a Memcached container](../../modules/memcached/examples_test.go) inside_block:runMemcachedContainer
 <!--/codeinclude-->
 
 ## Module Reference
