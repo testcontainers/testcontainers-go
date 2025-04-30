@@ -66,6 +66,17 @@ You can easily set the valkey logging level. E.g. `WithLogLevel(LogLevelDebug)`.
 
 In the case you have a custom config file for Valkey, it's possible to copy that file into the container before it's started. E.g. `WithConfigFile(filepath.Join("testdata", "valkey.conf"))`.
 
+#### WithTLS
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+In the case you want to enable TLS for the Valkey container, you can use the `WithTLS()` option. This options enables TLS on the `6379/tcp` port and uses a secure URL (e.g. `rediss://host:port`).
+
+!!!info
+    In case you want to use Non-mutual TLS (i.e. client authentication is not required), you can customize the CMD arguments by using the `WithCmdArgs` option. E.g. `WithCmdArgs("--tls-auth-clients", "no")`.
+
+The module automatically generates three certificates, a CA certificate, a client certificate and a Valkey certificate. Please use the `TLSConfig()` container method to get the TLS configuration and use it to configure the Valkey client. See more details in the [TLSConfig](#tlsconfig) section.
+
 ### Container Methods
 
 The Valkey container exposes the following methods:
@@ -79,3 +90,15 @@ This method returns the connection string to connect to the Valkey container, us
 <!--codeinclude-->
 [Get connection string](../../modules/valkey/valkey_test.go) inside_block:connectionString
 <!--/codeinclude-->
+
+#### TLSConfig
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This method returns the TLS configuration for the Valkey container, nil if TLS is not enabled.
+
+<!--codeinclude-->
+[Get TLS config](../../modules/valkey/valkey_test.go) inside_block:tlsConfig
+<!--/codeinclude-->
+
+In the above example, the options are used to configure a Valkey client with TLS enabled.

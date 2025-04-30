@@ -6,9 +6,10 @@ toolchain go1.23.6
 
 require (
 	github.com/google/uuid v1.6.0
+	github.com/mdelapenya/tlscert v0.2.0
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.37.0
-	github.com/valkey-io/valkey-go v1.0.41
+	github.com/valkey-io/valkey-go v1.0.59
 )
 
 replace github.com/testcontainers/testcontainers-go => ../..
@@ -60,7 +61,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	golang.org/x/crypto v0.37.0 // indirect
-	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240318140521-94a12d6c2237 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240318140521-94a12d6c2237 // indirect

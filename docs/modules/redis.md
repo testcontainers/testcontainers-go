@@ -73,10 +73,12 @@ In the case you have a custom config file for Redis, it's possible to copy that 
 
 #### WithTLS
 
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+
 In the case you want to enable TLS for the Redis container, you can use the `WithTLS()` option. This options enables TLS on the `6379/tcp` port and uses a secure URL (e.g. `rediss://host:port`).
 
 !!!info
-    In case you want to use Non-mutual TLS (i.e. client authentication is not required), you can customize the CMD arguments by using the `WithCmdArgs` option. E.g. `WithCmdArgs("--tls-auth-clients no")`.
+    In case you want to use Non-mutual TLS (i.e. client authentication is not required), you can customize the CMD arguments by using the `WithCmdArgs` option. E.g. `WithCmdArgs("--tls-auth-clients", "no")`.
 
 The module automatically generates three certificates, a CA certificate, a client certificate and a Redis certificate. Please use the `TLSConfig()` container method to get the TLS configuration and use it to configure the Redis client. See more details in the [TLSConfig](#tlsconfig) section.
 
@@ -93,6 +95,8 @@ This method returns the connection string to connect to the Redis container, usi
 If the container is started with TLS enabled, the connection string is `rediss://host:port`, using the `rediss` schema.
 
 #### TLSConfig
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 This method returns the TLS configuration for the Redis container, nil if TLS is not enabled.
 
