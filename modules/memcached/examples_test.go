@@ -24,7 +24,6 @@ func ExampleRun() {
 		log.Printf("failed to start container: %s", err)
 		return
 	}
-	// }
 
 	state, err := memcachedContainer.State(ctx)
 	if err != nil {
@@ -51,7 +50,6 @@ func ExampleRun_connect() {
 		log.Printf("failed to start container: %s", err)
 		return
 	}
-	// }
 
 	// hostPort {
 	hostPort, err := memcachedContainer.HostPort(ctx)
