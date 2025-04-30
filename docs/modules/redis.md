@@ -97,6 +97,7 @@ If the container is started with TLS enabled, the connection string is `rediss:/
 #### TLSConfig
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+
 This method returns the TLS configuration for the Redis container, nil if TLS is not enabled.
 
 <!--codeinclude-->
