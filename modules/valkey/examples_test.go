@@ -48,14 +48,14 @@ func ExampleRun() {
 func ExampleRun_withTLS() {
 	ctx := context.Background()
 
-	redisContainer, err := tcvalkey.Run(ctx,
+	valkeyContainer, err := tcvalkey.Run(ctx,
 		"valkey/valkey:7.2.5",
 		tcvalkey.WithSnapshotting(10, 1),
 		tcvalkey.WithLogLevel(tcvalkey.LogLevelVerbose),
 		tcvalkey.WithTLS(),
 	)
 	defer func() {
-		if err := testcontainers.TerminateContainer(redisContainer); err != nil {
+		if err := testcontainers.TerminateContainer(valkeyContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
@@ -64,18 +64,18 @@ func ExampleRun_withTLS() {
 		return
 	}
 
-	if redisContainer.TLSConfig() == nil {
+	if valkeyContainer.TLSConfig() == nil {
 		log.Println("TLS is not enabled")
 		return
 	}
 
-	uri, err := redisContainer.ConnectionString(ctx)
+	uri, err := valkeyContainer.ConnectionString(ctx)
 	if err != nil {
 		log.Printf("failed to get connection string: %s", err)
 		return
 	}
 
-	// You will likely want to wrap your Redis package of choice in an
+	// You will likely want to wrap your Valkey package of choice in an
 	// interface to aid in unit testing and limit lock-in throughout your
 	// codebase but that's out of scope for this example
 	options, err := valkey.ParseURL(uri)
@@ -84,7 +84,7 @@ func ExampleRun_withTLS() {
 		return
 	}
 
-	options.TLSConfig = redisContainer.TLSConfig()
+	options.TLSConfig = valkeyContainer.TLSConfig()
 
 	client, err := valkey.NewClient(options)
 	if err != nil {
