@@ -7,6 +7,7 @@ toolchain go1.23.6
 require (
 	github.com/docker/go-connections v0.5.0
 	github.com/gocql/gocql v1.6.0
+	github.com/mdelapenya/tlscert v0.2.0
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.36.0
 )

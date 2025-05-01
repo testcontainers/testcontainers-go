@@ -4,25 +4,28 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/docker/go-connections/nat"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
-	port = nat.Port("9042/tcp")
+	port             = nat.Port("9042/tcp")
+	securePort       = nat.Port("9142/tcp") // Common port for SSL/TLS connections
+	keystorePassword = "changeit"           // Default password
 )
 
 // CassandraContainer represents the Cassandra container type used in the module
 type CassandraContainer struct {
 	testcontainers.Container
+	useTLS bool
 }
 
-// ConnectionHost returns the host and port of the cassandra container, using the default, native 9000 port, and
+// ConnectionHost returns the host and port of the cassandra container, using the default, native port,
 // obtaining the host and exposed port from the container
 func (c *CassandraContainer) ConnectionHost(ctx context.Context) (string, error) {
 	host, err := c.Host(ctx)
@@ -30,12 +33,17 @@ func (c *CassandraContainer) ConnectionHost(ctx context.Context) (string, error)
 		return "", err
 	}
 
-	port, err := c.MappedPort(ctx, port)
+	// Use the secure port if TLS is enabled
+	portToUse := port
+	if c.useTLS {
+		portToUse = securePort
+	}
+
+	mappedPort, err := c.MappedPort(ctx, portToUse)
 	if err != nil {
 		return "", err
 	}
-
-	return host + ":" + port.Port(), nil
+	return host + ":" + mappedPort.Port(), nil
 }
 
 // WithConfigFile sets the YAML config file to be used for the cassandra container
@@ -49,7 +57,6 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 			FileMode:          0o755,
 		}
 		req.Files = append(req.Files, cf)
-
 		return nil
 	}
 }
@@ -66,12 +73,109 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 				FileMode:          0o755,
 			}
 			initScripts = append(initScripts, cf)
-
 			execs = append(execs, initScript{File: cf.ContainerFilePath})
 		}
-
 		req.Files = append(req.Files, initScripts...)
 		return testcontainers.WithAfterReadyCommand(execs...)(req)
+	}
+}
+
+// SSLOptions contains the configuration options for setting up SSL/TLS
+type SSLOptions struct {
+	KeystorePath       string
+	KeystorePassword   string
+	TruststorePath     string
+	TruststorePassword string
+	RequireClientAuth  bool
+}
+
+// WithSSL enables SSL/TLS support on the Cassandra container
+func WithSSL(sslOpts SSLOptions) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		// Add the secure port to the exposed ports
+		hasSecurePort := false
+		for _, p := range req.ExposedPorts {
+			if p == string(securePort) {
+				hasSecurePort = true
+				break
+			}
+		}
+		if !hasSecurePort {
+			req.ExposedPorts = append(req.ExposedPorts, string(securePort))
+		}
+
+		// Set SSL environment variables
+		if req.Env == nil {
+			req.Env = make(map[string]string)
+		}
+
+		req.Env["CASSANDRA_SSL_ENABLE"] = "true"
+
+		// If keystore path is provided, copy it to the container
+		if sslOpts.KeystorePath != "" {
+			keystoreFile := testcontainers.ContainerFile{
+				HostFilePath:      sslOpts.KeystorePath,
+				ContainerFilePath: "/etc/cassandra/certs/server-keystore.p12",
+				FileMode:          0o600,
+			}
+			req.Files = append(req.Files, keystoreFile)
+
+			// Set JVM options for the keystore
+			keystorePass := keystorePassword
+			if sslOpts.KeystorePassword != "" {
+				keystorePass = sslOpts.KeystorePassword
+			}
+
+			req.Env["JVM_EXTRA_OPTS"] = req.Env["JVM_EXTRA_OPTS"] + " -Djavax.net.ssl.keyStore=/etc/cassandra/certs/server-keystore.p12 -Djavax.net.ssl.keyStorePassword=" + keystorePass
+		}
+
+		// If truststore path is provided, copy it to the container
+		if sslOpts.TruststorePath != "" {
+			truststoreFile := testcontainers.ContainerFile{
+				HostFilePath:      sslOpts.TruststorePath,
+				ContainerFilePath: "/etc/cassandra/certs/server-truststore.jks",
+				FileMode:          0o600,
+			}
+			req.Files = append(req.Files, truststoreFile)
+
+			// Set JVM options for the truststore
+			truststorePass := keystorePassword
+			if sslOpts.TruststorePassword != "" {
+				truststorePass = sslOpts.TruststorePassword
+			}
+
+			req.Env["JVM_EXTRA_OPTS"] = req.Env["JVM_EXTRA_OPTS"] + " -Djavax.net.ssl.trustStore=/etc/cassandra/certs/server-truststore.jks -Djavax.net.ssl.trustStorePassword=" + truststorePass
+		}
+
+		// Configure client authentication if required
+		if sslOpts.RequireClientAuth {
+			req.Env["CASSANDRA_SSL_CLIENT_AUTH"] = "require"
+		} else {
+			req.Env["CASSANDRA_SSL_CLIENT_AUTH"] = "want"
+		}
+
+		// Mark that SSL is enabled for later use
+		req.Labels = mergeMap(req.Labels, map[string]string{"testcontainers.cassandra.ssl": "true"})
+
+		return nil
+	}
+}
+
+// WithTLS is an alias for WithSSL for user convenience
+func WithTLS(opts SSLOptions) testcontainers.CustomizeRequestOption {
+	return WithSSL(opts)
+}
+
+// WithSSLConfig sets a custom SSL configuration YAML file
+func WithSSLConfig(sslConfigFile string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		cf := testcontainers.ContainerFile{
+			HostFilePath:      sslConfigFile,
+			ContainerFilePath: "/etc/cassandra/conf/cassandra-ssl.properties",
+			FileMode:          0o644,
+		}
+		req.Files = append(req.Files, cf)
+		return nil
 	}
 }
 
@@ -103,26 +207,73 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		),
 	}
 
+	c := &CassandraContainer{}
+
 	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	}
 
+	sslEnabled := false
 	for _, opt := range opts {
 		if err := opt.Customize(&genericContainerReq); err != nil {
 			return nil, err
 		}
+		// Detect if WithSSL/WithTLS was used by checking the label
+		if genericContainerReq.Labels != nil && genericContainerReq.Labels["testcontainers.cassandra.ssl"] == "true" {
+			sslEnabled = true
+		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	var c *CassandraContainer
-	if container != nil {
-		c = &CassandraContainer{Container: container}
+	//If SSL is enabled, add a TLS wait strategy for the keystore file and SSL CQL port
+	if sslEnabled {
+		genericContainerReq.WaitingFor = wait.ForAll(
+			genericContainerReq.WaitingFor,
+			wait.ForListeningPort(securePort),
+			wait.ForFile("/etc/cassandra/certs/server-keystore.p12"),
+			wait.ForExec([]string{"cqlsh", "localhost", "--ssl", "-e", "SELECT release_version FROM system.local"}),
+		)
 	}
+
+	//Ensure cqlshrc file with SSL validation disabled exists on host
+	cqlshrcPath := "cqlshrc-ssl-disable"
+	cqlshrcContent := []byte("[ssl]\nvalidate = false\n")
+	_ = os.WriteFile(cqlshrcPath, cqlshrcContent, 0644)
+
+	//Add cqlshrc to container files
+	cqlshrcFile := testcontainers.ContainerFile{
+		HostFilePath:      cqlshrcPath,
+		ContainerFilePath: "/root/.cassandra/cqlshrc",
+		FileMode:          0o644,
+	}
+	genericContainerReq.Files = append(genericContainerReq.Files, cqlshrcFile)
+
+	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	if container != nil {
+		c.Container = container
+	}
+
+	// Set useTLS based on sslEnabled
+	c.useTLS = sslEnabled
 
 	if err != nil {
 		return c, fmt.Errorf("generic container: %w", err)
 	}
 
 	return c, nil
+}
+
+// mergeMap is a helper to merge two string maps
+func mergeMap(a, b map[string]string) map[string]string {
+	if a == nil && b == nil {
+		return nil
+	}
+	result := make(map[string]string)
+	for k, v := range a {
+		result[k] = v
+	}
+	for k, v := range b {
+		result[k] = v
+	}
+	return result
 }
