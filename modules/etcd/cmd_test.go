@@ -9,7 +9,7 @@ import (
 func Test_configureCMD(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		got := configureCMD(options{})
-		want := []string{"etcd", "--name=default"}
+		want := []string{"etcd", "--name=default", "--listen-client-urls=http://0.0.0.0:2379", "--advertise-client-urls=http://0.0.0.0:2379"}
 		require.Equal(t, want, got)
 	})
 

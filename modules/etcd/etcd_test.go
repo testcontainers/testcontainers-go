@@ -30,57 +30,44 @@ func TestRun(t *testing.T) {
 	require.Contains(t, string(output), "default")
 }
 
-func TestRun_PutGet(t *testing.T) {
+func TestPutGet(t *testing.T) {
+	t.Run("single_node", func(t *testing.T) {
+		ctr, err := etcd.Run(context.Background(), "gcr.io/etcd-development/etcd:v3.5.14")
+		require.NoError(t, err)
+		testPutGet(t, ctr)
+	})
+	t.Run("multiple_nodes", func(t *testing.T) {
+		ctr, err := etcd.Run(context.Background(), "gcr.io/etcd-development/etcd:v3.5.14", etcd.WithNodes("etcd-1", "etcd-2", "etcd-3"))
+		require.NoError(t, err)
+		testPutGet(t, ctr)
+	})
+}
+
+func testPutGet(t *testing.T, ctr *etcd.EtcdContainer) {
+	testcontainers.CleanupContainer(t, ctr)
+
 	ctx := context.Background()
 
-	for _, tc := range []struct {
-		name    string
-		builder func(t *testing.T) *etcd.EtcdContainer
-	}{
-		{
-			name: "single_node",
-			builder: func(t *testing.T) *etcd.EtcdContainer {
-				ctr, err := etcd.Run(ctx, "gcr.io/etcd-development/etcd:v3.5.14")
-				require.NoError(t, err)
-				return ctr
-			},
-		},
-		{
-			name: "multiple_nodes",
-			builder: func(t *testing.T) *etcd.EtcdContainer {
-				ctr, err := etcd.Run(ctx, "gcr.io/etcd-development/etcd:v3.5.14", etcd.WithNodes("etcd-1", "etcd-2", "etcd-3"))
-				require.NoError(t, err)
-				return ctr
-			},
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			ctr := tc.builder(t)
-			require.NoError(t, testcontainers.TerminateContainer(ctr))
+	clientEndpoints, err := ctr.ClientEndpoints(ctx)
+	require.NoError(t, err)
 
-			clientEndpoints, err := ctr.ClientEndpoints(ctx)
-			require.NoError(t, err)
+	cli, err := clientv3.New(clientv3.Config{
+		Endpoints:   clientEndpoints,
+		DialTimeout: 5 * time.Second,
+	})
+	require.NoError(t, err)
+	defer func(cli *clientv3.Client) {
+		require.NoError(t, cli.Close())
+	}(cli)
 
-			cli, err := clientv3.New(clientv3.Config{
-				Endpoints:   clientEndpoints,
-				DialTimeout: 5 * time.Second,
-			})
-			require.NoError(t, err)
-			defer func(cli *clientv3.Client) {
-				require.NoError(t, cli.Close())
-			}(cli)
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	_, err = cli.Put(ctx, "sample_key", "sample_value")
+	require.NoError(t, err)
 
-			ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
-			defer cancel()
-			_, err = cli.Put(ctx, "sample_key", "sample_value")
-			require.NoError(t, err)
+	resp, err := cli.Get(ctx, "sample_key")
+	require.NoError(t, err)
 
-			resp, err := cli.Get(ctx, "sample_key")
-			require.NoError(t, err)
-
-			require.Len(t, resp.Kvs, 1)
-			require.Equal(t, "sample_value", string(resp.Kvs[0].Value))
-		})
-
-	}
+	require.Len(t, resp.Kvs, 1)
+	require.Equal(t, "sample_value", string(resp.Kvs[0].Value))
 }
