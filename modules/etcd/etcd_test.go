@@ -33,18 +33,20 @@ func TestRun(t *testing.T) {
 func TestPutGet(t *testing.T) {
 	t.Run("single_node", func(t *testing.T) {
 		ctr, err := etcd.Run(context.Background(), "gcr.io/etcd-development/etcd:v3.5.14")
-		require.NoError(t, err)
-		testPutGet(t, ctr)
+		testPutGet(t, ctr, err)
 	})
 	t.Run("multiple_nodes", func(t *testing.T) {
 		ctr, err := etcd.Run(context.Background(), "gcr.io/etcd-development/etcd:v3.5.14", etcd.WithNodes("etcd-1", "etcd-2", "etcd-3"))
-		require.NoError(t, err)
-		testPutGet(t, ctr)
+		testPutGet(t, ctr, err)
 	})
 }
 
-func testPutGet(t *testing.T, ctr *etcd.EtcdContainer) {
+func testPutGet(t *testing.T, ctr *etcd.EtcdContainer, err error) {
+	t.Helper()
+
 	testcontainers.CleanupContainer(t, ctr)
+
+	require.NoError(t, err)
 
 	ctx := context.Background()
 
@@ -56,9 +58,9 @@ func testPutGet(t *testing.T, ctr *etcd.EtcdContainer) {
 		DialTimeout: 5 * time.Second,
 	})
 	require.NoError(t, err)
-	defer func(cli *clientv3.Client) {
+	defer func() {
 		require.NoError(t, cli.Close())
-	}(cli)
+	}()
 
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
