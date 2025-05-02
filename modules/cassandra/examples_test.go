@@ -2,18 +2,16 @@ package cassandra_test
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
 	"github.com/gocql/gocql"
-
-	"crypto/tls"
-	"crypto/x509"
-	"os/exec"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/cassandra"
 )
@@ -74,7 +72,7 @@ func ExampleRun() {
 	// 4.1.3
 }
 
-func ExampleRunSSL() {
+func ExampleRun_SSL() {
 	ctx := context.Background()
 
 	// Generate JKS keystore and export public cert for Go client

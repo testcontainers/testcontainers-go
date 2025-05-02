@@ -14,9 +14,8 @@ import (
 )
 
 const (
-	port             = nat.Port("9042/tcp")
-	securePort       = nat.Port("9142/tcp") // Common port for SSL/TLS connections
-	keystorePassword = "changeit"           // Default password
+	port       = nat.Port("9042/tcp")
+	securePort = nat.Port("9142/tcp") // Common port for SSL/TLS connections
 )
 
 // CassandraContainer represents the Cassandra container type used in the module
@@ -113,7 +112,7 @@ func WithSSL(sslOpts SSLOptions) testcontainers.CustomizeRequestOption {
 			keystoreFile := testcontainers.ContainerFile{
 				HostFilePath:      sslOpts.KeystorePath,
 				ContainerFilePath: "/etc/cassandra/conf/keystore.jks",
-				FileMode:          0644,
+				FileMode:          0o644,
 			}
 			req.Files = append(req.Files, keystoreFile)
 		}
@@ -122,7 +121,7 @@ func WithSSL(sslOpts SSLOptions) testcontainers.CustomizeRequestOption {
 			certFile := testcontainers.ContainerFile{
 				HostFilePath:      sslOpts.CertPath,
 				ContainerFilePath: "/etc/cassandra/conf/cassandra.crt",
-				FileMode:          0644,
+				FileMode:          0o644,
 			}
 			req.Files = append(req.Files, certFile)
 		}
@@ -187,7 +186,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	//If SSL is enabled, add a TLS wait strategy for the keystore file and SSL CQL port
+	// If SSL is enabled, add a TLS wait strategy for the keystore file and SSL CQL port
 	if sslEnabled {
 		genericContainerReq.WaitingFor = wait.ForAll(
 			genericContainerReq.WaitingFor,

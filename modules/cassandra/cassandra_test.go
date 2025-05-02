@@ -126,6 +126,7 @@ func TestCassandraWithInitScripts(t *testing.T) {
 
 // generateJKSKeystore generates a JKS keystore with a self-signed cert using keytool, and extracts the public cert for Go client trust.
 func generateJKSKeystore(t *testing.T) (keystorePath, keystorePassword, certPath string) {
+	t.Helper()
 	tmpDir := t.TempDir()
 	keystorePath = filepath.Join(tmpDir, "keystore.jks")
 	keystorePassword = "changeit"
