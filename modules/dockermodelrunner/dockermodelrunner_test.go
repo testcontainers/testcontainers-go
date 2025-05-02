@@ -3,6 +3,7 @@ package dockermodelrunner_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -60,6 +61,13 @@ func TestRun_client(t *testing.T) {
 
 		t.Run("failure", func(t *testing.T) {
 			err := ctr.PullModel(ctx, testNonExistentFQMN)
+			require.Error(t, err)
+		})
+
+		t.Run("failure/timeout", func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(ctx, 1*time.Millisecond)
+			defer cancel()
+			err := ctr.PullModel(ctx, testModelFQMN)
 			require.Error(t, err)
 		})
 	})

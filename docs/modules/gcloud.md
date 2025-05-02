@@ -31,7 +31,7 @@ The Google Cloud module exposes the following Go packages:
 
 ### Run function
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The BigQuery module exposes one entrypoint function to create the BigQuery container, and this function receives three parameters:
 
@@ -56,7 +56,7 @@ In example: `Run(context.Background(), "ghcr.io/goccy/bigquery-emulator:0.6.1")`
 
 #### Data YAML (Seed File)
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 If you would like to do additional initialization in the BigQuery container, add a `data.yaml` file represented by an `io.Reader` to the container request with the `WithDataYAML` function.
 That file is copied after the container is created but before it's started. The startup command then used will look like `--project test --data-from-yaml /testcontainers-data.yaml`.
@@ -80,7 +80,7 @@ It's important to set the `option.WithEndpoint()` option using the container's U
 
 ### Run function
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The BigTable module exposes one entrypoint function to create the BigTable container, and this function receives three parameters:
 
@@ -117,7 +117,7 @@ It's important to set the `option.WithEndpoint()` option using the container's U
 
 ### Run function
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The Datastore module exposes one entrypoint function to create the Datastore container, and this function receives three parameters:
 
@@ -153,7 +153,7 @@ It's important to set the `option.WithEndpoint()` option using the container's U
 
 ### Run function
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The Firestore module exposes one entrypoint function to create the Firestore container, and this function receives three parameters:
 
@@ -176,6 +176,14 @@ In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk
 
 {% include "./gcloud-shared.md" %}
 
+### Datastore mode
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+
+Using the `WithDatastoreMode` option will run the Firestore emulator using `Firestore In Datastore` mode allowing you to use Datastore APIs and clients towards the Firestore emulator.
+
+Requires `cloud-sdk:465.0.0` or higher
+
 ### Examples
 
 <!--codeinclude-->
@@ -189,7 +197,7 @@ It's important to set the target string of the `grpc.NewClient` method using the
 
 ### Run function
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The Pubsub module exposes one entrypoint function to create the Pubsub container, and this function receives three parameters:
 
@@ -225,7 +233,7 @@ It's important to set the target string of the `grpc.NewClient` method using the
 
 ### Run function
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The Spanner module exposes one entrypoint function to create the Spanner container, and this function receives three parameters:
 

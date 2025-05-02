@@ -10,7 +10,7 @@ up with Testcontainers and integrate into your tests:
 
 ## Run
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 `testcontainers.Run` defines the container that should be run, similar to the `docker run` command.
 

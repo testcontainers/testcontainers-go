@@ -1,6 +1,6 @@
 # Toxiproxy
 
-Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/toxiproxy
 
 ### Run function
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The Toxiproxy module exposes one entrypoint function to create the Toxiproxy container, and this function receives three parameters:
 
@@ -55,7 +55,7 @@ In example: `Run(context.Background(), "shopify/toxiproxy:2.12.0")`.
 
 #### WithProxy
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The `WithProxy` option allows you to specify a proxy to be created on the Toxiproxy container.
 This option allocates a random port on the host and exposes it to the Toxiproxy container, allowing
@@ -74,7 +74,7 @@ is added to the proxies defined in the config file.
 
 #### WithConfigFile
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The `WithConfigFile` option allows you to specify a config file for the Toxiproxy container, in the form of an `io.Reader` representing
 the JSON file with the Toxiproxy configuration, in the valid format of the Toxiproxy configuration file.
@@ -96,7 +96,7 @@ The Toxiproxy container exposes the following methods:
 
 #### ProxiedEndpoint
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The `ProxiedEndpoint` method returns the host and port of the proxy for a given port. It's used to create new connections to the proxied service, and it returns an error in case the port has no proxy.
 
@@ -113,7 +113,7 @@ The above examples show how to get the proxied endpoint and use it to create a n
 
 #### URI
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The `URI` method returns the URI of the Toxiproxy container, used to create a new Toxiproxy client.
 
