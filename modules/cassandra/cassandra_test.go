@@ -2,8 +2,14 @@ package cassandra_test
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"fmt"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/gocql/gocql"
 	"github.com/stretchr/testify/require"
@@ -116,4 +122,98 @@ func TestCassandraWithInitScripts(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, Test{ID: 1, Name: "NAME"}, test)
 	})
+}
+
+func TestCassandraSSL(t *testing.T) {
+	if _, err := exec.LookPath("keytool"); err != nil {
+		t.Skip("keytool not found, skipping test")
+	}
+
+	ctx := context.Background()
+
+	tmpDir := t.TempDir()
+	keystorePath := filepath.Join(tmpDir, "keystore.jks")
+	keystorePassword := "changeit"
+
+	cmd := exec.Command(
+		"keytool", "-genkeypair",
+		"-alias", "cassandra",
+		"-keyalg", "RSA",
+		"-keysize", "2048",
+		"-storetype", "JKS",
+		"-keystore", keystorePath,
+		"-storepass", keystorePassword,
+		"-keypass", keystorePassword,
+		"-dname", "CN=localhost, OU=Test, O=Test, C=US",
+		"-validity", "365",
+	)
+	_, err := cmd.CombinedOutput()
+	require.NoError(t, err)
+
+	certPath := filepath.Join(tmpDir, "cassandra.crt")
+	cmd = exec.Command(
+		"keytool", "-exportcert",
+		"-alias", "cassandra",
+		"-keystore", keystorePath,
+		"-storepass", keystorePassword,
+		"-rfc",
+		"-file", certPath,
+	)
+	_, err = cmd.CombinedOutput()
+	require.NoError(t, err)
+
+	sslOptions := cassandra.SSLOptions{
+		KeystorePath:      keystorePath,
+		CertPath:          certPath,
+		RequireClientAuth: false,
+	}
+
+	container, err := cassandra.Run(ctx, "cassandra:4.1.3",
+		// with ssl config file
+		cassandra.WithConfigFile(filepath.Join("testdata", "cassandra-ssl.yaml")),
+		cassandra.WithSSL(sslOptions))
+	testcontainers.CleanupContainer(t, container)
+	require.NoError(t, err)
+
+	host, err := container.Host(ctx)
+	require.NoError(t, err)
+
+	sslPort, err := container.MappedPort(ctx, "9142/tcp")
+	require.NoError(t, err)
+
+	// Read the certificate for client validation
+	certPEM, err := os.ReadFile(certPath)
+	if err != nil {
+		t.Fatalf("Failed to read certificate: %v", err)
+	}
+
+	// Create a certificate pool and add the certificate
+	certPool := x509.NewCertPool()
+	certPool.AppendCertsFromPEM(certPEM)
+
+	// Set up TLS configuration
+	tlsConfig := &tls.Config{
+		RootCAs:            certPool,
+		InsecureSkipVerify: true, // For testing only
+		ServerName:         "localhost",
+		MinVersion:         tls.VersionTLS12,
+	}
+
+	cluster := gocql.NewCluster(fmt.Sprintf("%s:%s", host, sslPort.Port()))
+	cluster.Consistency = gocql.Quorum
+	cluster.Timeout = 30 * time.Second
+	cluster.ConnectTimeout = 30 * time.Second
+	cluster.DisableInitialHostLookup = true
+	cluster.SslOpts = &gocql.SslOptions{
+		Config:                 tlsConfig,
+		EnableHostVerification: false,
+	}
+	var session *gocql.Session
+	session, err = cluster.CreateSession()
+	require.NoError(t, err)
+	defer session.Close()
+	var version string
+	err = session.Query("SELECT release_version FROM system.local").Scan(&version)
+	require.NoError(t, err)
+	require.NotEmpty(t, version)
 }

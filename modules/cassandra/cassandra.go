@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
@@ -84,9 +84,11 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 type SSLOptions struct {
 	KeystorePath       string
 	KeystorePassword   string
+	CertPath           string
 	TruststorePath     string
 	TruststorePassword string
 	RequireClientAuth  bool
+	CqlshrcPath        string
 }
 
 // WithSSL enables SSL/TLS support on the Cassandra container
@@ -109,49 +111,41 @@ func WithSSL(sslOpts SSLOptions) testcontainers.CustomizeRequestOption {
 			req.Env = make(map[string]string)
 		}
 
-		req.Env["CASSANDRA_SSL_ENABLE"] = "true"
-
 		// If keystore path is provided, copy it to the container
 		if sslOpts.KeystorePath != "" {
 			keystoreFile := testcontainers.ContainerFile{
 				HostFilePath:      sslOpts.KeystorePath,
-				ContainerFilePath: "/etc/cassandra/certs/server-keystore.p12",
-				FileMode:          0o600,
+				ContainerFilePath: "/etc/cassandra/conf/keystore.jks",
+				FileMode:          0644,
 			}
 			req.Files = append(req.Files, keystoreFile)
-
-			// Set JVM options for the keystore
-			keystorePass := keystorePassword
-			if sslOpts.KeystorePassword != "" {
-				keystorePass = sslOpts.KeystorePassword
-			}
-
-			req.Env["JVM_EXTRA_OPTS"] = req.Env["JVM_EXTRA_OPTS"] + " -Djavax.net.ssl.keyStore=/etc/cassandra/certs/server-keystore.p12 -Djavax.net.ssl.keyStorePassword=" + keystorePass
 		}
 
-		// If truststore path is provided, copy it to the container
+		if sslOpts.CertPath != "" {
+			certFile := testcontainers.ContainerFile{
+				HostFilePath:      sslOpts.CertPath,
+				ContainerFilePath: "/etc/cassandra/conf/cassandra.crt",
+				FileMode:          0644,
+			}
+			req.Files = append(req.Files, certFile)
+		}
+
+		if sslOpts.CqlshrcPath != "" {
+			cqlshrcFile := testcontainers.ContainerFile{
+				HostFilePath:      sslOpts.CqlshrcPath,
+				ContainerFilePath: "/root/.cassandra/cqlshrc",
+				FileMode:          0644,
+			}
+			req.Files = append(req.Files, cqlshrcFile)
+		}
+		//If truststore path is provided, copy it to the container
 		if sslOpts.TruststorePath != "" {
 			truststoreFile := testcontainers.ContainerFile{
 				HostFilePath:      sslOpts.TruststorePath,
 				ContainerFilePath: "/etc/cassandra/certs/server-truststore.jks",
-				FileMode:          0o600,
+				FileMode:          0644,
 			}
 			req.Files = append(req.Files, truststoreFile)
-
-			// Set JVM options for the truststore
-			truststorePass := keystorePassword
-			if sslOpts.TruststorePassword != "" {
-				truststorePass = sslOpts.TruststorePassword
-			}
-
-			req.Env["JVM_EXTRA_OPTS"] = req.Env["JVM_EXTRA_OPTS"] + " -Djavax.net.ssl.trustStore=/etc/cassandra/certs/server-truststore.jks -Djavax.net.ssl.trustStorePassword=" + truststorePass
-		}
-
-		// Configure client authentication if required
-		if sslOpts.RequireClientAuth {
-			req.Env["CASSANDRA_SSL_CLIENT_AUTH"] = "require"
-		} else {
-			req.Env["CASSANDRA_SSL_CLIENT_AUTH"] = "want"
 		}
 
 		// Mark that SSL is enabled for later use
@@ -191,19 +185,21 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Image:        img,
 		ExposedPorts: []string{string(port)},
 		Env: map[string]string{
-			"CASSANDRA_SNITCH":          "GossipingPropertyFileSnitch",
-			"JVM_OPTS":                  "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.initial_token=0",
-			"HEAP_NEWSIZE":              "128M",
-			"MAX_HEAP_SIZE":             "1024M",
-			"CASSANDRA_ENDPOINT_SNITCH": "GossipingPropertyFileSnitch",
-			"CASSANDRA_DC":              "datacenter1",
+			"CASSANDRA_SNITCH":                 "GossipingPropertyFileSnitch",
+			"JVM_OPTS":                         "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.initial_token=0",
+			"HEAP_NEWSIZE":                     "128M",
+			"MAX_HEAP_SIZE":                    "1024M",
+			"CASSANDRA_ENDPOINT_SNITCH":        "GossipingPropertyFileSnitch",
+			"CASSANDRA_DC":                     "datacenter1",
+			"CASSANDRA_SKIP_WAIT_FOR_GOSSIP":   "1",
+			"CASSANDRA_START_NATIVE_TRANSPORT": "true",
 		},
 		WaitingFor: wait.ForAll(
 			wait.ForListeningPort(port),
 			wait.ForExec([]string{"cqlsh", "-e", "SELECT bootstrapped FROM system.local"}).WithResponseMatcher(func(body io.Reader) bool {
 				data, _ := io.ReadAll(body)
 				return strings.Contains(string(data), "COMPLETED")
-			}),
+			}).WithStartupTimeout(2*time.Minute),
 		),
 	}
 
@@ -229,32 +225,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	if sslEnabled {
 		genericContainerReq.WaitingFor = wait.ForAll(
 			genericContainerReq.WaitingFor,
-			wait.ForListeningPort(securePort),
-			wait.ForFile("/etc/cassandra/certs/server-keystore.p12"),
-			wait.ForExec([]string{"cqlsh", "localhost", "--ssl", "-e", "SELECT release_version FROM system.local"}),
+			wait.ForListeningPort(securePort).WithStartupTimeout(3*time.Minute),
 		)
 	}
-
-	//Ensure cqlshrc file with SSL validation disabled exists on host
-	cqlshrcPath := "cqlshrc-ssl-disable"
-	cqlshrcContent := []byte("[ssl]\nvalidate = false\n")
-	_ = os.WriteFile(cqlshrcPath, cqlshrcContent, 0644)
-
-	//Add cqlshrc to container files
-	cqlshrcFile := testcontainers.ContainerFile{
-		HostFilePath:      cqlshrcPath,
-		ContainerFilePath: "/root/.cassandra/cqlshrc",
-		FileMode:          0o644,
-	}
-	genericContainerReq.Files = append(genericContainerReq.Files, cqlshrcFile)
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	if container != nil {
 		c.Container = container
+		// Set useTLS based on sslEnabled
+		c.useTLS = sslEnabled
 	}
-
-	// Set useTLS based on sslEnabled
-	c.useTLS = sslEnabled
 
 	if err != nil {
 		return c, fmt.Errorf("generic container: %w", err)
