@@ -73,7 +73,7 @@ func ExampleRun() {
 	// 4.1.3
 }
 
-func ExampleRun_SSL() {
+func ExampleRun_withSSL() {
 	ctx := context.Background()
 
 	// Generate JKS keystore and export public cert for Go client
