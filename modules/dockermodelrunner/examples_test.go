@@ -6,6 +6,7 @@ import (
 	"log"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
@@ -104,6 +105,9 @@ func ExampleRun_pullModel() {
 		modelTag       = "360M-Q4_K_M"
 		fqModelName    = modelNamespace + "/" + modelName + ":" + modelTag
 	)
+
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
 
 	err = dmrCtr.PullModel(ctx, fqModelName)
 	if err != nil {
