@@ -124,16 +124,12 @@ func TestCassandraWithInitScripts(t *testing.T) {
 	})
 }
 
-func TestCassandraSSL(t *testing.T) {
-	if _, err := exec.LookPath("keytool"); err != nil {
-		t.Skip("keytool not found, skipping test")
-	}
-
-	ctx := context.Background()
-
+// generateJKSKeystore generates a JKS keystore with a self-signed cert using keytool, and extracts the public cert for Go client trust.
+func generateJKSKeystore(t *testing.T) (keystorePath, keystorePassword, certPath string) {
 	tmpDir := t.TempDir()
-	keystorePath := filepath.Join(tmpDir, "keystore.jks")
-	keystorePassword := "changeit"
+	keystorePath = filepath.Join(tmpDir, "keystore.jks")
+	keystorePassword = "changeit"
+	certPath = filepath.Join(tmpDir, "cert.pem")
 
 	cmd := exec.Command(
 		"keytool", "-genkeypair",
@@ -147,10 +143,10 @@ func TestCassandraSSL(t *testing.T) {
 		"-dname", "CN=localhost, OU=Test, O=Test, C=US",
 		"-validity", "365",
 	)
-	_, err := cmd.CombinedOutput()
-	require.NoError(t, err)
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, string(out))
 
-	certPath := filepath.Join(tmpDir, "cassandra.crt")
+	// Export the public certificate for Go client trust
 	cmd = exec.Command(
 		"keytool", "-exportcert",
 		"-alias", "cassandra",
@@ -159,27 +155,17 @@ func TestCassandraSSL(t *testing.T) {
 		"-rfc",
 		"-file", certPath,
 	)
-	_, err = cmd.CombinedOutput()
-	require.NoError(t, err)
+	out, err = cmd.CombinedOutput()
+	require.NoError(t, err, string(out))
 
-	sslOptions := cassandra.SSLOptions{
-		KeystorePath:      keystorePath,
-		CertPath:          certPath,
-		RequireClientAuth: false,
-	}
+	return keystorePath, keystorePassword, certPath
+}
 
-	container, err := cassandra.Run(ctx, "cassandra:4.1.3",
-		// with ssl config file
-		cassandra.WithConfigFile(filepath.Join("testdata", "cassandra-ssl.yaml")),
-		cassandra.WithSSL(sslOptions))
-	testcontainers.CleanupContainer(t, container)
-	require.NoError(t, err)
+func TestCassandraSSL(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
 
-	host, err := container.Host(ctx)
-	require.NoError(t, err)
-
-	sslPort, err := container.MappedPort(ctx, "9142/tcp")
-	require.NoError(t, err)
+	keystorePath, keystorePassword, certPath := generateJKSKeystore(t)
 
 	// Read the certificate for client validation
 	certPEM, err := os.ReadFile(certPath)
@@ -198,6 +184,24 @@ func TestCassandraSSL(t *testing.T) {
 		ServerName:         "localhost",
 		MinVersion:         tls.VersionTLS12,
 	}
+
+	container, err := cassandra.Run(ctx, "cassandra:4.1.3",
+		cassandra.WithConfigFile(filepath.Join("testdata", "cassandra-ssl.yaml")),
+		cassandra.WithSSL(cassandra.SSLOptions{
+			KeystorePath:      keystorePath,
+			KeystorePassword:  keystorePassword,
+			CertPath:          certPath, // for reference, not used by server
+			RequireClientAuth: false,
+		}),
+	)
+	testcontainers.CleanupContainer(t, container)
+	require.NoError(t, err)
+
+	host, err := container.Host(ctx)
+	require.NoError(t, err)
+
+	sslPort, err := container.MappedPort(ctx, "9142/tcp")
+	require.NoError(t, err)
 
 	cluster := gocql.NewCluster(fmt.Sprintf("%s:%s", host, sslPort.Port()))
 	cluster.Consistency = gocql.Quorum

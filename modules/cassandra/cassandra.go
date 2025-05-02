@@ -82,13 +82,10 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 
 // SSLOptions contains the configuration options for setting up SSL/TLS
 type SSLOptions struct {
-	KeystorePath       string
-	KeystorePassword   string
-	CertPath           string
-	TruststorePath     string
-	TruststorePassword string
-	RequireClientAuth  bool
-	CqlshrcPath        string
+	KeystorePath      string
+	KeystorePassword  string
+	CertPath          string
+	RequireClientAuth bool
 }
 
 // WithSSL enables SSL/TLS support on the Cassandra container
@@ -130,24 +127,6 @@ func WithSSL(sslOpts SSLOptions) testcontainers.CustomizeRequestOption {
 			req.Files = append(req.Files, certFile)
 		}
 
-		if sslOpts.CqlshrcPath != "" {
-			cqlshrcFile := testcontainers.ContainerFile{
-				HostFilePath:      sslOpts.CqlshrcPath,
-				ContainerFilePath: "/root/.cassandra/cqlshrc",
-				FileMode:          0644,
-			}
-			req.Files = append(req.Files, cqlshrcFile)
-		}
-		//If truststore path is provided, copy it to the container
-		if sslOpts.TruststorePath != "" {
-			truststoreFile := testcontainers.ContainerFile{
-				HostFilePath:      sslOpts.TruststorePath,
-				ContainerFilePath: "/etc/cassandra/certs/server-truststore.jks",
-				FileMode:          0644,
-			}
-			req.Files = append(req.Files, truststoreFile)
-		}
-
 		// Mark that SSL is enabled for later use
 		req.Labels = mergeMap(req.Labels, map[string]string{"testcontainers.cassandra.ssl": "true"})
 
@@ -158,19 +137,6 @@ func WithSSL(sslOpts SSLOptions) testcontainers.CustomizeRequestOption {
 // WithTLS is an alias for WithSSL for user convenience
 func WithTLS(opts SSLOptions) testcontainers.CustomizeRequestOption {
 	return WithSSL(opts)
-}
-
-// WithSSLConfig sets a custom SSL configuration YAML file
-func WithSSLConfig(sslConfigFile string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := testcontainers.ContainerFile{
-			HostFilePath:      sslConfigFile,
-			ContainerFilePath: "/etc/cassandra/conf/cassandra-ssl.properties",
-			FileMode:          0o644,
-		}
-		req.Files = append(req.Files, cf)
-		return nil
-	}
 }
 
 // Deprecated: use Run instead
