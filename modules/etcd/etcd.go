@@ -166,7 +166,10 @@ func configureCMD(settings options) []string {
 	cmds := []string{"etcd"}
 
 	if len(settings.nodeNames) == 0 {
-		cmds = append(cmds, "--name=default")
+		cmds = append(cmds, "--name=default",
+			"--listen-client-urls="+scheme+"://0.0.0.0:"+clientPort,
+			"--advertise-client-urls="+scheme+"://0.0.0.0:"+clientPort,
+		)
 	} else {
 		clusterCmds := []string{
 			"--name=" + settings.nodeNames[settings.currentNode],
