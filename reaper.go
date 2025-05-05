@@ -61,6 +61,8 @@ var (
 // The ContainerProvider interface should usually satisfy this as well, so it is pluggable
 type ReaperProvider interface {
 	RunContainer(ctx context.Context, req ContainerRequest) (Container, error)
+
+	// Deprecated: use [testcontainers.NewConfig] instead
 	Config() TestcontainersConfig
 }
 
@@ -261,7 +263,12 @@ func (r *reaperSpawner) retryError(err error) error {
 //
 // Safe for concurrent calls.
 func (r *reaperSpawner) reaper(ctx context.Context, sessionID string, provider ReaperProvider) (*Reaper, error) {
-	if config.Read().RyukDisabled {
+	cfg, err := NewConfig()
+	if err != nil {
+		return nil, fmt.Errorf("read config: %w", err)
+	}
+
+	if cfg.RyukDisabled {
 		return nil, errReaperDisabled
 	}
 
@@ -377,6 +384,7 @@ func (r *reaperSpawner) newReaper(ctx context.Context, sessionID string, provide
 	dockerHostMount := core.MustExtractDockerSocket(ctx)
 
 	port := r.port()
+	// TODO: change deprecated usage of Config() once we have more consistent test for the config and the reaper.
 	tcConfig := provider.Config().Config
 	req := ContainerRequest{
 		Image:        config.ReaperDefaultImage,
@@ -387,7 +395,7 @@ func (r *reaperSpawner) newReaper(ctx context.Context, sessionID string, provide
 		HostConfigModifier: func(hc *container.HostConfig) {
 			hc.AutoRemove = true
 			hc.Binds = []string{dockerHostMount + ":/var/run/docker.sock"}
-			hc.NetworkMode = Bridge
+			hc.NetworkMode = "bridge"
 			hc.Privileged = tcConfig.RyukPrivileged
 		},
 		Env: map[string]string{},
@@ -406,16 +414,6 @@ func (r *reaperSpawner) newReaper(ctx context.Context, sessionID string, provide
 	req.Labels[core.LabelReaper] = "true"
 	req.Labels[core.LabelRyuk] = "true"
 	delete(req.Labels, core.LabelReap)
-
-	// Attach reaper container to a requested network if it is specified
-	if p, ok := provider.(*DockerProvider); ok {
-		defaultNetwork, err := p.ensureDefaultNetwork(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("ensure default network: %w", err)
-		}
-
-		req.Networks = append(req.Networks, defaultNetwork)
-	}
 
 	c, err := provider.RunContainer(ctx, req)
 	defer func() {
@@ -456,7 +454,12 @@ type Reaper struct {
 // It returns a channel that can be closed to terminate the connection.
 // Returns an error if config.RyukDisabled is true.
 func (r *Reaper) Connect() (chan bool, error) {
-	if config.Read().RyukDisabled {
+	cfg, err := config.Read()
+	if err != nil {
+		return nil, fmt.Errorf("read config: %w", err)
+	}
+
+	if cfg.RyukDisabled {
 		return nil, errReaperDisabled
 	}
 
