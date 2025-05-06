@@ -97,6 +97,7 @@ nav:
         - modules/localstack.md
         - modules/mariadb.md
         - modules/meilisearch.md
+        - modules/memcached.md
         - modules/milvus.md
         - modules/minio.md
         - modules/mockserver.md
