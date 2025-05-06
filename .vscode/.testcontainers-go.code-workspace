@@ -126,6 +126,10 @@
             "path": "../modules/meilisearch"
         },
         {
+            "name": "module / memcached",
+            "path": "../modules/memcached"
+        },
+        {
             "name": "module / milvus",
             "path": "../modules/milvus"
         },

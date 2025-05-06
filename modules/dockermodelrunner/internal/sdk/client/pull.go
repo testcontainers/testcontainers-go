@@ -1,11 +1,13 @@
 package client
 
 import (
+	"bufio"
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
+
+	"github.com/testcontainers/testcontainers-go/log"
 )
 
 // PullModel creates a model in the Docker Model Runner, by pulling the model from Docker Hub.
@@ -18,7 +20,9 @@ func (c *Client) PullModel(ctx context.Context, fullyQualifiedModelName string) 
 		return fmt.Errorf("new post request (%s): %w", reqURL, err)
 	}
 
-	log.Default().Printf("🙏 Pulling model %s. Please be patient, no progress bar yet!", fullyQualifiedModelName)
+	logger := log.Default()
+
+	logger.Printf("🙏 Pulling model %s. Please be patient", fullyQualifiedModelName)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -31,7 +35,17 @@ func (c *Client) PullModel(ctx context.Context, fullyQualifiedModelName string) 
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	log.Default().Printf("✅ Model %s pulled successfully!", fullyQualifiedModelName)
+	scanner := bufio.NewScanner(resp.Body)
+	// TODO: use a progressbar instead of multiple line output.
+	for scanner.Scan() {
+		logger.Printf(scanner.Text())
+	}
+
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("scan error: %w", err)
+	}
+
+	logger.Printf("✅ Model %s pulled successfully!", fullyQualifiedModelName)
 
 	return nil
 }
