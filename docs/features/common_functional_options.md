@@ -317,6 +317,15 @@ If you want to attach your containers to an already existing Docker network by i
 !!!warning
     In case the network name is `bridge`, no aliases are set. This is because network-scoped alias is supported only for containers in user defined networks.
 
+#### WithBridgeNetwork
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you want to attach your containers to the `bridge` network, you can use the `network.WithBridgeNetwork()` option.
+
+!!!warning
+    The `bridge` network is the default network for Docker. It's not a user defined network, so it doesn't support network-scoped aliases.
+
 #### WithNewNetwork
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>

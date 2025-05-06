@@ -342,6 +342,44 @@ func TestWithNetwork(t *testing.T) {
 	require.Equal(t, expectedLabels, newNetwork.Labels)
 }
 
+func TestWithNetworkName(t *testing.T) {
+	t.Run("bridge/success", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{},
+		}
+
+		err := network.WithBridgeNetwork()(&req)
+		require.NoError(t, err)
+
+		require.Len(t, req.Networks, 1)
+		require.Equal(t, "bridge", req.Networks[0])
+	})
+
+	t.Run("bridge/error/network-scoped-alias", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{},
+		}
+
+		err := network.WithNetworkName([]string{"alias"}, "bridge")(&req)
+		require.Error(t, err)
+	})
+
+	t.Run("user-defined/success", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{},
+		}
+
+		err := network.WithNetworkName([]string{"alias"}, "user-defined")(&req)
+		require.NoError(t, err)
+
+		require.Len(t, req.Networks, 1)
+		require.Equal(t, "user-defined", req.Networks[0])
+
+		require.Len(t, req.NetworkAliases, 1)
+		require.Equal(t, map[string][]string{"user-defined": {"alias"}}, req.NetworkAliases)
+	})
+}
+
 func TestWithSyntheticNetwork(t *testing.T) {
 	nw := &testcontainers.DockerNetwork{
 		Name: "synthetic-network",

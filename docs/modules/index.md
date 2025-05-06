@@ -226,6 +226,7 @@ In order to simplify the creation of the container for a given module, `Testcont
 - `testcontainers.WithNoStart`: a function that prevents the container from being started after creation, so it must be started manually.
 - `network.WithNetwork`: a function that sets the network and the network aliases for the container request, reusing an already existing network.
 - `network.WithNetworkName`: a function that sets the network aliases for an already existing network, by its name.
+- `network.WithBridgeNetwork`: a function that sets the container to be attached to the `bridge` network.
 - `network.WithNewNetwork`: a function that sets the network aliases for a throw-away network for the container request.
 
 ### Update Go dependencies in the modules
