@@ -12,13 +12,13 @@ import (
 
 // Options represents the configuration options for the Cassandra container
 type Options struct {
-	IsTLSEnabled bool
-	TLSConfig    *tls.Config
+	tlsEnabled bool
+	tlsConfig  *tls.Config
 }
 
 // TLSEnabled returns whether TLS is enabled
 func (o *Options) TLSEnabled() bool {
-	return o.IsTLSEnabled
+	return o.tlsEnabled
 }
 
 // Compiler check to ensure that Option implements the testcontainers.ContainerCustomizer interface.
@@ -36,7 +36,7 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 // WithSSL enables SSL/TLS support on the Cassandra container
 func WithSSL() Option {
 	return func(o *Options) error {
-		o.IsTLSEnabled = true
+		o.tlsEnabled = true
 		return nil
 	}
 }

@@ -38,7 +38,7 @@ func (c *CassandraContainer) ConnectionHost(ctx context.Context) (string, error)
 
 	// Use the secure port if TLS is enabled
 	portToUse := port
-	if c.settings.IsTLSEnabled {
+	if c.settings.tlsEnabled {
 		portToUse = securePort
 	}
 
@@ -101,7 +101,7 @@ func setupTLS(settings *Options) ([]string, []wait.Strategy, []testcontainers.Co
 	}
 	var tcOpts []testcontainers.ContainerCustomizer
 
-	if settings.IsTLSEnabled {
+	if settings.tlsEnabled {
 		exposePort = append(exposePort, string(securePort))
 		waitStrategies = append(waitStrategies, wait.ForListeningPort(securePort).WithStartupTimeout(1*time.Minute))
 
@@ -130,7 +130,7 @@ func setupTLS(settings *Options) ([]string, []wait.Strategy, []testcontainers.Co
 		certPool := x509.NewCertPool()
 		certPool.AppendCertsFromPEM(certPEM)
 
-		settings.TLSConfig = &tls.Config{
+		settings.tlsConfig = &tls.Config{
 			RootCAs:            certPool,
 			InsecureSkipVerify: true,
 			ServerName:         "localhost",
@@ -202,5 +202,5 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // TLSConfig returns the TLS configuration for the Redis container, nil if TLS is not enabled.
 func (c *CassandraContainer) TLSConfig() *tls.Config {
-	return c.settings.TLSConfig
+	return c.settings.tlsConfig
 }
