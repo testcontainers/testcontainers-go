@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/modules/cassandra"
@@ -16,7 +15,7 @@ func TestWithSSL(t *testing.T) {
 	opts := &cassandra.Options{}
 	err := cassandra.WithSSL()(opts)
 	require.NoError(t, err)
-	assert.True(t, opts.TLSEnabled())
+	require.True(t, opts.TLSEnabled())
 }
 
 func TestGenerateJKSKeystore(t *testing.T) {
@@ -32,8 +31,8 @@ func TestGenerateJKSKeystore(t *testing.T) {
 	require.NoError(t, err, "certificate file should exist")
 
 	// Verify file extensions
-	assert.Equal(t, ".jks", filepath.Ext(keystorePath), "keystore should have .jks extension")
-	assert.Equal(t, ".pem", filepath.Ext(certPath), "certificate should have .pem extension")
+	require.Equal(t, ".jks", filepath.Ext(keystorePath), "keystore should have .jks extension")
+	require.Equal(t, ".pem", filepath.Ext(certPath), "certificate should have .pem extension")
 
 	// Clean up
 	os.Remove(keystorePath)
@@ -54,15 +53,15 @@ func TestGenerateJKSKeystoreOverwrite(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify paths are the same
-	assert.Equal(t, keystorePath, newKeystorePath)
-	assert.Equal(t, certPath, newCertPath)
+	require.Equal(t, keystorePath, newKeystorePath)
+	require.Equal(t, certPath, newCertPath)
 
 	// Get new file info
 	newKeystoreInfo, err := os.Stat(keystorePath)
 	require.NoError(t, err)
 
 	// Verify that the file was modified
-	assert.NotEqual(t, initialKeystoreInfo.ModTime(), newKeystoreInfo.ModTime(), "keystore should be overwritten")
+	require.NotEqual(t, initialKeystoreInfo.ModTime(), newKeystoreInfo.ModTime(), "keystore should be overwritten")
 
 	// Clean up
 	os.Remove(keystorePath)
@@ -79,6 +78,6 @@ func TestGenerateJKSKeystoreInvalidKeytool(t *testing.T) {
 
 	// Test that keystore generation fails when keytool is not available
 	_, _, err := cassandra.GenerateJKSKeystore()
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to generate keystore")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to generate keystore")
 }

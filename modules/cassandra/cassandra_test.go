@@ -133,7 +133,7 @@ func TestCassandraSSL(t *testing.T) {
 	testcontainers.CleanupContainer(t, container)
 	require.NoError(t, err)
 
-	//Get TLS configruations
+	// Get TLS configurations
 	tlsConfig := container.TLSConfig()
 
 	host, err := container.Host(ctx)
