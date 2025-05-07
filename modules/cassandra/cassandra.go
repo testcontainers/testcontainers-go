@@ -89,6 +89,58 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	return Run(ctx, "cassandra:4.1.3", opts...)
 }
 
+// setupTLS configures TLS settings for the Cassandra container.
+func setupTLS(settings *Options) ([]string, []wait.Strategy, []testcontainers.ContainerCustomizer, error) {
+	exposePort := []string{string(port)}
+	waitStrategies := []wait.Strategy{
+		wait.ForListeningPort(port),
+		wait.ForExec([]string{"cqlsh", "-e", "SELECT bootstrapped FROM system.local"}).WithResponseMatcher(func(body io.Reader) bool {
+			data, _ := io.ReadAll(body)
+			return strings.Contains(string(data), "COMPLETED")
+		}).WithStartupTimeout(1 * time.Minute),
+	}
+	var tcOpts []testcontainers.ContainerCustomizer
+
+	if settings.IsTLSEnabled {
+		exposePort = append(exposePort, string(securePort))
+		waitStrategies = append(waitStrategies, wait.ForListeningPort(securePort).WithStartupTimeout(1*time.Minute))
+
+		keystorePath, certPath, err := GenerateJKSKeystore()
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("create SSL certs: %w", err)
+		}
+
+		tcOpts = append(tcOpts, testcontainers.WithFiles(
+			testcontainers.ContainerFile{
+				HostFilePath:      keystorePath,
+				ContainerFilePath: "/etc/cassandra/conf/keystore.jks",
+				FileMode:          0o644,
+			},
+			testcontainers.ContainerFile{
+				HostFilePath:      certPath,
+				ContainerFilePath: "/etc/cassandra/conf/cassandra.crt",
+				FileMode:          0o644,
+			}))
+
+		certPEM, err := os.ReadFile(certPath)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("error while read certificate: %w", err)
+		}
+
+		certPool := x509.NewCertPool()
+		certPool.AppendCertsFromPEM(certPEM)
+
+		settings.TLSConfig = &tls.Config{
+			RootCAs:            certPool,
+			InsecureSkipVerify: true,
+			ServerName:         "localhost",
+			MinVersion:         tls.VersionTLS12,
+		}
+	}
+
+	return exposePort, waitStrategies, tcOpts, nil
+}
+
 // Run creates an instance of the Cassandra container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*CassandraContainer, error) {
 	req := testcontainers.ContainerRequest{
@@ -117,58 +169,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	tcOpts := []testcontainers.ContainerCustomizer{}
-
-	exposePort := []string{string(port)}
-	waitStrategies := []wait.Strategy{
-		wait.ForListeningPort(port),
-		wait.ForExec([]string{"cqlsh", "-e", "SELECT bootstrapped FROM system.local"}).WithResponseMatcher(func(body io.Reader) bool {
-			data, _ := io.ReadAll(body)
-			return strings.Contains(string(data), "COMPLETED")
-		}).WithStartupTimeout(1 * time.Minute),
-	}
-
-	// If SSL is enabled, add a TLS wait strategy for the keystore file and SSL CQL port
-	if settings.IsTLSEnabled {
-		exposePort = append(exposePort, string(securePort))
-
-		// wait for the TLS port to be available
-		waitStrategies = append(waitStrategies, wait.ForListeningPort(securePort).WithStartupTimeout(1*time.Minute))
-
-		keystorePath, certPath, err := GenerateJKSKeystore()
-		if err != nil {
-			return nil, fmt.Errorf("create SSL certs: %w", err)
-		}
-
-		tcOpts = append(tcOpts, testcontainers.WithFiles(
-			testcontainers.ContainerFile{
-				HostFilePath:      keystorePath,
-				ContainerFilePath: "/etc/cassandra/conf/keystore.jks",
-				FileMode:          0o644,
-			},
-			testcontainers.ContainerFile{
-				HostFilePath:      certPath,
-				ContainerFilePath: "/etc/cassandra/conf/cassandra.crt",
-				FileMode:          0o644,
-			}))
-
-		// Read the certificate for client validation
-		certPEM, err := os.ReadFile(certPath)
-		if err != nil {
-			return nil, fmt.Errorf("error while read certificatate : %w", err)
-		}
-
-		// Create a certificate pool and add the certificate
-		certPool := x509.NewCertPool()
-		certPool.AppendCertsFromPEM(certPEM)
-
-		// Set up TLS configuration
-		settings.TLSConfig = &tls.Config{
-			RootCAs:            certPool,
-			InsecureSkipVerify: true, // For testing only
-			ServerName:         "localhost",
-			MinVersion:         tls.VersionTLS12,
-		}
+	exposePort, waitStrategies, tcOpts, err := setupTLS(&settings)
+	if err != nil {
+		return nil, err
 	}
 
 	tcOpts = append(tcOpts, testcontainers.WithExposedPorts(exposePort...))
