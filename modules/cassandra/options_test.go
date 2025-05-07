@@ -7,15 +7,25 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/cassandra"
 )
 
 func TestWithSSL(t *testing.T) {
-	// Test that WithSSL sets tlsEnabled to true
+	// Create a test container request
+	req := &testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{},
+	}
 	opts := &cassandra.Options{}
-	err := cassandra.WithSSL()(opts)
+
+	// Test that WithSSL configures TLS
+	err := cassandra.WithSSL()(req, opts)
 	require.NoError(t, err)
-	require.True(t, opts.TLSEnabled())
+	require.NotNil(t, opts.TLSConfig(), "TLS config should be set")
+	require.NotEmpty(t, opts.TLSConfig().KeystorePath, "Keystore path should be set")
+	require.NotEmpty(t, opts.TLSConfig().CertificatePath, "Certificate path should be set")
+	require.Contains(t, req.ExposedPorts, "9142/tcp", "Secure port should be exposed")
+	require.Len(t, req.Files, 2, "Should have keystore and certificate files")
 }
 
 func TestGenerateJKSKeystore(t *testing.T) {

@@ -3,10 +3,8 @@ package cassandra
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -38,7 +36,7 @@ func (c *CassandraContainer) ConnectionHost(ctx context.Context) (string, error)
 
 	// Use the secure port if TLS is enabled
 	portToUse := port
-	if c.settings.tlsEnabled {
+	if c.settings.tlsConfig != nil {
 		portToUse = securePort
 	}
 
@@ -89,58 +87,6 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 	return Run(ctx, "cassandra:4.1.3", opts...)
 }
 
-// setupTLS configures TLS settings for the Cassandra container.
-func setupTLS(settings *Options) ([]string, []wait.Strategy, []testcontainers.ContainerCustomizer, error) {
-	exposePort := []string{string(port)}
-	waitStrategies := []wait.Strategy{
-		wait.ForListeningPort(port),
-		wait.ForExec([]string{"cqlsh", "-e", "SELECT bootstrapped FROM system.local"}).WithResponseMatcher(func(body io.Reader) bool {
-			data, _ := io.ReadAll(body)
-			return strings.Contains(string(data), "COMPLETED")
-		}).WithStartupTimeout(1 * time.Minute),
-	}
-	var tcOpts []testcontainers.ContainerCustomizer
-
-	if settings.tlsEnabled {
-		exposePort = append(exposePort, string(securePort))
-		waitStrategies = append(waitStrategies, wait.ForListeningPort(securePort).WithStartupTimeout(1*time.Minute))
-
-		keystorePath, certPath, err := GenerateJKSKeystore()
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("create SSL certs: %w", err)
-		}
-
-		tcOpts = append(tcOpts, testcontainers.WithFiles(
-			testcontainers.ContainerFile{
-				HostFilePath:      keystorePath,
-				ContainerFilePath: "/etc/cassandra/conf/keystore.jks",
-				FileMode:          0o644,
-			},
-			testcontainers.ContainerFile{
-				HostFilePath:      certPath,
-				ContainerFilePath: "/etc/cassandra/conf/cassandra.crt",
-				FileMode:          0o644,
-			}))
-
-		certPEM, err := os.ReadFile(certPath)
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("error while read certificate: %w", err)
-		}
-
-		certPool := x509.NewCertPool()
-		certPool.AppendCertsFromPEM(certPEM)
-
-		settings.tlsConfig = &tls.Config{
-			RootCAs:            certPool,
-			InsecureSkipVerify: true,
-			ServerName:         "localhost",
-			MinVersion:         tls.VersionTLS12,
-		}
-	}
-
-	return exposePort, waitStrategies, tcOpts, nil
-}
-
 // Run creates an instance of the Cassandra container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*CassandraContainer, error) {
 	req := testcontainers.ContainerRequest{
@@ -153,6 +99,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"CASSANDRA_ENDPOINT_SNITCH": "GossipingPropertyFileSnitch",
 			"CASSANDRA_DC":              "datacenter1",
 		},
+		ExposedPorts: []string{string(port)},
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
@@ -162,29 +109,28 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	var settings Options
 	for _, opt := range opts {
-		if opt, ok := opt.(Option); ok {
-			if err := opt(&settings); err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	exposePort, waitStrategies, tcOpts, err := setupTLS(&settings)
-	if err != nil {
-		return nil, err
-	}
-
-	tcOpts = append(tcOpts, testcontainers.WithExposedPorts(exposePort...))
-	tcOpts = append(tcOpts, testcontainers.WithWaitStrategy(waitStrategies...))
-
-	// Append the customizers passed to the Run function.
-	tcOpts = append(tcOpts, opts...)
-
-	// Apply the testcontainers customizers.
-	for _, opt := range tcOpts {
 		if err := opt.Customize(&genericContainerReq); err != nil {
 			return nil, err
 		}
+	}
+
+	// Set up wait strategies
+	waitStrategies := []wait.Strategy{
+		wait.ForListeningPort(port),
+		wait.ForExec([]string{"cqlsh", "-e", "SELECT bootstrapped FROM system.local"}).WithResponseMatcher(func(body io.Reader) bool {
+			data, _ := io.ReadAll(body)
+			return strings.Contains(string(data), "COMPLETED")
+		}).WithStartupTimeout(1 * time.Minute),
+	}
+
+	// Add TLS wait strategy if TLS config exists
+	if settings.tlsConfig != nil {
+		waitStrategies = append(waitStrategies, wait.ForListeningPort(securePort).WithStartupTimeout(1*time.Minute))
+	}
+
+	// Apply wait strategy using the correct method
+	if err := testcontainers.WithWaitStrategy(wait.ForAll(waitStrategies...)).Customize(&genericContainerReq); err != nil {
+		return nil, err
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
@@ -200,7 +146,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
-// TLSConfig returns the TLS configuration for the Redis container, nil if TLS is not enabled.
+// TLSConfig returns the TLS configuration for the Cassandra container, nil if TLS is not enabled.
 func (c *CassandraContainer) TLSConfig() *tls.Config {
-	return c.settings.tlsConfig
+	if c.settings.tlsConfig == nil {
+		return nil
+	}
+	return c.settings.tlsConfig.Config
 }

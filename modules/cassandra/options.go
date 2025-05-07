@@ -2,6 +2,7 @@ package cassandra
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,33 +11,67 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
+// TLSConfig represents the TLS configuration for Cassandra
+type TLSConfig struct {
+	KeystorePath    string
+	CertificatePath string
+	Config          *tls.Config
+}
+
 // Options represents the configuration options for the Cassandra container
 type Options struct {
-	tlsEnabled bool
-	tlsConfig  *tls.Config
+	tlsConfig *TLSConfig
 }
-
-// TLSEnabled returns whether TLS is enabled
-func (o *Options) TLSEnabled() bool {
-	return o.tlsEnabled
-}
-
-// Compiler check to ensure that Option implements the testcontainers.ContainerCustomizer interface.
-var _ testcontainers.ContainerCustomizer = (Option)(nil)
 
 // Option is an option for the Cassandra container.
-type Option func(*Options) error
+type Option func(*testcontainers.GenericContainerRequest, *Options) error
 
-// Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
-func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
-	// NOOP to satisfy interface.
-	return nil
+// Customize implements the testcontainers.ContainerCustomizer interface
+func (o Option) Customize(req *testcontainers.GenericContainerRequest) error {
+	return o(req, &Options{})
 }
 
 // WithSSL enables SSL/TLS support on the Cassandra container
 func WithSSL() Option {
-	return func(o *Options) error {
-		o.tlsEnabled = true
+	return func(req *testcontainers.GenericContainerRequest, settings *Options) error {
+		req.ExposedPorts = append(req.ExposedPorts, string(securePort))
+
+		keystorePath, certPath, err := GenerateJKSKeystore()
+		if err != nil {
+			return fmt.Errorf("create SSL certs: %w", err)
+		}
+
+		req.Files = append(req.Files,
+			testcontainers.ContainerFile{
+				HostFilePath:      keystorePath,
+				ContainerFilePath: "/etc/cassandra/conf/keystore.jks",
+				FileMode:          0o644,
+			},
+			testcontainers.ContainerFile{
+				HostFilePath:      certPath,
+				ContainerFilePath: "/etc/cassandra/conf/cassandra.crt",
+				FileMode:          0o644,
+			})
+
+		certPEM, err := os.ReadFile(certPath)
+		if err != nil {
+			return fmt.Errorf("error while read certificate: %w", err)
+		}
+
+		certPool := x509.NewCertPool()
+		certPool.AppendCertsFromPEM(certPEM)
+
+		settings.tlsConfig = &TLSConfig{
+			KeystorePath:    keystorePath,
+			CertificatePath: certPath,
+			Config: &tls.Config{
+				RootCAs:            certPool,
+				InsecureSkipVerify: true,
+				ServerName:         "localhost",
+				MinVersion:         tls.VersionTLS12,
+			},
+		}
+
 		return nil
 	}
 }
@@ -82,4 +117,9 @@ func GenerateJKSKeystore() (keystorePath, certPath string, err error) {
 	}
 
 	return keystorePath, certPath, nil
+}
+
+// TLSConfig returns the TLS configuration
+func (o *Options) TLSConfig() *TLSConfig {
+	return o.tlsConfig
 }
