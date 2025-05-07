@@ -2,12 +2,8 @@ package cassandra_test
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"log"
-	"os"
-	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -76,56 +72,10 @@ func ExampleRun() {
 func ExampleRun_withSSL() {
 	ctx := context.Background()
 
-	// Generate JKS keystore and export public cert for Go client
-	tmpDir, err := os.MkdirTemp("", "cassandratestssl")
-	if err != nil {
-		log.Printf("failed to create temp dir: %s", err)
-		return
-	}
-	defer os.RemoveAll(tmpDir)
-	keystorePath := filepath.Join(tmpDir, "keystore.jks")
-	keystorePassword := "changeit"
-	certPath := filepath.Join(tmpDir, "cert.pem")
-
-	cmd := exec.Command(
-		"keytool", "-genkeypair",
-		"-alias", "cassandra",
-		"-keyalg", "RSA",
-		"-keysize", "2048",
-		"-storetype", "JKS",
-		"-keystore", keystorePath,
-		"-storepass", keystorePassword,
-		"-keypass", keystorePassword,
-		"-dname", "CN=localhost, OU=Test, O=Test, C=US",
-		"-validity", "365",
-	)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		log.Printf("failed to generate keystore: %s\n%s", err, string(out))
-		return
-	}
-
-	cmd = exec.Command(
-		"keytool", "-exportcert",
-		"-alias", "cassandra",
-		"-keystore", keystorePath,
-		"-storepass", keystorePassword,
-		"-rfc",
-		"-file", certPath,
-	)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		log.Printf("failed to export cert: %s\n%s", err, string(out))
-		return
-	}
-
 	cassandraContainer, err := cassandra.Run(ctx,
 		"cassandra:4.1.3",
 		cassandra.WithConfigFile(filepath.Join("testdata", "cassandra-ssl.yaml")),
-		cassandra.WithSSL(cassandra.SSLOptions{
-			KeystorePath:      keystorePath,
-			KeystorePassword:  keystorePassword,
-			CertPath:          certPath,
-			RequireClientAuth: false,
-		}),
+		cassandra.WithSSL(),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(cassandraContainer); err != nil {
@@ -149,19 +99,8 @@ func ExampleRun_withSSL() {
 		return
 	}
 
-	certPEM, err := os.ReadFile(certPath)
-	if err != nil {
-		log.Printf("failed to read cert: %s", err)
-		return
-	}
-	certPool := x509.NewCertPool()
-	certPool.AppendCertsFromPEM(certPEM)
-	tlsConfig := &tls.Config{
-		RootCAs:            certPool,
-		InsecureSkipVerify: true, // For testing only
-		ServerName:         "localhost",
-		MinVersion:         tls.VersionTLS12,
-	}
+	// Get TLS config
+	tlsConfig := cassandraContainer.TLSConfig()
 
 	cluster := gocql.NewCluster(fmt.Sprintf("%s:%s", host, sslPort.Port()))
 	cluster.Consistency = gocql.Quorum

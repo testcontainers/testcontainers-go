@@ -2,11 +2,7 @@ package cassandra_test
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
-	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -18,6 +14,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/cassandra"
 )
 
+const cassandraImage = "cassandra:4.1.3"
+
 type Test struct {
 	ID   uint64
 	Name string
@@ -26,7 +24,7 @@ type Test struct {
 func TestCassandra(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := cassandra.Run(ctx, "cassandra:4.1.3")
+	ctr, err := cassandra.Run(ctx, cassandraImage)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -58,7 +56,7 @@ func TestCassandra(t *testing.T) {
 func TestCassandraWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithConfigFile(filepath.Join("testdata", "config.yaml")))
+	ctr, err := cassandra.Run(ctx, cassandraImage, cassandra.WithConfigFile(filepath.Join("testdata", "config.yaml")))
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -81,7 +79,7 @@ func TestCassandraWithInitScripts(t *testing.T) {
 		ctx := context.Background()
 
 		// withInitScripts {
-		ctr, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts(filepath.Join("testdata", "init.cql")))
+		ctr, err := cassandra.Run(ctx, cassandraImage, cassandra.WithInitScripts(filepath.Join("testdata", "init.cql")))
 		// }
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
@@ -105,7 +103,7 @@ func TestCassandraWithInitScripts(t *testing.T) {
 	t.Run("with init bash script", func(t *testing.T) {
 		ctx := context.Background()
 
-		ctr, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts(filepath.Join("testdata", "init.sh")))
+		ctr, err := cassandra.Run(ctx, cassandraImage, cassandra.WithInitScripts(filepath.Join("testdata", "init.sh")))
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 
@@ -124,79 +122,19 @@ func TestCassandraWithInitScripts(t *testing.T) {
 	})
 }
 
-// generateJKSKeystore generates a JKS keystore with a self-signed cert using keytool, and extracts the public cert for Go client trust.
-func generateJKSKeystore(t *testing.T) (keystorePath, keystorePassword, certPath string) {
-	t.Helper()
-	tmpDir := t.TempDir()
-	keystorePath = filepath.Join(tmpDir, "keystore.jks")
-	keystorePassword = "changeit"
-	certPath = filepath.Join(tmpDir, "cert.pem")
-
-	cmd := exec.Command(
-		"keytool", "-genkeypair",
-		"-alias", "cassandra",
-		"-keyalg", "RSA",
-		"-keysize", "2048",
-		"-storetype", "JKS",
-		"-keystore", keystorePath,
-		"-storepass", keystorePassword,
-		"-keypass", keystorePassword,
-		"-dname", "CN=localhost, OU=Test, O=Test, C=US",
-		"-validity", "365",
-	)
-	out, err := cmd.CombinedOutput()
-	require.NoError(t, err, string(out))
-
-	// Export the public certificate for Go client trust
-	cmd = exec.Command(
-		"keytool", "-exportcert",
-		"-alias", "cassandra",
-		"-keystore", keystorePath,
-		"-storepass", keystorePassword,
-		"-rfc",
-		"-file", certPath,
-	)
-	out, err = cmd.CombinedOutput()
-	require.NoError(t, err, string(out))
-
-	return keystorePath, keystorePassword, certPath
-}
-
 func TestCassandraSSL(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	keystorePath, keystorePassword, certPath := generateJKSKeystore(t)
-
-	// Read the certificate for client validation
-	certPEM, err := os.ReadFile(certPath)
-	if err != nil {
-		t.Fatalf("Failed to read certificate: %v", err)
-	}
-
-	// Create a certificate pool and add the certificate
-	certPool := x509.NewCertPool()
-	certPool.AppendCertsFromPEM(certPEM)
-
-	// Set up TLS configuration
-	tlsConfig := &tls.Config{
-		RootCAs:            certPool,
-		InsecureSkipVerify: true, // For testing only
-		ServerName:         "localhost",
-		MinVersion:         tls.VersionTLS12,
-	}
-
-	container, err := cassandra.Run(ctx, "cassandra:4.1.3",
+	container, err := cassandra.Run(ctx, cassandraImage,
 		cassandra.WithConfigFile(filepath.Join("testdata", "cassandra-ssl.yaml")),
-		cassandra.WithSSL(cassandra.SSLOptions{
-			KeystorePath:      keystorePath,
-			KeystorePassword:  keystorePassword,
-			CertPath:          certPath, // for reference, not used by server
-			RequireClientAuth: false,
-		}),
+		cassandra.WithSSL(),
 	)
 	testcontainers.CleanupContainer(t, container)
 	require.NoError(t, err)
+
+	//Get TLS configruations
+	tlsConfig := container.TLSConfig()
 
 	host, err := container.Host(ctx)
 	require.NoError(t, err)
