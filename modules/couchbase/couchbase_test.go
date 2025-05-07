@@ -64,17 +64,10 @@ func TestCouchbaseWithEnterpriseContainer(t *testing.T) {
 	testBucketUsage(t, cluster.Bucket(bucketName))
 }
 
-type reusableCouchbase struct{}
-
-func (c *reusableCouchbase) Customize(req *testcontainers.GenericContainerRequest) error {
-	// Enable container reuse
-	req.Reuse = true
-	req.Name = "couchbase"
-	return nil
-}
-
 func TestCouchbaseWithReuse(t *testing.T) {
 	ctx := context.Background()
+
+	containerName := "couchbase" + time.Now().Format(time.RFC3339)
 
 	bucketName := "testBucket"
 	bucket := tccouchbase.NewBucket(bucketName).
@@ -85,7 +78,7 @@ func TestCouchbaseWithReuse(t *testing.T) {
 	ctr, err := tccouchbase.Run(ctx,
 		enterpriseEdition,
 		tccouchbase.WithBuckets(bucket),
-		&reusableCouchbase{},
+		testcontainers.WithReuseByName(containerName),
 	)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
@@ -102,7 +95,7 @@ func TestCouchbaseWithReuse(t *testing.T) {
 	// has completed.
 	reusedCtr, err := tccouchbase.Run(ctx,
 		enterpriseEdition,
-		&reusableCouchbase{},
+		testcontainers.WithReuseByName(containerName),
 	)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
