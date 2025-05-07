@@ -15,6 +15,23 @@ _Testcontainers for Go_ exposes an interface to perform this operation: `ImageSu
 
 Using the `WithImageSubstitutors` options, you could define your own substitutions to the container images. E.g. adding a prefix to the images so that they can be pulled from a Docker registry other than Docker Hub. This is the usual mechanism for using Docker image proxies, caches, etc.
 
+#### WithImageMount
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+
+Since Docker v28, it's possible to mount an image to a container, passing the source image name, the relative subpath to mount in that image, and the mount point in the target container.
+
+This option validates that the subpath is a relative path, raising an error otherwise.
+
+<!--codeinclude-->
+[Image Mount](../../modules/ollama/examples_test.go) inside_block:mountImage
+<!--/codeinclude-->
+
+In the code above, which mounts the directory in which Ollama models are stored, the `targetImage` is the name of the image containing the models (an Ollama image where the models are already pulled).
+
+!!!warning
+    Using this option fails the creation of the container if the underlying container runtime does not support the `image mount` feature.
+
 #### WithEnv
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
@@ -22,7 +39,125 @@ Using the `WithImageSubstitutors` options, you could define your own substitutio
 If you need to either pass additional environment variables to a container or override them, you can use `testcontainers.WithEnv` for example:
 
 ```golang
-postgres, err = postgresModule.Run(ctx, "postgres:15-alpine", testcontainers.WithEnv(map[string]string{"POSTGRES_INITDB_ARGS": "--no-sync"}))
+ctr, err = mymodule.Run(ctx, "docker.io/myservice:1.2.3", testcontainers.WithEnv(map[string]string{"FOO": "BAR"}))
+```
+
+#### WithExposedPorts
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+
+If you need to expose additional ports from the container, you can use `testcontainers.WithExposedPorts`. For example:
+
+```golang
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", 
+    testcontainers.WithExposedPorts("8080/tcp", "9090/tcp"))
+```
+
+#### WithEntrypoint
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+
+If you need to completely replace the container's entrypoint, you can use `testcontainers.WithEntrypoint`. For example:
+
+```golang
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", 
+    testcontainers.WithEntrypoint("/bin/sh", "-c", "echo hello"))
+```
+
+#### WithEntrypointArgs
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+
+If you need to append commands to the container's entrypoint, you can use `testcontainers.WithEntrypointArgs`. For example:
+
+```golang
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", 
+    testcontainers.WithEntrypointArgs("echo", "hello"))
+```
+
+#### WithCmd
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+
+If you need to completely replace the container's command, you can use `testcontainers.WithCmd`. For example:
+
+```golang
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", 
+    testcontainers.WithCmd("echo", "hello"))
+```
+
+#### WithCmdArgs
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+
+If you need to append commands to the container's command, you can use `testcontainers.WithCmdArgs`. For example:
+
+```golang
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", 
+    testcontainers.WithCmdArgs("echo", "hello"))
+```
+
+#### WithLabels
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+
+If you need to add Docker labels to the container, you can use `testcontainers.WithLabels`. For example:
+
+```golang
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", 
+    testcontainers.WithLabels(map[string]string{
+        "environment": "testing",
+        "project":     "myapp",
+    }))
+```
+
+#### WithFiles
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+
+If you need to copy files into the container, you can use `testcontainers.WithFiles`. For example:
+
+```golang
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", 
+    testcontainers.WithFiles([]testcontainers.ContainerFile{
+        {
+            HostFilePath:      "/path/to/local/file.txt",
+            ContainerFilePath: "/container/file.txt",
+            FileMode:          0o644,
+        },
+    }))
+```
+
+This option allows you to copy files from the host into the container at creation time.
+
+#### WithMounts
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+
+If you need to add volume mounts to the container, you can use `testcontainers.WithMounts`. For example:
+
+```golang
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", 
+    testcontainers.WithMounts([]testcontainers.ContainerMount{
+        {
+            Source: testcontainers.GenericVolumeMountSource{Name: "appdata"},
+            Target: "/app/data",
+        },
+    }))
+```
+
+#### WithTmpfs
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+
+If you need to add tmpfs mounts to the container, you can use `testcontainers.WithTmpfs`. For example:
+
+```golang
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", 
+    testcontainers.WithTmpfs(map[string]string{
+        "/tmp": "size=100m",
+        "/run": "size=100m",
+    }))
 ```
 
 #### WithHostPortAccess
@@ -32,7 +167,7 @@ postgres, err = postgresModule.Run(ctx, "postgres:15-alpine", testcontainers.Wit
 If you need to access a port that is already running in the host, you can use `testcontainers.WithHostPortAccess` for example:
 
 ```golang
-postgres, err = postgresModule.Run(ctx, "postgres:15-alpine", testcontainers.WithHostPortAccess(8080))
+ctr, err = mymodule.Run(ctx, "docker.io/myservice:1.2.3", testcontainers.WithHostPortAccess(8080))
 ```
 
 To understand more about this feature, please read the [Exposing host ports to the container](/features/networking/#exposing-host-ports-to-the-container) documentation.
@@ -70,7 +205,7 @@ useful context instead of appearing out of band.
 ```golang
 func TestHandler(t *testing.T) {
     logger := log.TestLogger(t)
-    ctr, err := postgresModule.Run(ctx, "postgres:15-alpine", testcontainers.WithLogger(logger))
+    ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", testcontainers.WithLogger(logger))
     CleanupContainer(t, ctr)
     require.NoError(t, err)
     // Do something with container.
@@ -117,6 +252,25 @@ It leverages the `Executable` interface to represent the command and positional 
 
 You could use this feature to run a custom script, or to run a command that is not supported by the module right after the container is ready.
 
+#### Build from Dockerfile
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+
+Testcontainers exposes the `testcontainers.WithDockerfile` option to build a container from a Dockerfile.
+The functional option receives a `testcontainers.FromDockerfile` struct that is applied to the container request before starting the container. As a result, the container is built and started in one go.
+
+```golang
+df := testcontainers.FromDockerfile{
+	Context:    ".",
+	Dockerfile: "Dockerfile",
+	Repo:       "testcontainers",
+	Tag:        "latest",
+	BuildArgs:  map[string]*string{"ARG1": nil, "ARG2": nil},
+}   
+
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", testcontainers.WithDockerfile(df))
+```
+
 #### WithNetwork
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
@@ -151,7 +305,7 @@ Please read the [Create containers: Advanced Settings](/features/creating_contai
 This option will merge the customized request into the module's own `ContainerRequest`.
 
 ```go
-container, err := Run(ctx, "postgres:13-alpine",
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3",
     /* Other module options */
     testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
         ContainerRequest: testcontainers.ContainerRequest{
@@ -165,3 +319,19 @@ The above example is updating the predefined command of the image, **appending**
 
 !!!info
     This can't be used to replace the command, only to append options.
+
+#### WithReuseByName
+
+- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+
+This option marks a container to be reused if it exists or create a new one if it doesn't.
+With the current implementation, the container name must be provided to identify the container to be reused.
+
+```golang
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", 
+    testcontainers.WithReuseByName("my-container-name"),
+)
+```
+
+!!!warning
+    Reusing a container is experimental and the API is subject to change for a more robust implementation that is not based on container names.

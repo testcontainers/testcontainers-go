@@ -3,15 +3,19 @@ package influxdb
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"path"
+	"time"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// InfluxDbContainer represents the MySQL container type used in the module
+// InfluxDbContainer represents the InfluxDB container type used in the module
+//
+//nolint:staticcheck //FIXME
 type InfluxDbContainer struct {
 	testcontainers.Container
 }
@@ -61,7 +65,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
-//nolint:revive //FIXME
+//nolint:revive,staticcheck //FIXME
 func (c *InfluxDbContainer) MustConnectionUrl(ctx context.Context) string {
 	connectionString, err := c.ConnectionUrl(ctx)
 	if err != nil {
@@ -70,7 +74,7 @@ func (c *InfluxDbContainer) MustConnectionUrl(ctx context.Context) string {
 	return connectionString
 }
 
-//nolint:revive //FIXME
+//nolint:revive,staticcheck //FIXME
 func (c *InfluxDbContainer) ConnectionUrl(ctx context.Context) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "8086/tcp")
 	if err != nil {
@@ -118,8 +122,146 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// withV2 configures the influxdb container to be compatible with InfluxDB v2
+func withV2(req *testcontainers.GenericContainerRequest, org, bucket string) error {
+	if org == "" {
+		return errors.New("organization name is required")
+	}
+
+	if bucket == "" {
+		return errors.New("bucket name is required")
+	}
+
+	req.Env["DOCKER_INFLUXDB_INIT_ORG"] = org
+	req.Env["DOCKER_INFLUXDB_INIT_BUCKET"] = bucket
+	req.Env["DOCKER_INFLUXDB_INIT_MODE"] = "setup" // Always setup, we wont be migrating from v1 to v2
+	return nil
+}
+
+// WithV2 configures the influxdb container to be compatible with InfluxDB v2
+func WithV2(org, bucket string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		err := withV2(req, org, bucket)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+}
+
+const dockerSecretPath = "/run/secrets"
+
+func secretsPath(path string) string {
+	return dockerSecretPath + "/" + path
+}
+
+// WithV2Auth configures the influxdb container to be compatible with InfluxDB v2 and sets the username and password
+// for the initial user.
+func WithV2Auth(org, bucket, username, password string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		if username == "" {
+			return errors.New("username is required")
+		}
+
+		if password == "" {
+			return errors.New("password is required")
+		}
+
+		err := withV2(req, org, bucket)
+		if err != nil {
+			return err
+		}
+
+		if req.Env["DOCKER_INFLUXDB_INIT_USERNAME_FILE"] != "" ||
+			req.Env["DOCKER_INFLUXDB_INIT_PASSWORD_FILE"] != "" {
+			return errors.New("username and password file already set, use either WithV2Auth or WithV2SecretsAuth")
+		}
+
+		req.Env["DOCKER_INFLUXDB_INIT_USERNAME"] = username
+		req.Env["DOCKER_INFLUXDB_INIT_PASSWORD"] = password
+		return nil
+	}
+}
+
+// WithV2SecretsAuth configures the container to be compatible with InfluxDB v2 and sets the username and password file path
+func WithV2SecretsAuth(org, bucket, usernameFile, passwordFile string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		if usernameFile == "" {
+			return errors.New("username file is required")
+		}
+
+		if passwordFile == "" {
+			return errors.New("password file is required")
+		}
+
+		if req.Env["DOCKER_INFLUXDB_INIT_USERNAME"] != "" ||
+			req.Env["DOCKER_INFLUXDB_INIT_PASSWORD"] != "" {
+			return errors.New("username and password already set, use either WithV2Auth or WithV2SecretsAuth")
+		}
+
+		err := withV2(req, org, bucket)
+		if err != nil {
+			return err
+		}
+
+		req.Env["DOCKER_INFLUXDB_INIT_USERNAME_FILE"] = secretsPath(usernameFile)
+		req.Env["DOCKER_INFLUXDB_INIT_PASSWORD_FILE"] = secretsPath(passwordFile)
+		return nil
+	}
+}
+
+// WithV2Retention configures the default bucket's retention
+func WithV2Retention(retention time.Duration) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		if retention == 0 {
+			return errors.New("retention is required")
+		}
+
+		req.Env["DOCKER_INFLUXDB_INIT_RETENTION"] = retention.String()
+
+		return nil
+	}
+}
+
+// WithV2AdminToken sets the admin token for the influxdb container
+func WithV2AdminToken(token string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		if token == "" {
+			return errors.New("admin token is required")
+		}
+
+		if req.Env["DOCKER_INFLUXDB_INIT_ADMIN_TOKEN_FILE"] != "" {
+			return errors.New("admin token file already set, use either WithV2AdminToken or WithV2SecretsAdminToken")
+		}
+
+		req.Env["DOCKER_INFLUXDB_INIT_ADMIN_TOKEN"] = token
+
+		return nil
+	}
+}
+
+// WithV2SecretsAdminToken sets the admin token for the influxdb container using a file
+func WithV2SecretsAdminToken(tokenFile string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		if tokenFile == "" {
+			return errors.New("admin token file is required")
+		}
+
+		if req.Env["DOCKER_INFLUXDB_INIT_ADMIN_TOKEN"] != "" {
+			return errors.New("admin token already set, use either WithV2AdminToken or WithV2SecretsAdminToken")
+		}
+
+		req.Env["DOCKER_INFLUXDB_INIT_ADMIN_TOKEN_FILE"] = secretsPath(tokenFile)
+
+		return nil
+	}
+}
+
 // WithInitDb returns a request customizer that initialises the database using the file `docker-entrypoint-initdb.d`
 // located in `srcPath` directory.
+//
+//nolint:staticcheck //FIXME
 func WithInitDb(srcPath string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		cf := testcontainers.ContainerFile{

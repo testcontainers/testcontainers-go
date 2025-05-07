@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -27,7 +29,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Image:        img,
 		ExposedPorts: []string{"8817/tcp", "9001/tcp"},
 		Cmd:          []string{"-conf=/vearch/config.toml", "all"},
-		Privileged:   true,
+		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.Privileged = true
+		},
 		Files: []testcontainers.ContainerFile{
 			{
 				HostFilePath:      "config.toml",

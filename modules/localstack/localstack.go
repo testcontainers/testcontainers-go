@@ -30,7 +30,7 @@ var recentVersionTags = []string{
 }
 
 func isMinimumVersion(image string, minVersion string) bool {
-	parts := strings.Split(image, ":")
+	parts := strings.Split(strings.Split(image, "@")[0], ":")
 	version := parts[len(parts)-1]
 
 	if pos := strings.LastIndexByte(version, '-'); pos >= 0 {
@@ -103,7 +103,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	if err != nil {
 		return nil, err
 	}
-	localStackReq.GenericContainerRequest.Logger.Printf("Setting %s to %s (%s)\n", envVar, req.Env[envVar], hostnameExternalReason)
+	localStackReq.Logger.Printf("Setting %s to %s (%s)\n", envVar, req.Env[envVar], hostnameExternalReason)
 
 	container, err := testcontainers.GenericContainer(ctx, localStackReq.GenericContainerRequest)
 	var c *LocalStackContainer

@@ -29,6 +29,32 @@ func TestPreCreateModifierHook(t *testing.T) {
 	require.NoError(t, err)
 	defer provider.Close()
 
+	t.Run("mount-errors", func(t *testing.T) {
+		// imageMounts {
+		req := ContainerRequest{
+			// three mounts, one valid and two invalid
+			Mounts: ContainerMounts{
+				{
+					Source: NewDockerImageMountSource("nginx:latest", "var/www/html"),
+					Target: "/var/www/valid",
+				},
+				ImageMount("nginx:latest", "../var/www/html", "/var/www/invalid1"),
+				ImageMount("nginx:latest", "/var/www/html", "/var/www/invalid2"),
+			},
+		}
+		// }
+
+		err = provider.preCreateContainerHook(ctx, req, &container.Config{}, &container.HostConfig{}, &network.NetworkingConfig{})
+		require.Error(t, err)
+
+		var errs []error
+		var joinErr interface{ Unwrap() []error }
+		if errors.As(err, &joinErr) {
+			errs = joinErr.Unwrap()
+		}
+		require.Len(t, errs, 2) // one valid and two invalid mounts
+	})
+
 	t.Run("No exposed ports", func(t *testing.T) {
 		// reqWithModifiers {
 		req := ContainerRequest{

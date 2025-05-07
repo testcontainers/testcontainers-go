@@ -186,7 +186,7 @@ func (c *DockerContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Po
 	if err != nil {
 		return "", fmt.Errorf("inspect: %w", err)
 	}
-	if inspect.ContainerJSONBase.HostConfig.NetworkMode == "host" {
+	if inspect.HostConfig.NetworkMode == "host" {
 		return port, nil
 	}
 
@@ -1153,15 +1153,10 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		Env:        env,
 		Labels:     req.Labels,
 		Cmd:        req.Cmd,
-		Hostname:   req.Hostname,
-		User:       req.User,
-		WorkingDir: req.WorkingDir,
 	}
 
 	hostConfig := &container.HostConfig{
-		Privileged: req.Privileged,
-		ShmSize:    req.ShmSize,
-		Tmpfs:      req.Tmpfs,
+		Tmpfs: req.Tmpfs,
 	}
 
 	networkingConfig := &network.NetworkingConfig{}
@@ -1271,7 +1266,7 @@ func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (
 
 	// Note that, 'name' filter will use regex to find the containers
 	filter := filters.NewArgs(filters.Arg("name", fmt.Sprintf("^%s$", name)))
-	containers, err := p.client.ContainerList(ctx, container.ListOptions{Filters: filter})
+	containers, err := p.client.ContainerList(ctx, container.ListOptions{All: true, Filters: filter})
 	if err != nil {
 		return nil, fmt.Errorf("container list: %w", err)
 	}
@@ -1367,6 +1362,23 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		terminationSignal: termSignal,
 		logger:            p.Logger,
 		lifecycleHooks:    []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)},
+	}
+
+	// If a container was stopped programmatically, we want to ensure the container
+	// is running again, but only if it is not paused, as it's not possible to start
+	// a paused container. The Docker Engine returns the "cannot start a paused container,
+	// try unpause instead" error.
+	switch c.State {
+	case "running":
+		// cannot re-start a running container, but we still need
+		// to call the startup hooks.
+	case "paused":
+		// TODO: we should unpause the container here.
+		return nil, fmt.Errorf("cannot start a paused container: %w", errors.ErrUnsupported)
+	default:
+		if err := dc.Start(ctx); err != nil {
+			return dc, fmt.Errorf("start container %s in state %s: %w", req.Name, c.State, err)
+		}
 	}
 
 	err = dc.startedHook(ctx)
@@ -1619,7 +1631,7 @@ func (p *DockerProvider) getGatewayIP(ctx context.Context, defaultNetwork string
 		}
 	}
 	if ip == "" {
-		return "", errors.New("Failed to get gateway IP from network settings")
+		return "", errors.New("failed to get gateway IP from network settings")
 	}
 
 	return ip, nil

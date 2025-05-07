@@ -10,12 +10,20 @@
             "path": "../examples/nginx"
         },
         {
-            "name": "example / toxiproxy",
-            "path": "../examples/toxiproxy"
+            "name": "module / aerospike",
+            "path": "../modules/aerospike"
+        },
+        {
+            "name": "module / arangodb",
+            "path": "../modules/arangodb"
         },
         {
             "name": "module / artemis",
             "path": "../modules/artemis"
+        },
+        {
+            "name": "module / azure",
+            "path": "../modules/azure"
         },
         {
             "name": "module / azurite",
@@ -56,6 +64,10 @@
         {
             "name": "module / dind",
             "path": "../modules/dind"
+        },
+        {
+            "name": "module / dockermodelrunner",
+            "path": "../modules/dockermodelrunner"
         },
         {
             "name": "module / dolt",
@@ -112,6 +124,10 @@
         {
             "name": "module / meilisearch",
             "path": "../modules/meilisearch"
+        },
+        {
+            "name": "module / memcached",
+            "path": "../modules/memcached"
         },
         {
             "name": "module / milvus",
@@ -198,8 +214,16 @@
             "path": "../modules/scylladb"
         },
         {
+            "name": "module / socat",
+            "path": "../modules/socat"
+        },
+        {
             "name": "module / surrealdb",
             "path": "../modules/surrealdb"
+        },
+        {
+            "name": "module / toxiproxy",
+            "path": "../modules/toxiproxy"
         },
         {
             "name": "module / valkey",

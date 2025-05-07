@@ -18,6 +18,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+//nolint:staticcheck //FIXME
 const (
 	// containerPorts {
 
