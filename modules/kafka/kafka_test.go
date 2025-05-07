@@ -61,3 +61,32 @@ func TestKafka(t *testing.T) {
 	require.Truef(t, strings.EqualFold(string(consumer.message.Key), "key"), "expected key to be %s, got %s", "key", string(consumer.message.Key))
 	require.Truef(t, strings.EqualFold(string(consumer.message.Value), "value"), "expected value to be %s, got %s", "value", string(consumer.message.Value))
 }
+
+func TestWithClusterID(t *testing.T) {
+	t.Run("error/less-than-16-chars", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{}
+
+		err := kafka.WithClusterID("kraftCluster")(&req)
+		require.Error(t, err)
+	})
+
+	t.Run("error/empty-string", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{}
+
+		err := kafka.WithClusterID("")(&req)
+		require.Error(t, err)
+	})
+
+	t.Run("success", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Env: map[string]string{},
+			},
+		}
+
+		err := kafka.WithClusterID("very-long-cluster-id")(&req)
+		require.NoError(t, err)
+
+		require.Equal(t, "very-long-cluster-id", req.Env["CLUSTER_ID"])
+	})
+}

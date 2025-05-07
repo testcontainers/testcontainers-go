@@ -101,6 +101,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
+		if len(clusterID) < 16 {
+			return fmt.Errorf("clusterID name must be at least 16 characters long: %s", clusterID)
+		}
+
 		req.Env["CLUSTER_ID"] = clusterID
 
 		return nil
