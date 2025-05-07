@@ -45,8 +45,8 @@ When starting the OpenLDAP container, you can pass options in a variadic way to 
 
 #### Image
 
-If you need to set a different OpenLDAP Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "bitnami/openldap:2.6.6")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "bitnami/openldap:2.6.6")`.
 
 {% include "../features/common_functional_options.md" %}
 
@@ -73,5 +73,5 @@ It returns and error if there is any problem with the ldif file loading process.
 
 #### Initial Ldif
 
-If you would like to load an ldif at the initialization of the openldap container, you can use `WithInititialLdif` function.
+If you would like to load an ldif at the initialization of the openldap container, you can use `WithInitialLdif` function.
 The file will be copied after the container is started and loaded in openldap.

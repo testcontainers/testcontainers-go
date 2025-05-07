@@ -5,13 +5,13 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/mdelapenya/tlscert"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/rabbitmq"
@@ -21,29 +21,17 @@ func TestRunContainer_connectUsingAmqp(t *testing.T) {
 	ctx := context.Background()
 
 	rabbitmqContainer, err := rabbitmq.Run(ctx, "rabbitmq:3.12.11-management-alpine")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer func() {
-		if err := rabbitmqContainer.Terminate(ctx); err != nil {
-			t.Fatal(err)
-		}
-	}()
+	testcontainers.CleanupContainer(t, rabbitmqContainer)
+	require.NoError(t, err)
 
 	amqpURL, err := rabbitmqContainer.AmqpURL(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	amqpConnection, err := amqp.Dial(amqpURL)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	if err = amqpConnection.Close(); err != nil {
-		t.Fatal(err)
-	}
+	err = amqpConnection.Close()
+	require.NoError(t, err)
 }
 
 func TestRunContainer_connectUsingAmqps(t *testing.T) {
@@ -57,9 +45,7 @@ func TestRunContainer_connectUsingAmqps(t *testing.T) {
 		IsCA:      true,
 		ParentDir: tmpDir,
 	})
-	if caCert == nil {
-		t.Fatal("failed to generate CA certificate")
-	}
+	require.NotNilf(t, caCert, "failed to generate CA certificate")
 
 	cert := tlscert.SelfSignedFromRequest(tlscert.Request{
 		Name:      "client",
@@ -68,9 +54,7 @@ func TestRunContainer_connectUsingAmqps(t *testing.T) {
 		Parent:    caCert,
 		ParentDir: tmpDir,
 	})
-	if cert == nil {
-		t.Fatal("failed to generate certificate")
-	}
+	require.NotNilf(t, cert, "failed to generate certificate")
 
 	sslSettings := rabbitmq.SSLSettings{
 		CACertFile:        caCert.CertPath,
@@ -82,44 +66,26 @@ func TestRunContainer_connectUsingAmqps(t *testing.T) {
 	}
 
 	rabbitmqContainer, err := rabbitmq.Run(ctx, "rabbitmq:3.12.11-management-alpine", rabbitmq.WithSSL(sslSettings))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer func() {
-		if err := rabbitmqContainer.Terminate(ctx); err != nil {
-			t.Fatal(err)
-		}
-	}()
+	testcontainers.CleanupContainer(t, rabbitmqContainer)
+	require.NoError(t, err)
 
 	amqpsURL, err := rabbitmqContainer.AmqpsURL(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	if !strings.HasPrefix(amqpsURL, "amqps") {
-		t.Fatal(fmt.Errorf("AMQPS Url should begin with `amqps`"))
-	}
+	require.Truef(t, strings.HasPrefix(amqpsURL, "amqps"), "AMQPS Url should begin with `amqps`")
 
 	certs := x509.NewCertPool()
 
 	pemData, err := os.ReadFile(sslSettings.CACertFile)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	certs.AppendCertsFromPEM(pemData)
 
 	amqpsConnection, err := amqp.DialTLS(amqpsURL, &tls.Config{InsecureSkipVerify: false, RootCAs: certs})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	if amqpsConnection.IsClosed() {
-		t.Fatal(fmt.Errorf("AMQPS Connection unexpectdely closed"))
-	}
-	if err = amqpsConnection.Close(); err != nil {
-		t.Fatal(err)
-	}
+	require.Falsef(t, amqpsConnection.IsClosed(), "AMQPS Connection unexpectdely closed")
+	err = amqpsConnection.Close()
+	require.NoError(t, err)
 }
 
 func TestRunContainer_withAllSettings(t *testing.T) {
@@ -145,7 +111,7 @@ func TestRunContainer_withAllSettings(t *testing.T) {
 			AutoDelete: false,
 			Internal:   false,
 			Durable:    true,
-			Args:       map[string]interface{}{},
+			Args:       map[string]any{},
 		}),
 		testcontainers.WithAfterReadyCommand(Exchange{
 			VHost: "vhost2",
@@ -158,7 +124,7 @@ func TestRunContainer_withAllSettings(t *testing.T) {
 			AutoDelete: false,
 			Internal:   false,
 			Durable:    true,
-			Args:       map[string]interface{}{},
+			Args:       map[string]any{},
 		}),
 		// }
 		// addQueues {
@@ -167,14 +133,14 @@ func TestRunContainer_withAllSettings(t *testing.T) {
 			Name:       "queue2",
 			AutoDelete: true,
 			Durable:    false,
-			Args:       map[string]interface{}{"x-message-ttl": 1000},
+			Args:       map[string]any{"x-message-ttl": 1000},
 		}),
 		testcontainers.WithAfterReadyCommand(Queue{
 			VHost:      "vhost1",
 			Name:       "queue3",
 			AutoDelete: true,
 			Durable:    false,
-			Args:       map[string]interface{}{"x-message-ttl": 1000},
+			Args:       map[string]any{"x-message-ttl": 1000},
 		}),
 		testcontainers.WithAfterReadyCommand(Queue{VHost: "vhost2", Name: "queue4"}),
 		// }
@@ -187,7 +153,7 @@ func TestRunContainer_withAllSettings(t *testing.T) {
 			Destination:     "queue4",
 			RoutingKey:      "ss7",
 			DestinationType: "queue",
-			Args:            map[string]interface{}{},
+			Args:            map[string]any{},
 		}),
 		// }
 		// addUsers {
@@ -208,20 +174,20 @@ func TestRunContainer_withAllSettings(t *testing.T) {
 		testcontainers.WithAfterReadyCommand(Policy{
 			Name:       "max length policy",
 			Pattern:    "^dog",
-			Definition: map[string]interface{}{"max-length": 1},
+			Definition: map[string]any{"max-length": 1},
 			Priority:   1,
 			ApplyTo:    "queues",
 		}),
 		testcontainers.WithAfterReadyCommand(Policy{
 			Name:       "alternate exchange policy",
 			Pattern:    "^direct-exchange",
-			Definition: map[string]interface{}{"alternate-exchange": "amq.direct"},
+			Definition: map[string]any{"alternate-exchange": "amq.direct"},
 		}),
 		testcontainers.WithAfterReadyCommand(Policy{
 			VHost:   "vhost2",
 			Name:    "ha-all",
 			Pattern: ".*",
-			Definition: map[string]interface{}{
+			Definition: map[string]any{
 				"ha-mode":      "all",
 				"ha-sync-mode": "automatic",
 			},
@@ -229,7 +195,7 @@ func TestRunContainer_withAllSettings(t *testing.T) {
 		testcontainers.WithAfterReadyCommand(OperatorPolicy{
 			Name:       "operator policy 1",
 			Pattern:    "^queue1",
-			Definition: map[string]interface{}{"message-ttl": 1000},
+			Definition: map[string]any{"message-ttl": 1000},
 			Priority:   1,
 			ApplyTo:    "queues",
 		}),
@@ -238,66 +204,32 @@ func TestRunContainer_withAllSettings(t *testing.T) {
 		testcontainers.WithAfterReadyCommand(Plugin{Name: "rabbitmq_shovel"}, Plugin{Name: "rabbitmq_random_exchange"}),
 		// }
 	)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testcontainers.CleanupContainer(t, rabbitmqContainer)
+	require.NoError(t, err)
 
-	defer func() {
-		if err := rabbitmqContainer.Terminate(ctx); err != nil {
-			t.Fatal(err)
-		}
-	}()
-
-	if !assertEntity(t, rabbitmqContainer, "queues", "queue1", "queue2", "queue3", "queue4") {
-		t.Fatal(err)
-	}
-	if !assertEntity(t, rabbitmqContainer, "exchanges", "direct-exchange", "topic-exchange", "topic-exchange-2", "topic-exchange-3", "topic-exchange-4") {
-		t.Fatal(err)
-	}
-	if !assertEntity(t, rabbitmqContainer, "users", "user1", "user2") {
-		t.Fatal(err)
-	}
-	if !assertEntity(t, rabbitmqContainer, "policies", "max length policy", "alternate exchange policy") {
-		t.Fatal(err)
-	}
-	if !assertEntityWithVHost(t, rabbitmqContainer, "policies", 2, "max length policy", "alternate exchange policy") {
-		t.Fatal(err)
-	}
-	if !assertEntity(t, rabbitmqContainer, "operator_policies", "operator policy 1") {
-		t.Fatal(err)
-	}
-	if !assertPluginIsEnabled(t, rabbitmqContainer, "rabbitmq_shovel", "rabbitmq_random_exchange") {
-		t.Fatal(err)
-	}
+	requireEntity(t, rabbitmqContainer, "queues", "queue1", "queue2", "queue3", "queue4")
+	requireEntity(t, rabbitmqContainer, "exchanges", "direct-exchange", "topic-exchange", "topic-exchange-2", "topic-exchange-3", "topic-exchange-4")
+	requireEntity(t, rabbitmqContainer, "users", "user1", "user2")
+	requireEntity(t, rabbitmqContainer, "policies", "max length policy", "alternate exchange policy")
+	requireEntityWithVHost(t, rabbitmqContainer, "policies", 2, "max length policy", "alternate exchange policy")
+	requireEntity(t, rabbitmqContainer, "operator_policies", "operator policy 1")
+	requirePluginIsEnabled(t, rabbitmqContainer, "rabbitmq_shovel", "rabbitmq_random_exchange")
 }
 
-func assertEntity(t *testing.T, container testcontainers.Container, listCommand string, entities ...string) bool {
+func requireEntity(t *testing.T, container testcontainers.Container, listCommand string, entities ...string) {
 	t.Helper()
 
 	ctx := context.Background()
 
 	cmd := []string{"rabbitmqadmin", "list", listCommand}
 
-	_, out, err := container.Exec(ctx, cmd)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	check, err := io.ReadAll(out)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	check := testcontainers.RequireContainerExec(ctx, t, container, cmd)
 	for _, e := range entities {
-		if !strings.Contains(string(check), e) {
-			return false
-		}
+		require.Contains(t, check, e)
 	}
-
-	return true
 }
 
-func assertEntityWithVHost(t *testing.T, container testcontainers.Container, listCommand string, vhostID int, entities ...string) bool {
+func requireEntityWithVHost(t *testing.T, container testcontainers.Container, listCommand string, vhostID int, entities ...string) {
 	t.Helper()
 
 	ctx := context.Background()
@@ -307,46 +239,22 @@ func assertEntityWithVHost(t *testing.T, container testcontainers.Container, lis
 		cmd = append(cmd, fmt.Sprintf("--vhost=vhost%d", vhostID))
 	}
 
-	_, out, err := container.Exec(ctx, cmd)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	check, err := io.ReadAll(out)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	check := testcontainers.RequireContainerExec(ctx, t, container, cmd)
 	for _, e := range entities {
-		if !strings.Contains(string(check), e) {
-			return false
-		}
+		require.Contains(t, check, e)
 	}
-
-	return true
 }
 
-func assertPluginIsEnabled(t *testing.T, container testcontainers.Container, plugins ...string) bool {
+func requirePluginIsEnabled(t *testing.T, container testcontainers.Container, plugins ...string) {
 	t.Helper()
 
 	ctx := context.Background()
 
 	for _, plugin := range plugins {
 
-		_, out, err := container.Exec(ctx, []string{"rabbitmq-plugins", "is_enabled", plugin})
-		if err != nil {
-			t.Fatal(err)
-		}
+		cmd := []string{"rabbitmq-plugins", "is_enabled", plugin}
 
-		check, err := io.ReadAll(out)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if !strings.Contains(string(check), plugin+" is enabled") {
-			return false
-		}
+		check := testcontainers.RequireContainerExec(ctx, t, container, cmd)
+		require.Contains(t, check, plugin+" is enabled")
 	}
-
-	return true
 }

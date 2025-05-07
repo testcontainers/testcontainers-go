@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/inbucket
 ## Usage example
 
 <!--codeinclude-->
-[Creating a Inbucket container](../../modules/inbucket/examples_test.go) inside_block:runInbucketContainer
+[Creating an Inbucket container](../../modules/inbucket/examples_test.go) inside_block:runInbucketContainer
 <!--/codeinclude-->
 
 ## Module Reference
@@ -45,8 +45,8 @@ When starting the Inbucket container, you can pass options in a variadic way to 
 
 #### Image
 
-If you need to set a different Inbucket Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "inbucket/inbucket:sha-2d409bb")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "inbucket/inbucket:sha-2d409bb")`.
 
 {% include "../features/common_functional_options.md" %}
 

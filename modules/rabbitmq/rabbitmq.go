@@ -37,6 +37,8 @@ type RabbitMQContainer struct {
 }
 
 // AmqpURL returns the URL for AMQP clients.
+//
+//nolint:staticcheck //FIXME
 func (c *RabbitMQContainer) AmqpURL(ctx context.Context) (string, error) {
 	endpoint, err := c.PortEndpoint(ctx, nat.Port(DefaultAMQPPort), "")
 	if err != nil {
@@ -57,11 +59,15 @@ func (c *RabbitMQContainer) AmqpsURL(ctx context.Context) (string, error) {
 }
 
 // HttpURL returns the URL for HTTP management.
+//
+//nolint:revive,staticcheck //FIXME
 func (c *RabbitMQContainer) HttpURL(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, nat.Port(DefaultHTTPPort), "http")
 }
 
 // HttpsURL returns the URL for HTTPS management.
+//
+//nolint:revive,staticcheck //FIXME
 func (c *RabbitMQContainer) HttpsURL(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, nat.Port(DefaultHTTPSPort), "https")
 }
@@ -96,7 +102,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
-		Logger:           testcontainers.Logger,
 		Started:          true,
 	}
 
@@ -133,14 +138,17 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *RabbitMQContainer
+	if container != nil {
+		c = &RabbitMQContainer{
+			Container:     container,
+			AdminUsername: settings.AdminUsername,
+			AdminPassword: settings.AdminPassword,
+		}
 	}
 
-	c := &RabbitMQContainer{
-		Container:     container,
-		AdminUsername: settings.AdminUsername,
-		AdminPassword: settings.AdminPassword,
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
 	}
 
 	return c, nil

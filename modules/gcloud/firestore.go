@@ -2,18 +2,18 @@ package gcloud
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// Deprecated: use RunFirestore instead
+// Deprecated: use [firestore.Run] instead
 // RunFirestoreContainer creates an instance of the GCloud container type for Firestore.
 func RunFirestoreContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	return RunFirestore(ctx, "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators", opts...)
 }
 
+// Deprecated: use [firestore.Run] instead
 // RunFirestore creates an instance of the GCloud container type for Firestore.
 func RunFirestore(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	req := testcontainers.GenericContainerRequest{
@@ -33,13 +33,8 @@ func RunFirestore(ctx context.Context, img string, opts ...testcontainers.Contai
 	req.Cmd = []string{
 		"/bin/sh",
 		"-c",
-		"gcloud beta emulators firestore start --host-port 0.0.0.0:8080 " + fmt.Sprintf("--project=%s", settings.ProjectID),
+		"gcloud beta emulators firestore start --host-port 0.0.0.0:8080 --project=" + settings.ProjectID,
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	return newGCloudContainer(ctx, 8080, container, settings)
+	return newGCloudContainer(ctx, req, 8080, settings, "")
 }

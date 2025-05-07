@@ -1,7 +1,6 @@
 package neo4j
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -35,7 +34,7 @@ func WithAdminPassword(adminPassword string) testcontainers.CustomizeRequestOpti
 	return func(req *testcontainers.GenericContainerRequest) error {
 		pwd := "none"
 		if adminPassword != "" {
-			pwd = fmt.Sprintf("neo4j/%s", adminPassword)
+			pwd = "neo4j/" + adminPassword
 		}
 
 		req.Env["NEO4J_AUTH"] = pwd
@@ -91,15 +90,14 @@ func WithNeo4jSettings(settings map[string]string) testcontainers.CustomizeReque
 	}
 }
 
+// Deprecated: use testcontainers.WithLogger instead
+//
 // WithLogger sets a custom logger to be used by the container
 // Consider calling this before other "With functions" as these may generate logs
-func WithLogger(logger testcontainers.Logging) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Logger = logger
-
-		return nil
-	}
-}
+var (
+	WithLogger                                       = testcontainers.WithLogger
+	_          testcontainers.CustomizeRequestOption = WithLogger(nil).Customize
+)
 
 func addSetting(req *testcontainers.GenericContainerRequest, key string, newVal string) error {
 	normalizedKey := formatNeo4jConfig(key)
@@ -117,17 +115,10 @@ func addSetting(req *testcontainers.GenericContainerRequest, key string, newVal 
 	return nil
 }
 
-func validate(req *testcontainers.GenericContainerRequest) error {
-	if req.Logger == nil {
-		return errors.New("nil logger is not permitted")
-	}
-	return nil
-}
-
 func formatNeo4jConfig(name string) string {
 	result := strings.ReplaceAll(name, "_", "__")
 	result = strings.ReplaceAll(result, ".", "_")
-	return fmt.Sprintf("NEO4J_%s", result)
+	return "NEO4J_" + result
 }
 
 // WithAcceptCommercialLicenseAgreement sets the environment variable

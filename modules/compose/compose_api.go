@@ -2,6 +2,7 @@ package compose
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -23,6 +24,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -30,14 +32,6 @@ type stackUpOptionFunc func(s *stackUpOptions)
 
 func (f stackUpOptionFunc) applyToStackUp(o *stackUpOptions) {
 	f(o)
-}
-
-//nolint:unused
-type stackDownOptionFunc func(do *api.DownOptions)
-
-//nolint:unused
-func (f stackDownOptionFunc) applyToStackDown(do *api.DownOptions) {
-	f(do)
 }
 
 // RunServices is comparable to 'docker compose run' as it only creates a subset of containers
@@ -128,19 +122,19 @@ func (r ComposeStackReaders) applyToComposeStack(o *composeStackOptions) error {
 		tmp = filepath.Join(tmp, strconv.FormatInt(time.Now().UnixNano(), 10))
 		err := os.MkdirAll(tmp, 0o755)
 		if err != nil {
-			return fmt.Errorf("failed to create temporary directory: %w", err)
+			return fmt.Errorf("create temporary directory: %w", err)
 		}
 
 		name := fmt.Sprintf(baseName, i)
 
 		bs, err := io.ReadAll(reader)
 		if err != nil {
-			return fmt.Errorf("failed to read from reader: %w", err)
+			return fmt.Errorf("read from reader: %w", err)
 		}
 
 		err = os.WriteFile(filepath.Join(tmp, name), bs, 0o644)
 		if err != nil {
-			return fmt.Errorf("failed to write to temporary file: %w", err)
+			return fmt.Errorf("write to temporary file: %w", err)
 		}
 
 		f[i] = filepath.Join(tmp, name)
@@ -158,6 +152,13 @@ type ComposeStackFiles []string
 
 func (f ComposeStackFiles) applyToComposeStack(o *composeStackOptions) error {
 	o.Paths = append(o.Paths, f...)
+	return nil
+}
+
+type ComposeProfiles []string
+
+func (p ComposeProfiles) applyToComposeStack(o *composeStackOptions) error {
+	o.Profiles = append(o.Profiles, p...)
 	return nil
 }
 
@@ -179,7 +180,7 @@ const (
 	RemoveImagesLocal
 )
 
-type dockerCompose struct {
+type DockerCompose struct {
 	// used to synchronize operations
 	lock sync.RWMutex
 
@@ -194,14 +195,14 @@ type dockerCompose struct {
 	temporaryConfigs map[string]bool
 
 	// used to set logger in DockerContainer
-	logger testcontainers.Logging
+	logger log.Logger
 
 	// wait strategies that are applied per service when starting the stack
 	// only one strategy can be added to a service, to use multiple use wait.ForAll(...)
 	waitStrategies map[string]wait.Strategy
 
-	// used to synchronise writes to the containers map
-	containersLock sync.RWMutex
+	// Used to synchronise writes to the containers.
+	containersLock sync.Mutex
 
 	// cache for containers that are part of the stack
 	// used in ServiceContainer(...) function to avoid calls to the Docker API
@@ -220,6 +221,9 @@ type dockerCompose struct {
 	// e.g. environment settings, ...
 	projectOptions []cli.ProjectOptionsFn
 
+	// profiles applied to the compose project after compilation.
+	projectProfiles []string
+
 	// compiled compose project
 	// can be nil if the stack wasn't started yet
 	project *types.Project
@@ -227,25 +231,25 @@ type dockerCompose struct {
 	// sessionID is used to identify the reaper session
 	sessionID string
 
-	// reaper is used to clean up containers after the stack is stopped
-	reaper *testcontainers.Reaper
+	// provider is used to docker operations.
+	provider *testcontainers.DockerProvider
 }
 
-func (d *dockerCompose) ServiceContainer(ctx context.Context, svcName string) (*testcontainers.DockerContainer, error) {
+func (d *DockerCompose) ServiceContainer(ctx context.Context, svcName string) (*testcontainers.DockerContainer, error) {
 	d.lock.Lock()
 	defer d.lock.Unlock()
 
 	return d.lookupContainer(ctx, svcName)
 }
 
-func (d *dockerCompose) Services() []string {
+func (d *DockerCompose) Services() []string {
 	d.lock.Lock()
 	defer d.lock.Unlock()
 
 	return d.project.ServiceNames()
 }
 
-func (d *dockerCompose) Down(ctx context.Context, opts ...StackDownOption) error {
+func (d *DockerCompose) Down(ctx context.Context, opts ...StackDownOption) error {
 	d.lock.Lock()
 	defer d.lock.Unlock()
 
@@ -267,11 +271,9 @@ func (d *dockerCompose) Down(ctx context.Context, opts ...StackDownOption) error
 	return d.composeService.Down(ctx, d.name, options.DownOptions)
 }
 
-func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
+func (d *DockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err error) {
 	d.lock.Lock()
 	defer d.lock.Unlock()
-
-	var err error
 
 	d.project, err = d.compileProject(ctx)
 	if err != nil {
@@ -319,7 +321,7 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 		},
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("compose up: %w", err)
 	}
 
 	err = d.lookupNetworks(ctx)
@@ -327,27 +329,57 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 		return err
 	}
 
-	if d.reaper != nil {
-		for _, n := range d.networks {
-			termSignal, err := d.reaper.Connect()
-			if err != nil {
-				return fmt.Errorf("failed to connect to reaper: %w", err)
-			}
-			n.SetTerminationSignal(termSignal)
+	var termSignals []chan bool
+	var reaper *testcontainers.Reaper
+	if !d.provider.Config().Config.RyukDisabled {
+		// NewReaper is deprecated: we need to find a way to create the reaper for compose
+		// bypassing the deprecation.
+		reaper, err = testcontainers.NewReaper(ctx, testcontainers.SessionID(), d.provider, "")
+		if err != nil {
+			return fmt.Errorf("create reaper: %w", err)
+		}
 
-			// Cleanup on error, otherwise set termSignal to nil before successful return.
-			defer func() {
-				if termSignal != nil {
+		// Cleanup on error, otherwise set termSignal to nil before successful return.
+		defer func() {
+			if len(termSignals) == 0 {
+				// Need to call Connect at least once to ensure the initial
+				// connection is cleaned up.
+				termSignal, errc := reaper.Connect()
+				if errc != nil {
+					err = errors.Join(err, fmt.Errorf("reaper connect: %w", errc))
+				} else {
 					termSignal <- true
 				}
-			}()
+			}
+
+			if err == nil {
+				// No need to cleanup.
+				return
+			}
+
+			for _, ts := range termSignals {
+				ts <- true
+			}
+		}()
+
+		// Connect to the reaper and set the termination signal for each network.
+		for _, n := range d.networks {
+			termSignal, err := reaper.Connect()
+			if err != nil {
+				return fmt.Errorf("reaper connect: %w", err)
+			}
+
+			n.SetTerminationSignal(termSignal)
+			termSignals = append(termSignals, termSignal)
 		}
 	}
 
 	errGrpContainers, errGrpCtx := errgroup.WithContext(ctx)
 
+	// Lookup the containers for each service and connect them
+	// to the reaper if needed.
+	var termSignalsMtx sync.Mutex
 	for _, srv := range d.project.Services {
-		// we are going to connect each container to the reaper
 		srv := srv
 		errGrpContainers.Go(func() error {
 			dc, err := d.lookupContainer(errGrpCtx, srv.Name)
@@ -355,24 +387,18 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 				return err
 			}
 
-			if d.reaper != nil {
-				termSignal, err := d.reaper.Connect()
+			if reaper != nil {
+				termSignal, err := reaper.Connect()
 				if err != nil {
-					return fmt.Errorf("failed to connect to reaper: %w", err)
+					return fmt.Errorf("reaper connect: %w", err)
 				}
+
 				dc.SetTerminationSignal(termSignal)
 
-				// Cleanup on error, otherwise set termSignal to nil before successful return.
-				defer func() {
-					if termSignal != nil {
-						termSignal <- true
-					}
-				}()
+				termSignalsMtx.Lock()
+				defer termSignalsMtx.Unlock()
+				termSignals = append(termSignals, termSignal)
 			}
-
-			d.containersLock.Lock()
-			defer d.containersLock.Unlock()
-			d.containers[srv.Name] = dc
 
 			return nil
 		})
@@ -399,19 +425,18 @@ func (d *dockerCompose) Up(ctx context.Context, opts ...StackUpOption) error {
 				return err
 			}
 
-			// cache all the containers on compose.up
-			d.containersLock.Lock()
-			defer d.containersLock.Unlock()
-			d.containers[svc] = target
-
 			return strategy.WaitUntilReady(errGrpCtx, target)
 		})
 	}
 
-	return errGrpWait.Wait()
+	if err := errGrpWait.Wait(); err != nil {
+		return fmt.Errorf("wait for services: %w", err)
+	}
+
+	return nil
 }
 
-func (d *dockerCompose) WaitForService(s string, strategy wait.Strategy) ComposeStack {
+func (d *DockerCompose) WaitForService(s string, strategy wait.Strategy) ComposeStack {
 	d.lock.Lock()
 	defer d.lock.Unlock()
 
@@ -419,7 +444,7 @@ func (d *dockerCompose) WaitForService(s string, strategy wait.Strategy) Compose
 	return d
 }
 
-func (d *dockerCompose) WithEnv(m map[string]string) ComposeStack {
+func (d *DockerCompose) WithEnv(m map[string]string) ComposeStack {
 	d.lock.Lock()
 	defer d.lock.Unlock()
 
@@ -427,7 +452,7 @@ func (d *dockerCompose) WithEnv(m map[string]string) ComposeStack {
 	return d
 }
 
-func (d *dockerCompose) WithOsEnv() ComposeStack {
+func (d *DockerCompose) WithOsEnv() ComposeStack {
 	d.lock.Lock()
 	defer d.lock.Unlock()
 
@@ -435,12 +460,20 @@ func (d *dockerCompose) WithOsEnv() ComposeStack {
 	return d
 }
 
-func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*testcontainers.DockerContainer, error) {
+// cachedContainer returns the cached container for svcName or nil if it doesn't exist.
+func (d *DockerCompose) cachedContainer(svcName string) *testcontainers.DockerContainer {
 	d.containersLock.Lock()
 	defer d.containersLock.Unlock()
 
-	if ctr, ok := d.containers[svcName]; ok {
-		return ctr, nil
+	return d.containers[svcName]
+}
+
+// lookupContainer is used to retrieve the container instance from the cache or the Docker API.
+//
+// Safe for concurrent calls.
+func (d *DockerCompose) lookupContainer(ctx context.Context, svcName string) (*testcontainers.DockerContainer, error) {
+	if c := d.cachedContainer(svcName); c != nil {
+		return c, nil
 	}
 
 	containers, err := d.dockerClient.ContainerList(ctx, container.ListOptions{
@@ -451,45 +484,36 @@ func (d *dockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 		),
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("container list: %w", err)
 	}
 
 	if len(containers) == 0 {
 		return nil, fmt.Errorf("no container found for service name %s", svcName)
 	}
 
-	containerInstance := containers[0]
-	ctr := &testcontainers.DockerContainer{
-		ID:    containerInstance.ID,
-		Image: containerInstance.Image,
-	}
-	ctr.SetLogger(d.logger)
-
-	dockerProvider, err := testcontainers.NewDockerProvider(testcontainers.WithLogger(d.logger))
+	ctr, err := d.provider.ContainerFromType(ctx, containers[0])
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("container from type: %w", err)
 	}
 
-	dockerProvider.SetClient(d.dockerClient)
-
-	ctr.SetProvider(dockerProvider)
-
+	d.containersLock.Lock()
+	defer d.containersLock.Unlock()
 	d.containers[svcName] = ctr
 
 	return ctr, nil
 }
 
-func (d *dockerCompose) lookupNetworks(ctx context.Context) error {
-	d.containersLock.Lock()
-	defer d.containersLock.Unlock()
-
+// lookupNetworks is used to retrieve the networks that are part of the compose stack.
+//
+// Safe for concurrent calls.
+func (d *DockerCompose) lookupNetworks(ctx context.Context) error {
 	networks, err := d.dockerClient.NetworkList(ctx, dockernetwork.ListOptions{
 		Filters: filters.NewArgs(
 			filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)),
 		),
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("network list: %w", err)
 	}
 
 	for _, n := range networks {
@@ -505,7 +529,7 @@ func (d *dockerCompose) lookupNetworks(ctx context.Context) error {
 	return nil
 }
 
-func (d *dockerCompose) compileProject(ctx context.Context) (*types.Project, error) {
+func (d *DockerCompose) compileProject(ctx context.Context) (*types.Project, error) {
 	const nameAndDefaultConfigPath = 2
 	projectOptions := make([]cli.ProjectOptionsFn, len(d.projectOptions), len(d.projectOptions)+nameAndDefaultConfigPath)
 
@@ -514,12 +538,19 @@ func (d *dockerCompose) compileProject(ctx context.Context) (*types.Project, err
 
 	compiledOptions, err := cli.NewProjectOptions(d.configs, projectOptions...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new project options: %w", err)
 	}
 
 	proj, err := compiledOptions.LoadProject(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load project: %w", err)
+	}
+
+	if len(d.projectProfiles) > 0 {
+		proj, err = proj.WithProfiles(d.projectProfiles)
+		if err != nil {
+			return nil, fmt.Errorf("with profiles: %w", err)
+		}
 	}
 
 	for i, s := range proj.Services {
@@ -532,9 +563,7 @@ func (d *dockerCompose) compileProject(ctx context.Context) (*types.Project, err
 			api.OneoffLabel:      "False", // default, will be overridden by `run` command
 		}
 
-		for k, label := range testcontainers.GenericLabels() {
-			s.CustomLabels[k] = label
-		}
+		testcontainers.AddGenericLabels(s.CustomLabels)
 
 		for i, envFile := range compiledOptions.EnvFiles {
 			// add a label for each env file, indexed by its position
@@ -551,9 +580,7 @@ func (d *dockerCompose) compileProject(ctx context.Context) (*types.Project, err
 			api.VersionLabel: api.ComposeVersion,
 		}
 
-		for k, label := range testcontainers.GenericLabels() {
-			n.Labels[k] = label
-		}
+		testcontainers.AddGenericLabels(n.Labels)
 
 		proj.Networks[key] = n
 	}
@@ -566,9 +593,8 @@ func withEnv(env map[string]string) func(*cli.ProjectOptions) error {
 		for k, v := range env {
 			if _, ok := options.Environment[k]; ok {
 				return fmt.Errorf("environment with key %s already set", k)
-			} else {
-				options.Environment[k] = v
 			}
+			options.Environment[k] = v
 		}
 
 		return nil
@@ -578,7 +604,7 @@ func withEnv(env map[string]string) func(*cli.ProjectOptions) error {
 func makeClient(*command.DockerCli) (client.APIClient, error) {
 	dockerClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new docker client: %w", err)
 	}
 	return dockerClient, nil
 }

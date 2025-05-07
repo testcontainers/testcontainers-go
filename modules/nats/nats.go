@@ -59,21 +59,24 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	var c *NATSContainer
+	if container != nil {
+		c = &NATSContainer{
+			Container: container,
+			User:      settings.CmdArgs["user"],
+			Password:  settings.CmdArgs["pass"],
+		}
+	}
+
 	if err != nil {
-		return nil, err
+		return c, fmt.Errorf("generic container: %w", err)
 	}
 
-	natsContainer := NATSContainer{
-		Container: container,
-		User:      settings.CmdArgs["user"],
-		Password:  settings.CmdArgs["pass"],
-	}
-
-	return &natsContainer, nil
+	return c, nil
 }
 
-func (c *NATSContainer) MustConnectionString(ctx context.Context, args ...string) string {
-	addr, err := c.ConnectionString(ctx, args...)
+func (c *NATSContainer) MustConnectionString(ctx context.Context) string {
+	addr, err := c.ConnectionString(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -81,7 +84,7 @@ func (c *NATSContainer) MustConnectionString(ctx context.Context, args ...string
 }
 
 // ConnectionString returns a connection string for the NATS container
-func (c *NATSContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
+func (c *NATSContainer) ConnectionString(ctx context.Context) (string, error) {
 	mappedPort, err := c.MappedPort(ctx, defaultClientPort)
 	if err != nil {
 		return "", err

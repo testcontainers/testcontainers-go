@@ -116,9 +116,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *SurrealDBContainer
+	if container != nil {
+		c = &SurrealDBContainer{Container: container}
 	}
 
-	return &SurrealDBContainer{Container: container}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }

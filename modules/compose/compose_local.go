@@ -17,6 +17,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -54,7 +55,7 @@ type LocalDockerCompose struct {
 	Identifier           string
 	Cmd                  []string
 	Env                  map[string]string
-	Services             map[string]interface{}
+	Services             map[string]any
 	waitStrategySupplied bool
 	WaitStrategyMap      map[waitService]wait.Strategy
 }
@@ -63,7 +64,7 @@ type (
 	// Deprecated: it will be removed in the next major release
 	// LocalDockerComposeOptions defines options applicable to LocalDockerCompose
 	LocalDockerComposeOptions struct {
-		Logger testcontainers.Logging
+		Logger log.Logger
 	}
 
 	// Deprecated: it will be removed in the next major release
@@ -79,13 +80,13 @@ type (
 )
 
 type ComposeLoggerOption struct {
-	logger testcontainers.Logging
+	logger log.Logger
 }
 
 // WithLogger is a generic option that implements LocalDockerComposeOption
 // It replaces the global Logging implementation with a user defined one e.g. to aggregate logs from testcontainers
 // with the logs of specific test case
-func WithLogger(logger testcontainers.Logging) ComposeLoggerOption {
+func WithLogger(logger log.Logger) ComposeLoggerOption {
 	return ComposeLoggerOption{
 		logger: logger,
 	}
@@ -136,7 +137,7 @@ func (dc *LocalDockerCompose) containerNameFromServiceName(service, separator st
 func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 	cli, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	if err != nil {
-		return err
+		return fmt.Errorf("new docker client: %w", err)
 	}
 	defer cli.Close()
 
@@ -150,22 +151,22 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 		containerListOptions := container.ListOptions{Filters: f, All: true}
 		containers, err := cli.ContainerList(context.Background(), containerListOptions)
 		if err != nil {
-			return fmt.Errorf("error %w occurred while filtering the service %s: %d by name and published port", err, k.service, k.publishedPort)
+			return fmt.Errorf("container list service %q: %w", k.service, err)
 		}
 
 		if len(containers) == 0 {
-			return fmt.Errorf("service with name %s not found in list of running containers", k.service)
+			return fmt.Errorf("service with name %q not found in list of running containers", k.service)
 		}
 
 		// The length should always be a list of 1, since we are matching one service name at a time
 		if l := len(containers); l > 1 {
-			return fmt.Errorf("expecting only one running container for %s but got %d", k.service, l)
+			return fmt.Errorf("expecting only one running container for %q but got %d", k.service, l)
 		}
 		container := containers[0]
 		strategy := dc.WaitStrategyMap[k]
 		dockerProvider, err := testcontainers.NewDockerProvider(testcontainers.WithLogger(dc.Logger))
 		if err != nil {
-			return fmt.Errorf("unable to create new Docker Provider: %w", err)
+			return fmt.Errorf("new docker provider: %w", err)
 		}
 		defer dockerProvider.Close()
 
@@ -175,7 +176,7 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 
 		err = strategy.WaitUntilReady(context.Background(), dockercontainer)
 		if err != nil {
-			return fmt.Errorf("unable to apply wait strategy %v to service %s due to %w", strategy, k.service, err)
+			return fmt.Errorf("wait until ready %v to service %q due: %w", strategy, k.service, err)
 		}
 	}
 	return nil
@@ -189,7 +190,7 @@ func (dc *LocalDockerCompose) Invoke() ExecError {
 
 // Deprecated: it will be removed in the next major release
 // WaitForService sets the strategy for the service that is to be waited on
-func (dc *LocalDockerCompose) WaitForService(service string, strategy wait.Strategy) DockerCompose {
+func (dc *LocalDockerCompose) WaitForService(service string, strategy wait.Strategy) DockerComposer {
 	dc.waitStrategySupplied = true
 	dc.WaitStrategyMap[waitService{service: service}] = strategy
 	return dc
@@ -197,14 +198,14 @@ func (dc *LocalDockerCompose) WaitForService(service string, strategy wait.Strat
 
 // Deprecated: it will be removed in the next major release
 // WithCommand assigns the command
-func (dc *LocalDockerCompose) WithCommand(cmd []string) DockerCompose {
+func (dc *LocalDockerCompose) WithCommand(cmd []string) DockerComposer {
 	dc.Cmd = cmd
 	return dc
 }
 
 // Deprecated: it will be removed in the next major release
 // WithEnv assigns the environment
-func (dc *LocalDockerCompose) WithEnv(env map[string]string) DockerCompose {
+func (dc *LocalDockerCompose) WithEnv(env map[string]string) DockerComposer {
 	dc.Env = env
 	return dc
 }
@@ -212,7 +213,7 @@ func (dc *LocalDockerCompose) WithEnv(env map[string]string) DockerCompose {
 // Deprecated: it will be removed in the next major release
 // WithExposedService sets the strategy for the service that is to be waited on. If multiple strategies
 // are given for a single service running on different ports, both strategies will be applied on the same container
-func (dc *LocalDockerCompose) WithExposedService(service string, port int, strategy wait.Strategy) DockerCompose {
+func (dc *LocalDockerCompose) WithExposedService(service string, port int, strategy wait.Strategy) DockerComposer {
 	dc.waitStrategySupplied = true
 	dc.WaitStrategyMap[waitService{service: service, publishedPort: port}] = strategy
 	return dc
@@ -223,7 +224,6 @@ func (dc *LocalDockerCompose) WithExposedService(service string, port int, strat
 // depending on the version services names are composed in a different way
 func (dc *LocalDockerCompose) determineVersion() error {
 	execErr := executeCompose(dc, []string{"version", "--short"})
-
 	if err := execErr.Error; err != nil {
 		return err
 	}
@@ -235,7 +235,7 @@ func (dc *LocalDockerCompose) determineVersion() error {
 
 	majorVersion, err := strconv.ParseInt(string(components[0]), 10, 8)
 	if err != nil {
-		return err
+		return fmt.Errorf("parsing major version: %w", err)
 	}
 
 	switch majorVersion {
@@ -255,7 +255,7 @@ func (dc *LocalDockerCompose) determineVersion() error {
 // references to all services in them
 func (dc *LocalDockerCompose) validate() error {
 	type compose struct {
-		Services map[string]interface{}
+		Services map[string]any
 	}
 
 	for _, abs := range dc.absComposeFilePaths {
@@ -263,11 +263,11 @@ func (dc *LocalDockerCompose) validate() error {
 
 		yamlFile, err := os.ReadFile(abs)
 		if err != nil {
-			return err
+			return fmt.Errorf("read compose file %q: %w", abs, err)
 		}
 		err = yaml.Unmarshal(yamlFile, &c)
 		if err != nil {
-			return err
+			return fmt.Errorf("unmarshalling file %q: %w", abs, err)
 		}
 
 		if dc.Services == nil {
@@ -307,14 +307,26 @@ func execute(
 		cmd.Env = append(cmd.Env, key+"="+value)
 	}
 
-	stdoutIn, _ := cmd.StdoutPipe()
-	stderrIn, _ := cmd.StderrPipe()
+	stdoutIn, err := cmd.StdoutPipe()
+	if err != nil {
+		return ExecError{
+			Command: cmd.Args,
+			Error:   fmt.Errorf("stdout: %w", err),
+		}
+	}
+
+	stderrIn, err := cmd.StderrPipe()
+	if err != nil {
+		return ExecError{
+			Command: cmd.Args,
+			Error:   fmt.Errorf("stderr: %w", err),
+		}
+	}
 
 	stdout := newCapturingPassThroughWriter(os.Stdout)
 	stderr := newCapturingPassThroughWriter(os.Stderr)
 
-	err := cmd.Start()
-	if err != nil {
+	if err = cmd.Start(); err != nil {
 		execCmd := []string{"Starting command", dirContext, binary}
 		execCmd = append(execCmd, args...)
 
@@ -360,7 +372,7 @@ func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
 	if which(dc.Executable) != nil {
 		return ExecError{
 			Command: []string{dc.Executable},
-			Error:   fmt.Errorf("Local Docker not found. Is %s on the PATH?", dc.Executable),
+			Error:   fmt.Errorf("local Docker not found. Is %s on the PATH?", dc.Executable),
 		}
 	}
 
@@ -389,7 +401,7 @@ func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
 		args := strings.Join(dc.Cmd, " ")
 		return ExecError{
 			Command: []string{dc.Executable, args},
-			Error:   fmt.Errorf("Local Docker compose exited abnormally whilst running %s: [%v]. %s", dc.Executable, args, err.Error()),
+			Error:   fmt.Errorf("local Docker compose exited abnormally whilst running %s: [%v]. %s", dc.Executable, args, err.Error()),
 		}
 	}
 
@@ -436,7 +448,9 @@ func (w *capturingPassThroughWriter) Bytes() []byte {
 
 // Which checks if a binary is present in PATH
 func which(binary string) error {
-	_, err := exec.LookPath(binary)
+	if _, err := exec.LookPath(binary); err != nil {
+		return fmt.Errorf("lookup: %w", err)
+	}
 
-	return err
+	return nil
 }

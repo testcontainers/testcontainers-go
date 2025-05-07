@@ -36,7 +36,7 @@ If you still want to host the module under the `testcontainers-go` repository, p
 We are happy to review and merge your PRs, and we are also happy to help you with the development of the module.
 But this is a shared responsibility, so we expect you to be involved in the maintenance, documentation and support of the module.
 - the module will be part of the CI/CD pipeline of the `testcontainers-go` repository, so it will be tested and released with the rest of the modules.
-Think of Github workflows, release notes, etc. Although it sounds great, which it is, it also means that it will increase the build time in our CI/CD pipeline on Github, including flaky tests, number of dependency updates, etc. So in the end it's more work for us.
+Think of GitHub workflows, release notes, etc. Although it sounds great, which it is, it also means that it will increase the build time in our CI/CD pipeline on GitHub, including flaky tests, number of dependency updates, etc. So in the end it's more work for us.
 - once created, we'll add the module to the [Modules Catalog](https://testcontainers.com/modules/?language=go) and to the [Go documentation](https://pkg.go.dev/github.com/testcontainers/testcontainers-go).
 
 ## Creating a new module
@@ -65,14 +65,14 @@ We have provided a command line tool to generate the scaffolding for the code of
 - an entry in the VSCode workspace file, in order to include the new module in the project's workspace.
 
 !!!info
-    If you are hosting the module under your own Github account, please move the generated files to the new repository. Discard the following files and directories: `mkdocs.yml`, VSCode workspace, Sonarqube properties, and the `.github/workflows` directory, as they are specific to the `testcontainers-go` repository. You can use them as reference to create your own CI/CD pipeline.
+    If you are hosting the module under your own GitHub account, please move the generated files to the new repository. Discard the following files and directories: `mkdocs.yml`, VSCode workspace, Sonarqube properties, and the `.github/workflows` directory, as they are specific to the `testcontainers-go` repository. You can use them as reference to create your own CI/CD pipeline.
 
 ### Command line flags
 
 | Flag    | Short | Type   | Required | Description                                                                                                                                      |
 |---------|-------|--------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------|
 | --name  | -n    | string | Yes      | Name of the module, use camel-case when needed. Only alphanumerical characters are allowed (leading character must be a letter).                 |
-| --image | -i    | string | Yes      | Fully-qualified name of the Docker image to be used in the examples and tests (i.e. 'docker.io/org/project:tag')                                             |
+| --image | -i    | string | Yes      | Fully-qualified name of the Docker image to be used in the examples and tests (i.e. 'org/project:tag')                                             |
 | --title | -t    | string | No       | A variant of the name supporting mixed casing (i.e. 'MongoDB'). Only alphanumerical characters are allowed (leading character must be a letter). |
 
 
@@ -121,7 +121,7 @@ We are going to propose a set of steps to follow when adding types and methods t
     Customize(req *GenericContainerRequest) error
     ```
 
-- We consider that a best practice for the options is define a function using the `With` prefix, that returns a function returning a modified `testcontainers.GenericContainerRequest` type. For that, the library already provides a `testcontainers.CustomizeRequestOption` type implementing the `ContainerCustomizer` interface, and we encourage you to use this type for creating your own customizer functions.
+- We consider that a best practice for the options is to define a function using the `With` prefix, that returns a function returning a modified `testcontainers.GenericContainerRequest` type. For that, the library already provides a `testcontainers.CustomizeRequestOption` type implementing the `ContainerCustomizer` interface, and we encourage you to use this type for creating your own customizer functions.
 - At the same time, you could need to create your own container customizers for your module. Make sure they implement the `testcontainers.ContainerCustomizer` interface. Defining your own customizer functions is useful when you need to transfer a certain state that is not present at the `ContainerRequest` for the container, possibly using an intermediate Config struct.
 - The options will be passed to the `Run` function as variadic arguments after the Go context, and they will be processed right after defining the initial `testcontainers.GenericContainerRequest` struct using a for loop.
 
@@ -193,6 +193,15 @@ In order to simplify the creation of the container for a given module, `Testcont
 
 - `testcontainers.WithImageSubstitutors`: a function that sets your own substitutions to the container images.
 - `testcontainers.WithEnv`: a function that sets the environment variables for the container request.
+- `testcontainers.WithExposedPorts`: a function that exposes additional ports from the container.
+- `testcontainers.WithEntrypoint`: a function that completely replaces the container's entrypoint.
+- `testcontainers.WithEntrypointArgs`: a function that appends commands to the container's entrypoint.
+- `testcontainers.WithCmd`: a function that completely replaces the container's command.
+- `testcontainers.WithCmdArgs`: a function that appends commands to the container's command.
+- `testcontainers.WithLabels`: a function that adds Docker labels to the container.
+- `testcontainers.WithFiles`: a function that copies files from the host into the container at creation time.
+- `testcontainers.WithMounts`: a function that adds volume mounts to the container.
+- `testcontainers.WithTmpfs`: a function that adds tmpfs mounts to the container.
 - `testcontainers.WithHostPortAccess`: a function that enables the container to access a port that is already running in the host.
 - `testcontainers.WithLogConsumers`: a function that sets the log consumers for the container request.
 - `testcontainers.WithLogger`: a function that sets the logger for the container request.
@@ -200,14 +209,14 @@ In order to simplify the creation of the container for a given module, `Testcont
 - `testcontainers.WithWaitStrategyAndDeadline`: a function that sets the wait strategy for the container request with a deadline.
 - `testcontainers.WithStartupCommand`: a function that sets the execution of a command when the container starts.
 - `testcontainers.WithAfterReadyCommand`: a function that sets the execution of a command right after the container is ready (its wait strategy is satisfied).
+- `testcontainers.WithDockerfile`: a function that sets the build from a Dockerfile for the container request.
 - `testcontainers.WithNetwork`: a function that sets the network and the network aliases for the container request.
 - `testcontainers.WithNewNetwork`: a function that sets the network aliases for a throw-away network for the container request.
 - `testcontainers.WithConfigModifier`: a function that sets the config Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
-- `testcontainers.WithEndpointSettingsModifier`: a function that sets the endpoint settings Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
 - `testcontainers.WithHostConfigModifier`: a function that sets the host config Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
-- `testcontainers.WithWaitStrategy`: a function that sets the wait strategy for the container request, adding all the passed wait strategies to the container request, using a `testcontainers.MultiStrategy` with 60 seconds of deadline. Please see [Wait strategies](../features/wait/multi.md) for more information.
-- `testcontainers.WithWaitStrategyAndDeadline`: a function that sets the wait strategy for the container request, adding all the passed wait strategies to the container request, using a `testcontainers.MultiStrategy` with the passed deadline. Please see [Wait strategies](../features/wait/multi.md) for more information.
+- `testcontainers.WithEndpointSettingsModifier`: a function that sets the endpoint settings Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
 - `testcontainers.CustomizeRequest`: a function that merges the default options with the ones provided by the user. Recommended for completely customizing the container request.
+- `testcontainers.WithReuseByName`: a function that marks a container to be reused if it exists or create a new one if it doesn't.
 
 ### Update Go dependencies in the modules
 
@@ -218,6 +227,24 @@ $ cd modules
 $ make tidy-examples
 ```
 
+## Refreshing the modules
+
+To refresh the modules, please run:
+
+```shell
+$ cd modulegen
+$ go run . refresh
+```
+
+This command recreates all the project files for the modules and examples, including:
+
+- the mkdocs.yml file, including all the modules and examples, excluding the `compose` module, as it has its own docs page.
+- the dependabot config file, including all the modules, the examples and the modulegen module.
+- the VSCode project file, including all the modules, the examples and the modulegen module.
+- the Sonar properties file, including all the modules, the examples and the modulegen module.
+
+Executing this command in a well-known state of the project, must not produce any changes in the project files.
+
 ## Interested in converting an example into a module?
 
 The steps to convert an existing example, aka `${THE_EXAMPLE}`, into a module are the following:
@@ -226,4 +253,4 @@ The steps to convert an existing example, aka `${THE_EXAMPLE}`, into a module ar
 1. Move the `examples/${THE_EXAMPLE}` directory to `modules/${THE_EXAMPLE}`.
 1. In the `mkdocs.yml` file, move the entry for `${THE_EXAMPLE}` from examples to modules.
 1. Move `docs/examples${THE_EXAMPLE}.md` file to `docs/modules/${THE_EXAMPLE}`, updating the references to the source code paths.
-1. Update the Github workflow for `${THE_EXAMPLE}`, modifying names and paths.
+1. Update the GitHub workflow for `${THE_EXAMPLE}`, modifying names and paths.

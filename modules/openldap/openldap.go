@@ -27,7 +27,7 @@ type OpenLDAPContainer struct {
 }
 
 // ConnectionString returns the connection string for the OpenLDAP container
-func (c *OpenLDAPContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
+func (c *OpenLDAPContainer) ConnectionString(ctx context.Context, _ ...string) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "1389/tcp")
 	if err != nil {
 		return "", err
@@ -38,7 +38,7 @@ func (c *OpenLDAPContainer) ConnectionString(ctx context.Context, args ...string
 		return "", err
 	}
 
-	connStr := fmt.Sprintf("ldap://%s", net.JoinHostPort(host, containerPort.Port()))
+	connStr := "ldap://" + net.JoinHostPort(host, containerPort.Port())
 	return connStr, nil
 }
 
@@ -161,14 +161,19 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *OpenLDAPContainer
+	if container != nil {
+		c = &OpenLDAPContainer{
+			Container:     container,
+			adminUsername: req.Env["LDAP_ADMIN_USERNAME"],
+			adminPassword: req.Env["LDAP_ADMIN_PASSWORD"],
+			rootDn:        req.Env["LDAP_ROOT"],
+		}
 	}
 
-	return &OpenLDAPContainer{
-		Container:     container,
-		adminUsername: req.Env["LDAP_ADMIN_USERNAME"],
-		adminPassword: req.Env["LDAP_ADMIN_PASSWORD"],
-		rootDn:        req.Env["LDAP_ROOT"],
-	}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }

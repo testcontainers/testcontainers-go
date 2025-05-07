@@ -3,6 +3,7 @@ package localstack
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"golang.org/x/mod/semver"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -20,48 +22,36 @@ const (
 	localstackHostEnvVar   = "LOCALSTACK_HOST"
 )
 
-func isLegacyMode(image string) bool {
-	parts := strings.Split(image, ":")
-	version := parts[len(parts)-1]
-
-	if version == "latest" {
-		return false
-	}
-
-	if !strings.HasPrefix(version, "v") {
-		version = fmt.Sprintf("v%s", version)
-	}
-
-	if semver.IsValid(version) {
-		return semver.Compare(version, "v0.11") < 0 // version < v0.11
-	}
-
-	return true
+var recentVersionTags = []string{
+	"latest",
+	"s3",
+	"s3-latest",
+	"stable",
 }
 
-func isVersion2(image string) bool {
-	parts := strings.Split(image, ":")
+func isMinimumVersion(image string, minVersion string) bool {
+	parts := strings.Split(strings.Split(image, "@")[0], ":")
 	version := parts[len(parts)-1]
 
-	if version == "latest" {
+	if pos := strings.LastIndexByte(version, '-'); pos >= 0 {
+		version = version[0:pos]
+	}
+
+	if slices.Contains(recentVersionTags, version) {
 		return true
 	}
 
 	if !strings.HasPrefix(version, "v") {
-		version = fmt.Sprintf("v%s", version)
+		version = "v" + version
 	}
 
-	if semver.IsValid(version) {
-		return semver.Compare(version, "v2.0") > 0 // version >= v2.0
-	}
-
-	return true
+	return semver.IsValid(version) && semver.Compare(version, minVersion) >= 0
 }
 
 // WithNetwork creates a network with the given name and attaches the container to it, setting the network alias
 // on that network to the given alias.
 // Deprecated: use network.WithNetwork or network.WithNewNetwork instead
-func WithNetwork(networkName string, alias string) testcontainers.CustomizeRequestOption {
+func WithNetwork(_ string, alias string) testcontainers.CustomizeRequestOption {
 	return network.WithNewNetwork(context.Background(), []string{alias})
 }
 
@@ -74,7 +64,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 // Run creates an instance of the LocalStack container type
 // - overrideReq: a function that can be used to override the default container request, usually used to set the image version, environment variables for localstack, etc.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*LocalStackContainer, error) {
-	dockerHost := testcontainers.ExtractDockerSocket()
+	dockerHost := testcontainers.MustExtractDockerSocket(ctx)
 
 	req := testcontainers.ContainerRequest{
 		Image:        img,
@@ -82,14 +72,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		ExposedPorts: []string{fmt.Sprintf("%d/tcp", defaultPort)},
 		Env:          map[string]string{},
 		HostConfigModifier: func(hostConfig *container.HostConfig) {
-			hostConfig.Binds = []string{fmt.Sprintf("%s:/var/run/docker.sock", dockerHost)}
+			hostConfig.Binds = []string{dockerHost + ":/var/run/docker.sock"}
 		},
 	}
 
 	localStackReq := LocalStackContainerRequest{
 		GenericContainerRequest: testcontainers.GenericContainerRequest{
 			ContainerRequest: req,
-			Logger:           testcontainers.Logger,
+			Logger:           log.Default(),
 			Started:          true,
 		},
 	}
@@ -100,12 +90,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	if isLegacyMode(localStackReq.Image) {
+	if !isMinimumVersion(localStackReq.Image, "v0.11") {
 		return nil, fmt.Errorf("version=%s. Testcontainers for Go does not support running LocalStack in legacy mode. Please use a version >= 0.11.0", localStackReq.Image)
 	}
 
 	envVar := hostnameExternalEnvVar
-	if isVersion2(localStackReq.Image) {
+	if isMinimumVersion(localStackReq.Image, "v2") {
 		envVar = localstackHostEnvVar
 	}
 
@@ -113,16 +103,18 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	if err != nil {
 		return nil, err
 	}
-	localStackReq.GenericContainerRequest.Logger.Printf("Setting %s to %s (%s)\n", envVar, req.Env[envVar], hostnameExternalReason)
+	localStackReq.Logger.Printf("Setting %s to %s (%s)\n", envVar, req.Env[envVar], hostnameExternalReason)
 
 	container, err := testcontainers.GenericContainer(ctx, localStackReq.GenericContainerRequest)
-	if err != nil {
-		return nil, err
+	var c *LocalStackContainer
+	if container != nil {
+		c = &LocalStackContainer{Container: container}
 	}
 
-	c := &LocalStackContainer{
-		Container: container,
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
 	}
+
 	return c, nil
 }
 

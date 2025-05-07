@@ -32,7 +32,7 @@ go get github.com/testcontainers/testcontainers-go/modules/weaviate
 The Weaviate module exposes one entrypoint function to create the Weaviate container, and this function receives three parameters:
 
 ```golang
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*WeaviteContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*WeaviateContainer, error)
 ```
 
 - `context.Context`, the Go context.
@@ -45,8 +45,8 @@ When starting the Weaviate container, you can pass options in a variadic way to 
 
 #### Image
 
-If you need to set a different Weaviate Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "semitechnologies/weaviate:1.23.9")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "semitechnologies/weaviate:1.23.9")`.
 
 {% include "../features/common_functional_options.md" %}
 

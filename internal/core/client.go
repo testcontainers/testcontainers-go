@@ -14,7 +14,7 @@ import (
 func NewClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {
 	tcConfig := config.Read()
 
-	dockerHost := ExtractDockerHost(ctx)
+	dockerHost := MustExtractDockerHost(ctx)
 
 	opts := []client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}
 	if dockerHost != "" {

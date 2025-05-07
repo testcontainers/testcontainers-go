@@ -17,13 +17,16 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+// cacheTarget is the path to the cache volume in the container.
+const cacheTarget = "/cache"
+
 // K6Container represents the K6 container type used in the module
 type K6Container struct {
 	testcontainers.Container
 }
 
 type DownloadableFile struct {
-	Uri         url.URL
+	Uri         url.URL //nolint:revive,staticcheck //FIXME
 	DownloadDir string
 	User        string
 	Password    string
@@ -69,7 +72,7 @@ func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
 	scriptBaseName := filepath.Base(scriptPath)
 	f, err := os.Open(scriptPath)
 	if err != nil {
-		return func(req *testcontainers.GenericContainerRequest) error {
+		return func(_ *testcontainers.GenericContainerRequest) error {
 			return fmt.Errorf("cannot create reader for test file: %w", err)
 		}
 	}
@@ -78,7 +81,7 @@ func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
 }
 
 // WithTestScriptReader copies files into the Container using the Reader API
-// The script base name is not a path, neither absolute or relative and should
+// The script base name is not a path, neither absolute nor relative and should
 // be just the file name of the script
 func WithTestScriptReader(reader io.Reader, scriptBaseName string) testcontainers.CustomizeRequestOption {
 	opt := func(req *testcontainers.GenericContainerRequest) error {
@@ -104,7 +107,7 @@ func WithTestScriptReader(reader io.Reader, scriptBaseName string) testcontainer
 func WithRemoteTestScript(d DownloadableFile) testcontainers.CustomizeRequestOption {
 	err := downloadFileFromDescription(d)
 	if err != nil {
-		return func(req *testcontainers.GenericContainerRequest) error {
+		return func(_ *testcontainers.GenericContainerRequest) error {
 			return fmt.Errorf("not able to download required test script: %w", err)
 		}
 	}
@@ -140,7 +143,7 @@ func WithCache() testcontainers.CustomizeRequestOption {
 	cacheVol := os.Getenv("TC_K6_BUILD_CACHE")
 	// if no volume is provided, create one and ensure add labels for garbage collection
 	if cacheVol == "" {
-		cacheVol = fmt.Sprintf("k6-cache-%s", testcontainers.SessionID())
+		cacheVol = "k6-cache-" + testcontainers.SessionID()
 		volOptions = &mount.VolumeOptions{
 			Labels: testcontainers.GenericLabels(),
 		}
@@ -152,7 +155,7 @@ func WithCache() testcontainers.CustomizeRequestOption {
 				Name:          cacheVol,
 				VolumeOptions: volOptions,
 			},
-			Target: "/cache",
+			Target: cacheTarget,
 		}
 		req.Mounts = append(req.Mounts, mount)
 
@@ -186,9 +189,31 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *K6Container
+	if container != nil {
+		c = &K6Container{Container: container}
 	}
 
-	return &K6Container{Container: container}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
+}
+
+// CacheMount returns the name of volume used as a cache or an empty string
+// if no cache was found.
+func (k *K6Container) CacheMount(ctx context.Context) (string, error) {
+	inspect, err := k.Inspect(ctx)
+	if err != nil {
+		return "", fmt.Errorf("inspect: %w", err)
+	}
+
+	for _, m := range inspect.Mounts {
+		if m.Type == mount.TypeVolume && m.Destination == cacheTarget {
+			return m.Name, nil
+		}
+	}
+
+	return "", nil
 }

@@ -42,6 +42,38 @@ func TestVolumeMount(t *testing.T) {
 	}
 }
 
+func TestImageMount(t *testing.T) {
+	t.Parallel()
+
+	t.Run("valid-image-mount", func(t *testing.T) {
+		t.Parallel()
+		m := testcontainers.ImageMount("nginx:latest", "var/www/html", "/var/www/html")
+		// the source is a GenericImageMountSource, which does implement the Validator interface
+		if v, ok := m.Source.(testcontainers.Validator); ok {
+			require.NoError(t, v.Validate())
+		}
+
+		require.Equal(t, testcontainers.ContainerMount{
+			Source: testcontainers.NewGenericImageMountSource("nginx:latest", "var/www/html"),
+			Target: "/var/www/html",
+		}, m)
+	})
+
+	t.Run("invalid-image-mount", func(t *testing.T) {
+		t.Parallel()
+		m := testcontainers.ImageMount("nginx:latest", "../var/www/html", "/var/www/invalid")
+		// the source is a GenericImageMountSource, which does implement the Validator interface
+		if v, ok := m.Source.(testcontainers.Validator); ok {
+			require.Error(t, v.Validate())
+		}
+
+		require.Equal(t, testcontainers.ContainerMount{
+			Source: testcontainers.NewGenericImageMountSource("nginx:latest", "../var/www/html"),
+			Target: "/var/www/invalid",
+		}, m)
+	})
+}
+
 func TestContainerMounts_PrepareMounts(t *testing.T) {
 	volumeOptions := &mount.VolumeOptions{
 		Labels: testcontainers.GenericLabels(),
@@ -160,6 +192,25 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Image mount",
+			mounts: testcontainers.ContainerMounts{
+				{
+					Source: testcontainers.NewDockerImageMountSource("my-custom-image:latest", "data"),
+					Target: "/data",
+				},
+			},
+			want: []mount.Mount{
+				{
+					Source: "my-custom-image:latest",
+					Type:   mount.TypeImage,
+					Target: "/data",
+					ImageOptions: &mount.ImageOptions{
+						Subpath: "data",
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -171,13 +222,14 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 }
 
 func TestCreateContainerWithVolume(t *testing.T) {
+	volumeName := "test-volume"
 	// volumeMounts {
 	req := testcontainers.ContainerRequest{
 		Image: "alpine",
 		Mounts: testcontainers.ContainerMounts{
 			{
 				Source: testcontainers.GenericVolumeMountSource{
-					Name: "test-volume",
+					Name: volumeName,
 				},
 				Target: "/data",
 			},
@@ -190,8 +242,8 @@ func TestCreateContainerWithVolume(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
+	testcontainers.CleanupContainer(t, c, testcontainers.RemoveVolumes(volumeName))
 	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, c)
 
 	// Check if volume is created
 	client, err := testcontainers.NewDockerClientWithOpts(ctx)
@@ -204,12 +256,13 @@ func TestCreateContainerWithVolume(t *testing.T) {
 }
 
 func TestMountsReceiveRyukLabels(t *testing.T) {
+	volumeName := "app-data"
 	req := testcontainers.ContainerRequest{
 		Image: "alpine",
 		Mounts: testcontainers.ContainerMounts{
 			{
 				Source: testcontainers.GenericVolumeMountSource{
-					Name: "app-data",
+					Name: volumeName,
 				},
 				Target: "/data",
 			},
@@ -217,19 +270,24 @@ func TestMountsReceiveRyukLabels(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	require.NoError(t, err)
-	terminateContainerOnEnd(t, ctx, c)
-
-	// Check if volume is created with the expected labels
 	client, err := testcontainers.NewDockerClientWithOpts(ctx)
 	require.NoError(t, err)
 	defer client.Close()
 
-	volume, err := client.VolumeInspect(ctx, "app-data")
+	// Ensure the volume is removed before creating the container
+	// otherwise the volume will be reused and the labels won't be set.
+	err = client.VolumeRemove(ctx, volumeName, true)
 	require.NoError(t, err)
-	assert.Equal(t, testcontainers.GenericLabels(), volume.Labels)
+
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	testcontainers.CleanupContainer(t, c, testcontainers.RemoveVolumes(volumeName))
+	require.NoError(t, err)
+
+	// Check if volume is created with the expected labels.
+	volume, err := client.VolumeInspect(ctx, volumeName)
+	require.NoError(t, err)
+	require.Equal(t, testcontainers.GenericLabels(), volume.Labels)
 }

@@ -2,8 +2,11 @@ package vearch
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
+
+	"github.com/docker/docker/api/types/container"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -26,7 +29,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Image:        img,
 		ExposedPorts: []string{"8817/tcp", "9001/tcp"},
 		Cmd:          []string{"-conf=/vearch/config.toml", "all"},
-		Privileged:   true,
+		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.Privileged = true
+		},
 		Files: []testcontainers.ContainerFile{
 			{
 				HostFilePath:      "config.toml",
@@ -52,11 +57,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *VearchContainer
+	if container != nil {
+		c = &VearchContainer{Container: container}
 	}
 
-	return &VearchContainer{Container: container}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }
 
 // RESTEndpoint returns the REST endpoint of the Vearch container
@@ -68,7 +78,7 @@ func (c *VearchContainer) RESTEndpoint(ctx context.Context) (string, error) {
 
 	host, err := c.Host(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to get container host")
+		return "", errors.New("failed to get container host")
 	}
 
 	return fmt.Sprintf("http://%s:%s", host, containerPort.Port()), nil

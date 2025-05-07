@@ -50,28 +50,16 @@ When starting the Localstack container, you can pass options in a variadic way t
 
 #### Image
 
-If you need to set a different Localstack Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "localstack:1.4.0")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "localstack:1.4.0")`.
 
 {% include "../features/common_functional_options.md" %}
-
-#### Customize the container request
-
-It's possible to entirely override the default LocalStack container request:
-
-<!--codeinclude-->
-[Customize container request](../../modules/localstack/examples_test.go) inside_block:withCustomContainerRequest
-<!--/codeinclude-->
-
-With simply passing the `testcontainers.CustomizeRequest` functional option to the `New` function, you'll be able to configure the LocalStack container with your own needs, as this new container request will be merged with the original one.
-
-In the above example you can check how it's possible to copy files that are needed by the tests. The `flagsFn` function is a helper function that converts Docker labels used by Ryuk to a string with the format requested by LocalStack.
 
 ## Accessing hostname-sensitive services
 
 Some Localstack APIs, such as SQS, require the container to be aware of the hostname that it is accessible on - for example, for construction of queue URLs in responses.
 
-Testcontainers will inform Localstack of the best hostname automatically, using the an environment variable for that:
+Testcontainers will inform Localstack of the best hostname automatically, using an environment variable for that:
 
 * for Localstack versions 0.10.0 and above, the `HOSTNAME_EXTERNAL` environment variable will be set to hostname in the container request.
 * for Localstack versions 2.0.0 and above, the `LOCALSTACK_HOST` environment variable will be set to the hostname in the container request.
@@ -103,6 +91,7 @@ For further reference on the SDK v1, please check out the AWS docs [here](https:
 ### Using the AWS SDK v2
 
 <!--codeinclude-->
+[EndpointResolver](../../modules/localstack/v2/s3_test.go) inside_block:awsResolverV2
 [AWS SDK v2](../../modules/localstack/v2/s3_test.go) inside_block:awsSDKClientV2
 <!--/codeinclude-->
 

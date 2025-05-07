@@ -26,7 +26,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		ExposedPorts: []string{"1080/tcp"},
 		WaitingFor: wait.ForAll(
 			wait.ForLog("started on port: 1080"),
-			wait.ForListeningPort("1080/tcp"),
+			wait.ForListeningPort("1080/tcp").SkipInternalCheck(),
 		),
 		Env: map[string]string{},
 	}
@@ -43,11 +43,15 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	var c *MockServerContainer
+	if container != nil {
+		c = &MockServerContainer{Container: container}
+	}
 	if err != nil {
-		return nil, err
+		return c, fmt.Errorf("generic container: %w", err)
 	}
 
-	return &MockServerContainer{Container: container}, nil
+	return c, nil
 }
 
 // GetURL returns the URL of the MockServer container

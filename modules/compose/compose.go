@@ -17,6 +17,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -31,7 +32,8 @@ type composeStackOptions struct {
 	Identifier     string
 	Paths          []string
 	temporaryPaths map[string]bool
-	Logger         testcontainers.Logging
+	Logger         log.Logger
+	Profiles       []string
 }
 
 type ComposeStackOption interface {
@@ -76,16 +78,16 @@ type ComposeStack interface {
 	ServiceContainer(ctx context.Context, svcName string) (*testcontainers.DockerContainer, error)
 }
 
-// Deprecated: DockerCompose is the old shell escape based API
+// Deprecated: DockerComposer is the old shell escape based API
 // use ComposeStack instead
-// DockerCompose defines the contract for running Docker Compose
-type DockerCompose interface {
+// DockerComposer defines the contract for running Docker Compose
+type DockerComposer interface {
 	Down() ExecError
 	Invoke() ExecError
-	WaitForService(string, wait.Strategy) DockerCompose
-	WithCommand([]string) DockerCompose
-	WithEnv(map[string]string) DockerCompose
-	WithExposedService(string, int, wait.Strategy) DockerCompose
+	WaitForService(string, wait.Strategy) DockerComposer
+	WithCommand([]string) DockerComposer
+	WithEnv(map[string]string) DockerComposer
+	WithExposedService(string, int, wait.Strategy) DockerComposer
 }
 
 type waitService struct {
@@ -116,20 +118,26 @@ func WithStackReaders(readers ...io.Reader) ComposeStackOption {
 	return ComposeStackReaders(readers)
 }
 
-func NewDockerCompose(filePaths ...string) (*dockerCompose, error) {
+// WithProfiles allows to enable/disable services based on the profiles defined in the compose file.
+func WithProfiles(profiles ...string) ComposeStackOption {
+	return ComposeProfiles(profiles)
+}
+
+func NewDockerCompose(filePaths ...string) (*DockerCompose, error) {
 	return NewDockerComposeWith(WithStackFiles(filePaths...))
 }
 
-func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
+func NewDockerComposeWith(opts ...ComposeStackOption) (*DockerCompose, error) {
 	composeOptions := composeStackOptions{
 		Identifier:     uuid.New().String(),
 		temporaryPaths: make(map[string]bool),
-		Logger:         testcontainers.Logger,
+		Logger:         log.Default(),
+		Profiles:       nil,
 	}
 
 	for i := range opts {
 		if err := opts[i].applyToComposeStack(&composeOptions); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("apply compose stack option: %w", err)
 		}
 	}
 
@@ -139,48 +147,40 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 
 	dockerCli, err := command.NewDockerCli()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new docker client: %w", err)
 	}
 
 	if err = dockerCli.Initialize(flags.NewClientOptions(), command.WithInitializeClient(makeClient)); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("initialize docker client: %w", err)
 	}
 
-	reaperProvider, err := testcontainers.NewDockerProvider()
+	provider, err := testcontainers.NewDockerProvider(testcontainers.WithLogger(composeOptions.Logger))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create reaper provider for compose: %w", err)
+		return nil, fmt.Errorf("new docker provider: %w", err)
 	}
 
-	var composeReaper *testcontainers.Reaper
-	if !reaperProvider.Config().Config.RyukDisabled {
-		// NewReaper is deprecated: we need to find a way to create the reaper for compose
-		// bypassing the deprecation.
-		r, err := testcontainers.NewReaper(context.Background(), testcontainers.SessionID(), reaperProvider, "")
-		if err != nil {
-			return nil, fmt.Errorf("failed to create reaper for compose: %w", err)
-		}
+	dockerClient := dockerCli.Client()
+	provider.SetClient(dockerClient)
 
-		composeReaper = r
-	}
-
-	composeAPI := &dockerCompose{
+	composeAPI := &DockerCompose{
 		name:             composeOptions.Identifier,
 		configs:          composeOptions.Paths,
 		temporaryConfigs: composeOptions.temporaryPaths,
 		logger:           composeOptions.Logger,
+		projectProfiles:  composeOptions.Profiles,
 		composeService:   compose.NewComposeService(dockerCli),
-		dockerClient:     dockerCli.Client(),
+		dockerClient:     dockerClient,
 		waitStrategies:   make(map[string]wait.Strategy),
 		containers:       make(map[string]*testcontainers.DockerContainer),
 		networks:         make(map[string]*testcontainers.DockerNetwork),
 		sessionID:        testcontainers.SessionID(),
-		reaper:           composeReaper,
+		provider:         provider,
 	}
 
 	return composeAPI, nil
 }
 
-// Deprecated: NewLocalDockerCompose returns a DockerCompose compatible instance which is superseded
+// Deprecated: NewLocalDockerCompose returns a DockerComposer compatible instance which is superseded
 // by ComposeStack use NewDockerCompose instead to get a ComposeStack compatible instance
 //
 // NewLocalDockerCompose returns an instance of the local Docker Compose, using an
@@ -193,7 +193,7 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*dockerCompose, error) {
 func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalDockerComposeOption) *LocalDockerCompose {
 	dc := &LocalDockerCompose{
 		LocalDockerComposeOptions: &LocalDockerComposeOptions{
-			Logger: testcontainers.Logger,
+			Logger: log.Default(),
 		},
 	}
 

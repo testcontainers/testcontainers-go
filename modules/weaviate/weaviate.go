@@ -2,6 +2,7 @@ package weaviate
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -22,7 +23,7 @@ type WeaviateContainer struct {
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Weaviate container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*WeaviateContainer, error) {
-	return Run(ctx, "semitechnologies/weaviate:1.25.5", opts...)
+	return Run(ctx, "semitechnologies/weaviate:1.29.0", opts...)
 }
 
 // Run creates an instance of the Weaviate container type
@@ -54,15 +55,22 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *WeaviateContainer
+	if container != nil {
+		c = &WeaviateContainer{Container: container}
 	}
 
-	return &WeaviateContainer{Container: container}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }
 
 // HttpHostAddress returns the schema and host of the Weaviate container.
 // At the moment, it only supports the http scheme.
+//
+//nolint:revive,staticcheck //FIXME
 func (c *WeaviateContainer) HttpHostAddress(ctx context.Context) (string, string, error) {
 	port, err := c.MappedPort(ctx, httpPort)
 	if err != nil {
@@ -71,7 +79,7 @@ func (c *WeaviateContainer) HttpHostAddress(ctx context.Context) (string, string
 
 	host, err := c.Host(ctx)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get container host")
+		return "", "", errors.New("failed to get container host")
 	}
 
 	return "http", fmt.Sprintf("%s:%s", host, port.Port()), nil
@@ -87,7 +95,7 @@ func (c *WeaviateContainer) GrpcHostAddress(ctx context.Context) (string, error)
 
 	host, err := c.Host(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to get container host")
+		return "", errors.New("failed to get container host")
 	}
 
 	return fmt.Sprintf("%s:%s", host, port.Port()), nil

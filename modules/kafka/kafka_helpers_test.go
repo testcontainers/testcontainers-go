@@ -3,6 +3,8 @@ package kafka
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/testcontainers/testcontainers-go"
 )
 
@@ -55,9 +57,7 @@ func TestConfigureQuorumVoters(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			configureControllerQuorumVoters(test.req)
 
-			if test.req.Env["KAFKA_CONTROLLER_QUORUM_VOTERS"] != test.expectedVoters {
-				t.Fatalf("expected KAFKA_CONTROLLER_QUORUM_VOTERS to be %s, got %s", test.expectedVoters, test.req.Env["KAFKA_CONTROLLER_QUORUM_VOTERS"])
-			}
+			require.Equalf(t, test.expectedVoters, test.req.Env["KAFKA_CONTROLLER_QUORUM_VOTERS"], "expected KAFKA_CONTROLLER_QUORUM_VOTERS to be %s, got %s", test.expectedVoters, test.req.Env["KAFKA_CONTROLLER_QUORUM_VOTERS"])
 		})
 	}
 }

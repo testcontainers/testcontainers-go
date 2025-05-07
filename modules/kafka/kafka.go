@@ -3,13 +3,15 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"github.com/docker/docker/api/types/container"
-	"github.com/testcontainers/testcontainers-go/wait"
+	"math"
 	"strconv"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
+
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
@@ -51,7 +53,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL":     "PLAIN",
 			"KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR": "1",
 			"KAFKA_TRANSACTION_STATE_LOG_MIN_ISR":            "1",
-			"KAFKA_LOG_FLUSH_INTERVAL_MESSAGES":              "9223372036854775807", // math.MaxInt value
+			"KAFKA_LOG_FLUSH_INTERVAL_MESSAGES":              strconv.Itoa(math.MaxInt),
 			"KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS":         "0",
 			"KAFKA_NODE_ID":                                  "1",
 			"KAFKA_PROCESS_ROLES":                            "broker,controller",
@@ -82,15 +84,19 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	clusterID := genericContainerReq.Env["CLUSTER_ID"]
 	configureControllerQuorumVoters(&genericContainerReq)
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *KafkaContainer
+	if container != nil {
+		c = &KafkaContainer{Container: container, ClusterID: genericContainerReq.Env["CLUSTER_ID"]}
 	}
 
-	return &KafkaContainer{Container: container, ClusterID: clusterID}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }
 
 func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {

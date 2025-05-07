@@ -6,40 +6,32 @@ import (
 	"testing"
 
 	"github.com/gocql/gocql"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/cassandra"
 )
 
 type Test struct {
-	Id   uint64
+	ID   uint64
 	Name string
 }
 
 func TestCassandra(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := cassandra.Run(ctx, "cassandra:4.1.3")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		require.NoError(t, container.Terminate(ctx))
-	})
+	ctr, err := cassandra.Run(ctx, "cassandra:4.1.3")
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
 	// connectionString {
-	connectionHost, err := container.ConnectionHost(ctx)
+	connectionHost, err := ctr.ConnectionHost(ctx)
 	// }
 	require.NoError(t, err)
 
 	cluster := gocql.NewCluster(connectionHost)
 	session, err := cluster.CreateSession()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer session.Close()
 
 	// perform assertions
@@ -52,38 +44,30 @@ func TestCassandra(t *testing.T) {
 	require.NoError(t, err)
 
 	var test Test
-	err = session.Query("SELECT id, name FROM test_keyspace.test_table WHERE id=1").Scan(&test.Id, &test.Name)
+	err = session.Query("SELECT id, name FROM test_keyspace.test_table WHERE id=1").Scan(&test.ID, &test.Name)
 	require.NoError(t, err)
-	assert.Equal(t, Test{Id: 1, Name: "NAME"}, test)
+	require.Equal(t, Test{ID: 1, Name: "NAME"}, test)
 }
 
 func TestCassandraWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithConfigFile(filepath.Join("testdata", "config.yaml")))
-	if err != nil {
-		t.Fatal(err)
-	}
+	ctr, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithConfigFile(filepath.Join("testdata", "config.yaml")))
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
 
-	// Clean up the container after the test is complete
-	t.Cleanup(func() {
-		require.NoError(t, container.Terminate(ctx))
-	})
-
-	connectionHost, err := container.ConnectionHost(ctx)
+	connectionHost, err := ctr.ConnectionHost(ctx)
 	require.NoError(t, err)
 
 	cluster := gocql.NewCluster(connectionHost)
 	session, err := cluster.CreateSession()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer session.Close()
 
 	var result string
 	err = session.Query("SELECT cluster_name FROM system.local").Scan(&result)
 	require.NoError(t, err)
-	assert.Equal(t, "My Cluster", result)
+	require.Equal(t, "My Cluster", result)
 }
 
 func TestCassandraWithInitScripts(t *testing.T) {
@@ -91,61 +75,45 @@ func TestCassandraWithInitScripts(t *testing.T) {
 		ctx := context.Background()
 
 		// withInitScripts {
-		container, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts(filepath.Join("testdata", "init.cql")))
+		ctr, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts(filepath.Join("testdata", "init.cql")))
 		// }
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		// Clean up the container after the test is complete
-		t.Cleanup(func() {
-			require.NoError(t, container.Terminate(ctx))
-		})
+		testcontainers.CleanupContainer(t, ctr)
+		require.NoError(t, err)
 
 		// connectionHost {
-		connectionHost, err := container.ConnectionHost(ctx)
+		connectionHost, err := ctr.ConnectionHost(ctx)
 		// }
 		require.NoError(t, err)
 
 		cluster := gocql.NewCluster(connectionHost)
 		session, err := cluster.CreateSession()
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		defer session.Close()
 
 		var test Test
-		err = session.Query("SELECT id, name FROM test_keyspace.test_table WHERE id=1").Scan(&test.Id, &test.Name)
+		err = session.Query("SELECT id, name FROM test_keyspace.test_table WHERE id=1").Scan(&test.ID, &test.Name)
 		require.NoError(t, err)
-		assert.Equal(t, Test{Id: 1, Name: "NAME"}, test)
+		require.Equal(t, Test{ID: 1, Name: "NAME"}, test)
 	})
 
 	t.Run("with init bash script", func(t *testing.T) {
 		ctx := context.Background()
 
-		container, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts(filepath.Join("testdata", "init.sh")))
-		if err != nil {
-			t.Fatal(err)
-		}
+		ctr, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts(filepath.Join("testdata", "init.sh")))
+		testcontainers.CleanupContainer(t, ctr)
+		require.NoError(t, err)
 
-		// Clean up the container after the test is complete
-		t.Cleanup(func() {
-			require.NoError(t, container.Terminate(ctx))
-		})
-
-		connectionHost, err := container.ConnectionHost(ctx)
+		connectionHost, err := ctr.ConnectionHost(ctx)
 		require.NoError(t, err)
 
 		cluster := gocql.NewCluster(connectionHost)
 		session, err := cluster.CreateSession()
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		defer session.Close()
 
 		var test Test
-		err = session.Query("SELECT id, name FROM init_sh_keyspace.test_table WHERE id=1").Scan(&test.Id, &test.Name)
+		err = session.Query("SELECT id, name FROM init_sh_keyspace.test_table WHERE id=1").Scan(&test.ID, &test.Name)
 		require.NoError(t, err)
-		assert.Equal(t, Test{Id: 1, Name: "NAME"}, test)
+		require.Equal(t, Test{ID: 1, Name: "NAME"}, test)
 	})
 }

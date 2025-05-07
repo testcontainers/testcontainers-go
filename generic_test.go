@@ -5,7 +5,6 @@ import (
 	"errors"
 	"os"
 	"os/exec"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -38,7 +37,7 @@ func TestGenericReusableContainer(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.True(t, n1.IsRunning())
-	terminateContainerOnEnd(t, ctx, n1)
+	CleanupContainer(t, n1)
 
 	copiedFileName := "hello_copy.sh"
 	err = n1.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 700)
@@ -123,7 +122,7 @@ func TestGenericContainerShouldReturnRefOnError(t *testing.T) {
 	})
 	require.Error(t, err)
 	require.NotNil(t, c)
-	terminateContainerOnEnd(t, context.Background(), c)
+	CleanupContainer(t, c)
 }
 
 func TestGenericReusableContainerInSubprocess(t *testing.T) {
@@ -138,8 +137,8 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 
 			t.Log(output)
 			// check is reuse container with WaitingFor work correctly.
-			require.True(t, strings.Contains(output, "⏳ Waiting for container id"))
-			require.True(t, strings.Contains(output, "🔔 Container is ready"))
+			require.Contains(t, output, "⏳ Waiting for container id")
+			require.Contains(t, output, "🔔 Container is ready")
 		}()
 	}
 
@@ -157,13 +156,18 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, ctrs, 1)
 
-	nginxC, err := containerFromDockerResponse(context.Background(), ctrs[0])
+	provider, err := NewDockerProvider()
 	require.NoError(t, err)
 
-	terminateContainerOnEnd(t, context.Background(), nginxC)
+	provider.SetClient(cli)
+
+	nginxC, err := provider.ContainerFromType(context.Background(), ctrs[0])
+	CleanupContainer(t, nginxC)
+	require.NoError(t, err)
 }
 
 func createReuseContainerInSubprocess(t *testing.T) string {
+	t.Helper()
 	// force verbosity in subprocesses, so that the output is printed
 	cmd := exec.Command(os.Args[0], "-test.run=TestHelperContainerStarterProcess", "-test.v=true")
 	cmd.Env = append(os.Environ(), "GO_WANT_HELPER_PROCESS=1")

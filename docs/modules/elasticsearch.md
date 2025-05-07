@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/elasticsearch
 ## Usage example
 
 <!--codeinclude-->
-[Creating a Elasticsearch container](../../modules/elasticsearch/examples_test.go) inside_block:runElasticsearchContainer
+[Creating an Elasticsearch container](../../modules/elasticsearch/examples_test.go) inside_block:runElasticsearchContainer
 <!--/codeinclude-->
 
 ## Module Reference
@@ -45,8 +45,8 @@ When starting the Elasticsearch container, you can pass options in a variadic wa
 
 #### Image
 
-If you need to set a different Elasticsearch Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "docker.elastic.co/elasticsearch/elasticsearch:8.0.0")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "docker.elastic.co/elasticsearch/elasticsearch:8.0.0")`.
 
 {% include "../features/common_functional_options.md" %}
 

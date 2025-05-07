@@ -2,18 +2,18 @@ package gcloud
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// Deprecated: use RunDatastore instead
+// Deprecated: use [datastore.Run] instead
 // RunDatastoreContainer creates an instance of the GCloud container type for Datastore.
 func RunDatastoreContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	return RunDatastore(ctx, "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators", opts...)
 }
 
+// Deprecated: use [datastore.Run] instead
 // RunDatastore creates an instance of the GCloud container type for Datastore.
 func RunDatastore(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	req := testcontainers.GenericContainerRequest{
@@ -33,13 +33,8 @@ func RunDatastore(ctx context.Context, img string, opts ...testcontainers.Contai
 	req.Cmd = []string{
 		"/bin/sh",
 		"-c",
-		"gcloud beta emulators datastore start --host-port 0.0.0.0:8081 " + fmt.Sprintf("--project=%s", settings.ProjectID),
+		"gcloud beta emulators datastore start --host-port 0.0.0.0:8081 --project=" + settings.ProjectID,
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	return newGCloudContainer(ctx, 8081, container, settings)
+	return newGCloudContainer(ctx, req, 8081, settings, "")
 }

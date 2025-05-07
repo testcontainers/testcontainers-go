@@ -45,8 +45,8 @@ When starting the MongoDB container, you can pass options in a variadic way to c
 
 #### Image
 
-If you need to set a different MongoDB Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "mongo:6")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "mongo:6")`.
 
 #### WithUsername
 
@@ -83,7 +83,7 @@ The MongoDB container exposes the following methods:
 The `ConnectionString` method returns the connection string to connect to the MongoDB container.
 It returns a string with the format `mongodb://<host>:<port>`.
 
-It can be use to configure a MongoDB client (`go.mongodb.org/mongo-driver/mongo`), e.g.:
+It can be used to configure a MongoDB client (`go.mongodb.org/mongo-driver/mongo`), e.g.:
 
 <!--codeinclude-->
 [Using ConnectionString with the MongoDB client](../../modules/mongodb/examples_test.go) inside_block:connectToMongo

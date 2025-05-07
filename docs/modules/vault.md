@@ -55,7 +55,7 @@ go get -u github.com/hashicorp/vault-client-go
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
 
-The Vault module exposes one entrypoint function to create the containerr, and this function receives three parameters:
+The Vault module exposes one entrypoint function to create the container, and this function receives three parameters:
 
 ```golang
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*VaultContainer, error)
@@ -71,8 +71,8 @@ When starting the Vault container, you can pass options in a variadic way to con
 
 #### Image
 
-If you need to set a different Vault Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "hashicorp/vault:1.13.0")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "hashicorp/vault:1.13.0")`.
 
 {% include "../features/common_functional_options.md" %}
 

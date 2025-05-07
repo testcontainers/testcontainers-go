@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/modules/vault"
 )
@@ -14,21 +15,21 @@ func ExampleRun() {
 	ctx := context.Background()
 
 	vaultContainer, err := vault.Run(ctx, "hashicorp/vault:1.13.0")
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := vaultContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(vaultContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := vaultContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -42,21 +43,21 @@ func ExampleRun_withToken() {
 	ctx := context.Background()
 
 	vaultContainer, err := vault.Run(ctx, "hashicorp/vault:1.13.0", vault.WithToken("MyToKeN"))
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := vaultContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(vaultContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := vaultContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)
@@ -66,7 +67,8 @@ func ExampleRun_withToken() {
 	}
 	exitCode, _, err := vaultContainer.Exec(ctx, cmds, exec.Multiplexed())
 	if err != nil {
-		log.Fatalf("failed to execute command: %s", err)
+		log.Printf("failed to execute command: %s", err)
+		return
 	}
 
 	fmt.Println(exitCode)
@@ -87,21 +89,21 @@ func ExampleRun_withInitCommand() {
 		"write --force auth/approle/role/myrole",      // Create a role
 		"write secret/testing top_secret=password123", // Create a secret
 	))
-	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
-	}
-
-	// Clean up the container
 	defer func() {
-		if err := vaultContainer.Terminate(ctx); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+		if err := testcontainers.TerminateContainer(vaultContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 	// }
 
 	state, err := vaultContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err) // nolint:gocritic
+		log.Printf("failed to get container state: %s", err)
+		return
 	}
 
 	fmt.Println(state.Running)

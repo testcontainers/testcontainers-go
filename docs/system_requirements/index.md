@@ -16,7 +16,7 @@ DRY_RUN=false ./scripts/bump-go.sh 1.21
 
 It will update:
 - all `go.mod` files.
-- all Github Actions workflows, and their matrices using the `go-version` strategy.
+- all GitHub Actions workflows, and their matrices using the `go-version` strategy.
 - the templates for the module generator.
 - the Devcontainer configuration.
 - the tag of the Go Docker image in the markdown documentation.

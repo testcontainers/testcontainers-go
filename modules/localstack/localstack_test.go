@@ -2,13 +2,11 @@ package localstack
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -43,7 +41,7 @@ func TestConfigureDockerHost(t *testing.T) {
 
 			reason, err := configureDockerHost(req, tt.envVar)
 			require.NoError(t, err)
-			assert.Equal(t, "explicitly as environment variable", reason)
+			require.Equal(t, "explicitly as environment variable", reason)
 		})
 
 		t.Run("HOSTNAME_EXTERNAL matches the last network alias on a container with non-default network", func(t *testing.T) {
@@ -58,8 +56,8 @@ func TestConfigureDockerHost(t *testing.T) {
 
 			reason, err := configureDockerHost(req, tt.envVar)
 			require.NoError(t, err)
-			assert.Equal(t, "to match last network alias on container with non-default network", reason)
-			assert.Equal(t, "foo3", req.Env[tt.envVar])
+			require.Equal(t, "to match last network alias on container with non-default network", reason)
+			require.Equal(t, "foo3", req.Env[tt.envVar])
 		})
 
 		t.Run("HOSTNAME_EXTERNAL matches the daemon host because there are no aliases", func(t *testing.T) {
@@ -78,31 +76,86 @@ func TestConfigureDockerHost(t *testing.T) {
 
 			reason, err := configureDockerHost(req, tt.envVar)
 			require.NoError(t, err)
-			assert.Equal(t, "to match host-routable address for container", reason)
-			assert.Equal(t, expectedDaemonHost, req.Env[tt.envVar])
+			require.Equal(t, "to match host-routable address for container", reason)
+			require.Equal(t, expectedDaemonHost, req.Env[tt.envVar])
 		})
 	}
 }
 
-func TestIsLegacyMode(t *testing.T) {
+func TestIsLegacyVersion(t *testing.T) {
 	tests := []struct {
 		version string
 		want    bool
 	}{
 		{"foo", true},
 		{"latest", false},
+		{"latest-amd64", false},
+		{"s3-latest", false},
+		{"s3-latest-amd64", false},
+		{"stable", false},
+		{"stable-amd64", false},
 		{"0.10.0", true},
+		{"0.10.0-amd64", true},
 		{"0.10.999", true},
+		{"0.10.999-amd64", true},
 		{"0.11", false},
+		{"0.11-amd64", false},
 		{"0.11.2", false},
+		{"0.11.2-amd64", false},
 		{"0.12", false},
+		{"0.12-amd64", false},
+		{"1", false},
+		{"1-amd64", false},
 		{"1.0", false},
+		{"1.0-amd64", false},
+		{"4.3.0@sha256:f3cb1a79f3add997575e859c3a2808e6dae4b0de836661de255baa2b576868f8", false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.version, func(t *testing.T) {
-			got := isLegacyMode(fmt.Sprintf("localstack/localstack:%s", tt.version))
-			assert.Equal(t, tt.want, got, "runInLegacyMode() = %v, want %v", got, tt.want)
+			got := !isMinimumVersion("localstack/localstack:"+tt.version, "v0.11")
+			require.Equal(t, tt.want, got, "runInLegacyMode() = %v, want %v", got, tt.want)
+		})
+	}
+}
+
+func TestIsMinimumVersion2(t *testing.T) {
+	tests := []struct {
+		version string
+		want    bool
+	}{
+		{"foo", false},
+		{"latest", true},
+		{"latest-amd64", true},
+		{"s3-latest", true},
+		{"s3-latest-amd64", true},
+		{"stable", true},
+		{"stable-amd64", true},
+		{"1", false},
+		{"1-amd64", false},
+		{"1.12", false},
+		{"1.12-amd64", false},
+		{"1.12.2", false},
+		{"1.12.2-amd64", false},
+		{"2", true},
+		{"2-amd64", true},
+		{"2.0", true},
+		{"2.0-amd64", true},
+		{"2.0.0", true},
+		{"2.0.0-amd64", true},
+		{"2.0.1", true},
+		{"2.0.1-amd64", true},
+		{"2.1", true},
+		{"2.1-amd64", true},
+		{"3", true},
+		{"3-amd64", true},
+		{"4.3.0@sha256:f3cb1a79f3add997575e859c3a2808e6dae4b0de836661de255baa2b576868f8", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.version, func(t *testing.T) {
+			got := isMinimumVersion("localstack/localstack:"+tt.version, "v2")
+			require.Equal(t, tt.want, got, "runInLegacyMode() = %v, want %v", got, tt.want)
 		})
 	}
 }
@@ -118,16 +171,17 @@ func TestRunContainer(t *testing.T) {
 	for _, tt := range tests {
 		ctx := context.Background()
 
-		container, err := Run(
+		ctr, err := Run(
 			ctx,
-			fmt.Sprintf("localstack/localstack:%s", tt.version),
+			"localstack/localstack:"+tt.version,
 		)
+		testcontainers.CleanupContainer(t, ctr)
 
 		t.Run("Localstack:"+tt.version+" - multiple services exposed on same port", func(t *testing.T) {
 			require.NoError(t, err)
-			assert.NotNil(t, container)
+			require.NotNil(t, ctr)
 
-			inspect, err := container.Inspect(ctx)
+			inspect, err := ctr.Inspect(ctx)
 			require.NoError(t, err)
 
 			rawPorts := inspect.NetworkSettings.Ports
@@ -140,7 +194,7 @@ func TestRunContainer(t *testing.T) {
 				}
 			}
 
-			assert.Equal(t, 1, ports) // a single port is exposed
+			require.Equal(t, 1, ports) // a single port is exposed
 		})
 	}
 }
@@ -148,9 +202,10 @@ func TestRunContainer(t *testing.T) {
 func TestStartWithoutOverride(t *testing.T) {
 	ctx := context.Background()
 
-	container, err := Run(ctx, "localstack/localstack:2.0.0")
+	ctr, err := Run(ctx, "localstack/localstack:2.0.0")
+	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
-	assert.NotNil(t, container)
+	require.NotNil(t, ctr)
 }
 
 func TestStartV2WithNetwork(t *testing.T) {
@@ -158,6 +213,7 @@ func TestStartV2WithNetwork(t *testing.T) {
 
 	nw, err := network.New(ctx)
 	require.NoError(t, err)
+	testcontainers.CleanupNetwork(t, nw)
 
 	localstack, err := Run(
 		ctx,
@@ -165,8 +221,9 @@ func TestStartV2WithNetwork(t *testing.T) {
 		network.WithNetwork([]string{"localstack"}, nw),
 		testcontainers.WithEnv(map[string]string{"SERVICES": "s3,sqs"}),
 	)
+	testcontainers.CleanupContainer(t, localstack)
 	require.NoError(t, err)
-	assert.NotNil(t, localstack)
+	require.NotNil(t, localstack)
 
 	networkName := nw.Name
 
@@ -197,6 +254,7 @@ func TestStartV2WithNetwork(t *testing.T) {
 		},
 		Started: true,
 	})
+	testcontainers.CleanupContainer(t, cli)
 	require.NoError(t, err)
-	assert.NotNil(t, cli)
+	require.NotNil(t, cli)
 }

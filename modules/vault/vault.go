@@ -32,7 +32,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Image:        img,
 		ExposedPorts: []string{defaultPort + "/tcp"},
 		HostConfigModifier: func(hc *container.HostConfig) {
-			hc.CapAdd = []string{"IPC_LOCK"}
+			hc.CapAdd = []string{"CAP_IPC_LOCK"}
 		},
 		WaitingFor: wait.ForHTTP("/v1/sys/health").WithPort(defaultPort),
 		Env: map[string]string{
@@ -52,11 +52,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	if err != nil {
-		return nil, err
+	var c *VaultContainer
+	if container != nil {
+		c = &VaultContainer{Container: container}
 	}
 
-	return &VaultContainer{container}, nil
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }
 
 // WithToken is a container option function that sets the root token for the Vault
@@ -86,6 +91,8 @@ func WithInitCommand(commands ...string) testcontainers.CustomizeRequestOption {
 
 // HttpHostAddress returns the http host address of Vault.
 // It returns a string with the format http://<host>:<port>
+//
+//nolint:revive,staticcheck //FIXME
 func (v *VaultContainer) HttpHostAddress(ctx context.Context) (string, error) {
 	host, err := v.Host(ctx)
 	if err != nil {
