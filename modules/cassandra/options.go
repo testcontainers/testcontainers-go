@@ -3,6 +3,7 @@ package cassandra
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -60,7 +61,7 @@ func WithSSL() Option {
 
 		certPool := x509.NewCertPool()
 		if !certPool.AppendCertsFromPEM(certPEM) {
-			return fmt.Errorf("failed to append certificate to pool")
+			return errors.New("failed to append certificate to pool")
 		}
 
 		settings.tlsConfig = &TLSConfig{
