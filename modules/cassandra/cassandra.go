@@ -134,11 +134,6 @@ func WithSSL(sslOpts SSLOptions) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithTLS is an alias for WithSSL for user convenience
-func WithTLS(opts SSLOptions) testcontainers.CustomizeRequestOption {
-	return WithSSL(opts)
-}
-
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Cassandra container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*CassandraContainer, error) {
@@ -151,25 +146,21 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Image:        img,
 		ExposedPorts: []string{string(port)},
 		Env: map[string]string{
-			"CASSANDRA_SNITCH":                 "GossipingPropertyFileSnitch",
-			"JVM_OPTS":                         "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.initial_token=0",
-			"HEAP_NEWSIZE":                     "128M",
-			"MAX_HEAP_SIZE":                    "1024M",
-			"CASSANDRA_ENDPOINT_SNITCH":        "GossipingPropertyFileSnitch",
-			"CASSANDRA_DC":                     "datacenter1",
-			"CASSANDRA_SKIP_WAIT_FOR_GOSSIP":   "1",
-			"CASSANDRA_START_NATIVE_TRANSPORT": "true",
+			"CASSANDRA_SNITCH":          "GossipingPropertyFileSnitch",
+			"JVM_OPTS":                  "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.initial_token=0",
+			"HEAP_NEWSIZE":              "128M",
+			"MAX_HEAP_SIZE":             "1024M",
+			"CASSANDRA_ENDPOINT_SNITCH": "GossipingPropertyFileSnitch",
+			"CASSANDRA_DC":              "datacenter1",
 		},
 		WaitingFor: wait.ForAll(
 			wait.ForListeningPort(port),
 			wait.ForExec([]string{"cqlsh", "-e", "SELECT bootstrapped FROM system.local"}).WithResponseMatcher(func(body io.Reader) bool {
 				data, _ := io.ReadAll(body)
 				return strings.Contains(string(data), "COMPLETED")
-			}).WithStartupTimeout(2*time.Minute),
+			}).WithStartupTimeout(1*time.Minute),
 		),
 	}
-
-	c := &CassandraContainer{}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
@@ -191,15 +182,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	if sslEnabled {
 		genericContainerReq.WaitingFor = wait.ForAll(
 			genericContainerReq.WaitingFor,
-			wait.ForListeningPort(securePort).WithStartupTimeout(3*time.Minute),
+			wait.ForListeningPort(securePort).WithStartupTimeout(1*time.Minute),
 		)
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	var c *CassandraContainer
 	if container != nil {
-		c.Container = container
-		// Set useTLS based on sslEnabled
-		c.useTLS = sslEnabled
+		c = &CassandraContainer{Container: container, useTLS: sslEnabled}
 	}
 
 	if err != nil {
