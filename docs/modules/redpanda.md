@@ -99,7 +99,7 @@ E.g. `WithSuperusers("superuser-1", "superuser-2")`.
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
-The `WithEnableSASL()` option enables SASL scram sha authentication. By default, no authentication (plaintext) is used.
+The `WithEnableSASL()` option enables SASL scram sha 256 authentication. By default, no authentication (plaintext) is used.
 When setting an authentication method, make sure to add users as well and authorize them using the `WithSuperusers()` option.
 
 #### WithEnableKafkaAuthorization
