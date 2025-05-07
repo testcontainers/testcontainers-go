@@ -59,16 +59,17 @@ func WithSSL() Option {
 		}
 
 		certPool := x509.NewCertPool()
-		certPool.AppendCertsFromPEM(certPEM)
+		if !certPool.AppendCertsFromPEM(certPEM) {
+			return fmt.Errorf("failed to append certificate to pool")
+		}
 
 		settings.tlsConfig = &TLSConfig{
 			KeystorePath:    keystorePath,
 			CertificatePath: certPath,
 			Config: &tls.Config{
-				RootCAs:            certPool,
-				InsecureSkipVerify: true,
-				ServerName:         "localhost",
-				MinVersion:         tls.VersionTLS12,
+				RootCAs:    certPool,
+				ServerName: "localhost",
+				MinVersion: tls.VersionTLS12,
 			},
 		}
 
