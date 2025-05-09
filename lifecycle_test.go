@@ -170,7 +170,6 @@ func TestPreCreateModifierHook(t *testing.T) {
 		)
 		require.Equal(t, []string{"b"}, inputNetworkingConfig.EndpointsConfig["a"].Aliases)
 		require.Equal(t, []string{"link1", "link2"}, inputNetworkingConfig.EndpointsConfig["a"].Links)
-
 	})
 
 	t.Run("No exposed ports and network mode IsContainer", func(t *testing.T) {
