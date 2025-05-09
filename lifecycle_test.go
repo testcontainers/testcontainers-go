@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -55,7 +56,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		require.Len(t, errs, 2) // one valid and two invalid mounts
 	})
 
-	t.Run("No exposed ports", func(t *testing.T) {
+	t.Run("no-exposed-ports", func(t *testing.T) {
 		// reqWithModifiers {
 		req := ContainerRequest{
 			Image: nginxAlpineImage, // alpine image does expose port 80
@@ -99,61 +100,52 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputHostConfig := &container.HostConfig{}
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
-		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
-		require.NoError(t, err)
-
 		// assertions
-
-		assert.Equal(
-			t,
-			[]string{"a=b"},
-			inputConfig.Env,
-			"Docker config's env should be overwritten by the modifier",
-		)
-		assert.Equal(t,
-			nat.PortSet(nat.PortSet{"80/tcp": struct{}{}}),
-			inputConfig.ExposedPorts,
-			"Docker config's exposed ports should be overwritten by the modifier",
-		)
-		assert.Equal(
-			t,
-			[]mount.Mount{
-				{
-					Type:   mount.TypeVolume,
-					Source: "appdata",
-					Target: "/data",
-					VolumeOptions: &mount.VolumeOptions{
-						Labels: GenericLabels(),
+		commonAssertionFn := func(t *testing.T, inputHostConfig *container.HostConfig, inputNetworkingConfig *network.NetworkingConfig) {
+			require.Equal(t, []string{"a=b"}, inputConfig.Env)
+			require.Equal(
+				t,
+				[]mount.Mount{
+					{
+						Type:   mount.TypeVolume,
+						Source: "appdata",
+						Target: "/data",
+						VolumeOptions: &mount.VolumeOptions{
+							Labels: GenericLabels(),
+						},
 					},
 				},
-			},
-			inputHostConfig.Mounts,
-			"Host config's mounts should be mapped to Docker types",
-		)
+				inputHostConfig.Mounts,
+			)
+			require.Equal(t, []string{"b"}, inputNetworkingConfig.EndpointsConfig["a"].Aliases)
+			require.Equal(t, []string{"link1", "link2"}, inputNetworkingConfig.EndpointsConfig["a"].Links)
+		}
 
-		assert.Equal(t, nat.PortMap{
-			"80/tcp": []nat.PortBinding{
-				{
-					HostIP:   "",
-					HostPort: "",
-				},
-			},
-		}, inputHostConfig.PortBindings,
-			"Host config's port bindings should be overwritten by the modifier",
-		)
+		t.Run("auto-expose-ports-enabled", func(t *testing.T) {
+			t.Setenv("TESTCONTAINERS_AUTO_EXPOSE_PORTS", "true")
+			config.Reset()
 
-		assert.Equal(
-			t,
-			[]string{"b"},
-			inputNetworkingConfig.EndpointsConfig["a"].Aliases,
-			"Networking config's aliases should be overwritten by the modifier",
-		)
-		assert.Equal(
-			t,
-			[]string{"link1", "link2"},
-			inputNetworkingConfig.EndpointsConfig["a"].Links,
-			"Networking config's links should be overwritten by the modifier",
-		)
+			err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+			require.NoError(t, err)
+
+			commonAssertionFn(t, inputHostConfig, inputNetworkingConfig)
+
+			require.Equal(t, nat.PortSet(nat.PortSet{"80/tcp": struct{}{}}), inputConfig.ExposedPorts)
+			require.Equal(t, nat.PortMap{"80/tcp": []nat.PortBinding{{HostIP: "", HostPort: ""}}}, inputHostConfig.PortBindings)
+		})
+
+		t.Run("auto-expose-ports-disabled", func(t *testing.T) {
+			t.Setenv("TESTCONTAINERS_AUTO_EXPOSE_PORTS", "false")
+			config.Reset()
+
+			err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+			require.NoError(t, err)
+
+			commonAssertionFn(t, inputHostConfig, inputNetworkingConfig)
+
+			require.Equal(t, nat.PortSet(nat.PortSet{}), inputConfig.ExposedPorts)
+			require.Equal(t, nat.PortMap{}, inputHostConfig.PortBindings)
+		})
 	})
 
 	t.Run("No exposed ports and network mode IsContainer", func(t *testing.T) {
