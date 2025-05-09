@@ -85,6 +85,11 @@ type Config struct {
 	//
 	// Environment variable: TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE
 	TestcontainersHost string `properties:"tc.host,default="`
+
+	// AutoExposePorts is a flag to enable or disable the automatic exposure of ports when no ports are explicitly exposed.
+	//
+	// Environment variable: TESTCONTAINERS_AUTO_EXPOSE_PORTS
+	AutoExposePorts bool `properties:"tc.auto.expose.ports,default=true"`
 }
 
 // }
@@ -139,6 +144,11 @@ func read() Config {
 		ryukConnectionTimeoutEnv := readTestcontainersEnv("RYUK_CONNECTION_TIMEOUT")
 		if timeout, err := time.ParseDuration(ryukConnectionTimeoutEnv); err == nil {
 			config.RyukConnectionTimeout = timeout
+		}
+
+		autoExposePortsEnv := readTestcontainersEnv("TESTCONTAINERS_AUTO_EXPOSE_PORTS")
+		if parseBool(autoExposePortsEnv) {
+			config.AutoExposePorts = autoExposePortsEnv == "true"
 		}
 
 		return config
