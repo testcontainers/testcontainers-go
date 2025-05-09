@@ -106,14 +106,33 @@ func WithHostPortAccess(ports ...int) CustomizeRequestOption {
 	}
 }
 
+// WithName will set the name of the container.
+func WithName(containerName string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		if containerName == "" {
+			return errors.New("container name must be provided")
+		}
+		req.Name = containerName
+		return nil
+	}
+}
+
+// WithNoStart will prevent the container from being started after creation.
+func WithNoStart() CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.Started = false
+		return nil
+	}
+}
+
 // WithReuseByName will mark a container to be reused if it exists or create a new one if it doesn't.
 // A container name must be provided to identify the container to be reused.
 func WithReuseByName(containerName string) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {
-		if containerName == "" {
-			return errors.New("container name must be provided for reuse")
+		if err := WithName(containerName)(req); err != nil {
+			return err
 		}
-		req.Name = containerName
+
 		req.Reuse = true
 		return nil
 	}
@@ -255,6 +274,17 @@ func WithLogConsumers(consumer ...LogConsumer) CustomizeRequestOption {
 	}
 }
 
+// WithLogConsumerConfig sets the log consumer config for a container.
+// Beware that this option completely replaces the existing log consumer config,
+// including the log consumers and the log production options,
+// so it should be used with care.
+func WithLogConsumerConfig(config *LogConsumerConfig) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.LogConsumerCfg = config
+		return nil
+	}
+}
+
 // Executable represents an executable command to be sent to a container, including options,
 // as part of the different lifecycle hooks.
 type Executable interface {
@@ -376,6 +406,22 @@ func WithImageMount(source string, subpath string, target ContainerMountTarget) 
 	}
 }
 
+// WithAlwaysPull will pull the image before starting the container
+func WithAlwaysPull() CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.AlwaysPullImage = true
+		return nil
+	}
+}
+
+// WithImagePlatform sets the platform for a container
+func WithImagePlatform(platform string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.ImagePlatform = platform
+		return nil
+	}
+}
+
 // WithEntrypoint completely replaces the entrypoint of a container
 func WithEntrypoint(entrypoint ...string) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {
@@ -425,6 +471,22 @@ func WithLabels(labels map[string]string) CustomizeRequestOption {
 		for k, v := range labels {
 			req.Labels[k] = v
 		}
+		return nil
+	}
+}
+
+// WithLifecycleHooks completely replaces the lifecycle hooks for a container
+func WithLifecycleHooks(hooks ...ContainerLifecycleHooks) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.LifecycleHooks = hooks
+		return nil
+	}
+}
+
+// WithAdditionalLifecycleHooks appends lifecycle hooks to the existing ones for a container
+func WithAdditionalLifecycleHooks(hooks ...ContainerLifecycleHooks) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.LifecycleHooks = append(req.LifecycleHooks, hooks...)
 		return nil
 	}
 }
