@@ -188,6 +188,12 @@ func (g *TestLogConsumer) Accept(l Log) {
 }
 ```
 
+#### WithLogConsumerConfig
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to set the log consumer config for the container, you can use `testcontainers.WithLogConsumerConfig`. This option completely replaces the existing log consumer config, including the log consumers and the log production options.
+
 #### WithLogger
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
@@ -213,6 +219,26 @@ func TestHandler(t *testing.T) {
 ```
 
 Please read the [Following Container Logs](/features/follow_logs) documentation for more information about creating log consumers.
+
+#### WithAlwaysPull
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to pull the image before starting the container, you can use `testcontainers.WithAlwaysPull()`.
+
+#### WithImagePlatform
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to set the platform for a container, you can use `testcontainers.WithImagePlatform(platform string)`.
+
+#### LifecycleHooks
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to set the lifecycle hooks for the container, you can use `testcontainers.WithLifecycleHooks`, which replaces the existing lifecycle hooks with the new ones.
+
+You can also use `testcontainers.WithAdditionalLifecycleHooks`, which appends the new lifecycle hooks to the existing ones.
 
 #### Wait Strategies
 
@@ -282,6 +308,24 @@ In the case you need to retrieve the network name, you can simply read it from t
 !!!warning
     This option is not checking whether the network exists or not. If you use a network that doesn't exist, the container will start in the default Docker network, as in the default behavior.
 
+#### WithNetworkByName
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you want to attach your containers to an already existing Docker network by its name, you can use the `network.WithNetworkName(aliases []string, networkName string)` option, which receives an alias as parameter and the network name, attaching the container to it, and setting the network alias for that network.
+
+!!!warning
+    In case the network name is `bridge`, no aliases are set. This is because network-scoped alias is supported only for containers in user defined networks.
+
+#### WithBridgeNetwork
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you want to attach your containers to the `bridge` network, you can use the `network.WithBridgeNetwork()` option.
+
+!!!warning
+    The `bridge` network is the default network for Docker. It's not a user defined network, so it doesn't support network-scoped aliases.
+
 #### WithNewNetwork
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
@@ -335,3 +379,27 @@ ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3",
 
 !!!warning
     Reusing a container is experimental and the API is subject to change for a more robust implementation that is not based on container names.
+
+#### WithName
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to set the name of the container, you can use the `testcontainers.WithName` option.
+
+```golang
+ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3", 
+    testcontainers.WithName("my-container-name"),
+)
+```
+
+!!!warning
+    This option is not checking whether the container name is already in use. If you use a name that is already in use, an error is returned.
+    At the same time, we discourage using this option as it might lead to unexpected behavior, but we understand that in some cases it might be useful.
+
+#### WithNoStart
+
+- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to prevent the container from being started after creation, you can use the `testcontainers.WithNoStart` option.
+
+

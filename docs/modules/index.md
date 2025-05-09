@@ -204,7 +204,12 @@ In order to simplify the creation of the container for a given module, `Testcont
 - `testcontainers.WithTmpfs`: a function that adds tmpfs mounts to the container.
 - `testcontainers.WithHostPortAccess`: a function that enables the container to access a port that is already running in the host.
 - `testcontainers.WithLogConsumers`: a function that sets the log consumers for the container request.
+- `testcontainers.WithLogConsumerConfig`: a function that sets the log consumer config for the container request.
 - `testcontainers.WithLogger`: a function that sets the logger for the container request.
+- `testcontainers.WithLifecycleHooks`: a function that sets the lifecycle hooks for the container request.
+- `testcontainers.WithAdditionalLifecycleHooks`: a function that appends lifecycle hooks to the existing ones for the container request.
+- `testcontainers.WithAlwaysPull`: a function that pulls the image before starting the container.
+- `testcontainers.WithImagePlatform`: a function that sets the image platform for the container request.
 - `testcontainers.WithWaitStrategy`: a function that sets the wait strategy for the container request.
 - `testcontainers.WithWaitStrategyAndDeadline`: a function that sets the wait strategy for the container request with a deadline.
 - `testcontainers.WithStartupCommand`: a function that sets the execution of a command when the container starts.
@@ -217,6 +222,12 @@ In order to simplify the creation of the container for a given module, `Testcont
 - `testcontainers.WithEndpointSettingsModifier`: a function that sets the endpoint settings Docker type for the container request. Please see [Advanced Settings](../features/creating_container.md#advanced-settings) for more information.
 - `testcontainers.CustomizeRequest`: a function that merges the default options with the ones provided by the user. Recommended for completely customizing the container request.
 - `testcontainers.WithReuseByName`: a function that marks a container to be reused if it exists or create a new one if it doesn't.
+- `testcontainers.WithName`: a function that sets the name of the container.
+- `testcontainers.WithNoStart`: a function that prevents the container from being started after creation, so it must be started manually.
+- `network.WithNetwork`: a function that sets the network and the network aliases for the container request, reusing an already existing network.
+- `network.WithNetworkName`: a function that sets the network aliases for an already existing network, by its name.
+- `network.WithBridgeNetwork`: a function that sets the container to be attached to the `bridge` network.
+- `network.WithNewNetwork`: a function that sets the network aliases for a throw-away network for the container request.
 
 ### Update Go dependencies in the modules
 
