@@ -584,13 +584,7 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 	if len(exposedPorts) == 0 && !hostConfig.NetworkMode.IsContainer() {
 		// Only expose the ports defined in the image if configured in the Testcontainers properties file.
 		if config.Read().AutoExposePorts {
-			image, err := p.client.ImageInspect(ctx, dockerInput.Image)
-			if err != nil {
-				return err
-			}
-			for p := range image.Config.ExposedPorts {
-				exposedPorts = append(exposedPorts, string(p))
-			}
+			hostConfig.PublishAllPorts = true
 		}
 	}
 

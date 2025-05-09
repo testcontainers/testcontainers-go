@@ -23,6 +23,54 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+func TestPreCreateModifierHook_NoExposedPorts(t *testing.T) {
+	t.Run("auto-expose-ports-enabled", func(t *testing.T) {
+		t.Setenv("TESTCONTAINERS_AUTO_EXPOSE_PORTS", "true")
+		config.Reset()
+
+		req := GenericContainerRequest{
+			ContainerRequest: ContainerRequest{
+				Image: nginxAlpineImage,
+			},
+			Started: true,
+		}
+
+		ctr, err := GenericContainer(context.Background(), req)
+		require.NoError(t, err)
+		CleanupContainer(t, ctr)
+
+		json, err := ctr.Inspect(context.Background())
+		require.NoError(t, err)
+
+		require.Equal(t, nat.PortSet(nat.PortSet{"80/tcp": struct{}{}}), json.Config.ExposedPorts)
+		require.Equal(t, nat.PortMap{}, json.HostConfig.PortBindings)
+		require.NotNil(t, json.NetworkSettings.Ports["80/tcp"])
+	})
+
+	t.Run("auto-expose-ports-disabled", func(t *testing.T) {
+		t.Setenv("TESTCONTAINERS_AUTO_EXPOSE_PORTS", "false")
+		config.Reset()
+
+		req := GenericContainerRequest{
+			ContainerRequest: ContainerRequest{
+				Image: nginxAlpineImage,
+			},
+			Started: true,
+		}
+
+		ctr, err := GenericContainer(context.Background(), req)
+		require.NoError(t, err)
+		CleanupContainer(t, ctr)
+
+		json, err := ctr.Inspect(context.Background())
+		require.NoError(t, err)
+
+		require.Equal(t, nat.PortSet(nat.PortSet{"80/tcp": struct{}{}}), json.Config.ExposedPorts)
+		require.Equal(t, nat.PortMap{}, json.HostConfig.PortBindings)
+		require.Nil(t, json.NetworkSettings.Ports["80/tcp"])
+	})
+}
+
 func TestPreCreateModifierHook(t *testing.T) {
 	ctx := context.Background()
 
@@ -100,52 +148,29 @@ func TestPreCreateModifierHook(t *testing.T) {
 		inputHostConfig := &container.HostConfig{}
 		inputNetworkingConfig := &network.NetworkingConfig{}
 
+		err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
+		require.NoError(t, err)
+
 		// assertions
-		commonAssertionFn := func(t *testing.T, inputHostConfig *container.HostConfig, inputNetworkingConfig *network.NetworkingConfig) {
-			require.Equal(t, []string{"a=b"}, inputConfig.Env)
-			require.Equal(
-				t,
-				[]mount.Mount{
-					{
-						Type:   mount.TypeVolume,
-						Source: "appdata",
-						Target: "/data",
-						VolumeOptions: &mount.VolumeOptions{
-							Labels: GenericLabels(),
-						},
+
+		require.Equal(t, []string{"a=b"}, inputConfig.Env)
+		require.Equal(
+			t,
+			[]mount.Mount{
+				{
+					Type:   mount.TypeVolume,
+					Source: "appdata",
+					Target: "/data",
+					VolumeOptions: &mount.VolumeOptions{
+						Labels: GenericLabels(),
 					},
 				},
-				inputHostConfig.Mounts,
-			)
-			require.Equal(t, []string{"b"}, inputNetworkingConfig.EndpointsConfig["a"].Aliases)
-			require.Equal(t, []string{"link1", "link2"}, inputNetworkingConfig.EndpointsConfig["a"].Links)
-		}
+			},
+			inputHostConfig.Mounts,
+		)
+		require.Equal(t, []string{"b"}, inputNetworkingConfig.EndpointsConfig["a"].Aliases)
+		require.Equal(t, []string{"link1", "link2"}, inputNetworkingConfig.EndpointsConfig["a"].Links)
 
-		t.Run("auto-expose-ports-enabled", func(t *testing.T) {
-			t.Setenv("TESTCONTAINERS_AUTO_EXPOSE_PORTS", "true")
-			config.Reset()
-
-			err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
-			require.NoError(t, err)
-
-			commonAssertionFn(t, inputHostConfig, inputNetworkingConfig)
-
-			require.Equal(t, nat.PortSet(nat.PortSet{"80/tcp": struct{}{}}), inputConfig.ExposedPorts)
-			require.Equal(t, nat.PortMap{"80/tcp": []nat.PortBinding{{HostIP: "", HostPort: ""}}}, inputHostConfig.PortBindings)
-		})
-
-		t.Run("auto-expose-ports-disabled", func(t *testing.T) {
-			t.Setenv("TESTCONTAINERS_AUTO_EXPOSE_PORTS", "false")
-			config.Reset()
-
-			err = provider.preCreateContainerHook(ctx, req, inputConfig, inputHostConfig, inputNetworkingConfig)
-			require.NoError(t, err)
-
-			commonAssertionFn(t, inputHostConfig, inputNetworkingConfig)
-
-			require.Equal(t, nat.PortSet(nat.PortSet{}), inputConfig.ExposedPorts)
-			require.Equal(t, nat.PortMap{}, inputHostConfig.PortBindings)
-		})
 	})
 
 	t.Run("No exposed ports and network mode IsContainer", func(t *testing.T) {
