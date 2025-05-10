@@ -70,12 +70,24 @@ func TestWaitForExposedPortSucceeds(t *testing.T) {
 	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
 	require.NoError(t, err)
 
-	var mappedPortCount, execCount int
+	var inspectCount, mappedPortCount, execCount int
 	target := &MockStrategyTarget{
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
+			defer func() { inspectCount++ }()
+			if inspectCount == 0 {
+				// Simulate a container that hasn't bound any ports yet.
+				return &container.InspectResponse{
+					NetworkSettings: &container.NetworkSettings{
+						NetworkSettingsBase: container.NetworkSettingsBase{
+							Ports: nat.PortMap{},
+						},
+					},
+				}, nil
+			}
+
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
 					NetworkSettingsBase: container.NetworkSettingsBase{
