@@ -2,8 +2,10 @@ package cassandra_test
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/gocql/gocql"
 	"github.com/stretchr/testify/require"
@@ -11,6 +13,8 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/cassandra"
 )
+
+const cassandraImage = "cassandra:4.1.3"
 
 type Test struct {
 	ID   uint64
@@ -20,7 +24,7 @@ type Test struct {
 func TestCassandra(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := cassandra.Run(ctx, "cassandra:4.1.3")
+	ctr, err := cassandra.Run(ctx, cassandraImage)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -52,7 +56,7 @@ func TestCassandra(t *testing.T) {
 func TestCassandraWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithConfigFile(filepath.Join("testdata", "config.yaml")))
+	ctr, err := cassandra.Run(ctx, cassandraImage, cassandra.WithConfigFile(filepath.Join("testdata", "config.yaml")))
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -75,7 +79,7 @@ func TestCassandraWithInitScripts(t *testing.T) {
 		ctx := context.Background()
 
 		// withInitScripts {
-		ctr, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts(filepath.Join("testdata", "init.cql")))
+		ctr, err := cassandra.Run(ctx, cassandraImage, cassandra.WithInitScripts(filepath.Join("testdata", "init.cql")))
 		// }
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
@@ -99,7 +103,7 @@ func TestCassandraWithInitScripts(t *testing.T) {
 	t.Run("with init bash script", func(t *testing.T) {
 		ctx := context.Background()
 
-		ctr, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts(filepath.Join("testdata", "init.sh")))
+		ctr, err := cassandra.Run(ctx, cassandraImage, cassandra.WithInitScripts(filepath.Join("testdata", "init.sh")))
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 
@@ -116,4 +120,43 @@ func TestCassandraWithInitScripts(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, Test{ID: 1, Name: "NAME"}, test)
 	})
+}
+
+func TestCassandraSSL(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	container, err := cassandra.Run(ctx, cassandraImage,
+		cassandra.WithConfigFile(filepath.Join("testdata", "cassandra-ssl.yaml")),
+		cassandra.WithSSL(),
+	)
+	testcontainers.CleanupContainer(t, container)
+	require.NoError(t, err)
+
+	// Get TLS configurations
+	tlsConfig := container.TLSConfig()
+
+	host, err := container.Host(ctx)
+	require.NoError(t, err)
+
+	sslPort, err := container.MappedPort(ctx, "9142/tcp")
+	require.NoError(t, err)
+
+	cluster := gocql.NewCluster(fmt.Sprintf("%s:%s", host, sslPort.Port()))
+	cluster.Consistency = gocql.Quorum
+	cluster.Timeout = 30 * time.Second
+	cluster.ConnectTimeout = 30 * time.Second
+	cluster.DisableInitialHostLookup = true
+	cluster.SslOpts = &gocql.SslOptions{
+		Config:                 tlsConfig,
+		EnableHostVerification: false,
+	}
+	var session *gocql.Session
+	session, err = cluster.CreateSession()
+	require.NoError(t, err)
+	defer session.Close()
+	var version string
+	err = session.Query("SELECT release_version FROM system.local").Scan(&version)
+	require.NoError(t, err)
+	require.NotEmpty(t, version)
 }
