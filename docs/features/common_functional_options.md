@@ -249,6 +249,8 @@ If you need to set a different wait strategy for the container, you can use `tes
 
 At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
 
+Finally, you can also append a wait strategy to the existing wait strategy, using `testcontainers.WithAdditionalWaitStrategy` and `testcontainers.WithAdditionalWaitStrategyAndDeadline`.
+
 #### Startup Commands
 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.25.0"><span class="tc-version">:material-tag: v0.25.0</span></a>
