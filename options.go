@@ -373,7 +373,7 @@ func WithAfterReadyCommand(execs ...Executable) CustomizeRequestOption {
 	}
 }
 
-// WithWaitStrategy sets the wait strategy for a container, using 60 seconds as deadline
+// WithWaitStrategy replaces the wait strategy for a container, using 60 seconds as deadline
 func WithWaitStrategy(strategies ...wait.Strategy) CustomizeRequestOption {
 	return WithWaitStrategyAndDeadline(60*time.Second, strategies...)
 }
@@ -383,7 +383,7 @@ func WithAdditionalWaitStrategy(strategies ...wait.Strategy) CustomizeRequestOpt
 	return WithAdditionalWaitStrategyAndDeadline(60*time.Second, strategies...)
 }
 
-// WithWaitStrategyAndDeadline sets the wait strategy for a container, including deadline
+// WithWaitStrategyAndDeadline replaces the wait strategy for a container, including deadline
 func WithWaitStrategyAndDeadline(deadline time.Duration, strategies ...wait.Strategy) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {
 		req.WaitingFor = wait.ForAll(strategies...).WithDeadline(deadline)
