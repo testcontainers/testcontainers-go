@@ -242,6 +242,8 @@ You can also use `testcontainers.WithAdditionalLifecycleHooks`, which appends th
 
 #### Wait Strategies
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+
 If you need to set a different wait strategy for the container, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy.
 
 !!!info
@@ -336,15 +338,19 @@ In the case you need to retrieve the network name, you can use the `Networks(ctx
 
 #### Docker type modifiers
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+
 If you need an advanced configuration for the container, you can leverage the following Docker type modifiers:
 
 - `testcontainers.WithConfigModifier`
 - `testcontainers.WithHostConfigModifier`
 - `testcontainers.WithEndpointSettingsModifier`
 
-Please read the [Create containers: Advanced Settings](/features/creating_container.md#advanced-settings) documentation for more information.
+Please read the [Create containers: Advanced Settings](/features/creating_container#advanced-settings) documentation for more information.
 
 #### Customising the ContainerRequest
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 This option will merge the customized request into the module's own `ContainerRequest`.
 

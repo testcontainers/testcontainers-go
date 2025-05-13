@@ -1,38 +1,38 @@
 #### Generic Options
 
-- `WithImageSubstitutors` - Since v0.26.0
-- `WithImageMount` - Since v0.37.0
-- `WithEnv` - Since v0.29.0
-- `WithExposedPorts` - Since v0.37.0
-- `WithEntrypoint` - Since v0.37.0
-- `WithEntrypointArgs` - Since v0.37.0
-- `WithCmd` - Since v0.37.0
-- `WithCmdArgs` - Since v0.37.0
-- `WithLabels` - Since v0.37.0
-- `WithFiles` - Since v0.37.0
-- `WithMounts` - Since v0.37.0
-- `WithTmpfs` - Since v0.37.0
-- `WithHostPortAccess` - Since v0.31.0
-- `WithLogConsumers` - Since v0.28.0
-- `WithLogConsumerConfig` - Not yet released
-- `WithLogger` - Since v0.29.0
-- `WithAlwaysPull` - Not yet released
-- `WithImagePlatform` - Not yet released
-- `WithLifecycleHooks` - Not yet released
-- `WithAdditionalLifecycleHooks` - Not yet released
-- `WithWaitStrategy`
-- `WithWaitStrategyAndDeadline`
-- `WithStartupCommand` - Since v0.25.0
-- `WithAfterReadyCommand` - Since v0.28.0
-- `WithDockerfile` - Since v0.37.0
-- `WithNetwork` - Since v0.27.0
-- `WithNetworkByName` - Not yet released
-- `WithBridgeNetwork` - Not yet released
-- `WithNewNetwork` - Since v0.27.0
-- `WithConfigModifier`
-- `WithHostConfigModifier`
-- `WithEndpointSettingsModifier`
-- `CustomizeRequest`
-- `WithReuseByName` - Since v0.37.0
-- `WithName` - Not yet released
-- `WithNoStart` - Not yet released
+- `WithImageSubstitutors` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.26.0"><span class="tc-version">:material-tag: v0.26.0</span></a>
+- `WithImageMount` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- `WithEnv` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
+- `WithExposedPorts` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- `WithEntrypoint` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- `WithEntrypointArgs` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- `WithCmd` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- `WithCmdArgs` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- `WithLabels` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- `WithFiles` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- `WithMounts` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- `WithTmpfs` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- `WithHostPortAccess` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.31.0"><span class="tc-version">:material-tag: v0.31.0</span></a>
+- `WithLogConsumers` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
+- `WithLogConsumerConfig` - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- `WithLogger` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
+- `WithAlwaysPull` - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- `WithImagePlatform` - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- `WithLifecycleHooks` - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- `WithAdditionalLifecycleHooks` - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- `WithWaitStrategy` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+- `WithWaitStrategyAndDeadline` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+- `WithStartupCommand` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.25.0"><span class="tc-version">:material-tag: v0.25.0</span></a>
+- `WithAfterReadyCommand` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
+- `WithDockerfile` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- `WithNetwork` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
+- `WithNetworkByName` - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- `WithBridgeNetwork` - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- `WithNewNetwork` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
+- `WithConfigModifier` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+- `WithHostConfigModifier` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+- `WithEndpointSettingsModifier` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+- `CustomizeRequest` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+- `WithReuseByName` - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- `WithName` - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- `WithNoStart` - Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
