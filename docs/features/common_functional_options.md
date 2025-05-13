@@ -1,4 +1,4 @@
-#### Image Substitutions
+#### WithImageSubstitutors
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.26.0"><span class="tc-version">:material-tag: v0.26.0</span></a>
 
@@ -232,15 +232,19 @@ If you need to pull the image before starting the container, you can use `testco
 
 If you need to set the platform for a container, you can use `testcontainers.WithImagePlatform(platform string)`.
 
-#### LifecycleHooks
+#### WithLifecycleHooks
 
 - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 If you need to set the lifecycle hooks for the container, you can use `testcontainers.WithLifecycleHooks`, which replaces the existing lifecycle hooks with the new ones.
 
+#### WithAdditionalLifecycleHooks
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
 You can also use `testcontainers.WithAdditionalLifecycleHooks`, which appends the new lifecycle hooks to the existing ones.
 
-#### Wait Strategies
+#### WithWaitStrategy
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
@@ -249,9 +253,13 @@ If you need to set a different wait strategy for the container, you can use `tes
 !!!info
     The default deadline for the wait strategy is 60 seconds.
 
+#### WithWaitStrategyAndDeadline
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+
 At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
 
-#### Startup Commands
+#### WithStartupCommand
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.25.0"><span class="tc-version">:material-tag: v0.25.0</span></a>
 
@@ -267,7 +275,7 @@ It also exports an `Executable` interface, defining the following methods:
 
 You could use this feature to run a custom script, or to run a command that is not supported by the module right after the container is started.
 
-#### Ready Commands
+#### WithAfterReadyCommand
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
 
@@ -280,7 +288,7 @@ It leverages the `Executable` interface to represent the command and positional 
 
 You could use this feature to run a custom script, or to run a command that is not supported by the module right after the container is ready.
 
-#### Build from Dockerfile
+#### WithDockerfile
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
@@ -336,19 +344,25 @@ If you want to attach your containers to a throw-away network, you can use the `
 
 In the case you need to retrieve the network name, you can use the `Networks(ctx)` method of the `Container` interface, right after it's running, which returns a slice of strings with the names of the networks where the container is attached.
 
-#### Docker type modifiers
+#### WithConfigModifier
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
-If you need an advanced configuration for the container, you can leverage the following Docker type modifiers:
+If you need an advanced configuration for the container, modifying the container's configuration, you can use the `testcontainers.WithConfigModifier` option, which gives access to the underlying Docker's Config type.
 
-- `testcontainers.WithConfigModifier`
-- `testcontainers.WithHostConfigModifier`
-- `testcontainers.WithEndpointSettingsModifier`
+#### WithHostConfigModifier
 
-Please read the [Create containers: Advanced Settings](/features/creating_container#advanced-settings) documentation for more information.
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
-#### Customising the ContainerRequest
+If you need an advanced configuration for the container, modifying the container's host configuration, you can use the `testcontainers.WithHostConfigModifier` option, which gives access to the underlying Docker's HostConfig type.
+
+#### WithEndpointSettingsModifier
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+
+If you need an advanced configuration for the container, modifying the container's endpoint settings, you can use the `testcontainers.WithEndpointSettingsModifier` option, which gives access to the underlying Docker's EndpointSettings type.
+
+#### CustomizeRequest
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
