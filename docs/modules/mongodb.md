@@ -1,6 +1,6 @@
 # MongoDB
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.23.0"><span class="tc-version">:material-tag: v0.23.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.23.0"><span class="tc-version">:material-tag: v0.23.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/mongodb
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
@@ -50,7 +50,7 @@ When starting the MongoDB container, you can pass options in a variadic way to c
 
 #### WithUsername
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
 
 This functional option sets the initial username to be created when the container starts.
 It is used in conjunction with `WithPassword` to set a username and its password, creating the specified user with superuser power.
@@ -59,7 +59,7 @@ E.g. `testcontainers.WithUsername("mymongouser")`.
 
 #### WithPassword
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
 
 This functional option sets the initial password to be created when the container starts.
 It is used in conjunction with `WithUsername` to set a username and its password, setting the password for the superuser power.
@@ -68,7 +68,7 @@ E.g. `testcontainers.WithPassword("mymongopwd")`.
 
 #### WithReplicaSet
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.31.0"><span class="tc-version">:material-tag: v0.31.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.31.0"><span class="tc-version">:material-tag: v0.31.0</span></a>
 
 The `WithReplicaSet` functional option configures the container to run a single-node MongoDB replica set named `rs`. The MongoDB container will wait until the replica set is ready.
 

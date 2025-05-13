@@ -1,6 +1,6 @@
 # Socat
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 ## Introduction
 
@@ -29,7 +29,7 @@ go get github.com/testcontainers/testcontainers-go/modules/socat
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The Socat module exposes one entrypoint function to create the Socat container, and this function receives three parameters:
 
@@ -58,7 +58,7 @@ When starting the Socat container, you can pass options in a variadic way to con
 
 #### WithTarget
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The `WithTarget` function sets a single target for the Socat container, defined by the `Target` struct.
 This struct can be built using the the following functions:
@@ -80,7 +80,7 @@ The Socat container exposes the following methods:
 
 #### TargetURL
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The `TargetURL(port int)` method returns the URL for the exposed port of a target, nil if the port is not mapped.
 

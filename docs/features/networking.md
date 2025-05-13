@@ -4,7 +4,7 @@
 
 Apart from creating containers, `Testcontainers for Go` allows you to create networks. This is useful when you need to connect multiple containers to the same network.
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
 
 For that, please import the `testcontainers/network` package.
 
@@ -80,7 +80,7 @@ It is normally advisable to use `Host` and `MappedPort` together when constructi
 
 ## Exposing host ports to the container
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.31.0"><span class="tc-version">:material-tag: v0.31.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.31.0"><span class="tc-version">:material-tag: v0.31.0</span></a>
 
 In some cases it is necessary to make a network connection from a container to a socket that is listening on the host machine. Natively, Docker has limited support for this model across platforms. Testcontainers, however, makes this possible, allowing your code to access services running on the host machine.
 

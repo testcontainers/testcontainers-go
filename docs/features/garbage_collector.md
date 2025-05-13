@@ -21,7 +21,7 @@ The `Terminate` function can be customised with termination options to determine
 
 #### NewTerminateOptions
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.35.0"><span class="tc-version">:material-tag: v0.35.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.35.0"><span class="tc-version">:material-tag: v0.35.0</span></a>
 
 If you want to attach option to container termination, you can use the `testcontainers.NewTerminateOptions(ctx context.Context, opts ...TerminateOption) *TerminateOptions` option, which receives a TerminateOption as parameter, creating custom termination options to be passed on the container termination.
 

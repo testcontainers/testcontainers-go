@@ -1,6 +1,6 @@
 # NATS
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.24.0"><span class="tc-version">:material-tag: v0.24.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.24.0"><span class="tc-version">:material-tag: v0.24.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/nats
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
@@ -50,7 +50,7 @@ When starting the NATS container, you can pass options in a variadic way to conf
 
 #### Set username and password
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.24.0"><span class="tc-version">:material-tag: v0.24.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.24.0"><span class="tc-version">:material-tag: v0.24.0</span></a>
 
 If you need to set different credentials, you can use `WithUsername` and `WithPassword`
 options. By default, the username, the password are not set. To establish the connection with the NATS container:
@@ -61,7 +61,7 @@ options. By default, the username, the password are not set. To establish the co
 
 #### Cmd Arguments
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.24.0"><span class="tc-version">:material-tag: v0.24.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.24.0"><span class="tc-version">:material-tag: v0.24.0</span></a>
 
 It's possible to pass extra arguments to the NATS container using the `testcontainers.WithArgument` option. E.g. `nats.WithArgument("cluster_name", "c1")`.
 These arguments are passed to the NATS server when it starts, as part of the command line arguments of the entrypoint.
@@ -75,7 +75,7 @@ These arguments are passed to the NATS server when it starts, as part of the com
 
 #### Custom configuration file
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.35.0"><span class="tc-version">:material-tag: v0.35.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.35.0"><span class="tc-version">:material-tag: v0.35.0</span></a>
 
 It's possible to pass a custom config file to NATS container using `nats.WithConfigFile(strings.NewReader(config))`. The content of `io.Reader` is passed as a `-config /etc/nats.conf` arguments to an entrypoint. 
 
@@ -90,7 +90,7 @@ The NATS container exposes the following methods:
 
 #### ConnectionString
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.24.0"><span class="tc-version">:material-tag: v0.24.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.24.0"><span class="tc-version">:material-tag: v0.24.0</span></a>
 
 This method returns the connection string to connect to the NATS container, using the default `4222` port.
 
@@ -100,7 +100,7 @@ This method returns the connection string to connect to the NATS container, usin
 
 #### MustConnectionString
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
 
 Exactly like `ConnectionString`, but it panics if an error occurs, returning just a string.
 

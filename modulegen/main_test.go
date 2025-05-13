@@ -362,7 +362,7 @@ func assertModuleDocContent(t *testing.T, module context.TestcontainersModule, m
 
 	data := sanitiseContent(content)
 	require.Equal(t, "# "+title, data[0])
-	require.Equal(t, `Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>`, data[2])
+	require.Equal(t, `Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>`, data[2])
 	require.Equal(t, "## Introduction", data[4])
 	require.Equal(t, "The Testcontainers module for "+title+".", data[6])
 	require.Equal(t, "## Adding this module to your project dependencies", data[8])
