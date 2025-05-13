@@ -56,6 +56,8 @@ The MockServer container exposes the following methods:
 
 #### URL
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
+
 The `URL` method returns the url string to connect to the MockServer container.
 It returns a string with the format `http://<host>:<port>`.
 

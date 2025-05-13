@@ -56,6 +56,8 @@ The Vearch container exposes the following methods:
 
 #### REST Endpoint
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+
 This method returns the REST endpoint of the Vearch container, using the default `9001` port.
 
 <!--codeinclude-->

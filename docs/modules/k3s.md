@@ -57,6 +57,8 @@ When starting the K3s container, you can pass options in a variadic way to confi
 
 ## WithManifest
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
+
 The `WithManifest` option loads a manifest obtained from a local file into the cluster. K3s applies it automatically during the startup process
 
 ```golang
@@ -77,6 +79,8 @@ The K3s container exposes the following methods:
 
 #### GetKubeConfig
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.21.0"><span class="tc-version">:material-tag: v0.21.0</span></a>
+
 The `GetKubeConfig` method returns the K3s cluster's `kubeconfig`, including the server URL, to be used for connecting
 to the Kubernetes Rest Client API using a Kubernetes client. It'll be returned in the format of `[]bytes`.
 
@@ -85,6 +89,8 @@ to the Kubernetes Rest Client API using a Kubernetes client. It'll be returned i
 <!--/codeinclude-->
 
 #### LoadImages
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.25.0"><span class="tc-version">:material-tag: v0.25.0</span></a>
 
 The `LoadImages` method loads a list of images into the kubernetes cluster and makes them available to pods.
 

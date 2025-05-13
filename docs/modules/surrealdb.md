@@ -50,6 +50,8 @@ When starting the SurrealDB container, you can pass options in a variadic way to
 
 #### Set username and password
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
+
 If you need to set different credentials, you can use `WithUsername` and `WithPassword` options.
 
 !!!info
@@ -57,13 +59,19 @@ If you need to set different credentials, you can use `WithUsername` and `WithPa
 
 #### WithAuthentication
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
+
 If you need to enable authentication, you can use `WithAuthentication` option. By default, it is disabled.
 
 #### WithStrictMode
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
+
 If you need to enable the strict mode for SurrealDB, you can use `WithStrictMode` option. By default, it is disabled.
 
 ### WithAllowAllCaps
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
 
 If you need to enable the all caps mode for SurrealDB, you can use `WithAllowAllCaps` option. By default, it is disabled.
 
@@ -74,6 +82,8 @@ If you need to enable the all caps mode for SurrealDB, you can use `WithAllowAll
 The SurrealDB container exposes the following methods:
 
 #### URL
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
 
 This method returns the websocket URL string to connect to the SurrealDB API, using the `8000` port.
 

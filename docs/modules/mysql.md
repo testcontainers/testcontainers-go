@@ -49,10 +49,11 @@ In example: `Run(context.Background(), "mysql:8.0.36")`.
 When starting the MySQL container, you can pass options in a variadic way to configure it.
 
 !!!tip
-
     You can find all the available configuration and environment variables for the MySQL Docker image on [Docker Hub](https://hub.docker.com/_/mysql).
 
 #### Set username, password and database name
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 If you need to set a different database, and its credentials, you can use `WithUsername`, `WithPassword`, `WithDatabase`
 options.
@@ -60,7 +61,9 @@ options.
 !!!info
     The default values for the username is `root`, for password is `test` and for the default database name is `test`.
 
-#### Init Scripts
+#### WithInitScripts
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 If you would like to perform DDL or DML operations in the MySQL container, add one or more `*.sql`, `*.sql.gz`, or `*.sh`
 scripts to the container request, using the `WithScripts(scriptPaths ...string)`. Those files will be copied under `/docker-entrypoint-initdb.d`.
@@ -69,7 +72,9 @@ scripts to the container request, using the `WithScripts(scriptPaths ...string)`
 [Example of Init script](../../modules/mysql/testdata/schema.sql)
 <!--/codeinclude-->
 
-#### Custom configuration
+#### WithConfigFile
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 If you need to set a custom configuration, you can use `WithConfigFile` option to pass the path to a custom configuration file.
 
@@ -79,9 +84,17 @@ If you need to set a custom configuration, you can use `WithConfigFile` option t
 
 #### ConnectionString
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+
 This method returns the connection string to connect to the MySQL container, using the default `3306` port.
 It's possible to pass extra parameters to the connection string, e.g. `tls=skip-verify` or `application_name=myapp`, in a variadic way.
 
 <!--codeinclude-->
 [Get connection string](../../modules/mysql/mysql_test.go) inside_block:connectionString
 <!--/codeinclude-->
+
+#### MustConnectionString
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
+
+Same as `ConnectionString`, but panics if an error occurs while getting the connection string.

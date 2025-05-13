@@ -53,7 +53,7 @@ In example: `Run(context.Background(), "mcr.microsoft.com/mssql/server:2022-RTM-
 
 When starting the MS SQL Server container, you can pass options in a variadic way to configure it.
 
-#### Init Scripts
+#### WithInitSQL
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
@@ -70,11 +70,15 @@ This will:
 1. Copy each file into the container.
 2. Execute them using `sqlcmd` after the container is ready.
 
-#### End User License Agreement
+#### WithAcceptEula
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
 
 Due to licensing restrictions you are required to explicitly accept an EULA for this container image. To do so, you must use the function `mssql.WithAcceptEula()`. Failure to include this will result in the container failing to start.
 
-#### Password
+#### WithPassword
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
 
 If you need to set a different MS SQL Server password, you can use `mssql.WithPassword` with a valid password for MS SQL Server. E.g. `mssql.WithPassword("SuperStrong@Passw0rd")`.
 
@@ -88,6 +92,8 @@ If you need to set a different MS SQL Server password, you can use `mssql.WithPa
 The MS SQL Server container exposes the following methods:
 
 #### ConnectionString
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
 
 This method returns the connection string to connect to the Microsoft SQL Server container, using the default `1433` port.
 It's possible to pass extra parameters to the connection string, e.g. `encrypt=false` or `TrustServerCertificate=true`, in a variadic way.

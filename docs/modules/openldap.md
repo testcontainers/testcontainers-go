@@ -56,6 +56,8 @@ The OpenLDAP container exposes the following methods:
 
 #### ConnectionString
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
+
 This method returns the connection string to connect to the OpenLDAP container, using the `1389` port.
 
 <!--codeinclude-->
@@ -63,6 +65,8 @@ This method returns the connection string to connect to the OpenLDAP container, 
 <!--/codeinclude-->
 
 #### LoadLdif
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
 
 This method loads an ldif file in the OpenLDAP server.
 It returns and error if there is any problem with the ldif file loading process.
@@ -72,6 +76,8 @@ It returns and error if there is any problem with the ldif file loading process.
 <!--/codeinclude-->
 
 #### Initial Ldif
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
 
 If you would like to load an ldif at the initialization of the openldap container, you can use `WithInitialLdif` function.
 The file will be copied after the container is started and loaded in openldap.

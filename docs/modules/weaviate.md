@@ -56,13 +56,25 @@ The Weaviate container exposes the following methods:
 
 #### HTTP Host Address
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
+
 This method returns the Schema and Host for the Weaviate container, using the default `8080` port.
 
 !!!info
     At the moment, the Weaviate module only supports the HTTP schema.
 
 <!--codeinclude-->
-[HTTP Host Address](../../modules/weaviate/weaviate_test.go) inside_block:httpHostAddress
+[HTTP Host Address](../../modules/weaviate/examples_test.go) inside_block:httpHostAddress
+<!--/codeinclude-->
+
+#### gRPC Host Address
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
+
+This method returns the Schema and Host for the Weaviate container, using the default `443` port.
+
+<!--codeinclude-->
+[gRPC Host Address](../../modules/weaviate/examples_test.go) inside_block:grpcHostAddress
 <!--/codeinclude-->
 
 ## Examples

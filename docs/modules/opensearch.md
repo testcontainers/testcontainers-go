@@ -50,6 +50,8 @@ When starting the OpenSearch container, you can pass options in a variadic way t
 
 #### User and password
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
+
 If you need to set a different password to request authorization when performing HTTP requests to the container, you can use the `WithUsername` and `WithPassword` options. By default, the username is set to `admin`, and the password is set to `admin`.
 
 <!--codeinclude-->
@@ -63,6 +65,8 @@ If you need to set a different password to request authorization when performing
 The OpenSearch container exposes the following methods:
 
 #### Address
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
 
 The `Address` method returns the location where the OpenSearch container is listening.
 It returns a string with the format `http://<host>:<port>`.

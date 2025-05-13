@@ -51,21 +51,27 @@ When starting the Redis container, you can pass options in a variadic way to con
 !!!tip
     You can find all the available configuration and environment variables for the Redis Docker image on [Docker Hub](https://hub.docker.com/_/redis).
 
-#### Snapshotting
+#### WithSnapshotting
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 By default Redis saves snapshots of the dataset on disk, in a binary file called dump.rdb. You can configure Redis to have it save the dataset every `N` seconds if there are at least `M` changes in the dataset. E.g. `WithSnapshotting(10, 1)`.
 
 !!!tip
     Please check [Redis docs on persistence](https://redis.io/docs/management/persistence/#snapshotting) for more information.
 
-#### Log Level
+#### WithLogLevel
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 By default Redis produces a log message to the standard Redis log, the format accepts printf-alike specifiers, while level is a string describing the log level to use when emitting the log, and must be one of the following: `LogLevelDebug`, `LogLevelVerbose`, `LogLevelNotice`, `LogLevelWarning`. E.g. `WithLogLevel(LogLevelDebug)`. If the specified log level is invalid, verbose is used by default.
 
 !!!tip
     Please check [Redis docs on logging](https://redis.io/docs/reference/modules/modules-api-ref/#redismodule_log) for more information.
 
-#### Redis configuration
+#### WithConfigFile
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 In the case you have a custom config file for Redis, it's possible to copy that file into the container before it's started. E.g. `WithConfigFile(filepath.Join("testdata", "redis7.conf"))`.
 
@@ -85,6 +91,8 @@ The module automatically generates three certificates, a CA certificate, a clien
 ### Container Methods
 
 #### ConnectionString
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 This method returns the connection string to connect to the Redis container, using the default `6379` port, and `redis` schema.
 

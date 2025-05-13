@@ -52,7 +52,9 @@ In example: `Run(context.Background(), "apache/activemq-artemis:2.30.0")`.
 
 When starting the Artemis container, you can pass options in a variadic way to configure it.
 
-#### Credentials
+#### WithCredentials
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.23.0"><span class="tc-version">:material-tag: v0.23.0</span></a>
 
 If you need to change the default admin credentials (i.e. `artemis:artemis`) use `WithCredentials`.
 
@@ -60,7 +62,9 @@ If you need to change the default admin credentials (i.e. `artemis:artemis`) use
 [With credentials](../../modules/artemis/artemis_test.go) inside_block:withCredentials
 <!--/codeinclude-->
 
-#### Enable Anonymous login
+#### WithAnonymousLogin
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.23.0"><span class="tc-version">:material-tag: v0.23.0</span></a>
 
 If you need to enable anonymous logins (which are disabled by default) use `WithAnonymousLogin`.
 
@@ -68,7 +72,9 @@ If you need to enable anonymous logins (which are disabled by default) use `With
 [With Anonymous Login](../../modules/artemis/artemis_test.go) inside_block:withAnonymousLogin
 <!--/codeinclude-->
 
-#### Custom Arguments
+#### WithExtraArgs
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.23.0"><span class="tc-version">:material-tag: v0.23.0</span></a>
 
 If you need to pass custom arguments to the `artemis create` command, use `WithExtraArgs`.
 The default is `--http-host 0.0.0.0 --relax-jolokia`.
@@ -89,6 +95,8 @@ The Artemis container exposes the following methods:
 
 #### User
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.23.0"><span class="tc-version">:material-tag: v0.23.0</span></a>
+
 User returns the administrator username.
 
 <!--codeinclude-->
@@ -96,6 +104,8 @@ User returns the administrator username.
 <!--/codeinclude-->
 
 #### Password
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.23.0"><span class="tc-version">:material-tag: v0.23.0</span></a>
 
 Password returns the administrator password.
 
@@ -105,6 +115,8 @@ Password returns the administrator password.
 
 #### BrokerEndpoint
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.23.0"><span class="tc-version">:material-tag: v0.23.0</span></a>
+
 BrokerEndpoint returns the host:port for the combined protocols endpoint.
 
 <!--codeinclude-->
@@ -112,6 +124,8 @@ BrokerEndpoint returns the host:port for the combined protocols endpoint.
 <!--/codeinclude-->
 
 #### ConsoleURL
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.23.0"><span class="tc-version">:material-tag: v0.23.0</span></a>
 
 ConsoleURL returns the URL for the management console.
 

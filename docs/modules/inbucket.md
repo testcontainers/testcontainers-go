@@ -56,6 +56,8 @@ The Inbucket container exposes the following methods:
 
 #### SmtpConnection
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
+
 This method returns the connection string to connect to the Inbucket container SMTP service, using the `2500` port.
 
 <!--codeinclude-->
@@ -63,6 +65,8 @@ This method returns the connection string to connect to the Inbucket container S
 <!--/codeinclude-->
 
 #### WebInterface
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
 
 This method returns the connection string to connect to the Inbucket container web interface, using the `9000` port.
 

@@ -84,6 +84,8 @@ When starting the Couchbase container, you can pass options in a variadic way to
 
 #### Credentials
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+
 If you need to change the default credentials for the admin user, you can use `WithAdminCredentials(user, password)` with a valid username and password.
 When the password has less than 6 characters, the container won't be created and the `New` function will throw an error.
 
@@ -91,6 +93,8 @@ When the password has less than 6 characters, the container won't be created and
 	In the case this optional function is not called, the default username is `Administrator` and the default password is `password`.
 
 #### Buckets
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 When creating a new Couchbase container, you can create one or more buckets. The module exposes a `WithBuckets` optional function that accepts a slice of buckets to be created.
 To create a new bucket, the module also exposes a `NewBucket` function, where you can pass the bucket name.
@@ -108,6 +112,8 @@ It's possible to customize a newly created bucket, using the following options:
 
 #### Index Storage
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+
 It's possible to set the storage mode to be used for all global secondary indexes in the cluster.
 
 !!!warning
@@ -118,6 +124,8 @@ It's possible to set the storage mode to be used for all global secondary indexe
 <!--/codeinclude-->
 
 #### Services
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 By default, the container will start with the following services: `kv`, `n1ql`, `fts` and `index`.
 
@@ -131,13 +139,19 @@ By default, the container will start with the following services: `kv`, `n1ql`, 
 
 #### ConnectionString
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+
 The `ConnectionString` method returns the connection string to connect to the Couchbase container instance. 
 It returns a string with the format `couchbase://<host>:<port>`.
 
 #### Username
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+
 The `Username` method returns the username of the Couchbase administrator. 
 
 #### Password
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 The `Password` method returns the password of the Couchbase administrator.

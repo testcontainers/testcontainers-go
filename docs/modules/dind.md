@@ -53,6 +53,8 @@ The DinD container exposes the following methods:
 
 #### Host
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
+
 The `Host` method returns the DinD URL, to be used for connecting
 to the Docker API using a Docker client. It'll be returned in the format of `string`.
 
@@ -62,6 +64,8 @@ to the Docker API using a Docker client. It'll be returned in the format of `str
 <!--/codeinclude-->
 
 #### LoadImage
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 The `LoadImage` method loads an image into the docker in docker daemon.
 

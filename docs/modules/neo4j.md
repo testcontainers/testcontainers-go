@@ -60,6 +60,9 @@ When starting the Neo4j container, you can pass options in a variadic way to con
 
 #### Logger
 
+- DEPRECATED: Use [testcontainers.WithLogger](/features/creating_container/#withlogger) instead.
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+
 This option sets a custom logger to be used by the container. Consider calling this before other `With` functions as these may generate logs.
 
 !!!info
@@ -71,12 +74,16 @@ This option sets a custom logger to be used by the container. Consider calling t
 
 #### Authentication
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+
 By default, the Neo4j container will be started with authentication disabled. If you need to enable authentication, you can
-use the `WithAuthentication(pwd string)` option.
+use the `WithAdminPassword(pwd string)` option.
 
 By default, the container will not use authentication, automatically prepending the `WithoutAuthentication` option to the options list.
 
-#### Plugins
+#### WithLabsPlugins
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 By default, the Neo4j container will start without any Labs plugins enabled, but you can enable them using the `WithLabsPlugin` optional function.
 
@@ -90,7 +97,9 @@ The list of available plugins is:
 [Labs plugins](../../modules/neo4j/config.go) inside_block:labsPlugins
 <!--/codeinclude-->
 
-#### Settings
+#### WithNeo4jSettings
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 It's possible to add Neo4j a single configuration setting to the container.
 The setting can be added as in the official Neo4j configuration, the function automatically translates the setting
@@ -111,6 +120,8 @@ To pass multiple settings at once, the `WithNeo4jSettings` function is provided.
 ### Container Methods
 
 #### Bolt URL
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 The `BoltURL` method returns the connection string to connect to the Neo4j container instance using the Bolt port.
 It returns a string with the format `neo4j://<host>:<port>`.

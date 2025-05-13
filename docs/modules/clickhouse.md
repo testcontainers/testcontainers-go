@@ -58,13 +58,17 @@ When starting the ClickHouse container, you can pass options in a variadic way t
 
 #### Set username, password and database name
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.23.0"><span class="tc-version">:material-tag: v0.23.0</span></a>
+
 If you need to set a different database, and its credentials, you can use `WithUsername`, `WithPassword`, `WithDatabase`
 options. E.g. `WithUsername("user")`, `WithPassword("password")`, `WithDatabase("db")`.
 
 !!!info
     The default values for the username is `default`, for password is `clickhouse` and for the default database name is `clickhouse`.
 
-#### Init Scripts
+#### WithInitScripts
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.23.0"><span class="tc-version">:material-tag: v0.23.0</span></a>
 
 If you would like to do additional initialization in the ClickHouse container, add one or more `*.sql`, `*.sql.gz`, or `*.sh` scripts to the container request.
 Those files will be copied after the container is created but before it's started under `/docker-entrypoint-initdb.d`. According to ClickHouse Docker image,
@@ -81,6 +85,8 @@ initialization before starting the service.
 
 #### Zookeeper
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
+
 Clusterized ClickHouse requires to start Zookeeper and pass link to it via `config.xml`.
 
 <!--codeinclude-->
@@ -90,7 +96,9 @@ Clusterized ClickHouse requires to start Zookeeper and pass link to it via `conf
 !!!warning
     The `WithZookeeper` option will `panic` if it's not possible to create the Zookeeper config file.
 
-#### Custom configuration
+#### WithConfigFile
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.23.0"><span class="tc-version">:material-tag: v0.23.0</span></a>
 
 If you need to set a custom configuration, the module provides the `WithConfigFile` option to pass the path to a custom configuration file in XML format.
 
@@ -112,6 +120,8 @@ The ClickHouse container exposes the following methods:
 
 #### ConnectionHost
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.23.0"><span class="tc-version">:material-tag: v0.23.0</span></a>
+
 This method returns the host and port of the ClickHouse container, using the default, native `9000/tcp` port. E.g. `localhost:9000`
 
 <!--codeinclude-->
@@ -119,6 +129,8 @@ This method returns the host and port of the ClickHouse container, using the def
 <!--/codeinclude-->
 
 #### ConnectionString
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.23.0"><span class="tc-version">:material-tag: v0.23.0</span></a>
 
 This method returns the dsn connection string to connect to the ClickHouse container, using the default, native `9000/tcp` port obtained from the `ConnectionHost` method.
 It's possible to pass extra parameters to the connection string, e.g. `dial_timeout=300ms` or `skip_verify=false`, in a variadic way.

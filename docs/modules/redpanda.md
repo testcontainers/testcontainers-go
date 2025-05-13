@@ -142,6 +142,13 @@ E.g. `WithTLS([]byte(cert), []byte(key))`.
 config file, which is particularly useful for configs requiring a restart when otherwise applied to a running Redpanda instance.
 E.g. `WithBootstrapConfig("config_key", config_value)`, where `config_value` is of type `any`.
 
+#### WithAdminAPIAuthentication
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
+
+Enables Admin API Authentication by setting [`admin_api_require_auth`](https://docs.redpanda.com/current/reference/properties/cluster-properties/#admin_api_require_auth) cluster configuration property to `true`. 
+It also configures a bootstrap superuser account via [`RP_BOOTSTRAP_USER`](https://docs.redpanda.com/current/deploy/deployment-option/self-hosted/manual/production/production-deployment/#bootstrap-a-user-account) environment variable.
+
 {% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
@@ -182,8 +189,3 @@ is an HTTP-based API and thus the returned format will be: http://host:port.
 <!--codeinclude-->
 [Get admin API address](../../modules/redpanda/redpanda_test.go) inside_block:adminAPIAddress
 <!--/codeinclude-->
-
-#### WithAdminAPIAuthentication
-
-Enables Admin API Authentication by setting [`admin_api_require_auth`](https://docs.redpanda.com/current/reference/properties/cluster-properties/#admin_api_require_auth) cluster configuration property to `true`. 
-It also configures a bootstrap superuser account via [`RP_BOOTSTRAP_USER`](https://docs.redpanda.com/current/deploy/deployment-option/self-hosted/manual/production/production-deployment/#bootstrap-a-user-account) environment variable.

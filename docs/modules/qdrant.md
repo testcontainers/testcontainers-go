@@ -56,6 +56,8 @@ The Qdrant container exposes the following methods:
 
 #### REST Endpoint
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
+
 This method returns the REST endpoint of the Qdrant container, using the default `6333` port.
 
 <!--codeinclude-->
@@ -64,6 +66,8 @@ This method returns the REST endpoint of the Qdrant container, using the default
 
 #### Web UI Endpoint
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
+
 This method returns the Web UI endpoint of the Qdrant container (`/dashboard`), using the default `6333` port.
 
 <!--codeinclude-->
@@ -71,6 +75,8 @@ This method returns the Web UI endpoint of the Qdrant container (`/dashboard`), 
 <!--/codeinclude-->
 
 #### gRPC Endpoint
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
 
 This method returns the gRPC endpoint of the Qdrant container, using the default `6334` port.
 

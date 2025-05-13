@@ -106,6 +106,8 @@ The Ollama container exposes the following methods:
 
 #### ConnectionString
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
+
 This method returns the connection string to connect to the Ollama container, using the default `11434` port.
 
 <!--codeinclude-->
@@ -113,6 +115,8 @@ This method returns the connection string to connect to the Ollama container, us
 <!--/codeinclude-->
 
 #### Commit
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
 
 This method commits the container to a new image, returning the new image ID.
 It should be used after a model has been pulled and loaded into the container in order to create a new image with the model,

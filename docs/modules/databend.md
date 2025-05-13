@@ -47,6 +47,8 @@ When starting the Databend container, you can pass options in a variadic way to 
 
 #### Set username, password
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.34.0"><span class="tc-version">:material-tag: v0.34.0</span></a>
+
 If you need to set a different user/password/database, you can use `WithUsername`, `WithPassword` options.
 
 !!!info
@@ -60,6 +62,8 @@ The Databend container exposes the following methods:
 
 #### ConnectionString
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.34.0"><span class="tc-version">:material-tag: v0.34.0</span></a>
+
 This method returns the connection string to connect to the Databend container, using the default `8000` port.
 It's possible to pass extra parameters to the connection string, e.g. `sslmode=disable`.
 
@@ -68,5 +72,7 @@ It's possible to pass extra parameters to the connection string, e.g. `sslmode=d
 <!--/codeinclude-->
 
 #### MustGetConnectionString
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.34.0"><span class="tc-version">:material-tag: v0.34.0</span></a>
 
 `MustConnectionString` panics if the address cannot be determined.

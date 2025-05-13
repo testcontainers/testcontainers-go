@@ -50,6 +50,8 @@ When starting the Consul container, you can pass options in a variadic way to co
 
 #### Configuration File
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
+
 If you need to customize the behavior for the deployed node you can use either `WithConfigString(config string)` or `WithConfigFile(configPath string)`.
 The configuration has to be in JSON format and will be loaded at the node startup.
 
@@ -60,6 +62,8 @@ The configuration has to be in JSON format and will be loaded at the node startu
 The Consul container exposes the following method:
 
 #### ApiEndpoint
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
 
 This method returns the connection string to connect to the Consul container API, using the default `8500` port.
 

@@ -54,7 +54,9 @@ In example: `Run(context.Background(), "apachepulsar/pulsar:2.10.2")`.
 
 When starting the Pulsar container, you can pass options in a variadic way to configure it.
 
-#### Pulsar Configuration
+#### WithPulsarEnv
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.19.0"><span class="tc-version">:material-tag: v0.19.0</span></a>
 
 If you need to set Pulsar configuration variables you can use the `WithPulsarEnv` to set Pulsar environment variables: the `PULSAR_PREFIX_` prefix will be automatically added for you.
 
@@ -66,7 +68,9 @@ For example, if you want to enable `brokerDeduplicationEnabled`:
 
 It will result in the `PULSAR_PREFIX_brokerDeduplicationEnabled=true` environment variable being set in the container request.
 
-#### Pulsar IO
+#### WithFunctionsWorker
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.19.0"><span class="tc-version">:material-tag: v0.19.0</span></a>
 
 If you need to test Pulsar IO framework you can enable the Pulsar Functions Worker with the `WithFunctionsWorker` option:
 
@@ -74,7 +78,9 @@ If you need to test Pulsar IO framework you can enable the Pulsar Functions Work
 [Create a Pulsar container with functions worker](../../modules/pulsar/pulsar_test.go) inside_block:withFunctionsWorker
 <!--/codeinclude-->
 
-#### Pulsar Transactions
+#### WithTransactions
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.19.0"><span class="tc-version">:material-tag: v0.19.0</span></a>
 
 If you need to test Pulsar Transactions you can enable the transactions feature:
 
@@ -90,11 +96,15 @@ Once you have a Pulsar container, then you can retrieve the broker and the admin
 
 #### Admin URL
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.19.0"><span class="tc-version">:material-tag: v0.19.0</span></a>
+
 <!--codeinclude-->
 [Get admin url](../../modules/pulsar/pulsar_test.go) inside_block:getAdminURL
 <!--/codeinclude-->
 
 #### Broker URL
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.19.0"><span class="tc-version">:material-tag: v0.19.0</span></a>
 
 <!--codeinclude-->
 [Get broker url](../../modules/pulsar/pulsar_test.go) inside_block:getBrokerURL

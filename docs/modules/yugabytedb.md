@@ -49,11 +49,15 @@ When starting the yugabyteDB container, you can pass options in a variadic way t
 
 #### Initial Database
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.34.0"><span class="tc-version">:material-tag: v0.34.0</span></a>
+
 By default the yugabyteDB container will start with a database named `yugabyte` and the default credentials `yugabyte` and `yugabyte`.
 
 If you need to set a different database, and its credentials, you can use the `WithDatabaseName(dbName string)`, `WithDatabaseUser(dbUser string)` and `WithDatabasePassword(dbPassword string)` options.
 
 #### Initial Cluster Configuration
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.34.0"><span class="tc-version">:material-tag: v0.34.0</span></a>
 
 By default the yugabyteDB container will start with a cluster keyspace named `yugabyte` and the default credentials `yugabyte` and `yugabyte`.
 
@@ -66,6 +70,8 @@ If you need to set a different cluster keyspace, and its credentials, you can us
 The yugabyteDB container exposes the following methods:
 
 #### YSQLConnectionString
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.34.0"><span class="tc-version">:material-tag: v0.34.0</span></a>
 
 This method returns the connection string for the yugabyteDB container when using
 the YSQL query language.

@@ -15,7 +15,8 @@ go get github.com/testcontainers/testcontainers-go/modules/vault
 ```
 
 ## Usage example
-The **RunWithImage** function is the main entry point to create a new VaultContainer instance. 
+
+The **Run** function is the main entry point to create a new VaultContainer instance. 
 It takes a context and zero or more Option values to configure the container.
 
 <!--codeinclude-->
@@ -41,23 +42,27 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the Vault container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "hashicorp/vault:1.13.0")`.
 
-#### Token
+### Container Options
+
+When starting the Vault container, you can pass options in a variadic way to configure it.
+
+#### WithToken
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 If you need to add token authentication, you can use the `WithToken`.
 <!--codeinclude-->
 [Add token authentication](../../modules/vault/vault_test.go) inside_block:WithToken
 <!--/codeinclude-->
 
-#### Command
+#### WithInitCommand
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 If you need to run a vault command in the container, you can use the `WithInitCommand`.
 <!--codeinclude-->
@@ -69,6 +74,8 @@ If you need to run a vault command in the container, you can use the `WithInitCo
 ### Container Methods
 
 #### HttpHostAddress
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 This method returns the http host address of Vault, in the `http://<host>:<port>` format.
 

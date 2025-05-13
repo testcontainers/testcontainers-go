@@ -48,7 +48,9 @@ In example: `Run(context.Background(), "docker.elastic.co/elasticsearch/elastics
 
 When starting the Elasticsearch container, you can pass options in a variadic way to configure it.
 
-#### Elasticsearch password
+#### WithPassword
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.24.0"><span class="tc-version">:material-tag: v0.24.0</span></a>
 
 If you need to set a different password to request authorization when performing HTTP requests to the container, you can use the `WithPassword` option.  By default, the username is set to `elastic`, and the password is set to `changeme`.
 

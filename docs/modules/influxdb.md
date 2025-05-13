@@ -61,6 +61,8 @@ When starting the container, you can pass options in a variadic way to configure
 
 #### Set username, password and database name
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
+
 By default, authentication is disabled and no credentials are needed to use the Influx API against the test container.
 If you want to test with credentials, include the appropriate environment variables to do so.
 
@@ -78,7 +80,9 @@ The following options are available:
 - `WithV2AdminToken(token string)`:  Sets the admin token for the initial user.
 - `WithV2SecretsAdminToken(tokenFile string)`: Sets the admin token file path.
 
-#### Init Scripts
+#### WithInitDb
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
 
 While the InfluxDB image will obey the `/docker-entrypoint-initdb.d` directory as is common, that directory does not
 exist in the default image. Instead, you can use the `WithInitDb` option to pass a directory which will be copied to
@@ -91,7 +95,9 @@ This module looks for that and adds some extra tests for readiness, but these co
     The `WithInitDb` option receives a path to the parent directory of one named `docker-entrypoint-initdb.d`. This is
     because the `docker-entrypoint-initdb.d` directory is not present in the image.
 
-#### Custom configuration
+#### WithConfigFile
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
 
 If you need to set a custom configuration, you can use `WithConfigFile` option to pass the path to a custom configuration file.
 
@@ -100,6 +106,8 @@ If you need to set a custom configuration, you can use `WithConfigFile` option t
 ### Container Methods
 
 #### ConnectionUrl
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
 
 This function is a simple helper to return a URL to the container, using the default `8086` port.
 

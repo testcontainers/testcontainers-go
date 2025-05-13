@@ -50,6 +50,8 @@ When starting the Minio container, you can pass options in a variadic way to con
 
 #### Username and Password
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
+
 If you need to set different credentials, you can use the `WithUsername(user string)` and `WithPassword(pwd string)` options.
 
 {% include "../features/common_functional_options_list.md" %}
@@ -57,6 +59,8 @@ If you need to set different credentials, you can use the `WithUsername(user str
 ### Container Methods
 
 #### ConnectionString
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
 
 This method returns the connection string to connect to the Minio container, using the default `9000` port.
 

@@ -48,7 +48,9 @@ In example: `Run(context.Background(), "cassandra:4.1.3")`.
 
 When starting the Cassandra container, you can pass options in a variadic way to configure it.
 
-#### Init Scripts
+#### WithInitScripts
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.26.0"><span class="tc-version">:material-tag: v0.26.0</span></a>
 
 If you would like to do additional initialization in the Cassandra container, add one or more `*.cql` or `*.sh` scripts to the container request with the `WithInitScripts` function.
 Those files will be copied after the container is created but before it's started under root directory.
@@ -59,7 +61,9 @@ An example of a `*.sh` script that creates a keyspace and table is shown below:
 [Init script content](../../modules/cassandra/testdata/init.sh)
 <!--/codeinclude-->
 
-#### Database configuration
+#### WithConfigFile
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.26.0"><span class="tc-version">:material-tag: v0.26.0</span></a>
 
 In the case you have a custom config file for Cassandra, it's possible to copy that file into the container before it's started, using the `WithConfigFile(cfgPath string)` function.
 
@@ -73,6 +77,8 @@ In the case you have a custom config file for Cassandra, it's possible to copy t
 The Cassandra container exposes the following methods:
 
 #### ConnectionHost
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.26.0"><span class="tc-version">:material-tag: v0.26.0</span></a>
 
 This method returns the host and port of the Cassandra container, using the default, `9042/tcp` port. E.g. `localhost:9042`
 

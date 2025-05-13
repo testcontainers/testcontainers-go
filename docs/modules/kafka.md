@@ -57,10 +57,6 @@ The environment variables that are already set by default are:
 [Environment variables](../../modules/kafka/kafka.go) inside_block:envVars
 <!--/codeinclude-->
 
-### Container Options
-
-When starting the Kafka container, you can pass options in a variadic way to configure it.
-
 #### Init script
 
 The Kafka container will be started using a custom shell script:
@@ -69,6 +65,10 @@ The Kafka container will be started using a custom shell script:
 [Init script](../../modules/kafka/kafka.go) inside_block:starterScript
 <!--/codeinclude-->
 
+### Container Options
+
+When starting the Kafka container, you can pass options in a variadic way to configure it.
+
 {% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
@@ -76,6 +76,8 @@ The Kafka container will be started using a custom shell script:
 The Kafka container exposes the following methods:
 
 #### Brokers
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.24.0"><span class="tc-version">:material-tag: v0.24.0</span></a>
 
 The `Brokers(ctx)` method returns the Kafka brokers as a string slice, containing the host and the random port defined by Kafka's public port (`9093/tcp`).
 

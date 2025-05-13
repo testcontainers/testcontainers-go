@@ -56,6 +56,8 @@ The Milvus container exposes the following methods:
 
 #### ConnectionString
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
+
 This method returns the connection string to connect to the Milvus container, using the default `19530` port.
 
 <!--codeinclude-->

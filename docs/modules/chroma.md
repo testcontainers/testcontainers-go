@@ -61,6 +61,8 @@ The Chroma container exposes the following methods:
 
 #### REST Endpoint
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
+
 This method returns the REST endpoint of the Chroma container, using the default `8000` port.
 
 <!--codeinclude-->

@@ -80,6 +80,8 @@ The MongoDB container exposes the following methods:
 
 #### ConnectionString
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.23.0"><span class="tc-version">:material-tag: v0.23.0</span></a>
+
 The `ConnectionString` method returns the connection string to connect to the MongoDB container.
 It returns a string with the format `mongodb://<host>:<port>`.
 

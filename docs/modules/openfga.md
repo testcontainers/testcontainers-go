@@ -56,6 +56,8 @@ The OpenFGA container exposes the following methods:
 
 #### HttpEndpoint
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
+
 This method returns the HTTP endpoint to connect to the OpenFGA container, using the `8080` port.
 
 <!--codeinclude-->
@@ -64,9 +66,13 @@ This method returns the HTTP endpoint to connect to the OpenFGA container, using
 
 #### GrpcEndpoint
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
+
 This method returns the gRPC endpoint to connect to the OpenFGA container, using the `8081` port.
 
 #### Playground URL
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
 
 In case you want to interact with the openfga playground, please use the `PlaygroundEndpoint` method, using the `3000` port.
 
