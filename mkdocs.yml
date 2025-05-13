@@ -43,7 +43,6 @@ nav:
         - features/configuration.md
         - features/image_name_substitution.md
         - features/files_and_mounts.md
-        - features/creating_networks.md
         - features/networking.md
         - features/tls.md
         - features/test_session_semantics.md
