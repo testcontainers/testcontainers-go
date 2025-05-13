@@ -554,6 +554,54 @@ func TestReadTCConfig(t *testing.T) {
 					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
+			{
+				"auto-expose-ports/env-var/properties/0",
+				`tc.auto.expose.ports=true`,
+				map[string]string{
+					"TESTCONTAINERS_AUTO_EXPOSE_PORTS": "true",
+				},
+				Config{
+					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
+					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         true,
+				},
+			},
+			{
+				"auto-expose-ports/env-var/properties/1",
+				`tc.auto.expose.ports=false`,
+				map[string]string{
+					"TESTCONTAINERS_AUTO_EXPOSE_PORTS": "true",
+				},
+				Config{
+					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
+					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         true,
+				},
+			},
+			{
+				"auto-expose-ports/env-var/properties/2",
+				`tc.auto.expose.ports=true`,
+				map[string]string{
+					"TESTCONTAINERS_AUTO_EXPOSE_PORTS": "false",
+				},
+				Config{
+					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
+					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         false,
+				},
+			},
+			{
+				"auto-expose-ports/env-var/properties/3",
+				`tc.auto.expose.ports=false`,
+				map[string]string{
+					"TESTCONTAINERS_AUTO_EXPOSE_PORTS": "false",
+				},
+				Config{
+					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
+					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         false,
+				},
+			},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
