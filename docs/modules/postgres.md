@@ -117,7 +117,7 @@ ssl_key_file = '/tmp/testcontainers-go/postgres/server.key'
 
     The `SSLSettings` function will modify the container `entrypoint`. This is done so that key material copied over to the container is chowned by `postgres`. All other container arguments will be passed through to the original container entrypoint.
 
-### Snapshot/Restore with custom driver
+#### Snapshot/Restore with custom driver
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
