@@ -39,16 +39,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the Cassandra container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "cassandra:4.1.3")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the Cassandra container, you can pass options in a variadic way to configure it.
 
 #### Init Scripts
 
@@ -67,6 +65,8 @@ In the case you have a custom config file for Cassandra, it's possible to copy t
 
 !!!warning
     You should provide a valid Cassandra configuration file, otherwise the container will fail to start.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

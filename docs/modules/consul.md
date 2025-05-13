@@ -39,26 +39,28 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the Consul container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "hashicorp/consul:1.15")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the Consul container, you can pass options in a variadic way to configure it.
 
 #### Configuration File
+
 If you need to customize the behavior for the deployed node you can use either `WithConfigString(config string)` or `WithConfigFile(configPath string)`.
 The configuration has to be in JSON format and will be loaded at the node startup.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 
 The Consul container exposes the following method:
 
 #### ApiEndpoint
+
 This method returns the connection string to connect to the Consul container API, using the default `8500` port.
 
 <!--codeinclude-->

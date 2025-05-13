@@ -48,7 +48,7 @@ When starting the CockroachDB container, you can pass options in a variadic way 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "cockroachdb/cockroach:latest-v23.1")`.
 
-{% include "../features/common_functional_options.md" %}
+{% include "../features/common_functional_options_list.md" %}
 
 #### Database
 

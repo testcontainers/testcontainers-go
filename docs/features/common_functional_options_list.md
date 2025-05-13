@@ -1,0 +1,38 @@
+#### Generic Options
+
+- `WithImageSubstitutors` - Since v0.26.0
+- `WithImageMount` - Since v0.37.0
+- `WithEnv` - Since v0.29.0
+- `WithExposedPorts` - Since v0.37.0
+- `WithEntrypoint` - Since v0.37.0
+- `WithEntrypointArgs` - Since v0.37.0
+- `WithCmd` - Since v0.37.0
+- `WithCmdArgs` - Since v0.37.0
+- `WithLabels` - Since v0.37.0
+- `WithFiles` - Since v0.37.0
+- `WithMounts` - Since v0.37.0
+- `WithTmpfs` - Since v0.37.0
+- `WithHostPortAccess` - Since v0.31.0
+- `WithLogConsumers` - Since v0.28.0
+- `WithLogConsumerConfig` - Not yet released
+- `WithLogger` - Since v0.29.0
+- `WithAlwaysPull` - Not yet released
+- `WithImagePlatform` - Not yet released
+- `WithLifecycleHooks` - Not yet released
+- `WithAdditionalLifecycleHooks` - Not yet released
+- `WithWaitStrategy`
+- `WithWaitStrategyAndDeadline`
+- `WithStartupCommand` - Since v0.25.0
+- `WithAfterReadyCommand` - Since v0.28.0
+- `WithDockerfile` - Since v0.37.0
+- `WithNetwork` - Since v0.27.0
+- `WithNetworkByName` - Not yet released
+- `WithBridgeNetwork` - Not yet released
+- `WithNewNetwork` - Since v0.27.0
+- `WithConfigModifier`
+- `WithHostConfigModifier`
+- `WithEndpointSettingsModifier`
+- `CustomizeRequest`
+- `WithReuseByName` - Since v0.37.0
+- `WithName` - Not yet released
+- `WithNoStart` - Not yet released

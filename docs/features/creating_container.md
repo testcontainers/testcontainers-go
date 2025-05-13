@@ -36,6 +36,10 @@ and `Network.Remove` which can be seen in the examples.
 [Creating a container](../../examples_test.go) inside_block:ExampleRun
 <!--/codeinclude-->
 
+## Customizing the container
+
+{% include "../features/common_functional_options.md" %}
+
 ## GenericContainer
 
 !!!warning

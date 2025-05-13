@@ -36,16 +36,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the DynamoDB container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "amazon/dynamodb-local:2.2.1")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the DynamoDB container, you can pass options in a variadic way to configure it.
 
 #### WithSharedDB
 
@@ -58,6 +56,8 @@ The `WithSharedDB` option tells the DynamoDB container to use a single database 
 - Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.34.0"><span class="tc-version">:material-tag: v0.34.0</span></a>
 
 You can turn off telemetry when starting the DynamoDB container, using the option `WithDisableTelemetry`.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

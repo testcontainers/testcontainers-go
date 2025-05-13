@@ -39,10 +39,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the Kafka container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
@@ -53,14 +49,6 @@ In example: `Run(context.Background(), "confluentinc/confluent-local:7.5.0")`.
     is different from the official one, please make sure that it's compatible with KRaft mode, as the module won't check
     the version for you.
 
-#### Init script
-
-The Kafka container will be started using a custom shell script:
-
-<!--codeinclude-->
-[Init script](../../modules/kafka/kafka.go) inside_block:starterScript
-<!--/codeinclude-->
-
 #### Environment variables
 
 The environment variables that are already set by default are:
@@ -69,7 +57,19 @@ The environment variables that are already set by default are:
 [Environment variables](../../modules/kafka/kafka.go) inside_block:envVars
 <!--/codeinclude-->
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the Kafka container, you can pass options in a variadic way to configure it.
+
+#### Init script
+
+The Kafka container will be started using a custom shell script:
+
+<!--codeinclude-->
+[Init script](../../modules/kafka/kafka.go) inside_block:starterScript
+<!--/codeinclude-->
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

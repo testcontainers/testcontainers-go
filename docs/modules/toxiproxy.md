@@ -42,16 +42,14 @@ The Toxiproxy container exposes the following ports:
 
 - `8474/tcp`, the Toxiproxy control port, exported as `toxiproxy.ControlPort`.
 
-### Container Options
-
-When starting the Toxiproxy container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "shopify/toxiproxy:2.12.0")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the Toxiproxy container, you can pass options in a variadic way to configure it.
 
 #### WithProxy
 
@@ -89,6 +87,8 @@ func WithConfigFile(r io.Reader) testcontainers.CustomizeRequestOption
 
 If this option is used in combination with the `WithProxy` option, the proxies defined in this option
 are added to the proxies defined with the `WithProxy` option.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

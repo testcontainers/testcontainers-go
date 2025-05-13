@@ -39,14 +39,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the MongoDB container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "mongo:6")`.
+
+### Container Options
+
+When starting the MongoDB container, you can pass options in a variadic way to configure it.
 
 #### WithUsername
 
@@ -72,7 +72,7 @@ E.g. `testcontainers.WithPassword("mymongopwd")`.
 
 The `WithReplicaSet` functional option configures the container to run a single-node MongoDB replica set named `rs`. The MongoDB container will wait until the replica set is ready.
 
-{% include "../features/common_functional_options.md" %}
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

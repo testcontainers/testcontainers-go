@@ -39,10 +39,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the RabbitMQ container, you can pass options in a variadic way to configure it. All these options will be automatically rendered into the RabbitMQ's custom configuration file, located at `/etc/rabbitmq/rabbitmq-custom.conf`.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
@@ -67,9 +63,33 @@ In example: `Run(context.Background(), "rabbitmq:3.7.25-management-alpine")`.
     - RABBITMQ_SSL_VERIFY
     - RABBITMQ_VM_MEMORY_HIGH_WATERMARK
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
 
-#### Startup Commands for RabbitMQ
+When starting the RabbitMQ container, you can pass options in a variadic way to configure it. All these options will be automatically rendered into the RabbitMQ's custom configuration file, located at `/etc/rabbitmq/rabbitmq-custom.conf`.
+
+#### Default Admin
+
+If you need to set the username and/or password for the admin user, you can use the `WithAdminUsername(username string)` and `WithAdminPassword(pwd string)` options.
+
+!!!info
+    By default, the admin username is `guest` and the password is `guest`.
+
+#### SSL settings
+
+In the case you need to enable SSL, you can use the `WithSSL(settings SSLSettings)` option. This option will enable SSL with the passed settings:
+
+<!--codeinclude-->
+[Enabling SSL](../../modules/rabbitmq/examples_test.go) inside_block:enableSSL
+<!--/codeinclude-->
+
+You'll find a log entry similar to this one in the container logs:
+
+```
+2023-09-13 13:05:10.213 [info] <0.548.0> started TLS (SSL) listener on [::]:5671
+```
+
+
+#### Startup Commands
 
 The RabbitMQ module includes several test implementations of the `testcontainers.Executable` interface: Binding, Exchange, OperatorPolicy, Parameter, Permission, Plugin, Policy, Queue, User, VirtualHost and VirtualHostLimit. You could use them as reference to understand how the startup commands are generated, but please consider this test implementation could not be complete for your use case.
 
@@ -99,26 +119,7 @@ Please refer to the RabbitMQ documentation to build your own commands.
 [Enabling Plugins](../../modules/rabbitmq/rabbitmq_test.go) inside_block:enablePlugins
 <!--/codeinclude-->
 
-#### Default Admin
-
-If you need to set the username and/or password for the admin user, you can use the `WithAdminUsername(username string)` and `WithAdminPassword(pwd string)` options.
-
-!!!info
-    By default, the admin username is `guest` and the password is `guest`.
-
-#### SSL settings
-
-In the case you need to enable SSL, you can use the `WithSSL(settings SSLSettings)` option. This option will enable SSL with the passed settings:
-
-<!--codeinclude-->
-[Enabling SSL](../../modules/rabbitmq/examples_test.go) inside_block:enableSSL
-<!--/codeinclude-->
-
-You'll find a log entry similar to this one in the container logs:
-
-```
-2023-09-13 13:05:10.213 [info] <0.548.0> started TLS (SSL) listener on [::]:5671
-```
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

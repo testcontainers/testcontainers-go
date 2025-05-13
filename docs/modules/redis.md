@@ -39,19 +39,17 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
+#### Image
+
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "redis:7")`.
+
 ### Container Options
 
 When starting the Redis container, you can pass options in a variadic way to configure it.
 
 !!!tip
     You can find all the available configuration and environment variables for the Redis Docker image on [Docker Hub](https://hub.docker.com/_/redis).
-
-#### Image
-
-Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "redis:7")`.
-
-{% include "../features/common_functional_options.md" %}
 
 #### Snapshotting
 
@@ -81,6 +79,8 @@ In the case you want to enable TLS for the Redis container, you can use the `Wit
     In case you want to use Non-mutual TLS (i.e. client authentication is not required), you can customize the CMD arguments by using the `WithCmdArgs` option. E.g. `WithCmdArgs("--tls-auth-clients", "no")`.
 
 The module automatically generates three certificates, a CA certificate, a client certificate and a Redis certificate. Please use the `TLSConfig()` container method to get the TLS configuration and use it to configure the Redis client. See more details in the [TLSConfig](#tlsconfig) section.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

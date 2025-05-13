@@ -52,16 +52,14 @@ The Azurite container uses the following default credentials:
 [Default Credentials](../../modules/azure/azurite/azurite.go) inside_block:defaultCredentials
 <!--/codeinclude-->
 
-### Container Options
-
-When starting the Azurite container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "mcr.microsoft.com/azure-storage/azurite:3.28.0")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the Azurite container, you can pass options in a variadic way to configure it.
 
 #### WithInMemoryPersistence
 
@@ -73,6 +71,8 @@ Please read the [Azurite documentation](https://github.com/Azure/Azurite?tab=rea
 
 !!! warning
     This option is only available in Azurite versions `3.28.0` and later.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 
@@ -161,16 +161,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 The EventHubs container needs an Azurite container to be running, for that reason _Testcontainers for Go_ **automatically creates a Docker network and an Azurite container** for EventHubs to work.
 When terminating the EventHubs container, the Azurite container and the Docker network are also terminated.
 
-### Container Options
-
-When starting the EventHubs container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "mcr.microsoft.com/azure-messaging/eventhubs-emulator:2.0.1")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the EventHubs container, you can pass options in a variadic way to configure it.
 
 #### WithAzurite
 
@@ -195,6 +193,8 @@ The config file must be a valid EventHubs config file, and it must be a valid JS
 <!--codeinclude-->
 [EventHubs JSON Config](../../modules/azure/eventhubs/testdata/eventhubs_config.json)
 <!--/codeinclude-->
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 
@@ -244,16 +244,14 @@ When terminating the ServiceBus container, the MSSQL Server container and the Do
     Since version `1.1.2` of the ServiceBus emulator, it's possible to set the `SQL_WAIT_INTERVAL` environment variable to the given seconds.
     This module sets it to `0` by default, because the MSSQL Server container is started first.
 
-### Container Options
-
-When starting the ServiceBus container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "mcr.microsoft.com/azure-messaging/servicebus-emulator:1.1.2")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the ServiceBus container, you can pass options in a variadic way to configure it.
 
 #### WithMSSQL
 
@@ -278,6 +276,8 @@ The config file must be a valid ServiceBus config file, and it must be a valid J
 <!--codeinclude-->
 [ServiceBus JSON Config](../../modules/azure/servicebus/testdata/servicebus_config.json)
 <!--/codeinclude-->
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

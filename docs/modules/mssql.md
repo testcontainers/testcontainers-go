@@ -44,14 +44,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the MS SQL Server container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "mcr.microsoft.com/mssql/server:2022-RTM-GDR1-ubuntu-20.04")`.
+
+### Container Options
+
+When starting the MS SQL Server container, you can pass options in a variadic way to configure it.
 
 #### Init Scripts
 
@@ -81,7 +81,7 @@ If you need to set a different MS SQL Server password, you can use `mssql.WithPa
 !!!info
     If you set a custom password string, it must adhere to the MS SQL Server [Password Policy](https://learn.microsoft.com/en-us/sql/relational-databases/security/password-policy?view=sql-server-ver16).
 
-{% include "../features/common_functional_options.md" %}
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

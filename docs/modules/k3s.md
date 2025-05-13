@@ -40,21 +40,20 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Ports
+
 These are the ports used by the K3s container:
 <!--codeinclude-->
 [Container Ports](../../modules/k3s/k3s.go) inside_block:containerPorts
 <!--/codeinclude-->
-
-### Container Options
-
-When starting the K3s container, you can pass options in a variadic way to configure it.
 
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "rancher/k3s:v1.27.1-k3s1")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the K3s container, you can pass options in a variadic way to configure it.
 
 ## WithManifest
 
@@ -69,6 +68,8 @@ Example:
 ```golang
         WithManifest("nginx-manifest.yaml")
 ```
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

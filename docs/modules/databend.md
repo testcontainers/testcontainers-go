@@ -36,16 +36,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the Databend container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "datafuselabs/databend:v1.2.615")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the Databend container, you can pass options in a variadic way to configure it.
 
 #### Set username, password
 
@@ -53,6 +51,8 @@ If you need to set a different user/password/database, you can use `WithUsername
 
 !!!info
 The default values for the username is `databend`, for password is `databend` and for the default database name is `default`.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

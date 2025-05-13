@@ -49,16 +49,14 @@ These are the ports used by the Neo4j container:
 [Container Ports](../../modules/neo4j/neo4j.go) inside_block:containerPorts
 <!--/codeinclude-->
 
-### Container Options
-
-When starting the Neo4j container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "neo4j:4.4")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the Neo4j container, you can pass options in a variadic way to configure it.
 
 #### Logger
 
@@ -107,6 +105,8 @@ To pass multiple settings at once, the `WithNeo4jSettings` function is provided.
 
 !!!warning
     Credentials must be configured with the `WithAdminPassword` optional function.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

@@ -44,10 +44,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
     requirements, the `--overprovisioned` command-line option is recommended. This enables certain optimizations for ScyllaDB
     to run efficiently in an overprovisioned environment. You can change it by using the `WithCustomCommand` function.
 
-### Container Options
-
-When starting the ScyllaDB container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
@@ -59,7 +55,9 @@ scylladb.Run(context.Background(), "scylladb/scylla:6.2.1")
 scylladb.Run(context.Background(), "scylladb/scylla:5.6")
 ```
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the ScyllaDB container, you can pass options in a variadic way to configure it.
 
 #### With Database Configuration File (scylla.yaml)
 
@@ -111,6 +109,8 @@ the [ScyllaDB Docker Best Practices](https://opensource.docs.scylladb.com/stable
 <!--codeinclude-->
 [With Custom Commands](../../modules/scylladb/examples_test.go) inside_block:runScyllaDBContainerWithCustomCommands
 <!--/codeinclude-->
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

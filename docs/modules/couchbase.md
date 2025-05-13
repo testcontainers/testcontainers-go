@@ -66,9 +66,6 @@ Here you can find the list with the default ports used by the Couchbase containe
 [Container Ports](../../modules/couchbase/couchbase.go) inside_block:containerPorts
 <!--/codeinclude-->
 
-### Container Options
-
-When starting the Couchbase container, you can pass options in a variadic way to configure it.
 
 #### Image
 
@@ -81,7 +78,9 @@ You can find the Docker images that are currently tested in this module, for the
 [Docker images](../../modules/couchbase/couchbase_test.go) inside_block:dockerImages
 <!--/codeinclude-->
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the Couchbase container, you can pass options in a variadic way to configure it.
 
 #### Credentials
 
@@ -125,6 +124,8 @@ By default, the container will start with the following services: `kv`, `n1ql`, 
 !!!warning
 	When running the Enterprise Edition of Couchbase Server, the module provides two functions to enable or disable services:
 	`WithServiceAnalytics` and `WithServiceEventing`. Else, it will throw an error and the container won't be created.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

@@ -42,15 +42,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the container, you can pass options in a variadic way to configure it.
-
-!!!tip
-
-    You can find configuration information for the InfluxDB image on [Docker Hub](https://hub.docker.com/_/influxdb) and a list of possible 
-    environment variables on [InfluxDB documentation](https://docs.influxdata.com/influxdb/v1/administration/config/).
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
@@ -59,7 +50,14 @@ In example: `Run(context.Background(), "influxdb:1.8.0")`.
 !!!info
     Note that `influxdb:latest` will pull a version 2 image.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the container, you can pass options in a variadic way to configure it.
+
+!!!tip
+
+    You can find configuration information for the InfluxDB image on [Docker Hub](https://hub.docker.com/_/influxdb) and a list of possible 
+    environment variables on [InfluxDB documentation](https://docs.influxdata.com/influxdb/v1/administration/config/).
 
 #### Set username, password and database name
 
@@ -96,6 +94,8 @@ This module looks for that and adds some extra tests for readiness, but these co
 #### Custom configuration
 
 If you need to set a custom configuration, you can use `WithConfigFile` option to pass the path to a custom configuration file.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

@@ -44,14 +44,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the Ollama container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "ollama/ollama:0.5.7")`.
+
+### Container Options
+
+When starting the Ollama container, you can pass options in a variadic way to configure it.
 
 #### Use Local
 
@@ -98,7 +98,7 @@ The local Ollama binary will create a log file in the current working directory,
     If the environment variable is not set, it will default to `localhost:0`
     which bind to a loopback address on an ephemeral port to avoid port conflicts.
 
-{% include "../features/common_functional_options.md" %}
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

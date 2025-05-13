@@ -39,14 +39,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the Grafana LGTM container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "grafana/otel-lgtm:0.6.0")`.
+
+### Container Options
+
+When starting the Grafana LGTM container, you can pass options in a variadic way to configure it.
 
 #### Admin Credentials
 
@@ -54,7 +54,7 @@ In example: `Run(context.Background(), "grafana/otel-lgtm:0.6.0")`.
 
 If you need to set different admin credentials in the Grafana LGTM container, you can set them using the `WithAdminCredentials(user, password)` option.
 
-{% include "../features/common_functional_options.md" %}
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

@@ -45,24 +45,17 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the Pulsar container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "apachepulsar/pulsar:2.10.2")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
 
-<!--codeinclude-->
-[Advanced Docker settings](../../modules/pulsar/pulsar_test.go) inside_block:advancedDockerSettings
-<!--/codeinclude-->
-
-Here, the `nwName` relates to the name of a previously created Docker network. Please see the [How to create a network](../features/creating_networks.md) documentation for more information.
+When starting the Pulsar container, you can pass options in a variadic way to configure it.
 
 #### Pulsar Configuration
+
 If you need to set Pulsar configuration variables you can use the `WithPulsarEnv` to set Pulsar environment variables: the `PULSAR_PREFIX_` prefix will be automatically added for you.
 
 For example, if you want to enable `brokerDeduplicationEnabled`:
@@ -88,6 +81,8 @@ If you need to test Pulsar Transactions you can enable the transactions feature:
 <!--codeinclude-->
 [Create a Pulsar container with transactions](../../modules/pulsar/pulsar_test.go) inside_block:withTransactions
 <!--/codeinclude-->
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container methods
 

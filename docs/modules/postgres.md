@@ -39,19 +39,17 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
+#### Image
+
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "postgres:16-alpine")`.
+
 ### Container Options
 
 When starting the Postgres container, you can pass options in a variadic way to configure it.
 
 !!!tip
     You can find all the available configuration and environment variables for the Postgres Docker image on [Docker Hub](https://hub.docker.com/_/postgres).
-
-#### Image
-
-Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "postgres:16-alpine")`.
-
-{% include "../features/common_functional_options.md" %}
 
 #### Initial Database
 
@@ -110,6 +108,8 @@ ssl_key_file = '/tmp/testcontainers-go/postgres/server.key'
     There is no current support for mutual authentication.
 
     The `SSLSettings` function will modify the container `entrypoint`. This is done so that key material copied over to the container is chowned by `postgres`. All other container arguments will be passed through to the original container entrypoint.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

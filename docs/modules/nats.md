@@ -39,16 +39,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the NATS container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "nats:2.9")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the NATS container, you can pass options in a variadic way to configure it.
 
 #### Set username and password
 
@@ -83,6 +81,8 @@ It's possible to pass a custom config file to NATS container using `nats.WithCon
 
 !!! note
     Changing the connectivity (listen address or ports) can break the container setup. So configuration must be done with care.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

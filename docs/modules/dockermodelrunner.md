@@ -42,16 +42,14 @@ func Run(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Cont
 !!! info
     This function will use the default `socat` image under the hood. Please refer to the [socat module](../socat.md) for more information.
 
-### Container Options
-
-When starting the Docker Model Runner container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "alpine/socat:1.8.0.1")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the Docker Model Runner container, you can pass options in a variadic way to configure it.
 
 #### WithModel
 
@@ -67,6 +65,8 @@ dockermodelrunner.WithModel("ai/llama3.2:latest")
     Multiple calls to this function overrides the previous value.
 
  You can find a curated collection of cutting-edge AI models as OCI Artifacts, from lightweight on-device models to high-performance LLMs on [Docker Hub](https://hub.docker.com/u/ai).
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

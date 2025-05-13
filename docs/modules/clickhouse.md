@@ -47,16 +47,14 @@ Here you can find the list with the default ports used by the ClickHouse contain
 [Container Ports](../../modules/clickhouse/clickhouse.go) inside_block:containerPorts
 <!--/codeinclude-->
 
-### Container Options
-
-When starting the ClickHouse container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "clickhouse/clickhouse-server:23.3.8.21-alpine")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the ClickHouse container, you can pass options in a variadic way to configure it.
 
 #### Set username, password and database name
 
@@ -105,6 +103,8 @@ In the case you want to pass a YAML configuration file, you can use the `WithYam
 <!--codeinclude-->
 [YAML config file](../../modules/clickhouse/testdata/config.yaml)
 <!--/codeinclude-->
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

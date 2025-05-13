@@ -36,16 +36,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the etcd container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "bitnami/etcd:latest")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the etcd container, you can pass options in a variadic way to configure it.
 
 #### WithAdditionalArgs
 
@@ -75,6 +73,8 @@ The module creates a Docker network for the etcd cluster, and the nodes are conn
 
 Sets the cluster token for the etcd cluster. The cluster token is used to identify the etcd cluster. The default value is `mys3cr3ttok3n`.
 The etcd container holds a reference to the cluster token, so you can use it with e.g. `ctr.ClusterToken`.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

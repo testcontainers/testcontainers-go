@@ -39,6 +39,11 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
+#### Image
+
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "registry:2.8.3")`.
+
 ### Docker Auth Config
 
 The module exposes a way to set the Docker Auth Config for the Registry container, thanks to the `SetDockerAuthConfig` function.
@@ -53,13 +58,6 @@ It also accepts additional host, username and password triples to add more auth 
 ### Container Options
 
 When starting the Registry container, you can pass options in a variadic way to configure it.
-
-#### Image
-
-Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "registry:2.8.3")`.
-
-{% include "../features/common_functional_options.md" %}
 
 #### With Authentication
 
@@ -86,6 +84,8 @@ Otherwise, the Registry will start but you won't be able to read any images from
 <!--codeinclude-->
 [Including data](../../modules/registry/examples_test.go) inside_block:htpasswdFile
 <!--/codeinclude-->
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

@@ -41,10 +41,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the Socat container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 The module exposes a default image:
@@ -56,7 +52,9 @@ The module exposes a default image:
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), DefaultImage)`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the Socat container, you can pass options in a variadic way to configure it.
 
 #### WithTarget
 
@@ -72,7 +70,9 @@ This struct can be built using the the following functions:
 [Passing a target](../../modules/socat/examples_test.go) inside_block:createSocatContainer
 <!--/codeinclude-->
 
-In the above example, there is a `helloworld` container thatis listening on port `8080` and `8081`. Please check [the helloworld container source code](https://github.com/testcontainers/helloworld/blob/141af7909907e04b124e691d3cd6fc7c32da2207/internal/server/server.go#L26-L27) for more details.
+In the above example, there is a `helloworld` container that is listening on port `8080` and `8081`. Please check [the helloworld container source code](https://github.com/testcontainers/helloworld/blob/141af7909907e04b124e691d3cd6fc7c32da2207/internal/server/server.go#L26-L27) for more details.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 

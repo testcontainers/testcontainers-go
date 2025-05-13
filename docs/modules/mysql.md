@@ -39,6 +39,11 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
+#### Image
+
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "mysql:8.0.36")`.
+
 ### Container Options
 
 When starting the MySQL container, you can pass options in a variadic way to configure it.
@@ -46,13 +51,6 @@ When starting the MySQL container, you can pass options in a variadic way to con
 !!!tip
 
     You can find all the available configuration and environment variables for the MySQL Docker image on [Docker Hub](https://hub.docker.com/_/mysql).
-
-#### Image
-
-Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "mysql:8.0.36")`.
-
-{% include "../features/common_functional_options.md" %}
 
 #### Set username, password and database name
 
@@ -74,6 +72,8 @@ scripts to the container request, using the `WithScripts(scriptPaths ...string)`
 #### Custom configuration
 
 If you need to set a custom configuration, you can use `WithConfigFile` option to pass the path to a custom configuration file.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 
