@@ -15,7 +15,7 @@ type options struct {
 	KafkaEnableAuthorization bool
 
 	// KafkaAuthenticationMethod is either "none" for plaintext or "sasl"
-	// for SASL (scram) authentication.
+	// for SASL (scram sha 256) authentication.
 	KafkaAuthenticationMethod string
 
 	// SchemaRegistryAuthenticationMethod is either "none" for no authentication
@@ -78,6 +78,9 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 	return nil
 }
 
+// WithNewServiceAccount includes a new user with username (key) and password (value)
+// that shall be created, so that you can use these to authenticate against
+// Redpanda (either for the Kafka API or Schema Registry HTTP access).
 func WithNewServiceAccount(username, password string) Option {
 	return func(o *options) {
 		o.ServiceAccounts[username] = password
@@ -92,7 +95,7 @@ func WithSuperusers(superusers ...string) Option {
 	}
 }
 
-// WithEnableSASL enables SASL scram sha authentication.
+// WithEnableSASL enables SASL scram sha 256 authentication.
 // By default, no authentication (plaintext) is used.
 // When setting an authentication method, make sure to add users
 // as well as authorize them using the WithSuperusers() option.

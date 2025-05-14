@@ -108,6 +108,7 @@ func TestIsLegacyVersion(t *testing.T) {
 		{"1-amd64", false},
 		{"1.0", false},
 		{"1.0-amd64", false},
+		{"4.3.0@sha256:f3cb1a79f3add997575e859c3a2808e6dae4b0de836661de255baa2b576868f8", false},
 	}
 
 	for _, tt := range tests {
@@ -148,6 +149,7 @@ func TestIsMinimumVersion2(t *testing.T) {
 		{"2.1-amd64", true},
 		{"3", true},
 		{"3-amd64", true},
+		{"4.3.0@sha256:f3cb1a79f3add997575e859c3a2808e6dae4b0de836661de255baa2b576868f8", true},
 	}
 
 	for _, tt := range tests {

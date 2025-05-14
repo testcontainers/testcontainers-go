@@ -44,6 +44,7 @@ updates:
         - /modules/localstack
         - /modules/mariadb
         - /modules/meilisearch
+        - /modules/memcached
         - /modules/milvus
         - /modules/minio
         - /modules/mockserver
