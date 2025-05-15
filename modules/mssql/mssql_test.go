@@ -50,7 +50,7 @@ func TestMSSQLServerWithMissingEulaOption(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		ctr, err := mssql.Run(ctx,
 			"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
-			testcontainers.WithWaitStrategy(
+			testcontainers.WithAdditionalWaitStrategy(
 				wait.ForLog("The SQL Server End-User License Agreement (EULA) must be accepted")),
 		)
 		testcontainers.CleanupContainer(t, ctr)
@@ -61,7 +61,7 @@ func TestMSSQLServerWithMissingEulaOption(t *testing.T) {
 		ctr, err := mssql.Run(ctx,
 			"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
 			testcontainers.WithEnv(map[string]string{"ACCEPT_EULA": "yes"}),
-			testcontainers.WithWaitStrategy(
+			testcontainers.WithAdditionalWaitStrategy(
 				wait.ForLog("The SQL Server End-User License Agreement (EULA) must be accepted")),
 		)
 		testcontainers.CleanupContainer(t, ctr)

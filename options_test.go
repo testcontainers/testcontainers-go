@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -783,4 +784,125 @@ func TestWithNoStart(t *testing.T) {
 	err := opt.Customize(req)
 	require.NoError(t, err)
 	require.False(t, req.Started)
+}
+
+func TestWithWaitStrategy(t *testing.T) {
+	testDuration := 10 * time.Second
+	defaultDuration := 60 * time.Second
+
+	waitForFoo := wait.ForLog("foo")
+	waitForBar := wait.ForLog("bar")
+
+	testWaitFor := func(t *testing.T, replace bool, customDuration *time.Duration, initial wait.Strategy, add wait.Strategy, expected wait.Strategy) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				WaitingFor: initial,
+			},
+		}
+
+		var opt testcontainers.CustomizeRequestOption
+		if replace {
+			opt = testcontainers.WithWaitStrategy(add)
+			if customDuration != nil {
+				opt = testcontainers.WithWaitStrategyAndDeadline(*customDuration, add)
+			}
+		} else {
+			opt = testcontainers.WithAdditionalWaitStrategy(add)
+			if customDuration != nil {
+				opt = testcontainers.WithAdditionalWaitStrategyAndDeadline(*customDuration, add)
+			}
+		}
+		require.NoError(t, opt.Customize(req))
+		require.Equal(t, expected, req.WaitingFor)
+	}
+
+	t.Run("replace-nil", func(t *testing.T) {
+		t.Run("default-duration", func(t *testing.T) {
+			testWaitFor(t,
+				true,
+				nil,
+				nil,
+				waitForFoo,
+				wait.ForAll(waitForFoo).WithDeadline(defaultDuration),
+			)
+		})
+
+		t.Run("custom-duration", func(t *testing.T) {
+			testWaitFor(t,
+				true,
+				&testDuration,
+				nil,
+				waitForFoo,
+				wait.ForAll(waitForFoo).WithDeadline(testDuration),
+			)
+		})
+	})
+
+	t.Run("replace-existing", func(t *testing.T) {
+		t.Run("default-duration", func(t *testing.T) {
+			testWaitFor(t,
+				true,
+				nil,
+				waitForFoo,
+				waitForBar,
+				wait.ForAll(waitForBar).WithDeadline(defaultDuration),
+			)
+		})
+
+		t.Run("custom-duration", func(t *testing.T) {
+			testWaitFor(t,
+				true,
+				&testDuration,
+				waitForFoo,
+				waitForBar,
+				wait.ForAll(waitForBar).WithDeadline(testDuration),
+			)
+		})
+	})
+
+	t.Run("add-to-nil", func(t *testing.T) {
+		t.Run("default-duration", func(t *testing.T) {
+			testWaitFor(t,
+				false,
+				nil,
+				nil,
+				waitForFoo,
+				wait.ForAll(waitForFoo).WithDeadline(defaultDuration),
+			)
+		})
+
+		t.Run("custom-duration", func(t *testing.T) {
+			testWaitFor(t,
+				false,
+				&testDuration,
+				nil,
+				waitForFoo,
+				wait.ForAll(waitForFoo).WithDeadline(testDuration),
+			)
+		})
+	})
+
+	t.Run("add-to-existing", func(t *testing.T) {
+		t.Run("default-duration", func(t *testing.T) {
+			testWaitFor(t,
+				false,
+				nil,
+				waitForFoo,
+				waitForBar,
+				wait.ForAll(waitForFoo, waitForBar).WithDeadline(defaultDuration),
+			)
+		})
+
+		t.Run("custom-duration", func(t *testing.T) {
+			testWaitFor(t,
+				false,
+				&testDuration,
+				waitForFoo,
+				waitForBar,
+				wait.ForAll(waitForFoo, waitForBar).WithDeadline(testDuration),
+			)
+		})
+	})
 }

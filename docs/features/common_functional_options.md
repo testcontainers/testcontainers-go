@@ -242,12 +242,14 @@ You can also use `testcontainers.WithAdditionalLifecycleHooks`, which appends th
 
 #### Wait Strategies
 
-If you need to set a different wait strategy for the container, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy.
+If you need to set a different wait strategy for the container, replacing the existing one, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy.
 
 !!!info
     The default deadline for the wait strategy is 60 seconds.
 
-At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
+At the same time, it's possible to replace the wait strategy with a new one and a custom deadline, using `testcontainers.WithWaitStrategyAndDeadline`.
+
+Finally, you can also append a wait strategy to the existing wait strategy, using `testcontainers.WithAdditionalWaitStrategy` and `testcontainers.WithAdditionalWaitStrategyAndDeadline`.
 
 #### Startup Commands
 
