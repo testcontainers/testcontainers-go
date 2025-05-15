@@ -377,25 +377,25 @@ To understand more about this feature, please read the [Exposing host ports to t
 
 ##### WithConfigModifier
 
-- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 If you need an advanced configuration for the container, modifying the container's configuration, you can use the `testcontainers.WithConfigModifier` option, which gives access to the underlying Docker's Config type.
 
 ##### WithHostConfigModifier
 
-- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 If you need an advanced configuration for the container, modifying the container's host configuration, you can use the `testcontainers.WithHostConfigModifier` option, which gives access to the underlying Docker's HostConfig type.
 
 ##### WithEndpointSettingsModifier
 
-- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 If you need an advanced configuration for the container, modifying the container's endpoint settings, you can use the `testcontainers.WithEndpointSettingsModifier` option, which gives access to the underlying Docker's EndpointSettings type.
 
 ##### CustomizeRequest
 
-- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 This option will merge the customized request into the module's own `ContainerRequest`.
 
