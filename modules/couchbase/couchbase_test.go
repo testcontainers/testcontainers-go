@@ -67,7 +67,7 @@ func TestCouchbaseWithEnterpriseContainer(t *testing.T) {
 func TestCouchbaseWithReuse(t *testing.T) {
 	ctx := context.Background()
 
-	containerName := "couchbase" + time.Now().Format(time.RFC3339)
+	containerName := "couchbase-" + testcontainers.SessionID()
 
 	bucketName := "testBucket"
 	bucket := tccouchbase.NewBucket(bucketName).
