@@ -11,7 +11,6 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/mongodb"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func ExampleRun() {
@@ -89,7 +88,6 @@ func ExampleRun_withCredentials() {
 		"mongo:6",
 		mongodb.WithUsername("root"),
 		mongodb.WithPassword("password"),
-		testcontainers.WithWaitStrategy(wait.ForLog("Waiting for connections")),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(ctr); err != nil {

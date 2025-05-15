@@ -373,15 +373,38 @@ func WithAfterReadyCommand(execs ...Executable) CustomizeRequestOption {
 	}
 }
 
-// WithWaitStrategy sets the wait strategy for a container, using 60 seconds as deadline
+// WithWaitStrategy replaces the wait strategy for a container, using 60 seconds as deadline
 func WithWaitStrategy(strategies ...wait.Strategy) CustomizeRequestOption {
 	return WithWaitStrategyAndDeadline(60*time.Second, strategies...)
 }
 
-// WithWaitStrategyAndDeadline sets the wait strategy for a container, including deadline
+// WithAdditionalWaitStrategy appends the wait strategy for a container, using 60 seconds as deadline
+func WithAdditionalWaitStrategy(strategies ...wait.Strategy) CustomizeRequestOption {
+	return WithAdditionalWaitStrategyAndDeadline(60*time.Second, strategies...)
+}
+
+// WithWaitStrategyAndDeadline replaces the wait strategy for a container, including deadline
 func WithWaitStrategyAndDeadline(deadline time.Duration, strategies ...wait.Strategy) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {
 		req.WaitingFor = wait.ForAll(strategies...).WithDeadline(deadline)
+
+		return nil
+	}
+}
+
+// WithAdditionalWaitStrategyAndDeadline appends the wait strategy for a container, including deadline
+func WithAdditionalWaitStrategyAndDeadline(deadline time.Duration, strategies ...wait.Strategy) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		if req.WaitingFor == nil {
+			req.WaitingFor = wait.ForAll(strategies...).WithDeadline(deadline)
+			return nil
+		}
+
+		wss := make([]wait.Strategy, 0, len(strategies)+1)
+		wss = append(wss, req.WaitingFor)
+		wss = append(wss, strategies...)
+
+		req.WaitingFor = wait.ForAll(wss...).WithDeadline(deadline)
 
 		return nil
 	}
