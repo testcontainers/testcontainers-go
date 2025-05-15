@@ -24,10 +24,12 @@ import (
 	"github.com/testcontainers/testcontainers-go/network"
 )
 
+const testImage = "docker.redpanda.com/redpandadata/redpanda:v23.3.3"
+
 func TestRedpanda(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := redpanda.Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v23.3.3")
+	ctr, err := redpanda.Run(ctx, testImage)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -78,7 +80,7 @@ func TestRedpandaWithAuthentication(t *testing.T) {
 	ctx := context.Background()
 	// redpandaCreateContainer {
 	ctr, err := redpanda.Run(ctx,
-		"docker.redpanda.com/redpandadata/redpanda:v23.3.3",
+		testImage,
 		redpanda.WithEnableSASL(),
 		redpanda.WithEnableKafkaAuthorization(),
 		redpanda.WithEnableWasmTransform(),
@@ -192,7 +194,7 @@ func TestRedpandaWithAuthentication(t *testing.T) {
 func TestRedpandaWithBootstrapUserAuthentication(t *testing.T) {
 	ctx := context.Background()
 	ctr, err := redpanda.Run(ctx,
-		"docker.redpanda.com/redpandadata/redpanda:v23.3.3",
+		testImage,
 		redpanda.WithEnableSASL(),
 		redpanda.WithEnableKafkaAuthorization(),
 		redpanda.WithEnableWasmTransform(),
@@ -427,7 +429,7 @@ func TestRedpandaWithOldVersionAndWasm(t *testing.T) {
 func TestRedpandaProduceWithAutoCreateTopics(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := redpanda.Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v23.3.3", redpanda.WithAutoCreateTopics())
+	ctr, err := redpanda.Run(ctx, testImage, redpanda.WithAutoCreateTopics())
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -446,17 +448,20 @@ func TestRedpandaProduceWithAutoCreateTopics(t *testing.T) {
 }
 
 func TestRedpandaWithTLS(t *testing.T) {
+	ctx := context.Background()
+
+	containerHostAddress, err := detectContainerHostAddress(testImage, ctx)
+	require.NoError(t, err, "failed to detect container host address")
+
 	tmp := t.TempDir()
 	cert := tlscert.SelfSignedFromRequest(tlscert.Request{
 		Name:      "client",
-		Host:      "localhost,127.0.0.1",
+		Host:      "localhost,127.0.0.1," + containerHostAddress,
 		ParentDir: tmp,
 	})
 	require.NotNil(t, cert, "failed to generate cert")
 
-	ctx := context.Background()
-
-	ctr, err := redpanda.Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v23.3.3", redpanda.WithTLS(cert.Bytes, cert.KeyBytes))
+	ctr, err := redpanda.Run(ctx, testImage, redpanda.WithTLS(cert.Bytes, cert.KeyBytes))
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -509,19 +514,21 @@ func TestRedpandaWithTLS(t *testing.T) {
 }
 
 func TestRedpandaWithTLSAndSASL(t *testing.T) {
-	tmp := t.TempDir()
+	ctx := context.Background()
 
+	containerHostAddress, err := detectContainerHostAddress(testImage, ctx)
+	require.NoError(t, err, "failed to detect container host address")
+
+	tmp := t.TempDir()
 	cert := tlscert.SelfSignedFromRequest(tlscert.Request{
 		Name:      "client",
-		Host:      "localhost,127.0.0.1",
+		Host:      "localhost,127.0.0.1," + containerHostAddress,
 		ParentDir: tmp,
 	})
 	require.NotNil(t, cert, "failed to generate cert")
 
-	ctx := context.Background()
-
 	ctr, err := redpanda.Run(ctx,
-		"docker.redpanda.com/redpandadata/redpanda:v23.3.3",
+		testImage,
 		redpanda.WithTLS(cert.Bytes, cert.KeyBytes),
 		redpanda.WithEnableSASL(),
 		redpanda.WithEnableKafkaAuthorization(),
@@ -697,4 +704,24 @@ func TestRedpandaBootstrapConfig(t *testing.T) {
 		needsRestart := data[0]["restart"].(bool)
 		require.False(t, needsRestart)
 	}
+}
+
+func detectContainerHostAddress(image string, ctx context.Context) (string, error) {
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: image,
+		},
+		Started: false,
+	})
+	if err != nil {
+		return "", fmt.Errorf("create container: %w", err)
+	}
+	defer func() {
+		_ = c.Terminate(ctx)
+	}()
+	addr, err := c.Host(ctx)
+	if err != nil {
+		return "", fmt.Errorf("host: %w", err)
+	}
+	return addr, nil
 }
