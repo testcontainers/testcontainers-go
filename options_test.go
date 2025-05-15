@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -97,6 +98,43 @@ func TestWithLogConsumers(t *testing.T) {
 	// but this is expected because we just want to test the log consumer
 	require.ErrorContains(t, err, "container exited with code 1")
 	require.NotEmpty(t, lc.msgs)
+}
+
+func TestWithLogConsumerConfig(t *testing.T) {
+	lc := &msgsLogConsumer{}
+
+	t.Run("add-to-nil", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: "alpine",
+			},
+		}
+
+		err := testcontainers.WithLogConsumerConfig(&testcontainers.LogConsumerConfig{
+			Consumers: []testcontainers.LogConsumer{lc},
+		})(&req)
+		require.NoError(t, err)
+
+		require.Equal(t, []testcontainers.LogConsumer{lc}, req.LogConsumerCfg.Consumers)
+	})
+
+	t.Run("replace-existing", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: "alpine",
+				LogConsumerCfg: &testcontainers.LogConsumerConfig{
+					Consumers: []testcontainers.LogConsumer{testcontainers.NewFooLogConsumer(t)},
+				},
+			},
+		}
+
+		err := testcontainers.WithLogConsumerConfig(&testcontainers.LogConsumerConfig{
+			Consumers: []testcontainers.LogConsumer{lc},
+		})(&req)
+		require.NoError(t, err)
+
+		require.Equal(t, []testcontainers.LogConsumer{lc}, req.LogConsumerCfg.Consumers)
+	})
 }
 
 func TestWithStartupCommand(t *testing.T) {
@@ -360,6 +398,30 @@ func TestWithCmd(t *testing.T) {
 	})
 }
 
+func TestWithAlwaysPull(t *testing.T) {
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "alpine",
+		},
+	}
+
+	opt := testcontainers.WithAlwaysPull()
+	require.NoError(t, opt.Customize(&req))
+	require.True(t, req.AlwaysPullImage)
+}
+
+func TestWithImagePlatform(t *testing.T) {
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "alpine",
+		},
+	}
+
+	opt := testcontainers.WithImagePlatform("linux/amd64")
+	require.NoError(t, opt.Customize(&req))
+	require.Equal(t, "linux/amd64", req.ImagePlatform)
+}
+
 func TestWithCmdArgs(t *testing.T) {
 	testCmd := func(t *testing.T, initial []string, add []string, expected []string) {
 		t.Helper()
@@ -418,6 +480,68 @@ func TestWithLabels(t *testing.T) {
 			nil,
 			map[string]string{"key1": "value1"},
 			map[string]string{"key1": "value1"},
+		)
+	})
+}
+
+func TestWithLifecycleHooks(t *testing.T) {
+	testHook := testcontainers.DefaultLoggingHook(nil)
+
+	testLifecycleHooks := func(t *testing.T, replace bool, initial []testcontainers.ContainerLifecycleHooks, add []testcontainers.ContainerLifecycleHooks, expected []testcontainers.ContainerLifecycleHooks) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				LifecycleHooks: initial,
+			},
+		}
+
+		var opt testcontainers.CustomizeRequestOption
+		if replace {
+			opt = testcontainers.WithLifecycleHooks(add...)
+		} else {
+			opt = testcontainers.WithAdditionalLifecycleHooks(add...)
+		}
+		require.NoError(t, opt.Customize(req))
+		require.Len(t, req.LifecycleHooks, len(expected))
+		for i, hook := range expected {
+			require.Equal(t, hook, req.LifecycleHooks[i])
+		}
+	}
+
+	t.Run("replace-nil", func(t *testing.T) {
+		testLifecycleHooks(t,
+			true,
+			nil,
+			[]testcontainers.ContainerLifecycleHooks{testHook},
+			[]testcontainers.ContainerLifecycleHooks{testHook},
+		)
+	})
+
+	t.Run("replace-existing", func(t *testing.T) {
+		testLifecycleHooks(t,
+			true,
+			[]testcontainers.ContainerLifecycleHooks{testHook},
+			[]testcontainers.ContainerLifecycleHooks{testHook},
+			[]testcontainers.ContainerLifecycleHooks{testHook},
+		)
+	})
+
+	t.Run("add-to-nil", func(t *testing.T) {
+		testLifecycleHooks(t,
+			false,
+			nil,
+			[]testcontainers.ContainerLifecycleHooks{testHook},
+			[]testcontainers.ContainerLifecycleHooks{testHook},
+		)
+	})
+
+	t.Run("add-to-existing", func(t *testing.T) {
+		testLifecycleHooks(t,
+			false,
+			[]testcontainers.ContainerLifecycleHooks{testHook},
+			[]testcontainers.ContainerLifecycleHooks{testHook},
+			[]testcontainers.ContainerLifecycleHooks{testHook, testHook},
 		)
 	})
 }
@@ -629,7 +753,156 @@ func TestWithReuseByName_ErrorsWithoutContainerNameProvided(t *testing.T) {
 	opt := testcontainers.WithReuseByName("")
 	err := opt.Customize(req)
 
-	require.ErrorContains(t, err, "container name must be provided for reuse")
+	require.ErrorContains(t, err, "container name must be provided")
 	require.False(t, req.Reuse)
 	require.Empty(t, req.Name)
+}
+
+func TestWithName(t *testing.T) {
+	t.Parallel()
+	req := &testcontainers.GenericContainerRequest{}
+
+	opt := testcontainers.WithName("pg-test")
+	err := opt.Customize(req)
+	require.NoError(t, err)
+	require.Equal(t, "pg-test", req.Name)
+
+	t.Run("empty", func(t *testing.T) {
+		req := &testcontainers.GenericContainerRequest{}
+
+		opt := testcontainers.WithName("")
+		err := opt.Customize(req)
+		require.ErrorContains(t, err, "container name must be provided")
+	})
+}
+
+func TestWithNoStart(t *testing.T) {
+	t.Parallel()
+	req := &testcontainers.GenericContainerRequest{}
+
+	opt := testcontainers.WithNoStart()
+	err := opt.Customize(req)
+	require.NoError(t, err)
+	require.False(t, req.Started)
+}
+
+func TestWithWaitStrategy(t *testing.T) {
+	testDuration := 10 * time.Second
+	defaultDuration := 60 * time.Second
+
+	waitForFoo := wait.ForLog("foo")
+	waitForBar := wait.ForLog("bar")
+
+	testWaitFor := func(t *testing.T, replace bool, customDuration *time.Duration, initial wait.Strategy, add wait.Strategy, expected wait.Strategy) {
+		t.Helper()
+
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				WaitingFor: initial,
+			},
+		}
+
+		var opt testcontainers.CustomizeRequestOption
+		if replace {
+			opt = testcontainers.WithWaitStrategy(add)
+			if customDuration != nil {
+				opt = testcontainers.WithWaitStrategyAndDeadline(*customDuration, add)
+			}
+		} else {
+			opt = testcontainers.WithAdditionalWaitStrategy(add)
+			if customDuration != nil {
+				opt = testcontainers.WithAdditionalWaitStrategyAndDeadline(*customDuration, add)
+			}
+		}
+		require.NoError(t, opt.Customize(req))
+		require.Equal(t, expected, req.WaitingFor)
+	}
+
+	t.Run("replace-nil", func(t *testing.T) {
+		t.Run("default-duration", func(t *testing.T) {
+			testWaitFor(t,
+				true,
+				nil,
+				nil,
+				waitForFoo,
+				wait.ForAll(waitForFoo).WithDeadline(defaultDuration),
+			)
+		})
+
+		t.Run("custom-duration", func(t *testing.T) {
+			testWaitFor(t,
+				true,
+				&testDuration,
+				nil,
+				waitForFoo,
+				wait.ForAll(waitForFoo).WithDeadline(testDuration),
+			)
+		})
+	})
+
+	t.Run("replace-existing", func(t *testing.T) {
+		t.Run("default-duration", func(t *testing.T) {
+			testWaitFor(t,
+				true,
+				nil,
+				waitForFoo,
+				waitForBar,
+				wait.ForAll(waitForBar).WithDeadline(defaultDuration),
+			)
+		})
+
+		t.Run("custom-duration", func(t *testing.T) {
+			testWaitFor(t,
+				true,
+				&testDuration,
+				waitForFoo,
+				waitForBar,
+				wait.ForAll(waitForBar).WithDeadline(testDuration),
+			)
+		})
+	})
+
+	t.Run("add-to-nil", func(t *testing.T) {
+		t.Run("default-duration", func(t *testing.T) {
+			testWaitFor(t,
+				false,
+				nil,
+				nil,
+				waitForFoo,
+				wait.ForAll(waitForFoo).WithDeadline(defaultDuration),
+			)
+		})
+
+		t.Run("custom-duration", func(t *testing.T) {
+			testWaitFor(t,
+				false,
+				&testDuration,
+				nil,
+				waitForFoo,
+				wait.ForAll(waitForFoo).WithDeadline(testDuration),
+			)
+		})
+	})
+
+	t.Run("add-to-existing", func(t *testing.T) {
+		t.Run("default-duration", func(t *testing.T) {
+			testWaitFor(t,
+				false,
+				nil,
+				waitForFoo,
+				waitForBar,
+				wait.ForAll(waitForFoo, waitForBar).WithDeadline(defaultDuration),
+			)
+		})
+
+		t.Run("custom-duration", func(t *testing.T) {
+			testWaitFor(t,
+				false,
+				&testDuration,
+				waitForFoo,
+				waitForBar,
+				wait.ForAll(waitForFoo, waitForBar).WithDeadline(testDuration),
+			)
+		})
+	})
 }
