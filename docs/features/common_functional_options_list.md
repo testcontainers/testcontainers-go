@@ -2,8 +2,10 @@
 
 - [`WithExposedPorts`](/features/creating_container/#withexposedports) - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 - [`WithEnv`](/features/creating_container/#withenv) - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
-- [`WithWaitStrategy`](/features/creating_container/#withwaitstrategy) - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
-- [`WithWaitStrategyAndDeadline`](/features/creating_container/#withwaitstrategyanddeadline) - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+- [`WithWaitStrategy`](/features/creating_container/#withwaitstrategy) - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+- [`WithAdditionalWaitStrategy`](/features/creating_container/#withadditionalwaitstrategy) - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- [`WithWaitStrategyAndDeadline`](/features/creating_container/#withwaitstrategyanddeadline) - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+- [`WithAdditionalWaitStrategyAndDeadline`](/features/creating_container/#withadditionalwaitstrategyanddeadline) - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 - [`WithEntrypoint`](/features/creating_container/#withentrypoint) - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 - [`WithEntrypointArgs`](/features/creating_container/#withentrypointargs) - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 - [`WithCmd`](/features/creating_container/#withcmd) - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>

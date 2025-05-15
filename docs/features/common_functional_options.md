@@ -23,7 +23,7 @@ ctr, err = mymodule.Run(ctx, "docker.io/myservice:1.2.3", testcontainers.WithEnv
 
 ##### WithWaitStrategy
 
-- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 If you need to set a different wait strategy for the container, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy.
 
@@ -32,9 +32,24 @@ If you need to set a different wait strategy for the container, you can use `tes
 
 ##### WithWaitStrategyAndDeadline
 
-- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 At the same time, it's possible to set a wait strategy and a custom deadline with `testcontainers.WithWaitStrategyAndDeadline`.
+
+##### WithAdditionalWaitStrategy
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to add a wait strategy to the existing wait strategy, you can use `testcontainers.WithAdditionalWaitStrategy`.
+
+!!!info
+    The default deadline for the wait strategy is 60 seconds.
+
+##### WithAdditionalWaitStrategyAndDeadline
+
+- - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+At the same time, it's possible to add a wait strategy and a custom deadline with `testcontainers.WithAdditionalWaitStrategyAndDeadline`.
 
 ##### WithEntrypoint
 
