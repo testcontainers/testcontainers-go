@@ -1,3 +1,5 @@
+The following options are exposed by the `testcontainers` package.
+
 ### Basic Options
 
 - [`WithExposedPorts`](/features/creating_container/#withexposedports) - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
