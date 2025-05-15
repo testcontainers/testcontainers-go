@@ -60,8 +60,9 @@ func (c *EtcdContainer) Terminate(ctx context.Context, opts ...testcontainers.Te
 // Run creates an instance of the etcd container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*EtcdContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image: img,
-		Cmd:   []string{},
+		Image:        img,
+		ExposedPorts: []string{clientPort, peerPort},
+		Cmd:          []string{},
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
