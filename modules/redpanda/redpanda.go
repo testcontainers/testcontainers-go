@@ -87,11 +87,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				"--memory=1G",
 			},
 			WaitingFor: wait.ForAll(
-				// Wait for the ports to be exposed only as the container needs configuration
-				// before it will bind to the ports and be ready to serve requests.
-				wait.ForListeningPort(defaultKafkaAPIPort).SkipInternalCheck(),
-				wait.ForListeningPort(defaultAdminAPIPort).SkipInternalCheck(),
-				wait.ForListeningPort(defaultSchemaRegistryPort).SkipInternalCheck(),
+				// Wait for the ports to be mapped without accessing them,
+				// because container needs Redpanda configuration before Redpanda is started
+				// and the mapped ports are part of that configuration.
+				wait.ForMappedPort(defaultKafkaAPIPort),
+				wait.ForMappedPort(defaultAdminAPIPort),
+				wait.ForMappedPort(defaultSchemaRegistryPort),
 			),
 		},
 		Started: true,
