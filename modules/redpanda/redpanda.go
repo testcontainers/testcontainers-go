@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
-	"path/filepath"
+	"path"
 	"strings"
 	"text/template"
 	"time"
@@ -159,7 +159,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		},
 		testcontainers.ContainerFile{
 			Reader:            bytes.NewReader(bootstrapConfig),
-			ContainerFilePath: filepath.Join(redpandaDir, bootstrapConfigFile),
+			ContainerFilePath: path.Join(redpandaDir, bootstrapConfigFile),
 			FileMode:          600,
 		},
 	)
@@ -169,12 +169,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		req.Files = append(req.Files,
 			testcontainers.ContainerFile{
 				Reader:            bytes.NewReader(settings.cert),
-				ContainerFilePath: filepath.Join(redpandaDir, certFile),
+				ContainerFilePath: path.Join(redpandaDir, certFile),
 				FileMode:          600,
 			},
 			testcontainers.ContainerFile{
 				Reader:            bytes.NewReader(settings.key),
-				ContainerFilePath: filepath.Join(redpandaDir, keyFile),
+				ContainerFilePath: path.Join(redpandaDir, keyFile),
 				FileMode:          600,
 			},
 		)
@@ -207,7 +207,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return c, err
 	}
 
-	err = ctr.CopyToContainer(ctx, nodeConfig, filepath.Join(redpandaDir, "redpanda.yaml"), 0o600)
+	err = ctr.CopyToContainer(ctx, nodeConfig, path.Join(redpandaDir, "redpanda.yaml"), 0o600)
 	if err != nil {
 		return c, fmt.Errorf("copy to container: %w", err)
 	}
