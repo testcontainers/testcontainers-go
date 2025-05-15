@@ -48,6 +48,8 @@ const (
 
 	bootstrapAdminAPIUser     = "redpanda_bootstrap_admin_user"
 	bootstrapAdminAPIPassword = "redpanda_bootstrap_admin_password"
+
+	mappedPortCheckInterval = 100 * time.Millisecond
 )
 
 // Container represents the Redpanda container type used in the module.
@@ -86,13 +88,29 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				"--smp=1",
 				"--memory=1G",
 			},
-			WaitingFor: wait.ForAll(
-				// Wait for the ports to be exposed only as the container needs configuration
-				// before it will bind to the ports and be ready to serve requests.
-				wait.ForListeningPort(defaultKafkaAPIPort).SkipInternalCheck(),
-				wait.ForListeningPort(defaultAdminAPIPort).SkipInternalCheck(),
-				wait.ForListeningPort(defaultSchemaRegistryPort).SkipInternalCheck(),
-			),
+			LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
+				{
+					PostStarts: []testcontainers.ContainerHook{
+						func(ctx context.Context, c testcontainers.Container) error {
+							ctx, cancel := context.WithTimeout(ctx, time.Minute)
+							defer cancel()
+							if _, err := testcontainers.WaitForMappedPort(
+								ctx, c, defaultKafkaAPIPort, mappedPortCheckInterval); err != nil {
+								return fmt.Errorf("mapped Kafka API port: %w", err)
+							}
+							if _, err := testcontainers.WaitForMappedPort(
+								ctx, c, defaultAdminAPIPort, mappedPortCheckInterval); err != nil {
+								return fmt.Errorf("mapped admin API port: %w", err)
+							}
+							if _, err := testcontainers.WaitForMappedPort(
+								ctx, c, defaultSchemaRegistryPort, mappedPortCheckInterval); err != nil {
+								return fmt.Errorf("mapped schema registry port: %w", err)
+							}
+							return nil
+						},
+					},
+				},
+			},
 		},
 		Started: true,
 	}

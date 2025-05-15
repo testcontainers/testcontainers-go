@@ -124,7 +124,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // copyStarterScript copies the starter script into the container.
 func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
-	port, err := waitForMappedPort(ctx, c, publicPort, time.Minute, 100*time.Millisecond)
+	port, err := waitForMappedPublicPort(ctx, c)
 	if err != nil {
 		return fmt.Errorf("mapped port: %w", err)
 	}
@@ -150,20 +150,10 @@ func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
 	return nil
 }
 
-func waitForMappedPort(ctx context.Context, c testcontainers.Container, localPort nat.Port, timeout, interval time.Duration) (nat.Port, error) {
-	ctx, cancel := context.WithTimeout(ctx, timeout)
+func waitForMappedPublicPort(ctx context.Context, c testcontainers.Container) (nat.Port, error) {
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
-	mappedPort, err := c.MappedPort(ctx, localPort)
-	for i := 1; err != nil; i++ {
-		select {
-		case <-ctx.Done():
-			return mappedPort, fmt.Errorf(
-				"mapped port: retries: %d, local port: %s, last err: %w, ctx err: %w", i, localPort, err, ctx.Err())
-		case <-time.After(interval):
-			mappedPort, err = c.MappedPort(ctx, localPort)
-		}
-	}
-	return mappedPort, nil
+	return testcontainers.WaitForMappedPort(ctx, c, publicPort, 100*time.Millisecond)
 }
 
 func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
