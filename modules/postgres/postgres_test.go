@@ -155,7 +155,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
-			testcontainers.WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL)),
+			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL)),
 		)
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
@@ -168,7 +168,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
-			testcontainers.WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 10")),
+			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 10")),
 		)
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
@@ -181,7 +181,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
-			testcontainers.WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 'a' from b")),
+			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 'a' from b")),
 		)
 		testcontainers.CleanupContainer(t, ctr)
 		require.Error(t, err)
@@ -225,7 +225,7 @@ func TestWithSSL(t *testing.T) {
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
-		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+		testcontainers.WithAdditionalWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
 		postgres.WithSSLCert(caCert.CertPath, serverCerts.CertPath, serverCerts.KeyPath),
 	)
 
@@ -255,7 +255,7 @@ func TestSSLValidatesKeyMaterialPath(t *testing.T) {
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
-		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+		testcontainers.WithAdditionalWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
 		postgres.WithSSLCert("", "", ""),
 	)
 
