@@ -7,6 +7,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/docker/go-connections/nat"
 	"golang.org/x/mod/semver"
@@ -123,10 +124,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // copyStarterScript copies the starter script into the container.
 func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
-	if err := wait.ForListeningPort(publicPort).
-		SkipInternalCheck().
-		WaitUntilReady(ctx, c); err != nil {
-		return fmt.Errorf("wait for exposed port: %w", err)
+	port, err := waitForMappedPublicPort(ctx, c)
+	if err != nil {
+		return fmt.Errorf("mapped port: %w", err)
 	}
 
 	host, err := c.Host(ctx)
@@ -141,11 +141,6 @@ func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
 
 	hostname := inspect.Config.Hostname
 
-	port, err := c.MappedPort(ctx, publicPort)
-	if err != nil {
-		return fmt.Errorf("mapped port: %w", err)
-	}
-
 	scriptContent := fmt.Sprintf(starterScriptContent, host, port.Int(), hostname)
 
 	if err := c.CopyToContainer(ctx, []byte(scriptContent), starterScript, 0o755); err != nil {
@@ -153,6 +148,12 @@ func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
 	}
 
 	return nil
+}
+
+func waitForMappedPublicPort(ctx context.Context, c testcontainers.Container) (nat.Port, error) {
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
+	return testcontainers.WaitForMappedPort(ctx, c, publicPort, 100*time.Millisecond)
 }
 
 func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
