@@ -1,6 +1,6 @@
 # GCloud
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.25.0"><span class="tc-version">:material-tag: v0.25.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.25.0"><span class="tc-version">:material-tag: v0.25.0</span></a>
 
 ## Introduction
 
@@ -31,7 +31,7 @@ The Google Cloud module exposes the following Go packages:
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The BigQuery module exposes one entrypoint function to create the BigQuery container, and this function receives three parameters:
 
@@ -43,20 +43,20 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the BigQuery container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "ghcr.io/goccy/bigquery-emulator:0.6.1")`.
 
+### Container Options
+
+When starting the BigQuery container, you can pass options in a variadic way to configure it.
+
 {% include "./gcloud-shared.md" %}
 
 #### Data YAML (Seed File)
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 If you would like to do additional initialization in the BigQuery container, add a `data.yaml` file represented by an `io.Reader` to the container request with the `WithDataYAML` function.
 That file is copied after the container is created but before it's started. The startup command then used will look like `--project test --data-from-yaml /testcontainers-data.yaml`.
@@ -66,6 +66,8 @@ An example of a `data.yaml` file that seeds the BigQuery instance with datasets 
 <!--codeinclude-->
 [Data Yaml content](../../modules/gcloud/bigquery/testdata/data.yaml)
 <!--/codeinclude-->
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Examples
 
@@ -80,7 +82,7 @@ It's important to set the `option.WithEndpoint()` option using the container's U
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The BigTable module exposes one entrypoint function to create the BigTable container, and this function receives three parameters:
 
@@ -92,16 +94,18 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the BigTable container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators")`.
 
+### Container Options
+
+When starting the BigTable container, you can pass options in a variadic way to configure it.
+
 {% include "./gcloud-shared.md" %}
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Examples
 
@@ -117,7 +121,7 @@ It's important to set the `option.WithEndpoint()` option using the container's U
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The Datastore module exposes one entrypoint function to create the Datastore container, and this function receives three parameters:
 
@@ -129,16 +133,18 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the Datastore container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators")`.
 
+### Container Options
+
+When starting the Datastore container, you can pass options in a variadic way to configure it.
+
 {% include "./gcloud-shared.md" %}
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Examples
 
@@ -153,7 +159,7 @@ It's important to set the `option.WithEndpoint()` option using the container's U
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The Firestore module exposes one entrypoint function to create the Firestore container, and this function receives three parameters:
 
@@ -165,24 +171,26 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the Firestore container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators")`.
 
+### Container Options
+
+When starting the Firestore container, you can pass options in a variadic way to configure it.
+
 {% include "./gcloud-shared.md" %}
 
 ### Datastore mode
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 Using the `WithDatastoreMode` option will run the Firestore emulator using `Firestore In Datastore` mode allowing you to use Datastore APIs and clients towards the Firestore emulator.
 
 Requires `cloud-sdk:465.0.0` or higher
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Examples
 
@@ -197,7 +205,7 @@ It's important to set the target string of the `grpc.NewClient` method using the
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The Pubsub module exposes one entrypoint function to create the Pubsub container, and this function receives three parameters:
 
@@ -209,16 +217,18 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the Pubsub container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators")`.
 
+### Container Options
+
+When starting the Pubsub container, you can pass options in a variadic way to configure it.
+
 {% include "./gcloud-shared.md" %}
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Examples
 
@@ -233,7 +243,7 @@ It's important to set the target string of the `grpc.NewClient` method using the
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The Spanner module exposes one entrypoint function to create the Spanner container, and this function receives three parameters:
 
@@ -245,16 +255,18 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the Spanner container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators")`.
 
+### Container Options
+
+When starting the Spanner container, you can pass options in a variadic way to configure it.
+
 {% include "./gcloud-shared.md" %}
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Examples
 

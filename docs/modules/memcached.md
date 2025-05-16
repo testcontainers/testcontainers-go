@@ -1,6 +1,6 @@
 # Memcached
 
-Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/memcached
 
 ### Run function
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 The Memcached module exposes one entrypoint function to create the Memcached container, and this function receives three parameters:
 
@@ -36,16 +36,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the Memcached container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "memcached:1.6-alpine")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the Memcached container, you can pass options in a variadic way to configure it.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 
@@ -53,7 +53,7 @@ The Memcached container exposes the following methods:
 
 #### HostPort
 
-- Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 The `HostPort` method returns the host and port of the Memcached container, in the format `host:port`. Use this method to connect to the Memcached container from your application.
 

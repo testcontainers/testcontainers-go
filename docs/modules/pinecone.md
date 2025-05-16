@@ -1,6 +1,6 @@
 # Pinecone
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/pinecone
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
@@ -39,16 +39,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the Pinecone container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "ghcr.io/pinecone-io/pinecone-local:latest")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the Pinecone container, you can pass options in a variadic way to configure it.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 
@@ -56,7 +56,7 @@ The Pinecone container exposes the following methods:
 
 #### HttpEndpoint
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 The `HttpEndpoint` method returns the location where the Pinecone container is listening.
 It returns a string with the format `http://<host>:<port>`.

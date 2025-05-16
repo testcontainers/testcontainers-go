@@ -1,6 +1,6 @@
 # Socat
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 ## Introduction
 
@@ -29,7 +29,7 @@ go get github.com/testcontainers/testcontainers-go/modules/socat
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The Socat module exposes one entrypoint function to create the Socat container, and this function receives three parameters:
 
@@ -40,10 +40,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `context.Context`, the Go context.
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
-
-### Container Options
-
-When starting the Socat container, you can pass options in a variadic way to configure it.
 
 #### Image
 
@@ -56,11 +52,13 @@ The module exposes a default image:
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), DefaultImage)`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the Socat container, you can pass options in a variadic way to configure it.
 
 #### WithTarget
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The `WithTarget` function sets a single target for the Socat container, defined by the `Target` struct.
 This struct can be built using the the following functions:
@@ -72,7 +70,9 @@ This struct can be built using the the following functions:
 [Passing a target](../../modules/socat/examples_test.go) inside_block:createSocatContainer
 <!--/codeinclude-->
 
-In the above example, there is a `helloworld` container thatis listening on port `8080` and `8081`. Please check [the helloworld container source code](https://github.com/testcontainers/helloworld/blob/141af7909907e04b124e691d3cd6fc7c32da2207/internal/server/server.go#L26-L27) for more details.
+In the above example, there is a `helloworld` container that is listening on port `8080` and `8081`. Please check [the helloworld container source code](https://github.com/testcontainers/helloworld/blob/141af7909907e04b124e691d3cd6fc7c32da2207/internal/server/server.go#L26-L27) for more details.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 
@@ -80,7 +80,7 @@ The Socat container exposes the following methods:
 
 #### TargetURL
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 The `TargetURL(port int)` method returns the URL for the exposed port of a target, nil if the port is not mapped.
 

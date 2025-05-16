@@ -1,6 +1,6 @@
 # Cassandra
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.26.0"><span class="tc-version">:material-tag: v0.26.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.26.0"><span class="tc-version">:material-tag: v0.26.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/cassandra
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
@@ -39,18 +39,18 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the Cassandra container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "cassandra:4.1.3")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
 
-#### Init Scripts
+When starting the Cassandra container, you can pass options in a variadic way to configure it.
+
+#### WithInitScripts
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.26.0"><span class="tc-version">:material-tag: v0.26.0</span></a>
 
 If you would like to do additional initialization in the Cassandra container, add one or more `*.cql` or `*.sh` scripts to the container request with the `WithInitScripts` function.
 Those files will be copied after the container is created but before it's started under root directory.
@@ -61,18 +61,24 @@ An example of a `*.sh` script that creates a keyspace and table is shown below:
 [Init script content](../../modules/cassandra/testdata/init.sh)
 <!--/codeinclude-->
 
-#### Database configuration
+#### WithConfigFile
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.26.0"><span class="tc-version">:material-tag: v0.26.0</span></a>
 
 In the case you have a custom config file for Cassandra, it's possible to copy that file into the container before it's started, using the `WithConfigFile(cfgPath string)` function.
 
 !!!warning
     You should provide a valid Cassandra configuration file, otherwise the container will fail to start.
 
+{% include "../features/common_functional_options_list.md" %}
+
 ### Container Methods
 
 The Cassandra container exposes the following methods:
 
 #### ConnectionHost
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.26.0"><span class="tc-version">:material-tag: v0.26.0</span></a>
 
 This method returns the host and port of the Cassandra container, using the default, `9042/tcp` port. E.g. `localhost:9042`
 

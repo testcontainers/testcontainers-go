@@ -1,6 +1,6 @@
 # LocalStack
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.18.0"><span class="tc-version">:material-tag: v0.18.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.18.0"><span class="tc-version">:material-tag: v0.18.0</span></a>
 
 ## Introduction
 
@@ -29,7 +29,7 @@ Use the `testcontainers.WithEnv` option when creating the `LocalStackContainer` 
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
@@ -44,16 +44,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the Localstack container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "localstack:1.4.0")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the Localstack container, you can pass options in a variadic way to configure it.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ## Accessing hostname-sensitive services
 
@@ -76,11 +76,11 @@ Once the variable is set:
 
 * Other usage scenarios, such as where the Localstack container is used from both the test host and containers on a custom network, are not automatically supported. If you have this use case, you should set `HOSTNAME_EXTERNAL` manually.
 
-## Obtaining a client using the AWS SDK for Go
+## Examples using the AWS SDK for Go
 
 You can use the AWS SDK for Go to create a client for the LocalStack container. The following examples show how to create a client for the S3 service, using both the SDK v1 and v2.
 
-### Using the AWS SDK v1
+### AWS SDK v1
 
 <!--codeinclude-->
 [AWS SDK v1](../../modules/localstack/v1/s3_test.go) inside_block:awsSDKClientV1
@@ -88,7 +88,7 @@ You can use the AWS SDK for Go to create a client for the LocalStack container. 
 
 For further reference on the SDK v1, please check out the AWS docs [here](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/setting-up.html).
 
-### Using the AWS SDK v2
+### AWS SDK v2
 
 <!--codeinclude-->
 [EndpointResolver](../../modules/localstack/v2/s3_test.go) inside_block:awsResolverV2

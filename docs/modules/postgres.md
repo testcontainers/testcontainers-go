@@ -1,6 +1,6 @@
 # Postgres
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/postgres
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
@@ -39,6 +39,11 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
+#### Image
+
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "postgres:16-alpine")`.
+
 ### Container Options
 
 When starting the Postgres container, you can pass options in a variadic way to configure it.
@@ -46,18 +51,15 @@ When starting the Postgres container, you can pass options in a variadic way to 
 !!!tip
     You can find all the available configuration and environment variables for the Postgres Docker image on [Docker Hub](https://hub.docker.com/_/postgres).
 
-#### Image
-
-Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "postgres:16-alpine")`.
-
-{% include "../features/common_functional_options.md" %}
-
 #### Initial Database
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 If you need to set a different database, and its credentials, you can use the `WithDatabase(db string)`, `WithUsername(user string)` and `WithPassword(pwd string)` options.
 
-#### Init Scripts
+#### WithInitScripts
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 If you would like to do additional initialization in the Postgres container, add one or more `*.sql`, `*.sql.gz`, or `*.sh` scripts to the container request with the `WithInitScripts` function.
 Those files will be copied after the container is created but before it's started under `/docker-entrypoint-initdb.d`. According to Postgres Docker image,
@@ -72,13 +74,17 @@ An example of a `*.sh` script that creates a user and database is shown below:
 
 #### Ordered Init Scripts
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+
 If you would like to run the init scripts in a specific order, you can use the `WithOrderedInitScripts` function, which copies the given scripts in the order they are provided to the container, prefixed with the order number so that Postgres executes them in the correct order.
 
 <!--codeinclude-->
 [Ordered init scripts](../../modules/postgres/postgres_test.go) inside_block:orderedInitScripts
 <!--/codeinclude-->
 
-#### Database configuration
+#### WithConfigFile
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 In the case you have a custom config file for Postgres, it's possible to copy that file into the container before it's started, using the `WithConfigFile(cfgPath string)` function.
 
@@ -89,7 +95,7 @@ This function can be used `WithSSLSettings` but requires your configuration corr
 
 #### SSL Configuration
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.35.0"><span class="tc-version">:material-tag: v0.35.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.35.0"><span class="tc-version">:material-tag: v0.35.0</span></a>
 
 If you would like to use SSL with the container you can use the `WithSSLSettings`. This function accepts a `SSLSettings` which has the required secret material, namely the ca-certificate, server certificate and key. The container will copy this material to `/tmp/testcontainers-go/postgres/ca_cert.pem`, `/tmp/testcontainers-go/postgres/server.cert` and `/tmp/testcontainers-go/postgres/server.key`
 
@@ -111,9 +117,19 @@ ssl_key_file = '/tmp/testcontainers-go/postgres/server.key'
 
     The `SSLSettings` function will modify the container `entrypoint`. This is done so that key material copied over to the container is chowned by `postgres`. All other container arguments will be passed through to the original container entrypoint.
 
+#### Snapshot/Restore with custom driver
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+
+You can tell the module to use the database driver you have imported in your test package by setting `postgres.WithSQLDriver("name")` to your driver name.
+
+{% include "../features/common_functional_options_list.md" %}
+
 ### Container Methods
 
 #### ConnectionString
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 This method returns the connection string to connect to the Postgres container, using the default `5432` port.
 It's possible to pass extra parameters to the connection string, e.g. `sslmode=disable` or `application_name=myapp`, in a variadic way.
@@ -144,6 +160,7 @@ No default is supplied, so you need to set it explicitly.
 <!--/codeinclude-->
 
 ### Using Snapshots
+
 This example shows the usage of the postgres module's Snapshot feature to give each test a clean database without having
 to recreate the database container on every test or run heavy scripts to clean your database. This makes the individual
 tests very modular, since they always run on a brand-new database.
@@ -158,8 +175,6 @@ tests very modular, since they always run on a brand-new database.
 <!--/codeinclude-->
 
 ### Snapshot/Restore with custom driver
-
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 The snapshot/restore feature tries to use the `postgres` driver with go's included `sql.DB` package to perform database operations.
 If the `postgres` driver is not installed, it will fall back to using `docker exec`, which works, but is slower.

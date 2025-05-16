@@ -1,6 +1,6 @@
 # Chroma
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
 
 ## Introduction
 
@@ -29,7 +29,7 @@ go get github.com/testcontainers/testcontainers-go/modules/chroma
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
@@ -44,22 +44,24 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the Chroma container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "chromadb/chroma:0.4.24")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the Chroma container, you can pass options in a variadic way to configure it.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 
 The Chroma container exposes the following methods:
 
 #### REST Endpoint
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
 
 This method returns the REST endpoint of the Chroma container, using the default `8000` port.
 

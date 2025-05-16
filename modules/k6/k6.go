@@ -115,13 +115,10 @@ func WithRemoteTestScript(d DownloadableFile) testcontainers.CustomizeRequestOpt
 	return WithTestScript(d.getDownloadPath())
 }
 
+// Deprecated: use [testcontainers.WithCmdArgs] instead
 // WithCmdOptions pass the given options to the k6 run command
 func WithCmdOptions(options ...string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Cmd = append(req.Cmd, options...)
-
-		return nil
-	}
+	return testcontainers.WithCmdArgs(options...)
 }
 
 // SetEnvVar adds a '--env' command-line flag to the k6 command in the container for setting an environment variable for the test script.
