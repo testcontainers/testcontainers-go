@@ -85,6 +85,8 @@ jobs:
       - lint
     name: "Test using Testcontainers Cloud"
     strategy:
+      # We don't want to fail the build the soonest but identify which modules passed and failed.
+      fail-fast: false
       matrix:
         go-version: [1.23.x, 1.24.x]
     uses: ./.github/workflows/ci-test-go.yml
