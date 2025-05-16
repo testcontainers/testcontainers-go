@@ -120,6 +120,7 @@ jobs:
         run: |
           if [[ "1.23.x" == "${{ inputs.go-version }}" ]] && \
              [[ "true" != "${{ inputs.rootless-docker }}" ]] && \
+             [[ "true" != "${{ inputs.testcontainers-cloud }}" ]] && \
              [[ "true" != "${{ inputs.ryuk-disabled }}" ]] && \
              [[ "main" == "${{ github.ref_name }}" ]] && \
              [[ "testcontainers" == "${{ github.repository_owner }}" ]]; then
