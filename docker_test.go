@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -93,6 +94,9 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 }
 
 func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testing.T) {
+	t.Setenv("TESTCONTAINERS_AUTO_EXPOSE_PORTS", "true")
+	config.Reset()
+
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
@@ -1907,6 +1911,9 @@ func assertExtractedFiles(t *testing.T, ctx context.Context, container Container
 }
 
 func TestDockerProviderFindContainerByName(t *testing.T) {
+	t.Setenv("TESTCONTAINERS_AUTO_EXPOSE_PORTS", "true")
+	config.Reset()
+
 	ctx := context.Background()
 	provider, err := NewDockerProvider(WithLogger(log.TestLogger(t)))
 	require.NoError(t, err)

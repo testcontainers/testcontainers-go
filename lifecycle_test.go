@@ -19,8 +19,57 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
+
+func TestPreCreateModifierHook_NoExposedPorts(t *testing.T) {
+	t.Run("auto-expose-ports-enabled", func(t *testing.T) {
+		t.Setenv("TESTCONTAINERS_AUTO_EXPOSE_PORTS", "true")
+		config.Reset()
+
+		req := GenericContainerRequest{
+			ContainerRequest: ContainerRequest{
+				Image: nginxAlpineImage,
+			},
+			Started: true,
+		}
+
+		ctr, err := GenericContainer(context.Background(), req)
+		require.NoError(t, err)
+		CleanupContainer(t, ctr)
+
+		json, err := ctr.Inspect(context.Background())
+		require.NoError(t, err)
+
+		require.Equal(t, nat.PortSet(nat.PortSet{"80/tcp": struct{}{}}), json.Config.ExposedPorts)
+		require.Equal(t, nat.PortMap{}, json.HostConfig.PortBindings)
+		require.NotNil(t, json.NetworkSettings.Ports["80/tcp"])
+	})
+
+	t.Run("auto-expose-ports-disabled", func(t *testing.T) {
+		t.Setenv("TESTCONTAINERS_AUTO_EXPOSE_PORTS", "false")
+		config.Reset()
+
+		req := GenericContainerRequest{
+			ContainerRequest: ContainerRequest{
+				Image: nginxAlpineImage,
+			},
+			Started: true,
+		}
+
+		ctr, err := GenericContainer(context.Background(), req)
+		require.NoError(t, err)
+		CleanupContainer(t, ctr)
+
+		json, err := ctr.Inspect(context.Background())
+		require.NoError(t, err)
+
+		require.Equal(t, nat.PortSet(nat.PortSet{"80/tcp": struct{}{}}), json.Config.ExposedPorts)
+		require.Equal(t, nat.PortMap{}, json.HostConfig.PortBindings)
+		require.Nil(t, json.NetworkSettings.Ports["80/tcp"])
+	})
+}
 
 func TestPreCreateModifierHook(t *testing.T) {
 	ctx := context.Background()
@@ -55,7 +104,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 		require.Len(t, errs, 2) // one valid and two invalid mounts
 	})
 
-	t.Run("No exposed ports", func(t *testing.T) {
+	t.Run("no-exposed-ports", func(t *testing.T) {
 		// reqWithModifiers {
 		req := ContainerRequest{
 			Image: nginxAlpineImage, // alpine image does expose port 80
@@ -104,18 +153,8 @@ func TestPreCreateModifierHook(t *testing.T) {
 
 		// assertions
 
-		assert.Equal(
-			t,
-			[]string{"a=b"},
-			inputConfig.Env,
-			"Docker config's env should be overwritten by the modifier",
-		)
-		assert.Equal(t,
-			nat.PortSet(nat.PortSet{"80/tcp": struct{}{}}),
-			inputConfig.ExposedPorts,
-			"Docker config's exposed ports should be overwritten by the modifier",
-		)
-		assert.Equal(
+		require.Equal(t, []string{"a=b"}, inputConfig.Env)
+		require.Equal(
 			t,
 			[]mount.Mount{
 				{
@@ -128,32 +167,9 @@ func TestPreCreateModifierHook(t *testing.T) {
 				},
 			},
 			inputHostConfig.Mounts,
-			"Host config's mounts should be mapped to Docker types",
 		)
-
-		assert.Equal(t, nat.PortMap{
-			"80/tcp": []nat.PortBinding{
-				{
-					HostIP:   "",
-					HostPort: "",
-				},
-			},
-		}, inputHostConfig.PortBindings,
-			"Host config's port bindings should be overwritten by the modifier",
-		)
-
-		assert.Equal(
-			t,
-			[]string{"b"},
-			inputNetworkingConfig.EndpointsConfig["a"].Aliases,
-			"Networking config's aliases should be overwritten by the modifier",
-		)
-		assert.Equal(
-			t,
-			[]string{"link1", "link2"},
-			inputNetworkingConfig.EndpointsConfig["a"].Links,
-			"Networking config's links should be overwritten by the modifier",
-		)
+		require.Equal(t, []string{"b"}, inputNetworkingConfig.EndpointsConfig["a"].Aliases)
+		require.Equal(t, []string{"link1", "link2"}, inputNetworkingConfig.EndpointsConfig["a"].Links)
 	})
 
 	t.Run("No exposed ports and network mode IsContainer", func(t *testing.T) {
