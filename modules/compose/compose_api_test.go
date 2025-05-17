@@ -198,7 +198,9 @@ func TestDockerComposeAPI_TestcontainersLabelsArePresent(t *testing.T) {
 
 func TestDockerComposeAPI_WithReaper(t *testing.T) {
 	config.Reset() // reset the config using the internal method to avoid the sync.Once
-	tcConfig := config.Read()
+	tcConfig, err := testcontainers.NewConfig()
+	require.NoError(t, err)
+
 	if tcConfig.RyukDisabled {
 		t.Skip("Ryuk is disabled, skipping test")
 	}
@@ -227,7 +229,9 @@ func TestDockerComposeAPI_WithReaper(t *testing.T) {
 
 func TestDockerComposeAPI_WithoutReaper(t *testing.T) {
 	config.Reset() // reset the config using the internal method to avoid the sync.Once
-	tcConfig := config.Read()
+	tcConfig, err := testcontainers.NewConfig()
+	require.NoError(t, err)
+
 	if !tcConfig.RyukDisabled {
 		t.Skip("Ryuk is enabled, skipping test")
 	}
