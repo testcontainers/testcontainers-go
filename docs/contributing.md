@@ -77,7 +77,7 @@ If you need to set the new feature, you can use the `testcontainers.WithNewFeatu
 Also update the [common_functional_options_list.md](./features/common_functional_options_list.md) file to include the new option, with the following syntax:
 
 ```md
-- [`WithNewFeature`](/features/common_functional_options/#withnewfeature) - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- [`WithNewFeature`](/features/common_functional_options/#withnewfeature) Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 ```
 
 This file is imported by all the modules, so they will all have the new option in the documentation.
