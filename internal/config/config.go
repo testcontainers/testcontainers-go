@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/magiconair/properties"
+
+	"github.com/testcontainers/testcontainers-go/log"
 )
 
 const ReaperDefaultImage = "testcontainers/ryuk:0.11.0"
@@ -149,6 +151,10 @@ func read() Config {
 		autoExposePortsEnv := readTestcontainersEnv("TESTCONTAINERS_AUTO_EXPOSE_PORTS")
 		if parseBool(autoExposePortsEnv) {
 			config.AutoExposePorts = autoExposePortsEnv == "true"
+		}
+
+		if config.AutoExposePorts {
+			log.Printf("⚠️ Testcontainers is configured to automatically expose ports from the Image definition, but this is deprecated and will be removed in a future version. Please set `tc.auto.expose.ports=false` in the testcontainers.properties file.")
 		}
 
 		return config
