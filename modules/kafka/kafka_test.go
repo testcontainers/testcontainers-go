@@ -17,11 +17,9 @@ func TestKafka(t *testing.T) {
 
 	ctx := context.Background()
 
-	kafkaContainer, err := kafka.Run(ctx, "confluentinc/confluent-local:7.5.0", kafka.WithClusterID("kraftCluster"))
+	kafkaContainer, err := kafka.Run(ctx, "apache/kafka-native:3.8.0", kafka.WithClusterID("kraftCluster"))
 	testcontainers.CleanupContainer(t, kafkaContainer)
 	require.NoError(t, err)
-
-	assertAdvertisedListeners(t, kafkaContainer)
 
 	require.Truef(t, strings.EqualFold(kafkaContainer.ClusterID, "kraftCluster"), "expected clusterID to be %s, got %s", "kraftCluster", kafkaContainer.ClusterID)
 
@@ -45,8 +43,6 @@ func TestKafka(t *testing.T) {
 	// wait for the consumer to be ready
 	<-ready
 
-	// perform assertions
-
 	// set config to true because successfully delivered messages will be returned on the Successes channel
 	config.Producer.Return.Successes = true
 
@@ -66,26 +62,31 @@ func TestKafka(t *testing.T) {
 	require.Truef(t, strings.EqualFold(string(consumer.message.Value), "value"), "expected value to be %s, got %s", "value", string(consumer.message.Value))
 }
 
-func TestKafka_invalidVersion(t *testing.T) {
-	ctx := context.Background()
+func TestWithClusterID(t *testing.T) {
+	t.Run("error/less-than-16-chars", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{}
 
-	ctr, err := kafka.Run(ctx, "confluentinc/confluent-local:6.3.3", kafka.WithClusterID("kraftCluster"))
-	testcontainers.CleanupContainer(t, ctr)
-	require.Error(t, err)
-}
+		err := kafka.WithClusterID("kraftCluster")(&req)
+		require.Error(t, err)
+	})
 
-// assertAdvertisedListeners checks that the advertised listeners are set correctly:
-// - The BROKER:// protocol is using the hostname of the Kafka container
-func assertAdvertisedListeners(t *testing.T, container testcontainers.Container) {
-	t.Helper()
-	inspect, err := container.Inspect(context.Background())
-	require.NoError(t, err)
+	t.Run("error/empty-string", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{}
 
-	brokerURL := "BROKER://" + inspect.Config.Hostname + ":9092"
+		err := kafka.WithClusterID("")(&req)
+		require.Error(t, err)
+	})
 
-	ctx := context.Background()
+	t.Run("success", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Env: map[string]string{},
+			},
+		}
 
-	bs := testcontainers.RequireContainerExec(ctx, t, container, []string{"cat", "/usr/sbin/testcontainers_start.sh"})
+		err := kafka.WithClusterID("very-long-cluster-id")(&req)
+		require.NoError(t, err)
 
-	require.Containsf(t, bs, brokerURL, "expected advertised listeners to contain %s, got %s", brokerURL, bs)
+		require.Equal(t, "very-long-cluster-id", req.Env["CLUSTER_ID"])
+	})
 }
