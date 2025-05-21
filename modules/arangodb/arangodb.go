@@ -43,47 +43,46 @@ func (c *Container) HTTPEndpoint(ctx context.Context) (string, error) {
 
 // Run creates an instance of the ArangoDB container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{defaultPort},
-		Env: map[string]string{
-			"ARANGO_ROOT_PASSWORD": defaultPassword,
-		},
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultPort),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
+	defaultOptions := defaultOptions()
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
+		if o, ok := opt.(Option); ok {
+			if err := o(&defaultOptions); err != nil {
+				return nil, fmt.Errorf("customize: %w", err)
+			}
 		}
 	}
 
 	// Wait for the container to be ready once we know the credentials
-	genericContainerReq.WaitingFor = wait.ForAll(
+	moduleOpts = append(moduleOpts, testcontainers.WithWaitStrategy(wait.ForAll(
 		wait.ForListeningPort(defaultPort),
 		wait.ForHTTP("/_admin/status").
 			WithPort(defaultPort).
-			WithBasicAuth(DefaultUser, req.Env["ARANGO_ROOT_PASSWORD"]).
+			WithBasicAuth(DefaultUser, defaultOptions.env["ARANGO_ROOT_PASSWORD"]).
 			WithHeaders(map[string]string{
 				"Accept": "application/json",
 			}).
 			WithStatusCodeMatcher(func(status int) bool {
 				return status == http.StatusOK
 			}),
-	)
+	)))
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	// module options take precedence over default options
+	moduleOpts = append(moduleOpts, testcontainers.WithEnv(defaultOptions.env))
+
+	container, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
 	if container != nil {
-		c = &Container{Container: container, password: req.Env["ARANGO_ROOT_PASSWORD"]}
+		c = &Container{Container: container, password: defaultOptions.env["ARANGO_ROOT_PASSWORD"]}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	return c, nil
