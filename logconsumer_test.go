@@ -241,9 +241,6 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		config.Reset()
 	})
 
-	if providerType == ProviderPodman {
-		t.Skip("Docker-in-Docker does not work with rootless Podman")
-	}
 	// First spin up a docker-in-docker container, then spin up an inner container within that dind container
 	// Logs are being read from the inner container via the dind container's tcp port, which can be briefly
 	// closed to test behaviour in connection-closed situations.
@@ -289,9 +286,12 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	require.NoError(t, err)
 	defer dockerClient.Close()
 
+	cfg, err := NewConfig()
+	require.NoError(t, err)
+
 	provider := &DockerProvider{
 		client: dockerClient,
-		config: config.Read(),
+		config: cfg,
 		DockerProviderOptions: &DockerProviderOptions{
 			GenericProviderOptions: &GenericProviderOptions{
 				Logger: log.TestLogger(t),

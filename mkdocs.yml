@@ -141,9 +141,6 @@ nav:
             - system_requirements/ci/gitlab_ci.md
             - system_requirements/ci/tekton.md
             - system_requirements/ci/travis.md
-        - system_requirements/using_colima.md
-        - system_requirements/using_podman.md
-        - system_requirements/rancher.md
     - Dependabot: dependabot.md
     - Contributing: contributing.md
     - Getting help: getting_help.md
