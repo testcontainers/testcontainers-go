@@ -1,27 +1,21 @@
 package etcd
 
 import (
-	"context"
-	"fmt"
-
 	"github.com/testcontainers/testcontainers-go"
-	tcexec "github.com/testcontainers/testcontainers-go/exec"
 )
 
 type options struct {
-	currentNode      int
-	clusterNetwork   *testcontainers.DockerNetwork
-	nodeNames        []string
-	clusterToken     string
-	additionalArgs   []string
-	mountDataDir     bool // flag needed to avoid extra calculations with the lifecycle hooks
-	containerRequest *testcontainers.ContainerRequest
+	currentNode    int
+	clusterNetwork *testcontainers.DockerNetwork
+	nodeNames      []string
+	clusterToken   string
+	additionalArgs []string
+	mountDataDir   bool // flag needed to avoid extra calculations with the lifecycle hooks
 }
 
-func defaultOptions(req *testcontainers.ContainerRequest) options {
+func defaultOptions() options {
 	return options{
-		clusterToken:     defaultClusterToken,
-		containerRequest: req,
+		clusterToken: defaultClusterToken,
 	}
 }
 
@@ -51,19 +45,6 @@ func WithDataDir() Option {
 	return func(o *options) {
 		// Avoid extra calculations with the lifecycle hooks
 		o.mountDataDir = true
-
-		o.containerRequest.LifecycleHooks = append(o.containerRequest.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
-			PostStarts: []testcontainers.ContainerHook{
-				func(ctx context.Context, c testcontainers.Container) error {
-					_, _, err := c.Exec(ctx, []string{"chmod", "o+rwx", "-R", dataDir}, tcexec.Multiplexed())
-					if err != nil {
-						return fmt.Errorf("chmod etcd data dir: %w", err)
-					}
-
-					return nil
-				},
-			},
-		})
 	}
 }
 
