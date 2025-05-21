@@ -32,47 +32,41 @@ func (c *MeilisearchContainer) MasterKey() string {
 
 // Run creates an instance of the Meilisearch container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MeilisearchContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{defaultHTTPPort},
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultHTTPPort),
+		testcontainers.WithEnv(map[string]string{
 			masterKeyEnvVar: defaultMasterKey,
-		},
+		}),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
 	// Gather all config options (defaults and then apply provided options)
 	settings := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
-			apply(settings)
-		}
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
+			if err := apply(settings); err != nil {
+				return nil, fmt.Errorf("meilisearch option: %w", err)
+			}
 		}
 	}
 
 	if settings.DumpDataFilePath != "" {
-		genericContainerReq.Files = []testcontainers.ContainerFile{
-			{
-				HostFilePath:      settings.DumpDataFilePath,
-				ContainerFilePath: "/dumps/" + settings.DumpDataFileName,
-				FileMode:          0o755,
-			},
-		}
-		genericContainerReq.Cmd = []string{"meilisearch", "--import-dump", "/dumps/" + settings.DumpDataFileName}
+		moduleOpts = append(moduleOpts, testcontainers.WithFiles(testcontainers.ContainerFile{
+			HostFilePath:      settings.DumpDataFilePath,
+			ContainerFilePath: "/dumps/" + settings.DumpDataFileName,
+			FileMode:          0o755,
+		}))
+
+		moduleOpts = append(moduleOpts, testcontainers.WithCmd("meilisearch", "--import-dump", "/dumps/"+settings.DumpDataFileName))
 	}
 
 	// the wait strategy does not support TLS at the moment,
 	// so we need to disable it in the strategy for now.
-	genericContainerReq.WaitingFor = wait.ForHTTP("/health").
+	moduleOpts = append(moduleOpts, testcontainers.WithWaitStrategy(wait.ForHTTP("/health").
 		WithPort(defaultHTTPPort).
 		WithTLS(false).
-		WithStartupTimeout(120 * time.Second).
+		WithStartupTimeout(120*time.Second).
 		WithStatusCodeMatcher(func(status int) bool {
 			return status == http.StatusOK
 		}).
@@ -86,16 +80,18 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			}
 
 			return r.Status == "available"
-		})
+		})))
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	moduleOpts = append(moduleOpts, testcontainers.WithEnv(settings.env))
+
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *MeilisearchContainer
-	if container != nil {
-		c = &MeilisearchContainer{Container: container, masterKey: req.Env[masterKeyEnvVar]}
+	if ctr != nil {
+		c = &MeilisearchContainer{Container: ctr, masterKey: settings.env[masterKeyEnvVar]}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	return c, nil
