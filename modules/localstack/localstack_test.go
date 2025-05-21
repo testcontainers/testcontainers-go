@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -34,14 +35,16 @@ func TestConfigureDockerHost(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		logger := log.TestLogger(t)
+
 		t.Run("HOSTNAME_EXTERNAL variable is passed as part of the request", func(t *testing.T) {
 			req := generateContainerRequest()
 
 			req.Env[tt.envVar] = "foo"
 
-			reason, err := configureDockerHost(req, tt.envVar)
+			err := configureDockerHost(logger, tt.envVar)(&req.GenericContainerRequest)
 			require.NoError(t, err)
-			require.Equal(t, "explicitly as environment variable", reason)
+			require.Equal(t, "foo", req.Env[tt.envVar])
 		})
 
 		t.Run("HOSTNAME_EXTERNAL matches the last network alias on a container with non-default network", func(t *testing.T) {
@@ -54,9 +57,8 @@ func TestConfigureDockerHost(t *testing.T) {
 				"baaz": {"baaz0", "baaz1", "baaz2", "baaz3"},
 			}
 
-			reason, err := configureDockerHost(req, tt.envVar)
+			err := configureDockerHost(logger, tt.envVar)(&req.GenericContainerRequest)
 			require.NoError(t, err)
-			require.Equal(t, "to match last network alias on container with non-default network", reason)
 			require.Equal(t, "foo3", req.Env[tt.envVar])
 		})
 
@@ -74,9 +76,8 @@ func TestConfigureDockerHost(t *testing.T) {
 			req.Networks = []string{"foo", "bar", "baaz"}
 			req.NetworkAliases = map[string][]string{}
 
-			reason, err := configureDockerHost(req, tt.envVar)
+			err = configureDockerHost(logger, tt.envVar)(&req.GenericContainerRequest)
 			require.NoError(t, err)
-			require.Equal(t, "to match host-routable address for container", reason)
 			require.Equal(t, expectedDaemonHost, req.Env[tt.envVar])
 		})
 	}
@@ -225,35 +226,31 @@ func TestStartV2WithNetwork(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, localstack)
 
-	networkName := nw.Name
-
-	cli, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:      "amazon/aws-cli:2.7.27",
-			Networks:   []string{networkName},
-			Entrypoint: []string{"tail"},
-			Cmd:        []string{"-f", "/dev/null"},
-			Env: map[string]string{
-				"AWS_ACCESS_KEY_ID":     "accesskey",
-				"AWS_SECRET_ACCESS_KEY": "secretkey",
-				"AWS_REGION":            "eu-west-1",
-			},
-			WaitingFor: wait.ForExec([]string{
-				"/usr/local/bin/aws", "sqs", "create-queue", "--queue-name", "baz", "--region", "eu-west-1",
-				"--endpoint-url", "http://localstack:4566", "--no-verify-ssl",
+	cliOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithEntrypoint("tail"),
+		testcontainers.WithCmd("-f", "/dev/null"),
+		testcontainers.WithEnv(map[string]string{
+			"AWS_ACCESS_KEY_ID":     "accesskey",
+			"AWS_SECRET_ACCESS_KEY": "secretkey",
+			"AWS_REGION":            "eu-west-1",
+		}),
+		network.WithNetwork([]string{"cli"}, nw),
+		testcontainers.WithWaitStrategy(wait.ForExec([]string{
+			"/usr/local/bin/aws", "sqs", "create-queue", "--queue-name", "baz", "--region", "eu-west-1",
+			"--endpoint-url", "http://localstack:4566", "--no-verify-ssl",
+		}).
+			WithStartupTimeout(time.Second * 10).
+			WithExitCodeMatcher(func(exitCode int) bool {
+				return exitCode == 0
 			}).
-				WithStartupTimeout(time.Second * 10).
-				WithExitCodeMatcher(func(exitCode int) bool {
-					return exitCode == 0
-				}).
-				WithResponseMatcher(func(r io.Reader) bool {
-					respBytes, _ := io.ReadAll(r)
-					resp := string(respBytes)
-					return strings.Contains(resp, "http://localstack:4566")
-				}),
-		},
-		Started: true,
-	})
+			WithResponseMatcher(func(r io.Reader) bool {
+				respBytes, _ := io.ReadAll(r)
+				resp := string(respBytes)
+				return strings.Contains(resp, "http://localstack:4566")
+			})),
+	}
+
+	cli, err := testcontainers.Run(ctx, "amazon/aws-cli:2.7.27", cliOpts...)
 	testcontainers.CleanupContainer(t, cli)
 	require.NoError(t, err)
 	require.NotNil(t, cli)
