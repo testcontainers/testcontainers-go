@@ -46,10 +46,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Kafka container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*KafkaContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{string(publicPort)},
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithEntrypoint("sh"),
+		// this CMD will wait for the starter script to be copied into the container and then execute it
+		testcontainers.WithCmd("-c", "while [ ! -f "+starterScript+" ]; do sleep 0.1; done; bash "+starterScript),
+		testcontainers.WithExposedPorts(string(publicPort)),
+		testcontainers.WithEnv(map[string]string{
 			// envVars {
 			"KAFKA_LISTENERS":                                "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
 			"KAFKA_REST_BOOTSTRAP_SERVERS":                   "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
@@ -66,56 +68,52 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"KAFKA_PROCESS_ROLES":                            "broker,controller",
 			"KAFKA_CONTROLLER_LISTENER_NAMES":                "CONTROLLER",
 			// }
-		},
-		Entrypoint: []string{"sh"},
-		// this CMD will wait for the starter script to be copied into the container and then execute it
-		Cmd: []string{"-c", "while [ ! -f " + starterScript + " ]; do sleep 0.1; done; bash " + starterScript},
-		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
-			{
-				PostStarts: []testcontainers.ContainerHook{
-					// Use a single hook to copy the starter script and wait for
-					// the Kafka server to be ready. This prevents the wait running
-					// if the starter script fails to copy.
-					func(ctx context.Context, c testcontainers.Container) error {
-						// 1. copy the starter script into the container
-						if err := copyStarterScript(ctx, c); err != nil {
-							return fmt.Errorf("copy starter script: %w", err)
-						}
+		}),
+		testcontainers.WithAdditionalLifecycleHooks(testcontainers.ContainerLifecycleHooks{
+			PostStarts: []testcontainers.ContainerHook{
+				// Use a single hook to copy the starter script and wait for
+				// the Kafka server to be ready. This prevents the wait running
+				// if the starter script fails to copy.
+				func(ctx context.Context, c testcontainers.Container) error {
+					// 1. copy the starter script into the container
+					if err := copyStarterScript(ctx, c); err != nil {
+						return fmt.Errorf("copy starter script: %w", err)
+					}
 
-						// 2. wait for the Kafka server to be ready
-						return wait.ForLog(".*Transitioning from RECOVERY to RUNNING.*").AsRegexp().WaitUntilReady(ctx, c)
-					},
+					// 2. wait for the Kafka server to be ready
+					return wait.ForLog(".*Transitioning from RECOVERY to RUNNING.*").AsRegexp().WaitUntilReady(ctx, c)
 				},
 			},
-		},
+		}),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
+	defaultOptions := defaultOptions()
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
+		if o, ok := opt.(Option); ok {
+			if err := o(&defaultOptions); err != nil {
+				return nil, fmt.Errorf("kafka option: %w", err)
+			}
 		}
 	}
 
-	err := validateKRaftVersion(genericContainerReq.Image)
+	err := validateKRaftVersion(img)
 	if err != nil {
 		return nil, err
 	}
 
-	configureControllerQuorumVoters(&genericContainerReq)
+	// configure the controller quorum voters the last option, as it depends on the network aliases
+	moduleOpts = append(moduleOpts, configureControllerQuorumVoters())
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *KafkaContainer
 	if container != nil {
-		c = &KafkaContainer{Container: container, ClusterID: genericContainerReq.Env["CLUSTER_ID"]}
+		c = &KafkaContainer{Container: container, ClusterID: defaultOptions.env["CLUSTER_ID"]}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	return c, nil
@@ -155,14 +153,6 @@ func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
 	return nil
 }
 
-func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["CLUSTER_ID"] = clusterID
-
-		return nil
-	}
-}
-
 // Brokers retrieves the broker connection strings from Kafka with only one entry,
 // defined by the exposed public port.
 func (kc *KafkaContainer) Brokers(ctx context.Context) ([]string, error) {
@@ -177,28 +167,6 @@ func (kc *KafkaContainer) Brokers(ctx context.Context) ([]string, error) {
 	}
 
 	return []string{fmt.Sprintf("%s:%d", host, port.Int())}, nil
-}
-
-// configureControllerQuorumVoters sets the quorum voters for the controller. For that, it will
-// check if there are any network aliases defined for the container and use the first alias in the
-// first network. Else, it will use localhost.
-func configureControllerQuorumVoters(req *testcontainers.GenericContainerRequest) {
-	if req.Env == nil {
-		req.Env = map[string]string{}
-	}
-
-	if req.Env["KAFKA_CONTROLLER_QUORUM_VOTERS"] == "" {
-		host := "localhost"
-		if len(req.Networks) > 0 {
-			nw := req.Networks[0]
-			if len(req.NetworkAliases[nw]) > 0 {
-				host = req.NetworkAliases[nw][0]
-			}
-		}
-
-		req.Env["KAFKA_CONTROLLER_QUORUM_VOTERS"] = fmt.Sprintf("1@%s:9094", host)
-	}
-	// }
 }
 
 // validateKRaftVersion validates if the image version is compatible with KRaft mode,

@@ -55,7 +55,8 @@ func TestConfigureQuorumVoters(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			configureControllerQuorumVoters(test.req)
+			err := configureControllerQuorumVoters()(test.req)
+			require.NoError(t, err)
 
 			require.Equalf(t, test.expectedVoters, test.req.Env["KAFKA_CONTROLLER_QUORUM_VOTERS"], "expected KAFKA_CONTROLLER_QUORUM_VOTERS to be %s, got %s", test.expectedVoters, test.req.Env["KAFKA_CONTROLLER_QUORUM_VOTERS"])
 		})
