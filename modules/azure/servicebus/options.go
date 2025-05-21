@@ -8,6 +8,8 @@ import (
 )
 
 type options struct {
+	env            map[string]string
+	files          []testcontainers.ContainerFile
 	mssqlImage     string
 	mssqlOptions   []testcontainers.ContainerCustomizer
 	mssqlContainer *mssql.MSSQLServerContainer
@@ -16,6 +18,9 @@ type options struct {
 
 func defaultOptions() options {
 	return options{
+		env: map[string]string{
+			"SQL_WAIT_INTERVAL": "0", // default is zero because the MSSQL container is started first
+		},
 		mssqlImage:     defaultMSSQLImage,
 		mssqlContainer: nil,
 	}
@@ -24,7 +29,7 @@ func defaultOptions() options {
 // Satisfy the testcontainers.CustomizeRequestOption interface
 var _ testcontainers.ContainerCustomizer = (Option)(nil)
 
-// Option is an option for the Redpanda container.
+// Option is an option for the ServiceBus container.
 type Option func(*options) error
 
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
@@ -44,9 +49,9 @@ func WithMSSQL(img string, opts ...testcontainers.ContainerCustomizer) Option {
 }
 
 // WithAcceptEULA sets the ACCEPT_EULA environment variable to "Y" for the eventhubs container.
-func WithAcceptEULA() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["ACCEPT_EULA"] = "Y"
+func WithAcceptEULA() Option {
+	return func(o *options) error {
+		o.env["ACCEPT_EULA"] = "Y"
 
 		return nil
 	}
@@ -55,9 +60,9 @@ func WithAcceptEULA() testcontainers.CustomizeRequestOption {
 // WithConfig sets the eventhubs config file for the eventhubs container,
 // copying the content of the reader to the container file at
 // "/ServiceBus_Emulator/ConfigFiles/Config.json".
-func WithConfig(r io.Reader) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Files = append(req.Files, testcontainers.ContainerFile{
+func WithConfig(r io.Reader) Option {
+	return func(o *options) error {
+		o.files = append(o.files, testcontainers.ContainerFile{
 			Reader:            r,
 			ContainerFilePath: containerConfigFile,
 			FileMode:          0o644,

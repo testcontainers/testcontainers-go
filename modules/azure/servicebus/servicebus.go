@@ -74,31 +74,21 @@ func (c *Container) Terminate(ctx context.Context, opts ...testcontainers.Termin
 
 // Run creates an instance of the Azure Event Hubs container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.ContainerRequest{
-		Image: img,
-		Env: map[string]string{
-			"SQL_WAIT_INTERVAL": "0", // default is zero because the MSSQL container is started first
-		},
-		ExposedPorts: []string{defaultPort, defaultHTTPPort},
-		WaitingFor: wait.ForAll(
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultPort, defaultHTTPPort),
+		testcontainers.WithWaitStrategy(wait.ForAll(
 			wait.ForListeningPort(defaultPort),
 			wait.ForListeningPort(defaultHTTPPort),
 			wait.ForHTTP("/health").WithPort(defaultHTTPPort).WithStatusCodeMatcher(func(status int) bool {
 				return status == http.StatusOK
 			}),
-		),
+		)),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
 	defaultOptions := defaultOptions()
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
-		}
 		if o, ok := opt.(Option); ok {
 			if err := o(&defaultOptions); err != nil {
 				return nil, fmt.Errorf("servicebus option: %w", err)
@@ -106,7 +96,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	if strings.ToUpper(genericContainerReq.Env["ACCEPT_EULA"]) != "Y" {
+	if strings.ToUpper(defaultOptions.env["ACCEPT_EULA"]) != "Y" {
 		return nil, errors.New("EULA not accepted. Please use the WithAcceptEULA option to accept the EULA")
 	}
 
@@ -133,20 +123,20 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 		defaultOptions.mssqlContainer = mssqlContainer
 
-		genericContainerReq.Env["SQL_SERVER"] = aliasMSSQL
-		genericContainerReq.Env["MSSQL_SA_PASSWORD"] = mssqlContainer.Password()
+		defaultOptions.env["SQL_SERVER"] = aliasMSSQL
+		defaultOptions.env["MSSQL_SA_PASSWORD"] = mssqlContainer.Password()
 
 		// apply the network to the eventhubs container
-		err = network.WithNetwork([]string{aliasServiceBus}, mssqlNetwork)(&genericContainerReq)
-		if err != nil {
-			return c, fmt.Errorf("with network: %w", err)
-		}
+		moduleOpts = append(moduleOpts, network.WithNetwork([]string{aliasServiceBus}, mssqlNetwork))
 	}
 
+	// module options take precedence over default options
+	moduleOpts = append(moduleOpts, testcontainers.WithEnv(defaultOptions.env), testcontainers.WithFiles(defaultOptions.files...))
+
 	var err error
-	c.Container, err = testcontainers.GenericContainer(ctx, genericContainerReq)
+	c.Container, err = testcontainers.Run(ctx, img, moduleOpts...)
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	return c, nil
