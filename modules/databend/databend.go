@@ -38,34 +38,32 @@ func (o DatabendOption) Customize(*testcontainers.GenericContainerRequest) error
 
 // Run creates an instance of the Databend container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*DatabendContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{"8000/tcp"},
-		Env: map[string]string{
-			"QUERY_DEFAULT_USER":     defaultUser,
-			"QUERY_DEFAULT_PASSWORD": defaultPassword,
-		},
-		WaitingFor: wait.ForListeningPort("8000/tcp"),
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("8000/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort("8000/tcp")),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
+	defaultOptions := defaultOptions()
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
+		if o, ok := opt.(Option); ok {
+			if err := o(&defaultOptions); err != nil {
+				return nil, fmt.Errorf("databend option: %w", err)
+			}
 		}
 	}
 
-	username := req.Env["QUERY_DEFAULT_USER"]
-	password := req.Env["QUERY_DEFAULT_PASSWORD"]
+	username := defaultOptions.env["QUERY_DEFAULT_USER"]
+	password := defaultOptions.env["QUERY_DEFAULT_PASSWORD"]
 	if password == "" && username == "" {
 		return nil, errors.New("empty password and user")
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	// module options take precedence over default options
+	moduleOpts = append(moduleOpts, testcontainers.WithEnv(defaultOptions.env))
+
+	container, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *DatabendContainer
 	if container != nil {
 		c = &DatabendContainer{
@@ -77,7 +75,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	return c, nil
@@ -114,22 +112,4 @@ func (c *DatabendContainer) ConnectionString(ctx context.Context, args ...string
 	// databend://databend:databend@localhost:8000/default?sslmode=disable
 	connectionString := fmt.Sprintf("databend://%s:%s@%s:%s/%s%s", c.username, c.password, host, containerPort.Port(), c.database, extraArgs)
 	return connectionString, nil
-}
-
-// WithUsername sets the username for the Databend container.
-// WithUsername is [Run] option that configures the default query user by setting
-// the `QUERY_DEFAULT_USER` container environment variable.
-func WithUsername(username string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["QUERY_DEFAULT_USER"] = username
-		return nil
-	}
-}
-
-// WithPassword sets the password for the Databend container.
-func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["QUERY_DEFAULT_PASSWORD"] = password
-		return nil
-	}
 }
