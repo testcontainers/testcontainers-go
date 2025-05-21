@@ -3,6 +3,7 @@ package dynamodb
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -20,33 +21,39 @@ type DynamoDBContainer struct {
 
 // Run creates an instance of the DynamoDB container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*DynamoDBContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{string(port)},
-		Entrypoint:   []string{"java", "-Djava.library.path=./DynamoDBLocal_lib"},
-		Cmd:          []string{"-jar", "DynamoDBLocal.jar"},
-		WaitingFor:   wait.ForListeningPort(port),
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithEntrypoint("java", "-Djava.library.path=./DynamoDBLocal_lib"),
+		testcontainers.WithCmd("-jar", "DynamoDBLocal.jar"),
+		testcontainers.WithExposedPorts(port),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort(port)),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
+	defaultOptions := defaultOptions()
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
+		if o, ok := opt.(Option); ok {
+			if err := o(&defaultOptions); err != nil {
+				return nil, fmt.Errorf("dynamodb option: %w", err)
+			}
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	if slices.Contains(defaultOptions.cmd, "-sharedDb") {
+		moduleOpts = append(moduleOpts, testcontainers.WithReuseByName(containerName))
+	}
+
+	// module options take precedence over default options
+	moduleOpts = append(moduleOpts, testcontainers.WithCmdArgs(defaultOptions.cmd...))
+
+	container, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *DynamoDBContainer
 	if container != nil {
 		c = &DynamoDBContainer{Container: container}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	return c, nil
@@ -65,26 +72,4 @@ func (c *DynamoDBContainer) ConnectionString(ctx context.Context) (string, error
 	}
 
 	return hostIP + ":" + mappedPort.Port(), nil
-}
-
-// WithSharedDB allows container reuse between successive runs. Data will be persisted
-func WithSharedDB() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Cmd = append(req.Cmd, "-sharedDb")
-
-		req.Reuse = true
-		req.Name = containerName
-
-		return nil
-	}
-}
-
-// WithDisableTelemetry - DynamoDB local will not send any telemetry
-func WithDisableTelemetry() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		// if other flags (e.g. -sharedDb) exist, append to them
-		req.Cmd = append(req.Cmd, "-disableTelemetry")
-
-		return nil
-	}
 }
