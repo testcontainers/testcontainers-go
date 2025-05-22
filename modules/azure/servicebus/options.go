@@ -39,7 +39,7 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 }
 
 // WithMSSQL sets the image and options for the MSSQL container.
-// By default, the image is "mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04".
+// By default, the image is "mcr.microsoft.com/mssql/server:2022-CU18-ubuntu-22.04".
 func WithMSSQL(img string, opts ...testcontainers.ContainerCustomizer) Option {
 	return func(o *options) error {
 		o.mssqlImage = img

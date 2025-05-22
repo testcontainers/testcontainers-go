@@ -27,7 +27,7 @@ const (
 	aliasMSSQL = "mssql"
 
 	// defaultMSSQLImage is the default image for the mssql container
-	defaultMSSQLImage = "mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04"
+	defaultMSSQLImage = "mcr.microsoft.com/mssql/server:2022-CU18-ubuntu-22.04"
 
 	// containerConfigFile is the path to the config file for the servicebus container
 	containerConfigFile = "/ServiceBus_Emulator/ConfigFiles/Config.json"
