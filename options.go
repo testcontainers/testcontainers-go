@@ -311,11 +311,11 @@ type RawCommand struct {
 	cmds []string
 }
 
-func NewRawCommand(cmds []string) RawCommand {
+func NewRawCommand(cmds []string, opts ...tcexec.ProcessOption) RawCommand {
 	return RawCommand{
 		cmds: cmds,
 		ExecOptions: ExecOptions{
-			opts: []tcexec.ProcessOption{},
+			opts: opts,
 		},
 	}
 }
