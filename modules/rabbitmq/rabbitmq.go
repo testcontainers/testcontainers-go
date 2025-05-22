@@ -108,6 +108,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return nil, err
 	}
 
+	// Make sure the admin user and password are also set as environment variables
+	moduleOpts = append(moduleOpts, testcontainers.WithEnv(map[string]string{
+		"RABBITMQ_DEFAULT_USER": settings.AdminUsername,
+		"RABBITMQ_DEFAULT_PASS": settings.AdminPassword,
+	}))
+
 	moduleOpts = append(moduleOpts, withConfig(nodeConfig))
 
 	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
