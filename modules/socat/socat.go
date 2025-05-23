@@ -29,6 +29,12 @@ type Container struct {
 
 // Run creates an instance of the Socat container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithEntrypoint("/bin/sh"),
+	}
+
+	moduleOpts = append(moduleOpts, opts...)
+
 	// Gather all config options (defaults and then apply provided options)
 	settings := defaultOptions()
 	for _, opt := range opts {
@@ -37,10 +43,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				return nil, err
 			}
 		}
-	}
-
-	moduleOpts := []testcontainers.ContainerCustomizer{
-		testcontainers.WithEntrypoint("/bin/sh"),
 	}
 
 	exposedPorts := []string{}
@@ -57,10 +59,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	moduleOpts = append(moduleOpts, opts...)
 
-	container, err := testcontainers.Run(ctx, img, moduleOpts...)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
-	if container != nil {
-		c = &Container{Container: container}
+	if ctr != nil {
+		c = &Container{Container: ctr}
 	}
 
 	if err != nil {
