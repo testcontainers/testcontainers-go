@@ -123,10 +123,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // copyStarterScript copies the starter script into the container.
 func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
-	if err := wait.ForListeningPort(publicPort).
-		SkipInternalCheck().
+	if err := wait.ForMappedPort(publicPort).
 		WaitUntilReady(ctx, c); err != nil {
-		return fmt.Errorf("wait for exposed port: %w", err)
+		return fmt.Errorf("wait for mapped port: %w", err)
 	}
 
 	host, err := c.Host(ctx)
