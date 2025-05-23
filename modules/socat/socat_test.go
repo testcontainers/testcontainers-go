@@ -118,17 +118,12 @@ func TestRun_helloWorld_WrongImage(t *testing.T) {
 	testcontainers.CleanupNetwork(t, nw)
 	require.NoError(t, err)
 
-	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "testcontainers/helloworld:1.2.0",
-			ExposedPorts: []string{"8080/tcp"},
-			Networks:     []string{nw.Name},
-			NetworkAliases: map[string][]string{
-				nw.Name: {"helloworld"},
-			},
-		},
-		Started: true,
-	})
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("8080/tcp"),
+		network.WithNetwork([]string{"helloworld"}, nw),
+	}
+
+	ctr, err := testcontainers.Run(ctx, "testcontainers/helloworld:1.2.0", moduleOpts...)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
