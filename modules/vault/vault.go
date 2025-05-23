@@ -28,37 +28,27 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Vault container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*VaultContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{defaultPort + "/tcp"},
-		HostConfigModifier: func(hc *container.HostConfig) {
-			hc.CapAdd = []string{"CAP_IPC_LOCK"}
-		},
-		WaitingFor: wait.ForHTTP("/v1/sys/health").WithPort(defaultPort),
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultPort + "/tcp"),
+		testcontainers.WithEnv(map[string]string{
 			"VAULT_ADDR": "http://0.0.0.0:" + defaultPort,
-		},
+		}),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/v1/sys/health").WithPort(defaultPort)),
+		testcontainers.WithHostConfigModifier(func(hc *container.HostConfig) {
+			hc.CapAdd = []string{"CAP_IPC_LOCK"}
+		}),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *VaultContainer
-	if container != nil {
-		c = &VaultContainer{Container: container}
+	if ctr != nil {
+		c = &VaultContainer{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	return c, nil
