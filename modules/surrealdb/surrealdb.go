@@ -87,42 +87,30 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the SurrealDB container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*SurrealDBContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image: img,
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithCmd("start"),
+		testcontainers.WithEnv(map[string]string{
 			"SURREAL_USER":           "root",
 			"SURREAL_PASS":           "root",
 			"SURREAL_AUTH":           "false",
 			"SURREAL_STRICT":         "false",
 			"SURREAL_CAPS_ALLOW_ALL": "false",
 			"SURREAL_PATH":           "memory",
-		},
-		ExposedPorts: []string{"8000/tcp"},
-		WaitingFor: wait.ForAll(
-			wait.ForLog("Started web server on "),
-		),
-		Cmd: []string{"start"},
+		}),
+		testcontainers.WithExposedPorts("8000/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForLog("Started web server on ")),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *SurrealDBContainer
-	if container != nil {
-		c = &SurrealDBContainer{Container: container}
+	if ctr != nil {
+		c = &SurrealDBContainer{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	return c, nil
