@@ -213,36 +213,26 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Registry container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*RegistryContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{registryPort},
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithEnv(map[string]string{
 			// convenient for testing
 			"REGISTRY_STORAGE_DELETE_ENABLED": "true",
-		},
-		WaitingFor: wait.ForHTTP("/").
+		}),
+		testcontainers.WithExposedPorts(registryPort),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/").
 			WithPort(registryPort).
-			WithStartupTimeout(10 * time.Second),
+			WithStartupTimeout(10 * time.Second)),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *RegistryContainer
-	if container != nil {
-		c = &RegistryContainer{Container: container}
+	if ctr != nil {
+		c = &RegistryContainer{Container: ctr}
 	}
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	address, err := c.Address(ctx)
