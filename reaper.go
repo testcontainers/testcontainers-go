@@ -41,7 +41,7 @@ var (
 
 	// defaultReaperPort is the default port that the reaper listens on if not
 	// overridden by the RYUK_PORT environment variable.
-	defaultReaperPort = nat.Port("8080/tcp")
+	defaultReaperPort = nat.Port("9095/tcp")
 
 	// errReaperNotFound is returned when no reaper container is found.
 	errReaperNotFound = errors.New("reaper not found")
