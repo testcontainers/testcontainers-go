@@ -128,6 +128,7 @@ func AddGenericLabels(target map[string]string) {
 func Run(ctx context.Context, img string, opts ...ContainerCustomizer) (*DockerContainer, error) {
 	req := ContainerRequest{
 		Image: img,
+		Env:   make(map[string]string),
 	}
 
 	genericContainerReq := GenericContainerRequest{
