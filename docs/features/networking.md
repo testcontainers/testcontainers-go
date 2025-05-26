@@ -29,7 +29,7 @@ It's important to mention that the name of the network is automatically generate
 <!--codeinclude-->
 [Creating a network](../../network/examples_test.go) inside_block:createNetwork
 [Creating a network with options](../../network/examples_test.go) inside_block:newNetworkWithOptions
-<!--/codeinclude--> 
+<!--/codeinclude-->
 
 ## Exposing container ports to the host
 
@@ -129,7 +129,7 @@ But according to those docs, it's supported only for Linux hosts:
 In the case you need to skip a test on non-Linux hosts, you can use the `SkipIfDockerDesktop` function:
 
 <!--codeinclude-->
-[Skipping tests on non-Linux hosts](../../docker_test.go) inside_block:skipIfDockerDesktop
+[Skipping tests on non-Linux hosts](../../network/network_test.go) inside_block:skipIfDockerDesktop
 <!--/codeinclude-->
 
 It will try to get a Docker client and obtain its Info. In the case the Operating System is "Docker Desktop", it will skip the test.
