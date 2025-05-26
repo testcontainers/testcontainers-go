@@ -116,18 +116,30 @@ func TestContainerIPs(t *testing.T) {
 	require.NoError(t, err)
 	testcontainers.CleanupNetwork(t, newNetwork)
 
-	nginx, err := testcontainers.Run(
-		ctx, nginxAlpineImage,
-		testcontainers.WithExposedPorts(nginxDefaultPort),
-		network.WithNetworkName([]string{"nginx-bridge"}, "bridge"),
-		network.WithNetwork([]string{"nginx-network"}, newNetwork),
-	)
-	testcontainers.CleanupContainer(t, nginx)
-	require.NoError(t, err)
+	t.Run("bridge/error/network-scoped-alias", func(t *testing.T) {
+		nginx, err := testcontainers.Run(
+			ctx, nginxAlpineImage,
+			testcontainers.WithExposedPorts(nginxDefaultPort),
+			network.WithNetworkName([]string{"nginx-bridge"}, "bridge"),
+			network.WithNetwork([]string{"nginx-network"}, newNetwork),
+		)
+		testcontainers.CleanupContainer(t, nginx)
+		require.Error(t, err)
+	})
 
-	ips, err := nginx.ContainerIPs(ctx)
-	require.NoError(t, err)
-	require.Len(t, ips, 2)
+	t.Run("bridge/success", func(t *testing.T) {
+		nginx, err := testcontainers.Run(
+			ctx, nginxAlpineImage,
+			testcontainers.WithExposedPorts(nginxDefaultPort),
+			network.WithNetwork([]string{"nginx-network"}, newNetwork),
+		)
+		testcontainers.CleanupContainer(t, nginx)
+		require.NoError(t, err)
+
+		ips, err := nginx.ContainerIPs(ctx)
+		require.NoError(t, err)
+		require.Len(t, ips, 1)
+	})
 }
 
 func TestContainerWithReaperNetwork(t *testing.T) {
