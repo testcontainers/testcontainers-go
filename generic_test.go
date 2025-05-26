@@ -118,7 +118,7 @@ func TestGenericContainerShouldReturnRefOnError(t *testing.T) {
 		WithWaitStrategy(wait.ForLog("this string should not be present in the logs")),
 	)
 	require.Error(t, err)
-	require.Nil(t, c)
+	require.NotNil(t, c)
 	CleanupContainer(t, c)
 }
 
