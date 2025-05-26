@@ -89,8 +89,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithExposedPorts(BlobPort, QueuePort, TablePort),
 	}
 
-	moduleOpts = append(moduleOpts, opts...)
-
 	// 1. Gather all config options (defaults and then apply provided options)
 	settings := defaultOptions()
 
@@ -114,6 +112,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		moduleOpts = append(moduleOpts, testcontainers.WithWaitStrategy(wait.ForAll(waitingFor...)))
 		moduleOpts = append(moduleOpts, testcontainers.WithCmd(moduleCmd...))
 	}
+
+	moduleOpts = append(moduleOpts, opts...)
 
 	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
