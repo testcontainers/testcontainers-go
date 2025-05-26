@@ -16,7 +16,7 @@ This page describes two approaches for image name substitution:
 * [Using an Image Name Substitutor](#developing-a-custom-function-for-transforming-image-names-on-the-fly), developing a custom function for transforming image names on the fly.
 
 !!!warning
-    It is assumed that you have already set up a private registry hosting [all the Docker images your build requires](../supported_docker_environment/image_registry_rate_limiting.md#which-images-are-used-by-testcontainers).
+    It is assumed that you have already set up a private registry hosting [all the Docker images your build requires](#images-used-by-testcontainers).
 
 ## Automatically modifying Docker Hub image names
 
