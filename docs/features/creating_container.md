@@ -67,6 +67,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -77,8 +78,7 @@ type nginxContainer struct {
 	URI string
 }
 
-
-func setupNginx(ctx context.Context, nw *network.DockerNetwork) (*nginxContainer, error) {
+func setupNginx(ctx context.Context, nw *testcontainers.DockerNetwork) (*nginxContainer, error) {
 	container, err := testcontainers.Run(
 		ctx, "nginx",
 		testcontainers.WithExposedPorts("80/tcp"),
@@ -119,13 +119,15 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 	require.NoError(t, err)
 	testcontainers.CleanupNetwork(t, nw)
 
-	nginxC, err := setupNginx(ctx, nw.Name)
+	nginxC, err := setupNginx(ctx, nw)
 	testcontainers.CleanupContainer(t, nginxC)
 	require.NoError(t, err)
 
 	resp, err := http.Get(nginxC.URI)
+	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
+
 ```
 
 
