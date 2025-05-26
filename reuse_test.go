@@ -12,7 +12,7 @@ import (
 )
 
 func TestGenericContainer_stop_start_withReuse(t *testing.T) {
-	containerName := "my-nginx"
+	containerName := "my-nginx-stop_start_withReuse"
 
 	opts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts("8080/tcp"),
@@ -36,7 +36,7 @@ func TestGenericContainer_stop_start_withReuse(t *testing.T) {
 }
 
 func TestGenericContainer_pause_start_withReuse(t *testing.T) {
-	containerName := "my-nginx"
+	containerName := "my-nginx-pause_start_withReuse"
 
 	opts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts("8080/tcp"),
