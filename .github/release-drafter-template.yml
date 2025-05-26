@@ -8,7 +8,7 @@ name-template: '{{FOLDER}}{{FOLDER_SEP}}v$RESOLVED_VERSION'
 tag-template: '{{FOLDER}}{{FOLDER_SLASH}}v$RESOLVED_VERSION'
 tag-prefix: '{{FOLDER}}{{FOLDER_SLASH}}v'
 include-paths:
-  - {{FOLDER}}
+  - {{FOLDER_PATH}}
 categories:
   - title: ⚠️ Breaking Changes
     labels:

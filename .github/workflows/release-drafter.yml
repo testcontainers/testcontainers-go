@@ -68,15 +68,18 @@ jobs:
             folder_sep=""
             folder_slash=""
             folder_filename="core"
+            folder_path="."
           else
             # Any other module
             folder_sep=" - "
             folder_slash="/"
             # Sanitize folder name for filename by replacing / with -
             folder_filename=$(echo "$folder" | tr '/' '-')
+            folder_path="$folder"
           fi
           sed -e "s|{{FOLDER}}|$folder|g" \
               -e "s|{{FOLDER_SEP}}|$folder_sep|g" \
+              -e "s|{{FOLDER_PATH}}|$folder_path|g" \
               -e "s|{{FOLDER_SLASH}}|$folder_slash|g" \
               .github/release-drafter-template.yml > .github/release-drafter-$folder_filename.yml
           echo "config<<EOF" >> $GITHUB_OUTPUT
