@@ -25,17 +25,13 @@ func TestGenericReusableContainer(t *testing.T) {
 
 	reusableContainerName := reusableContainerName + "_" + time.Now().Format("20060102150405")
 
-	// TODO: use Run once the WithReuse option is implemented
-	n1, err := genericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image:        nginxAlpineImage,
-			ExposedPorts: []string{nginxDefaultPort},
-			WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
-			Name:         reusableContainerName,
-		},
-		Started: true,
-	})
+	options1 := []ContainerCustomizer{
+		WithExposedPorts(nginxDefaultPort),
+		WithWaitStrategy(wait.ForListeningPort(nginxDefaultPort)),
+		WithReuseByName(reusableContainerName),
+	}
+
+	n1, err := Run(ctx, nginxAlpineImage, options1...)
 	require.NoError(t, err)
 	require.True(t, n1.IsRunning())
 	CleanupContainer(t, n1)
@@ -81,21 +77,21 @@ func TestGenericReusableContainer(t *testing.T) {
 		},
 	}
 
+	optionsBase := []ContainerCustomizer{
+		WithExposedPorts(nginxDefaultPort),
+		WithWaitStrategy(wait.ForListeningPort(nginxDefaultPort)),
+	}
+
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// TODO: use Run once the WithReuse option is implemented
-			n2, err := genericContainer(ctx, GenericContainerRequest{
-				ProviderType: providerType,
-				ContainerRequest: ContainerRequest{
-					Image:        nginxAlpineImage,
-					ExposedPorts: []string{nginxDefaultPort},
-					WaitingFor:   wait.ForListeningPort(nginxDefaultPort),
-					Name:         tc.containerName,
-				},
-				Started: true,
-				Reuse:   tc.reuseOption,
-			})
+			opts := optionsBase
+			if tc.reuseOption {
+				opts = append(opts, WithReuseByName(tc.containerName))
+			} else {
+				opts = append(opts, WithName(tc.containerName))
+			}
 
+			n2, err := Run(ctx, nginxAlpineImage, opts...)
 			require.NoError(t, tc.errorMatcher(err))
 
 			if err == nil {
@@ -184,18 +180,13 @@ func TestHelperContainerStarterProcess(t *testing.T) {
 
 	ctx := context.Background()
 
-	// TODO: use Run once the WithReuse option is implemented
-	nginxC, err := genericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image:        nginxDelayedImage,
-			ExposedPorts: []string{nginxDefaultPort},
-			WaitingFor:   wait.ForListeningPort(nginxDefaultPort), // default startupTimeout is 60s
-			Name:         reusableContainerName,
-		},
-		Started: true,
-		Reuse:   true,
-	})
+	options := []ContainerCustomizer{
+		WithExposedPorts(nginxDefaultPort),
+		WithWaitStrategy(wait.ForListeningPort(nginxDefaultPort)),
+		WithReuseByName(reusableContainerName),
+	}
+
+	nginxC, err := Run(ctx, nginxDelayedImage, options...)
 	require.NoError(t, err)
 	require.True(t, nginxC.IsRunning())
 }
