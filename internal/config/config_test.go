@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,23 +15,166 @@ const (
 	tcpDockerHost4711  = "tcp://127.0.0.1:4711"
 )
 
+// setupTestDir creates a temporary directory and sets it as HOME and USERPROFILE
+func setupTestDir(t *testing.T) string {
+	t.Helper()
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir) // Windows support
+	return tmpDir
+}
+
+// setupTestProperties writes the given content to a .testcontainers.properties file in the given directory
+func setupTestProperties(t *testing.T, dir, content string) {
+	t.Helper()
+	err := os.WriteFile(filepath.Join(dir, ".testcontainers.properties"), []byte(content), 0o600)
+	require.NoErrorf(t, err, "Failed to create the properties file")
+}
+
+// setupTestEnv sets up the test environment with the given environment variables
+func setupTestEnv(t *testing.T, env map[string]string) {
+	t.Helper()
+	for k, v := range env {
+		t.Setenv(k, v)
+	}
+}
+
 // unset environment variables to avoid side effects
 // execute this function before each test
 func resetTestEnv(t *testing.T) {
 	t.Helper()
-	t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", "")
-	t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "")
-	t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "")
-	t.Setenv("RYUK_VERBOSE", "")
-	t.Setenv("RYUK_RECONNECTION_TIMEOUT", "")
-	t.Setenv("RYUK_CONNECTION_TIMEOUT", "")
-	t.Setenv("TESTCONTAINERS_PORT_MAPPING_TIMEOUT", "")
+
+	setupTestEnv(t, map[string]string{
+		"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX":     "",
+		"TESTCONTAINERS_RYUK_DISABLED":             "",
+		"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "",
+		"RYUK_VERBOSE":                        "",
+		"RYUK_RECONNECTION_TIMEOUT":           "",
+		"RYUK_CONNECTION_TIMEOUT":             "",
+		"TESTCONTAINERS_PORT_MAPPING_TIMEOUT": "",
+	})
+}
+
+// defaultConfig returns a Config with default timeout values used in tests.
+// The default values are:
+//   - RyukConnectionTimeout: 60 seconds
+//   - RyukReconnectionTimeout: 10 seconds
+//   - TestcontainersPortMappingTimeout: 5 seconds
+func defaultConfig() Config {
+	return Config{
+		RyukConnectionTimeout:            60 * time.Second,
+		RyukReconnectionTimeout:          10 * time.Second,
+		TestcontainersPortMappingTimeout: 5 * time.Second,
+	}
+}
+
+// defaultTestConfig creates a new Config with default values and applies the given overrides.
+// It is the main helper function for creating test configurations. Each override function
+// modifies a specific aspect of the default configuration.
+//
+// Example usage:
+//
+//	config := defaultTestConfig(
+//	    withHost("tcp://localhost:1234"),
+//	    withRyukDisabled(true),
+//	    withTimeouts(12*time.Second, 13*time.Second, 11*time.Second),
+//	)
+//
+// For custom modifications not covered by the standard helpers, you can use an inline function:
+//
+//	config := defaultTestConfig(
+//	    withHost("tcp://localhost:1234"),
+//	    func(c *Config) { c.TLSVerify = 1 },
+//	)
+func defaultTestConfig(overrides ...func(*Config)) Config {
+	config := defaultConfig()
+	for _, override := range overrides {
+		override(&config)
+	}
+	return config
+}
+
+// withHost returns a function that sets the Docker host URL in a Config.
+// This is used to specify the Docker daemon connection URL.
+//
+// Example:
+//
+//	config := defaultTestConfig(withHost("tcp://localhost:1234"))
+func withHost(host string) func(*Config) {
+	return func(c *Config) {
+		c.Host = host
+	}
+}
+
+// withRyukDisabled returns a function that sets whether Ryuk (the resource reaper) is disabled.
+// When disabled, Ryuk will not be started and containers will not be automatically removed.
+//
+// Example:
+//
+//	config := defaultTestConfig(withRyukDisabled(true))
+func withRyukDisabled(disabled bool) func(*Config) {
+	return func(c *Config) {
+		c.RyukDisabled = disabled
+	}
+}
+
+// withRyukPrivileged returns a function that sets whether the Ryuk container should run in privileged mode.
+// Privileged mode is required for some Docker operations but may have security implications.
+//
+// Example:
+//
+//	config := defaultTestConfig(withRyukPrivileged(true))
+func withRyukPrivileged(privileged bool) func(*Config) {
+	return func(c *Config) {
+		c.RyukPrivileged = privileged
+	}
+}
+
+// withRyukVerbose returns a function that sets whether Ryuk should run in verbose mode.
+// Verbose mode enables additional logging for debugging purposes.
+//
+// Example:
+//
+//	config := defaultTestConfig(withRyukVerbose(true))
+func withRyukVerbose(verbose bool) func(*Config) {
+	return func(c *Config) {
+		c.RyukVerbose = verbose
+	}
+}
+
+// withTimeouts returns a function that sets all timeout-related fields in a Config.
+// The timeouts control various aspects of container and resource management:
+//   - connection: Time to wait for initial connection to Ryuk
+//   - reconnection: Time to wait between reconnection attempts to Ryuk
+//   - portMapping: Time to wait for port mapping operations
+//
+// Example:
+//
+//	config := defaultTestConfig(withTimeouts(12*time.Second, 13*time.Second, 11*time.Second))
+func withTimeouts(connection, reconnection, portMapping time.Duration) func(*Config) {
+	return func(c *Config) {
+		c.RyukConnectionTimeout = connection
+		c.RyukReconnectionTimeout = reconnection
+		c.TestcontainersPortMappingTimeout = portMapping
+	}
+}
+
+// withHubImagePrefix returns a function that sets the prefix for Docker Hub image names.
+// This is used to configure a custom registry or mirror for pulling Docker images.
+//
+// Example:
+//
+//	config := defaultTestConfig(withHubImagePrefix("registry.mycompany.com/mirror"))
+func withHubImagePrefix(prefix string) func(*Config) {
+	return func(c *Config) {
+		c.HubImageNamePrefix = prefix
+	}
 }
 
 func TestReadConfig(t *testing.T) {
 	resetTestEnv(t)
 
-	t.Run("Config is read just once", func(t *testing.T) {
+	t.Run("config-read-once", func(t *testing.T) {
 		t.Cleanup(Reset)
 
 		t.Setenv("HOME", "")
@@ -50,9 +192,8 @@ func TestReadConfig(t *testing.T) {
 		require.Equal(t, expected, config)
 
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "false")
-
 		config = Read()
-		assert.Equal(t, expected, config)
+		require.Equal(t, expected, config)
 	})
 }
 
@@ -61,101 +202,249 @@ func TestReadTCConfig(t *testing.T) {
 
 	const defaultHubPrefix string = "registry.mycompany.com/mirror"
 
-	t.Run("HOME is not set", func(t *testing.T) {
-		t.Setenv("HOME", "")
-		t.Setenv("USERPROFILE", "") // Windows support
+	// Group 1: Basic environment setup tests
+	t.Run("environment-setup", func(t *testing.T) {
+		t.Run("HOME-not-set", func(t *testing.T) {
+			t.Setenv("HOME", "")
+			t.Setenv("USERPROFILE", "") // Windows support
 
-		config := read()
+			config := read()
+			require.Equal(t, Config{}, config)
+		})
 
-		expected := Config{}
+		t.Run("HOME-does-not-contain-TC-props-file", func(t *testing.T) {
+			setupTestDir(t)
+			config := read()
+			require.Equal(t, Config{}, config)
+		})
 
-		assert.Equal(t, expected, config)
+		t.Run("HOME-does-not-contain-TC-props-file-DOCKER_HOST-env-is-set", func(t *testing.T) {
+			setupTestDir(t)
+			t.Setenv("DOCKER_HOST", tcpDockerHost33293)
+			config := read()
+			require.Equal(t, Config{}, config) // the config does not read DOCKER_HOST
+		})
 	})
 
-	t.Run("HOME is not set - TESTCONTAINERS_ env is set", func(t *testing.T) {
-		t.Setenv("HOME", "")
-		t.Setenv("USERPROFILE", "") // Windows support
-		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
-		t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", defaultHubPrefix)
-		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
-		t.Setenv("RYUK_RECONNECTION_TIMEOUT", "13s")
-		t.Setenv("RYUK_CONNECTION_TIMEOUT", "12s")
-		t.Setenv("TESTCONTAINERS_PORT_MAPPING_TIMEOUT", "11s")
-		config := read()
+	// Group 2: Environment variables tests
+	t.Run("environment-variables", func(t *testing.T) {
+		t.Run("HOME-is-not-set-TESTCONTAINERS_env-is-set", func(t *testing.T) {
+			t.Setenv("HOME", "")
+			t.Setenv("USERPROFILE", "") // Windows support
+			env := map[string]string{
+				"TESTCONTAINERS_RYUK_DISABLED":             "true",
+				"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX":     defaultHubPrefix,
+				"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
+				"RYUK_RECONNECTION_TIMEOUT":                "13s",
+				"RYUK_CONNECTION_TIMEOUT":                  "12s",
+				"TESTCONTAINERS_PORT_MAPPING_TIMEOUT":      "11s",
+			}
+			setupTestEnv(t, env)
 
-		expected := Config{
-			HubImageNamePrefix:               defaultHubPrefix,
-			RyukDisabled:                     true,
-			RyukPrivileged:                   true,
-			Host:                             "", // docker socket is empty at the properties file
-			RyukReconnectionTimeout:          13 * time.Second,
-			RyukConnectionTimeout:            12 * time.Second,
-			TestcontainersPortMappingTimeout: 11 * time.Second,
-		}
+			expected := defaultTestConfig(
+				withHubImagePrefix(defaultHubPrefix),
+				withRyukDisabled(true),
+				withRyukPrivileged(true),
+				withTimeouts(12*time.Second, 13*time.Second, 11*time.Second),
+			)
+			require.Equal(t, expected, read())
+		})
 
-		assert.Equal(t, expected, config)
+		t.Run("HOME-does-not-contain-TC-props-file-TESTCONTAINERS_env-is-set", func(t *testing.T) {
+			setupTestDir(t)
+			env := map[string]string{
+				"TESTCONTAINERS_RYUK_DISABLED":             "true",
+				"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX":     defaultHubPrefix,
+				"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
+				"RYUK_VERBOSE":                        "true",
+				"RYUK_RECONNECTION_TIMEOUT":           "13s",
+				"RYUK_CONNECTION_TIMEOUT":             "12s",
+				"TESTCONTAINERS_PORT_MAPPING_TIMEOUT": "11s",
+			}
+			setupTestEnv(t, env)
+
+			expected := defaultTestConfig(
+				withHubImagePrefix(defaultHubPrefix),
+				withRyukDisabled(true),
+				withRyukPrivileged(true),
+				withRyukVerbose(true),
+				withTimeouts(12*time.Second, 13*time.Second, 11*time.Second),
+			)
+			require.Equal(t, expected, read())
+		})
 	})
 
-	t.Run("HOME does not contain TC props file", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		t.Setenv("HOME", tmpDir)
-		t.Setenv("USERPROFILE", tmpDir) // Windows support
+	// Group 3: Properties file tests
+	t.Run("properties-file", func(t *testing.T) {
+		// Group 3.1: Docker host configuration
+		t.Run("docker-host", func(t *testing.T) {
+			tests := []struct {
+				name     string
+				content  string
+				expected Config
+			}{
+				{
+					"single-docker-host-with-spaces",
+					"docker.host = " + tcpDockerHost33293,
+					defaultTestConfig(withHost(tcpDockerHost33293)),
+				},
+				{
+					"single-docker-host-without-spaces",
+					"docker.host=" + tcpDockerHost33293,
+					defaultTestConfig(withHost(tcpDockerHost33293)),
+				},
+				{
+					"multiple-docker-host-entries-last-one-wins",
+					`docker.host = ` + tcpDockerHost33293 + `
+docker.host = ` + tcpDockerHost4711,
+					defaultTestConfig(withHost(tcpDockerHost4711)),
+				},
+				{
+					"multiple-docker-host-entries-with-TLS",
+					`docker.host = ` + tcpDockerHost33293 + `
+docker.host = ` + tcpDockerHost4711 + `
+docker.host = ` + tcpDockerHost1234 + `
+docker.tls.verify = 1`,
+					defaultTestConfig(
+						withHost(tcpDockerHost1234),
+						func(c *Config) { c.TLSVerify = 1 },
+					),
+				},
+				{
+					"multiple-docker-host-entries-with-TLS-and-cert-path",
+					`#docker.host = ` + tcpDockerHost33293 + `
+docker.host = ` + tcpDockerHost4711 + `
+docker.host = ` + tcpDockerHost1234 + `
+docker.cert.path=/tmp/certs`,
+					defaultTestConfig(
+						withHost(tcpDockerHost1234),
+						func(c *Config) { c.CertPath = "/tmp/certs" },
+					),
+				},
+			}
 
-		config := read()
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					tmpDir := setupTestDir(t)
+					setupTestProperties(t, tmpDir, tt.content)
+					require.Equal(t, tt.expected, read())
+				})
+			}
+		})
 
-		expected := Config{}
+		// Group 3.2: Ryuk configuration
+		t.Run("ryuk", func(t *testing.T) {
+			tests := []struct {
+				name     string
+				content  string
+				expected Config
+			}{
+				{
+					"ryuk-disabled",
+					"ryuk.disabled=true",
+					defaultTestConfig(withRyukDisabled(true)),
+				},
+				{
+					"ryuk-privileged",
+					"ryuk.container.privileged=true",
+					defaultTestConfig(withRyukPrivileged(true)),
+				},
+				{
+					"ryuk-verbose",
+					"ryuk.verbose=true",
+					defaultTestConfig(withRyukVerbose(true)),
+				},
+				{
+					"ryuk-timeouts",
+					`ryuk.connection.timeout=12s
+ryuk.reconnection.timeout=13s
+tc.port.mapping.timeout=11s`,
+					defaultTestConfig(withTimeouts(12*time.Second, 13*time.Second, 11*time.Second)),
+				},
+				{
+					"port-mapping-timeout",
+					"tc.port.mapping.timeout=14s",
+					defaultTestConfig(withTimeouts(60*time.Second, 10*time.Second, 14*time.Second)),
+				},
+			}
 
-		assert.Equal(t, expected, config)
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					tmpDir := setupTestDir(t)
+					setupTestProperties(t, tmpDir, tt.content)
+					require.Equal(t, tt.expected, read())
+				})
+			}
+		})
+
+		// Group 3.3: Hub image configuration
+		t.Run("hub-image", func(t *testing.T) {
+			tests := []struct {
+				name     string
+				content  string
+				expected Config
+			}{
+				{
+					"hub-image-prefix",
+					"hub.image.name.prefix=" + defaultHubPrefix + "/props/",
+					defaultTestConfig(withHubImagePrefix(defaultHubPrefix + "/props/")),
+				},
+			}
+
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					tmpDir := setupTestDir(t)
+					setupTestProperties(t, tmpDir, tt.content)
+					require.Equal(t, tt.expected, read())
+				})
+			}
+		})
+
+		// Group 3.4: Edge cases
+		t.Run("edge-cases", func(t *testing.T) {
+			tests := []struct {
+				name     string
+				content  string
+				expected Config
+			}{
+				{
+					"empty-file",
+					"",
+					defaultConfig(),
+				},
+				{
+					"comments-are-ignored",
+					"#docker.host=" + tcpDockerHost33293,
+					defaultConfig(),
+				},
+				{
+					"non-valid-properties-are-ignored",
+					`foo = bar
+docker.host = ` + tcpDockerHost1234,
+					defaultTestConfig(withHost(tcpDockerHost1234)),
+				},
+				{
+					"invalid-TLS-verify-value",
+					`ryuk.container.privileged=false
+docker.tls.verify = ERROR`,
+					Config{
+						// read() doesn't set default values, so timeouts should be zero
+					},
+				},
+			}
+
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					tmpDir := setupTestDir(t)
+					setupTestProperties(t, tmpDir, tt.content)
+					require.Equal(t, tt.expected, read())
+				})
+			}
+		})
 	})
 
-	t.Run("HOME does not contain TC props file - DOCKER_HOST env is set", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		t.Setenv("HOME", tmpDir)
-		t.Setenv("USERPROFILE", tmpDir) // Windows support
-		t.Setenv("DOCKER_HOST", tcpDockerHost33293)
-
-		config := read()
-		expected := Config{} // the config does not read DOCKER_HOST, that's why it's empty
-
-		assert.Equal(t, expected, config)
-	})
-
-	t.Run("HOME does not contain TC props file - TESTCONTAINERS_ env is set", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		t.Setenv("HOME", tmpDir)
-		t.Setenv("USERPROFILE", tmpDir) // Windows support
-		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
-		t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", defaultHubPrefix)
-		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
-		t.Setenv("RYUK_VERBOSE", "true")
-		t.Setenv("RYUK_RECONNECTION_TIMEOUT", "13s")
-		t.Setenv("RYUK_CONNECTION_TIMEOUT", "12s")
-		t.Setenv("TESTCONTAINERS_PORT_MAPPING_TIMEOUT", "11s")
-
-		config := read()
-		expected := Config{
-			HubImageNamePrefix:               defaultHubPrefix,
-			RyukDisabled:                     true,
-			RyukPrivileged:                   true,
-			RyukVerbose:                      true,
-			RyukReconnectionTimeout:          13 * time.Second,
-			RyukConnectionTimeout:            12 * time.Second,
-			TestcontainersPortMappingTimeout: 11 * time.Second,
-		}
-
-		assert.Equal(t, expected, config)
-	})
-
-	t.Run("HOME contains TC properties file", func(t *testing.T) {
-		defaultRyukConnectionTimeout := 60 * time.Second
-		defaultRyukReconnectionTimeout := 10 * time.Second
-		defaultTestcontainersPortMappingTimeout := 5 * time.Second
-		defaultConfig := Config{
-			RyukConnectionTimeout:            defaultRyukConnectionTimeout,
-			RyukReconnectionTimeout:          defaultRyukReconnectionTimeout,
-			TestcontainersPortMappingTimeout: defaultTestcontainersPortMappingTimeout,
-		}
-
+	// Group 4: environment-variables-vs-properties-precedence
+	t.Run("precedence", func(t *testing.T) {
 		tests := []struct {
 			name     string
 			content  string
@@ -163,409 +452,89 @@ func TestReadTCConfig(t *testing.T) {
 			expected Config
 		}{
 			{
-				"Single Docker host with spaces",
-				"docker.host = " + tcpDockerHost33293,
-				map[string]string{},
-				Config{
-					Host:                             tcpDockerHost33293,
-					RyukConnectionTimeout:            defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout:          defaultRyukReconnectionTimeout,
-					TestcontainersPortMappingTimeout: defaultTestcontainersPortMappingTimeout,
-				},
-			},
-			{
-				"Multiple docker host entries, last one wins",
-				`docker.host = ` + tcpDockerHost33293 + `
-	docker.host = ` + tcpDockerHost4711 + `
-	`,
-				map[string]string{},
-				Config{
-					Host:                             tcpDockerHost4711,
-					RyukConnectionTimeout:            defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout:          defaultRyukReconnectionTimeout,
-					TestcontainersPortMappingTimeout: defaultTestcontainersPortMappingTimeout,
-				},
-			},
-			{
-				"Multiple docker host entries, last one wins, with TLS",
-				`docker.host = ` + tcpDockerHost33293 + `
-	docker.host = ` + tcpDockerHost4711 + `
-	docker.host = ` + tcpDockerHost1234 + `
-	docker.tls.verify = 1
-	`,
-				map[string]string{},
-				Config{
-					Host:                             tcpDockerHost1234,
-					TLSVerify:                        1,
-					RyukConnectionTimeout:            defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout:          defaultRyukReconnectionTimeout,
-					TestcontainersPortMappingTimeout: defaultTestcontainersPortMappingTimeout,
-				},
-			},
-			{
-				"Empty file",
-				"",
-				map[string]string{},
-				Config{
-					RyukConnectionTimeout:            defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout:          defaultRyukReconnectionTimeout,
-					TestcontainersPortMappingTimeout: defaultTestcontainersPortMappingTimeout,
-				},
-			},
-			{
-				"Non-valid properties are ignored",
-				`foo = bar
-	docker.host = ` + tcpDockerHost1234 + `
-			`,
-				map[string]string{},
-				Config{
-					Host:                             tcpDockerHost1234,
-					RyukConnectionTimeout:            defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout:          defaultRyukReconnectionTimeout,
-					TestcontainersPortMappingTimeout: defaultTestcontainersPortMappingTimeout,
-				},
-			},
-			{
-				"Single Docker host without spaces",
-				"docker.host=" + tcpDockerHost33293,
-				map[string]string{},
-				Config{
-					Host:                             tcpDockerHost33293,
-					RyukConnectionTimeout:            defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout:          defaultRyukReconnectionTimeout,
-					TestcontainersPortMappingTimeout: defaultTestcontainersPortMappingTimeout,
-				},
-			},
-			{
-				"Comments are ignored",
-				`#docker.host=` + tcpDockerHost33293,
-				map[string]string{},
-				defaultConfig,
-			},
-			{
-				"Multiple docker host entries, last one wins, with TLS and cert path",
-				`#docker.host = ` + tcpDockerHost33293 + `
-	docker.host = ` + tcpDockerHost4711 + `
-	docker.host = ` + tcpDockerHost1234 + `
-	docker.cert.path=/tmp/certs`,
-				map[string]string{},
-				Config{
-					Host:                             tcpDockerHost1234,
-					CertPath:                         "/tmp/certs",
-					RyukConnectionTimeout:            defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout:          defaultRyukReconnectionTimeout,
-					TestcontainersPortMappingTimeout: defaultTestcontainersPortMappingTimeout,
-				},
-			},
-			{
-				"With Ryuk disabled using properties",
-				`ryuk.disabled=true`,
-				map[string]string{},
-				Config{
-					RyukDisabled:                     true,
-					RyukConnectionTimeout:            defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout:          defaultRyukReconnectionTimeout,
-					TestcontainersPortMappingTimeout: defaultTestcontainersPortMappingTimeout,
-				},
-			},
-			{
-				"With Ryuk container privileged using properties",
-				`ryuk.container.privileged=true`,
-				map[string]string{},
-				Config{
-					RyukPrivileged:                   true,
-					RyukConnectionTimeout:            defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout:          defaultRyukReconnectionTimeout,
-					TestcontainersPortMappingTimeout: defaultTestcontainersPortMappingTimeout,
-				},
-			},
-			{
-				"With Ryuk container timeouts configured using properties",
-				`ryuk.connection.timeout=12s
-	ryuk.reconnection.timeout=13s
-	tc.port.mapping.timeout=11s`,
-				map[string]string{},
-				Config{
-					RyukReconnectionTimeout:          13 * time.Second,
-					RyukConnectionTimeout:            12 * time.Second,
-					TestcontainersPortMappingTimeout: 11 * time.Second,
-				},
-			},
-			{
-				"With Ryuk container timeouts configured using env vars",
-				``,
+				"ryuk-disabled-env-var-wins",
+				"ryuk.disabled=false",
 				map[string]string{
-					"RYUK_RECONNECTION_TIMEOUT":           "13s",
-					"RYUK_CONNECTION_TIMEOUT":             "12s",
-					"TESTCONTAINERS_PORT_MAPPING_TIMEOUT": "11s",
+					"TESTCONTAINERS_RYUK_DISABLED": "true",
 				},
-				Config{
-					RyukReconnectionTimeout:          13 * time.Second,
-					RyukConnectionTimeout:            12 * time.Second,
-					TestcontainersPortMappingTimeout: 11 * time.Second,
-				},
+				defaultTestConfig(withRyukDisabled(true)),
 			},
 			{
-				"With Ryuk container timeouts configured using env vars and properties. Env var wins",
+				"ryuk-privileged-env-var-wins",
+				"ryuk.container.privileged=false",
+				map[string]string{
+					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
+				},
+				defaultTestConfig(withRyukPrivileged(true)),
+			},
+			{
+				"ryuk-verbose-env-var-wins",
+				"ryuk.verbose=false",
+				map[string]string{
+					"RYUK_VERBOSE": "true",
+				},
+				defaultTestConfig(withRyukVerbose(true)),
+			},
+			{
+				"ryuk-timeouts-env-vars-win",
 				`ryuk.connection.timeout=22s
-	ryuk.reconnection.timeout=23s
-	tc.port.mapping.timeout=21s`,
+ryuk.reconnection.timeout=23s
+tc.port.mapping.timeout=21s`,
 				map[string]string{
 					"RYUK_RECONNECTION_TIMEOUT":           "13s",
 					"RYUK_CONNECTION_TIMEOUT":             "12s",
 					"TESTCONTAINERS_PORT_MAPPING_TIMEOUT": "11s",
 				},
-				Config{
-					RyukReconnectionTimeout:          13 * time.Second,
-					RyukConnectionTimeout:            12 * time.Second,
-					TestcontainersPortMappingTimeout: 11 * time.Second,
-				},
+				defaultTestConfig(withTimeouts(12*time.Second, 13*time.Second, 11*time.Second)),
 			},
 			{
-				"With Ryuk verbose configured using properties",
-				`ryuk.verbose=true`,
-				map[string]string{},
-				Config{
-					RyukVerbose:                      true,
-					RyukConnectionTimeout:            defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout:          defaultRyukReconnectionTimeout,
-					TestcontainersPortMappingTimeout: defaultTestcontainersPortMappingTimeout,
-				},
-			},
-			{
-				"With Ryuk disabled using an env var",
-				``,
+				"hub-image-prefix-env-var-wins",
+				"hub.image.name.prefix=" + defaultHubPrefix + "/props/",
 				map[string]string{
-					"TESTCONTAINERS_RYUK_DISABLED": "true",
+					"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": defaultHubPrefix + "/env/",
 				},
-				Config{
-					RyukDisabled:                     true,
-					RyukConnectionTimeout:            defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout:          defaultRyukReconnectionTimeout,
-					TestcontainersPortMappingTimeout: defaultTestcontainersPortMappingTimeout,
-				},
+				defaultTestConfig(withHubImagePrefix(defaultHubPrefix + "/env/")),
 			},
 			{
-				"With Ryuk container privileged using an env var",
-				``,
-				map[string]string{
-					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
-				},
-				Config{
-					RyukPrivileged:                   true,
-					RyukConnectionTimeout:            defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout:          defaultRyukReconnectionTimeout,
-					TestcontainersPortMappingTimeout: defaultTestcontainersPortMappingTimeout,
-				},
-			},
-			{
-				"With Ryuk disabled using an env var and properties. Env var wins (0)",
-				`ryuk.disabled=true`,
-				map[string]string{
-					"TESTCONTAINERS_RYUK_DISABLED": "true",
-				},
-				Config{
-					RyukDisabled:                     true,
-					RyukConnectionTimeout:            defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout:          defaultRyukReconnectionTimeout,
-					TestcontainersPortMappingTimeout: defaultTestcontainersPortMappingTimeout,
-				},
-			},
-			{
-				"With Ryuk disabled using an env var and properties. Env var wins (1)",
-				`ryuk.disabled=false`,
-				map[string]string{
-					"TESTCONTAINERS_RYUK_DISABLED": "true",
-				},
-				Config{
-					RyukDisabled:                     true,
-					RyukConnectionTimeout:            defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout:          defaultRyukReconnectionTimeout,
-					TestcontainersPortMappingTimeout: defaultTestcontainersPortMappingTimeout,
-				},
-			},
-			{
-				"With Ryuk disabled using an env var and properties. Env var wins (2)",
-				`ryuk.disabled=true`,
-				map[string]string{
-					"TESTCONTAINERS_RYUK_DISABLED": "false",
-				},
-				defaultConfig,
-			},
-			{
-				"With Ryuk disabled using an env var and properties. Env var wins (3)",
-				`ryuk.disabled=false`,
-				map[string]string{
-					"TESTCONTAINERS_RYUK_DISABLED": "false",
-				},
-				defaultConfig,
-			},
-			{
-				"With Ryuk verbose using an env var and properties. Env var wins (0)",
-				`ryuk.verbose=true`,
-				map[string]string{
-					"RYUK_VERBOSE": "true",
-				},
-				Config{
-					RyukVerbose:                      true,
-					RyukConnectionTimeout:            defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout:          defaultRyukReconnectionTimeout,
-					TestcontainersPortMappingTimeout: defaultTestcontainersPortMappingTimeout,
-				},
-			},
-			{
-				"With Ryuk verbose using an env var and properties. Env var wins (1)",
-				`ryuk.verbose=false`,
-				map[string]string{
-					"RYUK_VERBOSE": "true",
-				},
-				Config{
-					RyukVerbose:                      true,
-					RyukConnectionTimeout:            defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout:          defaultRyukReconnectionTimeout,
-					TestcontainersPortMappingTimeout: defaultTestcontainersPortMappingTimeout,
-				},
-			},
-			{
-				"With Ryuk verbose using an env var and properties. Env var wins (2)",
-				`ryuk.verbose=true`,
-				map[string]string{
-					"RYUK_VERBOSE": "false",
-				},
-				defaultConfig,
-			},
-			{
-				"With Ryuk verbose using an env var and properties. Env var wins (3)",
-				`ryuk.verbose=false`,
-				map[string]string{
-					"RYUK_VERBOSE": "false",
-				},
-				defaultConfig,
-			},
-			{
-				"With Ryuk container privileged using an env var and properties. Env var wins (0)",
-				`ryuk.container.privileged=true`,
-				map[string]string{
-					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
-				},
-				Config{
-					RyukPrivileged:                   true,
-					RyukConnectionTimeout:            defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout:          defaultRyukReconnectionTimeout,
-					TestcontainersPortMappingTimeout: defaultTestcontainersPortMappingTimeout,
-				},
-			},
-			{
-				"With Ryuk container privileged using an env var and properties. Env var wins (1)",
-				`ryuk.container.privileged=false`,
-				map[string]string{
-					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
-				},
-				Config{
-					RyukPrivileged:                   true,
-					RyukConnectionTimeout:            defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout:          defaultRyukReconnectionTimeout,
-					TestcontainersPortMappingTimeout: defaultTestcontainersPortMappingTimeout,
-				},
-			},
-			{
-				"With Ryuk container privileged using an env var and properties. Env var wins (2)",
-				`ryuk.container.privileged=true`,
-				map[string]string{
-					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "false",
-				},
-				defaultConfig,
-			},
-			{
-				"With Ryuk container privileged using an env var and properties. Env var wins (3)",
-				`ryuk.container.privileged=false`,
-				map[string]string{
-					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "false",
-				},
-				defaultConfig,
-			},
-			{
-				"With TLS verify using properties when value is wrong",
-				`ryuk.container.privileged=false
-				docker.tls.verify = ERROR`,
-				map[string]string{
-					"TESTCONTAINERS_RYUK_DISABLED":             "true",
-					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
-				},
-				Config{
-					RyukDisabled:   true,
-					RyukPrivileged: true,
-				},
-			},
-			{
-				"With Ryuk disabled using an env var and properties. Env var does not win because it's not a boolean value",
-				`ryuk.disabled=false`,
+				"invalid-boolean-env-var-is-ignored",
+				"ryuk.disabled=false",
 				map[string]string{
 					"TESTCONTAINERS_RYUK_DISABLED": "foo",
 				},
-				defaultConfig,
+				defaultConfig(),
 			},
 			{
-				"With Ryuk container privileged using an env var and properties. Env var does not win because it's not a boolean value",
-				`ryuk.container.privileged=false`,
+				"invalid-privileged-env-var-is-ignored",
+				"ryuk.container.privileged=false",
 				map[string]string{
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "foo",
 				},
-				defaultConfig,
+				defaultConfig(),
 			},
 			{
-				"With Hub image name prefix set as a property",
-				`hub.image.name.prefix=` + defaultHubPrefix + `/props/`,
-				map[string]string{},
-				Config{
-					HubImageNamePrefix:               defaultHubPrefix + "/props/",
-					RyukConnectionTimeout:            defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout:          defaultRyukReconnectionTimeout,
-					TestcontainersPortMappingTimeout: defaultTestcontainersPortMappingTimeout,
-				},
-			},
-			{
-				"With Hub image name prefix set as env var",
-				``,
+				"port-mapping-timeout-env-var-wins",
+				"tc.port.mapping.timeout=22s",
 				map[string]string{
-					"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": defaultHubPrefix + "/env/",
+					"TESTCONTAINERS_PORT_MAPPING_TIMEOUT": "14s",
 				},
-				Config{
-					HubImageNamePrefix:               defaultHubPrefix + "/env/",
-					RyukConnectionTimeout:            defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout:          defaultRyukReconnectionTimeout,
-					TestcontainersPortMappingTimeout: defaultTestcontainersPortMappingTimeout,
-				},
+				defaultTestConfig(withTimeouts(60*time.Second, 10*time.Second, 14*time.Second)),
 			},
 			{
-				"With Hub image name prefix set as env var and properties: Env var wins",
-				`hub.image.name.prefix=` + defaultHubPrefix + `/props/`,
+				"invalid-port-mapping-timeout-env-var-is-ignored",
+				"tc.port.mapping.timeout=22s",
 				map[string]string{
-					"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": defaultHubPrefix + "/env/",
+					"TESTCONTAINERS_PORT_MAPPING_TIMEOUT": "invalid",
 				},
-				Config{
-					HubImageNamePrefix:               defaultHubPrefix + "/env/",
-					RyukConnectionTimeout:            defaultRyukConnectionTimeout,
-					RyukReconnectionTimeout:          defaultRyukReconnectionTimeout,
-					TestcontainersPortMappingTimeout: defaultTestcontainersPortMappingTimeout,
-				},
+				defaultTestConfig(withTimeouts(60*time.Second, 10*time.Second, 22*time.Second)),
 			},
 		}
+
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				tmpDir := t.TempDir()
-				t.Setenv("HOME", tmpDir)
-				t.Setenv("USERPROFILE", tmpDir) // Windows support
-				for k, v := range tt.env {
-					t.Setenv(k, v)
-				}
-				err := os.WriteFile(filepath.Join(tmpDir, ".testcontainers.properties"), []byte(tt.content), 0o600)
-				require.NoErrorf(t, err, "Failed to create the file")
-
-				//
-				config := read()
-
-				assert.Equal(t, tt.expected, config, "Configuration doesn't not match")
+				tmpDir := setupTestDir(t)
+				setupTestEnv(t, tt.env)
+				setupTestProperties(t, tmpDir, tt.content)
+				require.Equal(t, tt.expected, read())
 			})
 		}
 	})
