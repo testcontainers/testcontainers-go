@@ -1,6 +1,6 @@
 # RabbitMQ
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.25.0"><span class="tc-version">:material-tag: v0.25.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.25.0"><span class="tc-version">:material-tag: v0.25.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/rabbitmq
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
@@ -38,10 +38,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `context.Context`, the Go context.
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
-
-### Container Options
-
-When starting the RabbitMQ container, you can pass options in a variadic way to configure it. All these options will be automatically rendered into the RabbitMQ's custom configuration file, located at `/etc/rabbitmq/rabbitmq-custom.conf`.
 
 #### Image
 
@@ -67,9 +63,37 @@ In example: `Run(context.Background(), "rabbitmq:3.7.25-management-alpine")`.
     - RABBITMQ_SSL_VERIFY
     - RABBITMQ_VM_MEMORY_HIGH_WATERMARK
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
 
-#### Startup Commands for RabbitMQ
+When starting the RabbitMQ container, you can pass options in a variadic way to configure it. All these options will be automatically rendered into the RabbitMQ's custom configuration file, located at `/etc/rabbitmq/rabbitmq-custom.conf`.
+
+#### Default Admin
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.25.0"><span class="tc-version">:material-tag: v0.25.0</span></a>
+If you need to set the username and/or password for the admin user, you can use the `WithAdminUsername(username string)` and `WithAdminPassword(pwd string)` options.
+
+!!!info
+    By default, the admin username is `guest` and the password is `guest`.
+
+#### SSL settings
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.25.0"><span class="tc-version">:material-tag: v0.25.0</span></a>
+
+In the case you need to enable SSL, you can use the `WithSSL(settings SSLSettings)` option. This option will enable SSL with the passed settings:
+
+<!--codeinclude-->
+[Enabling SSL](../../modules/rabbitmq/examples_test.go) inside_block:enableSSL
+<!--/codeinclude-->
+
+You'll find a log entry similar to this one in the container logs:
+
+```
+2023-09-13 13:05:10.213 [info] <0.548.0> started TLS (SSL) listener on [::]:5671
+```
+
+#### Startup Commands
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.25.0"><span class="tc-version">:material-tag: v0.25.0</span></a>
 
 The RabbitMQ module includes several test implementations of the `testcontainers.Executable` interface: Binding, Exchange, OperatorPolicy, Parameter, Permission, Plugin, Policy, Queue, User, VirtualHost and VirtualHostLimit. You could use them as reference to understand how the startup commands are generated, but please consider this test implementation could not be complete for your use case.
 
@@ -99,26 +123,7 @@ Please refer to the RabbitMQ documentation to build your own commands.
 [Enabling Plugins](../../modules/rabbitmq/rabbitmq_test.go) inside_block:enablePlugins
 <!--/codeinclude-->
 
-#### Default Admin
-
-If you need to set the username and/or password for the admin user, you can use the `WithAdminUsername(username string)` and `WithAdminPassword(pwd string)` options.
-
-!!!info
-    By default, the admin username is `guest` and the password is `guest`.
-
-#### SSL settings
-
-In the case you need to enable SSL, you can use the `WithSSL(settings SSLSettings)` option. This option will enable SSL with the passed settings:
-
-<!--codeinclude-->
-[Enabling SSL](../../modules/rabbitmq/examples_test.go) inside_block:enableSSL
-<!--/codeinclude-->
-
-You'll find a log entry similar to this one in the container logs:
-
-```
-2023-09-13 13:05:10.213 [info] <0.548.0> started TLS (SSL) listener on [::]:5671
-```
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 
@@ -126,12 +131,16 @@ The RabbitMQ container exposes the following methods:
 
 #### AMQP URLs
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.25.0"><span class="tc-version">:material-tag: v0.25.0</span></a>
+
 The RabbitMQ container exposes two methods to retrieve the AMQP URLs in order to connect to the RabbitMQ instance using AMQP clients:
 
 - `AmqpURL()`, returns the AMQP URL.
 - `AmqpsURL()`, returns the AMQPS URL.
 
 #### HTTP management URLs
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.25.0"><span class="tc-version">:material-tag: v0.25.0</span></a>
 
 The RabbitMQ container exposes two methods to retrieve the HTTP URLs for management:
 

@@ -1,6 +1,6 @@
 # DinD (Docker in Docker)
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/dind
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 The DinD module exposes one entrypoint function to create the DinD container, and this function receives three parameters:
 
@@ -36,22 +36,24 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the DinD container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 If you need to set a different DinD Docker image, you can set a valid Docker image as the second argument in the `Run` function.
 E.g. `Run(context.Background(), "docker:28.0.1-dind")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the DinD container, you can pass options in a variadic way to configure it.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 
 The DinD container exposes the following methods:
 
 #### Host
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 The `Host` method returns the DinD URL, to be used for connecting
 to the Docker API using a Docker client. It'll be returned in the format of `string`.
@@ -62,6 +64,8 @@ to the Docker API using a Docker client. It'll be returned in the format of `str
 <!--/codeinclude-->
 
 #### LoadImage
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 The `LoadImage` method loads an image into the docker in docker daemon.
 
