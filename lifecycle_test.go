@@ -475,6 +475,29 @@ func TestMergePortBindings(t *testing.T) {
 	}
 }
 
+type mockPortMappingCheckContainer struct {
+	ports nat.PortMap
+}
+
+func (m *mockPortMappingCheckContainer) InspectRawContainer(ctx context.Context) (*container.InspectResponse, error) {
+	// check if the context has a timeout or if is cancelled
+	// used to simulate a timeout in the container inspection,
+	// so the exposed ports are not mapped.
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
+	return &container.InspectResponse{
+		NetworkSettings: &container.NetworkSettings{
+			NetworkSettingsBase: container.NetworkSettingsBase{
+				Ports: m.ports,
+			},
+		},
+	}, nil
+}
+
 func TestPortMappingCheck(t *testing.T) {
 	makePortMap := func(ports ...string) nat.PortMap {
 		out := make(nat.PortMap)
@@ -490,6 +513,15 @@ func TestPortMappingCheck(t *testing.T) {
 		exposedPorts          []string
 		expectError           bool
 	}{
+		"empty-ports": {
+			exposedAndMappedPorts: makePortMap(),
+			exposedPorts:          []string{},
+		},
+		"invalid-port-format": {
+			exposedAndMappedPorts: makePortMap(),
+			exposedPorts:          []string{"invalid"},
+			expectError:           true,
+		},
 		"no-protocol": {
 			exposedAndMappedPorts: makePortMap("1024/tcp"),
 			exposedPorts:          []string{"1024"},
@@ -509,6 +541,10 @@ func TestPortMappingCheck(t *testing.T) {
 		"multiple-ports": {
 			exposedAndMappedPorts: makePortMap("1024/tcp", "1025/tcp", "1026/tcp"),
 			exposedPorts:          []string{"1024", "25:1025/tcp", "1026:1026"},
+		},
+		"multiple-protocols": {
+			exposedAndMappedPorts: makePortMap("1024/tcp", "1024/udp"),
+			exposedPorts:          []string{"1024/tcp", "1024/udp"},
 		},
 		"only-ipv4": {
 			exposedAndMappedPorts: makePortMap("1024/tcp"),
@@ -530,14 +566,34 @@ func TestPortMappingCheck(t *testing.T) {
 			expectError:           true,
 		},
 	}
+
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			err := checkPortsMapped(tt.exposedAndMappedPorts, tt.exposedPorts)
-			if tt.expectError {
-				require.Error(t, err)
-				return
+			mock := &mockPortMappingCheckContainer{
+				ports: tt.exposedAndMappedPorts,
 			}
-			require.NoError(t, err)
+
+			t.Run("high-timeout", func(t *testing.T) {
+				// the context will not be cancelled, so the container inspection will not timeout while waiting for the ports to be mapped
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+				// simulate the configuration of the exposed ports timeout is 1 second
+				err := checkPortsMapped(ctx, mock.InspectRawContainer, tt.exposedPorts, 1*time.Second)
+				if tt.expectError {
+					require.Error(t, err)
+					return
+				}
+				require.NoError(t, err)
+			})
+
+			t.Run("low-timeout", func(t *testing.T) {
+				// the context is cancelled, so the container inspection will timeout while waiting for the ports to be mapped
+				ctx, cancel := context.WithCancel(context.Background())
+				cancel()
+
+				err := checkPortsMapped(ctx, mock.InspectRawContainer, tt.exposedPorts, 1*time.Second)
+				require.Error(t, err)
+			})
 		})
 	}
 }

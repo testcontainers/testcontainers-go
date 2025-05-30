@@ -214,29 +214,57 @@ var defaultLogConsumersHook = func(cfg *LogConsumerConfig) ContainerLifecycleHoo
 	}
 }
 
-func checkPortsMapped(exposedAndMappedPorts nat.PortMap, exposedPorts []string) error {
-	portMap, _, err := nat.ParsePortSpecs(exposedPorts)
+// checkPortsMapped waits until all the exposed ports are mapped:
+// it will be ready when all the exposed ports are mapped, checking every 50ms, up to 1s,
+// and failing if all the exposed ports are not mapped in the interval defined by the
+// [config.TestcontainersPortMappingTimeout] config.
+func checkPortsMapped(ctx context.Context, inspectRawContainer func(context.Context) (*container.InspectResponse, error), exposedPorts []string, timeout time.Duration) error {
+	b := backoff.NewExponentialBackOff()
+
+	b.InitialInterval = 50 * time.Millisecond
+	b.MaxElapsedTime = timeout
+	b.MaxInterval = time.Duration(float64(time.Second) * backoff.DefaultRandomizationFactor)
+
+	err := backoff.RetryNotify(
+		func() error {
+			jsonRaw, err := inspectRawContainer(ctx)
+			if err != nil {
+				return err
+			}
+
+			portMap, _, err := nat.ParsePortSpecs(exposedPorts)
+			if err != nil {
+				return fmt.Errorf("parse exposed ports: %w", err)
+			}
+
+			for exposedPort := range portMap {
+				// having entries in exposedAndMappedPorts, where the key is the exposed port,
+				// and the value is the mapped port, means that the port has been already mapped.
+				if _, ok := jsonRaw.NetworkSettings.Ports[exposedPort]; ok {
+					continue
+				}
+
+				// check if the port is mapped with the protocol (default is TCP)
+				if strings.Contains(string(exposedPort), "/") {
+					return fmt.Errorf("port %s is not mapped yet", exposedPort)
+				}
+
+				// Port didn't have a type, default to tcp and retry.
+				exposedPort += "/tcp"
+				if _, ok := jsonRaw.NetworkSettings.Ports[exposedPort]; !ok {
+					return fmt.Errorf("port %s is not mapped yet", exposedPort)
+				}
+			}
+
+			return nil
+		},
+		b,
+		func(err error, _ time.Duration) {
+			log.Printf("All requested ports were not exposed: %v", err)
+		},
+	)
 	if err != nil {
-		return fmt.Errorf("parse exposed ports: %w", err)
-	}
-
-	for exposedPort := range portMap {
-		// having entries in exposedAndMappedPorts, where the key is the exposed port,
-		// and the value is the mapped port, means that the port has been already mapped.
-		if _, ok := exposedAndMappedPorts[exposedPort]; ok {
-			continue
-		}
-
-		// check if the port is mapped with the protocol (default is TCP)
-		if strings.Contains(string(exposedPort), "/") {
-			return fmt.Errorf("port %s is not mapped yet", exposedPort)
-		}
-
-		// Port didn't have a type, default to tcp and retry.
-		exposedPort += "/tcp"
-		if _, ok := exposedAndMappedPorts[exposedPort]; !ok {
-			return fmt.Errorf("port %s is not mapped yet", exposedPort)
-		}
+		return fmt.Errorf("all exposed ports, %s, were not mapped in %s: %w", exposedPorts, timeout, err)
 	}
 
 	return nil
@@ -247,40 +275,11 @@ var defaultReadinessHook = func() ContainerLifecycleHooks {
 	return ContainerLifecycleHooks{
 		PostStarts: []ContainerHook{
 			func(ctx context.Context, c Container) error {
-				// wait until all the exposed ports are mapped:
-				// it will be ready when all the exposed ports are mapped,
-				// checking every 50ms, up to 1s, and failing if all the
-				// exposed ports are not mapped in the interval defined by the
-				// [config.TestcontainersPortMappingTimeout] config.
 				dockerContainer := c.(*DockerContainer)
 
 				cfg := config.Read()
 
-				b := backoff.NewExponentialBackOff()
-
-				b.InitialInterval = 50 * time.Millisecond
-				b.MaxElapsedTime = cfg.TestcontainersPortMappingTimeout
-				b.MaxInterval = time.Duration(float64(time.Second) * backoff.DefaultRandomizationFactor)
-
-				err := backoff.RetryNotify(
-					func() error {
-						jsonRaw, err := dockerContainer.inspectRawContainer(ctx)
-						if err != nil {
-							return err
-						}
-
-						return checkPortsMapped(jsonRaw.NetworkSettings.Ports, dockerContainer.exposedPorts)
-					},
-					b,
-					func(err error, _ time.Duration) {
-						dockerContainer.logger.Printf("All requested ports were not exposed: %v", err)
-					},
-				)
-				if err != nil {
-					return fmt.Errorf("all exposed ports, %s, were not mapped in %s: %w", dockerContainer.exposedPorts, cfg.TestcontainersPortMappingTimeout, err)
-				}
-
-				return nil
+				return checkPortsMapped(ctx, dockerContainer.inspectRawContainer, dockerContainer.exposedPorts, cfg.TestcontainersPortMappingTimeout)
 			},
 			// wait for the container to be ready
 			func(ctx context.Context, c Container) error {
