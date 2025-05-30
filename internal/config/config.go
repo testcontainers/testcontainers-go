@@ -85,6 +85,11 @@ type Config struct {
 	//
 	// Environment variable: TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE
 	TestcontainersHost string `properties:"tc.host,default="`
+
+	// TestcontainersPortMappingTimeout is the time to wait before all the exposed ports are mapped.
+	//
+	// Environment variable: TESTCONTAINERS_PORT_MAPPING_TIMEOUT
+	TestcontainersPortMappingTimeout time.Duration `properties:"tc.port.mapping.timeout,default=5s"`
 }
 
 // }
@@ -139,6 +144,11 @@ func read() Config {
 		ryukConnectionTimeoutEnv := readTestcontainersEnv("RYUK_CONNECTION_TIMEOUT")
 		if timeout, err := time.ParseDuration(ryukConnectionTimeoutEnv); err == nil {
 			config.RyukConnectionTimeout = timeout
+		}
+
+		testcontainersPortMappingTimeoutEnv := readTestcontainersEnv("TESTCONTAINERS_PORT_MAPPING_TIMEOUT")
+		if timeout, err := time.ParseDuration(testcontainersPortMappingTimeoutEnv); err == nil {
+			config.TestcontainersPortMappingTimeout = timeout
 		}
 
 		return config
