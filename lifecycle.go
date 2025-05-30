@@ -14,6 +14,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
 
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/log"
 )
 
@@ -249,13 +250,16 @@ var defaultReadinessHook = func() ContainerLifecycleHooks {
 				// wait until all the exposed ports are mapped:
 				// it will be ready when all the exposed ports are mapped,
 				// checking every 50ms, up to 1s, and failing if all the
-				// exposed ports are not mapped in 5s.
+				// exposed ports are not mapped in the interval defined by the
+				// [config.TestcontainersPortMappingTimeout] config.
 				dockerContainer := c.(*DockerContainer)
+
+				cfg := config.Read()
 
 				b := backoff.NewExponentialBackOff()
 
 				b.InitialInterval = 50 * time.Millisecond
-				b.MaxElapsedTime = 5 * time.Second
+				b.MaxElapsedTime = cfg.TestcontainersPortMappingTimeout
 				b.MaxInterval = time.Duration(float64(time.Second) * backoff.DefaultRandomizationFactor)
 
 				err := backoff.RetryNotify(
@@ -273,7 +277,7 @@ var defaultReadinessHook = func() ContainerLifecycleHooks {
 					},
 				)
 				if err != nil {
-					return fmt.Errorf("all exposed ports, %s, were not mapped in 5s: %w", dockerContainer.exposedPorts, err)
+					return fmt.Errorf("all exposed ports, %s, were not mapped in %s: %w", dockerContainer.exposedPorts, cfg.TestcontainersPortMappingTimeout, err)
 				}
 
 				return nil
