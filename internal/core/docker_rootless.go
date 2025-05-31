@@ -91,7 +91,7 @@ func parseURL(s string) (string, error) {
 		// return the original URL, as it is a valid TCP URL
 		return s, nil
 	default:
-		return "", ErrNoUnixSchema
+		return "", errNoUnixSchema
 	}
 }
 

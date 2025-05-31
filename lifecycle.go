@@ -538,7 +538,11 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 	// prepare mounts
 	hostConfig.Mounts = mapToDockerMounts(req.Mounts)
 
-	endpointSettings := map[string]*network.EndpointSettings{}
+	endpointSettings := networkingConfig.EndpointsConfig
+	if endpointSettings == nil {
+		// sanity check for nil map
+		endpointSettings = make(map[string]*network.EndpointSettings)
+	}
 
 	// #248: Docker allows only one network to be specified during container creation
 	// If there is more than one network specified in the request container should be attached to them

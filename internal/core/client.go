@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 
 	"github.com/docker/docker/client"
@@ -12,7 +13,10 @@ import (
 
 // NewClient returns a new docker client extracting the docker host from the different alternatives
 func NewClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {
-	tcConfig := config.Read()
+	tcConfig, err := config.Read()
+	if err != nil {
+		return nil, fmt.Errorf("read config: %w", err)
+	}
 
 	dockerHost := MustExtractDockerHost(ctx)
 
