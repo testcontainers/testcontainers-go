@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/build"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/strslice"
@@ -2015,9 +2015,9 @@ type errMockCli struct {
 	imagePullCount     int
 }
 
-func (f *errMockCli) ImageBuild(_ context.Context, _ io.Reader, _ types.ImageBuildOptions) (types.ImageBuildResponse, error) {
+func (f *errMockCli) ImageBuild(_ context.Context, _ io.Reader, _ build.ImageBuildOptions) (build.ImageBuildResponse, error) {
 	f.imageBuildCount++
-	return types.ImageBuildResponse{Body: io.NopCloser(&bytes.Buffer{})}, f.err
+	return build.ImageBuildResponse{Body: io.NopCloser(&bytes.Buffer{})}, f.err
 }
 
 func (f *errMockCli) ContainerList(_ context.Context, _ container.ListOptions) ([]container.Summary, error) {

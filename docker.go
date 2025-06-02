@@ -21,7 +21,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/containerd/errdefs"
 	"github.com/containerd/platforms"
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/build"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/image"
@@ -977,22 +977,22 @@ var _ ContainerProvider = (*DockerProvider)(nil)
 
 // BuildImage will build and image from context and Dockerfile, then return the tag
 func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (string, error) {
-	var buildOptions types.ImageBuildOptions
+	var buildOptions build.ImageBuildOptions
 	resp, err := backoff.RetryNotifyWithData(
-		func() (types.ImageBuildResponse, error) {
+		func() (build.ImageBuildResponse, error) {
 			var err error
 			buildOptions, err = img.BuildOptions()
 			if err != nil {
-				return types.ImageBuildResponse{}, backoff.Permanent(fmt.Errorf("build options: %w", err))
+				return build.ImageBuildResponse{}, backoff.Permanent(fmt.Errorf("build options: %w", err))
 			}
 			defer tryClose(buildOptions.Context) // release resources in any case
 
 			resp, err := p.client.ImageBuild(ctx, buildOptions.Context, buildOptions)
 			if err != nil {
 				if isPermanentClientError(err) {
-					return types.ImageBuildResponse{}, backoff.Permanent(fmt.Errorf("build image: %w", err))
+					return build.ImageBuildResponse{}, backoff.Permanent(fmt.Errorf("build image: %w", err))
 				}
-				return types.ImageBuildResponse{}, err
+				return build.ImageBuildResponse{}, err
 			}
 			defer p.Close()
 
@@ -1121,7 +1121,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		} else {
 			img, err := p.client.ImageInspect(ctx, imageName)
 			if err != nil {
-				if !client.IsErrNotFound(err) {
+				if !errdefs.IsNotFound(err) {
 					return nil, err
 				}
 				shouldPullImage = true
