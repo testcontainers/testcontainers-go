@@ -24,6 +24,6 @@ req := ContainerRequest{
 In the case you are building an image from the Dockerfile, the authentication will be automatically retrieved from the Docker config, so you don't need to pass it explicitly:
 
 <!--codeinclude-->
-[Building From a Dockerfile does not need Auth credentials anymore](../../docker_test.go) inside_block:fromDockerfile
+[Building From a Dockerfile does not need Auth credentials anymore](../../docker_test.go) inside_block:fromDockerfileWithBuildArgs
 <!--/codeinclude-->
 

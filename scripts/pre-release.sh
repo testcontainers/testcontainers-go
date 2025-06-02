@@ -64,8 +64,8 @@ function bumpVersion() {
   cd "${ROOT_DIR}/docs"
 
   versionEscapingDots="${versionToBumpWithoutV/./\.}"
-  NON_RELEASED_STRING='Not available until the next release of testcontainers-go <a href=\"https:\/\/github.com\/testcontainers\/testcontainers-go\"><span class=\"tc-version\">:material-tag: main<\/span><\/a>'
-  RELEASED_STRING="Since testcontainers-go <a href=\\\"https:\/\/github.com\/testcontainers\/testcontainers-go\/releases\/tag\/v${versionEscapingDots}\\\"><span class=\\\"tc-version\\\">:material-tag: v${versionEscapingDots}<\/span><\/a>"
+  NON_RELEASED_STRING='Not available until the next release <a href=\"https:\/\/github.com\/testcontainers\/testcontainers-go\"><span class=\"tc-version\">:material-tag: main<\/span><\/a>'
+  RELEASED_STRING="Since <a href=\\\"https:\/\/github.com\/testcontainers\/testcontainers-go\/releases\/tag\/v${versionEscapingDots}\\\"><span class=\\\"tc-version\\\">:material-tag: v${versionEscapingDots}<\/span><\/a>"
 
   # find all markdown files, and for each of them, replace the release string
   find . -name "*.md" | while read -r module_file; do
