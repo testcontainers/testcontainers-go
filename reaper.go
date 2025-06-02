@@ -224,7 +224,7 @@ func (r *reaperSpawner) isRunning(ctx context.Context, ctr Container) error {
 	if !state.Running {
 		// Use NotFound error to indicate the container is not running
 		// and should be recreated.
-		return errdefs.ErrNotFound.WithMessage(fmt.Sprintf("container state: %s", state.Status))
+		return errdefs.ErrNotFound.WithMessage("container state: " + state.Status)
 	}
 
 	return nil
