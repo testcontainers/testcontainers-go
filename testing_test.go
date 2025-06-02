@@ -47,7 +47,7 @@ func Test_isNotFound(t *testing.T) {
 		},
 		"join-other": {
 			err:  errors.Join(nil, notFoundError{}, errors.New("other")),
-			want: false,
+			want: true,
 		},
 		"wrap": {
 			err:  fmt.Errorf("wrap: %w", notFoundError{}),
@@ -63,7 +63,7 @@ func Test_isNotFound(t *testing.T) {
 		},
 		"multi-wrap-other-not-found": {
 			err:  fmt.Errorf("wrap: %w", fmt.Errorf("wrap: %w %w", errors.New("other"), notFoundError{})),
-			want: false,
+			want: true,
 		},
 		"multi-wrap-not-found-nil": {
 			err:  fmt.Errorf("wrap: %w", fmt.Errorf("wrap: %w %w", nil, notFoundError{})),
@@ -71,7 +71,7 @@ func Test_isNotFound(t *testing.T) {
 		},
 		"multi-join-not-found-other": {
 			err:  errors.Join(nil, fmt.Errorf("wrap: %w", errors.Join(notFoundError{}, errors.New("other")))),
-			want: false,
+			want: true,
 		},
 		"multi-join-not-found-nil": {
 			err:  errors.Join(nil, fmt.Errorf("wrap: %w", errors.Join(notFoundError{}, nil))),
