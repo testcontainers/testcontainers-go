@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/containerd/errdefs"
 	"github.com/containerd/platforms"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -26,7 +27,6 @@ import (
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
-	"github.com/docker/docker/errdefs"
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/go-connections/nat"
@@ -205,7 +205,7 @@ func (c *DockerContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Po
 		return nat.NewPort(k.Proto(), p[0].HostPort)
 	}
 
-	return "", errdefs.NotFound(fmt.Errorf("port %q not found", port))
+	return "", errdefs.ErrNotFound.WithMessage(fmt.Sprintf("port %q not found", port))
 }
 
 // Deprecated: use c.Inspect(ctx).NetworkSettings.Ports instead.
@@ -1290,7 +1290,7 @@ func (p *DockerProvider) waitContainerCreation(ctx context.Context, name string)
 			}
 
 			if c == nil {
-				return nil, errdefs.NotFound(fmt.Errorf("container %s not found", name))
+				return nil, errdefs.ErrNotFound.WithMessage(fmt.Sprintf("container %s not found", name))
 			}
 			return c, nil
 		},
@@ -1791,11 +1791,11 @@ func (p *DockerProvider) PullImage(ctx context.Context, img string) error {
 
 var permanentClientErrors = []func(error) bool{
 	errdefs.IsNotFound,
-	errdefs.IsInvalidParameter,
+	errdefs.IsInvalidArgument,
 	errdefs.IsUnauthorized,
-	errdefs.IsForbidden,
+	errdefs.IsPermissionDenied,
 	errdefs.IsNotImplemented,
-	errdefs.IsSystem,
+	errdefs.IsInternal,
 }
 
 func isPermanentClientError(err error) bool {
