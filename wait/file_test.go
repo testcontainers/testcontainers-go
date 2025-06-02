@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/containerd/errdefs"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/errdefs"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -39,7 +39,7 @@ func testForFile() *wait.FileStrategy {
 }
 
 func TestForFile(t *testing.T) {
-	errNotFound := errdefs.NotFound(errors.New("file not found"))
+	errNotFound := errdefs.ErrNotFound.WithMessage("file not found")
 	ctx := context.Background()
 
 	t.Run("not-found", func(t *testing.T) {

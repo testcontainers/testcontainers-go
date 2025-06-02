@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/build"
 	"github.com/docker/docker/api/types/image"
 	"github.com/stretchr/testify/require"
 
@@ -134,7 +134,7 @@ func TestBuildImageFromDockerfile_Target(t *testing.T) {
 				Context:    "testdata",
 				Dockerfile: "target.Dockerfile",
 				KeepImage:  false,
-				BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
+				BuildOptionsModifier: func(buildOptions *build.ImageBuildOptions) {
 					buildOptions.Target = fmt.Sprintf("target%d", i)
 				},
 			}),
@@ -160,7 +160,7 @@ func ExampleGenericContainer_buildFromDockerfile() {
 			Context:    "testdata",
 			Dockerfile: "target.Dockerfile",
 			KeepImage:  false,
-			BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
+			BuildOptionsModifier: func(buildOptions *build.ImageBuildOptions) {
 				buildOptions.Target = "target2"
 			},
 		}),
@@ -203,7 +203,7 @@ func TestBuildImageFromDockerfile_TargetDoesNotExist(t *testing.T) {
 			Context:    "testdata",
 			Dockerfile: "target.Dockerfile",
 			KeepImage:  false,
-			BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
+			BuildOptionsModifier: func(buildOptions *build.ImageBuildOptions) {
 				buildOptions.Target = "target-foo"
 			},
 		}),

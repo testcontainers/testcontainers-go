@@ -15,12 +15,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/containerd/errdefs"
+	"github.com/docker/docker/api/types/build"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/docker/client"
-	"github.com/docker/docker/errdefs"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
@@ -905,8 +905,7 @@ func TestContainerNonExistentImage(t *testing.T) {
 		ctr, err := Run(context.Background(), "postgres:nonexistent-version")
 		CleanupContainer(t, ctr)
 
-		var nf errdefs.ErrNotFound
-		require.ErrorAsf(t, err, &nf, "the error should have been an errdefs.ErrNotFound: %v", err)
+		require.ErrorIs(t, err, errdefs.ErrNotFound, "the error should have been an errdefs.ErrNotFound: %v", err)
 	})
 
 	t.Run("context-cancellation-propagated-to-container-creation", func(t *testing.T) {
@@ -1599,9 +1598,9 @@ type errMockCli struct {
 	imagePullCount     int
 }
 
-func (f *errMockCli) ImageBuild(_ context.Context, _ io.Reader, _ types.ImageBuildOptions) (types.ImageBuildResponse, error) {
+func (f *errMockCli) ImageBuild(_ context.Context, _ io.Reader, _ build.ImageBuildOptions) (build.ImageBuildResponse, error) {
 	f.imageBuildCount++
-	return types.ImageBuildResponse{Body: io.NopCloser(&bytes.Buffer{})}, f.err
+	return build.ImageBuildResponse{Body: io.NopCloser(&bytes.Buffer{})}, f.err
 }
 
 func (f *errMockCli) ContainerList(_ context.Context, _ container.ListOptions) ([]container.Summary, error) {
@@ -1631,32 +1630,32 @@ func TestDockerProvider_BuildImage_Retries(t *testing.T) {
 		},
 		{
 			name:        "no retry when a resource is not found",
-			errReturned: errdefs.NotFound(errors.New("not available")),
+			errReturned: errdefs.ErrNotFound.WithMessage("not available"),
 			shouldRetry: false,
 		},
 		{
 			name:        "no retry when parameters are invalid",
-			errReturned: errdefs.InvalidParameter(errors.New("invalid")),
+			errReturned: errdefs.ErrInvalidArgument.WithMessage("invalid"),
 			shouldRetry: false,
 		},
 		{
 			name:        "no retry when resource access not authorized",
-			errReturned: errdefs.Unauthorized(errors.New("not authorized")),
+			errReturned: errdefs.ErrUnauthenticated.WithMessage("not authorized"),
 			shouldRetry: false,
 		},
 		{
 			name:        "no retry when resource access is forbidden",
-			errReturned: errdefs.Forbidden(errors.New("forbidden")),
+			errReturned: errdefs.ErrPermissionDenied.WithMessage("forbidden"),
 			shouldRetry: false,
 		},
 		{
 			name:        "no retry when not implemented by provider",
-			errReturned: errdefs.NotImplemented(errors.New("unknown method")),
+			errReturned: errdefs.ErrNotImplemented.WithMessage("unknown method"),
 			shouldRetry: false,
 		},
 		{
 			name:        "no retry on system error",
-			errReturned: errdefs.System(errors.New("system error")),
+			errReturned: errdefs.ErrInternal.WithMessage("system error"),
 			shouldRetry: false,
 		},
 		{
@@ -1706,17 +1705,17 @@ func TestDockerProvider_waitContainerCreation_retries(t *testing.T) {
 		},
 		{
 			name:        "no retry when parameters are invalid",
-			errReturned: errdefs.InvalidParameter(errors.New("invalid")),
+			errReturned: errdefs.ErrInvalidArgument.WithMessage("invalid"),
 			shouldRetry: false,
 		},
 		{
 			name:        "no retry when not implemented by provider",
-			errReturned: errdefs.NotImplemented(errors.New("unknown method")),
+			errReturned: errdefs.ErrNotImplemented.WithMessage("unknown method"),
 			shouldRetry: false,
 		},
 		{
 			name:        "retry when not found",
-			errReturned: errdefs.NotFound(errors.New("not there yet")),
+			errReturned: errdefs.ErrNotFound.WithMessage("not there yet"),
 			shouldRetry: true,
 		},
 		{
@@ -1757,27 +1756,27 @@ func TestDockerProvider_attemptToPullImage_retries(t *testing.T) {
 		},
 		{
 			name:        "no retry when a resource is not found",
-			errReturned: errdefs.NotFound(errors.New("not available")),
+			errReturned: errdefs.ErrNotFound.WithMessage("not available"),
 			shouldRetry: false,
 		},
 		{
 			name:        "no retry when parameters are invalid",
-			errReturned: errdefs.InvalidParameter(errors.New("invalid")),
+			errReturned: errdefs.ErrInvalidArgument.WithMessage("invalid"),
 			shouldRetry: false,
 		},
 		{
 			name:        "no retry when resource access not authorized",
-			errReturned: errdefs.Unauthorized(errors.New("not authorized")),
+			errReturned: errdefs.ErrUnauthenticated.WithMessage("not authorized"),
 			shouldRetry: false,
 		},
 		{
 			name:        "no retry when resource access is forbidden",
-			errReturned: errdefs.Forbidden(errors.New("forbidden")),
+			errReturned: errdefs.ErrPermissionDenied.WithMessage("forbidden"),
 			shouldRetry: false,
 		},
 		{
 			name:        "no retry when not implemented by provider",
-			errReturned: errdefs.NotImplemented(errors.New("unknown method")),
+			errReturned: errdefs.ErrNotImplemented.WithMessage("unknown method"),
 			shouldRetry: false,
 		},
 		{
