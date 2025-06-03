@@ -60,3 +60,42 @@ req := ContainerRequest{
     WaitingFor:   wait.ForExposedPort().SkipInternalCheck(),
 }
 ```
+
+## Skipping the external check
+
+_Testcontainers for Go_ checks if the container is listening to the port externally (outside of container, 
+from the host where _Testcontainers for Go_ is used) before returning the control to the caller.
+
+But there are cases where this external check is not needed.
+In this case, the `wait.ForListeningPort.SkipExternalCheck` can be used to skip the external check.
+
+```golang
+req := ContainerRequest{
+    Image:      "nginx:alpine",
+    // Do not check port 80 externally, check it internally only
+    WaitingFor: wait.ForListeningPort("80/tcp").SkipExternalCheck(),
+}
+```
+
+If there is a need to wait only for completion of container port mapping (which doesn't happen immediately after container is started),
+then both internal and external checks can be skipped:
+
+```golang
+req := ContainerRequest{
+    Image:        "nginx:alpine",
+    ExposedPorts: []string{"80/tcp"},
+    // Wait only for completion of port 80 mapping (from container runtime perspective), do not connect to 80 port
+    WaitingFor:   wait.ForListeningPort("80/tcp").SkipInternalCheck().SkipExternalCheck(),
+}
+```
+
+Alternatively, `wait.ForMappedPort` can be used:
+
+```golang
+req := ContainerRequest{
+    Image:        "nginx:alpine",
+    ExposedPorts: []string{"80/tcp"},
+    // Wait only for completion of port 80 mapping (from container runtime perspective), do not connect to 80 port
+    WaitingFor:   wait.ForMappedPort("80/tcp"),
+}
+```
