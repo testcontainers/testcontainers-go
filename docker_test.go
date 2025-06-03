@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -214,11 +215,15 @@ func TestContainerReturnItsContainerID(t *testing.T) {
 }
 
 // testLogConsumer is a simple implementation of LogConsumer that logs to the test output.
+// It is safe to use concurrently.
 type testLogConsumer struct {
-	t *testing.T
+	t  *testing.T
+	mx sync.Mutex
 }
 
 func (l *testLogConsumer) Accept(log Log) {
+	l.mx.Lock()
+	defer l.mx.Unlock()
 	l.t.Log(log.LogType + ": " + strings.TrimSpace(string(log.Content)))
 }
 
