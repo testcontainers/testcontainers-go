@@ -25,7 +25,7 @@ const (
 	baseImage    string = "amazon/dynamodb-local:"
 )
 
-var image2_2_1 string = baseImage + "2.2.1"
+var image2_2_1 = baseImage + "2.2.1"
 
 func TestRun(t *testing.T) {
 	ctx := context.Background()
@@ -212,7 +212,7 @@ type dynamoDBResolver struct {
 	HostPort string
 }
 
-func (r *dynamoDBResolver) ResolveEndpoint(ctx context.Context, params dynamodb.EndpointParameters) (smithyendpoints.Endpoint, error) {
+func (r *dynamoDBResolver) ResolveEndpoint(_ context.Context, _ dynamodb.EndpointParameters) (smithyendpoints.Endpoint, error) {
 	return smithyendpoints.Endpoint{
 		URI: url.URL{Host: r.HostPort, Scheme: "http"},
 	}, nil

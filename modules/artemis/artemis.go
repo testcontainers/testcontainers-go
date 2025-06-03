@@ -66,7 +66,7 @@ func WithAnonymousLogin() testcontainers.CustomizeRequestOption {
 	}
 }
 
-// Additional arguments sent to the `artemis create“ command.
+// Additional arguments sent to the `artemis create` command.
 // The default is `--http-host 0.0.0.0 --relax-jolokia`.
 // Setting this value will override the default.
 // See the documentation on `artemis create` for available options.
@@ -81,7 +81,7 @@ func WithExtraArgs(args string) testcontainers.CustomizeRequestOption {
 // Deprecated: use Run instead.
 // RunContainer creates an instance of the Artemis container type.
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	return Run(ctx, "docker.io/apache/activemq-artemis:2.30.0-alpine", opts...)
+	return Run(ctx, "apache/activemq-artemis:2.30.0-alpine", opts...)
 }
 
 // Run creates an instance of the Artemis container type with a given image

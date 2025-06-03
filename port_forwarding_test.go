@@ -8,10 +8,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
+	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -21,110 +23,156 @@ const (
 )
 
 func TestExposeHostPorts(t *testing.T) {
-	tests := []struct {
-		name             string
-		numberOfPorts    int
-		hasNetwork       bool
-		bindOnPostStarts bool
-	}{
-		{
-			name:          "single port",
-			numberOfPorts: 1,
-		},
-		{
-			name:          "single port using a network",
-			numberOfPorts: 1,
-			hasNetwork:    true,
-		},
-		{
-			name:          "multiple ports",
-			numberOfPorts: 3,
-		},
-		{
-			name:             "multiple ports bound on PostStarts",
-			numberOfPorts:    3,
-			bindOnPostStarts: true,
-		},
+	const numberOfPorts = 3
+
+	servers := make([]*httptest.Server, numberOfPorts)
+	hostPorts := make([]int, numberOfPorts)
+	waitStrategies := make([]wait.Strategy, numberOfPorts)
+
+	for i := range hostPorts {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			fmt.Fprint(w, expectedResponse)
+		}))
+		hostPorts[i] = server.Listener.Addr().(*net.TCPAddr).Port
+
+		servers[i] = server
+		freePort := server.Listener.Addr().(*net.TCPAddr).Port
+		hostPorts[i] = freePort
+
+		waitStrategies[i] = wait.
+			ForExec([]string{"wget", "-q", "-O", "-", fmt.Sprintf("http://%s:%d", testcontainers.HostInternal, freePort)}).
+			WithExitCodeMatcher(func(code int) bool {
+				return code == 0
+			}).
+			WithResponseMatcher(func(body io.Reader) bool {
+				bs, err := io.ReadAll(body)
+				require.NoError(t, err)
+				return string(bs) == expectedResponse
+			})
+
+		t.Cleanup(server.Close)
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(tt *testing.T) {
-			servers := make([]*httptest.Server, tc.numberOfPorts)
-			freePorts := make([]int, tc.numberOfPorts)
-			waitStrategies := make([]wait.Strategy, tc.numberOfPorts)
-			for i := range freePorts {
-				server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					fmt.Fprint(w, expectedResponse)
-				}))
+	singlePort := hostPorts[0:1]
 
-				if !tc.bindOnPostStarts {
-					server.Start()
-				}
+	t.Run("single-port", func(t *testing.T) {
+		testExposeHostPorts(t, singlePort, false, false)
+	})
 
-				servers[i] = server
-				freePort := server.Listener.Addr().(*net.TCPAddr).Port
-				freePorts[i] = freePort
-				waitStrategies[i] = wait.
-					ForExec([]string{"wget", "-q", "-O", "-", fmt.Sprintf("http://%s:%d", testcontainers.HostInternal, freePort)}).
-					WithExitCodeMatcher(func(code int) bool {
-						return code == 0
-					}).
-					WithResponseMatcher(func(body io.Reader) bool {
-						bs, err := io.ReadAll(body)
-						require.NoError(tt, err)
-						return string(bs) == expectedResponse
-					})
+	t.Run("single-port-network", func(t *testing.T) {
+		testExposeHostPorts(t, singlePort, true, false)
+	})
 
-				tt.Cleanup(func() {
-					server.Close()
-				})
-			}
+	t.Run("single-port-host-access", func(t *testing.T) {
+		testExposeHostPorts(t, singlePort, false, true)
+	})
 
-			req := testcontainers.GenericContainerRequest{
-				// hostAccessPorts {
-				ContainerRequest: testcontainers.ContainerRequest{
-					Image:           "alpine:3.17",
-					HostAccessPorts: freePorts,
-					WaitingFor:      wait.ForAll(waitStrategies...),
-					LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
-						{
-							PostStarts: []testcontainers.ContainerHook{
-								func(ctx context.Context, c testcontainers.Container) error {
-									if tc.bindOnPostStarts {
-										for _, server := range servers {
-											server.Start()
-										}
-									}
+	t.Run("single-port-network-host-access", func(t *testing.T) {
+		testExposeHostPorts(t, singlePort, true, true)
+	})
 
-									return nil
-								},
-								func(ctx context.Context, c testcontainers.Container) error {
-									return waitStrategies[0].WaitUntilReady(ctx, c)
-								},
-							},
-						},
-					},
-					Cmd: []string{"top"},
-				},
-				// }
-				Started: true,
-			}
+	t.Run("multi-port", func(t *testing.T) {
+		testExposeHostPorts(t, hostPorts, false, false)
+	})
 
-			var nw *testcontainers.DockerNetwork
-			if tc.hasNetwork {
-				var err error
-				nw, err = network.New(context.Background())
-				require.NoError(tt, err)
-				testcontainers.CleanupNetwork(t, nw)
+	t.Run("multi-port-network", func(t *testing.T) {
+		testExposeHostPorts(t, hostPorts, true, false)
+	})
 
-				req.Networks = []string{nw.Name}
-				req.NetworkAliases = map[string][]string{nw.Name: {"myalpine"}}
-			}
+	t.Run("multi-port-host-access", func(t *testing.T) {
+		testExposeHostPorts(t, hostPorts, false, true)
+	})
 
-			ctx := context.Background()
-			c, err := testcontainers.GenericContainer(ctx, req)
-			require.NoError(tt, err)
-			_ = c.Terminate(ctx)
-		})
+	t.Run("multi-port-network-host-access", func(t *testing.T) {
+		testExposeHostPorts(t, hostPorts, true, true)
+	})
+}
+
+func testExposeHostPorts(t *testing.T, hostPorts []int, hasNetwork, hasHostAccess bool) {
+	t.Helper()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	var hostAccessPorts []int
+	if hasHostAccess {
+		hostAccessPorts = hostPorts
+	}
+	req := testcontainers.GenericContainerRequest{
+		// hostAccessPorts {
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:           "alpine:3.17",
+			HostAccessPorts: hostAccessPorts,
+			Cmd:             []string{"top"},
+		},
+		// }
+		Started: true,
+	}
+
+	if hasNetwork {
+		nw, err := network.New(ctx)
+		require.NoError(t, err)
+		testcontainers.CleanupNetwork(t, nw)
+
+		req.Networks = []string{nw.Name}
+		req.NetworkAliases = map[string][]string{nw.Name: {"myalpine"}}
+	}
+
+	c, err := testcontainers.GenericContainer(ctx, req)
+	testcontainers.CleanupContainer(t, c)
+	require.NoError(t, err)
+
+	if hasHostAccess {
+		// Verify that the container can access the host ports.
+		containerHasHostAccess(t, c, hostPorts...)
+		return
+	}
+
+	// Verify that the container cannot access the host ports.
+	containerHasNoHostAccess(t, c, hostPorts...)
+}
+
+// httpRequest sends an HTTP request from the container to the host port via
+// [testcontainers.HostInternal] address.
+func httpRequest(t *testing.T, c testcontainers.Container, port int) (int, string) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	// wgetHostInternal {
+	code, reader, err := c.Exec(
+		ctx,
+		[]string{"wget", "-q", "-O", "-", "-T", "2", fmt.Sprintf("http://%s:%d", testcontainers.HostInternal, port)},
+		tcexec.Multiplexed(),
+	)
+	// }
+	require.NoError(t, err)
+
+	// read the response
+	bs, err := io.ReadAll(reader)
+	require.NoError(t, err)
+
+	return code, string(bs)
+}
+
+// containerHasHostAccess verifies that the container can access the host ports
+// via [testcontainers.HostInternal] address.
+func containerHasHostAccess(t *testing.T, c testcontainers.Container, ports ...int) {
+	t.Helper()
+	for _, port := range ports {
+		code, response := httpRequest(t, c, port)
+		require.Zero(t, code)
+		require.Equal(t, expectedResponse, response)
+	}
+}
+
+// containerHasNoHostAccess verifies that the container cannot access the host ports
+// via [testcontainers.HostInternal] address.
+func containerHasNoHostAccess(t *testing.T, c testcontainers.Container, ports ...int) {
+	t.Helper()
+	for _, port := range ports {
+		code, response := httpRequest(t, c, port)
+		require.NotZero(t, code)
+		require.Contains(t, response, "bad address")
 	}
 }

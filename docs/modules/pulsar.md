@@ -1,6 +1,6 @@
 # Apache Pulsar
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.19.0"><span class="tc-version">:material-tag: v0.19.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.19.0"><span class="tc-version">:material-tag: v0.19.0</span></a>
 
 ## Introduction
 
@@ -30,12 +30,12 @@ Create a `Pulsar` container to use it in your tests:
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
 
-The Pulsar module exposes one entrypoint function to create the containerr, and this function receives three parameters:
+The Pulsar module exposes one entrypoint function to create the container, and this function receives three parameters:
 
 ```golang
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)
@@ -45,24 +45,19 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
+#### Image
+
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "apachepulsar/pulsar:2.10.2")`.
+
 ### Container Options
 
 When starting the Pulsar container, you can pass options in a variadic way to configure it.
 
-#### Image
+#### WithPulsarEnv
 
-If you need to set a different Pulsar Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "docker.io/apachepulsar/pulsar:2.10.2")`.
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.19.0"><span class="tc-version">:material-tag: v0.19.0</span></a>
 
-{% include "../features/common_functional_options.md" %}
-
-<!--codeinclude-->
-[Advanced Docker settings](../../modules/pulsar/pulsar_test.go) inside_block:advancedDockerSettings
-<!--/codeinclude-->
-
-Here, the `nwName` relates to the name of a previously created Docker network. Please see the [How to create a network](../features/creating_networks.md) documentation for more information.
-
-#### Pulsar Configuration
 If you need to set Pulsar configuration variables you can use the `WithPulsarEnv` to set Pulsar environment variables: the `PULSAR_PREFIX_` prefix will be automatically added for you.
 
 For example, if you want to enable `brokerDeduplicationEnabled`:
@@ -73,7 +68,9 @@ For example, if you want to enable `brokerDeduplicationEnabled`:
 
 It will result in the `PULSAR_PREFIX_brokerDeduplicationEnabled=true` environment variable being set in the container request.
 
-#### Pulsar IO
+#### WithFunctionsWorker
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.19.0"><span class="tc-version">:material-tag: v0.19.0</span></a>
 
 If you need to test Pulsar IO framework you can enable the Pulsar Functions Worker with the `WithFunctionsWorker` option:
 
@@ -81,7 +78,9 @@ If you need to test Pulsar IO framework you can enable the Pulsar Functions Work
 [Create a Pulsar container with functions worker](../../modules/pulsar/pulsar_test.go) inside_block:withFunctionsWorker
 <!--/codeinclude-->
 
-#### Pulsar Transactions
+#### WithTransactions
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.19.0"><span class="tc-version">:material-tag: v0.19.0</span></a>
 
 If you need to test Pulsar Transactions you can enable the transactions feature:
 
@@ -89,17 +88,23 @@ If you need to test Pulsar Transactions you can enable the transactions feature:
 [Create a Pulsar container with transactions](../../modules/pulsar/pulsar_test.go) inside_block:withTransactions
 <!--/codeinclude-->
 
+{% include "../features/common_functional_options_list.md" %}
+
 ### Container methods
 
 Once you have a Pulsar container, then you can retrieve the broker and the admin url:
 
 #### Admin URL
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.19.0"><span class="tc-version">:material-tag: v0.19.0</span></a>
+
 <!--codeinclude-->
 [Get admin url](../../modules/pulsar/pulsar_test.go) inside_block:getAdminURL
 <!--/codeinclude-->
 
 #### Broker URL
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.19.0"><span class="tc-version">:material-tag: v0.19.0</span></a>
 
 <!--codeinclude-->
 [Get broker url](../../modules/pulsar/pulsar_test.go) inside_block:getBrokerURL

@@ -2,7 +2,6 @@ package localstack
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -83,24 +82,79 @@ func TestConfigureDockerHost(t *testing.T) {
 	}
 }
 
-func TestIsLegacyMode(t *testing.T) {
+func TestIsLegacyVersion(t *testing.T) {
 	tests := []struct {
 		version string
 		want    bool
 	}{
 		{"foo", true},
 		{"latest", false},
+		{"latest-amd64", false},
+		{"s3-latest", false},
+		{"s3-latest-amd64", false},
+		{"stable", false},
+		{"stable-amd64", false},
 		{"0.10.0", true},
+		{"0.10.0-amd64", true},
 		{"0.10.999", true},
+		{"0.10.999-amd64", true},
 		{"0.11", false},
+		{"0.11-amd64", false},
 		{"0.11.2", false},
+		{"0.11.2-amd64", false},
 		{"0.12", false},
+		{"0.12-amd64", false},
+		{"1", false},
+		{"1-amd64", false},
 		{"1.0", false},
+		{"1.0-amd64", false},
+		{"4.3.0@sha256:f3cb1a79f3add997575e859c3a2808e6dae4b0de836661de255baa2b576868f8", false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.version, func(t *testing.T) {
-			got := isLegacyMode(fmt.Sprintf("localstack/localstack:%s", tt.version))
+			got := !isMinimumVersion("localstack/localstack:"+tt.version, "v0.11")
+			require.Equal(t, tt.want, got, "runInLegacyMode() = %v, want %v", got, tt.want)
+		})
+	}
+}
+
+func TestIsMinimumVersion2(t *testing.T) {
+	tests := []struct {
+		version string
+		want    bool
+	}{
+		{"foo", false},
+		{"latest", true},
+		{"latest-amd64", true},
+		{"s3-latest", true},
+		{"s3-latest-amd64", true},
+		{"stable", true},
+		{"stable-amd64", true},
+		{"1", false},
+		{"1-amd64", false},
+		{"1.12", false},
+		{"1.12-amd64", false},
+		{"1.12.2", false},
+		{"1.12.2-amd64", false},
+		{"2", true},
+		{"2-amd64", true},
+		{"2.0", true},
+		{"2.0-amd64", true},
+		{"2.0.0", true},
+		{"2.0.0-amd64", true},
+		{"2.0.1", true},
+		{"2.0.1-amd64", true},
+		{"2.1", true},
+		{"2.1-amd64", true},
+		{"3", true},
+		{"3-amd64", true},
+		{"4.3.0@sha256:f3cb1a79f3add997575e859c3a2808e6dae4b0de836661de255baa2b576868f8", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.version, func(t *testing.T) {
+			got := isMinimumVersion("localstack/localstack:"+tt.version, "v2")
 			require.Equal(t, tt.want, got, "runInLegacyMode() = %v, want %v", got, tt.want)
 		})
 	}
@@ -119,7 +173,7 @@ func TestRunContainer(t *testing.T) {
 
 		ctr, err := Run(
 			ctx,
-			fmt.Sprintf("localstack/localstack:%s", tt.version),
+			"localstack/localstack:"+tt.version,
 		)
 		testcontainers.CleanupContainer(t, ctr)
 

@@ -27,7 +27,7 @@ type OpenLDAPContainer struct {
 }
 
 // ConnectionString returns the connection string for the OpenLDAP container
-func (c *OpenLDAPContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
+func (c *OpenLDAPContainer) ConnectionString(ctx context.Context, _ ...string) (string, error) {
 	containerPort, err := c.MappedPort(ctx, "1389/tcp")
 	if err != nil {
 		return "", err
@@ -38,7 +38,7 @@ func (c *OpenLDAPContainer) ConnectionString(ctx context.Context, args ...string
 		return "", err
 	}
 
-	connStr := fmt.Sprintf("ldap://%s", net.JoinHostPort(host, containerPort.Port()))
+	connStr := "ldap://" + net.JoinHostPort(host, containerPort.Port())
 	return connStr, nil
 }
 

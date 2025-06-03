@@ -175,7 +175,7 @@ func ExampleRun_writeModel() {
 			},
 		},
 		// because we are going to write an authorization model,
-		// we need to specify an store id. Else, it will fail with
+		// we need to specify a store id. Else, it will fail with
 		// "Configuration.StoreId is required and must be specified to call this method"
 		// In this example, it's an arbitrary store id, that will be created
 		// on the fly.

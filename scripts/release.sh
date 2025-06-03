@@ -13,12 +13,11 @@
 # Usage: DRY_RUN="false" ./scripts/release.sh
 
 readonly BUMP_TYPE="${BUMP_TYPE:-minor}"
-readonly DOCKER_IMAGE_SEMVER="docker.io/mdelapenya/semver-tool:3.4.0"
+readonly DOCKER_IMAGE_SEMVER="mdelapenya/semver-tool:3.4.0"
 readonly DRY_RUN="${DRY_RUN:-true}"
 readonly CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly ROOT_DIR="$(dirname "$CURRENT_DIR")"
 readonly MKDOCS_FILE="${ROOT_DIR}/mkdocs.yml"
-readonly SONARCLOUD_FILE="${ROOT_DIR}/sonar-project.properties"
 readonly VERSION_FILE="${ROOT_DIR}/internal/version.go"
 
 readonly REPOSITORY="github.com/testcontainers/testcontainers-go"
@@ -126,7 +125,6 @@ function gitCommitVersion() {
 
   gitFn add "${VERSION_FILE}"
   gitFn add "${MKDOCS_FILE}"
-  gitFn add "${SONARCLOUD_FILE}"
   gitFn add "docs/**/*.md"
   gitFn add "examples/**/go.*"
   gitFn add "modules/**/go.*"

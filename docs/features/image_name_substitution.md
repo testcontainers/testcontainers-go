@@ -45,7 +45,7 @@ _Testcontainers for Go_ will automatically apply the prefix to every image that 
 _Testcontainers for Go_ will not apply the prefix to:
 
 * non-Hub image names (e.g. where another registry is set)
-* Docker Hub image names where the hub registry is explicitly part of the name (i.e. anything with a `docker.io` or `registry.hub.docker.com` host part)
+* Docker Hub image names where the hub registry is explicitly part of the name (i.e. anything with a `registry.hub.docker.com` host part)
 
 ## Developing a custom function for transforming image names on the fly
 
@@ -68,7 +68,7 @@ You can implement a custom image name substitutor by:
 * implementing the `ImageNameSubstitutor` interface, exposed by the `testcontainers` package.
 * configuring _Testcontainers for Go_ to use your custom implementation, defined at the `ContainerRequest` level.
 
-The following is an example image substitutor implementation prepending the `docker.io/` prefix, used in the tests:
+The following is an example image substitutor implementation prepending the `registry.hub.docker.com/library/` prefix, used in the tests:
 
 <!--codeinclude-->
 [Image Substitutor Interface](../../options.go) inside_block:imageSubstitutor

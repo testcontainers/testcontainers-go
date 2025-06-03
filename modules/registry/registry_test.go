@@ -50,7 +50,7 @@ func TestRunContainer_authenticated(t *testing.T) {
 	registryHost, err := registryContainer.HostAddress(ctx)
 	require.NoError(t, err)
 
-	t.Run("HTTP connection without basic auth fails", func(tt *testing.T) {
+	t.Run("HTTP connection without basic auth fails", func(t *testing.T) {
 		httpCli := http.Client{}
 		req, err := http.NewRequest(http.MethodGet, httpAddress+"/v2/_catalog", nil)
 		require.NoError(t, err)
@@ -62,7 +62,7 @@ func TestRunContainer_authenticated(t *testing.T) {
 		require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	})
 
-	t.Run("HTTP connection with incorrect basic auth fails", func(tt *testing.T) {
+	t.Run("HTTP connection with incorrect basic auth fails", func(t *testing.T) {
 		httpCli := http.Client{}
 		req, err := http.NewRequest(http.MethodGet, httpAddress+"/v2/_catalog", nil)
 		require.NoError(t, err)
@@ -76,7 +76,7 @@ func TestRunContainer_authenticated(t *testing.T) {
 		require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	})
 
-	t.Run("HTTP connection with basic auth succeeds", func(tt *testing.T) {
+	t.Run("HTTP connection with basic auth succeeds", func(t *testing.T) {
 		httpCli := http.Client{}
 		req, err := http.NewRequest(http.MethodGet, httpAddress+"/v2/_catalog", nil)
 		require.NoError(t, err)
@@ -207,8 +207,7 @@ func TestRunContainer_wrongData(t *testing.T) {
 		Started: true,
 	})
 	testcontainers.CleanupContainer(t, redisC)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "manifest unknown")
+	require.ErrorContains(t, err, "manifest unknown")
 }
 
 // setAuthConfig sets the DOCKER_AUTH_CONFIG environment variable with

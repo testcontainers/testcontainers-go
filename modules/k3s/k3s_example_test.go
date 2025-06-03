@@ -17,7 +17,7 @@ func ExampleRun() {
 	// runK3sContainer {
 	ctx := context.Background()
 
-	k3sContainer, err := k3s.Run(ctx, "docker.io/rancher/k3s:v1.27.1-k3s1")
+	k3sContainer, err := k3s.Run(ctx, "rancher/k3s:v1.27.1-k3s1")
 	defer func() {
 		if err := testcontainers.TerminateContainer(k3sContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)

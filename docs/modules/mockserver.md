@@ -1,6 +1,6 @@
 # MockServer
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/mockserver
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
@@ -39,16 +39,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
+#### Image
+
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "mockserver/mockserver:5.15.0")`.
+
 ### Container Options
 
 When starting the MockServer container, you can pass options in a variadic way to configure it.
 
-#### Image
-
-If you need to set a different MockServer Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "mockserver/mockserver:5.15.0")`.
-
-{% include "../features/common_functional_options.md" %}
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 
@@ -56,10 +56,12 @@ The MockServer container exposes the following methods:
 
 #### URL
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
+
 The `URL` method returns the url string to connect to the MockServer container.
 It returns a string with the format `http://<host>:<port>`.
 
-It can be use to configure a MockServer client (`github.com/BraspagDevelopers/mock-server-client`), e.g.:
+It can be used to configure a MockServer client (`github.com/BraspagDevelopers/mock-server-client`), e.g.:
 
 <!--codeinclude-->
 [Using URL with the MockServer client](../../modules/mockserver/examples_test.go) inside_block:connectToMockServer

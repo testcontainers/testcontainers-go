@@ -2,12 +2,49 @@
 
 Testcontainers are a wrapper around the Docker daemon designed for tests. Anything you can run in Docker, you can spin
 up with Testcontainers and integrate into your tests:
+
 * NoSQL databases or other data stores (e.g. Redis, ElasticSearch, MongoDB)
 * Web servers/proxies (e.g. NGINX, Apache)
 * Log services (e.g. Logstash, Kibana)
 * Other services developed by your team/organization which are already dockerized
 
+## Run
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+
+`testcontainers.Run` defines the container that should be run, similar to the `docker run` command.
+
+```golang
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*DockerContainer, error)
+```
+
+- `context.Context`, the Go context.
+- `string`, the Docker image to use.
+- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+
+The following test creates an NGINX container on both the `bridge` (docker default
+network) and the `foo` network and validates that it returns 200 for the status code.
+
+It also demonstrates how to use `CleanupContainer`, that ensures that nginx container
+is removed when the test ends even if the underlying container errored,
+as well as the `CleanupNetwork` which does the same for networks.
+
+The alternatives for these outside of tests as a `defer` are `TerminateContainer`
+and `Network.Remove` which can be seen in the examples.
+
+<!--codeinclude-->
+[Creating a container](../../examples_test.go) inside_block:ExampleRun
+<!--/codeinclude-->
+
+## Customizing the container
+
+{% include "../features/common_functional_options.md" %}
+
 ## GenericContainer
+
+!!!warning
+	`GenericContainer` is the old way to create a container, and we recommend using `Run` instead,
+	as it could be deprecated in the future.
 
 `testcontainers.GenericContainer` defines the container that should be run, similar to the `docker run` command.
 
@@ -53,7 +90,7 @@ func setupNginx(ctx context.Context, networkName string) (*nginxContainer, error
 	})
 	var nginxC *nginxContainer
 	if container != nil {
-		nginxC = &nginxContainer{Container: c}
+		nginxC = &nginxContainer{Container: container}
 	}
 	if err != nil {
 		return nginxC, err
@@ -81,14 +118,11 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 
 	ctx := context.Background()
 
-	networkName := "foo"
-	net, err := provider.CreateNetwork(ctx, NetworkRequest{
-		Name: networkName,
-	})
+	nw, err := network.New(ctx)
 	require.NoError(t, err)
-	CleanupNetwork(t, net)
+	testcontainers.CleanupNetwork(t, nw)
 
-	nginxC, err := setupNginx(ctx, networkName)
+	nginxC, err := setupNginx(ctx, nw.Name)
 	testcontainers.CleanupContainer(t, nginxC)
 	require.NoError(t, err)
 
@@ -106,6 +140,8 @@ _Testcontainers for Go_ allows you to define your own lifecycle hooks for better
 
 You'll be able to pass multiple lifecycle hooks at the `ContainerRequest` as an array of `testcontainers.ContainerLifecycleHooks`. The `testcontainers.ContainerLifecycleHooks` struct defines the following lifecycle hooks, each of them backed by an array of functions representing the hooks:
 
+* `PreBuilds` - hooks that are executed before the image is built. This hook is only available when creating a container from a Dockerfile
+* `PostBuilds` - hooks that are executed after the image is built. This hook is only available when creating a container from a Dockerfile
 * `PreCreates` - hooks that are executed before the container is created
 * `PostCreates` - hooks that are executed after the container is created
 * `PreStarts` - hooks that are executed before the container is started
@@ -141,7 +177,7 @@ In the following example, we are going to create a container using all the lifec
 _Testcontainers for Go_ comes with a default logging hook that will print a log message for each container lifecycle event, using the default logger. You can add your own logger by passing the `testcontainers.DefaultLoggingHook` option to the `ContainerRequest`, passing a reference to your preferred logger:
 
 <!--codeinclude-->
-[Use a custom logger for container hooks](../../lifecycle_test.go) inside_block:reqWithDefaultLogginHook
+[Use a custom logger for container hooks](../../lifecycle_test.go) inside_block:reqWithDefaultLoggingHook
 [Custom Logger implementation](../../lifecycle_test.go) inside_block:customLoggerImplementation
 <!--/codeinclude-->
 
@@ -154,7 +190,7 @@ The aforementioned `GenericContainer` function and the `ContainerRequest` struct
 <!--/codeinclude-->
 
 !!!warning
-	The only special case where the modifiers are not applied last, is when there are no exposed ports in the container request and the container does not use a network mode from a container (e.g. `req.NetworkMode = container.NetworkMode("container:$CONTAINER_ID")`). In that case, _Testcontainers for Go_ will extract the ports from the underliying Docker image and export them.
+	The only special case where the modifiers are not applied last, is when there are no exposed ports in the container request and the container does not use a network mode from a container (e.g. `req.NetworkMode = container.NetworkMode("container:$CONTAINER_ID")`). In that case, _Testcontainers for Go_ will extract the ports from the underlying Docker image and export them.
 
 ## Reusable container
 

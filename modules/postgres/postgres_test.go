@@ -3,8 +3,12 @@ package postgres_test
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+	"io"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,9 +16,12 @@ import (
 	"github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/lib/pq"
+	"github.com/mdelapenya/tlscert"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
+	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -25,6 +32,40 @@ const (
 	password = "password"
 )
 
+func createSSLCerts(t *testing.T) (*tlscert.Certificate, *tlscert.Certificate, error) {
+	t.Helper()
+	tmpDir := t.TempDir()
+	certsDir := tmpDir + "/certs"
+
+	require.NoError(t, os.MkdirAll(certsDir, 0o755))
+
+	t.Cleanup(func() {
+		require.NoError(t, os.RemoveAll(tmpDir))
+	})
+
+	caCert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Host:      "localhost",
+		Name:      "ca-cert",
+		ParentDir: certsDir,
+	})
+
+	if caCert == nil {
+		return caCert, nil, errors.New("unable to create CA Authority")
+	}
+
+	cert := tlscert.SelfSignedFromRequest(tlscert.Request{
+		Host:      "localhost",
+		Name:      "client-cert",
+		Parent:    caCert,
+		ParentDir: certsDir,
+	})
+	if cert == nil {
+		return caCert, cert, errors.New("unable to create Server Certificates")
+	}
+
+	return caCert, cert, nil
+}
+
 func TestPostgres(t *testing.T) {
 	ctx := context.Background()
 
@@ -34,24 +75,24 @@ func TestPostgres(t *testing.T) {
 	}{
 		{
 			name:  "Postgres",
-			image: "docker.io/postgres:15.2-alpine",
+			image: "postgres:15.2-alpine",
 		},
 		{
 			name: "Timescale",
 			// timescale {
-			image: "docker.io/timescale/timescaledb:2.1.0-pg11",
+			image: "timescale/timescaledb:2.1.0-pg11",
 			// }
 		},
 		{
 			name: "Postgis",
 			// postgis {
-			image: "docker.io/postgis/postgis:12-3.0",
+			image: "postgis/postgis:12-3.0",
 			// }
 		},
 		{
 			name: "Pgvector",
 			// pgvector {
-			image: "docker.io/pgvector/pgvector:pg16",
+			image: "pgvector/pgvector:pg16",
 			// }
 		},
 	}
@@ -75,9 +116,7 @@ func TestPostgres(t *testing.T) {
 			require.NoError(t, err)
 
 			mustConnStr := ctr.MustConnectionString(ctx, "sslmode=disable", "application_name=test")
-			if mustConnStr != connStr {
-				t.Errorf("ConnectionString was not equal to MustConnectionString")
-			}
+			require.Equalf(t, mustConnStr, connStr, "ConnectionString was not equal to MustConnectionString")
 
 			// Ensure connection string is using generic format
 			id, err := ctr.MappedPort(ctx, "5432/tcp")
@@ -112,11 +151,11 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 	t.Run("default query", func(t *testing.T) {
 		ctr, err := postgres.Run(
 			ctx,
-			"docker.io/postgres:16-alpine",
+			"postgres:16-alpine",
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
-			testcontainers.WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL)),
+			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL)),
 		)
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
@@ -125,11 +164,11 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 	t.Run("custom query", func(t *testing.T) {
 		ctr, err := postgres.Run(
 			ctx,
-			"docker.io/postgres:16-alpine",
+			"postgres:16-alpine",
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
-			testcontainers.WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 10")),
+			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 10")),
 		)
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
@@ -138,11 +177,11 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 	t.Run("custom bad query", func(t *testing.T) {
 		ctr, err := postgres.Run(
 			ctx,
-			"docker.io/postgres:16-alpine",
+			"postgres:16-alpine",
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
-			testcontainers.WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 'a' from b")),
+			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 'a' from b")),
 		)
 		testcontainers.CleanupContainer(t, ctr)
 		require.Error(t, err)
@@ -153,7 +192,7 @@ func TestWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := postgres.Run(ctx,
-		"docker.io/postgres:16-alpine",
+		"postgres:16-alpine",
 		postgres.WithConfigFile(filepath.Join("testdata", "my-postgres.conf")),
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
@@ -173,11 +212,61 @@ func TestWithConfigFile(t *testing.T) {
 	defer db.Close()
 }
 
+func TestWithSSL(t *testing.T) {
+	ctx := context.Background()
+
+	caCert, serverCerts, err := createSSLCerts(t)
+	require.NoError(t, err)
+
+	ctr, err := postgres.Run(ctx,
+		"postgres:16-alpine",
+		postgres.WithConfigFile(filepath.Join("testdata", "postgres-ssl.conf")),
+		postgres.WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
+		postgres.WithDatabase(dbname),
+		postgres.WithUsername(user),
+		postgres.WithPassword(password),
+		testcontainers.WithAdditionalWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+		postgres.WithSSLCert(caCert.CertPath, serverCerts.CertPath, serverCerts.KeyPath),
+	)
+
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	connStr, err := ctr.ConnectionString(ctx, "sslmode=require")
+	require.NoError(t, err)
+
+	db, err := sql.Open("postgres", connStr)
+	require.NoError(t, err)
+	assert.NotNil(t, db)
+	defer db.Close()
+
+	result, err := db.Exec("SELECT * FROM testdb;")
+	require.NoError(t, err)
+	assert.NotNil(t, result)
+}
+
+func TestSSLValidatesKeyMaterialPath(t *testing.T) {
+	ctx := context.Background()
+
+	_, err := postgres.Run(ctx,
+		"postgres:16-alpine",
+		postgres.WithConfigFile(filepath.Join("testdata", "postgres-ssl.conf")),
+		postgres.WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
+		postgres.WithDatabase(dbname),
+		postgres.WithUsername(user),
+		postgres.WithPassword(password),
+		testcontainers.WithAdditionalWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+		postgres.WithSSLCert("", "", ""),
+	)
+
+	require.Error(t, err, "Error should not have been nil. Container creation should have failed due to empty key material")
+}
+
 func TestWithInitScript(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := postgres.Run(ctx,
-		"docker.io/postgres:15.2-alpine",
+		"postgres:15.2-alpine",
 		postgres.WithInitScripts(filepath.Join("testdata", "init-user-db.sh")),
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
@@ -200,6 +289,62 @@ func TestWithInitScript(t *testing.T) {
 	result, err := db.Exec("SELECT * FROM testdb;")
 	require.NoError(t, err)
 	require.NotNil(t, result)
+}
+
+func TestWithOrderedInitScript(t *testing.T) {
+	ctx := context.Background()
+
+	ctr, err := postgres.Run(ctx,
+		"postgres:15.2-alpine",
+		// orderedInitScripts {
+		// Executes first the init-user-db shell-script, then the do-insert-user SQL script
+		// Using WithInitScripts, this would not work.
+		// This is because aaaa-insert-user would get executed first, but requires init-user-db to be executed before.
+		postgres.WithOrderedInitScripts(
+			filepath.Join("testdata", "init-user-db.sh"),
+			filepath.Join("testdata", "aaaa-insert-user.sql"),
+		),
+		// }
+		postgres.WithDatabase(dbname),
+		postgres.WithUsername(user),
+		postgres.WithPassword(password),
+		postgres.BasicWaitStrategies(),
+	)
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	// Test that init scripts have been correctly renamed
+	c, reader, err := ctr.Exec(ctx, []string{"ls", "-l", "/docker-entrypoint-initdb.d"}, tcexec.Multiplexed())
+	require.NoError(t, err)
+	require.Equal(t, 0, c, "Expected to read init scripts from the container")
+
+	buf := new(strings.Builder)
+	_, err = io.Copy(buf, reader)
+	require.NoError(t, err)
+
+	initScripts := buf.String()
+	strings.Contains(initScripts, "000-init-user-db.sh")
+	strings.Contains(initScripts, "001-aaaa-insert-user.sql")
+
+	// explicitly set sslmode=disable because the container is not configured to use TLS
+	connStr, err := ctr.ConnectionString(ctx, "sslmode=disable")
+	require.NoError(t, err)
+
+	db, err := sql.Open("postgres", connStr)
+	require.NoError(t, err)
+	require.NotNil(t, db)
+	defer db.Close()
+
+	// database created in init script. See testdata/init-user-db.sh
+	rows, err := db.Query("SELECT COUNT(*) FROM testdb;")
+	require.NoError(t, err)
+	require.NotNil(t, rows)
+	for rows.Next() {
+		var count int
+		err := rows.Scan(&count)
+		require.NoError(t, err)
+		require.Equal(t, 2, count)
+	}
 }
 
 func TestSnapshot(t *testing.T) {
@@ -228,7 +373,7 @@ func TestSnapshot(t *testing.T) {
 			// 1. Start the postgres ctr and run any migrations on it
 			ctr, err := postgres.Run(
 				ctx,
-				"docker.io/postgres:16-alpine",
+				"postgres:16-alpine",
 				postgres.WithDatabase(dbname),
 				postgres.WithUsername(user),
 				postgres.WithPassword(password),
@@ -303,7 +448,7 @@ func TestSnapshotWithOverrides(t *testing.T) {
 
 	ctr, err := postgres.Run(
 		ctx,
-		"docker.io/postgres:16-alpine",
+		"postgres:16-alpine",
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
@@ -340,6 +485,34 @@ func TestSnapshotWithOverrides(t *testing.T) {
 	})
 }
 
+func TestSnapshotDuplicate(t *testing.T) {
+	ctx := context.Background()
+
+	dbname := "other-db"
+	user := "other-user"
+	password := "other-password"
+
+	ctr, err := postgres.Run(
+		ctx,
+		"postgres:16-alpine",
+		postgres.WithDatabase(dbname),
+		postgres.WithUsername(user),
+		postgres.WithPassword(password),
+		postgres.BasicWaitStrategies(),
+	)
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	_, _, err = ctr.Exec(ctx, []string{"psql", "-U", user, "-d", dbname, "-c", "CREATE TABLE users (id SERIAL, name TEXT NOT NULL, age INT NOT NULL)"})
+	require.NoError(t, err)
+
+	err = ctr.Snapshot(ctx, postgres.WithSnapshotName("other-snapshot"))
+	require.NoError(t, err)
+
+	err = ctr.Snapshot(ctx, postgres.WithSnapshotName("other-snapshot"))
+	require.NoError(t, err)
+}
+
 func TestSnapshotWithDockerExecFallback(t *testing.T) {
 	ctx := context.Background()
 
@@ -347,7 +520,7 @@ func TestSnapshotWithDockerExecFallback(t *testing.T) {
 	// 1. Start the postgres container and run any migrations on it
 	ctr, err := postgres.Run(
 		ctx,
-		"docker.io/postgres:16-alpine",
+		"postgres:16-alpine",
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),

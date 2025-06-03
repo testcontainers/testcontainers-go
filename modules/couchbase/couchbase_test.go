@@ -64,6 +64,49 @@ func TestCouchbaseWithEnterpriseContainer(t *testing.T) {
 	testBucketUsage(t, cluster.Bucket(bucketName))
 }
 
+func TestCouchbaseWithReuse(t *testing.T) {
+	ctx := context.Background()
+
+	containerName := "couchbase-" + testcontainers.SessionID()
+
+	bucketName := "testBucket"
+	bucket := tccouchbase.NewBucket(bucketName).
+		WithQuota(100).
+		WithReplicas(0).
+		WithFlushEnabled(true).
+		WithPrimaryIndex(true)
+	ctr, err := tccouchbase.Run(ctx,
+		enterpriseEdition,
+		tccouchbase.WithBuckets(bucket),
+		testcontainers.WithReuseByName(containerName),
+	)
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	cluster, err := connectCluster(ctx, ctr)
+	require.NoError(t, err)
+
+	testBucketUsage(t, cluster.Bucket(bucketName))
+
+	// Test reuse when first container has had time to fully start up and be configured with auth
+	// Without enabling auth on the initCluster functions the reuse of this container fails with
+	// "init cluster: context deadline exceeded".
+	// This is due to the management endpoints requiring the Basic Auth headers once configureAdminUser
+	// has completed.
+	reusedCtr, err := tccouchbase.Run(ctx,
+		enterpriseEdition,
+		testcontainers.WithReuseByName(containerName),
+	)
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+	require.Equal(t, ctr.GetContainerID(), reusedCtr.GetContainerID())
+
+	cluster, err = connectCluster(ctx, reusedCtr)
+	require.NoError(t, err)
+
+	testBucketUsage(t, cluster.Bucket(bucketName))
+}
+
 func TestWithCredentials(t *testing.T) {
 	ctx := context.Background()
 
@@ -113,34 +156,25 @@ func TestEventingServiceWithCommunityContainer(t *testing.T) {
 }
 
 func testBucketUsage(t *testing.T, bucket *gocb.Bucket) {
+	t.Helper()
 	err := bucket.WaitUntilReady(5*time.Second, nil)
-	if err != nil {
-		t.Fatalf("could not connect bucket: %s", err)
-	}
+	require.NoErrorf(t, err, "could not connect bucket")
 
 	key := "foo"
 	data := map[string]string{"key": "value"}
 	collection := bucket.DefaultCollection()
 
 	_, err = collection.Upsert(key, data, nil)
-	if err != nil {
-		t.Fatalf("could not upsert data: %s", err)
-	}
+	require.NoErrorf(t, err, "could not upsert data")
 
 	result, err := collection.Get(key, nil)
-	if err != nil {
-		t.Fatalf("could not get data: %s", err)
-	}
+	require.NoErrorf(t, err, "could not get data")
 
 	var resultData map[string]string
 	err = result.Content(&resultData)
-	if err != nil {
-		t.Fatalf("could not assign content: %s", err)
-	}
-
-	if resultData["key"] != "value" {
-		t.Errorf("Expected value to be [%s], got %s", "value", resultData["key"])
-	}
+	require.NoErrorf(t, err, "could not assign content")
+	require.Contains(t, resultData, "key")
+	require.Equalf(t, "value", resultData["key"], "Expected value to be [%s], got %s", "value", resultData["key"])
 }
 
 func connectCluster(ctx context.Context, container *tccouchbase.CouchbaseContainer) (*gocb.Cluster, error) {

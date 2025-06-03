@@ -3,10 +3,11 @@ package testcontainers
 import (
 	"context"
 	"fmt"
+	"io"
 	"regexp"
 	"testing"
 
-	"github.com/docker/docker/errdefs"
+	"github.com/containerd/errdefs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,32 +20,51 @@ var errAlreadyInProgress = regexp.MustCompile(`removal of container .* is alread
 // This is a function designed to be used in your test, when Docker is not mandatory for CI/CD.
 // In this way tests that depend on Testcontainers won't run if the provider is provisioned correctly.
 func SkipIfProviderIsNotHealthy(t *testing.T) {
+	t.Helper()
+	defer func() {
+		if r := recover(); r != nil {
+			t.Skipf("Recovered from panic: %v. Docker is not running. Testcontainers can't perform is work without it", r)
+		}
+	}()
+
 	ctx := context.Background()
 	provider, err := ProviderDocker.GetProvider()
 	if err != nil {
-		t.Skipf("Docker is not running. TestContainers can't perform is work without it: %s", err)
+		t.Skipf("Docker is not running. Testcontainers can't perform is work without it: %s", err)
 	}
 	err = provider.Health(ctx)
 	if err != nil {
-		t.Skipf("Docker is not running. TestContainers can't perform is work without it: %s", err)
+		t.Skipf("Docker is not running. Testcontainers can't perform is work without it: %s", err)
 	}
 }
 
 // SkipIfDockerDesktop is a utility function capable of skipping tests
 // if tests are run using Docker Desktop.
 func SkipIfDockerDesktop(t *testing.T, ctx context.Context) {
+	t.Helper()
 	cli, err := NewDockerClientWithOpts(ctx)
-	if err != nil {
-		t.Fatalf("failed to create docker client: %s", err)
-	}
+	require.NoErrorf(t, err, "failed to create docker client: %s", err)
 
 	info, err := cli.Info(ctx)
-	if err != nil {
-		t.Fatalf("failed to get docker info: %s", err)
-	}
+	require.NoErrorf(t, err, "failed to get docker info: %s", err)
 
 	if info.OperatingSystem == "Docker Desktop" {
 		t.Skip("Skipping test that requires host network access when running in Docker Desktop")
+	}
+}
+
+// SkipIfNotDockerDesktop is a utility function capable of skipping tests
+// if tests are not run using Docker Desktop.
+func SkipIfNotDockerDesktop(t *testing.T, ctx context.Context) {
+	t.Helper()
+	cli, err := NewDockerClientWithOpts(ctx)
+	require.NoErrorf(t, err, "failed to create docker client: %s", err)
+
+	info, err := cli.Info(ctx)
+	require.NoErrorf(t, err, "failed to get docker info: %s", err)
+
+	if info.OperatingSystem != "Docker Desktop" {
+		t.Skip("Skipping test that needs Docker Desktop")
 	}
 }
 
@@ -67,24 +87,26 @@ func (lc *StdoutLogConsumer) Accept(l Log) {
 // of [GenericContainer](...) or a modules Run(...) in a test to ensure the
 // container is stopped when the function ends.
 //
-// before any error check. If container is nil, its a no-op.
-func CleanupContainer(tb testing.TB, container Container, options ...TerminateOption) {
+// before any error check. If container is nil, it's a no-op.
+func CleanupContainer(tb testing.TB, ctr Container, options ...TerminateOption) {
 	tb.Helper()
 
 	tb.Cleanup(func() {
-		noErrorOrIgnored(tb, TerminateContainer(container, options...))
+		noErrorOrIgnored(tb, TerminateContainer(ctr, options...))
 	})
 }
 
 // CleanupNetwork is a helper function that schedules the network to be
 // removed when the test ends.
 // This should be the first call after NewNetwork(...) in a test before
-// any error check. If network is nil, its a no-op.
+// any error check. If network is nil, it's a no-op.
 func CleanupNetwork(tb testing.TB, network Network) {
 	tb.Helper()
 
 	tb.Cleanup(func() {
-		noErrorOrIgnored(tb, network.Remove(context.Background()))
+		if !isNil(network) {
+			noErrorOrIgnored(tb, network.Remove(context.Background()))
+		}
 	})
 }
 
@@ -125,15 +147,19 @@ func isCleanupSafe(err error) bool {
 		return true
 	}
 
-	switch x := err.(type) { //nolint:errorlint // We need to check for interfaces.
-	case errdefs.ErrNotFound:
+	// First try with containerd's errdefs
+	switch {
+	case errdefs.IsNotFound(err):
 		return true
-	case errdefs.ErrConflict:
+	case errdefs.IsConflict(err):
 		// Terminating a container that is already terminating.
 		if errAlreadyInProgress.MatchString(err.Error()) {
 			return true
 		}
 		return false
+	}
+
+	switch x := err.(type) { //nolint:errorlint // We need to check for interfaces.
 	case causer:
 		return isCleanupSafe(x.Cause())
 	case wrapErr:
@@ -148,4 +174,19 @@ func isCleanupSafe(err error) bool {
 	default:
 		return false
 	}
+}
+
+// RequireContainerExec is a helper function that executes a command in a container
+// It insures that there is no error during the execution
+// Finally returns the output of its execution
+func RequireContainerExec(ctx context.Context, t *testing.T, container Container, cmd []string) string {
+	t.Helper()
+
+	code, out, err := container.Exec(ctx, cmd)
+	require.NoError(t, err)
+	require.Zero(t, code)
+
+	checkBytes, err := io.ReadAll(out)
+	require.NoError(t, err)
+	return string(checkBytes)
 }

@@ -101,7 +101,7 @@ func ExampleRun_legacyMode() {
 		ctx,
 		"localstack/localstack:0.10.0",
 		testcontainers.WithEnv(map[string]string{"SERVICES": "s3,sqs"}),
-		testcontainers.WithWaitStrategy(wait.ForLog("Ready.").WithStartupTimeout(5*time.Minute).WithOccurrence(1)),
+		testcontainers.WithAdditionalWaitStrategy(wait.ForLog("Ready.").WithStartupTimeout(5*time.Minute).WithOccurrence(1)),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(ctr); err != nil {
@@ -142,16 +142,12 @@ func ExampleRun_usingLambdas() {
 			"SERVICES":            "lambda",
 			"LAMBDA_DOCKER_FLAGS": flagsFn(),
 		}),
-		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
-			ContainerRequest: testcontainers.ContainerRequest{
-				Files: []testcontainers.ContainerFile{
-					{
-						HostFilePath:      filepath.Join("testdata", "function.zip"),
-						ContainerFilePath: "/tmp/function.zip",
-					},
-				},
+		testcontainers.WithFiles(
+			testcontainers.ContainerFile{
+				HostFilePath:      filepath.Join("testdata", "function.zip"),
+				ContainerFilePath: "/tmp/function.zip",
 			},
-		}),
+		),
 	)
 	// }
 	defer func() {

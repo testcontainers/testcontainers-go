@@ -104,7 +104,7 @@ func ExampleRun_otelCollector() {
 
 // setupOTelSDK bootstraps the OpenTelemetry pipeline.
 // If it does not return an error, make sure to call shutdown for proper cleanup.
-func setupOTelSDK(ctx context.Context, ctr *grafanalgtm.GrafanaLGTMContainer) (shutdown func(context.Context) error, err error) { //nolint:nonamedreturns // this is a pattern in the OpenTelemetry Go SDK
+func setupOTelSDK(ctx context.Context, ctr *grafanalgtm.GrafanaLGTMContainer) (shutdown func(context.Context) error, err error) {
 	var shutdownFuncs []func(context.Context) error
 
 	// shutdown calls cleanup functions registered via shutdownFuncs.
@@ -134,14 +134,14 @@ func setupOTelSDK(ctx context.Context, ctr *grafanalgtm.GrafanaLGTMContainer) (s
 	)
 	otel.SetTextMapPropagator(prop)
 
-	otlpHttpEndpoint := ctr.MustOtlpHttpEndpoint(ctx)
+	otlpHTTPEndpoint := ctr.MustOtlpHttpEndpoint(ctx)
 
 	traceExporter, err := otlptrace.New(ctx,
 		otlptracehttp.NewClient(
 			// adding schema to avoid this error:
 			// 2024/07/19 13:16:30 internal_logging.go:50: "msg"="otlptrace: parse endpoint url" "error"="parse \"127.0.0.1:33007\": first path segment in URL cannot contain colon" "url"="127.0.0.1:33007"
 			// it does not happen with the logs and metrics exporters
-			otlptracehttp.WithEndpointURL("http://"+otlpHttpEndpoint),
+			otlptracehttp.WithEndpointURL("http://"+otlpHTTPEndpoint),
 			otlptracehttp.WithInsecure(),
 		),
 	)
@@ -158,7 +158,7 @@ func setupOTelSDK(ctx context.Context, ctr *grafanalgtm.GrafanaLGTMContainer) (s
 
 	metricExporter, err := otlpmetrichttp.New(ctx,
 		otlpmetrichttp.WithInsecure(),
-		otlpmetrichttp.WithEndpoint(otlpHttpEndpoint),
+		otlpmetrichttp.WithEndpoint(otlpHTTPEndpoint),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("new metric exporter: %w", err)
@@ -185,7 +185,7 @@ func setupOTelSDK(ctx context.Context, ctr *grafanalgtm.GrafanaLGTMContainer) (s
 
 	logExporter, err := otlploghttp.New(ctx,
 		otlploghttp.WithInsecure(),
-		otlploghttp.WithEndpoint(otlpHttpEndpoint),
+		otlploghttp.WithEndpoint(otlpHTTPEndpoint),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("new log exporter: %w", err)

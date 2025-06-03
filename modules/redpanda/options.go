@@ -15,7 +15,7 @@ type options struct {
 	KafkaEnableAuthorization bool
 
 	// KafkaAuthenticationMethod is either "none" for plaintext or "sasl"
-	// for SASL (scram) authentication.
+	// for SASL (scram sha 256) authentication.
 	KafkaAuthenticationMethod string
 
 	// SchemaRegistryAuthenticationMethod is either "none" for no authentication
@@ -47,6 +47,9 @@ type options struct {
 	// ExtraBootstrapConfig is a map of configs to be interpolated into the
 	// container's bootstrap.yml
 	ExtraBootstrapConfig map[string]any
+
+	// enableAdminAPIAuthentication enables Admin API authentication
+	enableAdminAPIAuthentication bool
 }
 
 func defaultOptions() options {
@@ -75,6 +78,9 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 	return nil
 }
 
+// WithNewServiceAccount includes a new user with username (key) and password (value)
+// that shall be created, so that you can use these to authenticate against
+// Redpanda (either for the Kafka API or Schema Registry HTTP access).
 func WithNewServiceAccount(username, password string) Option {
 	return func(o *options) {
 		o.ServiceAccounts[username] = password
@@ -89,7 +95,7 @@ func WithSuperusers(superusers ...string) Option {
 	}
 }
 
-// WithEnableSASL enables SASL scram sha authentication.
+// WithEnableSASL enables SASL scram sha 256 authentication.
 // By default, no authentication (plaintext) is used.
 // When setting an authentication method, make sure to add users
 // as well as authorize them using the WithSuperusers() option.
@@ -144,12 +150,12 @@ func WithTLS(cert, key []byte) Option {
 func WithListener(lis string) Option {
 	host, port, err := net.SplitHostPort(lis)
 	if err != nil {
-		return func(o *options) {}
+		return func(_ *options) {}
 	}
 
 	portInt, err := strconv.Atoi(port)
 	if err != nil {
-		return func(o *options) {}
+		return func(_ *options) {}
 	}
 
 	return func(o *options) {
@@ -168,5 +174,14 @@ func WithListener(lis string) Option {
 func WithBootstrapConfig(cfg string, val any) Option {
 	return func(o *options) {
 		o.ExtraBootstrapConfig[cfg] = val
+	}
+}
+
+// WithAdminAPIAuthentication enables Admin API Authentication.
+// It sets `admin_api_require_auth` configuration to true and configures a bootstrap user account.
+// See https://docs.redpanda.com/current/deploy/deployment-option/self-hosted/manual/production/production-deployment/#bootstrap-a-user-account
+func WithAdminAPIAuthentication() Option {
+	return func(o *options) {
+		o.enableAdminAPIAuthentication = true
 	}
 }

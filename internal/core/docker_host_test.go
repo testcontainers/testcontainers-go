@@ -2,7 +2,7 @@ package core
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -46,10 +46,11 @@ func testCallbackCheckPassing(_ context.Context, _ string) error {
 }
 
 func testCallbackCheckError(_ context.Context, _ string) error {
-	return fmt.Errorf("could not check the Docker host")
+	return errors.New("could not check the Docker host")
 }
 
 func mockCallbackCheck(t *testing.T, fn func(_ context.Context, _ string) error) {
+	t.Helper()
 	oldCheck := dockerHostCheck
 	dockerHostCheck = fn
 	t.Cleanup(func() {
@@ -73,7 +74,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 		host := MustExtractDockerHost(context.Background())
 
-		assert.Equal(t, expected, host)
+		require.Equal(t, expected, host)
 
 		t.Setenv("DOCKER_HOST", "/path/to/another/docker.sock")
 
@@ -103,7 +104,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 		host, err := extractDockerHost(context.Background())
 		require.Error(t, err)
-		require.Equal(t, "", host)
+		require.Empty(t, host)
 	})
 
 	t.Run("Docker Host as environment variable", func(t *testing.T) {
@@ -121,7 +122,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 		host, err := extractDockerHost(context.WithValue(ctx, DockerHostContextKey, "path-to-docker-sock"))
 		require.Error(t, err)
-		require.Equal(t, "", host)
+		require.Empty(t, host)
 	})
 
 	t.Run("Malformed Schema Docker Host is passed in context", func(t *testing.T) {
@@ -131,7 +132,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 		host, err := extractDockerHost(context.WithValue(ctx, DockerHostContextKey, "http://path to docker sock"))
 		require.Error(t, err)
-		require.Equal(t, "", host)
+		require.Empty(t, host)
 	})
 
 	t.Run("Unix Docker Host is passed in context", func(t *testing.T) {
@@ -168,7 +169,7 @@ func TestExtractDockerHost(t *testing.T) {
 		setupRootlessNotFound(t)
 		host, err := extractDockerHost(context.Background())
 		require.Error(t, err)
-		require.Equal(t, "", host)
+		require.Empty(t, host)
 	})
 
 	t.Run("Extract Docker socket", func(t *testing.T) {
@@ -192,7 +193,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 			socket, err := testcontainersHostFromProperties(context.Background())
 			require.ErrorIs(t, err, ErrTestcontainersHostNotSetInProperties)
-			assert.Empty(t, socket)
+			require.Empty(t, socket)
 		})
 
 		t.Run("DOCKER_HOST is set", func(t *testing.T) {
@@ -212,7 +213,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 			socket, err := dockerHostFromEnv(context.Background())
 			require.ErrorIs(t, err, ErrDockerHostNotSet)
-			assert.Empty(t, socket)
+			require.Empty(t, socket)
 		})
 
 		t.Run("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE is set", func(t *testing.T) {
@@ -236,7 +237,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 			socket, err := dockerSocketOverridePath()
 			require.ErrorIs(t, err, ErrDockerSocketOverrideNotSet)
-			assert.Empty(t, socket)
+			require.Empty(t, socket)
 		})
 
 		t.Run("Context sets the Docker socket", func(t *testing.T) {
@@ -252,7 +253,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 			socket, err := dockerHostFromContext(context.WithValue(ctx, DockerHostContextKey, "path-to-docker-sock"))
 			require.Error(t, err)
-			assert.Empty(t, socket)
+			require.Empty(t, socket)
 		})
 
 		t.Run("Context sets a malformed schema for the Docker socket", func(t *testing.T) {
@@ -260,7 +261,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 			socket, err := dockerHostFromContext(context.WithValue(ctx, DockerHostContextKey, "http://example.com/docker.sock"))
 			require.ErrorIs(t, err, ErrNoUnixSchema)
-			assert.Empty(t, socket)
+			require.Empty(t, socket)
 		})
 
 		t.Run("Docker socket exists", func(t *testing.T) {
@@ -289,7 +290,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 			socket, err := dockerHostFromProperties(context.Background())
 			require.ErrorIs(t, err, ErrDockerSocketNotSetInProperties)
-			assert.Empty(t, socket)
+			require.Empty(t, socket)
 		})
 
 		t.Run("Docker socket does not exist", func(t *testing.T) {
@@ -297,7 +298,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 			socket, err := dockerSocketPath(context.Background())
 			require.ErrorIs(t, err, ErrSocketNotFoundInPath)
-			assert.Empty(t, socket)
+			require.Empty(t, socket)
 		})
 	})
 }
@@ -311,7 +312,7 @@ type mockCli struct {
 
 // Info returns a mock implementation of types.Info, which is handy for detecting the operating system,
 // which is used to determine the default docker socket path.
-func (m mockCli) Info(ctx context.Context) (system.Info, error) {
+func (m mockCli) Info(_ context.Context) (system.Info, error) {
 	return system.Info{
 		OperatingSystem: m.OS,
 	}, nil
@@ -515,10 +516,12 @@ func createTmpDockerSocket(parent string) error {
 // setupDockerHostNotFound sets up the environment for the test case where the DOCKER_HOST environment variable is
 // already set (e.g. rootless docker) therefore we need to unset it before the test
 func setupDockerHostNotFound(t *testing.T) {
+	t.Helper()
 	t.Setenv("DOCKER_HOST", "")
 }
 
 func setupDockerSocket(t *testing.T) string {
+	t.Helper()
 	t.Cleanup(func() {
 		DockerSocketPath = originalDockerSocketPath
 		DockerSocketPathWithSchema = originalDockerSocketPathWithSchema
@@ -536,6 +539,7 @@ func setupDockerSocket(t *testing.T) string {
 }
 
 func setupDockerSocketNotFound(t *testing.T) {
+	t.Helper()
 	t.Cleanup(func() {
 		DockerSocketPath = originalDockerSocketPath
 		DockerSocketPathWithSchema = originalDockerSocketPathWithSchema
@@ -548,6 +552,7 @@ func setupDockerSocketNotFound(t *testing.T) {
 }
 
 func setupTestcontainersProperties(t *testing.T, content string) {
+	t.Helper()
 	t.Cleanup(func() {
 		// reset the properties file after the test
 		config.Reset()
@@ -562,8 +567,6 @@ func setupTestcontainersProperties(t *testing.T, content string) {
 	t.Setenv("HOME", homeDir)
 	t.Setenv("USERPROFILE", homeDir) // Windows support
 
-	if err := os.WriteFile(filepath.Join(homeDir, ".testcontainers.properties"), []byte(content), 0o600); err != nil {
-		t.Errorf("Failed to create the file: %v", err)
-		return
-	}
+	err = os.WriteFile(filepath.Join(homeDir, ".testcontainers.properties"), []byte(content), 0o600)
+	require.NoErrorf(t, err, "Failed to create the file")
 }

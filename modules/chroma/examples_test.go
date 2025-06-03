@@ -131,7 +131,7 @@ func ExampleChromaContainer_collections() {
 	col1, err := col.Add(
 		context.Background(),
 		nil,                                      // embeddings
-		[]map[string]interface{}{},               // metadata
+		[]map[string]any{},                       // metadata
 		[]string{"test-doc-1", "test-doc-2"},     // documents
 		[]string{"test-label-1", "test-label-2"}, // ids
 	)

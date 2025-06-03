@@ -40,7 +40,7 @@ type credentialsCustomizer struct {
 	password string
 }
 
-func (c credentialsCustomizer) Customize(req *testcontainers.GenericContainerRequest) error {
+func (c credentialsCustomizer) Customize(_ *testcontainers.GenericContainerRequest) error {
 	// NOOP, we want to simply transfer the credentials to the container
 	return nil
 }
@@ -74,7 +74,7 @@ type bucketCustomizer struct {
 	buckets []bucket
 }
 
-func (c bucketCustomizer) Customize(req *testcontainers.GenericContainerRequest) error {
+func (c bucketCustomizer) Customize(_ *testcontainers.GenericContainerRequest) error {
 	// NOOP, we want to simply transfer the buckets to the container
 	return nil
 }
@@ -98,7 +98,7 @@ type indexStorageCustomizer struct {
 	mode indexStorageMode
 }
 
-func (c indexStorageCustomizer) Customize(req *testcontainers.GenericContainerRequest) error {
+func (c indexStorageCustomizer) Customize(_ *testcontainers.GenericContainerRequest) error {
 	// NOOP, we want to simply transfer the index storage mode to the container
 	return nil
 }

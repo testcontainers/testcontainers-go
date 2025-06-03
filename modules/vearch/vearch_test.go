@@ -18,7 +18,7 @@ func TestVearch(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	t.Run("REST Endpoint", func(tt *testing.T) {
+	t.Run("REST Endpoint", func(t *testing.T) {
 		// restEndpoint {
 		restEndpoint, err := ctr.RESTEndpoint(ctx)
 		// }

@@ -15,7 +15,7 @@ func ExampleRun() {
 	// runConsulContainer {
 	ctx := context.Background()
 
-	consulContainer, err := consul.Run(ctx, "docker.io/hashicorp/consul:1.15")
+	consulContainer, err := consul.Run(ctx, "hashicorp/consul:1.15")
 	defer func() {
 		if err := testcontainers.TerminateContainer(consulContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -43,7 +43,7 @@ func ExampleRun_connect() {
 	// connectConsul {
 	ctx := context.Background()
 
-	consulContainer, err := consul.Run(ctx, "docker.io/hashicorp/consul:1.15")
+	consulContainer, err := consul.Run(ctx, "hashicorp/consul:1.15")
 	defer func() {
 		if err := testcontainers.TerminateContainer(consulContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -69,12 +69,12 @@ func ExampleRun_connect() {
 	}
 	// }
 
-	node_name, err := client.Agent().NodeName()
+	nodeName, err := client.Agent().NodeName()
 	if err != nil {
 		log.Printf("failed to get node name: %s", err)
 		return
 	}
-	fmt.Println(len(node_name) > 0)
+	fmt.Println(len(nodeName) > 0)
 
 	// Output:
 	// true

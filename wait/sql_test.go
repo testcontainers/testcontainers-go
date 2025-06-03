@@ -7,30 +7,27 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_waitForSql_WithQuery(t *testing.T) {
 	t.Run("default query", func(t *testing.T) {
-		w := ForSQL("5432/tcp", "postgres", func(host string, port nat.Port) string {
+		w := ForSQL("5432/tcp", "postgres", func(_ string, _ nat.Port) string {
 			return "fake-url"
 		})
 
-		if got := w.query; got != defaultForSqlQuery {
-			t.Fatalf("expected %s, got %s", defaultForSqlQuery, got)
-		}
+		require.Equal(t, defaultForSQLQuery, w.query)
 	})
 	t.Run("custom query", func(t *testing.T) {
 		const q = "SELECT 100;"
 
-		w := ForSQL("5432/tcp", "postgres", func(host string, port nat.Port) string {
+		w := ForSQL("5432/tcp", "postgres", func(_ string, _ nat.Port) string {
 			return "fake-url"
 		}).WithQuery(q)
 
-		if got := w.query; got != q {
-			t.Fatalf("expected %s, got %s", q, got)
-		}
+		require.Equal(t, q, w.query)
 	})
 }
 
@@ -91,8 +88,8 @@ func TestWaitForSQLSucceeds(t *testing.T) {
 			}
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Running: true,
 			}, nil
 		},
@@ -102,9 +99,8 @@ func TestWaitForSQLSucceeds(t *testing.T) {
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
-	if err := wg.WaitUntilReady(context.Background(), target); err != nil {
-		t.Fatal(err)
-	}
+	err := wg.WaitUntilReady(context.Background(), target)
+	require.NoError(t, err)
 }
 
 func TestWaitForSQLFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) {
@@ -120,8 +116,8 @@ func TestWaitForSQLFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) {
 			}
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				OOMKilled: true,
 			}, nil
 		},
@@ -133,14 +129,7 @@ func TestWaitForSQLFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) {
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "container crashed with out-of-memory (OOMKilled)"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
+		require.EqualError(t, err, "container crashed with out-of-memory (OOMKilled)")
 	}
 }
 
@@ -157,8 +146,8 @@ func TestWaitForSQLFailsWhileGettingPortDueToExitedContainer(t *testing.T) {
 			}
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Status:   "exited",
 				ExitCode: 1,
 			}, nil
@@ -171,14 +160,7 @@ func TestWaitForSQLFailsWhileGettingPortDueToExitedContainer(t *testing.T) {
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "container exited with code 1"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
+		require.EqualError(t, err, "container exited with code 1")
 	}
 }
 
@@ -195,8 +177,8 @@ func TestWaitForSQLFailsWhileGettingPortDueToUnexpectedContainerStatus(t *testin
 			}
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Status: "dead",
 			}, nil
 		},
@@ -208,14 +190,7 @@ func TestWaitForSQLFailsWhileGettingPortDueToUnexpectedContainerStatus(t *testin
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "unexpected container status \"dead\""
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
+		require.EqualError(t, err, "unexpected container status \"dead\"")
 	}
 }
 
@@ -227,8 +202,8 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToOOMKilledContainer(t *testing.T)
 		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				OOMKilled: true,
 			}, nil
 		},
@@ -240,14 +215,7 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToOOMKilledContainer(t *testing.T)
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "container crashed with out-of-memory (OOMKilled)"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
+		require.EqualError(t, err, "container crashed with out-of-memory (OOMKilled)")
 	}
 }
 
@@ -259,8 +227,8 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToExitedContainer(t *testing.T) {
 		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Status:   "exited",
 				ExitCode: 1,
 			}, nil
@@ -273,14 +241,7 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToExitedContainer(t *testing.T) {
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "container exited with code 1"
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
+		require.EqualError(t, err, "container exited with code 1")
 	}
 }
 
@@ -292,8 +253,8 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToUnexpectedContainerStatus(t *tes
 		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
 			return "49152", nil
 		},
-		StateImpl: func(_ context.Context) (*types.ContainerState, error) {
-			return &types.ContainerState{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
 				Status: "dead",
 			}, nil
 		},
@@ -305,13 +266,6 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToUnexpectedContainerStatus(t *tes
 
 	{
 		err := wg.WaitUntilReady(context.Background(), target)
-		if err == nil {
-			t.Fatal("no error")
-		}
-
-		expected := "unexpected container status \"dead\""
-		if err.Error() != expected {
-			t.Fatalf("expected %q, got %q", expected, err.Error())
-		}
+		require.EqualError(t, err, "unexpected container status \"dead\"")
 	}
 }

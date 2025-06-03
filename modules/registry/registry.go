@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -50,7 +51,7 @@ func (c *RegistryContainer) HostAddress(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("mapped port: %w", err)
 	}
 
-	host, err := c.Container.Host(ctx)
+	host, err := c.Host(ctx)
 	if err != nil {
 		return "", fmt.Errorf("host: %w", err)
 	}
@@ -88,7 +89,7 @@ func localAddress(ctx context.Context) (string, error) {
 }
 
 // getEndpointWithAuth returns the HTTP endpoint of the Registry container, along with the image auth
-// for the image referece.
+// for the image reference.
 // E.g. imageRef = "localhost:5000/alpine:latest"
 func getEndpointWithAuth(ctx context.Context, imageRef string) (string, string, registry.AuthConfig, error) {
 	registry, imageAuth, err := testcontainers.DockerImageAuth(ctx, imageRef)
@@ -193,9 +194,8 @@ func (c *RegistryContainer) PushImage(ctx context.Context, ref string) error {
 	encodedJSON, err := json.Marshal(imageAuth)
 	if err != nil {
 		return fmt.Errorf("failed to encode image auth: %w", err)
-	} else {
-		pushOpts.RegistryAuth = base64.URLEncoding.EncodeToString(encodedJSON)
 	}
+	pushOpts.RegistryAuth = base64.URLEncoding.EncodeToString(encodedJSON)
 
 	_, err = dockerCli.ImagePush(ctx, ref, pushOpts)
 	if err != nil {
@@ -286,7 +286,7 @@ func SetDockerAuthConfig(host, username, password string, additional ...string) 
 // triples to add more auth configurations.
 func DockerAuthConfig(host, username, password string, additional ...string) (map[string]dockercfg.AuthConfig, error) {
 	if len(additional)%3 != 0 {
-		return nil, fmt.Errorf("additional must be a multiple of 3")
+		return nil, errors.New("additional must be a multiple of 3")
 	}
 
 	additional = append(additional, host, username, password)

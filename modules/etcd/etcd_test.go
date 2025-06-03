@@ -23,19 +23,32 @@ func TestRun(t *testing.T) {
 
 	c, r, err := ctr.Exec(ctx, []string{"etcdctl", "member", "list"}, tcexec.Multiplexed())
 	require.NoError(t, err)
-	require.Equal(t, 0, c)
+	require.Zero(t, c)
 
 	output, err := io.ReadAll(r)
 	require.NoError(t, err)
 	require.Contains(t, string(output), "default")
 }
 
-func TestRun_PutGet(t *testing.T) {
-	ctx := context.Background()
+func TestPutGet(t *testing.T) {
+	t.Run("single_node", func(t *testing.T) {
+		ctr, err := etcd.Run(context.Background(), "gcr.io/etcd-development/etcd:v3.5.14")
+		testPutGet(t, ctr, err)
+	})
+	t.Run("multiple_nodes", func(t *testing.T) {
+		ctr, err := etcd.Run(context.Background(), "gcr.io/etcd-development/etcd:v3.5.14", etcd.WithNodes("etcd-1", "etcd-2", "etcd-3"))
+		testPutGet(t, ctr, err)
+	})
+}
 
-	ctr, err := etcd.Run(ctx, "gcr.io/etcd-development/etcd:v3.5.14", etcd.WithNodes("etcd-1", "etcd-2", "etcd-3"))
+func testPutGet(t *testing.T, ctr *etcd.EtcdContainer, err error) {
+	t.Helper()
+
 	testcontainers.CleanupContainer(t, ctr)
+
 	require.NoError(t, err)
+
+	ctx := context.Background()
 
 	clientEndpoints, err := ctr.ClientEndpoints(ctx)
 	require.NoError(t, err)
@@ -45,7 +58,9 @@ func TestRun_PutGet(t *testing.T) {
 		DialTimeout: 5 * time.Second,
 	})
 	require.NoError(t, err)
-	defer cli.Close()
+	defer func() {
+		require.NoError(t, cli.Close())
+	}()
 
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()

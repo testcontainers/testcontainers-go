@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	nginxAlpineImage = "docker.io/nginx:alpine"
+	nginxAlpineImage = "nginx:alpine"
 	nginxDefaultPort = "80/tcp"
 )
 
@@ -37,7 +37,7 @@ func TestNew(t *testing.T) {
 
 	nginxC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "nginx:alpine",
+			Image: nginxAlpineImage,
 			ExposedPorts: []string{
 				"80/tcp",
 			},
@@ -190,13 +190,13 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 	testcontainers.CleanupContainer(t, nginx)
 	require.NoError(t, err)
 
-	containerId := nginx.GetContainerID()
+	containerID := nginx.GetContainerID()
 
 	cli, err := testcontainers.NewDockerClientWithOpts(ctx)
 	require.NoError(t, err)
 	defer cli.Close()
 
-	cnt, err := cli.ContainerInspect(ctx, containerId)
+	cnt, err := cli.ContainerInspect(ctx, containerID)
 	require.NoError(t, err)
 	require.Len(t, cnt.NetworkSettings.Networks, maxNetworksCount)
 	require.NotNil(t, cnt.NetworkSettings.Networks[networks[0]])
@@ -275,7 +275,7 @@ func TestNew_withOptions(t *testing.T) {
 
 	nginx, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "nginx:alpine",
+			Image: nginxAlpineImage,
 			ExposedPorts: []string{
 				"80/tcp",
 			},
@@ -340,6 +340,44 @@ func TestWithNetwork(t *testing.T) {
 	require.False(t, newNetwork.Attachable)
 	require.False(t, newNetwork.Internal)
 	require.Equal(t, expectedLabels, newNetwork.Labels)
+}
+
+func TestWithNetworkName(t *testing.T) {
+	t.Run("bridge/success", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{},
+		}
+
+		err := network.WithBridgeNetwork()(&req)
+		require.NoError(t, err)
+
+		require.Len(t, req.Networks, 1)
+		require.Equal(t, "bridge", req.Networks[0])
+	})
+
+	t.Run("bridge/error/network-scoped-alias", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{},
+		}
+
+		err := network.WithNetworkName([]string{"alias"}, "bridge")(&req)
+		require.Error(t, err)
+	})
+
+	t.Run("user-defined/success", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{},
+		}
+
+		err := network.WithNetworkName([]string{"alias"}, "user-defined")(&req)
+		require.NoError(t, err)
+
+		require.Len(t, req.Networks, 1)
+		require.Equal(t, "user-defined", req.Networks[0])
+
+		require.Len(t, req.NetworkAliases, 1)
+		require.Equal(t, map[string][]string{"user-defined": {"alias"}}, req.NetworkAliases)
+	})
 }
 
 func TestWithSyntheticNetwork(t *testing.T) {
@@ -439,4 +477,9 @@ func TestWithNewNetworkContextTimeout(t *testing.T) {
 	// we do not want to fail, just skip the network creation
 	require.Empty(t, req.Networks)
 	require.Empty(t, req.NetworkAliases)
+}
+
+func TestCleanupWithNil(t *testing.T) {
+	var network *testcontainers.DockerNetwork
+	testcontainers.CleanupNetwork(t, network)
 }

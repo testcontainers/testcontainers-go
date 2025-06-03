@@ -9,13 +9,13 @@ import (
 )
 
 const (
-	defaultHttpApiPort = "8500"
+	defaultHTTPAPIPort = "8500"
 	defaultBrokerPort  = "8600"
 )
 
 const (
 	// Deprecated: it will be removed in the next major version.
-	DefaultBaseImage = "docker.io/hashicorp/consul:1.15"
+	DefaultBaseImage = "hashicorp/consul:1.15"
 )
 
 // ConsulContainer represents the Consul container type used in the module.
@@ -24,8 +24,10 @@ type ConsulContainer struct {
 }
 
 // ApiEndpoint returns host:port for the HTTP API endpoint.
+//
+//nolint:revive,staticcheck //FIXME
 func (c *ConsulContainer) ApiEndpoint(ctx context.Context) (string, error) {
-	mappedPort, err := c.MappedPort(ctx, defaultHttpApiPort)
+	mappedPort, err := c.MappedPort(ctx, defaultHTTPAPIPort)
 	if err != nil {
 		return "", err
 	}
@@ -65,7 +67,7 @@ func WithConfigFile(configPath string) testcontainers.CustomizeRequestOption {
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Consul container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ConsulContainer, error) {
-	return Run(ctx, "docker.io/hashicorp/consul:1.15", opts...)
+	return Run(ctx, "hashicorp/consul:1.15", opts...)
 }
 
 // Run creates an instance of the Consul container type
@@ -74,14 +76,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: img,
 			ExposedPorts: []string{
-				defaultHttpApiPort + "/tcp",
+				defaultHTTPAPIPort + "/tcp",
 				defaultBrokerPort + "/tcp",
 				defaultBrokerPort + "/udp",
 			},
 			Env: map[string]string{},
 			WaitingFor: wait.ForAll(
 				wait.ForLog("Consul agent running!"),
-				wait.ForListeningPort(defaultHttpApiPort+"/tcp"),
+				wait.ForListeningPort(defaultHTTPAPIPort+"/tcp"),
 			),
 		},
 		Started: true,

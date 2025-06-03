@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	wvt "github.com/weaviate/weaviate-go-client/v4/weaviate"
-	wvtgrpc "github.com/weaviate/weaviate-go-client/v4/weaviate/grpc"
+	wvt "github.com/weaviate/weaviate-go-client/v5/weaviate"
+	wvtgrpc "github.com/weaviate/weaviate-go-client/v5/weaviate/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -20,11 +20,11 @@ import (
 func TestWeaviate(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := weaviate.Run(ctx, "semitechnologies/weaviate:1.25.5")
+	ctr, err := weaviate.Run(ctx, "semitechnologies/weaviate:1.29.0")
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	t.Run("HttpHostAddress", func(tt *testing.T) {
+	t.Run("HttpHostAddress", func(t *testing.T) {
 		// httpHostAddress {
 		schema, host, err := ctr.HttpHostAddress(ctx)
 		// }
@@ -38,52 +38,35 @@ func TestWeaviate(t *testing.T) {
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 
-	t.Run("GrpcHostAddress", func(tt *testing.T) {
+	t.Run("GrpcHostAddress", func(t *testing.T) {
 		// gRPCHostAddress {
 		host, err := ctr.GrpcHostAddress(ctx)
 		// }
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		var opts []grpc.DialOption
 
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		conn, err := grpc.NewClient(host, opts...)
-		if err != nil {
-			tt.Fatalf("failed to dial connection: %v", err)
-		}
+		require.NoErrorf(t, err, "failed to dial connection")
 		client := grpc_health_v1.NewHealthClient(conn)
 		check, err := client.Check(context.TODO(), &grpc_health_v1.HealthCheckRequest{})
-		if err != nil {
-			tt.Fatalf("failed to get a health check: %v", err)
-		}
-		if grpc_health_v1.HealthCheckResponse_SERVING.Enum().Number() != check.Status.Number() {
-			tt.Fatalf("unexpected status code: %d", check.Status.Number())
-		}
+		require.NoErrorf(t, err, "failed to get a health check")
+		require.Equalf(t, grpc_health_v1.HealthCheckResponse_SERVING.Enum().Number(), check.Status.Number(), "unexpected status code: %d", check.Status.Number())
 	})
 
 	t.Run("Weaviate client", func(tt *testing.T) {
 		httpScheme, httpHost, err := ctr.HttpHostAddress(ctx)
-		if err != nil {
-			tt.Fatal(err)
-		}
+		require.NoError(tt, err)
 		grpcHost, err := ctr.GrpcHostAddress(ctx)
-		if err != nil {
-			tt.Fatal(err)
-		}
+		require.NoError(tt, err)
 		config := wvt.Config{Scheme: httpScheme, Host: httpHost, GrpcConfig: &wvtgrpc.Config{Host: grpcHost}}
 		client, err := wvt.NewClient(config)
-		if err != nil {
-			tt.Fatal(err)
-		}
+		require.NoError(tt, err)
 		meta, err := client.Misc().MetaGetter().Do(ctx)
-		if err != nil {
-			tt.Fatal(err)
-		}
+		require.NoError(tt, err)
 
-		if meta == nil || meta.Version == "" {
-			tt.Fatal("failed to get /v1/meta response")
-		}
+		require.NotNilf(tt, meta, "failed to get /v1/meta response")
+		require.NotEmptyf(tt, meta.Version, "failed to get /v1/meta response")
 	})
 }

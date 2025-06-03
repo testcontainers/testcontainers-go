@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/errdefs"
+	"github.com/containerd/errdefs"
+	"github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -20,13 +20,13 @@ import (
 
 const testFilename = "/tmp/file"
 
-var anyContext = mock.AnythingOfType("*context.timerCtx")
+var anyContext = mock.MatchedBy(func(_ context.Context) bool { return true })
 
 // newRunningTarget creates a new mockStrategyTarget that is running.
 func newRunningTarget() *mockStrategyTarget {
 	target := &mockStrategyTarget{}
 	target.EXPECT().State(anyContext).
-		Return(&types.ContainerState{Running: true}, nil)
+		Return(&container.State{Running: true}, nil)
 
 	return target
 }
@@ -39,7 +39,7 @@ func testForFile() *wait.FileStrategy {
 }
 
 func TestForFile(t *testing.T) {
-	errNotFound := errdefs.NotFound(errors.New("file not found"))
+	errNotFound := errdefs.ErrNotFound.WithMessage("file not found")
 	ctx := context.Background()
 
 	t.Run("not-found", func(t *testing.T) {
@@ -79,7 +79,7 @@ func TestFileStrategyWaitUntilReady_WithMatcher(t *testing.T) {
 	// waitForFileWithMatcher {
 	var out bytes.Buffer
 	dockerReq := testcontainers.ContainerRequest{
-		Image: "docker.io/nginx:latest",
+		Image: "nginx:latest",
 		WaitingFor: wait.ForFile("/etc/nginx/nginx.conf").
 			WithStartupTimeout(time.Second * 10).
 			WithPollInterval(time.Second).

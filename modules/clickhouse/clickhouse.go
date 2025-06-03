@@ -34,7 +34,7 @@ const (
 // ClickHouseContainer represents the ClickHouse container type used in the module
 type ClickHouseContainer struct {
 	testcontainers.Container
-	DbName   string
+	DbName   string //nolint:staticcheck //FIXME
 	User     string
 	Password string
 }

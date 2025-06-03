@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"time"
@@ -41,6 +42,15 @@ func CustomizeRequest(src GenericContainerRequest) CustomizeRequestOption {
 	}
 }
 
+// WithDockerfile allows to build a container from a Dockerfile
+func WithDockerfile(df FromDockerfile) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.FromDockerfile = df
+
+		return nil
+	}
+}
+
 // WithConfigModifier allows to override the default container config
 func WithConfigModifier(modifier func(config *container.Config)) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {
@@ -53,7 +63,7 @@ func WithConfigModifier(modifier func(config *container.Config)) CustomizeReques
 // WithEndpointSettingsModifier allows to override the default endpoint settings
 func WithEndpointSettingsModifier(modifier func(settings map[string]*network.EndpointSettings)) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {
-		req.EnpointSettingsModifier = modifier
+		req.EndpointSettingsModifier = modifier
 
 		return nil
 	}
@@ -96,7 +106,38 @@ func WithHostPortAccess(ports ...int) CustomizeRequestOption {
 	}
 }
 
-// Deprecated: the modules API forces passing the image as part of the signature of the Run function.
+// WithName will set the name of the container.
+func WithName(containerName string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		if containerName == "" {
+			return errors.New("container name must be provided")
+		}
+		req.Name = containerName
+		return nil
+	}
+}
+
+// WithNoStart will prevent the container from being started after creation.
+func WithNoStart() CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.Started = false
+		return nil
+	}
+}
+
+// WithReuseByName will mark a container to be reused if it exists or create a new one if it doesn't.
+// A container name must be provided to identify the container to be reused.
+func WithReuseByName(containerName string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		if err := WithName(containerName)(req); err != nil {
+			return err
+		}
+
+		req.Reuse = true
+		return nil
+	}
+}
+
 // WithImage sets the image for a container
 func WithImage(image string) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {
@@ -186,7 +227,7 @@ func (p prependHubRegistry) Description() string {
 //   - if the prefix is empty, the image is returned as is.
 //   - if the image is a non-hub image (e.g. where another registry is set), the image is returned as is.
 //   - if the image is a Docker Hub image where the hub registry is explicitly part of the name
-//     (i.e. anything with a docker.io or registry.hub.docker.com host part), the image is returned as is.
+//     (i.e. anything with a registry.hub.docker.com host part), the image is returned as is.
 func (p prependHubRegistry) Substitute(image string) (string, error) {
 	registry := core.ExtractRegistry(image, "")
 
@@ -233,6 +274,17 @@ func WithLogConsumers(consumer ...LogConsumer) CustomizeRequestOption {
 	}
 }
 
+// WithLogConsumerConfig sets the log consumer config for a container.
+// Beware that this option completely replaces the existing log consumer config,
+// including the log consumers and the log production options,
+// so it should be used with care.
+func WithLogConsumerConfig(config *LogConsumerConfig) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.LogConsumerCfg = config
+		return nil
+	}
+}
+
 // Executable represents an executable command to be sent to a container, including options,
 // as part of the different lifecycle hooks.
 type Executable interface {
@@ -259,11 +311,11 @@ type RawCommand struct {
 	cmds []string
 }
 
-func NewRawCommand(cmds []string) RawCommand {
+func NewRawCommand(cmds []string, opts ...tcexec.ProcessOption) RawCommand {
 	return RawCommand{
 		cmds: cmds,
 		ExecOptions: ExecOptions{
-			opts: []tcexec.ProcessOption{},
+			opts: opts,
 		},
 	}
 }
@@ -321,16 +373,172 @@ func WithAfterReadyCommand(execs ...Executable) CustomizeRequestOption {
 	}
 }
 
-// WithWaitStrategy sets the wait strategy for a container, using 60 seconds as deadline
+// WithWaitStrategy replaces the wait strategy for a container, using 60 seconds as deadline
 func WithWaitStrategy(strategies ...wait.Strategy) CustomizeRequestOption {
 	return WithWaitStrategyAndDeadline(60*time.Second, strategies...)
 }
 
-// WithWaitStrategyAndDeadline sets the wait strategy for a container, including deadline
+// WithAdditionalWaitStrategy appends the wait strategy for a container, using 60 seconds as deadline
+func WithAdditionalWaitStrategy(strategies ...wait.Strategy) CustomizeRequestOption {
+	return WithAdditionalWaitStrategyAndDeadline(60*time.Second, strategies...)
+}
+
+// WithWaitStrategyAndDeadline replaces the wait strategy for a container, including deadline
 func WithWaitStrategyAndDeadline(deadline time.Duration, strategies ...wait.Strategy) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {
 		req.WaitingFor = wait.ForAll(strategies...).WithDeadline(deadline)
 
+		return nil
+	}
+}
+
+// WithAdditionalWaitStrategyAndDeadline appends the wait strategy for a container, including deadline
+func WithAdditionalWaitStrategyAndDeadline(deadline time.Duration, strategies ...wait.Strategy) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		if req.WaitingFor == nil {
+			req.WaitingFor = wait.ForAll(strategies...).WithDeadline(deadline)
+			return nil
+		}
+
+		wss := make([]wait.Strategy, 0, len(strategies)+1)
+		wss = append(wss, req.WaitingFor)
+		wss = append(wss, strategies...)
+
+		req.WaitingFor = wait.ForAll(wss...).WithDeadline(deadline)
+
+		return nil
+	}
+}
+
+// WithImageMount mounts an image to a container, passing the source image name,
+// the relative subpath to mount in that image, and the mount point in the target container.
+// This option validates that the subpath is a relative path, raising an error otherwise.
+func WithImageMount(source string, subpath string, target ContainerMountTarget) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		src := NewDockerImageMountSource(source, subpath)
+
+		if err := src.Validate(); err != nil {
+			return fmt.Errorf("validate image mount source: %w", err)
+		}
+
+		req.Mounts = append(req.Mounts, ContainerMount{
+			Source: src,
+			Target: target,
+		})
+		return nil
+	}
+}
+
+// WithAlwaysPull will pull the image before starting the container
+func WithAlwaysPull() CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.AlwaysPullImage = true
+		return nil
+	}
+}
+
+// WithImagePlatform sets the platform for a container
+func WithImagePlatform(platform string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.ImagePlatform = platform
+		return nil
+	}
+}
+
+// WithEntrypoint completely replaces the entrypoint of a container
+func WithEntrypoint(entrypoint ...string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.Entrypoint = entrypoint
+		return nil
+	}
+}
+
+// WithEntrypointArgs appends the entrypoint arguments to the entrypoint of a container
+func WithEntrypointArgs(entrypointArgs ...string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.Entrypoint = append(req.Entrypoint, entrypointArgs...)
+		return nil
+	}
+}
+
+// WithExposedPorts appends the ports to the exposed ports for a container
+func WithExposedPorts(ports ...string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.ExposedPorts = append(req.ExposedPorts, ports...)
+		return nil
+	}
+}
+
+// WithCmd completely replaces the command for a container
+func WithCmd(cmd ...string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.Cmd = cmd
+		return nil
+	}
+}
+
+// WithCmdArgs appends the command arguments to the command for a container
+func WithCmdArgs(cmdArgs ...string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.Cmd = append(req.Cmd, cmdArgs...)
+		return nil
+	}
+}
+
+// WithLabels appends the labels to the labels for a container
+func WithLabels(labels map[string]string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		if req.Labels == nil {
+			req.Labels = make(map[string]string)
+		}
+		for k, v := range labels {
+			req.Labels[k] = v
+		}
+		return nil
+	}
+}
+
+// WithLifecycleHooks completely replaces the lifecycle hooks for a container
+func WithLifecycleHooks(hooks ...ContainerLifecycleHooks) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.LifecycleHooks = hooks
+		return nil
+	}
+}
+
+// WithAdditionalLifecycleHooks appends lifecycle hooks to the existing ones for a container
+func WithAdditionalLifecycleHooks(hooks ...ContainerLifecycleHooks) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.LifecycleHooks = append(req.LifecycleHooks, hooks...)
+		return nil
+	}
+}
+
+// WithMounts appends the mounts to the mounts for a container
+func WithMounts(mounts ...ContainerMount) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.Mounts = append(req.Mounts, mounts...)
+		return nil
+	}
+}
+
+// WithTmpfs appends the tmpfs mounts to the tmpfs mounts for a container
+func WithTmpfs(tmpfs map[string]string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		if req.Tmpfs == nil {
+			req.Tmpfs = make(map[string]string)
+		}
+		for k, v := range tmpfs {
+			req.Tmpfs[k] = v
+		}
+		return nil
+	}
+}
+
+// WithFiles appends the files to the files for a container
+func WithFiles(files ...ContainerFile) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		req.Files = append(req.Files, files...)
 		return nil
 	}
 }

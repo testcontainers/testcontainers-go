@@ -2,7 +2,6 @@ package kafka_test
 
 import (
 	"context"
-	"io"
 	"strings"
 	"testing"
 
@@ -24,9 +23,7 @@ func TestKafka(t *testing.T) {
 
 	assertAdvertisedListeners(t, kafkaContainer)
 
-	if !strings.EqualFold(kafkaContainer.ClusterID, "kraftCluster") {
-		t.Fatalf("expected clusterID to be %s, got %s", "kraftCluster", kafkaContainer.ClusterID)
-	}
+	require.Truef(t, strings.EqualFold(kafkaContainer.ClusterID, "kraftCluster"), "expected clusterID to be %s, got %s", "kraftCluster", kafkaContainer.ClusterID)
 
 	// getBrokers {
 	brokers, err := kafkaContainer.Brokers(ctx)
@@ -65,12 +62,8 @@ func TestKafka(t *testing.T) {
 
 	<-done
 
-	if !strings.EqualFold(string(consumer.message.Key), "key") {
-		t.Fatalf("expected key to be %s, got %s", "key", string(consumer.message.Key))
-	}
-	if !strings.EqualFold(string(consumer.message.Value), "value") {
-		t.Fatalf("expected value to be %s, got %s", "value", string(consumer.message.Value))
-	}
+	require.Truef(t, strings.EqualFold(string(consumer.message.Key), "key"), "expected key to be %s, got %s", "key", string(consumer.message.Key))
+	require.Truef(t, strings.EqualFold(string(consumer.message.Value), "value"), "expected value to be %s, got %s", "value", string(consumer.message.Value))
 }
 
 func TestKafka_invalidVersion(t *testing.T) {
@@ -84,20 +77,15 @@ func TestKafka_invalidVersion(t *testing.T) {
 // assertAdvertisedListeners checks that the advertised listeners are set correctly:
 // - The BROKER:// protocol is using the hostname of the Kafka container
 func assertAdvertisedListeners(t *testing.T, container testcontainers.Container) {
+	t.Helper()
 	inspect, err := container.Inspect(context.Background())
 	require.NoError(t, err)
 
-	hostname := inspect.Config.Hostname
+	brokerURL := "BROKER://" + inspect.Config.Hostname + ":9092"
 
-	code, r, err := container.Exec(context.Background(), []string{"cat", "/usr/sbin/testcontainers_start.sh"})
-	require.NoError(t, err)
+	ctx := context.Background()
 
-	require.Zero(t, code)
+	bs := testcontainers.RequireContainerExec(ctx, t, container, []string{"cat", "/usr/sbin/testcontainers_start.sh"})
 
-	bs, err := io.ReadAll(r)
-	require.NoError(t, err)
-
-	if !strings.Contains(string(bs), "BROKER://"+hostname+":9092") {
-		t.Fatalf("expected advertised listeners to contain %s, got %s", "BROKER://"+hostname+":9092", string(bs))
-	}
+	require.Containsf(t, bs, brokerURL, "expected advertised listeners to contain %s, got %s", brokerURL, bs)
 }

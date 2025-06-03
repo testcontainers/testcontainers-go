@@ -87,7 +87,7 @@ func TestPulsar(t *testing.T) {
 		{
 			name: "with log consumers",
 			opts: []testcontainers.ContainerCustomizer{
-				// withLogconsumers {
+				// withLogConsumers {
 				testcontainers.WithLogConsumers(&noopLogConsumer{}),
 				// }
 			},
@@ -98,7 +98,7 @@ func TestPulsar(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c, err := testcontainerspulsar.Run(
 				ctx,
-				"docker.io/apachepulsar/pulsar:2.10.2",
+				"apachepulsar/pulsar:2.10.2",
 				tt.opts...,
 			)
 			testcontainers.CleanupContainer(t, c)
@@ -166,9 +166,7 @@ func TestPulsar(t *testing.T) {
 			case <-ticker.C:
 				t.Fatal("did not receive message in time")
 			case msg := <-msgChan:
-				if string(msg) != "hello world" {
-					t.Fatal("received unexpected message bytes")
-				}
+				require.Equalf(t, "hello world", string(msg), "received unexpected message bytes")
 			}
 
 			// get topic statistics using the Admin endpoint
@@ -183,14 +181,14 @@ func TestPulsar(t *testing.T) {
 			body, err := io.ReadAll(resp.Body)
 			require.NoError(t, err)
 
-			var stats map[string]interface{}
+			var stats map[string]any
 			err = json.Unmarshal(body, &stats)
 			require.NoError(t, err)
 
 			subscriptions := stats["subscriptions"]
 			require.NotNil(t, subscriptions)
 
-			subscriptionsMap := subscriptions.(map[string]interface{})
+			subscriptionsMap := subscriptions.(map[string]any)
 
 			// check that the subscription exists
 			_, ok := subscriptionsMap[subscriptionName]

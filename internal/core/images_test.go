@@ -17,10 +17,10 @@ const (
 )
 
 func TestExtractImagesFromDockerfile(t *testing.T) {
-	var baseImage string = "scratch"
-	var registryHost string = "localhost"
-	var registryPort string = "5000"
-	var nginxImage string = "nginx:latest"
+	baseImage := "scratch"
+	registryHost := "localhost"
+	registryPort := "5000"
+	nginxImage := "nginx:latest"
 
 	tests := []struct {
 		name          string
@@ -67,7 +67,7 @@ func TestExtractImagesFromDockerfile(t *testing.T) {
 			images, err := ExtractImagesFromDockerfile(tt.dockerfile, tt.buildArgs)
 			if tt.expectedError {
 				require.Error(t, err)
-				assert.Empty(t, images)
+				require.Empty(t, images)
 			} else {
 				require.NoError(t, err)
 				assert.Equal(t, tt.expected, images)

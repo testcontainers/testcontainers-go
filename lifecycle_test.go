@@ -3,7 +3,10 @@ package testcontainers
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
+	"io"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -25,6 +28,32 @@ func TestPreCreateModifierHook(t *testing.T) {
 	provider, err := NewDockerProvider()
 	require.NoError(t, err)
 	defer provider.Close()
+
+	t.Run("mount-errors", func(t *testing.T) {
+		// imageMounts {
+		req := ContainerRequest{
+			// three mounts, one valid and two invalid
+			Mounts: ContainerMounts{
+				{
+					Source: NewDockerImageMountSource("nginx:latest", "var/www/html"),
+					Target: "/var/www/valid",
+				},
+				ImageMount("nginx:latest", "../var/www/html", "/var/www/invalid1"),
+				ImageMount("nginx:latest", "/var/www/html", "/var/www/invalid2"),
+			},
+		}
+		// }
+
+		err = provider.preCreateContainerHook(ctx, req, &container.Config{}, &container.HostConfig{}, &network.NetworkingConfig{})
+		require.Error(t, err)
+
+		var errs []error
+		var joinErr interface{ Unwrap() []error }
+		if errors.As(err, &joinErr) {
+			errs = joinErr.Unwrap()
+		}
+		require.Len(t, errs, 2) // one valid and two invalid mounts
+	})
 
 	t.Run("No exposed ports", func(t *testing.T) {
 		// reqWithModifiers {
@@ -54,7 +83,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 					},
 				}
 			},
-			EnpointSettingsModifier: func(endpointSettings map[string]*network.EndpointSettings) {
+			EndpointSettingsModifier: func(endpointSettings map[string]*network.EndpointSettings) {
 				endpointSettings["a"] = &network.EndpointSettings{
 					Aliases: []string{"b"},
 					Links:   []string{"link1", "link2"},
@@ -281,7 +310,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 
 		// assertions
 
-		assert.Empty(
+		require.Empty(
 			t,
 			inputNetworkingConfig.EndpointsConfig[networkName].Aliases,
 			"Networking config's aliases should be empty",
@@ -538,91 +567,91 @@ func TestLifecycleHooks(t *testing.T) {
 				LifecycleHooks: []ContainerLifecycleHooks{
 					{
 						PreCreates: []ContainerRequestHook{
-							func(ctx context.Context, req ContainerRequest) error {
+							func(_ context.Context, _ ContainerRequest) error {
 								prints = append(prints, "pre-create hook 1")
 								return nil
 							},
-							func(ctx context.Context, req ContainerRequest) error {
+							func(_ context.Context, _ ContainerRequest) error {
 								prints = append(prints, "pre-create hook 2")
 								return nil
 							},
 						},
 						PostCreates: []ContainerHook{
-							func(ctx context.Context, c Container) error {
+							func(_ context.Context, _ Container) error {
 								prints = append(prints, "post-create hook 1")
 								return nil
 							},
-							func(ctx context.Context, c Container) error {
+							func(_ context.Context, _ Container) error {
 								prints = append(prints, "post-create hook 2")
 								return nil
 							},
 						},
 						PreStarts: []ContainerHook{
-							func(ctx context.Context, c Container) error {
+							func(_ context.Context, _ Container) error {
 								prints = append(prints, "pre-start hook 1")
 								return nil
 							},
-							func(ctx context.Context, c Container) error {
+							func(_ context.Context, _ Container) error {
 								prints = append(prints, "pre-start hook 2")
 								return nil
 							},
 						},
 						PostStarts: []ContainerHook{
-							func(ctx context.Context, c Container) error {
+							func(_ context.Context, _ Container) error {
 								prints = append(prints, "post-start hook 1")
 								return nil
 							},
-							func(ctx context.Context, c Container) error {
+							func(_ context.Context, _ Container) error {
 								prints = append(prints, "post-start hook 2")
 								return nil
 							},
 						},
 						PostReadies: []ContainerHook{
-							func(ctx context.Context, c Container) error {
+							func(_ context.Context, _ Container) error {
 								prints = append(prints, "post-ready hook 1")
 								return nil
 							},
-							func(ctx context.Context, c Container) error {
+							func(_ context.Context, _ Container) error {
 								prints = append(prints, "post-ready hook 2")
 								return nil
 							},
 						},
 						PreStops: []ContainerHook{
-							func(ctx context.Context, c Container) error {
+							func(_ context.Context, _ Container) error {
 								prints = append(prints, "pre-stop hook 1")
 								return nil
 							},
-							func(ctx context.Context, c Container) error {
+							func(_ context.Context, _ Container) error {
 								prints = append(prints, "pre-stop hook 2")
 								return nil
 							},
 						},
 						PostStops: []ContainerHook{
-							func(ctx context.Context, c Container) error {
+							func(_ context.Context, _ Container) error {
 								prints = append(prints, "post-stop hook 1")
 								return nil
 							},
-							func(ctx context.Context, c Container) error {
+							func(_ context.Context, _ Container) error {
 								prints = append(prints, "post-stop hook 2")
 								return nil
 							},
 						},
 						PreTerminates: []ContainerHook{
-							func(ctx context.Context, c Container) error {
+							func(_ context.Context, _ Container) error {
 								prints = append(prints, "pre-terminate hook 1")
 								return nil
 							},
-							func(ctx context.Context, c Container) error {
+							func(_ context.Context, _ Container) error {
 								prints = append(prints, "pre-terminate hook 2")
 								return nil
 							},
 						},
 						PostTerminates: []ContainerHook{
-							func(ctx context.Context, c Container) error {
+							func(_ context.Context, _ Container) error {
 								prints = append(prints, "post-terminate hook 1")
 								return nil
 							},
-							func(ctx context.Context, c Container) error {
+							func(_ context.Context, _ Container) error {
 								prints = append(prints, "post-terminate hook 2")
 								return nil
 							},
@@ -665,7 +694,7 @@ type inMemoryLogger struct {
 	data []string
 }
 
-func (l *inMemoryLogger) Printf(format string, args ...interface{}) {
+func (l *inMemoryLogger) Printf(format string, args ...any) {
 	l.data = append(l.data, fmt.Sprintf(format, args...))
 }
 
@@ -674,7 +703,7 @@ func (l *inMemoryLogger) Printf(format string, args ...interface{}) {
 func TestLifecycleHooks_WithDefaultLogger(t *testing.T) {
 	ctx := context.Background()
 
-	// reqWithDefaultLogginHook {
+	// reqWithDefaultLoggingHook {
 	dl := inMemoryLogger{}
 
 	req := ContainerRequest{
@@ -711,13 +740,13 @@ func TestCombineLifecycleHooks(t *testing.T) {
 	prints := []string{}
 
 	preCreateFunc := func(prefix string, hook string, lifecycleID int, hookID int) func(ctx context.Context, req ContainerRequest) error {
-		return func(ctx context.Context, _ ContainerRequest) error {
+		return func(_ context.Context, _ ContainerRequest) error {
 			prints = append(prints, fmt.Sprintf("[%s] pre-%s hook %d.%d", prefix, hook, lifecycleID, hookID))
 			return nil
 		}
 	}
 	hookFunc := func(prefix string, hookType string, hook string, lifecycleID int, hookID int) func(ctx context.Context, c Container) error {
-		return func(ctx context.Context, _ Container) error {
+		return func(_ context.Context, _ Container) error {
 			prints = append(prints, fmt.Sprintf("[%s] %s-%s hook %d.%d", prefix, hookType, hook, lifecycleID, hookID))
 			return nil
 		}
@@ -781,7 +810,7 @@ func TestCombineLifecycleHooks(t *testing.T) {
 
 	// There are 5 lifecycles (create, start, ready, stop, terminate),
 	// but ready has only half of the hooks (it only has post), so we have 90 hooks in total.
-	assert.Len(t, prints, 90)
+	require.Len(t, prints, 90)
 
 	// The order of the hooks is:
 	// - pre-X hooks: first default (2*2), then user-defined (3*2)
@@ -879,7 +908,7 @@ type linesTestLogger struct {
 	data []string
 }
 
-func (l *linesTestLogger) Printf(format string, args ...interface{}) {
+func (l *linesTestLogger) Printf(format string, args ...any) {
 	l.data = append(l.data, fmt.Sprintf(format, args...))
 }
 
@@ -887,7 +916,7 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 	ctx := context.Background()
 
 	req := ContainerRequest{
-		Image:      "docker.io/alpine",
+		Image:      "alpine",
 		Cmd:        []string{"echo", "-n", "I am expecting this"},
 		WaitingFor: wait.ForLog("I was expecting that").WithStartupTimeout(5 * time.Second),
 	}
@@ -904,27 +933,20 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 	})
 	CleanupContainer(t, ctr)
 	// it should fail because the waiting for condition is not met
-	if err == nil {
-		t.Fatal(err)
-	}
+	require.Error(t, err)
 
 	containerLogs, err := ctr.Logs(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer containerLogs.Close()
 
 	// read container logs line by line, checking that each line is present in the stdout
 	rd := bufio.NewReader(containerLogs)
 	for {
 		line, err := rd.ReadString('\n')
-		if err != nil {
-			if err.Error() == "EOF" {
-				break
-			}
-
-			t.Fatal("Read Error:", err)
+		if errors.Is(err, io.EOF) {
+			break
 		}
+		require.NoErrorf(t, err, "Read Error")
 
 		// the last line of the array should contain the line of interest,
 		// but we are checking all the lines to make sure that is present
@@ -975,4 +997,106 @@ func lifecycleHooksIsHonouredFn(t *testing.T, prints []string) {
 	}
 
 	require.Equal(t, expects, prints)
+}
+
+func Test_combineContainerHooks(t *testing.T) {
+	var funcID string
+	defaultContainerRequestHook := func(_ context.Context, _ ContainerRequest) error {
+		funcID = "defaultContainerRequestHook"
+		return nil
+	}
+	userContainerRequestHook := func(_ context.Context, _ ContainerRequest) error {
+		funcID = "userContainerRequestHook"
+		return nil
+	}
+	defaultContainerHook := func(_ context.Context, _ Container) error {
+		funcID = "defaultContainerHook"
+		return nil
+	}
+	userContainerHook := func(_ context.Context, _ Container) error {
+		funcID = "userContainerHook"
+		return nil
+	}
+
+	defaultHooks := []ContainerLifecycleHooks{
+		{
+			PreBuilds:      []ContainerRequestHook{defaultContainerRequestHook},
+			PostBuilds:     []ContainerRequestHook{defaultContainerRequestHook},
+			PreCreates:     []ContainerRequestHook{defaultContainerRequestHook},
+			PostCreates:    []ContainerHook{defaultContainerHook},
+			PreStarts:      []ContainerHook{defaultContainerHook},
+			PostStarts:     []ContainerHook{defaultContainerHook},
+			PostReadies:    []ContainerHook{defaultContainerHook},
+			PreStops:       []ContainerHook{defaultContainerHook},
+			PostStops:      []ContainerHook{defaultContainerHook},
+			PreTerminates:  []ContainerHook{defaultContainerHook},
+			PostTerminates: []ContainerHook{defaultContainerHook},
+		},
+	}
+	userDefinedHooks := []ContainerLifecycleHooks{
+		{
+			PreBuilds:      []ContainerRequestHook{userContainerRequestHook},
+			PostBuilds:     []ContainerRequestHook{userContainerRequestHook},
+			PreCreates:     []ContainerRequestHook{userContainerRequestHook},
+			PostCreates:    []ContainerHook{userContainerHook},
+			PreStarts:      []ContainerHook{userContainerHook},
+			PostStarts:     []ContainerHook{userContainerHook},
+			PostReadies:    []ContainerHook{userContainerHook},
+			PreStops:       []ContainerHook{userContainerHook},
+			PostStops:      []ContainerHook{userContainerHook},
+			PreTerminates:  []ContainerHook{userContainerHook},
+			PostTerminates: []ContainerHook{userContainerHook},
+		},
+	}
+	expects := ContainerLifecycleHooks{
+		PreBuilds:      []ContainerRequestHook{defaultContainerRequestHook, userContainerRequestHook},
+		PostBuilds:     []ContainerRequestHook{userContainerRequestHook, defaultContainerRequestHook},
+		PreCreates:     []ContainerRequestHook{defaultContainerRequestHook, userContainerRequestHook},
+		PostCreates:    []ContainerHook{userContainerHook, defaultContainerHook},
+		PreStarts:      []ContainerHook{defaultContainerHook, userContainerHook},
+		PostStarts:     []ContainerHook{userContainerHook, defaultContainerHook},
+		PostReadies:    []ContainerHook{userContainerHook, defaultContainerHook},
+		PreStops:       []ContainerHook{defaultContainerHook, userContainerHook},
+		PostStops:      []ContainerHook{userContainerHook, defaultContainerHook},
+		PreTerminates:  []ContainerHook{defaultContainerHook, userContainerHook},
+		PostTerminates: []ContainerHook{userContainerHook, defaultContainerHook},
+	}
+
+	ctx := context.Background()
+	ctxVal := reflect.ValueOf(ctx)
+	var req ContainerRequest
+	reqVal := reflect.ValueOf(req)
+	container := &DockerContainer{}
+	containerVal := reflect.ValueOf(container)
+
+	got := combineContainerHooks(defaultHooks, userDefinedHooks)
+
+	// Compare for equal. This can't be done with deep equals as functions
+	// are not comparable so we use the unique value stored in funcID when
+	// the function is called to determine if they are the same.
+	gotVal := reflect.ValueOf(got)
+	gotType := reflect.TypeOf(got)
+	expectedVal := reflect.ValueOf(expects)
+	for i := 0; i < gotVal.NumField(); i++ {
+		fieldName := gotType.Field(i).Name
+		gotField := gotVal.Field(i)
+		expectedField := expectedVal.Field(i)
+		require.Equalf(t, expectedField.Len(), 2, "field %q not setup len expected %d got %d", fieldName, 2, expectedField.Len()) //nolint:testifylint // False positive.
+		require.Equalf(t, expectedField.Len(), gotField.Len(), "field %q len expected %d got %d", fieldName, gotField.Len(), expectedField.Len())
+		for j := 0; j < gotField.Len(); j++ {
+			gotIndex := gotField.Index(j)
+			expectedIndex := expectedField.Index(j)
+			var gotID string
+			if gotIndex.Type().Name() == "ContainerRequestHook" {
+				gotIndex.Call([]reflect.Value{ctxVal, reqVal})
+				gotID = funcID
+				expectedIndex.Call([]reflect.Value{ctxVal, reqVal})
+			} else {
+				gotIndex.Call([]reflect.Value{ctxVal, containerVal})
+				gotID = funcID
+				expectedIndex.Call([]reflect.Value{ctxVal, containerVal})
+			}
+			require.Equalf(t, funcID, gotID, "field %q[%d] func expected %s got %s", fieldName, j, funcID, gotID)
+		}
+	}
 }

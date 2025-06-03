@@ -1,6 +1,6 @@
 # CockroachDB
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
 
 ## Introduction
 
@@ -10,7 +10,7 @@ The Testcontainers module for CockroachDB.
 
 Please run the following command to add the CockroachDB module to your Go dependencies:
 
-```
+```shell
 go get github.com/testcontainers/testcontainers-go/modules/cockroachdb
 ```
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/cockroachdb
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
@@ -45,32 +45,56 @@ When starting the CockroachDB container, you can pass options in a variadic way 
 
 #### Image
 
-If you need to set a different CockroachDB Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "cockroachdb/cockroach:latest-v23.1")`.
-
-{% include "../features/common_functional_options.md" %}
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "cockroachdb/cockroach:latest-v23.1")`.
 
 #### Database
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
+
 Set the database that is created & dialled with `cockroachdb.WithDatabase`.
 
-#### Password authentication
+#### User and Password
 
-Disable insecure mode and connect with password authentication by setting `cockroachdb.WithUser` and `cockroachdb.WithPassword`.
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
+
+You can configure the container to create a user with a password by setting `cockroachdb.WithUser` and `cockroachdb.WithPassword`.
+
+`cockroachdb.WithPassword` is incompatible with `cockroachdb.WithInsecure`.
 
 #### Store size
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
 
 Control the maximum amount of memory used for storage, by default this is 100% but can be changed by provided a valid option to `WithStoreSize`. Checkout https://www.cockroachlabs.com/docs/stable/cockroach-start#store for the full range of options available.
 
 #### TLS authentication
 
-`cockroachdb.WithTLS` lets you provide the CA certificate along with the certicate and key for the node & clients to connect with.
-Internally CockroachDB requires a client certificate for the user to connect with.
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.35.0"><span class="tc-version">:material-tag: v0.35.0</span></a>
 
-A helper `cockroachdb.NewTLSConfig` exists to generate all of this for you.
+`cockroachdb.WithInsecure` lets you disable the use of TLS on connections.
 
-!!!warning
-    When TLS is enabled there's a very small, unlikely chance that the underlying driver can panic when registering the driver as part of waiting for CockroachDB to be ready to accept connections. If this is repeatedly happening please open an issue.
+`cockroachdb.WithInsecure` is incompatible with `cockroachdb.WithPassword`.
+
+#### Initialization Scripts
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.35.0"><span class="tc-version">:material-tag: v0.35.0</span></a>
+
+`cockroachdb.WithInitScripts` adds the given scripts to those automatically run when the container starts.
+These will be ignored if data exists in the `/cockroach/cockroach-data` directory within the container.
+
+#### No Cluster Defaults
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.35.0"><span class="tc-version">:material-tag: v0.35.0</span></a>
+
+`cockroachdb.WithNoClusterDefaults` disables the default cluster settings script.
+
+Without this option Cockroach containers run `data/cluster-defaults.sql` on startup
+which configures the settings recommended by Cockroach Labs for
+[local testing clusters](https://www.cockroachlabs.com/docs/stable/local-testing)
+unless data exists in the `/cockroach/cockroach-data` directory within the container.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 
@@ -78,12 +102,27 @@ The CockroachDB container exposes the following methods:
 
 #### ConnectionString
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
+
 Dial address to open a new connection.
 
 #### MustConnectionString
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
 
 Same as `ConnectionString` but any error to generate the address will raise a panic
 
 #### TLSConfig
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
+
 Returns `*tls.Config` setup to allow you to dial your client over TLS, if enabled, else this will error with `cockroachdb.ErrTLSNotEnabled`.
+
+!!!info
+    The `TLSConfig()` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
+
+#### ConnectionConfig
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.35.0"><span class="tc-version">:material-tag: v0.35.0</span></a>
+
+Returns `*pgx.ConnConfig` which can be passed to `pgx.ConnectConfig` to open a new connection.

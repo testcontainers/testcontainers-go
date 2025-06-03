@@ -26,7 +26,7 @@ type K6Container struct {
 }
 
 type DownloadableFile struct {
-	Uri         url.URL
+	Uri         url.URL //nolint:revive,staticcheck //FIXME
 	DownloadDir string
 	User        string
 	Password    string
@@ -72,7 +72,7 @@ func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
 	scriptBaseName := filepath.Base(scriptPath)
 	f, err := os.Open(scriptPath)
 	if err != nil {
-		return func(req *testcontainers.GenericContainerRequest) error {
+		return func(_ *testcontainers.GenericContainerRequest) error {
 			return fmt.Errorf("cannot create reader for test file: %w", err)
 		}
 	}
@@ -81,7 +81,7 @@ func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
 }
 
 // WithTestScriptReader copies files into the Container using the Reader API
-// The script base name is not a path, neither absolute or relative and should
+// The script base name is not a path, neither absolute nor relative and should
 // be just the file name of the script
 func WithTestScriptReader(reader io.Reader, scriptBaseName string) testcontainers.CustomizeRequestOption {
 	opt := func(req *testcontainers.GenericContainerRequest) error {
@@ -107,7 +107,7 @@ func WithTestScriptReader(reader io.Reader, scriptBaseName string) testcontainer
 func WithRemoteTestScript(d DownloadableFile) testcontainers.CustomizeRequestOption {
 	err := downloadFileFromDescription(d)
 	if err != nil {
-		return func(req *testcontainers.GenericContainerRequest) error {
+		return func(_ *testcontainers.GenericContainerRequest) error {
 			return fmt.Errorf("not able to download required test script: %w", err)
 		}
 	}
@@ -115,13 +115,10 @@ func WithRemoteTestScript(d DownloadableFile) testcontainers.CustomizeRequestOpt
 	return WithTestScript(d.getDownloadPath())
 }
 
+// Deprecated: use [testcontainers.WithCmdArgs] instead
 // WithCmdOptions pass the given options to the k6 run command
 func WithCmdOptions(options ...string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Cmd = append(req.Cmd, options...)
-
-		return nil
-	}
+	return testcontainers.WithCmdArgs(options...)
 }
 
 // SetEnvVar adds a '--env' command-line flag to the k6 command in the container for setting an environment variable for the test script.
@@ -143,7 +140,7 @@ func WithCache() testcontainers.CustomizeRequestOption {
 	cacheVol := os.Getenv("TC_K6_BUILD_CACHE")
 	// if no volume is provided, create one and ensure add labels for garbage collection
 	if cacheVol == "" {
-		cacheVol = fmt.Sprintf("k6-cache-%s", testcontainers.SessionID())
+		cacheVol = "k6-cache-" + testcontainers.SessionID()
 		volOptions = &mount.VolumeOptions{
 			Labels: testcontainers.GenericLabels(),
 		}

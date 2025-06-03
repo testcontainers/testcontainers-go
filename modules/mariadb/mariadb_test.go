@@ -53,9 +53,7 @@ func TestMariaDBWithNonRootUserAndEmptyPassword(t *testing.T) {
 		mariadb.WithDatabase("foo"),
 		mariadb.WithUsername("test"),
 		mariadb.WithPassword(""))
-	if err.Error() != "empty password can be used only with the root user" {
-		t.Fatal(err)
-	}
+	require.EqualError(t, err, "empty password can be used only with the root user")
 }
 
 func TestMariaDBWithRootUserAndEmptyPassword(t *testing.T) {
@@ -144,6 +142,7 @@ func TestMariaDBWithScripts(t *testing.T) {
 }
 
 func assertDataCanBeFetched(t *testing.T, ctx context.Context, container *mariadb.MariaDBContainer) {
+	t.Helper()
 	connectionString, err := container.ConnectionString(ctx)
 	require.NoError(t, err)
 	db, err := sql.Open("mysql", connectionString)

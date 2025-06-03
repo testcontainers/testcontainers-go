@@ -39,7 +39,7 @@ func TestConsul(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ctr, err := consul.Run(ctx, "docker.io/hashicorp/consul:1.15", test.opts...)
+			ctr, err := consul.Run(ctx, "hashicorp/consul:1.15", test.opts...)
 			testcontainers.CleanupContainer(t, ctr)
 			require.NoError(t, err)
 

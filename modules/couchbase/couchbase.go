@@ -18,6 +18,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+//nolint:staticcheck //FIXME
 const (
 	// containerPorts {
 
@@ -218,11 +219,12 @@ func (c *CouchbaseContainer) waitUntilNodeIsOnline(ctx context.Context) error {
 		WithStatusCodeMatcher(func(status int) bool {
 			return status == http.StatusOK
 		}).
+		WithBasicAuth(c.config.username, c.config.password).
 		WaitUntilReady(ctx, c)
 }
 
 func (c *CouchbaseContainer) initializeIsEnterprise(ctx context.Context) error {
-	response, err := c.doHttpRequest(ctx, MGMT_PORT, "/pools", http.MethodGet, nil, false)
+	response, err := c.doHTTPRequest(ctx, MGMT_PORT, "/pools", http.MethodGet, nil)
 	if err != nil {
 		return err
 	}
@@ -251,7 +253,7 @@ func (c *CouchbaseContainer) renameNode(ctx context.Context) error {
 		"hostname": hostname,
 	}
 
-	_, err = c.doHttpRequest(ctx, MGMT_PORT, "/node/controller/rename", http.MethodPost, body, false)
+	_, err = c.doHTTPRequest(ctx, MGMT_PORT, "/node/controller/rename", http.MethodPost, body)
 
 	return err
 }
@@ -260,7 +262,7 @@ func (c *CouchbaseContainer) initializeServices(ctx context.Context) error {
 	body := map[string]string{
 		"services": c.getEnabledServices(),
 	}
-	_, err := c.doHttpRequest(ctx, MGMT_PORT, "/node/controller/setupServices", http.MethodPost, body, false)
+	_, err := c.doHTTPRequest(ctx, MGMT_PORT, "/node/controller/setupServices", http.MethodPost, body)
 
 	return err
 }
@@ -281,7 +283,7 @@ func (c *CouchbaseContainer) setMemoryQuotas(ctx context.Context) error {
 		}
 	}
 
-	_, err := c.doHttpRequest(ctx, MGMT_PORT, "/pools/default", http.MethodPost, body, false)
+	_, err := c.doHTTPRequest(ctx, MGMT_PORT, "/pools/default", http.MethodPost, body)
 
 	return err
 }
@@ -293,7 +295,7 @@ func (c *CouchbaseContainer) configureAdminUser(ctx context.Context) error {
 		"port":     "SAME",
 	}
 
-	_, err := c.doHttpRequest(ctx, MGMT_PORT, "/settings/web", http.MethodPost, body, false)
+	_, err := c.doHTTPRequest(ctx, MGMT_PORT, "/settings/web", http.MethodPost, body)
 
 	return err
 }
@@ -352,7 +354,7 @@ func (c *CouchbaseContainer) configureExternalPorts(ctx context.Context) error {
 		body["eventingSSL"] = eventingSSL.Port()
 	}
 
-	_, err := c.doHttpRequest(ctx, MGMT_PORT, "/node/controller/setupAlternateAddresses/external", http.MethodPut, body, true)
+	_, err := c.doHTTPRequest(ctx, MGMT_PORT, "/node/controller/setupAlternateAddresses/external", http.MethodPut, body)
 
 	return err
 }
@@ -370,7 +372,7 @@ func (c *CouchbaseContainer) configureIndexer(ctx context.Context) error {
 		"storageMode": string(c.config.indexStorageMode),
 	}
 
-	_, err := c.doHttpRequest(ctx, MGMT_PORT, "/settings/indexes", http.MethodPost, body, true)
+	_, err := c.doHTTPRequest(ctx, MGMT_PORT, "/settings/indexes", http.MethodPost, body)
 
 	return err
 }
@@ -473,7 +475,7 @@ func (c *CouchbaseContainer) isPrimaryIndexOnline(ctx context.Context, bucket bu
 	}
 
 	err := backoff.Retry(func() error {
-		response, err := c.doHttpRequest(ctx, QUERY_PORT, "/query/service", http.MethodPost, body, true)
+		response, err := c.doHTTPRequest(ctx, QUERY_PORT, "/query/service", http.MethodPost, body)
 		if err != nil {
 			return err
 		}
@@ -494,7 +496,7 @@ func (c *CouchbaseContainer) createPrimaryIndex(ctx context.Context, bucket buck
 		"statement": "CREATE PRIMARY INDEX on `" + bucket.name + "`",
 	}
 	err := backoff.Retry(func() error {
-		response, err := c.doHttpRequest(ctx, QUERY_PORT, "/query/service", http.MethodPost, body, true)
+		response, err := c.doHTTPRequest(ctx, QUERY_PORT, "/query/service", http.MethodPost, body)
 		firstError := gjson.Get(string(response), "errors.0.code").Int()
 		if firstError != 0 {
 			return errors.New("index creation failed")
@@ -510,7 +512,7 @@ func (c *CouchbaseContainer) isQueryKeyspacePresent(ctx context.Context, bucket 
 	}
 
 	err := backoff.Retry(func() error {
-		response, err := c.doHttpRequest(ctx, QUERY_PORT, "/query/service", http.MethodPost, body, true)
+		response, err := c.doHTTPRequest(ctx, QUERY_PORT, "/query/service", http.MethodPost, body)
 		if err != nil {
 			return err
 		}
@@ -556,18 +558,18 @@ func (c *CouchbaseContainer) createBucket(ctx context.Context, bucket bucket) er
 		"replicaNumber": strconv.Itoa(bucket.numReplicas),
 	}
 
-	_, err := c.doHttpRequest(ctx, MGMT_PORT, "/pools/default/buckets", http.MethodPost, body, true)
+	_, err := c.doHTTPRequest(ctx, MGMT_PORT, "/pools/default/buckets", http.MethodPost, body)
 
 	return err
 }
 
-func (c *CouchbaseContainer) doHttpRequest(ctx context.Context, port, path, method string, body map[string]string, auth bool) ([]byte, error) {
+func (c *CouchbaseContainer) doHTTPRequest(ctx context.Context, port, path, method string, body map[string]string) ([]byte, error) {
 	form := url.Values{}
 	for k, v := range body {
 		form.Set(k, v)
 	}
 
-	url, err := c.getUrl(ctx, port, path)
+	url, err := c.getURL(ctx, port, path)
 	if err != nil {
 		return nil, err
 	}
@@ -581,10 +583,7 @@ func (c *CouchbaseContainer) doHttpRequest(ctx context.Context, port, path, meth
 		}
 
 		request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-		if auth {
-			request.SetBasicAuth(c.config.username, c.config.password)
-		}
+		request.SetBasicAuth(c.config.username, c.config.password)
 
 		response, err := http.DefaultClient.Do(request)
 		if err != nil {
@@ -607,7 +606,7 @@ func (c *CouchbaseContainer) doHttpRequest(ctx context.Context, port, path, meth
 	return bytes, nil
 }
 
-func (c *CouchbaseContainer) getUrl(ctx context.Context, port, path string) (string, error) {
+func (c *CouchbaseContainer) getURL(ctx context.Context, port, path string) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
 		return "", err

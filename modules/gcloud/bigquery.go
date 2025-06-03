@@ -8,14 +8,15 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// Deprecated: use RunBigQuery instead
+// Deprecated: use [bigquery.Run] instead.
 // RunBigQueryContainer creates an instance of the GCloud container type for BigQuery.
 func RunBigQueryContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
-	return RunBigQuery(ctx, "ghcr.io/goccy/bigquery-emulator:0.4.3", opts...)
+	return RunBigQuery(ctx, "ghcr.io/goccy/bigquery-emulator:0.6.1", opts...)
 }
 
+// Deprecated: use [bigquery.Run] instead.
 // RunBigQuery creates an instance of the GCloud container type for BigQuery.
-// The URI will always use http:// as the protocol.
+// The URI uses http:// as the protocol.
 func RunBigQuery(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
@@ -31,7 +32,20 @@ func RunBigQuery(ctx context.Context, img string, opts ...testcontainers.Contain
 		return nil, err
 	}
 
-	req.Cmd = []string{"--project", settings.ProjectID}
+	req.Cmd = append(req.Cmd, "--project", settings.ProjectID)
+
+	// Process data yaml file only for the BigQuery container.
+	if settings.bigQueryDataYaml != nil {
+		containerPath := "/testcontainers-data.yaml"
+
+		req.Cmd = append(req.Cmd, "--data-from-yaml", containerPath)
+
+		req.Files = append(req.Files, testcontainers.ContainerFile{
+			Reader:            settings.bigQueryDataYaml,
+			ContainerFilePath: containerPath,
+			FileMode:          0o644,
+		})
+	}
 
 	return newGCloudContainer(ctx, req, 9050, settings, "http://")
 }

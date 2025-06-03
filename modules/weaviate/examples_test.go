@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/weaviate/weaviate-go-client/v4/weaviate"
-	"github.com/weaviate/weaviate-go-client/v4/weaviate/grpc"
+	"github.com/weaviate/weaviate-go-client/v5/weaviate"
+	"github.com/weaviate/weaviate-go-client/v5/weaviate/grpc"
 
 	"github.com/testcontainers/testcontainers-go"
 	tcweaviate "github.com/testcontainers/testcontainers-go/modules/weaviate"
@@ -19,7 +19,7 @@ func ExampleRun() {
 	// runWeaviateContainer {
 	ctx := context.Background()
 
-	weaviateContainer, err := tcweaviate.Run(ctx, "semitechnologies/weaviate:1.24.5")
+	weaviateContainer, err := tcweaviate.Run(ctx, "semitechnologies/weaviate:1.29.0")
 	defer func() {
 		if err := testcontainers.TerminateContainer(weaviateContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -47,7 +47,7 @@ func ExampleRun_connectWithClient() {
 	// createClientNoModules {
 	ctx := context.Background()
 
-	weaviateContainer, err := tcweaviate.Run(ctx, "semitechnologies/weaviate:1.23.9")
+	weaviateContainer, err := tcweaviate.Run(ctx, "semitechnologies/weaviate:1.28.7")
 	defer func() {
 		if err := testcontainers.TerminateContainer(weaviateContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -73,7 +73,7 @@ func ExampleRun_connectWithClient() {
 	connectionClient := &http.Client{}
 	headers := map[string]string{
 		// put here the custom API key, e.g. for OpenAPI
-		"Authorization": fmt.Sprintf("Bearer %s", "custom-api-key"),
+		"Authorization": "Bearer custom-api-key",
 	}
 
 	cli := weaviate.New(weaviate.Config{
@@ -127,22 +127,26 @@ func ExampleRun_connectWithClientWithModules() {
 		return
 	}
 
+	// httpHostAddress {
 	scheme, host, err := weaviateContainer.HttpHostAddress(ctx)
 	if err != nil {
 		log.Printf("failed to get http schema and host: %s", err)
 		return
 	}
+	// }
 
+	// grpcHostAddress {
 	grpcHost, err := weaviateContainer.GrpcHostAddress(ctx)
 	if err != nil {
 		log.Printf("failed to get gRPC host: %s", err)
 		return
 	}
+	// }
 
 	connectionClient := &http.Client{}
 	headers := map[string]string{
 		// put here the custom API key, e.g. for OpenAPI
-		"Authorization": fmt.Sprintf("Bearer %s", "custom-api-key"),
+		"Authorization": "Bearer custom-api-key",
 	}
 
 	cli := weaviate.New(weaviate.Config{

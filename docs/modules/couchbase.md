@@ -1,6 +1,6 @@
 # Couchbase
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/couchbase
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
@@ -49,7 +49,7 @@ Once the container is started, it will perform the following operations, **in th
 * Configure the Admin user, sending a POST request to the `/settings/web` endpoint in the management port, passing as body of the request the username and password of the admin user.
 * Configure the external ports, sending a POST request to the `/node/controller/setupAlternateAddresses/external` endpoint in the management port, passing as body of the request the external mapped ports for each enabled service.
 * If the `Index` service is enabled, configure the indexer, sending a POST request to the `/settings/indexes` endpoint in the management port, passing as body of the request the defined storage mode. If the Community Edition is used, it will make sure the storage mode is `forestdb`. If the Enterprise Edition is used, it will make sure the storage mode is not `forestdb`, changing to `memory_optimized` in that case.
-* Finally, it will wait for all nodes to be healthy. Depending of the enabled services, it will use a different wait strategy to check if the node is healthy:
+* Finally, it will wait for all nodes to be healthy. Depending on the enabled services, it will use a different wait strategy to check if the node is healthy:
 	- It will wait for the `/pools/default` endpoint in the management port to return a 200 HTTP status code and the response body to contain the `healthy` key set to `true`.
 	- If the `Query` service is enabled, it will wait for the `/admin/ping` endpoint in the query port to return a 200 HTTP status code.
 	- If the `Analytics` service is enabled, it will wait for the `/admin/ping` endpoint in the analytics port to return a 200 HTTP status code.
@@ -66,14 +66,11 @@ Here you can find the list with the default ports used by the Couchbase containe
 [Container Ports](../../modules/couchbase/couchbase.go) inside_block:containerPorts
 <!--/codeinclude-->
 
-### Container Options
-
-When starting the Couchbase container, you can pass options in a variadic way to configure it.
 
 #### Image
 
-If you need to set a different Couchbase Docker image, you can set a valid Docker image as the second argument in the `Run` function.
-E.g. `Run(context.Background(), "docker.io/couchbase:6.5.1")`.
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "couchbase:6.5.1")`.
 
 You can find the Docker images that are currently tested in this module, for the Enterprise and Community editions, in the following list:
 
@@ -81,9 +78,13 @@ You can find the Docker images that are currently tested in this module, for the
 [Docker images](../../modules/couchbase/couchbase_test.go) inside_block:dockerImages
 <!--/codeinclude-->
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the Couchbase container, you can pass options in a variadic way to configure it.
 
 #### Credentials
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 If you need to change the default credentials for the admin user, you can use `WithAdminCredentials(user, password)` with a valid username and password.
 When the password has less than 6 characters, the container won't be created and the `New` function will throw an error.
@@ -93,7 +94,9 @@ When the password has less than 6 characters, the container won't be created and
 
 #### Buckets
 
-When creating a new Couchbase container, you can create one or more buckets. The module exposes a `WithBuckets` optional function that accepts an slice of buckets to be created.
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+
+When creating a new Couchbase container, you can create one or more buckets. The module exposes a `WithBuckets` optional function that accepts a slice of buckets to be created.
 To create a new bucket, the module also exposes a `NewBucket` function, where you can pass the bucket name.
 
 It's possible to customize a newly created bucket, using the following options:
@@ -109,6 +112,8 @@ It's possible to customize a newly created bucket, using the following options:
 
 #### Index Storage
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+
 It's possible to set the storage mode to be used for all global secondary indexes in the cluster.
 
 !!!warning
@@ -120,23 +125,33 @@ It's possible to set the storage mode to be used for all global secondary indexe
 
 #### Services
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+
 By default, the container will start with the following services: `kv`, `n1ql`, `fts` and `index`.
 
 !!!warning
 	When running the Enterprise Edition of Couchbase Server, the module provides two functions to enable or disable services:
 	`WithServiceAnalytics` and `WithServiceEventing`. Else, it will throw an error and the container won't be created.
 
+{% include "../features/common_functional_options_list.md" %}
+
 ### Container Methods
 
 #### ConnectionString
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 The `ConnectionString` method returns the connection string to connect to the Couchbase container instance. 
 It returns a string with the format `couchbase://<host>:<port>`.
 
 #### Username
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
+
 The `Username` method returns the username of the Couchbase administrator. 
 
 #### Password
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 The `Password` method returns the password of the Couchbase administrator.

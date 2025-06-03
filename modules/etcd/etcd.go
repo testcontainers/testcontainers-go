@@ -29,18 +29,18 @@ type EtcdContainer struct {
 
 // Terminate terminates the etcd container, its child nodes, and the network in which the cluster is running
 // to communicate between the nodes.
-func (c *EtcdContainer) Terminate(ctx context.Context) error {
+func (c *EtcdContainer) Terminate(ctx context.Context, opts ...testcontainers.TerminateOption) error {
 	var errs []error
 
 	// child nodes has no other children
 	for i, child := range c.childNodes {
-		if err := child.Terminate(ctx); err != nil {
+		if err := child.Terminate(ctx, opts...); err != nil {
 			errs = append(errs, fmt.Errorf("terminate child node(%d): %w", i, err))
 		}
 	}
 
 	if c.Container != nil {
-		if err := c.Container.Terminate(ctx); err != nil {
+		if err := c.Container.Terminate(ctx, opts...); err != nil {
 			errs = append(errs, fmt.Errorf("terminate cluster node: %w", err))
 		}
 	}
@@ -60,8 +60,9 @@ func (c *EtcdContainer) Terminate(ctx context.Context) error {
 // Run creates an instance of the etcd container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*EtcdContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image: img,
-		Cmd:   []string{},
+		Image:        img,
+		ExposedPorts: []string{clientPort, peerPort},
+		Cmd:          []string{},
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
@@ -166,7 +167,10 @@ func configureCMD(settings options) []string {
 	cmds := []string{"etcd"}
 
 	if len(settings.nodeNames) == 0 {
-		cmds = append(cmds, "--name=default")
+		cmds = append(cmds, "--name=default",
+			"--listen-client-urls="+scheme+"://0.0.0.0:"+clientPort,
+			"--advertise-client-urls="+scheme+"://0.0.0.0:"+clientPort,
+		)
 	} else {
 		clusterCmds := []string{
 			"--name=" + settings.nodeNames[settings.currentNode],
