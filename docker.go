@@ -1364,11 +1364,19 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		lifecycleHooks:    []ContainerLifecycleHooks{combineContainerHooks(defaultHooks, req.LifecycleHooks)},
 	}
 
+	// Workaround for https://github.com/moby/moby/issues/50133.
+	// /containers/{id}/json API endpoint of Docker Engine takes data about container from master (not replica) database
+	// which is synchronized with container state after call of /containers/{id}/stop API endpoint.
+	dcState, err := dc.State(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("docker container state: %w", err)
+	}
+
 	// If a container was stopped programmatically, we want to ensure the container
 	// is running again, but only if it is not paused, as it's not possible to start
 	// a paused container. The Docker Engine returns the "cannot start a paused container,
 	// try unpause instead" error.
-	switch c.State {
+	switch dcState.Status {
 	case "running":
 		// cannot re-start a running container, but we still need
 		// to call the startup hooks.
