@@ -17,7 +17,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var (
+const (
 	// containerPorts {
 	defaultKubeSecurePort     = "6443/tcp"
 	defaultRancherWebhookPort = "8443/tcp"
