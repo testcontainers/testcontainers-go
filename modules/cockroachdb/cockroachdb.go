@@ -203,7 +203,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	moduleOpts = append(moduleOpts, testcontainers.WithEnv(c.options.env))
+	moduleOpts = append(moduleOpts, testcontainers.WithEnv(c.env))
 	moduleOpts = append(moduleOpts, configure(&c.options))
 
 	// pass it last to make sure all options have been set.
@@ -233,10 +233,10 @@ func (c *CockroachDBContainer) connString(host string, port nat.Port) (string, e
 // connConfig returns a [pgx.ConnConfig] for the given host, port and options.
 func (c *CockroachDBContainer) connConfig(host string, port nat.Port) (*pgx.ConnConfig, error) {
 	var user *url.Userinfo
-	if c.options.env[envPassword] != "" {
-		user = url.UserPassword(c.options.env[envUser], c.options.env[envPassword])
+	if c.env[envPassword] != "" {
+		user = url.UserPassword(c.env[envUser], c.env[envPassword])
 	} else {
-		user = url.User(c.options.env[envUser])
+		user = url.User(c.env[envUser])
 	}
 
 	sslMode := "disable"
@@ -252,7 +252,7 @@ func (c *CockroachDBContainer) connConfig(host string, port nat.Port) (*pgx.Conn
 		Scheme:   "postgres",
 		User:     user,
 		Host:     net.JoinHostPort(host, port.Port()),
-		Path:     c.options.env[envDatabase],
+		Path:     c.env[envDatabase],
 		RawQuery: params.Encode(),
 	}
 
