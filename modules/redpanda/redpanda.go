@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
-	"path/filepath"
+	"path"
 	"strings"
 	"text/template"
 	"time"
@@ -38,7 +38,6 @@ const (
 	defaultKafkaAPIPort       = "9092/tcp"
 	defaultAdminAPIPort       = "9644/tcp"
 	defaultSchemaRegistryPort = "8081/tcp"
-	defaultDockerKafkaAPIPort = "29092"
 
 	redpandaDir         = "/etc/redpanda"
 	entrypointFile      = "/entrypoint-tc.sh"
@@ -71,11 +70,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithCmd("redpanda", "start", "--mode=dev-container", "--smp=1", "--memory=1G"),
 		testcontainers.WithExposedPorts(defaultKafkaAPIPort, defaultAdminAPIPort, defaultSchemaRegistryPort),
 		testcontainers.WithWaitStrategy(wait.ForAll(
-			// Wait for the ports to be exposed only as the container needs configuration
-			// before it will bind to the ports and be ready to serve requests.
-			wait.ForListeningPort(defaultKafkaAPIPort).SkipInternalCheck(),
-			wait.ForListeningPort(defaultAdminAPIPort).SkipInternalCheck(),
-			wait.ForListeningPort(defaultSchemaRegistryPort).SkipInternalCheck(),
+			// Wait for the ports to be mapped without accessing them,
+			// because container needs Redpanda configuration before Redpanda is started
+			// and the mapped ports are part of that configuration.
+			wait.ForMappedPort(defaultKafkaAPIPort),
+			wait.ForMappedPort(defaultAdminAPIPort),
+			wait.ForMappedPort(defaultSchemaRegistryPort),
 		)),
 		testcontainers.WithConfigModifier(func(c *container.Config) {
 			c.User = "root:root"
@@ -141,7 +141,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		},
 		testcontainers.ContainerFile{
 			Reader:            bytes.NewReader(bootstrapConfig),
-			ContainerFilePath: filepath.Join(redpandaDir, bootstrapConfigFile),
+			ContainerFilePath: path.Join(redpandaDir, bootstrapConfigFile),
 			FileMode:          600,
 		},
 	))
@@ -151,12 +151,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		moduleOpts = append(moduleOpts, testcontainers.WithFiles(
 			testcontainers.ContainerFile{
 				Reader:            bytes.NewReader(settings.cert),
-				ContainerFilePath: filepath.Join(redpandaDir, certFile),
+				ContainerFilePath: path.Join(redpandaDir, certFile),
 				FileMode:          600,
 			},
 			testcontainers.ContainerFile{
 				Reader:            bytes.NewReader(settings.key),
-				ContainerFilePath: filepath.Join(redpandaDir, keyFile),
+				ContainerFilePath: path.Join(redpandaDir, keyFile),
 				FileMode:          600,
 			},
 		))
@@ -189,7 +189,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return c, err
 	}
 
-	err = ctr.CopyToContainer(ctx, nodeConfig, filepath.Join(redpandaDir, "redpanda.yaml"), 0o600)
+	err = ctr.CopyToContainer(ctx, nodeConfig, path.Join(redpandaDir, "redpanda.yaml"), 0o600)
 	if err != nil {
 		return c, fmt.Errorf("copy to container: %w", err)
 	}
