@@ -91,7 +91,20 @@ type localProcess struct {
 }
 
 // runLocal returns an OllamaContainer that uses the local Ollama binary instead of using a Docker container.
-func (c *localProcess) run(ctx context.Context, req testcontainers.GenericContainerRequest) (*OllamaContainer, error) {
+func (c *localProcess) run(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*OllamaContainer, error) {
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Env: make(map[string]string),
+		},
+		Started: true,
+	}
+
+	for _, opt := range opts {
+		if err := opt.Customize(&req); err != nil {
+			return nil, fmt.Errorf("customize local ollama: %w", err)
+		}
+	}
+
 	if err := c.validateRequest(req); err != nil {
 		return nil, fmt.Errorf("validate request: %w", err)
 	}
@@ -164,6 +177,10 @@ func (c *localProcess) validateRequest(req testcontainers.GenericContainerReques
 	req.Image = ""
 	req.Started = false
 	req.Logger = nil // We don't need the logger.
+	req.HostConfigModifier = nil
+	req.ConfigModifier = nil
+	req.EndpointSettingsModifier = nil
+	req.BuildOptionsModifier = nil
 
 	parts := make([]string, 0, 3)
 	value := reflect.ValueOf(req)
@@ -716,7 +733,14 @@ func (c *localProcess) Customize(req *testcontainers.GenericContainerRequest) er
 	logStrategy := wait.ForLog(localLogRegex).Submatch(c.extractLogDetails)
 	if req.WaitingFor == nil {
 		req.WaitingFor = logStrategy
+	} else if multiStrategy, ok := req.WaitingFor.(*wait.MultiStrategy); ok {
+		if len(multiStrategy.Strategies) == 0 {
+			req.WaitingFor = logStrategy
+		} else {
+			req.WaitingFor = wait.ForAll(req.WaitingFor, logStrategy)
+		}
 	} else {
+		// If it's a different type of strategy, combine it with the log strategy
 		req.WaitingFor = wait.ForAll(req.WaitingFor, logStrategy)
 	}
 
