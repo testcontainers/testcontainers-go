@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/containerd/errdefs"
 	"github.com/cpuguy83/dockercfg"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/registry"
@@ -187,7 +188,7 @@ func removeImageFromLocalCache(t *testing.T, img string) {
 		Force:         true,
 		PruneChildren: true,
 	})
-	if err != nil && !client.IsErrNotFound(err) {
+	if err != nil && !errdefs.IsNotFound(err) {
 		t.Logf("could not remove image %s: %v\n", img, err)
 	}
 }

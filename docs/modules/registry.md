@@ -1,6 +1,6 @@
 # Registry
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/registry
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
@@ -38,6 +38,11 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `context.Context`, the Go context.
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+
+#### Image
+
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "registry:2.8.3")`.
 
 ### Docker Auth Config
 
@@ -54,14 +59,9 @@ It also accepts additional host, username and password triples to add more auth 
 
 When starting the Registry container, you can pass options in a variadic way to configure it.
 
-#### Image
-
-Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "registry:2.8.3")`.
-
-{% include "../features/common_functional_options.md" %}
-
 #### With Authentication
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
 
 It's possible to enable authentication for the Registry container. By default, it is disabled, but you can enable it in two ways:
 
@@ -78,6 +78,8 @@ In both cases, the `htpasswd` file will be copied into the `/auth` directory ins
 
 #### WithData
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
+
 In the case you want to initialise the Registry with your own images, you can use `WithData` to copy a directory from your local filesystem to the container.
 The directory will be copied into the `/data` directory inside the container.
 The format of the directory should be the same as the one used by the Registry to store images.
@@ -87,16 +89,22 @@ Otherwise, the Registry will start but you won't be able to read any images from
 [Including data](../../modules/registry/examples_test.go) inside_block:htpasswdFile
 <!--/codeinclude-->
 
+{% include "../features/common_functional_options_list.md" %}
+
 ### Container Methods
 
 The Registry container exposes the following methods:
 
 #### HostAddress
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.33.0"><span class="tc-version">:material-tag: v0.33.0</span></a>
+
 This method returns the host address including port of the Distribution Registry.
 E.g. `localhost:32878`.
 
 #### Address
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
 
 This method returns the HTTP address string to connect to the Distribution Registry, so that you can use to connect to the Registry.
 E.g. `http://localhost:32878`.
@@ -107,12 +115,16 @@ E.g. `http://localhost:32878`.
 
 #### ImageExists
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
+
 The `ImageExists` method allows to check if an image exists in the Registry. It receives the Go context and the image reference as parameters.
 
 !!! info
     The image reference should be in the format `my-registry:port/image:tag` in order to be pushed to the Registry.
 
 #### PushImage
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
 
 The `PushImage` method allows to push an image to the Registry. It receives the Go context and the image reference as parameters.
 
@@ -126,6 +138,8 @@ The `PushImage` method allows to push an image to the Registry. It receives the 
 If the push operation is successful, the method will internally wait for the image to be available in the Registry, querying the Registry API, returning an error in case of any failure (e.g. pushing or waiting for the image).
 
 #### DeleteImage
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
 
 The `DeleteImage` method allows to delete an image from the Registry. It receives the Go context and the image reference as parameters.
 

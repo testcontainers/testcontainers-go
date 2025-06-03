@@ -1,6 +1,6 @@
 # K3s
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.21.0"><span class="tc-version">:material-tag: v0.21.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.21.0"><span class="tc-version">:material-tag: v0.21.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/k3s
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
@@ -40,23 +40,24 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
 ### Container Ports
+
 These are the ports used by the K3s container:
 <!--codeinclude-->
 [Container Ports](../../modules/k3s/k3s.go) inside_block:containerPorts
 <!--/codeinclude-->
-
-### Container Options
-
-When starting the K3s container, you can pass options in a variadic way to configure it.
 
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "rancher/k3s:v1.27.1-k3s1")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the K3s container, you can pass options in a variadic way to configure it.
 
 ## WithManifest
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
 
 The `WithManifest` option loads a manifest obtained from a local file into the cluster. K3s applies it automatically during the startup process
 
@@ -70,11 +71,15 @@ Example:
         WithManifest("nginx-manifest.yaml")
 ```
 
+{% include "../features/common_functional_options_list.md" %}
+
 ### Container Methods
 
 The K3s container exposes the following methods:
 
 #### GetKubeConfig
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.21.0"><span class="tc-version">:material-tag: v0.21.0</span></a>
 
 The `GetKubeConfig` method returns the K3s cluster's `kubeconfig`, including the server URL, to be used for connecting
 to the Kubernetes Rest Client API using a Kubernetes client. It'll be returned in the format of `[]bytes`.
@@ -84,6 +89,8 @@ to the Kubernetes Rest Client API using a Kubernetes client. It'll be returned i
 <!--/codeinclude-->
 
 #### LoadImages
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.25.0"><span class="tc-version">:material-tag: v0.25.0</span></a>
 
 The `LoadImages` method loads a list of images into the kubernetes cluster and makes them available to pods.
 

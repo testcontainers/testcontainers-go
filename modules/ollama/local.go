@@ -16,9 +16,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/containerd/errdefs"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/errdefs"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/go-connections/nat"
 
@@ -615,7 +615,7 @@ func (c *localProcess) Host(_ context.Context) (string, error) {
 // MappedPort implements testcontainers.Container interface for the local Ollama binary.
 func (c *localProcess) MappedPort(_ context.Context, port nat.Port) (nat.Port, error) {
 	if port.Port() != localPort || port.Proto() != "tcp" {
-		return "", errdefs.NotFound(fmt.Errorf("port %q not found", port))
+		return "", errdefs.ErrNotFound.WithMessage(fmt.Sprintf("port %q not found", port))
 	}
 
 	return nat.Port(c.port + "/tcp"), nil
