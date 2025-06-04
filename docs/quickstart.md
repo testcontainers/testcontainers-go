@@ -30,15 +30,11 @@ import (
 
 func TestWithRedis(t *testing.T) {
 	ctx := context.Background()
-	req := testcontainers.ContainerRequest{
-		Image:        "redis:latest",
-		ExposedPorts: []string{"6379/tcp"},
-		WaitingFor:   wait.ForLog("Ready to accept connections"),
-	}
-	redisC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	redisC, err := testcontainers.Run(
+		ctx, "redis:latest",
+		testcontainers.WithExposedPorts("6379/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForLog("Ready to accept connections")),
+	)
 	testcontainers.CleanupContainer(t, redisC)
 	require.NoError(t, err)
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -26,24 +25,6 @@ type MySQLContainer struct {
 	database string
 }
 
-func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		username := req.Env["MYSQL_USER"]
-		password := req.Env["MYSQL_PASSWORD"]
-		if strings.EqualFold(rootUser, username) {
-			delete(req.Env, "MYSQL_USER")
-		}
-		if len(password) != 0 && password != "" {
-			req.Env["MYSQL_ROOT_PASSWORD"] = password
-		} else if strings.EqualFold(rootUser, username) {
-			req.Env["MYSQL_ALLOW_EMPTY_PASSWORD"] = "yes"
-			delete(req.Env, "MYSQL_PASSWORD")
-		}
-
-		return nil
-	}
-}
-
 // Deprecated: use Run instead
 // RunContainer creates an instance of the MySQL container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MySQLContainer, error) {
@@ -52,48 +33,49 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the MySQL container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MySQLContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("3306/tcp", "33060/tcp"),
+		testcontainers.WithEnv(map[string]string{
 			"MYSQL_USER":     defaultUser,
 			"MYSQL_PASSWORD": defaultPassword,
 			"MYSQL_DATABASE": defaultDatabaseName,
-		},
-		WaitingFor: wait.ForLog("port: 3306  MySQL Community Server"),
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		}),
+		testcontainers.WithWaitStrategy(wait.ForLog("port: 3306  MySQL Community Server")),
 	}
 
 	opts = append(opts, WithDefaultCredentials())
 
+	moduleOpts = append(moduleOpts, opts...)
+
+	defaultOptions := defaultOptions()
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
+		if o, ok := opt.(Option); ok {
+			if err := o(&defaultOptions); err != nil {
+				return nil, fmt.Errorf("mysql option: %w", err)
+			}
 		}
 	}
 
-	username, ok := req.Env["MYSQL_USER"]
+	username, ok := defaultOptions.env["MYSQL_USER"]
 	if !ok {
 		username = rootUser
 	}
-	password := req.Env["MYSQL_PASSWORD"]
+	password := defaultOptions.env["MYSQL_PASSWORD"]
 
 	if len(password) == 0 && password == "" && !strings.EqualFold(rootUser, username) {
 		return nil, errors.New("empty password can be used only with the root user")
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	moduleOpts = append(moduleOpts, testcontainers.WithEnv(defaultOptions.env))
+
+	container, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *MySQLContainer
 	if container != nil {
 		c = &MySQLContainer{
 			Container: container,
 			password:  password,
 			username:  username,
-			database:  req.Env["MYSQL_DATABASE"],
+			database:  defaultOptions.env["MYSQL_DATABASE"],
 		}
 	}
 
@@ -134,58 +116,4 @@ func (c *MySQLContainer) ConnectionString(ctx context.Context, args ...string) (
 
 	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s%s", c.username, c.password, host, containerPort.Port(), c.database, extraArgs)
 	return connectionString, nil
-}
-
-func WithUsername(username string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["MYSQL_USER"] = username
-
-		return nil
-	}
-}
-
-func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["MYSQL_PASSWORD"] = password
-
-		return nil
-	}
-}
-
-func WithDatabase(database string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["MYSQL_DATABASE"] = database
-
-		return nil
-	}
-}
-
-func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := testcontainers.ContainerFile{
-			HostFilePath:      configFile,
-			ContainerFilePath: "/etc/mysql/conf.d/my.cnf",
-			FileMode:          0o755,
-		}
-		req.Files = append(req.Files, cf)
-
-		return nil
-	}
-}
-
-func WithScripts(scripts ...string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		var initScripts []testcontainers.ContainerFile
-		for _, script := range scripts {
-			cf := testcontainers.ContainerFile{
-				HostFilePath:      script,
-				ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
-				FileMode:          0o755,
-			}
-			initScripts = append(initScripts, cf)
-		}
-		req.Files = append(req.Files, initScripts...)
-
-		return nil
-	}
 }

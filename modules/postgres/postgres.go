@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"path/filepath"
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -65,95 +64,6 @@ func (c *PostgresContainer) ConnectionString(ctx context.Context, args ...string
 	return connStr, nil
 }
 
-// WithConfigFile sets the config file to be used for the postgres container
-// It will also set the "config_file" parameter to the path of the config file
-// as a command line argument to the container
-func WithConfigFile(cfg string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		cfgFile := testcontainers.ContainerFile{
-			HostFilePath:      cfg,
-			ContainerFilePath: "/etc/postgresql.conf",
-			FileMode:          0o755,
-		}
-
-		req.Files = append(req.Files, cfgFile)
-		req.Cmd = append(req.Cmd, "-c", "config_file=/etc/postgresql.conf")
-
-		return nil
-	}
-}
-
-// WithDatabase sets the initial database to be created when the container starts
-// It can be used to define a different name for the default database that is created when the image is first started.
-// If it is not specified, then the value of WithUser will be used.
-func WithDatabase(dbName string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["POSTGRES_DB"] = dbName
-
-		return nil
-	}
-}
-
-// WithInitScripts sets the init scripts to be run when the container starts.
-// These init scripts will be executed in sorted name order as defined by the container's current locale, which defaults to en_US.utf8.
-// If you need to run your scripts in a specific order, consider using `WithOrderedInitScripts` instead.
-func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
-	containerFiles := []testcontainers.ContainerFile{}
-	for _, script := range scripts {
-		initScript := testcontainers.ContainerFile{
-			HostFilePath:      script,
-			ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
-			FileMode:          0o755,
-		}
-		containerFiles = append(containerFiles, initScript)
-	}
-
-	return testcontainers.WithFiles(containerFiles...)
-}
-
-// WithOrderedInitScripts sets the init scripts to be run when the container starts.
-// The scripts will be run in the order that they are provided in this function.
-func WithOrderedInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
-	containerFiles := []testcontainers.ContainerFile{}
-	for idx, script := range scripts {
-		initScript := testcontainers.ContainerFile{
-			HostFilePath:      script,
-			ContainerFilePath: "/docker-entrypoint-initdb.d/" + fmt.Sprintf("%03d-%s", idx, filepath.Base(script)),
-			FileMode:          0o755,
-		}
-		containerFiles = append(containerFiles, initScript)
-	}
-
-	return testcontainers.WithFiles(containerFiles...)
-}
-
-// WithPassword sets the initial password of the user to be created when the container starts
-// It is required for you to use the PostgreSQL image. It must not be empty or undefined.
-// This environment variable sets the superuser password for PostgreSQL.
-func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["POSTGRES_PASSWORD"] = password
-
-		return nil
-	}
-}
-
-// WithUsername sets the initial username to be created when the container starts
-// It is used in conjunction with WithPassword to set a user and its password.
-// It will create the specified user with superuser power and a database with the same name.
-// If it is not specified, then the default user of postgres will be used.
-func WithUsername(user string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		if user == "" {
-			user = defaultUser
-		}
-
-		req.Env["POSTGRES_USER"] = user
-
-		return nil
-	}
-}
-
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Postgres container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*PostgresContainer, error) {
@@ -162,48 +72,45 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Postgres container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*PostgresContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image: img,
-		Env: map[string]string{
+	modulesOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("5432/tcp"),
+		testcontainers.WithEnv(map[string]string{
 			"POSTGRES_USER":     defaultUser,
 			"POSTGRES_PASSWORD": defaultPassword,
 			"POSTGRES_DB":       defaultUser, // defaults to the user name
-		},
-		ExposedPorts: []string{"5432/tcp"},
-		Cmd:          []string{"postgres", "-c", "fsync=off"},
+		}),
+		testcontainers.WithCmd("postgres", "-c", "fsync=off"),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	modulesOpts = append(modulesOpts, opts...)
 
 	// Gather all config options (defaults and then apply provided options)
 	settings := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
-			apply(&settings)
-		}
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
+			if err := apply(&settings); err != nil {
+				return nil, fmt.Errorf("postgres option: %w", err)
+			}
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	modulesOpts = append(modulesOpts, testcontainers.WithEnv(settings.env))
+
+	ctr, err := testcontainers.Run(ctx, img, modulesOpts...)
 	var c *PostgresContainer
-	if container != nil {
+	if ctr != nil {
 		c = &PostgresContainer{
-			Container:     container,
-			dbName:        req.Env["POSTGRES_DB"],
-			password:      req.Env["POSTGRES_PASSWORD"],
-			user:          req.Env["POSTGRES_USER"],
+			Container:     ctr,
+			dbName:        settings.env["POSTGRES_DB"],
+			password:      settings.env["POSTGRES_PASSWORD"],
+			user:          settings.env["POSTGRES_USER"],
 			sqlDriverName: settings.SQLDriverName,
 			snapshotName:  settings.Snapshot,
 		}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	return c, nil

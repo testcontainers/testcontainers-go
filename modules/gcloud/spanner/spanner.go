@@ -32,37 +32,32 @@ func (c *Container) URI() string {
 // Run creates an instance of the Spanner GCloud container type.
 // The URI uses the empty string as the protocol.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        img,
-			ExposedPorts: []string{"9010/tcp"},
-			WaitingFor: wait.ForAll(
-				wait.ForListeningPort("9010/tcp"),
-				wait.ForLog("Cloud Spanner emulator running"),
-			),
-		},
-		Started: true,
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("9010/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForAll(
+			wait.ForListeningPort("9010/tcp"),
+			wait.ForLog("Cloud Spanner emulator running"),
+		)),
 	}
+
+	moduleOpts = append(moduleOpts, opts...)
 
 	settings := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
 			if err := apply(&settings); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("spanner option: %w", err)
 			}
-		}
-		if err := opt.Customize(&req); err != nil {
-			return nil, err
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, req)
+	container, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
 	if container != nil {
 		c = &Container{Container: container, settings: settings}
 	}
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	portEndpoint, err := c.PortEndpoint(ctx, "9010/tcp", "")

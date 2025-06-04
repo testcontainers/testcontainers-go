@@ -2,7 +2,6 @@ package testcontainers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"time"
@@ -110,7 +109,7 @@ func WithHostPortAccess(ports ...int) CustomizeRequestOption {
 func WithName(containerName string) CustomizeRequestOption {
 	return func(req *GenericContainerRequest) error {
 		if containerName == "" {
-			return errors.New("container name must be provided")
+			return ErrReuseEmptyName
 		}
 		req.Name = containerName
 		return nil

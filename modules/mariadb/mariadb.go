@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -26,100 +25,6 @@ type MariaDBContainer struct {
 	database string
 }
 
-// WithDefaultCredentials applies the default credentials to the container request.
-// It will look up for MARIADB environment variables.
-func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		username := req.Env["MARIADB_USER"]
-		password := req.Env["MARIADB_PASSWORD"]
-		if strings.EqualFold(rootUser, username) {
-			delete(req.Env, "MARIADB_USER")
-		}
-
-		if len(password) != 0 && password != "" {
-			req.Env["MARIADB_ROOT_PASSWORD"] = password
-		} else if strings.EqualFold(rootUser, username) {
-			req.Env["MARIADB_ALLOW_EMPTY_ROOT_PASSWORD"] = "yes"
-			delete(req.Env, "MARIADB_PASSWORD")
-		}
-
-		return nil
-	}
-}
-
-// https://github.com/docker-library/docs/tree/master/mariadb#environment-variables
-// From tag 10.2.38, 10.3.29, 10.4.19, 10.5.10 onwards, and all 10.6 and later tags,
-// the MARIADB_* equivalent variables are provided. MARIADB_* variants will always be
-// used in preference to MYSQL_* variants.
-func withMySQLEnvVars() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		// look up for MARIADB environment variables and apply the same to MYSQL
-		for k, v := range req.Env {
-			if strings.HasPrefix(k, "MARIADB_") {
-				// apply the same value to the MYSQL environment variables
-				mysqlEnvVar := strings.ReplaceAll(k, "MARIADB_", "MYSQL_")
-				req.Env[mysqlEnvVar] = v
-			}
-		}
-
-		return nil
-	}
-}
-
-func WithUsername(username string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["MARIADB_USER"] = username
-
-		return nil
-	}
-}
-
-func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["MARIADB_PASSWORD"] = password
-
-		return nil
-	}
-}
-
-func WithDatabase(database string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["MARIADB_DATABASE"] = database
-
-		return nil
-	}
-}
-
-func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := testcontainers.ContainerFile{
-			HostFilePath:      configFile,
-			ContainerFilePath: "/etc/mysql/conf.d/my.cnf",
-			FileMode:          0o755,
-		}
-		req.Files = append(req.Files, cf)
-
-		return nil
-	}
-}
-
-func WithScripts(scripts ...string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		var initScripts []testcontainers.ContainerFile
-		for _, script := range scripts {
-			cf := testcontainers.ContainerFile{
-				HostFilePath:      script,
-				ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
-				FileMode:          0o755,
-			}
-			initScripts = append(initScripts, cf)
-		}
-		req.Files = append(req.Files, initScripts...)
-
-		return nil
-	}
-}
-
 // Deprecated: use Run instead
 // RunContainer creates an instance of the MariaDB container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*MariaDBContainer, error) {
@@ -128,60 +33,59 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the MariaDB container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MariaDBContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("3306/tcp", "33060/tcp"),
+		testcontainers.WithEnv(map[string]string{
 			"MARIADB_USER":     defaultUser,
 			"MARIADB_PASSWORD": defaultPassword,
 			"MARIADB_DATABASE": defaultDatabaseName,
-		},
-		WaitingFor: wait.ForLog("port: 3306  mariadb.org binary distribution"),
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+		}),
+		testcontainers.WithWaitStrategy(wait.ForLog("port: 3306  mariadb.org binary distribution")),
 	}
 
 	opts = append(opts, WithDefaultCredentials())
 
+	moduleOpts = append(moduleOpts, opts...)
+
+	defaultOptions := defaultOptions()
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
+		if o, ok := opt.(Option); ok {
+			if err := o(&defaultOptions); err != nil {
+				return nil, fmt.Errorf("mariadb option: %w", err)
+			}
 		}
 	}
 
 	// Apply MySQL environment variables after user customization
 	// In future releases of MariaDB, they could remove the MYSQL_* environment variables
 	// at all. Then we can remove this customization.
-	if err := withMySQLEnvVars().Customize(&genericContainerReq); err != nil {
-		return nil, err
-	}
+	moduleOpts = append(moduleOpts, withMySQLEnvVars())
 
-	username, ok := req.Env["MARIADB_USER"]
+	username, ok := defaultOptions.env["MARIADB_USER"]
 	if !ok {
 		username = rootUser
 	}
-	password := req.Env["MARIADB_PASSWORD"]
+	password := defaultOptions.env["MARIADB_PASSWORD"]
 
 	if len(password) == 0 && password == "" && !strings.EqualFold(rootUser, username) {
 		return nil, errors.New("empty password can be used only with the root user")
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	moduleOpts = append(moduleOpts, testcontainers.WithEnv(defaultOptions.env))
+
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *MariaDBContainer
-	if container != nil {
+	if ctr != nil {
 		c = &MariaDBContainer{
-			Container: container,
+			Container: ctr,
 			username:  username,
 			password:  password,
-			database:  req.Env["MARIADB_DATABASE"],
+			database:  defaultOptions.env["MARIADB_DATABASE"],
 		}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	return c, nil

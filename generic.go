@@ -48,7 +48,12 @@ func GenericNetwork(ctx context.Context, req GenericNetworkRequest) (Network, er
 }
 
 // GenericContainer creates a generic container with parameters
+// Deprecated: use [Run] instead
 func GenericContainer(ctx context.Context, req GenericContainerRequest) (Container, error) {
+	return genericContainer(ctx, req)
+}
+
+func genericContainer(ctx context.Context, req GenericContainerRequest) (Container, error) {
 	if req.Reuse && req.Name == "" {
 		return nil, ErrReuseEmptyName
 	}
@@ -123,6 +128,7 @@ func AddGenericLabels(target map[string]string) {
 func Run(ctx context.Context, img string, opts ...ContainerCustomizer) (*DockerContainer, error) {
 	req := ContainerRequest{
 		Image: img,
+		Env:   make(map[string]string),
 	}
 
 	genericContainerReq := GenericContainerRequest{
@@ -136,7 +142,7 @@ func Run(ctx context.Context, img string, opts ...ContainerCustomizer) (*DockerC
 		}
 	}
 
-	ctr, err := GenericContainer(ctx, genericContainerReq)
+	ctr, err := genericContainer(ctx, genericContainerReq)
 	var c *DockerContainer
 	if ctr != nil {
 		c = ctr.(*DockerContainer)

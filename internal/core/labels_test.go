@@ -32,3 +32,21 @@ func TestMergeCustomLabels(t *testing.T) {
 		require.Error(t, err)
 	})
 }
+
+func TestLabelMerger(t *testing.T) {
+	dst := map[string]string{"A": "1", "B": "2"}
+	src := map[string]string{"B": "X", "C": "3"}
+
+	merger := newLabelMerger(dst)
+	err := merger.Merge(src)
+	require.NoError(t, err)
+
+	t.Run("merge", func(t *testing.T) {
+		require.Equal(t, map[string]string{"A": "1", "B": "X", "C": "3"}, dst)
+	})
+
+	t.Run("labels", func(t *testing.T) {
+		labels := merger.Labels()
+		require.Equal(t, map[string]string{"A": "1", "B": "X", "C": "3"}, labels)
+	})
+}

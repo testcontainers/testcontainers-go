@@ -52,50 +52,31 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 // Run creates an instance of the Neo4j container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Neo4jContainer, error) {
 	httpPort, _ := nat.NewPort("tcp", defaultHTTPPort)
-	request := testcontainers.ContainerRequest{
-		Image: img,
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithEnv(map[string]string{
 			"NEO4J_AUTH": "none",
-		},
-		ExposedPorts: []string{
-			defaultBoltPort + "/tcp",
-			defaultHTTPPort + "/tcp",
-			defaultHTTPSPort + "/tcp",
-		},
-		WaitingFor: &wait.MultiStrategy{
-			Strategies: []wait.Strategy{
-				wait.NewLogStrategy("Bolt enabled on"),
-				&wait.HTTPStrategy{
-					Port:              httpPort,
-					StatusCodeMatcher: isHTTPOk(),
-				},
-			},
-		},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: request,
-		Started:          true,
+		}),
+		testcontainers.WithExposedPorts(defaultBoltPort+"/tcp", defaultHTTPPort+"/tcp", defaultHTTPSPort+"/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForAll(
+			wait.ForLog("Bolt enabled on"),
+			wait.ForHTTP("/").WithPort(httpPort).WithStatusCodeMatcher(isHTTPOk()),
+		)),
 	}
 
 	if len(opts) == 0 {
 		opts = append(opts, WithoutAuthentication())
 	}
 
-	for _, option := range opts {
-		if err := option.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Neo4jContainer
 	if container != nil {
 		c = &Neo4jContainer{Container: container}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	return c, nil

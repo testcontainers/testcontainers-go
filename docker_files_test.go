@@ -26,22 +26,16 @@ func TestCopyFileToContainer(t *testing.T) {
 	r, err := os.Open(absPath)
 	require.NoError(t, err)
 
-	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: testBashImage,
-			Files: []testcontainers.ContainerFile{
-				{
-					Reader:            r,
-					HostFilePath:      absPath, // will be discarded internally
-					ContainerFilePath: "/hello.sh",
-					FileMode:          0o700,
-				},
-			},
-			Cmd:        []string{"bash", "/hello.sh"},
-			WaitingFor: wait.ForLog("done"),
-		},
-		Started: true,
-	})
+	ctr, err := testcontainers.Run(ctx, testBashImage,
+		testcontainers.WithFiles(testcontainers.ContainerFile{
+			Reader:            r,
+			HostFilePath:      absPath, // will be discarded internally
+			ContainerFilePath: "/hello.sh",
+			FileMode:          0o700,
+		}),
+		testcontainers.WithCmd("bash", "/hello.sh"),
+		testcontainers.WithWaitStrategy(wait.ForLog("done")),
+	)
 	// }
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
@@ -58,20 +52,14 @@ func TestCopyFileToRunningContainer(t *testing.T) {
 	helloPath, err := filepath.Abs(filepath.Join(".", "testdata", "hello.sh"))
 	require.NoError(t, err)
 
-	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: testBashImage,
-			Files: []testcontainers.ContainerFile{
-				{
-					HostFilePath:      waitForPath,
-					ContainerFilePath: "/waitForHello.sh",
-					FileMode:          0o700,
-				},
-			},
-			Cmd: []string{"bash", "/waitForHello.sh"},
-		},
-		Started: true,
-	})
+	ctr, err := testcontainers.Run(ctx, testBashImage,
+		testcontainers.WithFiles(testcontainers.ContainerFile{
+			HostFilePath:      waitForPath,
+			ContainerFilePath: "/waitForHello.sh",
+			FileMode:          0o700,
+		}),
+		testcontainers.WithCmd("bash", "/waitForHello.sh"),
+	)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -94,24 +82,18 @@ func TestCopyDirectoryToContainer(t *testing.T) {
 	dataDirectory, err := filepath.Abs(filepath.Join(".", "testdata"))
 	require.NoError(t, err)
 
-	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: testBashImage,
-			Files: []testcontainers.ContainerFile{
-				{
-					HostFilePath: dataDirectory,
-					// ContainerFile cannot create the parent directory, so we copy the scripts
-					// to the root of the container instead. Make sure to create the container directory
-					// before you copy a host directory on create.
-					ContainerFilePath: "/",
-					FileMode:          0o700,
-				},
-			},
-			Cmd:        []string{"bash", "/testdata/hello.sh"},
-			WaitingFor: wait.ForLog("done"),
-		},
-		Started: true,
-	})
+	ctr, err := testcontainers.Run(ctx, testBashImage,
+		testcontainers.WithFiles(testcontainers.ContainerFile{
+			HostFilePath: dataDirectory,
+			// ContainerFile cannot create the parent directory, so we copy the scripts
+			// to the root of the container instead. Make sure to create the container directory
+			// before you copy a host directory on create.
+			ContainerFilePath: "/",
+			FileMode:          0o700,
+		}),
+		testcontainers.WithCmd("bash", "/testdata/hello.sh"),
+		testcontainers.WithWaitStrategy(wait.ForLog("done")),
+	)
 	// }
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
@@ -127,20 +109,14 @@ func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
 	waitForPath, err := filepath.Abs(filepath.Join(dataDirectory, "waitForHello.sh"))
 	require.NoError(t, err)
 
-	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: testBashImage,
-			Files: []testcontainers.ContainerFile{
-				{
-					HostFilePath:      waitForPath,
-					ContainerFilePath: "/waitForHello.sh",
-					FileMode:          0o700,
-				},
-			},
-			Cmd: []string{"bash", "/waitForHello.sh"},
-		},
-		Started: true,
-	})
+	ctr, err := testcontainers.Run(ctx, testBashImage,
+		testcontainers.WithFiles(testcontainers.ContainerFile{
+			HostFilePath:      waitForPath,
+			ContainerFilePath: "/waitForHello.sh",
+			FileMode:          0o700,
+		}),
+		testcontainers.WithCmd("bash", "/waitForHello.sh"),
+	)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -165,20 +141,14 @@ func TestCopyDirectoryToRunningContainerAsDir(t *testing.T) {
 	dataDirectory, err := filepath.Abs(filepath.Join(".", "testdata"))
 	require.NoError(t, err)
 
-	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: testBashImage,
-			Files: []testcontainers.ContainerFile{
-				{
-					HostFilePath:      waitForPath,
-					ContainerFilePath: "/waitForHello.sh",
-					FileMode:          0o700,
-				},
-			},
-			Cmd: []string{"bash", "/waitForHello.sh"},
-		},
-		Started: true,
-	})
+	ctr, err := testcontainers.Run(ctx, testBashImage,
+		testcontainers.WithFiles(testcontainers.ContainerFile{
+			HostFilePath:      waitForPath,
+			ContainerFilePath: "/waitForHello.sh",
+			FileMode:          0o700,
+		}),
+		testcontainers.WithCmd("bash", "/waitForHello.sh"),
+	)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 

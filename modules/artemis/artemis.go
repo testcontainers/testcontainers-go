@@ -47,37 +47,6 @@ func (c *Container) ConsoleURL(ctx context.Context) (string, error) {
 	return fmt.Sprintf("http://%s:%s@%s/console", c.user, c.password, host), nil
 }
 
-// WithCredentials sets the administrator credentials. The default is artemis:artemis.
-func WithCredentials(user, password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["ARTEMIS_USER"] = user
-		req.Env["ARTEMIS_PASSWORD"] = password
-
-		return nil
-	}
-}
-
-// WithAnonymousLogin enables anonymous logins.
-func WithAnonymousLogin() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["ANONYMOUS_LOGIN"] = "true"
-
-		return nil
-	}
-}
-
-// Additional arguments sent to the `artemis create` command.
-// The default is `--http-host 0.0.0.0 --relax-jolokia`.
-// Setting this value will override the default.
-// See the documentation on `artemis create` for available options.
-func WithExtraArgs(args string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["EXTRA_ARGS"] = args
-
-		return nil
-	}
-}
-
 // Deprecated: use Run instead.
 // RunContainer creates an instance of the Artemis container type.
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
@@ -86,39 +55,36 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Artemis container type with a given image
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: img,
-			Env: map[string]string{
-				"ARTEMIS_USER":     "artemis",
-				"ARTEMIS_PASSWORD": "artemis",
-			},
-			ExposedPorts: []string{defaultBrokerPort, defaultHTTPPort},
-			WaitingFor: wait.ForAll(
-				wait.ForLog("Server is now live"),
-				wait.ForLog("REST API available"),
-			),
-		},
-		Started: true,
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultBrokerPort, defaultHTTPPort),
+		testcontainers.WithWaitStrategy(wait.ForAll(
+			wait.ForLog("Server is now live"),
+			wait.ForLog("REST API available"),
+		)),
 	}
 
+	moduleOpts = append(moduleOpts, opts...)
+
+	defaultOptions := defaultOptions()
 	for _, opt := range opts {
-		if err := opt.Customize(&req); err != nil {
-			return nil, err
+		if o, ok := opt.(Option); ok {
+			if err := o(&defaultOptions); err != nil {
+				return nil, fmt.Errorf("artemis option: %w", err)
+			}
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, req)
+	// module options take precedence over default options
+	moduleOpts = append(moduleOpts, testcontainers.WithEnv(defaultOptions.env))
+
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
-	if container != nil {
-		c = &Container{Container: container}
+	if ctr != nil {
+		c = &Container{Container: ctr, user: defaultOptions.env["ARTEMIS_USER"], password: defaultOptions.env["ARTEMIS_PASSWORD"]}
 	}
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
-
-	c.user = req.Env["ARTEMIS_USER"]
-	c.password = req.Env["ARTEMIS_PASSWORD"]
 
 	return c, nil
 }

@@ -61,13 +61,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return nil, err
 	}
 
-	req := testcontainers.ContainerRequest{
-		Image: img,
-		ExposedPorts: []string{
-			defaultKubeSecurePort,
-			defaultRancherWebhookPort,
-		},
-		HostConfigModifier: func(hc *container.HostConfig) {
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithCmd("server", "--disable=traefik", "--tls-san="+host), // Host which will be used to access the Kubernetes server from tests.
+		testcontainers.WithExposedPorts(defaultKubeSecurePort, defaultRancherWebhookPort),
+		testcontainers.WithEnv(map[string]string{
+			"K3S_KUBECONFIG_MODE": "644",
+		}),
+		testcontainers.WithWaitStrategy(wait.ForLog(".*Node controller sync successful.*").AsRegexp()),
+		testcontainers.WithHostConfigModifier(func(hc *container.HostConfig) {
 			hc.Privileged = true
 			hc.CgroupnsMode = "host"
 			hc.Tmpfs = map[string]string{
@@ -75,37 +76,19 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				"/var/run": "",
 			}
 			hc.Mounts = []mount.Mount{}
-		},
-		Cmd: []string{
-			"server",
-			"--disable=traefik",
-			"--tls-san=" + host, // Host which will be used to access the Kubernetes server from tests.
-		},
-		Env: map[string]string{
-			"K3S_KUBECONFIG_MODE": "644",
-		},
-		WaitingFor: wait.ForLog(".*Node controller sync successful.*").AsRegexp(),
+		}),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *K3sContainer
 	if container != nil {
 		c = &K3sContainer{Container: container}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	return c, nil

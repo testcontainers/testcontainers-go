@@ -67,7 +67,9 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -76,18 +78,13 @@ type nginxContainer struct {
 	URI string
 }
 
-
-func setupNginx(ctx context.Context, networkName string) (*nginxContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        "nginx",
-		ExposedPorts: []string{"80/tcp"},
-		Networks:     []string{"bridge", networkName},
-		WaitingFor:   wait.ForHTTP("/"),
-	}
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+func setupNginx(ctx context.Context, nw *testcontainers.DockerNetwork) (*nginxContainer, error) {
+	container, err := testcontainers.Run(
+		ctx, "nginx",
+		testcontainers.WithExposedPorts("80/tcp"),
+		network.WithNetwork([]string{"nginx-alias"}, nw),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/")),
+	)
 	var nginxC *nginxContainer
 	if container != nil {
 		nginxC = &nginxContainer{Container: container}
@@ -122,13 +119,15 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 	require.NoError(t, err)
 	testcontainers.CleanupNetwork(t, nw)
 
-	nginxC, err := setupNginx(ctx, nw.Name)
+	nginxC, err := setupNginx(ctx, nw)
 	testcontainers.CleanupContainer(t, nginxC)
 	require.NoError(t, err)
 
 	resp, err := http.Get(nginxC.URI)
+	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
+
 ```
 
 
@@ -221,15 +220,12 @@ const (
 func main() {
 	ctx := context.Background()
 
-	n1, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "nginx:1.17.6",
-			ExposedPorts: []string{"80/tcp"},
-			WaitingFor:   wait.ForListeningPort("80/tcp"),
-			Name:         reusableContainerName,
-		},
-		Started: true,
-	})
+	n1, err := testcontainers.Run(
+		ctx, "nginx:1.17.6",
+		testcontainers.WithExposedPorts("80/tcp"),
+		testcontainers.WithReuseByName(reusableContainerName),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort("80/tcp")),
+	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(n1); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -248,16 +244,12 @@ func main() {
 		return
 	}
 
-	n2, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "nginx:1.17.6",
-			ExposedPorts: []string{"80/tcp"},
-			WaitingFor:   wait.ForListeningPort("80/tcp"),
-			Name:         reusableContainerName,
-		},
-		Started: true,
-		Reuse:   true,
-	})
+	n2, err := testcontainers.Run(
+		ctx, "nginx:1.17.6",
+		testcontainers.WithExposedPorts("80/tcp"),
+		testcontainers.WithReuseByName(reusableContainerName),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort("80/tcp")),
+	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(n2); err != nil {
 			log.Printf("failed to terminate container: %s", err)

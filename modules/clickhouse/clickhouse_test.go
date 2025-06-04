@@ -161,7 +161,7 @@ func TestClickHouseWithConfigFile(t *testing.T) {
 
 	testCases := []struct {
 		desc         string
-		configOption testcontainers.CustomizeRequestOption
+		configOption clickhouse.Option
 	}{
 		{"XML_Config", clickhouse.WithConfigFile(filepath.Join("testdata", "config.xml"))},       // <allow_no_password>1</allow_no_password>
 		{"YAML_Config", clickhouse.WithYamlConfigFile(filepath.Join("testdata", "config.yaml"))}, // allow_no_password: true
@@ -207,14 +207,13 @@ func TestClickHouseWithZookeeper(t *testing.T) {
 	// withZookeeper {
 	zkPort := nat.Port("2181/tcp")
 
-	zkcontainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			ExposedPorts: []string{zkPort.Port()},
-			Image:        "zookeeper:3.7",
-			WaitingFor:   wait.ForListeningPort(zkPort),
-		},
-		Started: true,
-	})
+	zkOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(zkPort.Port()),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort(zkPort)),
+	}
+
+	zkcontainer, err := testcontainers.Run(ctx, "zookeeper:3.7", zkOpts...)
+	require.NoError(t, err)
 	testcontainers.CleanupContainer(t, zkcontainer)
 	require.NoError(t, err)
 

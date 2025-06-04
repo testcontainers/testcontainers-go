@@ -8,6 +8,8 @@ import (
 )
 
 type options struct {
+	env              map[string]string
+	files            []testcontainers.ContainerFile
 	azuriteImage     string
 	azuriteOptions   []testcontainers.ContainerCustomizer
 	azuriteContainer *azurite.Container
@@ -16,6 +18,7 @@ type options struct {
 
 func defaultOptions() options {
 	return options{
+		env:              make(map[string]string),
 		azuriteImage:     "mcr.microsoft.com/azure-storage/azurite:3.33.0",
 		azuriteContainer: nil,
 	}
@@ -24,7 +27,7 @@ func defaultOptions() options {
 // Satisfy the testcontainers.CustomizeRequestOption interface
 var _ testcontainers.ContainerCustomizer = (Option)(nil)
 
-// Option is an option for the Redpanda container.
+// Option is an option for the EventHubs container.
 type Option func(*options) error
 
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
@@ -44,9 +47,9 @@ func WithAzurite(img string, opts ...testcontainers.ContainerCustomizer) Option 
 }
 
 // WithAcceptEULA sets the ACCEPT_EULA environment variable to "Y" for the eventhubs container.
-func WithAcceptEULA() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["ACCEPT_EULA"] = "Y"
+func WithAcceptEULA() Option {
+	return func(o *options) error {
+		o.env["ACCEPT_EULA"] = "Y"
 
 		return nil
 	}
@@ -55,9 +58,9 @@ func WithAcceptEULA() testcontainers.CustomizeRequestOption {
 // WithConfig sets the eventhubs config file for the eventhubs container,
 // copying the content of the reader to the container file at
 // "/Eventhubs_Emulator/ConfigFiles/Config.json".
-func WithConfig(r io.Reader) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Files = append(req.Files, testcontainers.ContainerFile{
+func WithConfig(r io.Reader) Option {
+	return func(o *options) error {
+		o.files = append(o.files, testcontainers.ContainerFile{
 			Reader:            r,
 			ContainerFilePath: containerConfigFile,
 			FileMode:          0o644,

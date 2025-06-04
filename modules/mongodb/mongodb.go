@@ -39,81 +39,53 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the MongoDB container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MongoDBContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{"27017/tcp"},
-		WaitingFor: wait.ForAll(
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("27017/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForAll(
 			wait.ForLog("Waiting for connections"),
 			wait.ForListeningPort("27017/tcp"),
-		),
-		Env: map[string]string{},
+		)),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
+	defaultOptions := defaultOptions()
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
+		if o, ok := opt.(Option); ok {
+			if err := o(&defaultOptions); err != nil {
+				return nil, fmt.Errorf("mongodb option: %w", err)
+			}
 		}
 	}
-	username := req.Env["MONGO_INITDB_ROOT_USERNAME"]
-	password := req.Env["MONGO_INITDB_ROOT_PASSWORD"]
+
+	username := defaultOptions.env["MONGO_INITDB_ROOT_USERNAME"]
+	password := defaultOptions.env["MONGO_INITDB_ROOT_PASSWORD"]
 	if username != "" && password == "" || username == "" && password != "" {
 		return nil, errors.New("if you specify username or password, you must provide both of them")
 	}
 
-	replicaSet := req.Env[replicaSetOptEnvKey]
+	replicaSet := defaultOptions.env[replicaSetOptEnvKey]
 	if replicaSet != "" {
-		if err := configureRequestForReplicaset(username, password, replicaSet, &genericContainerReq); err != nil {
-			return nil, err
+		if username == "" || password == "" {
+			moduleOpts = append(moduleOpts, noAuthReplicaSet(replicaSet))
+		} else {
+			moduleOpts = append(moduleOpts, withAuthReplicaset(replicaSet, username, password))
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	moduleOpts = append(moduleOpts, testcontainers.WithEnv(defaultOptions.env))
+
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *MongoDBContainer
-	if container != nil {
-		c = &MongoDBContainer{Container: container, username: username, password: password, replicaSet: replicaSet}
+	if ctr != nil {
+		c = &MongoDBContainer{Container: ctr, username: username, password: password, replicaSet: replicaSet}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	return c, nil
-}
-
-// WithUsername sets the initial username to be created when the container starts
-// It is used in conjunction with WithPassword to set a username and its password.
-// It will create the specified user with superuser power.
-func WithUsername(username string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["MONGO_INITDB_ROOT_USERNAME"] = username
-
-		return nil
-	}
-}
-
-// WithPassword sets the initial password of the user to be created when the container starts
-// It is used in conjunction with WithUsername to set a username and its password.
-// It will set the superuser password for MongoDB.
-func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["MONGO_INITDB_ROOT_PASSWORD"] = password
-
-		return nil
-	}
-}
-
-// WithReplicaSet sets the replica set name for Single node MongoDB replica set.
-func WithReplicaSet(replSetName string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env[replicaSetOptEnvKey] = replSetName
-
-		return nil
-	}
 }
 
 // ConnectionString returns the connection string for the MongoDB container.
@@ -146,66 +118,74 @@ func (c *MongoDBContainer) ConnectionString(ctx context.Context) (string, error)
 	return u.String(), nil
 }
 
-func setupEntrypointForAuth(req *testcontainers.GenericContainerRequest) {
-	req.Files = append(
-		req.Files, testcontainers.ContainerFile{
+func setupEntrypointForAuth() testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		if err := testcontainers.WithFiles(testcontainers.ContainerFile{
 			Reader:            bytes.NewReader(entrypointContent),
 			ContainerFilePath: entrypointPath,
 			FileMode:          0o755,
-		},
-	)
-	req.Entrypoint = []string{entrypointPath}
-	req.Env["MONGO_KEYFILE"] = keyFilePath
-}
+		})(req); err != nil {
+			return err
+		}
 
-func configureRequestForReplicaset(
-	username string,
-	password string,
-	replicaSet string,
-	genericContainerReq *testcontainers.GenericContainerRequest,
-) error {
-	if username == "" || password == "" {
-		return noAuthReplicaSet(replicaSet)(genericContainerReq)
-	}
+		if err := testcontainers.WithEntrypoint(entrypointPath)(req); err != nil {
+			return err
+		}
 
-	return withAuthReplicaset(replicaSet, username, password)(genericContainerReq)
-}
-
-func noAuthReplicaSet(replSetName string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		cli := newMongoCli("", "")
-		req.Cmd = append(req.Cmd, "--replSet", replSetName)
-		initiateReplicaSet(req, cli, replSetName)
+		if err := testcontainers.WithEnv(map[string]string{
+			"MONGO_KEYFILE": keyFilePath,
+		})(req); err != nil {
+			return err
+		}
 
 		return nil
 	}
 }
 
-func initiateReplicaSet(req *testcontainers.GenericContainerRequest, cli mongoCli, replSetName string) {
-	req.WaitingFor = wait.ForAll(
-		req.WaitingFor,
-		wait.ForExec(cli.eval("rs.status().ok")),
-	).WithDeadline(60 * time.Second)
+func noAuthReplicaSet(replSetName string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		cli := newMongoCli("", "")
+		if err := testcontainers.WithCmdArgs("--replSet", replSetName)(req); err != nil {
+			return fmt.Errorf("with cmd args: %w", err)
+		}
 
-	req.LifecycleHooks = append(
-		req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
-			PostStarts: []testcontainers.ContainerHook{
-				func(ctx context.Context, c testcontainers.Container) error {
-					ip, err := c.ContainerIP(ctx)
-					if err != nil {
-						return fmt.Errorf("container ip: %w", err)
-					}
+		if err := initiateReplicaSet(cli, replSetName)(req); err != nil {
+			return fmt.Errorf("initiate replica set: %w", err)
+		}
 
-					cmd := cli.eval(
-						"rs.initiate({ _id: '%s', members: [ { _id: 0, host: '%s:27017' } ] })",
-						replSetName,
-						ip,
-					)
-					return wait.ForExec(cmd).WaitUntilReady(ctx, c)
+		return nil
+	}
+}
+
+func initiateReplicaSet(cli mongoCli, replSetName string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		req.WaitingFor = wait.ForAll(
+			req.WaitingFor,
+			wait.ForExec(cli.eval("rs.status().ok")),
+		).WithDeadline(60 * time.Second)
+
+		req.LifecycleHooks = append(
+			req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
+				PostStarts: []testcontainers.ContainerHook{
+					func(ctx context.Context, c testcontainers.Container) error {
+						ip, err := c.ContainerIP(ctx)
+						if err != nil {
+							return fmt.Errorf("container ip: %w", err)
+						}
+
+						cmd := cli.eval(
+							"rs.initiate({ _id: '%s', members: [ { _id: 0, host: '%s:27017' } ] })",
+							replSetName,
+							ip,
+						)
+						return wait.ForExec(cmd).WaitUntilReady(ctx, c)
+					},
 				},
 			},
-		},
-	)
+		)
+
+		return nil
+	}
 }
 
 func withAuthReplicaset(
@@ -214,10 +194,19 @@ func withAuthReplicaset(
 	password string,
 ) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		setupEntrypointForAuth(req)
+		if err := setupEntrypointForAuth()(req); err != nil {
+			return fmt.Errorf("setup entrypoint for auth: %w", err)
+		}
+
 		cli := newMongoCli(username, password)
-		req.Cmd = append(req.Cmd, "--replSet", replSetName, "--keyFile", keyFilePath)
-		initiateReplicaSet(req, cli, replSetName)
+
+		if err := testcontainers.WithCmdArgs("--replSet", replSetName, "--keyFile", keyFilePath)(req); err != nil {
+			return fmt.Errorf("with cmd args: %w", err)
+		}
+
+		if err := initiateReplicaSet(cli, replSetName)(req); err != nil {
+			return fmt.Errorf("initiate replica set: %w", err)
+		}
 
 		return nil
 	}

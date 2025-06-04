@@ -68,26 +68,18 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Redis container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*RedisContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{redisPort},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(redisPort),
 	}
 
 	var settings options
 	for _, opt := range opts {
 		if opt, ok := opt.(Option); ok {
 			if err := opt(&settings); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("redis option: %w", err)
 			}
 		}
 	}
-
-	tcOpts := []testcontainers.ContainerCustomizer{}
 
 	waitStrategies := []wait.Strategy{
 		wait.ForListeningPort(redisPort).WithStartupTimeout(time.Second * 10),
@@ -116,8 +108,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"--tls-auth-clients", "yes",
 		}
 
-		tcOpts = append(tcOpts, testcontainers.WithCmdArgs(cmds...)) // Append the default CMD with the TLS certificates.
-		tcOpts = append(tcOpts, testcontainers.WithFiles(
+		moduleOpts = append(moduleOpts, testcontainers.WithCmdArgs(cmds...)) // Append the default CMD with the TLS certificates.
+		moduleOpts = append(moduleOpts, testcontainers.WithFiles(
 			testcontainers.ContainerFile{
 				Reader:            bytes.NewReader(caCert.Bytes),
 				ContainerFilePath: "/tls/ca.crt",
@@ -142,26 +134,19 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	tcOpts = append(tcOpts, testcontainers.WithWaitStrategy(waitStrategies...))
+	moduleOpts = append(moduleOpts, testcontainers.WithWaitStrategy(waitStrategies...))
 
 	// Append the customizers passed to the Run function.
-	tcOpts = append(tcOpts, opts...)
+	moduleOpts = append(moduleOpts, opts...)
 
-	// Apply the testcontainers customizers.
-	for _, opt := range tcOpts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *RedisContainer
-	if container != nil {
-		c = &RedisContainer{Container: container, settings: settings}
+	if ctr != nil {
+		c = &RedisContainer{Container: ctr, settings: settings}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	return c, nil

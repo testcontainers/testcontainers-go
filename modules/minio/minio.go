@@ -21,28 +21,6 @@ type MinioContainer struct {
 	Password string
 }
 
-// WithUsername sets the initial username to be created when the container starts
-// It is used in conjunction with WithPassword to set a user and its password.
-// It will create the specified user. It must not be empty or undefined.
-func WithUsername(username string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["MINIO_ROOT_USER"] = username
-
-		return nil
-	}
-}
-
-// WithPassword sets the initial password of the user to be created when the container starts
-// It is required for you to use the Minio image. It must not be empty or undefined.
-// This environment variable sets the root user password for Minio.
-func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["MINIO_ROOT_PASSWORD"] = password
-
-		return nil
-	}
-}
-
 // ConnectionString returns the connection string for the minio container, using the default 9000 port, and
 // obtaining the host and exposed port from the container.
 func (c *MinioContainer) ConnectionString(ctx context.Context) (string, error) {
@@ -65,42 +43,43 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Minio container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MinioContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{"9000/tcp"},
-		WaitingFor:   wait.ForHTTP("/minio/health/live").WithPort("9000"),
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithCmd("server", "/data"),
+		testcontainers.WithExposedPorts("9000/tcp"),
+		testcontainers.WithEnv(map[string]string{
 			"MINIO_ROOT_USER":     defaultUser,
 			"MINIO_ROOT_PASSWORD": defaultPassword,
-		},
-		Cmd: []string{"server", "/data"},
+		}),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/minio/health/live").WithPort("9000")),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
+	defaultOptions := defaultOptions()
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
+		if o, ok := opt.(Option); ok {
+			if err := o(&defaultOptions); err != nil {
+				return nil, fmt.Errorf("minio option: %w", err)
+			}
 		}
 	}
 
-	username := req.Env["MINIO_ROOT_USER"]
-	password := req.Env["MINIO_ROOT_PASSWORD"]
+	username := defaultOptions.env["MINIO_ROOT_USER"]
+	password := defaultOptions.env["MINIO_ROOT_PASSWORD"]
 	if username == "" || password == "" {
 		return nil, errors.New("username or password has not been set")
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	moduleOpts = append(moduleOpts, testcontainers.WithEnv(defaultOptions.env))
+
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *MinioContainer
-	if container != nil {
-		c = &MinioContainer{Container: container, Username: username, Password: password}
+	if ctr != nil {
+		c = &MinioContainer{Container: ctr, Username: username, Password: password}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	return c, nil

@@ -101,11 +101,9 @@ func (c *Container) WithLogConsumers(ctx context.Context, _ ...testcontainers.Lo
 
 // WithPulsarEnv allows to use the native APIs and set each variable with PULSAR_PREFIX_ as prefix.
 func WithPulsarEnv(configVar string, configValue string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["PULSAR_PREFIX_"+configVar] = configValue
-
-		return nil
-	}
+	return testcontainers.WithEnv(map[string]string{
+		"PULSAR_PREFIX_" + configVar: configValue,
+	})
 }
 
 func WithTransactions() testcontainers.CustomizeRequestOption {
@@ -145,33 +143,22 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 //
 // - command: "/bin/bash -c /pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone --no-functions-worker -nss"
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		Env:          map[string]string{},
-		ExposedPorts: []string{defaultPulsarPort, defaultPulsarAdminPort},
-		WaitingFor:   defaultWaitStrategies,
-		Cmd:          []string{"/bin/bash", "-c", strings.Join([]string{defaultPulsarCmd, defaultPulsarCmdWithoutFunctionsWorker}, " ")},
+	modulesOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultPulsarPort, defaultPulsarAdminPort),
+		testcontainers.WithWaitStrategy(defaultWaitStrategies),
+		testcontainers.WithCmd("/bin/bash", "-c", strings.Join([]string{defaultPulsarCmd, defaultPulsarCmdWithoutFunctionsWorker}, " ")),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	modulesOpts = append(modulesOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, modulesOpts...)
 	var c *Container
-	if container != nil {
-		c = &Container{Container: container}
+	if ctr != nil {
+		c = &Container{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	return c, nil
