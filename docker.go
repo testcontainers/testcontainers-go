@@ -139,7 +139,8 @@ func (c *DockerContainer) Endpoint(ctx context.Context, proto string) (string, e
 }
 
 // PortEndpoint gets proto://host:port string for the given exposed port
-// Will returns just host:port if proto is ""
+// It returns proto://host:port or proto://[IPv6host]:port string for the given exposed port.
+// It returns just host:port or [IPv6host]:port if proto is blank.
 func (c *DockerContainer) PortEndpoint(ctx context.Context, port nat.Port, proto string) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
@@ -151,12 +152,12 @@ func (c *DockerContainer) PortEndpoint(ctx context.Context, port nat.Port, proto
 		return "", err
 	}
 
-	protoFull := ""
-	if proto != "" {
-		protoFull = proto + "://"
+	hostPort := net.JoinHostPort(host, outerPort.Port())
+	if proto == "" {
+		return hostPort, nil
 	}
 
-	return fmt.Sprintf("%s%s:%s", protoFull, host, outerPort.Port()), nil
+	return proto + "://" + hostPort, nil
 }
 
 // Host gets host (ip or name) of the docker daemon where the container port is exposed
@@ -1445,7 +1446,7 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 	defer pull.Close()
 
 	// download of docker image finishes at EOF of the pull request
-	_, err = io.ReadAll(pull)
+	_, err = io.Copy(io.Discard, pull)
 	return err
 }
 

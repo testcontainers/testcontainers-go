@@ -27,18 +27,7 @@ type ConsulContainer struct {
 //
 //nolint:revive,staticcheck //FIXME
 func (c *ConsulContainer) ApiEndpoint(ctx context.Context) (string, error) {
-	mappedPort, err := c.MappedPort(ctx, defaultHTTPAPIPort)
-	if err != nil {
-		return "", err
-	}
-
-	hostIP, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	uri := fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
-	return uri, nil
+	return c.PortEndpoint(ctx, defaultHTTPAPIPort, "")
 }
 
 // WithConfigString takes in a JSON string of keys and values to define a configuration to be used by the instance.

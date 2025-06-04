@@ -311,7 +311,11 @@ func (c *DockerContainer) printLogs(ctx context.Context, cause error) {
 
 	b, err := io.ReadAll(reader)
 	if err != nil {
-		c.logger.Printf("failed reading container logs: %v\n", err)
+		if len(b) > 0 {
+			c.logger.Printf("failed reading container logs: %v\npartial container logs (%s):\n%s", err, cause, b)
+		} else {
+			c.logger.Printf("failed reading container logs: %v\n", err)
+		}
 		return
 	}
 

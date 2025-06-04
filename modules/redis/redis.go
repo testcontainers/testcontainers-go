@@ -36,23 +36,11 @@ type RedisContainer struct {
 // ConnectionString returns the connection string for the Redis container.
 // It uses the default 6379 port.
 func (c *RedisContainer) ConnectionString(ctx context.Context) (string, error) {
-	mappedPort, err := c.MappedPort(ctx, redisPort)
-	if err != nil {
-		return "", err
-	}
-
-	hostIP, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
 	schema := "redis"
 	if c.settings.tlsEnabled {
 		schema = "rediss"
 	}
-
-	uri := fmt.Sprintf("%s://%s:%s", schema, hostIP, mappedPort.Port())
-	return uri, nil
+	return c.PortEndpoint(ctx, redisPort, schema)
 }
 
 // TLSConfig returns the TLS configuration for the Redis container, nil if TLS is not enabled.

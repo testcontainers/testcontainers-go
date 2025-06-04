@@ -152,17 +152,12 @@ func (c *DoltContainer) initialize(ctx context.Context, createUser bool) error {
 }
 
 func (c *DoltContainer) initialConnectionString(ctx context.Context) (string, error) {
-	containerPort, err := c.MappedPort(ctx, "3306/tcp")
+	endpoint, err := c.PortEndpoint(ctx, "3306/tcp", "")
 	if err != nil {
 		return "", err
 	}
 
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	connectionString := fmt.Sprintf("root:@tcp(%s:%s)/", host, containerPort.Port())
+	connectionString := fmt.Sprintf("root:@tcp(%s)/", endpoint)
 	return connectionString, nil
 }
 
@@ -175,12 +170,7 @@ func (c *DoltContainer) MustConnectionString(ctx context.Context, args ...string
 }
 
 func (c *DoltContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
-	containerPort, err := c.MappedPort(ctx, "3306/tcp")
-	if err != nil {
-		return "", err
-	}
-
-	host, err := c.Host(ctx)
+	endpoint, err := c.PortEndpoint(ctx, "3306/tcp", "")
 	if err != nil {
 		return "", err
 	}
@@ -193,7 +183,7 @@ func (c *DoltContainer) ConnectionString(ctx context.Context, args ...string) (s
 		extraArgs = "?" + extraArgs
 	}
 
-	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s%s", c.username, c.password, host, containerPort.Port(), c.database, extraArgs)
+	connectionString := fmt.Sprintf("%s:%s@tcp(%s)/%s%s", c.username, c.password, endpoint, c.database, extraArgs)
 	return connectionString, nil
 }
 
