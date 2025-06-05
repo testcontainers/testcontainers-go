@@ -1335,15 +1335,14 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 
 		termSignal, err := r.Connect()
 		if err != nil {
+			if termSignal != nil {
+				// If a termination signal is present with an error, Pass along to cleanup.
+				// to the reaper to ensure it cleans up the container.
+				termSignal <- true
+			}
 			return nil, fmt.Errorf("reaper connect: %w", err)
 		}
 
-		// Cleanup on error.
-		defer func() {
-			if err != nil {
-				termSignal <- true
-			}
-		}()
 	}
 
 	// default hooks include logger hook and pre-create hook
@@ -1575,15 +1574,13 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 
 		termSignal, err := r.Connect()
 		if err != nil {
-			return nil, fmt.Errorf("reaper connect: %w", err)
-		}
-
-		// Cleanup on error.
-		defer func() {
-			if err != nil {
+			if termSignal != nil {
+				// If a termination signal is present with an error, Pass along to cleanup.
+				// to the reaper to ensure it cleans up the container.
 				termSignal <- true
 			}
-		}()
+			return nil, fmt.Errorf("reaper connect: %w", err)
+		}
 	}
 
 	// add the labels that the reaper will use to terminate the network to the request
