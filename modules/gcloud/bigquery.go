@@ -47,5 +47,5 @@ func RunBigQuery(ctx context.Context, img string, opts ...testcontainers.Contain
 		})
 	}
 
-	return newGCloudContainer(ctx, req, 9050, settings, "http://")
+	return newGCloudContainer(ctx, req, 9050, settings, "http")
 }
