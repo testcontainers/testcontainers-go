@@ -137,22 +137,17 @@ func configureWaitFor(options *Options) testcontainers.CustomizeRequestOption {
 // configureAddress sets the address of the Elasticsearch container.
 // If the certificate is set, it will use https as protocol, otherwise http.
 func (c *ElasticsearchContainer) configureAddress(ctx context.Context) error {
-	containerPort, err := c.MappedPort(ctx, defaultHTTPPort+"/tcp")
-	if err != nil {
-		return fmt.Errorf("mapped port: %w", err)
-	}
-
-	host, err := c.Host(ctx)
-	if err != nil {
-		return fmt.Errorf("host: %w", err)
-	}
-
 	proto := "http"
 	if c.Settings.CACert != nil {
 		proto = "https"
 	}
 
-	c.Settings.Address = fmt.Sprintf("%s://%s:%s", proto, host, containerPort.Port())
+	endpoint, err := c.PortEndpoint(ctx, defaultHTTPPort+"/tcp", proto)
+	if err != nil {
+		return fmt.Errorf("port endpoint: %w", err)
+	}
+
+	c.Settings.Address = endpoint
 
 	return nil
 }

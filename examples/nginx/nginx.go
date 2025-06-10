@@ -2,7 +2,6 @@ package nginx
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -28,16 +27,11 @@ func startContainer(ctx context.Context) (*nginxContainer, error) {
 		return nginxC, err
 	}
 
-	ip, err := ctr.Host(ctx)
+	endpoint, err := ctr.PortEndpoint(ctx, "80", "http")
 	if err != nil {
 		return nginxC, err
 	}
 
-	mappedPort, err := ctr.MappedPort(ctx, "80")
-	if err != nil {
-		return nginxC, err
-	}
-
-	nginxC.URI = fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
+	nginxC.URI = endpoint
 	return nginxC, nil
 }
