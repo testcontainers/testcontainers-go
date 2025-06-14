@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"time"
 
@@ -104,15 +103,5 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // Address retrieves the address of the Meilisearch container.
 // It will use http as protocol, as TLS is not supported at the moment.
 func (c *MeilisearchContainer) Address(ctx context.Context) (string, error) {
-	containerPort, err := c.MappedPort(ctx, defaultHTTPPort)
-	if err != nil {
-		return "", fmt.Errorf("mapped port: %w", err)
-	}
-
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", fmt.Errorf("host: %w", err)
-	}
-
-	return "http://" + net.JoinHostPort(host, containerPort.Port()), nil
+	return c.PortEndpoint(ctx, defaultHTTPPort, "http")
 }

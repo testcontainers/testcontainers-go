@@ -197,12 +197,7 @@ func (c *MariaDBContainer) MustConnectionString(ctx context.Context, args ...str
 }
 
 func (c *MariaDBContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
-	containerPort, err := c.MappedPort(ctx, "3306/tcp")
-	if err != nil {
-		return "", err
-	}
-
-	host, err := c.Host(ctx)
+	endpoint, err := c.PortEndpoint(ctx, "3306/tcp", "")
 	if err != nil {
 		return "", err
 	}
@@ -215,6 +210,6 @@ func (c *MariaDBContainer) ConnectionString(ctx context.Context, args ...string)
 		extraArgs = "?" + extraArgs
 	}
 
-	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s%s", c.username, c.password, host, containerPort.Port(), c.database, extraArgs)
+	connectionString := fmt.Sprintf("%s:%s@tcp(%s)/%s%s", c.username, c.password, endpoint, c.database, extraArgs)
 	return connectionString, nil
 }
