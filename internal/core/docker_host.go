@@ -28,6 +28,7 @@ var (
 	ErrSocketNotFoundInPath           = errors.New("docker socket not found in " + DockerSocketPath)
 	// ErrTestcontainersHostNotSetInProperties this error is specific to Testcontainers
 	ErrTestcontainersHostNotSetInProperties = errors.New("tc.host not set in ~/.testcontainers.properties")
+	ErrDockerSocketNotSetInDockerContext    = errors.New("socket not found in docker context")
 )
 
 var (
@@ -73,7 +74,7 @@ var dockerHostCheck = func(ctx context.Context, host string) error {
 	return nil
 }
 
-// MustExtractDockerHost Extracts the docker host from the different alternatives, caching the result to avoid unnecessary
+// MustExtractDockerHost extracts the docker host from the different alternatives, caching the result to avoid unnecessary
 // calculations. Use this function to get the actual Docker host. This function does not consider Windows containers at the moment.
 // The possible alternatives are:
 //
@@ -118,13 +119,26 @@ func MustExtractDockerSocket(ctx context.Context) string {
 	return dockerSocketPathCache
 }
 
-// extractDockerHost Extracts the docker host from the different alternatives, without caching the result.
-// This internal method is handy for testing purposes.
+// ExtractDockerHost Extracts the docker host from the different alternatives, without caching the result.
+// Use this function to get the actual Docker host. This function does not consider Windows containers at the moment.
+// The possible alternatives are:
+//
+//  1. Docker host from the "tc.host" property in the ~/.testcontainers.properties file.
+//  2. DOCKER_HOST environment variable.
+//  3. Docker host from context.
+//  4. Docker host from the default docker socket path, without the unix schema.
+//  5. Docker host from the "docker.host" property in the ~/.testcontainers.properties file.
+//  6. Rootless docker socket path.
+func ExtractDockerHost(ctx context.Context) (string, error) {
+	return extractDockerHost(ctx)
+}
+
 func extractDockerHost(ctx context.Context) (string, error) {
 	dockerHostFns := []func(context.Context) (string, error){
 		testcontainersHostFromProperties,
 		dockerHostFromEnv,
 		dockerHostFromContext,
+		dockerHostFromDockerContext,
 		dockerSocketPath,
 		dockerHostFromProperties,
 		rootlessDockerSocketPath,
@@ -227,12 +241,14 @@ func isHostNotSet(err error) bool {
 	case errors.Is(err, ErrTestcontainersHostNotSetInProperties),
 		errors.Is(err, ErrDockerHostNotSet),
 		errors.Is(err, ErrDockerSocketNotSetInContext),
+		errors.Is(err, ErrDockerSocketNotSetInDockerContext),
 		errors.Is(err, ErrDockerSocketNotSetInProperties),
 		errors.Is(err, ErrSocketNotFoundInPath),
 		errors.Is(err, ErrXDGRuntimeDirNotSet),
 		errors.Is(err, ErrRootlessDockerNotFoundHomeRunDir),
 		errors.Is(err, ErrRootlessDockerNotFoundHomeDesktopDir),
-		errors.Is(err, ErrRootlessDockerNotFoundRunDir):
+		errors.Is(err, ErrRootlessDockerNotFoundRunDir),
+		errors.Is(err, ErrRootlessDockerNotFound):
 		return true
 	default:
 		return false
@@ -260,6 +276,17 @@ func dockerHostFromContext(ctx context.Context) (string, error) {
 	}
 
 	return "", ErrDockerSocketNotSetInContext
+}
+
+// dockerHostFromDockerContext returns the docker host from the DOCKER_CONTEXT environment variable, if it's not empty
+func dockerHostFromDockerContext(_ context.Context) (string, error) {
+	// exec `docker context inspect -f='{{.Endpoints.docker.Host}}'`
+	cmd := exec.Command("docker", "context", "inspect", "-f", "{{.Endpoints.docker.Host}}")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("%w: %w", ErrDockerSocketNotSetInDockerContext, err)
+	}
+	return strings.TrimSpace(string(output)), nil
 }
 
 // dockerHostFromProperties returns the docker host from the ~/.testcontainers.properties file, if it's not empty
