@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/testcontainers/testcontainers-go/internal"
 	"github.com/testcontainers/testcontainers-go/internal/config"
@@ -31,6 +32,50 @@ const (
 	// LabelReap specifies the container should be reaped by the reaper.
 	LabelReap = LabelBase + ".reap"
 )
+
+// labelMerger provides thread-safe operations for merging labels
+type labelMerger struct {
+	mu     sync.RWMutex
+	labels map[string]string
+}
+
+// newLabelMerger creates a new thread-safe label merger
+func newLabelMerger(initial map[string]string) *labelMerger {
+	if initial == nil {
+		initial = make(map[string]string)
+	}
+	return &labelMerger{
+		labels: initial,
+	}
+}
+
+// MergeCustomLabelsSafeMerge merges labels from src to dst.
+// If a key in src has [LabelBase] prefix returns an error.
+func (m *labelMerger) Merge(src map[string]string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	for key, value := range src {
+		if strings.HasPrefix(key, LabelBase) {
+			return fmt.Errorf("key %q has %q prefix", key, LabelBase)
+		}
+		m.labels[key] = value
+	}
+	return nil
+}
+
+// Labels returns a copy of the current labels
+func (m *labelMerger) Labels() map[string]string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	labels := make(map[string]string, len(m.labels))
+	for k, v := range m.labels {
+		labels[k] = v
+	}
+
+	return labels
+}
 
 // DefaultLabels returns the standard set of labels which
 // includes LabelSessionID if the reaper is enabled.
@@ -63,11 +108,7 @@ func MergeCustomLabels(dst, src map[string]string) error {
 	if dst == nil {
 		return errors.New("destination map is nil")
 	}
-	for key, value := range src {
-		if strings.HasPrefix(key, LabelBase) {
-			return fmt.Errorf("key %q has %q prefix", key, LabelBase)
-		}
-		dst[key] = value
-	}
-	return nil
+
+	merger := newLabelMerger(dst)
+	return merger.Merge(src)
 }

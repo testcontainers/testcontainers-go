@@ -598,7 +598,8 @@ func TestLifecycleHooks(t *testing.T) {
 				req.Name = "reuse-container"
 			}
 
-			c, err := GenericContainer(ctx, GenericContainerRequest{
+			// TODO: use Run once the WithReuse option is implemented
+			c, err := genericContainer(ctx, GenericContainerRequest{
 				ContainerRequest: req,
 				Reuse:            tt.reuse,
 				Started:          true,
@@ -639,18 +640,10 @@ func TestLifecycleHooks_WithDefaultLogger(t *testing.T) {
 	// reqWithDefaultLoggingHook {
 	dl := inMemoryLogger{}
 
-	req := ContainerRequest{
-		Image: nginxAlpineImage,
-		LifecycleHooks: []ContainerLifecycleHooks{
-			DefaultLoggingHook(&dl),
-		},
-	}
+	c, err := Run(ctx, nginxAlpineImage,
+		WithLifecycleHooks(DefaultLoggingHook(&dl)),
+	)
 	// }
-
-	c, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
 	CleanupContainer(t, c)
 	require.NoError(t, err)
 	require.NotNil(t, c)
@@ -807,18 +800,9 @@ func TestLifecycleHooks_WithMultipleHooks(t *testing.T) {
 
 	dl := inMemoryLogger{}
 
-	req := ContainerRequest{
-		Image: nginxAlpineImage,
-		LifecycleHooks: []ContainerLifecycleHooks{
-			DefaultLoggingHook(&dl),
-			DefaultLoggingHook(&dl),
-		},
-	}
-
-	c, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	c, err := Run(ctx, nginxAlpineImage,
+		WithLifecycleHooks(DefaultLoggingHook(&dl), DefaultLoggingHook(&dl)),
+	)
 	CleanupContainer(t, c)
 	require.NoError(t, err)
 	require.NotNil(t, c)
@@ -848,22 +832,15 @@ func (l *linesTestLogger) Printf(format string, args ...any) {
 func TestPrintContainerLogsOnError(t *testing.T) {
 	ctx := context.Background()
 
-	req := ContainerRequest{
-		Image:      "alpine",
-		Cmd:        []string{"echo", "-n", "I am expecting this"},
-		WaitingFor: wait.ForLog("I was expecting that").WithStartupTimeout(5 * time.Second),
-	}
-
 	arrayOfLinesLogger := linesTestLogger{
 		data: []string{},
 	}
 
-	ctr, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Logger:           &arrayOfLinesLogger,
-		Started:          true,
-	})
+	ctr, err := Run(ctx, "alpine",
+		WithCmd("echo", "-n", "I am expecting this"),
+		WithWaitStrategy(wait.ForLog("I was expecting that").WithStartupTimeout(5*time.Second)),
+		WithLogger(&arrayOfLinesLogger),
+	)
 	CleanupContainer(t, ctr)
 	// it should fail because the waiting for condition is not met
 	require.Error(t, err)

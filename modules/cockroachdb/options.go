@@ -2,11 +2,43 @@ package cockroachdb
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
+
+// options represents the options for the CockroachDBContainer type.
+type options struct {
+	tlsStrategy *wait.TLSStrategy
+
+	// used to transfer the state of the options to the container
+	env map[string]string
+}
+
+func defaultOptions() options {
+	return options{
+		env: map[string]string{
+			envDatabase: defaultDatabase,
+			envUser:     defaultUser,
+			envPassword: defaultPassword,
+		},
+	}
+}
+
+// Satisfy the testcontainers.CustomizeRequestOption interface
+var _ testcontainers.ContainerCustomizer = (Option)(nil)
+
+// Option is an option for the DynamoDB container.
+type Option func(*options) error
+
+// Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
+func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
+	// NOOP to satisfy interface.
+	return nil
+}
 
 // errInsecureWithPassword is returned when trying to use insecure mode with a password.
 var errInsecureWithPassword = errors.New("insecure mode cannot be used with a password")
@@ -14,9 +46,11 @@ var errInsecureWithPassword = errors.New("insecure mode cannot be used with a pa
 // WithDatabase sets the name of the database to create and use.
 // This will be converted to lowercase as CockroachDB forces the database to be lowercase.
 // The database creation will be skipped if data exists in the `/cockroach/cockroach-data` directory within the container.
-func WithDatabase(database string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env[envDatabase] = strings.ToLower(database)
+func WithDatabase(database string) Option {
+	lowerDB := strings.ToLower(database)
+
+	return func(o *options) error {
+		o.env[envDatabase] = lowerDB
 		return nil
 	}
 }
@@ -24,9 +58,11 @@ func WithDatabase(database string) testcontainers.CustomizeRequestOption {
 // WithUser sets the name of the user to create and connect as.
 // This will be converted to lowercase as CockroachDB forces the user to be lowercase.
 // The user creation will be skipped if data exists in the `/cockroach/cockroach-data` directory within the container.
-func WithUser(user string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env[envUser] = strings.ToLower(user)
+func WithUser(user string) Option {
+	lowerUser := strings.ToLower(user)
+
+	return func(o *options) error {
+		o.env[envUser] = lowerUser
 		return nil
 	}
 }
@@ -34,15 +70,26 @@ func WithUser(user string) testcontainers.CustomizeRequestOption {
 // WithPassword sets the password of the user to create and connect as.
 // The user creation will be skipped if data exists in the `/cockroach/cockroach-data` directory within the container.
 // This will error if insecure mode is enabled.
-func WithPassword(password string) testcontainers.CustomizeRequestOption {
+func WithPassword(password string) Option {
+	return func(o *options) error {
+		o.env[envPassword] = password
+
+		return nil
+	}
+}
+
+// validatePassword validates that the password is not set when insecure mode is enabled.
+func validatePassword() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		for _, arg := range req.Cmd {
-			if arg == insecureFlag {
+		if req.Env[envPassword] == "" {
+			return nil
+		}
+
+		for _, cmd := range req.Cmd {
+			if cmd == insecureFlag {
 				return errInsecureWithPassword
 			}
 		}
-
-		req.Env[envPassword] = password
 
 		return nil
 	}
@@ -90,19 +137,16 @@ func WithNoClusterDefaults() testcontainers.CustomizeRequestOption {
 // WithInitScripts adds the given scripts to those automatically run when the container starts.
 // These will be ignored if data exists in the `/cockroach/cockroach-data` directory within the container.
 func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		files := make([]testcontainers.ContainerFile, len(scripts))
-		for i, script := range scripts {
-			files[i] = testcontainers.ContainerFile{
-				HostFilePath:      script,
-				ContainerFilePath: initDBPath + "/" + filepath.Base(script),
-				FileMode:          0o644,
-			}
+	files := make([]testcontainers.ContainerFile, len(scripts))
+	for i, script := range scripts {
+		files[i] = testcontainers.ContainerFile{
+			HostFilePath:      script,
+			ContainerFilePath: initDBPath + "/" + filepath.Base(script),
+			FileMode:          0o644,
 		}
-		req.Files = append(req.Files, files...)
-
-		return nil
 	}
+
+	return testcontainers.WithFiles(files...)
 }
 
 // WithInsecure enables insecure mode which disables TLS.
@@ -112,7 +156,48 @@ func WithInsecure() testcontainers.CustomizeRequestOption {
 			return errInsecureWithPassword
 		}
 
-		req.Cmd = append(req.Cmd, insecureFlag)
+		if err := testcontainers.WithCmdArgs(insecureFlag)(req); err != nil {
+			return fmt.Errorf("with cmd args: %w", err)
+		}
+
+		return nil
+	}
+}
+
+// configure sets the CockroachDBContainer options from the given request and updates the request
+// wait strategies to match the options.
+func configure(o *options) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		var insecure bool
+		for _, arg := range req.Cmd {
+			if arg == insecureFlag {
+				insecure = true
+				break
+			}
+		}
+
+		// Walk the wait strategies to find the TLS strategy and either remove it or
+		// update the client certificate files to match the user and configure the
+		// container to use the TLS strategy.
+		if err := wait.Walk(&req.WaitingFor, func(strategy wait.Strategy) error {
+			if cert, ok := strategy.(*wait.TLSStrategy); ok {
+				if insecure {
+					// If insecure mode is enabled, the certificate strategy is removed.
+					return errors.Join(wait.ErrVisitRemove, wait.ErrVisitStop)
+				}
+
+				// Update the client certificate files to match the user which may have changed.
+				cert.WithCert(certsDir+"/client."+o.env[envUser]+".crt", certsDir+"/client."+o.env[envUser]+".key")
+
+				o.tlsStrategy = cert
+
+				// Stop the walk as the certificate strategy has been found.
+				return wait.ErrVisitStop
+			}
+			return nil
+		}); err != nil {
+			return fmt.Errorf("walk strategies: %w", err)
+		}
 
 		return nil
 	}

@@ -29,13 +29,11 @@ type Container struct {
 
 // Run creates an instance of the Socat container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:      img,
-			Entrypoint: []string{"/bin/sh"},
-		},
-		Started: true,
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithEntrypoint("/bin/sh"),
 	}
+
+	moduleOpts = append(moduleOpts, opts...)
 
 	// Gather all config options (defaults and then apply provided options)
 	settings := defaultOptions()
@@ -45,27 +43,30 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				return nil, err
 			}
 		}
-		if err := opt.Customize(&req); err != nil {
-			return nil, err
-		}
 	}
+
+	exposedPorts := []string{}
 
 	for k := range settings.targets {
-		req.ExposedPorts = append(req.ExposedPorts, fmt.Sprintf("%d/tcp", k))
+		exposedPorts = append(exposedPorts, fmt.Sprintf("%d/tcp", k))
 	}
+
+	moduleOpts = append(moduleOpts, testcontainers.WithExposedPorts(exposedPorts...))
 
 	if settings.targetsCmd != "" {
-		req.Cmd = append(req.Cmd, "-c", settings.targetsCmd)
+		moduleOpts = append(moduleOpts, testcontainers.WithCmdArgs("-c", settings.targetsCmd))
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, req)
+	moduleOpts = append(moduleOpts, opts...)
+
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
-	if container != nil {
-		c = &Container{Container: container}
+	if ctr != nil {
+		c = &Container{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	// Only check if the socat binary is available if there are targets to expose.

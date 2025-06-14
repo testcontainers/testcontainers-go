@@ -19,7 +19,7 @@ var servicebusConfig string
 func TestServiceBus_topology(t *testing.T) {
 	ctx := context.Background()
 
-	const mssqlImage = "mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04"
+	const mssqlImage = "mcr.microsoft.com/mssql/server:2022-CU18-ubuntu-22.04"
 
 	ctr, err := servicebus.Run(
 		ctx,
@@ -52,7 +52,7 @@ func TestServiceBus_topology(t *testing.T) {
 func TestServiceBus_withConfig(t *testing.T) {
 	ctx := context.Background()
 
-	const mssqlImage = "mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04"
+	const mssqlImage = "mcr.microsoft.com/mssql/server:2022-CU18-ubuntu-22.04"
 
 	ctr, err := servicebus.Run(
 		ctx,

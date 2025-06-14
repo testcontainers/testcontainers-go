@@ -50,50 +50,51 @@ type Container struct {
 // [*Container.YSQLConnectionString] and [*Container.YCQLConfigureClusterConfig]
 // methods to use the container in their respective clients.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.ContainerRequest{
-		Image: img,
-		Cmd:   []string{"bin/yugabyted", "start", "--background=false"},
-		WaitingFor: wait.ForAll(
-			wait.ForLog("YugabyteDB Started").WithOccurrence(1),
-			wait.ForLog("Data placement constraint successfully verified").WithOccurrence(1),
-			wait.ForListeningPort(ysqlPort),
-			wait.ForListeningPort(ycqlPort),
-		),
-		ExposedPorts: []string{ycqlPort, ysqlPort},
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithCmd("bin/yugabyted", "start", "--background=false"),
+		testcontainers.WithExposedPorts(ycqlPort, ysqlPort),
+		testcontainers.WithEnv(map[string]string{
 			ycqlKeyspaceEnv:         ycqlKeyspace,
 			ycqlUserNameEnv:         ycqlUserName,
 			ycqlPasswordEnv:         ycqlPassword,
 			ysqlDatabaseNameEnv:     ysqlDatabaseName,
 			ysqlDatabaseUserEnv:     ysqlDatabaseUser,
 			ysqlDatabasePasswordEnv: ysqlDatabasePassword,
-		},
+		}),
+		testcontainers.WithWaitStrategy(wait.ForAll(
+			wait.ForLog("YugabyteDB Started").WithOccurrence(1),
+			wait.ForLog("Data placement constraint successfully verified").WithOccurrence(1),
+			wait.ForListeningPort(ysqlPort),
+			wait.ForListeningPort(ycqlPort),
+		)),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
+	settings := defaultOptions()
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
+		if apply, ok := opt.(Option); ok {
+			if err := apply(&settings); err != nil {
+				return nil, fmt.Errorf("yugabytedb option: %w", err)
+			}
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	moduleOpts = append(moduleOpts, testcontainers.WithEnv(settings.envs))
+
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
-	if container != nil {
+	if ctr != nil {
 		c = &Container{
-			Container:            container,
-			ysqlDatabaseName:     req.Env[ysqlDatabaseNameEnv],
-			ysqlDatabaseUser:     req.Env[ysqlDatabaseUserEnv],
-			ysqlDatabasePassword: req.Env[ysqlDatabasePasswordEnv],
+			Container:            ctr,
+			ysqlDatabaseName:     settings.envs[ysqlDatabaseNameEnv],
+			ysqlDatabaseUser:     settings.envs[ysqlDatabaseUserEnv],
+			ysqlDatabasePassword: settings.envs[ysqlDatabasePasswordEnv],
 		}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	return c, nil

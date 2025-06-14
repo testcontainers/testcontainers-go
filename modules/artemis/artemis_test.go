@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/go-stomp/stomp/v3"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -80,11 +79,11 @@ func TestArtemis(t *testing.T) {
 			require.Equal(t, http.StatusOK, res.StatusCode, "failed to access console")
 
 			if test.user != "" {
-				assert.Equal(t, test.user, ctr.User(), "unexpected user")
+				require.Equal(t, test.user, ctr.User(), "unexpected user")
 			}
 
 			if test.pass != "" {
-				assert.Equal(t, test.pass, ctr.Password(), "unexpected password")
+				require.Equal(t, test.pass, ctr.Password(), "unexpected password")
 			}
 
 			// brokerEndpoint {
