@@ -28,19 +28,7 @@ type Neo4jContainer struct {
 //
 //nolint:revive,staticcheck //FIXME
 func (c Neo4jContainer) BoltUrl(ctx context.Context) (string, error) {
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-	containerPort, err := nat.NewPort("tcp", defaultBoltPort)
-	if err != nil {
-		return "", err
-	}
-	mappedPort, err := c.MappedPort(ctx, containerPort)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("neo4j://%s:%d", host, mappedPort.Int()), nil
+	return c.PortEndpoint(ctx, "7687/tcp", "neo4j")
 }
 
 // Deprecated: use Run instead

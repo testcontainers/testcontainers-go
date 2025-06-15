@@ -122,17 +122,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			return c, fmt.Errorf("sanitize: %w", err)
 		}
 
-		host, err := c.Host(ctx)
+		endpoint, err := c.PortEndpoint(ctx, nat.Port(fmt.Sprintf("%d/tcp", proxy.listenPort)), "")
 		if err != nil {
-			return c, fmt.Errorf("host: %w", err)
+			return c, fmt.Errorf("port endpoint: %w", err)
 		}
 
-		mappedPort, err := c.MappedPort(ctx, nat.Port(fmt.Sprintf("%d/tcp", proxy.listenPort)))
-		if err != nil {
-			return c, fmt.Errorf("mapped port: %w", err)
-		}
-
-		c.proxiedEndpoints[proxy.listenPort] = net.JoinHostPort(host, mappedPort.Port())
+		c.proxiedEndpoints[proxy.listenPort] = endpoint
 	}
 
 	return c, nil

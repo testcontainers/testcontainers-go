@@ -94,15 +94,5 @@ func WithInitCommand(commands ...string) testcontainers.CustomizeRequestOption {
 //
 //nolint:revive,staticcheck //FIXME
 func (v *VaultContainer) HttpHostAddress(ctx context.Context) (string, error) {
-	host, err := v.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	port, err := v.MappedPort(ctx, defaultPort)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("http://%s:%d", host, port.Int()), nil
+	return v.PortEndpoint(ctx, defaultPort, "http")
 }
