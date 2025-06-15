@@ -510,7 +510,7 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	t.Cleanup(cancel)
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		i := i
 		t.Run(fmt.Sprintf("iteration_%d", i), func(t *testing.T) {
 			t.Parallel()

@@ -3,6 +3,7 @@ package core
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go/internal"
@@ -51,9 +52,7 @@ func DefaultLabels(sessionID string) map[string]string {
 
 // AddDefaultLabels adds the default labels for sessionID to target.
 func AddDefaultLabels(sessionID string, target map[string]string) {
-	for k, v := range DefaultLabels(sessionID) {
-		target[k] = v
-	}
+	maps.Copy(target, DefaultLabels(sessionID))
 }
 
 // MergeCustomLabels sets labels from src to dst.
