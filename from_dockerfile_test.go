@@ -136,7 +136,7 @@ func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
 
 func TestBuildImageFromDockerfile_Target(t *testing.T) {
 	// there are three targets: target0, target1 and target2.
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		ctx := context.Background()
 		c, err := GenericContainer(ctx, GenericContainerRequest{
 			ContainerRequest: ContainerRequest{
