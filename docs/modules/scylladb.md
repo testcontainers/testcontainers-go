@@ -1,6 +1,6 @@
 # ScyllaDB
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 ## Introduction
 
@@ -25,7 +25,7 @@ go get github.com/testcontainers/testcontainers-go/modules/scylladb
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 The ScyllaDB module exposes one entrypoint function to create the ScyllaDB container, and this function receives three parameters:
 
@@ -44,10 +44,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
     requirements, the `--overprovisioned` command-line option is recommended. This enables certain optimizations for ScyllaDB
     to run efficiently in an overprovisioned environment. You can change it by using the `WithCustomCommand` function.
 
-### Container Options
-
-When starting the ScyllaDB container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
@@ -59,11 +55,13 @@ scylladb.Run(context.Background(), "scylladb/scylla:6.2.1")
 scylladb.Run(context.Background(), "scylladb/scylla:5.6")
 ```
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the ScyllaDB container, you can pass options in a variadic way to configure it.
 
 #### With Database Configuration File (scylla.yaml)
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 In the case you have a custom config file for ScyllaDB, it's possible to copy that file into the container before it's
 started, using the `WithConfig(r io.Reader)` function.
@@ -78,7 +76,7 @@ started, using the `WithConfig(r io.Reader)` function.
 
 #### With Shard Awareness
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 If you want to test ScyllaDB with shard awareness, you can use the `WithShardAwareness` function. This function will
 configure the ScyllaDB container to use the `19042` port and ask the container to wait until the port is ready.
@@ -89,7 +87,7 @@ configure the ScyllaDB container to use the `19042` port and ask the container t
 
 #### With Alternator (DynamoDB Compatible API)
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 If you want to test ScyllaDB with the Alternator API, you can use the `WithAlternator` function. This function will
 configure the ScyllaDB container to use the port any port you want and ask the container to wait until the port is
@@ -102,7 +100,7 @@ By default, you can choose the port `8000`.
 
 #### With Custom Commands
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 If you need to pass any flag to the ScyllaDB container, you can use the `WithCustomCommand` function. This also rewrites
 predefined commands like `--developer-mode=1`. You can check
@@ -112,13 +110,15 @@ the [ScyllaDB Docker Best Practices](https://opensource.docs.scylladb.com/stable
 [With Custom Commands](../../modules/scylladb/examples_test.go) inside_block:runScyllaDBContainerWithCustomCommands
 <!--/codeinclude-->
 
+{% include "../features/common_functional_options_list.md" %}
+
 ### Container Methods
 
 The ScyllaDB container exposes the following methods:
 
 #### ConnectionHost methods
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 There exist three methods to get the host and port of the ScyllaDB container, depending on the feature you want.
 

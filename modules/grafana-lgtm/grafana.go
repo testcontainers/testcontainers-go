@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/docker/go-connections/nat"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -72,7 +70,7 @@ func WithAdminCredentials(user, password string) testcontainers.ContainerCustomi
 
 // LokiEndpoint returns the Loki endpoint
 func (c *GrafanaLGTMContainer) LokiEndpoint(ctx context.Context) (string, error) {
-	url, err := baseEndpoint(ctx, c, LokiPort)
+	url, err := c.PortEndpoint(ctx, LokiPort, "")
 	if err != nil {
 		return "", err
 	}
@@ -92,7 +90,7 @@ func (c *GrafanaLGTMContainer) MustLokiEndpoint(ctx context.Context) string {
 
 // TempoEndpoint returns the Tempo endpoint
 func (c *GrafanaLGTMContainer) TempoEndpoint(ctx context.Context) (string, error) {
-	url, err := baseEndpoint(ctx, c, TempoPort)
+	url, err := c.PortEndpoint(ctx, TempoPort, "")
 	if err != nil {
 		return "", err
 	}
@@ -114,7 +112,7 @@ func (c *GrafanaLGTMContainer) MustTempoEndpoint(ctx context.Context) string {
 //
 //nolint:revive,staticcheck //FIXME
 func (c *GrafanaLGTMContainer) HttpEndpoint(ctx context.Context) (string, error) {
-	url, err := baseEndpoint(ctx, c, GrafanaPort)
+	url, err := c.PortEndpoint(ctx, GrafanaPort, "")
 	if err != nil {
 		return "", err
 	}
@@ -138,7 +136,7 @@ func (c *GrafanaLGTMContainer) MustHttpEndpoint(ctx context.Context) string {
 //
 //nolint:revive,staticcheck //FIXME
 func (c *GrafanaLGTMContainer) OtlpHttpEndpoint(ctx context.Context) (string, error) {
-	url, err := baseEndpoint(ctx, c, OtlpHttpPort)
+	url, err := c.PortEndpoint(ctx, OtlpHttpPort, "")
 	if err != nil {
 		return "", err
 	}
@@ -160,7 +158,7 @@ func (c *GrafanaLGTMContainer) MustOtlpHttpEndpoint(ctx context.Context) string 
 
 // OtlpGrpcEndpoint returns the OTLP gRPC endpoint
 func (c *GrafanaLGTMContainer) OtlpGrpcEndpoint(ctx context.Context) (string, error) {
-	url, err := baseEndpoint(ctx, c, OtlpGrpcPort)
+	url, err := c.PortEndpoint(ctx, OtlpGrpcPort, "")
 	if err != nil {
 		return "", err
 	}
@@ -182,7 +180,7 @@ func (c *GrafanaLGTMContainer) MustOtlpGrpcEndpoint(ctx context.Context) string 
 //
 //nolint:revive,staticcheck //FIXME
 func (c *GrafanaLGTMContainer) PrometheusHttpEndpoint(ctx context.Context) (string, error) {
-	url, err := baseEndpoint(ctx, c, PrometheusPort)
+	url, err := c.PortEndpoint(ctx, PrometheusPort, "")
 	if err != nil {
 		return "", err
 	}
@@ -200,18 +198,4 @@ func (c *GrafanaLGTMContainer) MustPrometheusHttpEndpoint(ctx context.Context) s
 	}
 
 	return url
-}
-
-func baseEndpoint(ctx context.Context, c *GrafanaLGTMContainer, port nat.Port) (string, error) {
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	mappedPort, err := c.MappedPort(ctx, port)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%s:%s", host, mappedPort.Port()), nil
 }

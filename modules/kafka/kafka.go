@@ -22,7 +22,7 @@ const (
 	// starterScript {
 	starterScriptContent = `#!/bin/bash
 source /etc/confluent/docker/bash-config
-export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://%s:%d,BROKER://%s:9092
+export KAFKA_ADVERTISED_LISTENERS=%s,BROKER://%s:9092
 echo Starting Kafka KRaft mode
 sed -i '/KAFKA_ZOOKEEPER_CONNECT/d' /etc/confluent/docker/configure
 echo 'kafka-storage format --ignore-formatted -t "$(kafka-storage random-uuid)" -c /etc/kafka/kafka.properties' >> /etc/confluent/docker/configure
@@ -123,15 +123,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // copyStarterScript copies the starter script into the container.
 func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
-	if err := wait.ForListeningPort(publicPort).
-		SkipInternalCheck().
+	if err := wait.ForMappedPort(publicPort).
 		WaitUntilReady(ctx, c); err != nil {
-		return fmt.Errorf("wait for exposed port: %w", err)
+		return fmt.Errorf("wait for mapped port: %w", err)
 	}
 
-	host, err := c.Host(ctx)
+	endpoint, err := c.PortEndpoint(ctx, publicPort, "PLAINTEXT")
 	if err != nil {
-		return fmt.Errorf("host: %w", err)
+		return fmt.Errorf("port endpoint: %w", err)
 	}
 
 	inspect, err := c.Inspect(ctx)
@@ -141,12 +140,7 @@ func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
 
 	hostname := inspect.Config.Hostname
 
-	port, err := c.MappedPort(ctx, publicPort)
-	if err != nil {
-		return fmt.Errorf("mapped port: %w", err)
-	}
-
-	scriptContent := fmt.Sprintf(starterScriptContent, host, port.Int(), hostname)
+	scriptContent := fmt.Sprintf(starterScriptContent, endpoint, hostname)
 
 	if err := c.CopyToContainer(ctx, []byte(scriptContent), starterScript, 0o755); err != nil {
 		return fmt.Errorf("copy to container: %w", err)
@@ -166,17 +160,12 @@ func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
 // Brokers retrieves the broker connection strings from Kafka with only one entry,
 // defined by the exposed public port.
 func (kc *KafkaContainer) Brokers(ctx context.Context) ([]string, error) {
-	host, err := kc.Host(ctx)
+	endpoint, err := kc.PortEndpoint(ctx, publicPort, "")
 	if err != nil {
 		return nil, err
 	}
 
-	port, err := kc.MappedPort(ctx, publicPort)
-	if err != nil {
-		return nil, err
-	}
-
-	return []string{fmt.Sprintf("%s:%d", host, port.Int())}, nil
+	return []string{endpoint}, nil
 }
 
 // configureControllerQuorumVoters sets the quorum voters for the controller. For that, it will

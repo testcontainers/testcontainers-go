@@ -14,10 +14,10 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/containerd/errdefs"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/errdefs"
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
@@ -224,7 +224,7 @@ func (r *reaperSpawner) isRunning(ctx context.Context, ctr Container) error {
 	if !state.Running {
 		// Use NotFound error to indicate the container is not running
 		// and should be recreated.
-		return errdefs.NotFound(fmt.Errorf("container state: %s", state.Status))
+		return errdefs.ErrNotFound.WithMessage("container state: " + state.Status)
 	}
 
 	return nil

@@ -42,6 +42,11 @@ type HostPortStrategy struct {
 	// a shell is not available in the container or when the container doesn't bind
 	// the port internally until additional conditions are met.
 	skipInternalCheck bool
+
+	// skipExternalCheck is a flag to skip the external check, which, if used with
+	// skipInternalCheck, makes strategy waiting only for port mapping completion
+	// without accessing port.
+	skipExternalCheck bool
 }
 
 // NewHostPortStrategy constructs a default host port strategy that waits for the given
@@ -70,11 +75,26 @@ func ForExposedPort() *HostPortStrategy {
 	return NewHostPortStrategy("")
 }
 
+// ForMappedPort returns a host port strategy that waits for the given port
+// to be mapped without accessing the port itself.
+func ForMappedPort(port nat.Port) *HostPortStrategy {
+	return NewHostPortStrategy(port).SkipInternalCheck().SkipExternalCheck()
+}
+
 // SkipInternalCheck changes the host port strategy to skip the internal check,
 // which is useful when a shell is not available in the container or when the
 // container doesn't bind the port internally until additional conditions are met.
 func (hp *HostPortStrategy) SkipInternalCheck() *HostPortStrategy {
 	hp.skipInternalCheck = true
+
+	return hp
+}
+
+// SkipExternalCheck changes the host port strategy to skip the external check,
+// which, if used with SkipInternalCheck, makes strategy waiting only for port
+// mapping completion without accessing port.
+func (hp *HostPortStrategy) SkipExternalCheck() *HostPortStrategy {
+	hp.skipExternalCheck = true
 
 	return hp
 }
@@ -124,16 +144,12 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	ipAddress, err := target.Host(ctx)
-	if err != nil {
-		return err
-	}
-
 	waitInterval := hp.PollInterval
 
 	internalPort := hp.Port
 	i := 0
 	if internalPort == "" {
+		var err error
 		// Port is not specified, so we need to detect it.
 		internalPort, err = hp.detectInternalPort(ctx, target)
 		if err != nil {
@@ -157,8 +173,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		}
 	}
 
-	var port nat.Port
-	port, err = target.MappedPort(ctx, internalPort)
+	port, err := target.MappedPort(ctx, internalPort)
 	i = 0
 
 	for port == "" {
@@ -178,8 +193,15 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		}
 	}
 
-	if err := externalCheck(ctx, ipAddress, port, target, waitInterval); err != nil {
-		return fmt.Errorf("external check: %w", err)
+	if !hp.skipExternalCheck {
+		ipAddress, err := target.Host(ctx)
+		if err != nil {
+			return fmt.Errorf("host: %w", err)
+		}
+
+		if err := externalCheck(ctx, ipAddress, port, target, waitInterval); err != nil {
+			return fmt.Errorf("external check: %w", err)
+		}
 	}
 
 	if hp.skipInternalCheck {

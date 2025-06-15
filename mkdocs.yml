@@ -40,19 +40,6 @@ nav:
     - Quickstart: quickstart.md
     - Features:
         - features/creating_container.md
-        - features/configuration.md
-        - features/image_name_substitution.md
-        - features/files_and_mounts.md
-        - features/creating_networks.md
-        - features/networking.md
-        - features/tls.md
-        - features/test_session_semantics.md
-        - features/garbage_collector.md
-        - features/build_from_dockerfile.md
-        - features/docker_auth.md
-        - features/docker_compose.md
-        - features/follow_logs.md
-        - features/override_container_command.md
         - Wait Strategies:
             - Introduction: features/wait/introduction.md
             - Exec: features/wait/exec.md
@@ -66,6 +53,18 @@ nav:
             - SQL: features/wait/sql.md
             - TLS: features/wait/tls.md
             - Walk: features/wait/walk.md
+        - features/files_and_mounts.md
+        - features/follow_logs.md
+        - features/garbage_collector.md
+        - features/build_from_dockerfile.md
+        - features/override_container_command.md
+        - features/networking.md
+        - features/configuration.md
+        - features/image_name_substitution.md
+        - features/test_session_semantics.md
+        - features/docker_auth.md
+        - features/docker_compose.md
+        - features/tls.md
     - Modules:
         - modules/index.md
         - modules/aerospike.md
@@ -86,7 +85,6 @@ nav:
         - modules/dynamodb.md
         - modules/elasticsearch.md
         - modules/etcd.md
-        - modules/firebase.md
         - modules/gcloud.md
         - modules/grafana-lgtm.md
         - modules/inbucket.md

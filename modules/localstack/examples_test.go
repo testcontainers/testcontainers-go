@@ -101,7 +101,7 @@ func ExampleRun_legacyMode() {
 		ctx,
 		"localstack/localstack:0.10.0",
 		testcontainers.WithEnv(map[string]string{"SERVICES": "s3,sqs"}),
-		testcontainers.WithWaitStrategy(wait.ForLog("Ready.").WithStartupTimeout(5*time.Minute).WithOccurrence(1)),
+		testcontainers.WithAdditionalWaitStrategy(wait.ForLog("Ready.").WithStartupTimeout(5*time.Minute).WithOccurrence(1)),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(ctr); err != nil {

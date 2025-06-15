@@ -20,14 +20,17 @@ import (
 	"github.com/twmb/franz-go/pkg/sasl/scram"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/modules/redpanda"
 	"github.com/testcontainers/testcontainers-go/network"
 )
 
+const testImage = "docker.redpanda.com/redpandadata/redpanda:v23.3.3"
+
 func TestRedpanda(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := redpanda.Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v23.3.3")
+	ctr, err := redpanda.Run(ctx, testImage)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -78,7 +81,7 @@ func TestRedpandaWithAuthentication(t *testing.T) {
 	ctx := context.Background()
 	// redpandaCreateContainer {
 	ctr, err := redpanda.Run(ctx,
-		"docker.redpanda.com/redpandadata/redpanda:v23.3.3",
+		testImage,
 		redpanda.WithEnableSASL(),
 		redpanda.WithEnableKafkaAuthorization(),
 		redpanda.WithEnableWasmTransform(),
@@ -192,7 +195,7 @@ func TestRedpandaWithAuthentication(t *testing.T) {
 func TestRedpandaWithBootstrapUserAuthentication(t *testing.T) {
 	ctx := context.Background()
 	ctr, err := redpanda.Run(ctx,
-		"docker.redpanda.com/redpandadata/redpanda:v23.3.3",
+		testImage,
 		redpanda.WithEnableSASL(),
 		redpanda.WithEnableKafkaAuthorization(),
 		redpanda.WithEnableWasmTransform(),
@@ -427,7 +430,7 @@ func TestRedpandaWithOldVersionAndWasm(t *testing.T) {
 func TestRedpandaProduceWithAutoCreateTopics(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := redpanda.Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v23.3.3", redpanda.WithAutoCreateTopics())
+	ctr, err := redpanda.Run(ctx, testImage, redpanda.WithAutoCreateTopics())
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -446,17 +449,17 @@ func TestRedpandaProduceWithAutoCreateTopics(t *testing.T) {
 }
 
 func TestRedpandaWithTLS(t *testing.T) {
-	tmp := t.TempDir()
-	cert := tlscert.SelfSignedFromRequest(tlscert.Request{
-		Name:      "client",
-		Host:      "localhost,127.0.0.1",
-		ParentDir: tmp,
-	})
-	require.NotNil(t, cert, "failed to generate cert")
-
 	ctx := context.Background()
 
-	ctr, err := redpanda.Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v23.3.3", redpanda.WithTLS(cert.Bytes, cert.KeyBytes))
+	containerHostAddress, err := containerHost(ctx)
+	require.NoError(t, err)
+	cert, err := tlscert.SelfSignedFromRequestE(tlscert.Request{
+		Name: "client",
+		Host: "localhost,127.0.0.1," + containerHostAddress,
+	})
+	require.NoError(t, err, "failed to generate cert")
+
+	ctr, err := redpanda.Run(ctx, testImage, redpanda.WithTLS(cert.Bytes, cert.KeyBytes))
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -509,19 +512,18 @@ func TestRedpandaWithTLS(t *testing.T) {
 }
 
 func TestRedpandaWithTLSAndSASL(t *testing.T) {
-	tmp := t.TempDir()
-
-	cert := tlscert.SelfSignedFromRequest(tlscert.Request{
-		Name:      "client",
-		Host:      "localhost,127.0.0.1",
-		ParentDir: tmp,
-	})
-	require.NotNil(t, cert, "failed to generate cert")
-
 	ctx := context.Background()
 
+	containerHostAddress, err := containerHost(ctx)
+	require.NoError(t, err)
+	cert, err := tlscert.SelfSignedFromRequestE(tlscert.Request{
+		Name: "client",
+		Host: "localhost,127.0.0.1," + containerHostAddress,
+	})
+	require.NoError(t, err, "failed to generate cert")
+
 	ctr, err := redpanda.Run(ctx,
-		"docker.redpanda.com/redpandadata/redpanda:v23.3.3",
+		testImage,
 		redpanda.WithTLS(cert.Bytes, cert.KeyBytes),
 		redpanda.WithEnableSASL(),
 		redpanda.WithEnableKafkaAuthorization(),
@@ -697,4 +699,30 @@ func TestRedpandaBootstrapConfig(t *testing.T) {
 		needsRestart := data[0]["restart"].(bool)
 		require.False(t, needsRestart)
 	}
+}
+
+func containerHost(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (string, error) {
+	// Use a dummy request to get the provider from options.
+	var req testcontainers.GenericContainerRequest
+	for _, opt := range opts {
+		if err := opt.Customize(&req); err != nil {
+			return "", err
+		}
+	}
+
+	logging := req.Logger
+	if logging == nil {
+		logging = log.Default()
+	}
+	p, err := req.ProviderType.GetProvider(testcontainers.WithLogger(logging))
+	if err != nil {
+		return "", err
+	}
+
+	if p, ok := p.(*testcontainers.DockerProvider); ok {
+		return p.DaemonHost(ctx)
+	}
+
+	// Fall back to localhost.
+	return "localhost", nil
 }

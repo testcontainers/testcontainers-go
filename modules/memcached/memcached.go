@@ -3,7 +3,6 @@ package memcached
 import (
 	"context"
 	"fmt"
-	"net"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -52,15 +51,5 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // HostPort returns the host and port of the Memcached container
 func (c *Container) HostPort(ctx context.Context) (string, error) {
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", fmt.Errorf("host: %w", err)
-	}
-
-	port, err := c.MappedPort(ctx, defaultPort)
-	if err != nil {
-		return "", fmt.Errorf("port: %w", err)
-	}
-
-	return net.JoinHostPort(host, port.Port()), nil
+	return c.PortEndpoint(ctx, defaultPort, "")
 }

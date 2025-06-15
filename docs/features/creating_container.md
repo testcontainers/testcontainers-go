@@ -10,7 +10,7 @@ up with Testcontainers and integrate into your tests:
 
 ## Run
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.37.0"><span class="tc-version">:material-tag: v0.37.0</span></a>
 
 `testcontainers.Run` defines the container that should be run, similar to the `docker run` command.
 
@@ -35,6 +35,10 @@ and `Network.Remove` which can be seen in the examples.
 <!--codeinclude-->
 [Creating a container](../../examples_test.go) inside_block:ExampleRun
 <!--/codeinclude-->
+
+## Customizing the container
+
+{% include "../features/common_functional_options.md" %}
 
 ## GenericContainer
 
@@ -161,6 +165,9 @@ Inside each group, the hooks will be executed in the order they were defined.
 	The default hooks are for logging (applied to all hooks), customising the Docker config (applied to the pre-create hook), copying files in to the container (applied to the post-create hook), adding log consumers (applied to the post-start and pre-terminate hooks), and running the wait strategies as a readiness check (applied to the post-start hook).
 
 It's important to notice that the `Readiness` of a container is defined by the wait strategies defined for the container. **This hook will be executed right after the `PostStarts` hook**. If you want to add your own readiness checks, you can do it by adding a `PostReadies` hook to the container request, which will execute your own readiness check after the default ones. That said, the `PostStarts` hooks don't warrant that the container is ready, so you should not rely on that.
+
+!!!warning
+	Up to `v0.37.0`, the readiness hook included checks for all the exposed ports to be ready. This is not the case anymore, and the readiness hook only uses the wait strategies defined for the container to determine if the container is ready.
 
 In the following example, we are going to create a container using all the lifecycle hooks, all of them printing a message when any of the lifecycle hooks is called:
 
