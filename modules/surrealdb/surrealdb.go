@@ -3,7 +3,6 @@ package surrealdb
 import (
 	"context"
 	"fmt"
-	"net"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -14,23 +13,17 @@ type SurrealDBContainer struct {
 	testcontainers.Container
 }
 
-// ConnectionString returns the connection string for the OpenLDAP container
+// URL returns the connection string for the OpenLDAP container
 func (c *SurrealDBContainer) URL(ctx context.Context) (string, error) {
-	containerPort, err := c.MappedPort(ctx, "8000/tcp")
+	endpoint, err := c.PortEndpoint(ctx, "8000/tcp", "ws")
 	if err != nil {
 		return "", err
 	}
 
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	connStr := fmt.Sprintf("ws://%s/rpc", net.JoinHostPort(host, containerPort.Port()))
-	return connStr, nil
+	return endpoint + "/rpc", nil
 }
 
-// WithUser sets the initial username to be created when the container starts
+// WithUsername sets the initial username to be created when the container starts
 // It is used in conjunction with WithPassword to set a username and its password.
 // It will create the specified user with superuser power.
 func WithUsername(username string) testcontainers.CustomizeRequestOption {
@@ -61,7 +54,7 @@ func WithAuthentication() testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithStrict enables strict mode for the SurrealDB instance
+// WithStrictMode enables strict mode for the SurrealDB instance
 func WithStrictMode() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		req.Env["SURREAL_STRICT"] = "true"

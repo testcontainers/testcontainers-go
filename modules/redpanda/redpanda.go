@@ -249,12 +249,11 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	// 8. Create Redpanda Service Accounts if configured to do so.
 	if len(settings.ServiceAccounts) > 0 {
-		adminAPIPort, err := ctr.MappedPort(ctx, nat.Port(defaultAdminAPIPort))
+		adminAPIUrl, err := c.PortEndpoint(ctx, defaultAdminAPIPort, c.urlScheme)
 		if err != nil {
-			return c, fmt.Errorf("mapped admin port: %w", err)
+			return c, fmt.Errorf("port endpoint: %w", err)
 		}
 
-		adminAPIUrl := fmt.Sprintf("%s://%v:%d", c.urlScheme, hostIP, adminAPIPort.Int())
 		adminCl := NewAdminAPIClient(adminAPIUrl)
 		if settings.enableAdminAPIAuthentication {
 			adminCl = adminCl.WithAuthentication(bootstrapAdminAPIUser, bootstrapAdminAPIPassword)

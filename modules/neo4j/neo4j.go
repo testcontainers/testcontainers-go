@@ -5,17 +5,15 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/docker/go-connections/nat"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
 	// containerPorts {
-	defaultBoltPort  = "7687"
-	defaultHTTPPort  = "7474"
-	defaultHTTPSPort = "7473"
+	defaultBoltPort  = "7687/tcp"
+	defaultHTTPPort  = "7474/tcp"
+	defaultHTTPSPort = "7473/tcp"
 	// }
 )
 
@@ -28,19 +26,7 @@ type Neo4jContainer struct {
 //
 //nolint:revive,staticcheck //FIXME
 func (c Neo4jContainer) BoltUrl(ctx context.Context) (string, error) {
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-	containerPort, err := nat.NewPort("tcp", defaultBoltPort)
-	if err != nil {
-		return "", err
-	}
-	mappedPort, err := c.MappedPort(ctx, containerPort)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("neo4j://%s:%d", host, mappedPort.Int()), nil
+	return c.PortEndpoint(ctx, defaultBoltPort, "neo4j")
 }
 
 // Deprecated: use Run instead
@@ -51,22 +37,21 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Neo4j container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Neo4jContainer, error) {
-	httpPort, _ := nat.NewPort("tcp", defaultHTTPPort)
 	request := testcontainers.ContainerRequest{
 		Image: img,
 		Env: map[string]string{
 			"NEO4J_AUTH": "none",
 		},
 		ExposedPorts: []string{
-			defaultBoltPort + "/tcp",
-			defaultHTTPPort + "/tcp",
-			defaultHTTPSPort + "/tcp",
+			defaultBoltPort,
+			defaultHTTPPort,
+			defaultHTTPSPort,
 		},
 		WaitingFor: &wait.MultiStrategy{
 			Strategies: []wait.Strategy{
 				wait.NewLogStrategy("Bolt enabled on"),
 				&wait.HTTPStrategy{
-					Port:              httpPort,
+					Port:              defaultHTTPPort,
 					StatusCodeMatcher: isHTTPOk(),
 				},
 			},

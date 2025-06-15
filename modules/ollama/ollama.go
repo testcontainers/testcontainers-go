@@ -25,17 +25,7 @@ type OllamaContainer struct {
 // ConnectionString returns the connection string for the Ollama container,
 // using the default port 11434.
 func (c *OllamaContainer) ConnectionString(ctx context.Context) (string, error) {
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", fmt.Errorf("host: %w", err)
-	}
-
-	port, err := c.MappedPort(ctx, "11434/tcp")
-	if err != nil {
-		return "", fmt.Errorf("mapped port: %w", err)
-	}
-
-	return fmt.Sprintf("http://%s:%d", host, port.Int()), nil
+	return c.PortEndpoint(ctx, "11434/tcp", "http")
 }
 
 // Commit it commits the current file system changes in the container into a new target image.
