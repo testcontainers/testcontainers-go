@@ -189,10 +189,7 @@ var defaultLogConsumersHook = func(cfg *LogConsumerConfig) ContainerLifecycleHoo
 				}
 
 				dockerContainer := c.(*DockerContainer)
-				dockerContainer.consumers = dockerContainer.consumers[:0]
-				for _, consumer := range cfg.Consumers {
-					dockerContainer.followOutput(consumer)
-				}
+				dockerContainer.resetConsumers(cfg.Consumers)
 
 				return dockerContainer.startLogProduction(ctx, cfg.Opts...)
 			},
