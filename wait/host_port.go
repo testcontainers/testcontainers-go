@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/docker/go-connections/nat"
@@ -226,11 +225,9 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 
 func externalCheck(ctx context.Context, ipAddress string, port nat.Port, target StrategyTarget, waitInterval time.Duration) error {
 	proto := port.Proto()
-	portNumber := port.Int()
-	portString := strconv.Itoa(portNumber)
 
 	dialer := net.Dialer{}
-	address := net.JoinHostPort(ipAddress, portString)
+	address := net.JoinHostPort(ipAddress, port.Port())
 	for i := 0; ; i++ {
 		if err := checkTarget(ctx, target); err != nil {
 			return fmt.Errorf("check target: retries: %d address: %s: %w", i, address, err)
