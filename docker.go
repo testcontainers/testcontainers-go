@@ -1062,13 +1062,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	// as container won't be attached to it automatically
 	// in case of Podman the bridge network is called 'podman' as 'bridge' would conflict
 	if defaultNetwork != p.defaultBridgeNetworkName {
-		isAttached := false
-		for _, net := range req.Networks {
-			if net == defaultNetwork {
-				isAttached = true
-				break
-			}
-		}
+		isAttached := slices.Contains(req.Networks, defaultNetwork)
 
 		if !isAttached {
 			req.Networks = append(req.Networks, defaultNetwork)
