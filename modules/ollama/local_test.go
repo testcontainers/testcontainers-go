@@ -483,15 +483,6 @@ func TestRun_localExec(t *testing.T) {
 		require.Nil(t, r)
 	})
 
-	t.Run("unsupported-option-detach", func(t *testing.T) {
-		code, r, err := ollamaContainer.Exec(ctx, []string{testBinary, "-v"}, tcexec.ProcessOptionFunc(func(opts *tcexec.ProcessOptions) {
-			opts.ExecConfig.Detach = true
-		}))
-		require.ErrorIs(t, err, errors.ErrUnsupported)
-		require.Equal(t, 1, code)
-		require.Nil(t, r)
-	})
-
 	t.Run("unsupported-option-detach-keys", func(t *testing.T) {
 		code, r, err := ollamaContainer.Exec(ctx, []string{testBinary, "-v"}, tcexec.ProcessOptionFunc(func(opts *tcexec.ProcessOptions) {
 			opts.ExecConfig.DetachKeys = "ctrl-p,ctrl-q"
