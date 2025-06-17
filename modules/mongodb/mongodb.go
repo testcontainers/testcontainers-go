@@ -6,7 +6,6 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-	"net"
 	"net/url"
 	"time"
 
@@ -91,17 +90,13 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // ConnectionString returns the connection string for the MongoDB container.
 // If you provide a username and a password, the connection string will also include them.
 func (c *MongoDBContainer) ConnectionString(ctx context.Context) (string, error) {
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-	port, err := c.MappedPort(ctx, "27017/tcp")
+	endpoint, err := c.PortEndpoint(ctx, "27017/tcp", "")
 	if err != nil {
 		return "", err
 	}
 	u := url.URL{
 		Scheme: "mongodb",
-		Host:   net.JoinHostPort(host, port.Port()),
+		Host:   endpoint,
 		Path:   "/",
 	}
 

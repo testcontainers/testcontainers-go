@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 
 	"github.com/docker/docker/api/types/network"
 	"github.com/google/uuid"
@@ -118,9 +119,7 @@ func WithInternal() CustomizeNetworkOption {
 // to the default Testcontainers for Go labels.
 func WithLabels(labels map[string]string) CustomizeNetworkOption {
 	return func(original *network.CreateOptions) error {
-		for k, v := range labels {
-			original.Labels[k] = v
-		}
+		maps.Copy(original.Labels, labels)
 
 		return nil
 	}
