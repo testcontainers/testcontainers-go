@@ -426,12 +426,11 @@ func assertModuleContent(t *testing.T, module context.TestcontainersModule, exam
 	require.Equal(t, "type "+containerName+" struct {", data[10])
 	require.Equal(t, "// "+entrypoint+" creates an instance of the "+exampleName+" container type", data[14])
 	require.Equal(t, "func "+entrypoint+"(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*"+containerName+", error) {", data[15])
-	require.Equal(t, "\t\tImage: img,", data[17])
-	require.Equal(t, "\t\tif err := opt.Customize(&genericContainerReq); err != nil {", data[26])
-	require.Equal(t, "\t\t\treturn nil, fmt.Errorf(\"customize: %w\", err)", data[27])
-	require.Equal(t, "\tvar c *"+containerName, data[32])
-	require.Equal(t, "\t\tc = &"+containerName+"{Container: container}", data[34])
-	require.Equal(t, "\treturn c, nil", data[41])
+	require.Equal(t, "\tctr, err := testcontainers.Run(ctx, img, opts...)", data[16])
+	require.Equal(t, "\tvar c *"+containerName, data[17])
+	require.Equal(t, "\t\tc = &"+containerName+"{Container: ctr}", data[19])
+	require.Equal(t, "\t\treturn c, fmt.Errorf(\"generic container: %w\", err)", data[23])
+	require.Equal(t, "\treturn c, nil", data[26])
 }
 
 // assert content go.mod

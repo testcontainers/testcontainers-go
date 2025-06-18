@@ -21,7 +21,7 @@ func defaultOptions() options {
 var _ testcontainers.ContainerCustomizer = (*CmdOption)(nil)
 
 // CmdOption is an option for the NATS container.
-type CmdOption func(opts *options)
+type CmdOption func(opts *options) error
 
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
 func (o CmdOption) Customize(_ *testcontainers.GenericContainerRequest) error {
@@ -30,14 +30,16 @@ func (o CmdOption) Customize(_ *testcontainers.GenericContainerRequest) error {
 }
 
 func WithUsername(username string) CmdOption {
-	return func(o *options) {
+	return func(o *options) error {
 		o.CmdArgs["user"] = username
+		return nil
 	}
 }
 
 func WithPassword(password string) CmdOption {
-	return func(o *options) {
+	return func(o *options) error {
 		o.CmdArgs["pass"] = password
+		return nil
 	}
 }
 
@@ -46,8 +48,9 @@ func WithPassword(password string) CmdOption {
 func WithArgument(flag string, value string) CmdOption {
 	flag = strings.ReplaceAll(flag, "--", "") // remove all dashes to make it easier to use
 
-	return func(o *options) {
+	return func(o *options) error {
 		o.CmdArgs[flag] = value
+		return nil
 	}
 }
 

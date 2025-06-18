@@ -66,53 +66,38 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*LocalStackContainer, error) {
 	dockerHost := testcontainers.MustExtractDockerSocket(ctx)
 
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		WaitingFor:   wait.ForHTTP("/_localstack/health").WithPort("4566/tcp").WithStartupTimeout(120 * time.Second),
-		ExposedPorts: []string{fmt.Sprintf("%d/tcp", defaultPort)},
-		Env:          map[string]string{},
-		HostConfigModifier: func(hostConfig *container.HostConfig) {
+	logger := log.Default()
+
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(fmt.Sprintf("%d/tcp", defaultPort)),
+		testcontainers.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
 			hostConfig.Binds = []string{dockerHost + ":/var/run/docker.sock"}
-		},
+		}),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/_localstack/health").WithPort("4566/tcp").WithStartupTimeout(120 * time.Second)),
+		testcontainers.WithLogger(logger),
 	}
 
-	localStackReq := LocalStackContainerRequest{
-		GenericContainerRequest: testcontainers.GenericContainerRequest{
-			ContainerRequest: req,
-			Logger:           log.Default(),
-			Started:          true,
-		},
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&localStackReq.GenericContainerRequest); err != nil {
-			return nil, err
-		}
-	}
-
-	if !isMinimumVersion(localStackReq.Image, "v0.11") {
-		return nil, fmt.Errorf("version=%s. Testcontainers for Go does not support running LocalStack in legacy mode. Please use a version >= 0.11.0", localStackReq.Image)
+	if !isMinimumVersion(img, "v0.11") {
+		return nil, fmt.Errorf("version=%s. Testcontainers for Go does not support running LocalStack in legacy mode. Please use a version >= 0.11.0", img)
 	}
 
 	envVar := hostnameExternalEnvVar
-	if isMinimumVersion(localStackReq.Image, "v2") {
+	if isMinimumVersion(img, "v2") {
 		envVar = localstackHostEnvVar
 	}
 
-	hostnameExternalReason, err := configureDockerHost(&localStackReq, envVar)
-	if err != nil {
-		return nil, err
-	}
-	localStackReq.Logger.Printf("Setting %s to %s (%s)\n", envVar, req.Env[envVar], hostnameExternalReason)
+	moduleOpts = append(moduleOpts, configureDockerHost(logger, envVar))
 
-	container, err := testcontainers.GenericContainer(ctx, localStackReq.GenericContainerRequest)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *LocalStackContainer
-	if container != nil {
-		c = &LocalStackContainer{Container: container}
+	if ctr != nil {
+		c = &LocalStackContainer{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	return c, nil
@@ -125,33 +110,36 @@ func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOpt
 	return RunContainer(ctx, overrideReq)
 }
 
-func configureDockerHost(req *LocalStackContainerRequest, envVar string) (string, error) {
-	reason := ""
+func configureDockerHost(logger log.Logger, envVar string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		if _, ok := req.Env[envVar]; ok {
+			logger.Printf("Setting %s to %s (explicitly as environment variable)\n", envVar, req.Env[envVar])
+			return nil
+		}
 
-	if _, ok := req.Env[envVar]; ok {
-		return "explicitly as environment variable", nil
+		// if the container is not connected to the default network, use the last network alias in the first network
+		// for that we need to check if the container is connected to a network and if it has network aliases
+		if len(req.Networks) > 0 && len(req.NetworkAliases) > 0 && len(req.NetworkAliases[req.Networks[0]]) > 0 {
+			alias := req.NetworkAliases[req.Networks[0]][len(req.NetworkAliases[req.Networks[0]])-1]
+
+			req.Env[envVar] = alias
+			logger.Printf("Setting %s to %s (to match last network alias on container with non-default network)\n", envVar, req.Env[envVar])
+			return nil
+		}
+
+		dockerProvider, err := testcontainers.NewDockerProvider()
+		if err != nil {
+			return err
+		}
+		defer dockerProvider.Close()
+
+		daemonHost, err := dockerProvider.DaemonHost(context.Background())
+		if err != nil {
+			return err
+		}
+
+		req.Env[envVar] = daemonHost
+		logger.Printf("Setting %s to %s (to match host-routable address for container)\n", envVar, req.Env[envVar])
+		return nil
 	}
-
-	// if the container is not connected to the default network, use the last network alias in the first network
-	// for that we need to check if the container is connected to a network and if it has network aliases
-	if len(req.Networks) > 0 && len(req.NetworkAliases) > 0 && len(req.NetworkAliases[req.Networks[0]]) > 0 {
-		alias := req.NetworkAliases[req.Networks[0]][len(req.NetworkAliases[req.Networks[0]])-1]
-
-		req.Env[envVar] = alias
-		return "to match last network alias on container with non-default network", nil
-	}
-
-	dockerProvider, err := testcontainers.NewDockerProvider()
-	if err != nil {
-		return reason, err
-	}
-	defer dockerProvider.Close()
-
-	daemonHost, err := dockerProvider.DaemonHost(context.Background())
-	if err != nil {
-		return reason, err
-	}
-
-	req.Env[envVar] = daemonHost
-	return "to match host-routable address for container", nil
 }

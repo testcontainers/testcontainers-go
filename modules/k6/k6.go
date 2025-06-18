@@ -168,31 +168,21 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the K6 container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*K6Container, error) {
-	req := testcontainers.ContainerRequest{
-		Image:      img,
-		Cmd:        []string{"run"},
-		WaitingFor: wait.ForExit(),
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithCmd("run"),
+		testcontainers.WithWaitStrategy(wait.ForExit()),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *K6Container
 	if container != nil {
 		c = &K6Container{Container: container}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	return c, nil

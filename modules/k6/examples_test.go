@@ -17,18 +17,12 @@ func ExampleRun() {
 
 	// create a container with the httpbin application that will be the target
 	// for the test script that runs in the k6 container
-	gcr := testcontainers.GenericContainerRequest{
-		ProviderType: testcontainers.ProviderDocker,
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "kennethreitz/httpbin",
-			ExposedPorts: []string{
-				"80",
-			},
-			WaitingFor: wait.ForExposedPort(),
-		},
-		Started: true,
+	gcrOptions := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("80"),
+		testcontainers.WithWaitStrategy(wait.ForExposedPort()),
 	}
-	httpbin, err := testcontainers.GenericContainer(ctx, gcr)
+
+	httpbin, err := testcontainers.Run(ctx, "kennethreitz/httpbin", gcrOptions...)
 	defer func() {
 		if err := testcontainers.TerminateContainer(httpbin); err != nil {
 			log.Printf("failed to terminate container: %s", err)
