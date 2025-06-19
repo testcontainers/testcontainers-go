@@ -35,7 +35,7 @@ It's also possible to copy an entire directory to a container, and that can happ
 
 It's important to notice that, when copying the directory to the container, the container path must exist in the Docker image. And this is a strong requirement for files to be copied _before_ the container is started, as we cannot create the full path at that time.
 
-You can leverage the very same mechanism used for copying files to a container, but for directories.:
+You can leverage the very same mechanism used for copying files to a container, but for directories:
 
 1. The first way is using the `Files` field in the `ContainerRequest` struct, as shown in the previous section, but using the path of a directory as `HostFilePath`. Like so:
 
@@ -54,6 +54,16 @@ You can leverage the very same mechanism used for copying files to a container, 
 <!--codeinclude-->
 [Copying a directory to a running container](../../docker_files_test.go) inside_block:copyDirectoryToRunningContainerAsDir
 <!--/codeinclude-->
+
+## Copying files from a container
+
+It's also possible to copy files from a container to the host machine. This can be done by using the `CopyFileFromContainer` method on the `Container` type, which will return an error and an `io.ReadCloser` that you can use to read the file content.
+
+<!--codeinclude-->
+[Copying a file from a container](../../examples_test.go) inside_block:copyFileFromContainer
+<!--/codeinclude-->
+
+In the above example, we previously copied the file `/tmp/file.txt` to the container, and then we copied it back to the host machine, reading the content of the file.
 
 ## Volume mapping
 
