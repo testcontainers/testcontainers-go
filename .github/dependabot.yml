@@ -28,6 +28,7 @@ updates:
         - /modules/consul
         - /modules/couchbase
         - /modules/databend
+        - /modules/dex
         - /modules/dind
         - /modules/dockermodelrunner
         - /modules/dolt

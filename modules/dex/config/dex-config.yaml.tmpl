@@ -1,0 +1,31 @@
+issuer: {{ getenv "DEX_ISSUER" "http://127.0.0.1:5556/dex" }}
+
+storage:
+  type: sqlite3
+  config:
+    file: {{ getenv "DEX_STORAGE_SQLITE3_CONFIG_FILE" "/var/dex/dex.db" }}
+
+web:
+  http: {{ getenv "DEX_WEB_HTTP" "0.0.0.0:5556" }}
+
+grpc:
+  addr: 0.0.0.0:5557
+  reflection: true
+
+expiry:
+  deviceRequests: {{ getenv "DEX_EXPIRY_DEVICE_REQUESTS" "5m" }}
+  signingKeys: {{ getenv "DEX_EXPIRY_SIGNING_KEYS" "6h" }}
+  idTokens: {{ getenv "DEX_EXPIRY_ID_TOKENS" "24h" }}
+  authRequests: {{ getenv "DEX_EXPIRY_AUTH_REQUESTS" "24h" }}
+
+logger:
+  level: {{ getenv "DEX_LOG_LEVEL" "info" }}
+  format: {{ getenv "DEX_LOG_FORMAT" "text" }}
+
+oauth2:
+  passwordConnector: {{ getenv "DEX_OAUTH2_PASSWORD_CONNECTOR" "local" }}
+  responseTypes: {{ getenv "DEX_OAUTH2_RESPONSE_TYPES" "[code]" }}
+  skipApprovalScreen: {{ getenv "DEX_OAUTH2_SKIP_APPROVAL_SCREEN" "true" }}
+  alwaysShowLoginScreen: {{ getenv "DEX_OAUTH2_ALWAYS_SHOW_LOGIN_SCREEN" "false" }}
+
+enablePasswordDB: {{ getenv "DEX_ENABLE_PASSWORD_DB" "true" }}
