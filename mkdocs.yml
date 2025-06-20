@@ -79,6 +79,7 @@ nav:
         - modules/consul.md
         - modules/couchbase.md
         - modules/databend.md
+        - modules/dex.md
         - modules/dind.md
         - modules/dockermodelrunner.md
         - modules/dolt.md
