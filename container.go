@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -457,9 +458,7 @@ func (c *ContainerRequest) BuildOptions() (build.ImageBuildOptions, error) {
 		buildOptions.AuthConfigs = map[string]registry.AuthConfig{}
 	}
 
-	for registry, authConfig := range authsFromDockerfile {
-		buildOptions.AuthConfigs[registry] = authConfig
-	}
+	maps.Copy(buildOptions.AuthConfigs, authsFromDockerfile)
 
 	// make sure the first tag is the one defined in the ContainerRequest
 	tag := fmt.Sprintf("%s:%s", c.GetRepo(), c.GetTag())

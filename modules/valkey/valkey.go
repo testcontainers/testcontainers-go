@@ -40,23 +40,12 @@ const (
 
 // ConnectionString returns the connection string for the Valkey container
 func (c *ValkeyContainer) ConnectionString(ctx context.Context) (string, error) {
-	mappedPort, err := c.MappedPort(ctx, valkeyPort)
-	if err != nil {
-		return "", err
-	}
-
-	hostIP, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
 	schema := "redis"
 	if c.settings.tlsEnabled {
 		schema = "rediss"
 	}
 
-	uri := fmt.Sprintf("%s://%s:%s", schema, hostIP, mappedPort.Port())
-	return uri, nil
+	return c.PortEndpoint(ctx, valkeyPort, schema)
 }
 
 // TLSConfig returns the TLS configuration for the Valkey container, nil if TLS is not enabled.

@@ -2,7 +2,6 @@ package weaviate
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -72,31 +71,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 //
 //nolint:revive,staticcheck //FIXME
 func (c *WeaviateContainer) HttpHostAddress(ctx context.Context) (string, string, error) {
-	port, err := c.MappedPort(ctx, httpPort)
+	endpoint, err := c.PortEndpoint(ctx, httpPort, "")
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get container port: %w", err)
+		return "", "", fmt.Errorf("port endpoint: %w", err)
 	}
 
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", "", errors.New("failed to get container host")
-	}
-
-	return "http", fmt.Sprintf("%s:%s", host, port.Port()), nil
+	return "http", endpoint, nil
 }
 
 // GrpcHostAddress returns the gRPC host of the Weaviate container.
 // At the moment, it only supports unsecured gRPC connection.
 func (c *WeaviateContainer) GrpcHostAddress(ctx context.Context) (string, error) {
-	port, err := c.MappedPort(ctx, grpcPort)
-	if err != nil {
-		return "", fmt.Errorf("failed to get container port: %w", err)
-	}
-
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", errors.New("failed to get container host")
-	}
-
-	return fmt.Sprintf("%s:%s", host, port.Port()), nil
+	return c.PortEndpoint(ctx, grpcPort, "")
 }

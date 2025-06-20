@@ -2,7 +2,6 @@ package vearch
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -71,15 +70,5 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // RESTEndpoint returns the REST endpoint of the Vearch container
 func (c *VearchContainer) RESTEndpoint(ctx context.Context) (string, error) {
-	containerPort, err := c.MappedPort(ctx, "8817/tcp")
-	if err != nil {
-		return "", fmt.Errorf("failed to get container port: %w", err)
-	}
-
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", errors.New("failed to get container host")
-	}
-
-	return fmt.Sprintf("http://%s:%s", host, containerPort.Port()), nil
+	return c.PortEndpoint(ctx, "8817/tcp", "http")
 }

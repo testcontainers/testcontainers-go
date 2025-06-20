@@ -103,7 +103,8 @@ func ExampleRun() {
 	fmt.Println(ctrResp.Config.Labels["testcontainers.label"])
 
 	// files
-	f, err := ctr.CopyFileFromContainer(ctx, "/tmp/file.txt")
+	// copyFileFromContainer {
+	f, err := ctr.CopyFileFromContainer(context.Background(), "/tmp/file.txt")
 	if err != nil {
 		log.Printf("failed to copy file from container: %s", err)
 		return
@@ -114,6 +115,7 @@ func ExampleRun() {
 		log.Printf("failed to read file: %s", err)
 		return
 	}
+	// }
 	fmt.Println(string(content))
 
 	// Output:
