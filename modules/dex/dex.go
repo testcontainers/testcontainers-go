@@ -192,7 +192,7 @@ func (c Container) RawOpenIDConfiguration(ctx context.Context) (rawCfg []byte, e
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/.well-known/openid-configuration", httpEndpoint), http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, httpEndpoint+"/.well-known/openid-configuration", http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -339,7 +339,7 @@ func randomSecret() string {
 	)
 
 	src := make([]byte, length)
-	rand.Read(src)
+	_, _ = rand.Read(src)
 	for i := range src {
 		src[i] = base32alphabet[src[i]%32]
 	}
