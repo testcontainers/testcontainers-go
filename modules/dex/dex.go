@@ -81,12 +81,12 @@ type Container struct {
 func (c Container) CreateClientApp(ctx context.Context, req CreateClientAppRequest) (*dexapi.Client, error) {
 	apiClient, connCloser, err := c.createDexAPIClient(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("prepare Dex API client: %w", err)
 	}
 
 	defer func() {
 		if closeErr := connCloser.Close(); closeErr != nil {
-			err = errors.Join(err, closeErr)
+			err = errors.Join(err, fmt.Errorf("close GRPC connection: %w", closeErr))
 		}
 	}()
 
@@ -110,7 +110,7 @@ func (c Container) CreateClientApp(ctx context.Context, req CreateClientAppReque
 
 	resp, err := apiClient.CreateClient(ctx, apiReq)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("register client application: %w", err)
 	}
 
 	return resp.Client, nil
@@ -126,12 +126,12 @@ func (c Container) CreatePassword(
 ) (err error) {
 	apiClient, connCloser, err := c.createDexAPIClient(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("prepare Dex API client: %w", err)
 	}
 
 	defer func() {
 		if closeErr := connCloser.Close(); closeErr != nil {
-			err = errors.Join(err, closeErr)
+			err = errors.Join(err, fmt.Errorf("close GRPC connection: %w", closeErr))
 		}
 	}()
 
@@ -146,7 +146,7 @@ func (c Container) CreatePassword(
 	if len(req.Hash) == 0 {
 		req.Hash, err = bcrypt.GenerateFromPassword([]byte(req.Password), bcryptCost)
 		if err != nil {
-			return err
+			return fmt.Errorf("hash plaintext password with bcrypt: %w", err)
 		}
 	}
 
@@ -159,9 +159,11 @@ func (c Container) CreatePassword(
 		},
 	}
 
-	_, err = apiClient.CreatePassword(ctx, apiReq)
+	if _, err = apiClient.CreatePassword(ctx, apiReq); err != nil {
+		return fmt.Errorf("create password in Dex: %w", err)
+	}
 
-	return err
+	return nil
 }
 
 // OpenIDConfiguration returns the OpenID configuration for the Dex instance.
@@ -175,7 +177,7 @@ func (c Container) OpenIDConfiguration(ctx context.Context) (cfg OpenIDConfigura
 
 	err = json.Unmarshal(rawCfg, &cfg)
 	if err != nil {
-		return cfg, err
+		return cfg, fmt.Errorf("unmarshal OpenID configuration: %w", err)
 	}
 
 	return cfg, nil
@@ -189,16 +191,12 @@ func (c Container) OpenIDConfiguration(ctx context.Context) (cfg OpenIDConfigura
 func (c Container) RawOpenIDConfiguration(ctx context.Context) (rawCfg []byte, err error) {
 	httpEndpoint, err := c.PortEndpoint(ctx, HTTPPort, "http")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get Dex HTTP endpoint: %w", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, httpEndpoint+"/.well-known/openid-configuration", http.NoBody)
 	if err != nil {
-		return nil, err
-	}
-
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("prepare OIDC discovery requrest: %w", err)
 	}
 
 	httpClient := c.Client
@@ -208,7 +206,7 @@ func (c Container) RawOpenIDConfiguration(ctx context.Context) (rawCfg []byte, e
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("send OIDC discovery request: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -220,7 +218,7 @@ func (c Container) RawOpenIDConfiguration(ctx context.Context) (rawCfg []byte, e
 
 	configDecoder := json.NewDecoder(resp.Body)
 	if err := configDecoder.Decode(&partiallyDecoded); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("decode OIDC discovery response: %w", err)
 	}
 
 	for _, property := range propertiesToPatch {
@@ -236,18 +234,22 @@ func (c Container) RawOpenIDConfiguration(ctx context.Context) (rawCfg []byte, e
 		partiallyDecoded[property] = json.RawMessage(fmt.Sprintf("%q", patched))
 	}
 
-	return json.Marshal(partiallyDecoded)
+	if rawCfg, err = json.Marshal(partiallyDecoded); err != nil {
+		return nil, fmt.Errorf("marshal OIDC discovery response: %w", err)
+	}
+
+	return rawCfg, nil
 }
 
 func (c Container) createDexAPIClient(ctx context.Context) (dexapi.DexClient, io.Closer, error) {
 	grpcEndpoint, err := c.PortEndpoint(ctx, GRPCPort, "")
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("get GRPC port endpoint: %w", err)
 	}
 
 	grpcClient, err := grpc.NewClient(grpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("create Dex API gRPC client: %w", err)
 	}
 
 	return dexapi.NewDexClient(grpcClient), grpcClient, nil
@@ -289,7 +291,7 @@ func Run(
 
 	for _, opt := range opts {
 		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
+			return nil, fmt.Errorf("customize container request: %w", err)
 		}
 	}
 
@@ -313,12 +315,12 @@ func patchEndpoint(original, newHost string) (patched string, err error) {
 
 	parsedOriginalURL, err := url.Parse(original)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("parse original URL %s: %w", original, err)
 	}
 
 	parsedPatchedURL, err := url.Parse(newHost)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("parse container HTTP port endpoint %s: %w", newHost, err)
 	}
 
 	parsedOriginalURL.Scheme = parsedPatchedURL.Scheme
