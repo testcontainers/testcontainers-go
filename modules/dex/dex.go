@@ -126,7 +126,7 @@ func (c Container) CreatePassword(
 ) (err error) {
 	apiClient, connCloser, err := c.createDexAPIClient(ctx)
 	if err != nil {
-		return fmt.Errorf("prepare Dex API client: %w", err)
+		return fmt.Errorf("create Dex API client: %w", err)
 	}
 
 	defer func() {
@@ -163,21 +163,24 @@ func (c Container) CreatePassword(
 		return fmt.Errorf("create password in Dex: %w", err)
 	}
 
+	clear(req.Hash)
+
 	return nil
 }
 
 // OpenIDConfiguration returns the OpenID configuration for the Dex instance.
 // It retrieves the raw configuration, unmarshals it into an OpenIDConfiguration struct,
 // and returns any error that occurs during the process.
-func (c Container) OpenIDConfiguration(ctx context.Context) (cfg OpenIDConfiguration, err error) {
+func (c Container) OpenIDConfiguration(ctx context.Context) (OpenIDConfiguration, error) {
 	rawCfg, err := c.RawOpenIDConfiguration(ctx)
 	if err != nil {
-		return cfg, err
+		return OpenIDConfiguration{}, err
 	}
 
+	var cfg OpenIDConfiguration
 	err = json.Unmarshal(rawCfg, &cfg)
 	if err != nil {
-		return cfg, fmt.Errorf("unmarshal OpenID configuration: %w", err)
+		return OpenIDConfiguration{}, fmt.Errorf("unmarshal OpenID configuration: %w", err)
 	}
 
 	return cfg, nil
@@ -196,7 +199,7 @@ func (c Container) RawOpenIDConfiguration(ctx context.Context) (rawCfg []byte, e
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, httpEndpoint+"/.well-known/openid-configuration", http.NoBody)
 	if err != nil {
-		return nil, fmt.Errorf("prepare OIDC discovery requrest: %w", err)
+		return nil, fmt.Errorf("create OIDC discovery request: %w", err)
 	}
 
 	httpClient := c.Client
@@ -332,7 +335,7 @@ func patchEndpoint(original, newHost string) (patched string, err error) {
 
 // randomSecret generates a random password for identities.
 // Based on https://pkg.go.dev/crypto/rand@go1.24.0#Text
-// Can be replaced as soon as testcontainers-go is updated to Go 1.24 or higher.
+// TODO: replace as soon as testcontainers-go is updated to Go 1.24 or higher.
 func randomSecret() string {
 	// ⌈log₃₂ 2¹²⁸⌉ = 26 chars
 	const (
