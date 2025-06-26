@@ -18,7 +18,8 @@ func TestImageList(t *testing.T) {
 	require.NoErrorf(t, err, "failed to get provider")
 
 	defer func() {
-		_ = provider.Close()
+		err = provider.Close()
+		require.NoError(t, err)
 	}()
 
 	req := ContainerRequest{
@@ -51,7 +52,8 @@ func TestSaveImages(t *testing.T) {
 	require.NoErrorf(t, err, "failed to get provider")
 
 	defer func() {
-		_ = provider.Close()
+		err = provider.Close()
+		require.NoError(t, err)
 	}()
 
 	req := ContainerRequest{
@@ -64,6 +66,38 @@ func TestSaveImages(t *testing.T) {
 
 	output := filepath.Join(t.TempDir(), "images.tar")
 	err = provider.SaveImages(context.Background(), output, req.Image)
+	require.NoErrorf(t, err, "saving image %q", req.Image)
+
+	info, err := os.Stat(output)
+	require.NoError(t, err)
+
+	require.NotZerof(t, info.Size(), "output file is empty")
+}
+
+func TestSaveImagesWithOpts(t *testing.T) {
+	t.Setenv("DOCKER_HOST", core.MustExtractDockerHost(context.Background()))
+
+	provider, err := ProviderDocker.GetProvider()
+	require.NoErrorf(t, err, "failed to get provider")
+
+	defer func() {
+		err = provider.Close()
+		require.NoError(t, err)
+	}()
+
+	req := ContainerRequest{
+		Image:         "redis:latest",
+		ImagePlatform: "linux/amd64",
+	}
+
+	ctr, err := provider.CreateContainer(context.Background(), req)
+	CleanupContainer(t, ctr)
+	require.NoErrorf(t, err, "creating test container")
+
+	output := filepath.Join(t.TempDir(), "images.tar")
+	err = provider.SaveImagesWithOps(
+		context.Background(), output, []string{req.Image}, SaveImageWithPlatforms("linux/amd64"),
+	)
 	require.NoErrorf(t, err, "saving image %q", req.Image)
 
 	info, err := os.Stat(output)

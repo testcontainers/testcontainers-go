@@ -1786,6 +1786,25 @@ func (p *DockerProvider) ListImages(ctx context.Context) ([]ImageInfo, error) {
 
 // SaveImages exports a list of images as an uncompressed tar
 func (p *DockerProvider) SaveImages(ctx context.Context, output string, images ...string) error {
+	return p.SaveImagesWithOps(ctx, output, images)
+}
+
+// SaveImagesWithOpts exports a list of images as an uncompressed tar, passiong options to the provider
+func (p *DockerProvider) SaveImagesWithOps(ctx context.Context, output string, images []string, opts ...SaveImageOption) error {
+	saveOpts := saveOptions{}
+	dockerOpts := []client.ImageSaveOption{}
+
+	for _, o := range opts {
+		err := o(&saveOpts)
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(saveOpts.Platforms) > 0 {
+		dockerOpts = append(dockerOpts, client.ImageSaveWithPlatforms(saveOpts.Platforms...))
+	}
+
 	outputFile, err := os.Create(output)
 	if err != nil {
 		return fmt.Errorf("opening output file %w", err)
@@ -1794,7 +1813,7 @@ func (p *DockerProvider) SaveImages(ctx context.Context, output string, images .
 		_ = outputFile.Close()
 	}()
 
-	imageReader, err := p.client.ImageSave(ctx, images)
+	imageReader, err := p.client.ImageSave(ctx, images, dockerOpts...)
 	if err != nil {
 		return fmt.Errorf("saving images %w", err)
 	}
