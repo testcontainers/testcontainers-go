@@ -37,22 +37,24 @@ func ExampleRun() {
 	}
 
 	// Register a client application
-	clientApp, err := dexContainer.CreateClientApp(ctx, dex.CreateClientAppRequest{
-		Name: "testcontainers-go",
-	})
+	clientApp, err := dexContainer.CreateClientApp(ctx, dex.WithClientName("testcontainers-go"))
 	if err != nil {
 		log.Printf("failed to create client app: %s", err)
 		return
 	}
 
-	identityReq := dex.CreatePasswordRequest{
-		Email:    "ted.tester@testcontainers.com",
-		Username: "ted.tester",
-		Password: "$up3r$3crEt",
-	}
+	const (
+		email    = "ted.tester@testcontainers.com"
+		password = "$up3r$3crEt"
+	)
 
+	err = dexContainer.CreatePassword(
+		ctx,
+		dex.PlainTextCredential(email, password),
+		dex.WithUsername("ted.tester"),
+	)
 	// Register an identity that can be used to authenticate with Dex
-	if err := dexContainer.CreatePassword(ctx, identityReq); err != nil {
+	if err != nil {
 		log.Printf("failed to create identity: %s", err)
 		return
 	}
@@ -79,7 +81,7 @@ func ExampleRun() {
 	}
 
 	// the primary identifier is always the email address **not** the username 🤷‍♂️
-	tokenResp, err := oauth2Cfg.PasswordCredentialsToken(ctx, identityReq.Email, identityReq.Password)
+	tokenResp, err := oauth2Cfg.PasswordCredentialsToken(ctx, email, password)
 	if err != nil {
 		log.Printf("failed to get token response: %s", err)
 		return

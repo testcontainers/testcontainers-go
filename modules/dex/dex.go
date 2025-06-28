@@ -3,7 +3,6 @@ package dex
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
 	_ "embed"
 	"encoding/json"
 	"errors"
@@ -15,7 +14,6 @@ import (
 
 	dexapi "github.com/dexidp/dex/api/v2"
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -26,14 +24,9 @@ import (
 const (
 	HTTPPort = "5556/tcp"
 	GRPCPort = "5557/tcp"
-)
 
-const (
-	bcryptCost    = 10
 	defaultIssuer = "http://localhost:5556"
 )
-
-var ErrPasswordRequired = errors.New("plaintext password or hash is required")
 
 var (
 	propertiesToPatch = []string{
@@ -48,37 +41,14 @@ var (
 	dexConfigTemplate []byte
 )
 
-// CreateClientAppRequest represents a request to register a client application in Dex.
-type CreateClientAppRequest struct {
-	Name         string
-	ClientID     string
-	ClientSecret string
-	RedirectURIs []string
-	Public       bool
-}
-
-// CreatePasswordRequest represents a request to register an identity in Dex.
-// Either Hash or Password must be provided.
-// If Hash is provided, Password will be ignored.
-type CreatePasswordRequest struct {
-	UserID   string
-	Email    string
-	Username string
-	// Password is a plain text password.
-	Password string
-	// Hash is a bcrypt hash of the password.
-	Hash []byte
-}
-
 // Container represents the Dex container type used in the module
 type Container struct {
 	testcontainers.Container
-	Client *http.Client
 }
 
 // CreateClientApp registers a new client application in Dex.
 // If ClientID or ClientSecret are empty, they will be generated and returned.
-func (c Container) CreateClientApp(ctx context.Context, req CreateClientAppRequest) (*dexapi.Client, error) {
+func (c Container) CreateClientApp(ctx context.Context, opts ...CreateClientAppOption) (*dexapi.Client, error) {
 	apiClient, connCloser, err := c.createDexAPIClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("prepare Dex API client: %w", err)
@@ -90,25 +60,13 @@ func (c Container) CreateClientApp(ctx context.Context, req CreateClientAppReque
 		}
 	}()
 
-	if req.ClientID == "" {
-		req.ClientID = uuid.New().String()
+	var dexClientApp dexapi.Client
+
+	for _, opt := range opts {
+		opt(&dexClientApp)
 	}
 
-	if req.ClientSecret == "" {
-		req.ClientSecret = randomSecret()
-	}
-
-	apiReq := &dexapi.CreateClientReq{
-		Client: &dexapi.Client{
-			Name:         req.Name,
-			Id:           req.ClientID,
-			Secret:       req.ClientSecret,
-			RedirectUris: req.RedirectURIs,
-			Public:       req.Public,
-		},
-	}
-
-	resp, err := apiClient.CreateClient(ctx, apiReq)
+	resp, err := apiClient.CreateClient(ctx, &dexapi.CreateClientReq{Client: &dexClientApp})
 	if err != nil {
 		return nil, fmt.Errorf("register client application: %w", err)
 	}
@@ -122,7 +80,8 @@ func (c Container) CreateClientApp(ctx context.Context, req CreateClientAppReque
 // Password nor Hash are provided, or an error from bcrypt if hashing fails.
 func (c Container) CreatePassword(
 	ctx context.Context,
-	req CreatePasswordRequest,
+	credential CreatePasswordCredential,
+	opts ...CreatePasswordOption,
 ) (err error) {
 	apiClient, connCloser, err := c.createDexAPIClient(ctx)
 	if err != nil {
@@ -135,35 +94,26 @@ func (c Container) CreatePassword(
 		}
 	}()
 
-	if req.Password == "" && len(req.Hash) == 0 {
-		return ErrPasswordRequired
+	dexPassword := dexapi.Password{
+		// defaulting user ID
+		// can be overridden by using WithUserID
+		UserId: uuid.New().String(),
 	}
 
-	if req.UserID == "" {
-		req.UserID = uuid.New().String()
+	dexPassword.Email, dexPassword.Hash, err = credential()
+	if err != nil {
+		return fmt.Errorf("create password credential: %w", err)
 	}
 
-	if len(req.Hash) == 0 {
-		req.Hash, err = bcrypt.GenerateFromPassword([]byte(req.Password), bcryptCost)
-		if err != nil {
-			return fmt.Errorf("hash plaintext password with bcrypt: %w", err)
-		}
+	for _, opt := range opts {
+		opt(&dexPassword)
 	}
 
-	apiReq := &dexapi.CreatePasswordReq{
-		Password: &dexapi.Password{
-			UserId:   req.UserID,
-			Username: req.Username,
-			Email:    req.Email,
-			Hash:     req.Hash,
-		},
-	}
-
-	if _, err = apiClient.CreatePassword(ctx, apiReq); err != nil {
+	if _, err = apiClient.CreatePassword(ctx, &dexapi.CreatePasswordReq{Password: &dexPassword}); err != nil {
 		return fmt.Errorf("create password in Dex: %w", err)
 	}
 
-	clear(req.Hash)
+	clear(dexPassword.Hash)
 
 	return nil
 }
@@ -174,7 +124,7 @@ func (c Container) CreatePassword(
 func (c Container) OpenIDConfiguration(ctx context.Context) (OpenIDConfiguration, error) {
 	rawCfg, err := c.RawOpenIDConfiguration(ctx)
 	if err != nil {
-		return OpenIDConfiguration{}, err
+		return OpenIDConfiguration{}, fmt.Errorf("fetching raw OpenID configuration: %w", err)
 	}
 
 	var cfg OpenIDConfiguration
@@ -202,12 +152,7 @@ func (c Container) RawOpenIDConfiguration(ctx context.Context) (rawCfg []byte, e
 		return nil, fmt.Errorf("create OIDC discovery request: %w", err)
 	}
 
-	httpClient := c.Client
-	if httpClient == nil {
-		httpClient = http.DefaultClient
-	}
-
-	resp, err := httpClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("send OIDC discovery request: %w", err)
 	}
@@ -331,22 +276,4 @@ func patchEndpoint(original, newHost string) (patched string, err error) {
 
 	patched = parsedOriginalURL.String()
 	return patched, nil
-}
-
-// randomSecret generates a random password for identities.
-// Based on https://pkg.go.dev/crypto/rand@go1.24.0#Text
-// TODO: replace as soon as testcontainers-go is updated to Go 1.24 or higher.
-func randomSecret() string {
-	// ⌈log₃₂ 2¹²⁸⌉ = 26 chars
-	const (
-		length         = 26
-		base32alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
-	)
-
-	src := make([]byte, length)
-	_, _ = rand.Read(src)
-	for i := range src {
-		src[i] = base32alphabet[src[i]%32]
-	}
-	return string(src)
 }
