@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	dexapi "github.com/dexidp/dex/api/v2"
-	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -49,6 +48,11 @@ type Container struct {
 // CreateClientApp registers a new client application in Dex.
 // If ClientID or ClientSecret are empty, they will be generated and returned.
 func (c Container) CreateClientApp(ctx context.Context, opts ...CreateClientAppOption) (*dexapi.Client, error) {
+	clientApp, err := combineOptionsToClientApp(opts)
+	if err != nil {
+		return nil, fmt.Errorf("combine options to client app: %w", err)
+	}
+
 	apiClient, connCloser, err := c.createDexAPIClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("prepare Dex API client: %w", err)
@@ -60,13 +64,7 @@ func (c Container) CreateClientApp(ctx context.Context, opts ...CreateClientAppO
 		}
 	}()
 
-	var dexClientApp dexapi.Client
-
-	for _, opt := range opts {
-		opt(&dexClientApp)
-	}
-
-	resp, err := apiClient.CreateClient(ctx, &dexapi.CreateClientReq{Client: &dexClientApp})
+	resp, err := apiClient.CreateClient(ctx, &dexapi.CreateClientReq{Client: clientApp})
 	if err != nil {
 		return nil, fmt.Errorf("register client application: %w", err)
 	}
@@ -83,6 +81,16 @@ func (c Container) CreatePassword(
 	credential CreatePasswordCredential,
 	opts ...CreatePasswordOption,
 ) (err error) {
+	email, hash, err := credential()
+	if err != nil {
+		return fmt.Errorf("create password credential: %w", err)
+	}
+
+	dexPassword, err := combineOptionsToPassword(email, hash, opts)
+	if err != nil {
+		return fmt.Errorf("combine options to password: %w", err)
+	}
+
 	apiClient, connCloser, err := c.createDexAPIClient(ctx)
 	if err != nil {
 		return fmt.Errorf("create Dex API client: %w", err)
@@ -94,22 +102,7 @@ func (c Container) CreatePassword(
 		}
 	}()
 
-	dexPassword := dexapi.Password{
-		// defaulting user ID
-		// can be overridden by using WithUserID
-		UserId: uuid.New().String(),
-	}
-
-	dexPassword.Email, dexPassword.Hash, err = credential()
-	if err != nil {
-		return fmt.Errorf("create password credential: %w", err)
-	}
-
-	for _, opt := range opts {
-		opt(&dexPassword)
-	}
-
-	if _, err = apiClient.CreatePassword(ctx, &dexapi.CreatePasswordReq{Password: &dexPassword}); err != nil {
+	if _, err = apiClient.CreatePassword(ctx, &dexapi.CreatePasswordReq{Password: dexPassword}); err != nil {
 		return fmt.Errorf("create password in Dex: %w", err)
 	}
 
@@ -121,19 +114,19 @@ func (c Container) CreatePassword(
 // OpenIDConfiguration returns the OpenID configuration for the Dex instance.
 // It retrieves the raw configuration, unmarshals it into an OpenIDConfiguration struct,
 // and returns any error that occurs during the process.
-func (c Container) OpenIDConfiguration(ctx context.Context) (OpenIDConfiguration, error) {
+func (c Container) OpenIDConfiguration(ctx context.Context) (*OpenIDConfiguration, error) {
 	rawCfg, err := c.RawOpenIDConfiguration(ctx)
 	if err != nil {
-		return OpenIDConfiguration{}, fmt.Errorf("fetching raw OpenID configuration: %w", err)
+		return nil, fmt.Errorf("fetching raw OpenID configuration: %w", err)
 	}
 
 	var cfg OpenIDConfiguration
 	err = json.Unmarshal(rawCfg, &cfg)
 	if err != nil {
-		return OpenIDConfiguration{}, fmt.Errorf("unmarshal OpenID configuration: %w", err)
+		return nil, fmt.Errorf("unmarshal OpenID configuration: %w", err)
 	}
 
-	return cfg, nil
+	return &cfg, nil
 }
 
 // RawOpenIDConfiguration retrieves the raw OpenID configuration from the Dex instance.
@@ -175,7 +168,7 @@ func (c Container) RawOpenIDConfiguration(ctx context.Context) (rawCfg []byte, e
 			continue
 		}
 
-		patched, err := patchEndpoint(strings.Trim(string(jsonValue), "\""), httpEndpoint)
+		patched, err := patchEndpoint(strings.Trim(string(jsonValue), `"`), httpEndpoint)
 		if err != nil {
 			return nil, err
 		}
