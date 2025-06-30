@@ -167,7 +167,7 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 
 	maxNetworksCount := 2
 
-	for i := 0; i < maxNetworksCount; i++ {
+	for range maxNetworksCount {
 		n, err := network.New(ctx)
 		require.NoError(t, err)
 		testcontainers.CleanupNetwork(t, n)
@@ -306,7 +306,7 @@ func TestWithNetwork(t *testing.T) {
 	networkName := nw.Name
 
 	// check that the network is reused, multiple times
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		req := testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{},
 		}

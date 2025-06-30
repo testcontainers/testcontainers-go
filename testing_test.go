@@ -47,31 +47,31 @@ func Test_isNotFound(t *testing.T) {
 		},
 		"join-other": {
 			err:  errors.Join(nil, notFoundError{}, errors.New("other")),
-			want: false,
+			want: true,
 		},
-		"warp": {
+		"wrap": {
 			err:  fmt.Errorf("wrap: %w", notFoundError{}),
 			want: true,
 		},
-		"multi-warp": {
+		"multi-wrap": {
 			err:  fmt.Errorf("wrap: %w", fmt.Errorf("wrap: %w", notFoundError{})),
 			want: true,
 		},
-		"multi-warp-other": {
+		"multi-wrap-other": {
 			err:  fmt.Errorf("wrap: %w", fmt.Errorf("wrap: %w", errors.New("other"))),
 			want: false,
 		},
-		"multi-warp-other-not-found": {
+		"multi-wrap-other-not-found": {
 			err:  fmt.Errorf("wrap: %w", fmt.Errorf("wrap: %w %w", errors.New("other"), notFoundError{})),
-			want: false,
+			want: true,
 		},
-		"multi-warp-not-found-nil": {
+		"multi-wrap-not-found-nil": {
 			err:  fmt.Errorf("wrap: %w", fmt.Errorf("wrap: %w %w", nil, notFoundError{})),
 			want: true,
 		},
 		"multi-join-not-found-other": {
 			err:  errors.Join(nil, fmt.Errorf("wrap: %w", errors.Join(notFoundError{}, errors.New("other")))),
-			want: false,
+			want: true,
 		},
 		"multi-join-not-found-nil": {
 			err:  errors.Join(nil, fmt.Errorf("wrap: %w", errors.Join(notFoundError{}, nil))),

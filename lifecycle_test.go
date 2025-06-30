@@ -491,73 +491,6 @@ func TestMergePortBindings(t *testing.T) {
 	}
 }
 
-func TestPortMappingCheck(t *testing.T) {
-	makePortMap := func(ports ...string) nat.PortMap {
-		out := make(nat.PortMap)
-		for _, port := range ports {
-			// We don't care about the actual binding in this test
-			out[nat.Port(port)] = nil
-		}
-		return out
-	}
-
-	tests := map[string]struct {
-		exposedAndMappedPorts nat.PortMap
-		exposedPorts          []string
-		expectError           bool
-	}{
-		"no-protocol": {
-			exposedAndMappedPorts: makePortMap("1024/tcp"),
-			exposedPorts:          []string{"1024"},
-		},
-		"protocol": {
-			exposedAndMappedPorts: makePortMap("1024/tcp"),
-			exposedPorts:          []string{"1024/tcp"},
-		},
-		"protocol-target-port": {
-			exposedAndMappedPorts: makePortMap("1024/tcp"),
-			exposedPorts:          []string{"1024:1024/tcp"},
-		},
-		"target-port": {
-			exposedAndMappedPorts: makePortMap("1024/tcp"),
-			exposedPorts:          []string{"1024:1024"},
-		},
-		"multiple-ports": {
-			exposedAndMappedPorts: makePortMap("1024/tcp", "1025/tcp", "1026/tcp"),
-			exposedPorts:          []string{"1024", "25:1025/tcp", "1026:1026"},
-		},
-		"only-ipv4": {
-			exposedAndMappedPorts: makePortMap("1024/tcp"),
-			exposedPorts:          []string{"0.0.0.0::1024/tcp"},
-		},
-		"no-mapped-ports": {
-			exposedAndMappedPorts: makePortMap(),
-			exposedPorts:          []string{"1024"},
-			expectError:           true,
-		},
-		"wrong-mapped-port": {
-			exposedAndMappedPorts: makePortMap("1023/tcp"),
-			exposedPorts:          []string{"1024"},
-			expectError:           true,
-		},
-		"subset-mapped-ports": {
-			exposedAndMappedPorts: makePortMap("1024/tcp", "1025/tcp"),
-			exposedPorts:          []string{"1024", "1025", "1026"},
-			expectError:           true,
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			err := checkPortsMapped(tt.exposedAndMappedPorts, tt.exposedPorts)
-			if tt.expectError {
-				require.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
-		})
-	}
-}
-
 func TestLifecycleHooks(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -832,7 +765,7 @@ func TestCombineLifecycleHooks(t *testing.T) {
 	// - pre-X hooks: first default (2*2), then user-defined (3*2)
 	// - post-X hooks: first user-defined (3*2), then default (2*2)
 
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		var hookType string
 		// this is the particular order of execution for the hooks
 		switch i {
@@ -1093,13 +1026,13 @@ func Test_combineContainerHooks(t *testing.T) {
 	gotVal := reflect.ValueOf(got)
 	gotType := reflect.TypeOf(got)
 	expectedVal := reflect.ValueOf(expects)
-	for i := 0; i < gotVal.NumField(); i++ {
+	for i := range gotVal.NumField() {
 		fieldName := gotType.Field(i).Name
 		gotField := gotVal.Field(i)
 		expectedField := expectedVal.Field(i)
 		require.Equalf(t, expectedField.Len(), 2, "field %q not setup len expected %d got %d", fieldName, 2, expectedField.Len()) //nolint:testifylint // False positive.
 		require.Equalf(t, expectedField.Len(), gotField.Len(), "field %q len expected %d got %d", fieldName, gotField.Len(), expectedField.Len())
-		for j := 0; j < gotField.Len(); j++ {
+		for j := range gotField.Len() {
 			gotIndex := gotField.Index(j)
 			expectedIndex := expectedField.Index(j)
 			var gotID string

@@ -42,17 +42,7 @@ type ClickHouseContainer struct {
 // ConnectionHost returns the host and port of the clickhouse container, using the default, native 9000 port, and
 // obtaining the host and exposed port from the container
 func (c *ClickHouseContainer) ConnectionHost(ctx context.Context) (string, error) {
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	port, err := c.MappedPort(ctx, nativePort)
-	if err != nil {
-		return "", err
-	}
-
-	return host + ":" + port.Port(), nil
+	return c.PortEndpoint(ctx, nativePort, "")
 }
 
 // ConnectionString returns the dsn string for the clickhouse container, using the default, native 9000 port, and

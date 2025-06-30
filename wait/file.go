@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/docker/docker/errdefs"
+	"github.com/containerd/errdefs"
 )
 
 var (

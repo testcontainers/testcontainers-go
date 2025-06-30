@@ -133,15 +133,5 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // Address retrieves the address of the OpenSearch container.
 // It will use http as protocol, as TLS is not supported at the moment.
 func (c *OpenSearchContainer) Address(ctx context.Context) (string, error) {
-	containerPort, err := c.MappedPort(ctx, defaultHTTPPort)
-	if err != nil {
-		return "", err
-	}
-
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("http://%s:%s", host, containerPort.Port()), nil
+	return c.PortEndpoint(ctx, defaultHTTPPort, "http")
 }

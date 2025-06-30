@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/docker/docker/errdefs"
+	"github.com/containerd/errdefs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -147,15 +147,19 @@ func isCleanupSafe(err error) bool {
 		return true
 	}
 
-	switch x := err.(type) { //nolint:errorlint // We need to check for interfaces.
-	case errdefs.ErrNotFound:
+	// First try with containerd's errdefs
+	switch {
+	case errdefs.IsNotFound(err):
 		return true
-	case errdefs.ErrConflict:
+	case errdefs.IsConflict(err):
 		// Terminating a container that is already terminating.
 		if errAlreadyInProgress.MatchString(err.Error()) {
 			return true
 		}
 		return false
+	}
+
+	switch x := err.(type) { //nolint:errorlint // We need to check for interfaces.
 	case causer:
 		return isCleanupSafe(x.Cause())
 	case wrapErr:

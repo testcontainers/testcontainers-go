@@ -166,6 +166,9 @@ Inside each group, the hooks will be executed in the order they were defined.
 
 It's important to notice that the `Readiness` of a container is defined by the wait strategies defined for the container. **This hook will be executed right after the `PostStarts` hook**. If you want to add your own readiness checks, you can do it by adding a `PostReadies` hook to the container request, which will execute your own readiness check after the default ones. That said, the `PostStarts` hooks don't warrant that the container is ready, so you should not rely on that.
 
+!!!warning
+	Up to `v0.37.0`, the readiness hook included checks for all the exposed ports to be ready. This is not the case anymore, and the readiness hook only uses the wait strategies defined for the container to determine if the container is ready.
+
 In the following example, we are going to create a container using all the lifecycle hooks, all of them printing a message when any of the lifecycle hooks is called:
 
 <!--codeinclude-->

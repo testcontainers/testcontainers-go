@@ -2,6 +2,7 @@ package wait
 
 import (
 	"errors"
+	"slices"
 )
 
 var (
@@ -63,7 +64,7 @@ func walk(root *Strategy, visit VisitFunc) error {
 		for range s.Strategies {
 			if err := walk(&s.Strategies[i], visit); err != nil {
 				if errors.Is(err, ErrVisitRemove) {
-					s.Strategies = append(s.Strategies[:i], s.Strategies[i+1:]...)
+					s.Strategies = slices.Delete(s.Strategies, i, i+1)
 					if errors.Is(err, VisitStop) {
 						return VisitStop
 					}

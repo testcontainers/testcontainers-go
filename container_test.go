@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/build"
 	"github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -353,7 +353,7 @@ func TestCustomLabelsBuildOptionsModifier(t *testing.T) {
 			FromDockerfile: testcontainers.FromDockerfile{
 				Context:    "./testdata",
 				Dockerfile: "Dockerfile",
-				BuildOptionsModifier: func(opts *types.ImageBuildOptions) {
+				BuildOptionsModifier: func(opts *build.ImageBuildOptions) {
 					opts.Labels = map[string]string{
 						myBuildOptionLabel: myBuildOptionValue,
 					}
@@ -510,7 +510,7 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	t.Cleanup(cancel)
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		i := i
 		t.Run(fmt.Sprintf("iteration_%d", i), func(t *testing.T) {
 			t.Parallel()

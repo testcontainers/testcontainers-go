@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
-	"path/filepath"
+	"path"
 	"strings"
 	"text/template"
 	"time"
@@ -38,7 +38,6 @@ const (
 	defaultKafkaAPIPort       = "9092/tcp"
 	defaultAdminAPIPort       = "9644/tcp"
 	defaultSchemaRegistryPort = "8081/tcp"
-	defaultDockerKafkaAPIPort = "29092"
 
 	redpandaDir         = "/etc/redpanda"
 	entrypointFile      = "/entrypoint-tc.sh"
@@ -87,11 +86,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				"--memory=1G",
 			},
 			WaitingFor: wait.ForAll(
-				// Wait for the ports to be exposed only as the container needs configuration
-				// before it will bind to the ports and be ready to serve requests.
-				wait.ForListeningPort(defaultKafkaAPIPort).SkipInternalCheck(),
-				wait.ForListeningPort(defaultAdminAPIPort).SkipInternalCheck(),
-				wait.ForListeningPort(defaultSchemaRegistryPort).SkipInternalCheck(),
+				// Wait for the ports to be mapped without accessing them,
+				// because container needs Redpanda configuration before Redpanda is started
+				// and the mapped ports are part of that configuration.
+				wait.ForMappedPort(defaultKafkaAPIPort),
+				wait.ForMappedPort(defaultAdminAPIPort),
+				wait.ForMappedPort(defaultSchemaRegistryPort),
 			),
 		},
 		Started: true,
@@ -158,7 +158,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		},
 		testcontainers.ContainerFile{
 			Reader:            bytes.NewReader(bootstrapConfig),
-			ContainerFilePath: filepath.Join(redpandaDir, bootstrapConfigFile),
+			ContainerFilePath: path.Join(redpandaDir, bootstrapConfigFile),
 			FileMode:          600,
 		},
 	)
@@ -168,12 +168,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		req.Files = append(req.Files,
 			testcontainers.ContainerFile{
 				Reader:            bytes.NewReader(settings.cert),
-				ContainerFilePath: filepath.Join(redpandaDir, certFile),
+				ContainerFilePath: path.Join(redpandaDir, certFile),
 				FileMode:          600,
 			},
 			testcontainers.ContainerFile{
 				Reader:            bytes.NewReader(settings.key),
-				ContainerFilePath: filepath.Join(redpandaDir, keyFile),
+				ContainerFilePath: path.Join(redpandaDir, keyFile),
 				FileMode:          600,
 			},
 		)
@@ -206,7 +206,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return c, err
 	}
 
-	err = ctr.CopyToContainer(ctx, nodeConfig, filepath.Join(redpandaDir, "redpanda.yaml"), 0o600)
+	err = ctr.CopyToContainer(ctx, nodeConfig, path.Join(redpandaDir, "redpanda.yaml"), 0o600)
 	if err != nil {
 		return c, fmt.Errorf("copy to container: %w", err)
 	}
@@ -249,12 +249,11 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	// 8. Create Redpanda Service Accounts if configured to do so.
 	if len(settings.ServiceAccounts) > 0 {
-		adminAPIPort, err := ctr.MappedPort(ctx, nat.Port(defaultAdminAPIPort))
+		adminAPIUrl, err := c.PortEndpoint(ctx, defaultAdminAPIPort, c.urlScheme)
 		if err != nil {
-			return c, fmt.Errorf("mapped admin port: %w", err)
+			return c, fmt.Errorf("port endpoint: %w", err)
 		}
 
-		adminAPIUrl := fmt.Sprintf("%s://%v:%d", c.urlScheme, hostIP, adminAPIPort.Int())
 		adminCl := NewAdminAPIClient(adminAPIUrl)
 		if settings.enableAdminAPIAuthentication {
 			adminCl = adminCl.WithAuthentication(bootstrapAdminAPIUser, bootstrapAdminAPIPassword)

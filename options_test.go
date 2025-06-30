@@ -146,7 +146,7 @@ func TestWithStartupCommand(t *testing.T) {
 		Started: true,
 	}
 
-	testExec := testcontainers.NewRawCommand([]string{"touch", "/tmp/.testcontainers"})
+	testExec := testcontainers.NewRawCommand([]string{"touch", ".testcontainers"}, exec.WithWorkingDir("/tmp"))
 
 	err := testcontainers.WithStartupCommand(testExec)(&req)
 	require.NoError(t, err)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"net/url"
 	"time"
 
@@ -77,9 +78,7 @@ func WithEnv(envs map[string]string) CustomizeRequestOption {
 			req.Env = map[string]string{}
 		}
 
-		for key, val := range envs {
-			req.Env[key] = val
-		}
+		maps.Copy(req.Env, envs)
 
 		return nil
 	}
@@ -311,11 +310,11 @@ type RawCommand struct {
 	cmds []string
 }
 
-func NewRawCommand(cmds []string) RawCommand {
+func NewRawCommand(cmds []string, opts ...tcexec.ProcessOption) RawCommand {
 	return RawCommand{
 		cmds: cmds,
 		ExecOptions: ExecOptions{
-			opts: []tcexec.ProcessOption{},
+			opts: opts,
 		},
 	}
 }
@@ -491,9 +490,7 @@ func WithLabels(labels map[string]string) CustomizeRequestOption {
 		if req.Labels == nil {
 			req.Labels = make(map[string]string)
 		}
-		for k, v := range labels {
-			req.Labels[k] = v
-		}
+		maps.Copy(req.Labels, labels)
 		return nil
 	}
 }
@@ -528,9 +525,7 @@ func WithTmpfs(tmpfs map[string]string) CustomizeRequestOption {
 		if req.Tmpfs == nil {
 			req.Tmpfs = make(map[string]string)
 		}
-		for k, v := range tmpfs {
-			req.Tmpfs[k] = v
-		}
+		maps.Copy(req.Tmpfs, tmpfs)
 		return nil
 	}
 }

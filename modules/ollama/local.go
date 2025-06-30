@@ -16,9 +16,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/containerd/errdefs"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/errdefs"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/go-connections/nat"
 
@@ -408,9 +408,6 @@ func (c *localProcess) validateExecOptions(options container.ExecOptions) error 
 	if options.Tty {
 		errs = append(errs, fmt.Errorf("tty: %w", errors.ErrUnsupported))
 	}
-	if options.Detach {
-		errs = append(errs, fmt.Errorf("detach: %w", errors.ErrUnsupported))
-	}
 	if options.DetachKeys != "" {
 		errs = append(errs, fmt.Errorf("detach keys: %w", errors.ErrUnsupported))
 	}
@@ -615,7 +612,7 @@ func (c *localProcess) Host(_ context.Context) (string, error) {
 // MappedPort implements testcontainers.Container interface for the local Ollama binary.
 func (c *localProcess) MappedPort(_ context.Context, port nat.Port) (nat.Port, error) {
 	if port.Port() != localPort || port.Proto() != "tcp" {
-		return "", errdefs.NotFound(fmt.Errorf("port %q not found", port))
+		return "", errdefs.ErrNotFound.WithMessage(fmt.Sprintf("port %q not found", port))
 	}
 
 	return nat.Port(c.port + "/tcp"), nil
@@ -634,8 +631,8 @@ func (c *localProcess) NetworkAliases(_ context.Context) (map[string][]string, e
 }
 
 // PortEndpoint implements testcontainers.Container interface for the local Ollama binary.
-// It returns proto://host:port string for the given exposed port.
-// It returns just host:port if proto is blank.
+// It returns proto://host:port or proto://[IPv6host]:port string for the given exposed port.
+// It returns just host:port or [IPv6host]:port if proto is blank.
 func (c *localProcess) PortEndpoint(ctx context.Context, port nat.Port, proto string) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
@@ -647,11 +644,11 @@ func (c *localProcess) PortEndpoint(ctx context.Context, port nat.Port, proto st
 		return "", fmt.Errorf("mapped port: %w", err)
 	}
 
-	if proto != "" {
-		proto += "://"
+	hostPost := net.JoinHostPort(host, outerPort.Port())
+	if proto == "" {
+		return hostPost, nil
 	}
-
-	return fmt.Sprintf("%s%s:%s", proto, host, outerPort.Port()), nil
+	return proto + "://" + hostPost, nil
 }
 
 // SessionID implements testcontainers.Container interface for the local Ollama binary.

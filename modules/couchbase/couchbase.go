@@ -164,17 +164,7 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 // ConnectionString returns the connection string to connect to the Couchbase container instance.
 // It returns a string with the format couchbase://<host>:<port>
 func (c *CouchbaseContainer) ConnectionString(ctx context.Context) (string, error) {
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	port, err := c.MappedPort(ctx, KV_PORT)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("couchbase://%s:%d", host, port.Int()), nil
+	return c.PortEndpoint(ctx, KV_PORT, "couchbase")
 }
 
 // Username returns the username of the Couchbase administrator.
@@ -607,17 +597,11 @@ func (c *CouchbaseContainer) doHTTPRequest(ctx context.Context, port, path, meth
 }
 
 func (c *CouchbaseContainer) getURL(ctx context.Context, port, path string) (string, error) {
-	host, err := c.Host(ctx)
+	endpoint, err := c.PortEndpoint(ctx, nat.Port(port), "http")
 	if err != nil {
 		return "", err
 	}
-
-	mappedPort, err := c.MappedPort(ctx, nat.Port(port))
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("http://%s:%d%s", host, mappedPort.Int(), path), nil
+	return endpoint + path, nil
 }
 
 func (c *CouchbaseContainer) getInternalIPAddress(ctx context.Context) (string, error) {

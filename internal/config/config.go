@@ -13,7 +13,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/log"
 )
 
-const ReaperDefaultImage = "testcontainers/ryuk:0.11.0"
+const ReaperDefaultImage = "testcontainers/ryuk:0.12.0"
 
 var (
 	tcConfig     Config

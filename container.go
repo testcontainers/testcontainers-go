@@ -6,13 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/cpuguy83/dockercfg"
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/build"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/registry"
@@ -73,7 +74,7 @@ type Container interface {
 
 // ImageBuildInfo defines what is needed to build an image
 type ImageBuildInfo interface {
-	BuildOptions() (types.ImageBuildOptions, error) // converts the ImageBuildInfo to a types.ImageBuildOptions
+	BuildOptions() (build.ImageBuildOptions, error) // converts the ImageBuildInfo to a build.ImageBuildOptions
 	GetContext() (io.Reader, error)                 // the path to the build context
 	GetDockerfile() string                          // the relative path to the Dockerfile, including the file itself
 	GetRepo() string                                // get repo label for image
@@ -103,7 +104,7 @@ type FromDockerfile struct {
 	// BuildOptionsModifier Modifier for the build options before image build. Use it for
 	// advanced configurations while building the image. Please consider that the modifier
 	// is called after the default build options are set.
-	BuildOptionsModifier func(*types.ImageBuildOptions)
+	BuildOptionsModifier func(*build.ImageBuildOptions)
 }
 
 type ContainerFile struct {
@@ -433,8 +434,8 @@ func (c *ContainerRequest) BuildLogWriter() io.Writer {
 // BuildOptions returns the image build options when building a Docker image from a Dockerfile.
 // It will apply some defaults and finally call the BuildOptionsModifier from the FromDockerfile struct,
 // if set.
-func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
-	buildOptions := types.ImageBuildOptions{
+func (c *ContainerRequest) BuildOptions() (build.ImageBuildOptions, error) {
+	buildOptions := build.ImageBuildOptions{
 		Remove:      true,
 		ForceRemove: true,
 	}
@@ -450,16 +451,14 @@ func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 	// Make sure the auth configs from the Dockerfile are set right after the user-defined build options.
 	authsFromDockerfile, err := getAuthConfigsFromDockerfile(c)
 	if err != nil {
-		return types.ImageBuildOptions{}, fmt.Errorf("auth configs from Dockerfile: %w", err)
+		return build.ImageBuildOptions{}, fmt.Errorf("auth configs from Dockerfile: %w", err)
 	}
 
 	if buildOptions.AuthConfigs == nil {
 		buildOptions.AuthConfigs = map[string]registry.AuthConfig{}
 	}
 
-	for registry, authConfig := range authsFromDockerfile {
-		buildOptions.AuthConfigs[registry] = authConfig
-	}
+	maps.Copy(buildOptions.AuthConfigs, authsFromDockerfile)
 
 	// make sure the first tag is the one defined in the ContainerRequest
 	tag := fmt.Sprintf("%s:%s", c.GetRepo(), c.GetTag())
@@ -468,7 +467,7 @@ func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 	for _, is := range c.ImageSubstitutors {
 		modifiedTag, err := is.Substitute(tag)
 		if err != nil {
-			return types.ImageBuildOptions{}, fmt.Errorf("failed to substitute image %s with %s: %w", tag, is.Description(), err)
+			return build.ImageBuildOptions{}, fmt.Errorf("failed to substitute image %s with %s: %w", tag, is.Description(), err)
 		}
 
 		if modifiedTag != tag {
@@ -487,10 +486,10 @@ func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 	if !c.ShouldKeepBuiltImage() {
 		dst := GenericLabels()
 		if err = core.MergeCustomLabels(dst, c.Labels); err != nil {
-			return types.ImageBuildOptions{}, err
+			return build.ImageBuildOptions{}, err
 		}
 		if err = core.MergeCustomLabels(dst, buildOptions.Labels); err != nil {
-			return types.ImageBuildOptions{}, err
+			return build.ImageBuildOptions{}, err
 		}
 		buildOptions.Labels = dst
 	}
@@ -498,7 +497,7 @@ func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 	// Do this as late as possible to ensure we don't leak the context on error/panic.
 	buildContext, err := c.GetContext()
 	if err != nil {
-		return types.ImageBuildOptions{}, err
+		return build.ImageBuildOptions{}, err
 	}
 
 	buildOptions.Context = buildContext

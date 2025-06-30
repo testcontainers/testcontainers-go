@@ -17,7 +17,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var (
+const (
 	// containerPorts {
 	defaultKubeSecurePort     = "6443/tcp"
 	defaultRancherWebhookPort = "8443/tcp"
@@ -139,16 +139,6 @@ func getContainerHost(ctx context.Context, opts ...testcontainers.ContainerCusto
 
 // GetKubeConfig returns the modified kubeconfig with server url
 func (c *K3sContainer) GetKubeConfig(ctx context.Context) ([]byte, error) {
-	hostIP, err := c.Host(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get hostIP: %w", err)
-	}
-
-	mappedPort, err := c.MappedPort(ctx, nat.Port(defaultKubeSecurePort))
-	if err != nil {
-		return nil, fmt.Errorf("failed to get mapped port: %w", err)
-	}
-
 	reader, err := c.CopyFileFromContainer(ctx, defaultKubeConfigK3sPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to copy file from container: %w", err)
@@ -159,7 +149,11 @@ func (c *K3sContainer) GetKubeConfig(ctx context.Context) ([]byte, error) {
 		return nil, fmt.Errorf("failed to read file from container: %w", err)
 	}
 
-	server := "https://" + fmt.Sprintf("%v:%d", hostIP, mappedPort.Int())
+	server, err := c.PortEndpoint(ctx, nat.Port(defaultKubeSecurePort), "https")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get port endpoint: %w", err)
+	}
+
 	newKubeConfig, err := kubeConfigWithServerURL(string(kubeConfigYaml), server)
 	if err != nil {
 		return nil, fmt.Errorf("failed to modify kubeconfig with server url: %w", err)

@@ -3,7 +3,6 @@ package inbucket
 import (
 	"context"
 	"fmt"
-	"net"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -19,34 +18,14 @@ type InbucketContainer struct {
 //
 //nolint:revive,staticcheck //FIXME
 func (c *InbucketContainer) SmtpConnection(ctx context.Context) (string, error) {
-	containerPort, err := c.MappedPort(ctx, "2500/tcp")
-	if err != nil {
-		return "", err
-	}
-
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	return net.JoinHostPort(host, containerPort.Port()), nil
+	return c.PortEndpoint(ctx, "2500/tcp", "")
 }
 
 // WebInterface returns the connection string for the web interface server,
 // using the default 9000 port, and obtaining the host and exposed port from
 // the container.
 func (c *InbucketContainer) WebInterface(ctx context.Context) (string, error) {
-	containerPort, err := c.MappedPort(ctx, "9000/tcp")
-	if err != nil {
-		return "", err
-	}
-
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	return "http://" + net.JoinHostPort(host, containerPort.Port()), nil
+	return c.PortEndpoint(ctx, "9000/tcp", "http")
 }
 
 // Deprecated: use Run instead
