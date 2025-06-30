@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"slices"
 	"sync"
 	"time"
 
@@ -19,7 +20,7 @@ import (
 
 const (
 	// hubSshdImage {
-	sshdImage string = "testcontainers/sshd:1.2.0"
+	sshdImage string = "testcontainers/sshd:1.3.0"
 	// }
 
 	// HostInternal is the internal hostname used to reach the host from the container,
@@ -135,13 +136,7 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, ports ...int) (
 
 		modes := []container.NetworkMode{container.NetworkMode(sshdFirstNetwork), "none", "host"}
 		// if the container is not in one of the modes, attach it to the first network of the SSHD container
-		found := false
-		for _, mode := range modes {
-			if hostConfig.NetworkMode == mode {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(modes, hostConfig.NetworkMode)
 		if !found {
 			req.Networks = append(req.Networks, sshdFirstNetwork)
 		}

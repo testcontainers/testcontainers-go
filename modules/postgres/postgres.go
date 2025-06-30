@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"path/filepath"
 	"strings"
 
@@ -50,18 +49,13 @@ func (c *PostgresContainer) MustConnectionString(ctx context.Context, args ...st
 // which will be appended to the connection string. The format of the extra arguments is the same as the
 // connection string format, e.g. "connect_timeout=10" or "application_name=myapp"
 func (c *PostgresContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
-	containerPort, err := c.MappedPort(ctx, "5432/tcp")
-	if err != nil {
-		return "", err
-	}
-
-	host, err := c.Host(ctx)
+	endpoint, err := c.PortEndpoint(ctx, "5432/tcp", "")
 	if err != nil {
 		return "", err
 	}
 
 	extraArgs := strings.Join(args, "&")
-	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s?%s", c.user, c.password, net.JoinHostPort(host, containerPort.Port()), c.dbName, extraArgs)
+	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s?%s", c.user, c.password, endpoint, c.dbName, extraArgs)
 	return connStr, nil
 }
 

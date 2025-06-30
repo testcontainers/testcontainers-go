@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"strings"
 
 	"github.com/docker/go-connections/nat"
@@ -64,7 +65,7 @@ func (c *Container) resolveURL(ctx context.Context, port nat.Port) (string, erro
 		proto = "http"
 	}
 
-	return fmt.Sprintf("%s://%s:%v", proto, host, pulsarPort.Int()), nil
+	return fmt.Sprintf("%s://%s", proto, net.JoinHostPort(host, pulsarPort.Port())), nil
 }
 
 // WithFunctionsWorker enables the functions worker, which will override the default pulsar command

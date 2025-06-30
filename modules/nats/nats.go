@@ -85,16 +85,5 @@ func (c *NATSContainer) MustConnectionString(ctx context.Context) string {
 
 // ConnectionString returns a connection string for the NATS container
 func (c *NATSContainer) ConnectionString(ctx context.Context) (string, error) {
-	mappedPort, err := c.MappedPort(ctx, defaultClientPort)
-	if err != nil {
-		return "", err
-	}
-
-	hostIP, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	uri := fmt.Sprintf("nats://%s:%s", hostIP, mappedPort.Port())
-	return uri, nil
+	return c.PortEndpoint(ctx, defaultClientPort, "nats")
 }

@@ -2,7 +2,6 @@ package qdrant
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -58,32 +57,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // RESTEndpoint returns the REST endpoint of the Qdrant container
 func (c *QdrantContainer) RESTEndpoint(ctx context.Context) (string, error) {
-	containerPort, err := c.MappedPort(ctx, "6333/tcp")
-	if err != nil {
-		return "", fmt.Errorf("failed to get container port: %w", err)
-	}
-
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", errors.New("failed to get container host")
-	}
-
-	return fmt.Sprintf("http://%s:%s", host, containerPort.Port()), nil
+	return c.PortEndpoint(ctx, "6333/tcp", "http")
 }
 
 // GRPCEndpoint returns the gRPC endpoint of the Qdrant container
 func (c *QdrantContainer) GRPCEndpoint(ctx context.Context) (string, error) {
-	containerPort, err := c.MappedPort(ctx, "6334/tcp")
-	if err != nil {
-		return "", fmt.Errorf("failed to get container port: %w", err)
-	}
-
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", errors.New("failed to get container host")
-	}
-
-	return fmt.Sprintf("%s:%s", host, containerPort.Port()), nil
+	return c.PortEndpoint(ctx, "6334/tcp", "")
 }
 
 // WebUI returns the web UI endpoint of the Qdrant container

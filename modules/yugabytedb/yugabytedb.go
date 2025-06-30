@@ -3,7 +3,6 @@ package yugabytedb
 import (
 	"context"
 	"fmt"
-	"net"
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -105,21 +104,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // Additional arguments are appended to the connection string as query parameters
 // in the form of key=value pairs separated by "&".
 func (y *Container) YSQLConnectionString(ctx context.Context, args ...string) (string, error) {
-	host, err := y.Host(ctx)
+	endpoint, err := y.PortEndpoint(ctx, ysqlPort, "")
 	if err != nil {
-		return "", fmt.Errorf("host: %w", err)
-	}
-
-	mappedPort, err := y.MappedPort(ctx, ysqlPort)
-	if err != nil {
-		return "", fmt.Errorf("mapped port: %w", err)
+		return "", fmt.Errorf("port endpoint: %w", err)
 	}
 
 	return fmt.Sprintf(
 		"postgres://%s:%s@%s/%s?%s",
 		y.ysqlDatabaseUser,
 		y.ysqlDatabasePassword,
-		net.JoinHostPort(host, mappedPort.Port()),
+		endpoint,
 		y.ysqlDatabaseName,
 		strings.Join(args, "&"),
 	), nil

@@ -408,9 +408,6 @@ func (c *localProcess) validateExecOptions(options container.ExecOptions) error 
 	if options.Tty {
 		errs = append(errs, fmt.Errorf("tty: %w", errors.ErrUnsupported))
 	}
-	if options.Detach {
-		errs = append(errs, fmt.Errorf("detach: %w", errors.ErrUnsupported))
-	}
 	if options.DetachKeys != "" {
 		errs = append(errs, fmt.Errorf("detach keys: %w", errors.ErrUnsupported))
 	}

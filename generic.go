@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"strings"
 	"sync"
 
@@ -113,9 +114,7 @@ func GenericLabels() map[string]string {
 
 // AddGenericLabels adds the generic labels to target.
 func AddGenericLabels(target map[string]string) {
-	for k, v := range GenericLabels() {
-		target[k] = v
-	}
+	maps.Copy(target, GenericLabels())
 }
 
 // Run is a convenience function that creates a new container and starts it.

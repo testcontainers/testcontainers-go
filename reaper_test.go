@@ -531,7 +531,7 @@ func TestReaper_ReuseRunning(t *testing.T) {
 
 	obtainedReaperContainerIDs := make([]string, concurrency)
 	var wg sync.WaitGroup
-	for i := 0; i < concurrency; i++ {
+	for i := range concurrency {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
@@ -554,7 +554,7 @@ func TestReaper_ReuseRunning(t *testing.T) {
 
 func TestSpawnerBackoff(t *testing.T) {
 	b := spawner.backoff()
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		require.LessOrEqual(t, b.NextBackOff(), time.Millisecond*250, "backoff should not exceed max interval")
 	}
 }

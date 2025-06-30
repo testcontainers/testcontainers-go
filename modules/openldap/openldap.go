@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -28,18 +27,7 @@ type OpenLDAPContainer struct {
 
 // ConnectionString returns the connection string for the OpenLDAP container
 func (c *OpenLDAPContainer) ConnectionString(ctx context.Context, _ ...string) (string, error) {
-	containerPort, err := c.MappedPort(ctx, "1389/tcp")
-	if err != nil {
-		return "", err
-	}
-
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	connStr := "ldap://" + net.JoinHostPort(host, containerPort.Port())
-	return connStr, nil
+	return c.PortEndpoint(ctx, "1389/tcp", "ldap")
 }
 
 // LoadLdif loads an ldif file into the OpenLDAP container

@@ -189,10 +189,7 @@ var defaultLogConsumersHook = func(cfg *LogConsumerConfig) ContainerLifecycleHoo
 				}
 
 				dockerContainer := c.(*DockerContainer)
-				dockerContainer.consumers = dockerContainer.consumers[:0]
-				for _, consumer := range cfg.Consumers {
-					dockerContainer.followOutput(consumer)
-				}
+				dockerContainer.resetConsumers(cfg.Consumers)
 
 				return dockerContainer.startLogProduction(ctx, cfg.Opts...)
 			},
@@ -562,7 +559,7 @@ func combineContainerHooks(defaultHooks, userDefinedHooks []ContainerLifecycleHo
 	hooksType := reflect.TypeOf(hooks)
 	for _, defaultHook := range defaultHooks {
 		defaultVal := reflect.ValueOf(defaultHook)
-		for i := 0; i < hooksType.NumField(); i++ {
+		for i := range hooksType.NumField() {
 			if strings.HasPrefix(hooksType.Field(i).Name, "Pre") {
 				field := hooksVal.Field(i)
 				field.Set(reflect.AppendSlice(field, defaultVal.Field(i)))
@@ -575,7 +572,7 @@ func combineContainerHooks(defaultHooks, userDefinedHooks []ContainerLifecycleHo
 	// post-hooks will be the first ones to be executed.
 	for _, userDefinedHook := range userDefinedHooks {
 		userVal := reflect.ValueOf(userDefinedHook)
-		for i := 0; i < hooksType.NumField(); i++ {
+		for i := range hooksType.NumField() {
 			field := hooksVal.Field(i)
 			field.Set(reflect.AppendSlice(field, userVal.Field(i)))
 		}
@@ -584,7 +581,7 @@ func combineContainerHooks(defaultHooks, userDefinedHooks []ContainerLifecycleHo
 	// Finally, append the default post-hooks.
 	for _, defaultHook := range defaultHooks {
 		defaultVal := reflect.ValueOf(defaultHook)
-		for i := 0; i < hooksType.NumField(); i++ {
+		for i := range hooksType.NumField() {
 			if strings.HasPrefix(hooksType.Field(i).Name, "Post") {
 				field := hooksVal.Field(i)
 				field.Set(reflect.AppendSlice(field, defaultVal.Field(i)))
