@@ -381,6 +381,31 @@ func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 	assert.Equal(t, "abcdefghi\nfoo", strings.TrimSpace(string(b)))
 }
 
+func TestContainerLogsTty(t *testing.T) {
+	ctx := context.Background()
+	req := ContainerRequest{
+		Image: "alpine:latest",
+		Cmd:   []string{"sh", "-c", "echo 'abcdefghi' && echo 'foo'"},
+		ConfigModifier: func(ctr *container.Config) {
+			ctr.Tty = true
+		},
+		WaitingFor: wait.ForExit(),
+	}
+	ctr, err := GenericContainer(ctx, GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	r, err := ctr.Logs(ctx)
+	require.NoError(t, err)
+	defer r.Close()
+	b, err := io.ReadAll(r)
+	require.NoError(t, err)
+	assert.Equal(t, "abcdefghi\r\nfoo", strings.TrimSpace(string(b)))
+}
+
 func TestContainerLogsEnableAtStart(t *testing.T) {
 	ctx := context.Background()
 	g := TestLogConsumer{
