@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -384,32 +385,17 @@ func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
 	r := bufio.NewReader(rc)
 
 	go func() {
-		lineStarted := true
+		header := make([]byte, streamHeaderSize)
 		for err == nil {
-			line, isPrefix, err := r.ReadLine()
-
-			if lineStarted && len(line) >= streamHeaderSize {
-				line = line[streamHeaderSize:] // trim stream header
-				lineStarted = false
-			}
-			if !isPrefix {
-				lineStarted = true
-			}
-
-			_, errW := pw.Write(line)
-			if errW != nil {
+			_, errH := r.Read(header)
+			if errH != nil {
+				_ = pw.CloseWithError(err)
 				return
 			}
 
-			if !isPrefix {
-				_, errW := pw.Write([]byte("\n"))
-				if errW != nil {
-					return
-				}
-			}
-
-			if err != nil {
-				_ = pw.CloseWithError(err)
+			frameSize := binary.BigEndian.Uint32(header[4:])
+			if _, err := io.CopyN(pw, r, int64(frameSize)); err != nil {
+				pw.CloseWithError(err)
 				return
 			}
 		}
