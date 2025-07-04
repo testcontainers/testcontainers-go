@@ -1428,7 +1428,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pullOpt image.PullOptions) error {
 	registry, imageAuth, err := DockerImageAuth(ctx, tag)
 	if err != nil {
-		p.Logger.Printf("Failed to get image auth for %s. Setting empty credentials for the image: %s. Error is: %s", registry, tag, err)
+		p.Logger.Printf("No image auth found for %s. Setting empty credentials for the image: %s. This is expected for public images. Details: %s", registry, tag, err)
 	} else {
 		// see https://github.com/docker/docs/blob/e8e1204f914767128814dca0ea008644709c117f/engine/api/sdk/examples.md?plain=1#L649-L657
 		encodedJSON, err := json.Marshal(imageAuth)
