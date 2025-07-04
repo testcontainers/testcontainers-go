@@ -108,43 +108,28 @@ func (c Container) AlternatorConnectionHost(ctx context.Context) (string, error)
 
 // Run starts a ScyllaDB container with the specified image and options
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{port},
-		Cmd: []string{
-			"--developer-mode=1",
-			"--overprovisioned=1",
-			"--smp=1",
-			"--memory=512M",
-		},
-		WaitingFor: wait.ForAll(
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithCmd("--developer-mode=1", "--overprovisioned=1", "--smp=1", "--memory=512M"),
+		testcontainers.WithExposedPorts(port),
+		testcontainers.WithWaitStrategy(wait.ForAll(
 			wait.ForListeningPort(port),
 			wait.ForExec([]string{"cqlsh", "-e", "SELECT bootstrapped FROM system.local"}).WithResponseMatcher(func(body io.Reader) bool {
 				data, _ := io.ReadAll(body)
 				return strings.Contains(string(data), "COMPLETED")
 			}),
-		),
+		)),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
-	if container != nil {
-		c = &Container{Container: container}
+	if ctr != nil {
+		c = &Container{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run: %w", err)
 	}
 
 	return c, nil

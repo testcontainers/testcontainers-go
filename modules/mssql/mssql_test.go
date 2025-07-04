@@ -19,7 +19,7 @@ func TestMSSQLServer(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := mssql.Run(ctx,
-		"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
+		"mcr.microsoft.com/mssql/server:2022-CU18-ubuntu-22.04",
 		mssql.WithAcceptEULA(),
 	)
 	testcontainers.CleanupContainer(t, ctr)
@@ -49,7 +49,7 @@ func TestMSSQLServerWithMissingEulaOption(t *testing.T) {
 
 	t.Run("empty", func(t *testing.T) {
 		ctr, err := mssql.Run(ctx,
-			"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
+			"mcr.microsoft.com/mssql/server:2022-CU18-ubuntu-22.04",
 			testcontainers.WithAdditionalWaitStrategy(
 				wait.ForLog("The SQL Server End-User License Agreement (EULA) must be accepted")),
 		)
@@ -59,7 +59,7 @@ func TestMSSQLServerWithMissingEulaOption(t *testing.T) {
 
 	t.Run("not-y", func(t *testing.T) {
 		ctr, err := mssql.Run(ctx,
-			"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
+			"mcr.microsoft.com/mssql/server:2022-CU18-ubuntu-22.04",
 			testcontainers.WithEnv(map[string]string{"ACCEPT_EULA": "yes"}),
 			testcontainers.WithAdditionalWaitStrategy(
 				wait.ForLog("The SQL Server End-User License Agreement (EULA) must be accepted")),
@@ -73,7 +73,7 @@ func TestMSSQLServerWithConnectionStringParameters(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := mssql.Run(ctx,
-		"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
+		"mcr.microsoft.com/mssql/server:2022-CU18-ubuntu-22.04",
 		mssql.WithAcceptEULA(),
 	)
 	testcontainers.CleanupContainer(t, ctr)
@@ -103,7 +103,7 @@ func TestMSSQLServerWithCustomStrongPassword(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := mssql.Run(ctx,
-		"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
+		"mcr.microsoft.com/mssql/server:2022-CU18-ubuntu-22.04",
 		mssql.WithAcceptEULA(),
 		mssql.WithPassword("Strong@Passw0rd"),
 	)
@@ -127,7 +127,7 @@ func TestMSSQLServerWithInvalidPassword(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := mssql.Run(ctx,
-		"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
+		"mcr.microsoft.com/mssql/server:2022-CU18-ubuntu-22.04",
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("Password validation failed")),
 		mssql.WithAcceptEULA(),
@@ -195,7 +195,7 @@ func TestMSSQLServerWithScriptsDDL(t *testing.T) {
 
 	t.Run("WithPassword/beforeWithScripts", func(t *testing.T) {
 		assertContainer(t, ctx,
-			"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
+			"mcr.microsoft.com/mssql/server:2022-CU18-ubuntu-22.04",
 			mssql.WithPassword(password),
 			mssql.WithInitSQL(bytes.NewReader(seedSQLContent)),
 		)
@@ -203,15 +203,15 @@ func TestMSSQLServerWithScriptsDDL(t *testing.T) {
 
 	t.Run("WithPassword/afterWithScripts", func(t *testing.T) {
 		assertContainer(t, ctx,
-			"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
+			"mcr.microsoft.com/mssql/server:2022-CU18-ubuntu-22.04",
 			mssql.WithInitSQL(bytes.NewReader(seedSQLContent)),
 			mssql.WithPassword(password),
 		)
 	})
 
-	t.Run("2019-CU30-ubuntu-20.04/oldSQLCmd", func(t *testing.T) {
+	t.Run("2019-CU32-ubuntu-20.04/oldSQLCmd", func(t *testing.T) {
 		assertContainer(t, ctx,
-			"mcr.microsoft.com/mssql/server:2019-CU30-ubuntu-20.04",
+			"mcr.microsoft.com/mssql/server:2019-CU32-ubuntu-20.04",
 			mssql.WithPassword(password),
 			mssql.WithInitSQL(bytes.NewReader(seedSQLContent)),
 		)

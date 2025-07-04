@@ -8,6 +8,7 @@ import (
 )
 
 type options struct {
+	env              map[string]string
 	azuriteImage     string
 	azuriteOptions   []testcontainers.ContainerCustomizer
 	azuriteContainer *azurite.Container
@@ -16,6 +17,7 @@ type options struct {
 
 func defaultOptions() options {
 	return options{
+		env:              make(map[string]string),
 		azuriteImage:     "mcr.microsoft.com/azure-storage/azurite:3.33.0",
 		azuriteContainer: nil,
 	}
@@ -24,7 +26,7 @@ func defaultOptions() options {
 // Satisfy the testcontainers.CustomizeRequestOption interface
 var _ testcontainers.ContainerCustomizer = (Option)(nil)
 
-// Option is an option for the Redpanda container.
+// Option is an option for the EventHubs container.
 type Option func(*options) error
 
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
@@ -44,9 +46,9 @@ func WithAzurite(img string, opts ...testcontainers.ContainerCustomizer) Option 
 }
 
 // WithAcceptEULA sets the ACCEPT_EULA environment variable to "Y" for the eventhubs container.
-func WithAcceptEULA() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["ACCEPT_EULA"] = "Y"
+func WithAcceptEULA() Option {
+	return func(o *options) error {
+		o.env["ACCEPT_EULA"] = "Y"
 
 		return nil
 	}

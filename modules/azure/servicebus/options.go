@@ -8,6 +8,7 @@ import (
 )
 
 type options struct {
+	env            map[string]string
 	mssqlImage     string
 	mssqlOptions   []testcontainers.ContainerCustomizer
 	mssqlContainer *mssql.MSSQLServerContainer
@@ -16,6 +17,9 @@ type options struct {
 
 func defaultOptions() options {
 	return options{
+		env: map[string]string{
+			"SQL_WAIT_INTERVAL": "0", // default is zero because the MSSQL container is started first
+		},
 		mssqlImage:     defaultMSSQLImage,
 		mssqlContainer: nil,
 	}
@@ -24,7 +28,7 @@ func defaultOptions() options {
 // Satisfy the testcontainers.CustomizeRequestOption interface
 var _ testcontainers.ContainerCustomizer = (Option)(nil)
 
-// Option is an option for the Redpanda container.
+// Option is an option for the ServiceBus container.
 type Option func(*options) error
 
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
@@ -34,7 +38,7 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 }
 
 // WithMSSQL sets the image and options for the MSSQL container.
-// By default, the image is "mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04".
+// By default, the image is "mcr.microsoft.com/mssql/server:2022-CU18-ubuntu-22.04".
 func WithMSSQL(img string, opts ...testcontainers.ContainerCustomizer) Option {
 	return func(o *options) error {
 		o.mssqlImage = img
@@ -44,9 +48,9 @@ func WithMSSQL(img string, opts ...testcontainers.ContainerCustomizer) Option {
 }
 
 // WithAcceptEULA sets the ACCEPT_EULA environment variable to "Y" for the eventhubs container.
-func WithAcceptEULA() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["ACCEPT_EULA"] = "Y"
+func WithAcceptEULA() Option {
+	return func(o *options) error {
+		o.env["ACCEPT_EULA"] = "Y"
 
 		return nil
 	}

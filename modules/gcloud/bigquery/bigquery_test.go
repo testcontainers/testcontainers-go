@@ -76,7 +76,7 @@ func TestBigQueryWithDataYAML(t *testing.T) {
 			tcbigquery.WithDataYAML(bytes.NewReader(dataYaml)),
 		)
 		testcontainers.CleanupContainer(t, bigQueryContainer)
-		require.EqualError(t, err, `data yaml already exists`)
+		require.ErrorContains(t, err, `data yaml already exists`)
 	})
 
 	t.Run("multi-value-not-set", func(t *testing.T) {
