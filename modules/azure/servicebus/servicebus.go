@@ -131,7 +131,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	// module options take precedence over default options
-	moduleOpts = append(moduleOpts, testcontainers.WithEnv(defaultOptions.env), testcontainers.WithFiles(defaultOptions.files...))
+	moduleOpts = append(moduleOpts, testcontainers.WithEnv(defaultOptions.env))
 
 	var err error
 	c.Container, err = testcontainers.Run(ctx, img, moduleOpts...)

@@ -9,7 +9,6 @@ import (
 
 type options struct {
 	env            map[string]string
-	files          []testcontainers.ContainerFile
 	mssqlImage     string
 	mssqlOptions   []testcontainers.ContainerCustomizer
 	mssqlContainer *mssql.MSSQLServerContainer
@@ -60,9 +59,9 @@ func WithAcceptEULA() Option {
 // WithConfig sets the eventhubs config file for the eventhubs container,
 // copying the content of the reader to the container file at
 // "/ServiceBus_Emulator/ConfigFiles/Config.json".
-func WithConfig(r io.Reader) Option {
-	return func(o *options) error {
-		o.files = append(o.files, testcontainers.ContainerFile{
+func WithConfig(r io.Reader) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		req.Files = append(req.Files, testcontainers.ContainerFile{
 			Reader:            r,
 			ContainerFilePath: containerConfigFile,
 			FileMode:          0o644,
