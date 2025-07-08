@@ -368,7 +368,6 @@ func (c *DockerContainer) inspectRawContainer(ctx context.Context) (*container.I
 // Logs will fetch both STDOUT and STDERR from the current container. Returns a
 // ReadCloser and leaves it up to the caller to extract what it wants.
 func (c *DockerContainer) Logs(ctx context.Context) (io.ReadCloser, error) {
-
 	options := container.LogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
