@@ -159,7 +159,7 @@ func TestBuildImageFromDockerfile_Target(t *testing.T) {
 
 		logs, err := io.ReadAll(r)
 		require.NoError(t, err)
-		require.Equal(t, fmt.Sprintf("target%d\n\n", i), string(logs))
+		require.Equal(t, fmt.Sprintf("target%d\n", i), string(logs))
 	}
 }
 
