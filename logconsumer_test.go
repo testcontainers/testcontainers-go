@@ -378,7 +378,7 @@ func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 	defer r.Close()
 	b, err := io.ReadAll(r)
 	require.NoError(t, err)
-	assert.Equal(t, "abcdefghi\nfoo", strings.TrimSpace(string(b)))
+	require.Equal(t, "abcdefghi\nfoo", strings.TrimSpace(string(b)))
 }
 
 func TestContainerLogsTty(t *testing.T) {
@@ -403,7 +403,7 @@ func TestContainerLogsTty(t *testing.T) {
 	defer r.Close()
 	b, err := io.ReadAll(r)
 	require.NoError(t, err)
-	assert.Equal(t, "abcdefghi\r\nfoo", strings.TrimSpace(string(b)))
+	require.Equal(t, "abcdefghi\r\nfoo", strings.TrimSpace(string(b)))
 }
 
 func TestContainerLogsEnableAtStart(t *testing.T) {
