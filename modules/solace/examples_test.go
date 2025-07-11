@@ -73,7 +73,7 @@ func ExampleRun_withTopicAndQueue() {
 
 func testMessagePublishAndConsume(solaceC *solacecontainer.SolaceContainer, queueName, topicName string) error {
 	// Get the SMF service URL from the container
-	smfURL, err := solaceC.GetOrigin(solacecontainer.ServiceSMF)
+	smfURL, err := solaceC.BrokerURLFor(solacecontainer.ServiceSMF)
 	if err != nil {
 		return fmt.Errorf("failed to get SMF URL: %w", err)
 	}

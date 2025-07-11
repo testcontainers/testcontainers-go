@@ -247,7 +247,7 @@ func (s *SolaceContainer) Run(ctx context.Context) error {
 			return fmt.Errorf("failed to copy CLI script to container: %w", err)
 		}
 
-		// Execute the script using the same method as Java implementation
+		// Execute the script
 		code, out, err := s.Container.Exec(ctx, []string{"/usr/sw/loads/currentload/bin/cli", "-A", "-es", "script.cli"})
 		output := ""
 		if out != nil {
@@ -269,8 +269,8 @@ func (s *SolaceContainer) Run(ctx context.Context) error {
 	return nil
 }
 
-// GetOrigin returns the origin URL for a given service
-func (s *SolaceContainer) GetOrigin(service Service) (string, error) {
+// BrokerURLFor returns the origin URL for a given service
+func (s *SolaceContainer) BrokerURLFor(service Service) (string, error) {
 	host, err := s.Container.Host(s.ctx)
 	if err != nil {
 		return "", err
@@ -281,6 +281,7 @@ func (s *SolaceContainer) GetOrigin(service Service) (string, error) {
 	}
 	return fmt.Sprintf("%s://%s:%s", service.Protocol, host, port.Port()), nil
 }
+
 
 func (s *SolaceContainer) Terminate() error {
 	if s.Container != nil {
