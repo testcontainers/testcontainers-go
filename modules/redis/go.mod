@@ -9,7 +9,7 @@ require (
 	github.com/mdelapenya/tlscert v0.2.0
 	github.com/redis/go-redis/v9 v9.7.3
 	github.com/stretchr/testify v1.10.0
-	github.com/testcontainers/testcontainers-go v0.37.0
+	github.com/testcontainers/testcontainers-go v0.38.0
 
 )
 
