@@ -26,6 +26,7 @@ func resetTestEnv(t *testing.T) {
 	t.Setenv("RYUK_VERBOSE", "")
 	t.Setenv("RYUK_RECONNECTION_TIMEOUT", "")
 	t.Setenv("RYUK_CONNECTION_TIMEOUT", "")
+	t.Setenv("TESTCONTAINERS_AUTO_EXPOSE_PORTS", "true")
 }
 
 func TestReadConfig(t *testing.T) {
@@ -42,8 +43,9 @@ func TestReadConfig(t *testing.T) {
 		config := Read()
 
 		expected := Config{
-			RyukDisabled: true,
-			Host:         "", // docker socket is empty at the properties file
+			RyukDisabled:    true,
+			Host:            "", // docker socket is empty at the properties file
+			AutoExposePorts: true,
 		}
 
 		require.Equal(t, expected, config)
@@ -66,7 +68,9 @@ func TestReadTCConfig(t *testing.T) {
 
 		config := read()
 
-		expected := Config{}
+		expected := Config{
+			AutoExposePorts: true,
+		}
 
 		assert.Equal(t, expected, config)
 	})
@@ -89,6 +93,7 @@ func TestReadTCConfig(t *testing.T) {
 			Host:                    "", // docker socket is empty at the properties file
 			RyukReconnectionTimeout: 13 * time.Second,
 			RyukConnectionTimeout:   12 * time.Second,
+			AutoExposePorts:         true,
 		}
 
 		assert.Equal(t, expected, config)
@@ -101,7 +106,9 @@ func TestReadTCConfig(t *testing.T) {
 
 		config := read()
 
-		expected := Config{}
+		expected := Config{
+			AutoExposePorts: true,
+		}
 
 		assert.Equal(t, expected, config)
 	})
@@ -113,7 +120,10 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("DOCKER_HOST", tcpDockerHost33293)
 
 		config := read()
-		expected := Config{} // the config does not read DOCKER_HOST, that's why it's empty
+		// the config does not read DOCKER_HOST, that's why it's empty
+		expected := Config{
+			AutoExposePorts: true,
+		}
 
 		assert.Equal(t, expected, config)
 	})
@@ -128,7 +138,7 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("RYUK_VERBOSE", "true")
 		t.Setenv("RYUK_RECONNECTION_TIMEOUT", "13s")
 		t.Setenv("RYUK_CONNECTION_TIMEOUT", "12s")
-
+		t.Setenv("TESTCONTAINERS_AUTO_EXPOSE_PORTS", "true")
 		config := read()
 		expected := Config{
 			HubImageNamePrefix:      defaultHubPrefix,
@@ -137,6 +147,7 @@ func TestReadTCConfig(t *testing.T) {
 			RyukVerbose:             true,
 			RyukReconnectionTimeout: 13 * time.Second,
 			RyukConnectionTimeout:   12 * time.Second,
+			AutoExposePorts:         true,
 		}
 
 		assert.Equal(t, expected, config)
@@ -145,9 +156,11 @@ func TestReadTCConfig(t *testing.T) {
 	t.Run("HOME contains TC properties file", func(t *testing.T) {
 		defaultRyukConnectionTimeout := 60 * time.Second
 		defaultRyukReconnectionTimeout := 10 * time.Second
+		defaultAutoExposePorts := true
 		defaultConfig := Config{
 			RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 			RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+			AutoExposePorts:         defaultAutoExposePorts,
 		}
 
 		tests := []struct {
@@ -164,6 +177,7 @@ func TestReadTCConfig(t *testing.T) {
 					Host:                    tcpDockerHost33293,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -176,6 +190,7 @@ func TestReadTCConfig(t *testing.T) {
 					Host:                    tcpDockerHost4711,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -191,6 +206,7 @@ func TestReadTCConfig(t *testing.T) {
 					TLSVerify:               1,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -200,6 +216,7 @@ func TestReadTCConfig(t *testing.T) {
 				Config{
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -212,6 +229,7 @@ func TestReadTCConfig(t *testing.T) {
 					Host:                    tcpDockerHost1234,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -222,6 +240,7 @@ func TestReadTCConfig(t *testing.T) {
 					Host:                    tcpDockerHost33293,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -242,6 +261,7 @@ func TestReadTCConfig(t *testing.T) {
 					CertPath:                "/tmp/certs",
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -252,6 +272,7 @@ func TestReadTCConfig(t *testing.T) {
 					RyukDisabled:            true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -262,6 +283,7 @@ func TestReadTCConfig(t *testing.T) {
 					RyukPrivileged:          true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -272,6 +294,7 @@ func TestReadTCConfig(t *testing.T) {
 				Config{
 					RyukReconnectionTimeout: 13 * time.Second,
 					RyukConnectionTimeout:   12 * time.Second,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -284,6 +307,7 @@ func TestReadTCConfig(t *testing.T) {
 				Config{
 					RyukReconnectionTimeout: 13 * time.Second,
 					RyukConnectionTimeout:   12 * time.Second,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -297,6 +321,7 @@ func TestReadTCConfig(t *testing.T) {
 				Config{
 					RyukReconnectionTimeout: 13 * time.Second,
 					RyukConnectionTimeout:   12 * time.Second,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -307,6 +332,7 @@ func TestReadTCConfig(t *testing.T) {
 					RyukVerbose:             true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -319,6 +345,7 @@ func TestReadTCConfig(t *testing.T) {
 					RyukDisabled:            true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -331,6 +358,7 @@ func TestReadTCConfig(t *testing.T) {
 					RyukPrivileged:          true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -343,6 +371,7 @@ func TestReadTCConfig(t *testing.T) {
 					RyukDisabled:            true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -355,6 +384,7 @@ func TestReadTCConfig(t *testing.T) {
 					RyukDisabled:            true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -383,6 +413,7 @@ func TestReadTCConfig(t *testing.T) {
 					RyukVerbose:             true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -395,6 +426,7 @@ func TestReadTCConfig(t *testing.T) {
 					RyukVerbose:             true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -423,6 +455,7 @@ func TestReadTCConfig(t *testing.T) {
 					RyukPrivileged:          true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -435,6 +468,7 @@ func TestReadTCConfig(t *testing.T) {
 					RyukPrivileged:          true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -462,8 +496,9 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
 				},
 				Config{
-					RyukDisabled:   true,
-					RyukPrivileged: true,
+					RyukDisabled:    true,
+					RyukPrivileged:  true,
+					AutoExposePorts: defaultAutoExposePorts,
 				},
 			},
 			{
@@ -490,6 +525,7 @@ func TestReadTCConfig(t *testing.T) {
 					HubImageNamePrefix:      defaultHubPrefix + "/props/",
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -502,6 +538,7 @@ func TestReadTCConfig(t *testing.T) {
 					HubImageNamePrefix:      defaultHubPrefix + "/env/",
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         defaultAutoExposePorts,
 				},
 			},
 			{
@@ -514,6 +551,55 @@ func TestReadTCConfig(t *testing.T) {
 					HubImageNamePrefix:      defaultHubPrefix + "/env/",
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         defaultAutoExposePorts,
+				},
+			},
+			{
+				"auto-expose-ports/env-var/properties/0",
+				`tc.auto.expose.ports=true`,
+				map[string]string{
+					"TESTCONTAINERS_AUTO_EXPOSE_PORTS": "true",
+				},
+				Config{
+					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
+					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         true,
+				},
+			},
+			{
+				"auto-expose-ports/env-var/properties/1",
+				`tc.auto.expose.ports=false`,
+				map[string]string{
+					"TESTCONTAINERS_AUTO_EXPOSE_PORTS": "true",
+				},
+				Config{
+					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
+					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         true,
+				},
+			},
+			{
+				"auto-expose-ports/env-var/properties/2",
+				`tc.auto.expose.ports=true`,
+				map[string]string{
+					"TESTCONTAINERS_AUTO_EXPOSE_PORTS": "false",
+				},
+				Config{
+					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
+					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         false,
+				},
+			},
+			{
+				"auto-expose-ports/env-var/properties/3",
+				`tc.auto.expose.ports=false`,
+				map[string]string{
+					"TESTCONTAINERS_AUTO_EXPOSE_PORTS": "false",
+				},
+				Config{
+					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
+					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					AutoExposePorts:         false,
 				},
 			},
 		}
