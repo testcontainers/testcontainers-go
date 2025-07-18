@@ -30,15 +30,7 @@ type MilvusContainer struct {
 // ConnectionString returns the connection string for the milvus container, using the default 19530 port, and
 // obtaining the host and exposed port from the container.
 func (c *MilvusContainer) ConnectionString(ctx context.Context) (string, error) {
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-	port, err := c.MappedPort(ctx, grpcPort)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%s:%s", host, port.Port()), nil
+	return c.PortEndpoint(ctx, grpcPort, "")
 }
 
 // Deprecated: use Run instead

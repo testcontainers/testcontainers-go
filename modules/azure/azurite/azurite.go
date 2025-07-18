@@ -55,11 +55,6 @@ func (c *Container) TableServiceURL(ctx context.Context) (string, error) {
 }
 
 func (c *Container) serviceURL(ctx context.Context, srv service) (string, error) {
-	hostname, err := c.Host(ctx)
-	if err != nil {
-		return "", fmt.Errorf("host: %w", err)
-	}
-
 	var port nat.Port
 	switch srv {
 	case blobService:
@@ -72,12 +67,7 @@ func (c *Container) serviceURL(ctx context.Context, srv service) (string, error)
 		return "", fmt.Errorf("unknown service: %s", srv)
 	}
 
-	mappedPort, err := c.MappedPort(ctx, port)
-	if err != nil {
-		return "", fmt.Errorf("mapped port: %w", err)
-	}
-
-	return fmt.Sprintf("http://%s:%d", hostname, mappedPort.Int()), nil
+	return c.PortEndpoint(ctx, port, "http")
 }
 
 // Run creates an instance of the Azurite container type

@@ -93,14 +93,9 @@ func (c *DatabendContainer) MustConnectionString(ctx context.Context, args ...st
 }
 
 func (c *DatabendContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
-	containerPort, err := c.MappedPort(ctx, "8000/tcp")
+	endpoint, err := c.PortEndpoint(ctx, "8000/tcp", "")
 	if err != nil {
-		return "", fmt.Errorf("mapped port: %w", err)
-	}
-
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
+		return "", fmt.Errorf("port endpoint: %w", err)
 	}
 
 	extraArgs := ""
@@ -112,7 +107,7 @@ func (c *DatabendContainer) ConnectionString(ctx context.Context, args ...string
 	}
 
 	// databend://databend:databend@localhost:8000/default?sslmode=disable
-	connectionString := fmt.Sprintf("databend://%s:%s@%s:%s/%s%s", c.username, c.password, host, containerPort.Port(), c.database, extraArgs)
+	connectionString := fmt.Sprintf("databend://%s:%s@%s/%s%s", c.username, c.password, endpoint, c.database, extraArgs)
 	return connectionString, nil
 }
 

@@ -29,22 +29,13 @@ type CassandraContainer struct {
 // ConnectionHost returns the host and port of the cassandra container, using the default, native port,
 // obtaining the host and exposed port from the container
 func (c *CassandraContainer) ConnectionHost(ctx context.Context) (string, error) {
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
 	// Use the secure port if TLS is enabled
 	portToUse := port
 	if c.settings.tlsConfig != nil {
 		portToUse = securePort
 	}
 
-	mappedPort, err := c.MappedPort(ctx, portToUse)
-	if err != nil {
-		return "", err
-	}
-	return host + ":" + mappedPort.Port(), nil
+	return c.PortEndpoint(ctx, portToUse, "")
 }
 
 // WithConfigFile sets the YAML config file to be used for the cassandra container

@@ -206,17 +206,7 @@ func configureCMD(settings options) []string {
 // ClientEndpoint returns the client endpoint for the etcd container, and an error if any.
 // For a cluster, it returns the client endpoint of the first node.
 func (c *EtcdContainer) ClientEndpoint(ctx context.Context) (string, error) {
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	port, err := c.MappedPort(ctx, clientPort)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("http://%s:%s", host, port.Port()), nil
+	return c.PortEndpoint(ctx, clientPort, "http")
 }
 
 // ClientEndpoints returns the client endpoints for the etcd cluster.
@@ -242,17 +232,7 @@ func (c *EtcdContainer) ClientEndpoints(ctx context.Context) ([]string, error) {
 // PeerEndpoint returns the peer endpoint for the etcd container, and an error if any.
 // For a cluster, it returns the peer endpoint of the first node.
 func (c *EtcdContainer) PeerEndpoint(ctx context.Context) (string, error) {
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	port, err := c.MappedPort(ctx, peerPort)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("http://%s:%s", host, port.Port()), nil
+	return c.PortEndpoint(ctx, peerPort, "http")
 }
 
 // PeerEndpoints returns the peer endpoints for the etcd cluster.

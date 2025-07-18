@@ -76,17 +76,7 @@ func (c *InfluxDbContainer) MustConnectionUrl(ctx context.Context) string {
 
 //nolint:revive,staticcheck //FIXME
 func (c *InfluxDbContainer) ConnectionUrl(ctx context.Context) (string, error) {
-	containerPort, err := c.MappedPort(ctx, "8086/tcp")
-	if err != nil {
-		return "", err
-	}
-
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("http://%s:%s", host, containerPort.Port()), nil
+	return c.PortEndpoint(ctx, "8086/tcp", "http")
 }
 
 func WithUsername(username string) testcontainers.CustomizeRequestOption {

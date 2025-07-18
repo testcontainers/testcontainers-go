@@ -54,15 +54,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
-// GetURL returns the URL of the MockServer container
+// URL returns the URL of the MockServer container
 func (c *MockServerContainer) URL(ctx context.Context) (string, error) {
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-	port, err := c.MappedPort(ctx, "1080/tcp")
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("http://%s:%d", host, port.Int()), nil
+	return c.PortEndpoint(ctx, "1080/tcp", "http")
 }

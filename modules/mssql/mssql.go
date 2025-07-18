@@ -154,19 +154,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // ConnectionString returns the connection string for the MSSQLServer container
 func (c *MSSQLServerContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
-	host, err := c.Host(ctx)
+	endpoint, err := c.PortEndpoint(ctx, defaultPort, "")
 	if err != nil {
-		return "", fmt.Errorf("host: %w", err)
-	}
-
-	containerPort, err := c.MappedPort(ctx, defaultPort)
-	if err != nil {
-		return "", fmt.Errorf("mapped port: %w", err)
+		return "", fmt.Errorf("port endpoint: %w", err)
 	}
 
 	extraArgs := strings.Join(args, "&")
 
-	connStr := fmt.Sprintf("sqlserver://%s:%s@%s:%s?%s", c.username, c.password, host, containerPort.Port(), extraArgs)
+	connStr := fmt.Sprintf("sqlserver://%s:%s@%s?%s", c.username, c.password, endpoint, extraArgs)
 
 	return connStr, nil
 }

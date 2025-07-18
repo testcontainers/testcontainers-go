@@ -54,17 +54,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // ConnectionString returns DynamoDB local endpoint host and port in <host>:<port> format
 func (c *DynamoDBContainer) ConnectionString(ctx context.Context) (string, error) {
-	mappedPort, err := c.MappedPort(ctx, port)
-	if err != nil {
-		return "", err
-	}
-
-	hostIP, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	return hostIP + ":" + mappedPort.Port(), nil
+	return c.PortEndpoint(ctx, port, "")
 }
 
 // WithSharedDB allows container reuse between successive runs. Data will be persisted
