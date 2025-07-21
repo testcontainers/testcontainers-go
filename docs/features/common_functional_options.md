@@ -38,7 +38,7 @@ At the same time, it's possible to set a wait strategy and a custom deadline wit
 
 ##### WithAdditionalWaitStrategy
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.38.0"><span class="tc-version">:material-tag: v0.38.0</span></a>
 
 If you need to add a wait strategy to the existing wait strategy, you can use `testcontainers.WithAdditionalWaitStrategy`.
 
@@ -47,7 +47,7 @@ If you need to add a wait strategy to the existing wait strategy, you can use `t
 
 ##### WithAdditionalWaitStrategyAndDeadline
 
-- - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.38.0"><span class="tc-version">:material-tag: v0.38.0</span></a>
 
 At the same time, it's possible to add a wait strategy and a custom deadline with `testcontainers.WithAdditionalWaitStrategyAndDeadline`.
 
@@ -113,13 +113,13 @@ ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3",
 
 ##### WithLifecycleHooks
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.38.0"><span class="tc-version">:material-tag: v0.38.0</span></a>
 
 If you need to set the lifecycle hooks for the container, you can use `testcontainers.WithLifecycleHooks`, which replaces the existing lifecycle hooks with the new ones.
 
 ##### WithAdditionalLifecycleHooks
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.38.0"><span class="tc-version">:material-tag: v0.38.0</span></a>
 
 You can also use `testcontainers.WithAdditionalLifecycleHooks`, which appends the new lifecycle hooks to the existing ones.
 
@@ -261,7 +261,7 @@ func (g *TestLogConsumer) Accept(l Log) {
 
 ##### WithLogConsumerConfig
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.38.0"><span class="tc-version">:material-tag: v0.38.0</span></a>
 
 If you need to set the log consumer config for the container, you can use `testcontainers.WithLogConsumerConfig`. This option completely replaces the existing log consumer config, including the log consumers and the log production options.
 
@@ -295,7 +295,7 @@ Please read the [Following Container Logs](/features/follow_logs) documentation 
 
 ##### WithAlwaysPull
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.38.0"><span class="tc-version">:material-tag: v0.38.0</span></a>
 
 If you need to pull the image before starting the container, you can use `testcontainers.WithAlwaysPull()`.
 
@@ -318,7 +318,7 @@ Using the `WithImageSubstitutors` options, you could define your own substitutio
 
 ##### WithImagePlatform
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.38.0"><span class="tc-version">:material-tag: v0.38.0</span></a>
 
 If you need to set the platform for a container, you can use `testcontainers.WithImagePlatform(platform string)`.
 
@@ -337,7 +337,7 @@ In the case you need to retrieve the network name, you can simply read it from t
 
 ##### WithNetworkByName
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.38.0"><span class="tc-version">:material-tag: v0.38.0</span></a>
 
 If you want to attach your containers to an already existing Docker network by its name, you can use the `network.WithNetworkName(aliases []string, networkName string)` option, which receives an alias as parameter and the network name, attaching the container to it, and setting the network alias for that network.
 
@@ -346,7 +346,7 @@ If you want to attach your containers to an already existing Docker network by i
 
 ##### WithBridgeNetwork
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.38.0"><span class="tc-version">:material-tag: v0.38.0</span></a>
 
 If you want to attach your containers to the `bridge` network, you can use the `network.WithBridgeNetwork()` option.
 
@@ -417,7 +417,7 @@ The above example is updating the predefined command of the image, **appending**
 
 ##### WithName
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.38.0"><span class="tc-version">:material-tag: v0.38.0</span></a>
 
 If you need to set the name of the container, you can use the `testcontainers.WithName` option.
 
@@ -433,7 +433,7 @@ ctr, err := mymodule.Run(ctx, "docker.io/myservice:1.2.3",
 
 ##### WithNoStart
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.38.0"><span class="tc-version">:material-tag: v0.38.0</span></a>
 
 If you need to prevent the container from being started after creation, you can use the `testcontainers.WithNoStart` option.
 

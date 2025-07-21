@@ -7,7 +7,7 @@ toolchain go1.24.1
 require (
 	github.com/arangodb/go-driver/v2 v2.1.3
 	github.com/stretchr/testify v1.10.0
-	github.com/testcontainers/testcontainers-go v0.37.0
+	github.com/testcontainers/testcontainers-go v0.38.0
 )
 
 require (

@@ -7,7 +7,7 @@ toolchain go1.23.6
 require (
 	github.com/microsoft/go-mssqldb v1.7.0
 	github.com/stretchr/testify v1.10.0
-	github.com/testcontainers/testcontainers-go v0.37.0
+	github.com/testcontainers/testcontainers-go v0.38.0
 )
 
 require (
