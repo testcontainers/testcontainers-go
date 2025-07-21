@@ -27,7 +27,7 @@ func ExampleRun() {
 		}).
 		WithShmSize(1 << 30)
 	defer func() {
-		if err := solaceC.Terminate(); err != nil {
+		if err := solaceC.Terminate(ctx); err != nil {
 			log.Printf("Error terminating Solace container: %v", err)
 		}
 	}()
@@ -52,23 +52,23 @@ func ExampleRun_withTopicAndQueue() {
 		WithQueue("TestQueue", "Topic/MyTopic").
 		WithShmSize(1 << 30)
 	defer func() {
-		if err := solaceC.Terminate(); err != nil {
+		if err := solaceC.Terminate(ctx); err != nil {
 			log.Printf("Error terminating Solace container: %v", err)
 		}
 	}()
 
 	err := solaceC.Run(ctx)
-	fmt.Println(err == nil)
+	fmt.Println(err)
 
 	err = testMessagePublishAndConsume(solaceC, "TestQueue", "Topic/MyTopic")
-	fmt.Println(err == nil)
+	fmt.Println(err)
 
 	// Output:
-	// true
+	// <nil>
 	// Published message to topic: Topic/MyTopic
 	// Received message: Hello from Solace testcontainers!
 	// Successfully received message from queue: TestQueue
-	// true
+	// <nil>
 }
 
 func testMessagePublishAndConsume(solaceC *solacecontainer.SolaceContainer, queueName, topicName string) error {

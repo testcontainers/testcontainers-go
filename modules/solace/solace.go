@@ -15,7 +15,7 @@ import (
 )
 
 type SolaceContainer struct {
-	Container      testcontainers.Container
+	testcontainers.Container
 	Username       string
 	Password       string
 	Vpn            string
@@ -100,7 +100,7 @@ func (s *SolaceContainer) waitForSolaceActive(ctx context.Context) error {
 
 	for attempt := 0; attempt < maxAttempts; attempt++ {
 		// Execute grep command to check for "Primary Virtual Router is now active" in system log
-		code, _, err := s.Container.Exec(ctx, []string{"grep", "-R", "Primary Virtual Router is now active", "/usr/sw/jail/logs/system.log"})
+		code, _, err := s.Exec(ctx, []string{"grep", "-R", "Primary Virtual Router is now active", "/usr/sw/jail/logs/system.log"})
 
 		if err == nil && code == 0 {
 			// Found the message, broker is active
@@ -242,13 +242,13 @@ func (s *SolaceContainer) Run(ctx context.Context) error {
 		}
 
 		// Copy the script into the container at the correct location
-		err = s.Container.CopyFileToContainer(ctx, tmpFile.Name(), "/usr/sw/jail/cliscripts/script.cli", 0o644)
+		err = s.CopyFileToContainer(ctx, tmpFile.Name(), "/usr/sw/jail/cliscripts/script.cli", 0o644)
 		if err != nil {
 			return fmt.Errorf("failed to copy CLI script to container: %w", err)
 		}
 
 		// Execute the script
-		code, out, err := s.Container.Exec(ctx, []string{"/usr/sw/loads/currentload/bin/cli", "-A", "-es", "script.cli"})
+		code, out, err := s.Exec(ctx, []string{"/usr/sw/loads/currentload/bin/cli", "-A", "-es", "script.cli"})
 		output := ""
 		if out != nil {
 			bytes, readErr := io.ReadAll(out)
@@ -271,21 +271,6 @@ func (s *SolaceContainer) Run(ctx context.Context) error {
 
 // BrokerURLFor returns the origin URL for a given service
 func (s *SolaceContainer) BrokerURLFor(service Service) (string, error) {
-	host, err := s.Container.Host(s.ctx)
-	if err != nil {
-		return "", err
-	}
-	port, err := s.Container.MappedPort(s.ctx, nat.Port(fmt.Sprintf("%d/tcp", service.Port)))
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%s://%s:%s", service.Protocol, host, port.Port()), nil
-}
-
-
-func (s *SolaceContainer) Terminate() error {
-	if s.Container != nil {
-		return s.Container.Terminate(s.ctx)
-	}
-	return nil
+	p := nat.Port(fmt.Sprintf("%d/tcp", service.Port))
+	return s.PortEndpoint(s.ctx, p, service.Protocol)
 }
