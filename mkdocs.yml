@@ -80,6 +80,7 @@ nav:
         - modules/couchbase.md
         - modules/databend.md
         - modules/dind.md
+        - modules/dockermcpgateway.md
         - modules/dockermodelrunner.md
         - modules/dolt.md
         - modules/dynamodb.md
