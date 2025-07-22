@@ -29,7 +29,7 @@ go get github.com/testcontainers/testcontainers-go/modules/solace
 The Solace Pubsub+ module exposes one entrypoint function to create the Solace Pubsub+ container, and this function receives three parameters:
 
 ```golang
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*SolaceContainer, error)
 ```
 
 - `context.Context`, the Go context.
@@ -39,11 +39,20 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "solace-pubsub-standard:latest")`.
+In example: `Run(context.Background(), "solace/solace-pubsub-standard:latest")`.
 
 ### Container Options
 
 When starting the Solace Pubsub+ container, you can pass options in a variadic way to configure it.
+
+#### Available Options
+
+- `WithCredentials(username, password string)` - sets the client credentials for authentication
+- `WithVpn(vpn string)` - sets the VPN name (defaults to "default")
+- `WithQueue(queueName, topic string)` - subscribes a given topic to a queue (for SMF/AMQP testing)
+- `WithExposedPorts(ports ...string)` - allows adding extra exposed ports
+- `WithEnv(env map[string]string)` - allows adding or overriding environment variables
+- `WithShmSize(size int64)` - sets the shared memory size (defaults to 1 GiB)
 
 {% include "../features/common_functional_options_list.md" %}
 
@@ -53,50 +62,46 @@ The Solace Pubsub+ container exposes the following methods:
 
 #### BrokerURLFor
 
-`BrokerURLFor(service Service) (string, error)` - returns the connection URL for a given Solace service.
+`BrokerURLFor(ctx context.Context, service Service) (string, error)` - returns the connection URL for a given Solace service.
 
 This method allows you to retrieve the connection URL for specific Solace services. The available services are:
 
-- `ServiceAMQP` - AMQP service (port 5672)
-- `ServiceMQTT` - MQTT service (port 1883)  
-- `ServiceREST` - REST service (port 9000)
-- `ServiceManagement` - Management service (port 8080)
-- `ServiceSMF` - SMF service (port 55555)
-- `ServiceSMFSSL` - SMF SSL service (port 55443)
+- `ServiceAMQP` - AMQP service (port 5672, protocol: amqp)
+- `ServiceMQTT` - MQTT service (port 1883, protocol: tcp)  
+- `ServiceREST` - REST service (port 9000, protocol: http)
+- `ServiceManagement` - Management service (port 8080, protocol: http)
+- `ServiceSMF` - SMF service (port 55555, protocol: tcp)
+- `ServiceSMFSSL` - SMF SSL service (port 55443, protocol: tcps)
 
 ```go
 // Get the AMQP connection URL
-amqpURL, err := container.BrokerURLFor(solace.ServiceAMQP)
+amqpURL, err := container.BrokerURLFor(ctx, solace.ServiceAMQP)
 if err != nil {
     log.Fatal(err)
 }
 // amqpURL will be something like: amqp://localhost:32768
 
 // Get the management URL
-mgmtURL, err := container.BrokerURLFor(solace.ServiceManagement)
+mgmtURL, err := container.BrokerURLFor(ctx, solace.ServiceManagement)
 if err != nil {
     log.Fatal(err)
 }
 // mgmtURL will be something like: http://localhost:32769
 ```
 
-#### Terminate
-
-`Terminate() error` - terminates the Solace container.
-
-```go
-err := container.Terminate()
-if err != nil {
-    log.Fatal(err)
-}
-```
-
 ### Container Properties
 
-The Solace Pubsub+ container also exposes these public properties:
+The Solace Pubsub+ container also exposes these public methods:
 
-- `Username` - the configured username for authentication
-- `Password` - the configured password for authentication  
-- `Vpn` - the configured VPN name
-- `Container` - the underlying testcontainers Container instance
+#### Username
+
+`Username() string` - returns the configured username for authentication
+
+#### Password
+
+`Password() string` - returns the configured password for authentication
+
+#### Vpn
+
+`Vpn() string` - returns the configured VPN name
 

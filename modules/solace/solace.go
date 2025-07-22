@@ -15,13 +15,12 @@ import (
 )
 
 const (
-	defaultImage = "solace/solace-pubsub-standard:latest"
-	defaultVpn   = "default"
+	defaultVpn = "default"
 )
 
 type SolaceContainer struct {
 	testcontainers.Container
-	Settings options
+	settings options
 }
 
 // waitForSolaceActive waits for the Solace broker to be fully active by checking the system log
@@ -134,7 +133,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	if container != nil {
 		c = &SolaceContainer{
 			Container: container,
-			Settings:  settings,
+			settings:  settings,
 		}
 	}
 
@@ -193,13 +192,13 @@ func (s *SolaceContainer) BrokerURLFor(ctx context.Context, service Service) (st
 }
 
 func (c *SolaceContainer) Username() string {
-	return c.Settings.username
+	return c.settings.username
 }
 
 func (c *SolaceContainer) Password() string {
-	return c.Settings.password
+	return c.settings.password
 }
 
 func (c *SolaceContainer) Vpn() string {
-	return c.Settings.vpn
+	return c.settings.vpn
 }
