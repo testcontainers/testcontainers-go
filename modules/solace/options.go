@@ -97,6 +97,8 @@ func WithEnv(env map[string]string) Option {
 		return nil
 	}
 }
+
+// WithShmSize sets the size of the /dev/shm volume
 func WithShmSize(size int64) Option {
 	return func(o *options) error {
 		o.shmSize = size

@@ -34,63 +34,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	// --- CLI script generation for queue/topic config ---
-	// Reference: https://docs.solace.com/Admin-Ref/CLI-Reference/VMR_CLI_Commands.html
-	var cliScript string
-	if len(settings.queues) > 0 {
-		cliScript += "enable\nconfigure\n"
-
-		// Create VPN if not default
-		if settings.vpn != defaultVpn {
-			cliScript += fmt.Sprintf("create message-vpn %s\n", settings.vpn)
-			cliScript += "no shutdown\n"
-			cliScript += "exit\n"
-			cliScript += fmt.Sprintf("client-profile default message-vpn %s\n", settings.vpn)
-			cliScript += "message-spool\n"
-			cliScript += "allow-guaranteed-message-send\n"
-			cliScript += "allow-guaranteed-message-receive\n"
-			cliScript += "allow-guaranteed-endpoint-create\n"
-			cliScript += "allow-guaranteed-endpoint-create-durability all\n"
-			cliScript += "exit\n"
-			cliScript += "exit\n"
-			cliScript += fmt.Sprintf("message-spool message-vpn %s\n", settings.vpn)
-			cliScript += "max-spool-usage 60000\n"
-			cliScript += "exit\n"
-		}
-
-		// Configure username and password
-		cliScript += fmt.Sprintf("create client-username %s message-vpn %s\n", settings.username, settings.vpn)
-		cliScript += fmt.Sprintf("password %s\n", settings.password)
-		cliScript += "no shutdown\n"
-		cliScript += "exit\n"
-
-		// Configure VPN Basic authentication
-		cliScript += fmt.Sprintf("message-vpn %s\n", settings.vpn)
-		cliScript += "authentication basic auth-type internal\n"
-		cliScript += "no shutdown\n"
-		cliScript += "end\n"
-
-		// Configure queues and topic subscriptions
-		cliScript += "configure\n"
-		cliScript += fmt.Sprintf("message-spool message-vpn %s\n", settings.vpn)
-		for queue, topics := range settings.queues {
-			// Create the queue first
-			cliScript += fmt.Sprintf("create queue %s\n", queue)
-			cliScript += "access-type exclusive\n"
-			cliScript += "permission all consume\n"
-			cliScript += "no shutdown\n"
-			cliScript += "exit\n"
-
-			// Add topic subscriptions to the queue
-			for _, topic := range topics {
-				cliScript += fmt.Sprintf("queue %s\n", queue)
-				cliScript += fmt.Sprintf("subscription topic %s\n", topic)
-				cliScript += "exit\n"
-			}
-		}
-		cliScript += "exit\nexit\n"
-	}
-
 	req := testcontainers.ContainerRequest{
 		Image:        img,
 		ExposedPorts: settings.exposedPorts,
@@ -118,44 +61,46 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	// Copy and execute CLI script inside the container if it was generated
-	if cliScript != "" {
-		// Write the CLI script to a temp file
-		tmpFile, err := os.CreateTemp("", "solace-queue-setup-*.cli")
-		if err != nil {
-			return nil, fmt.Errorf("failed to create temp CLI script: %w", err)
-		}
-		defer os.Remove(tmpFile.Name())
-		if _, err := tmpFile.Write([]byte(cliScript)); err != nil {
-			return nil, fmt.Errorf("failed to write CLI script: %w", err)
-		}
-		if err := tmpFile.Close(); err != nil {
-			return nil, fmt.Errorf("failed to close CLI script: %w", err)
-		}
+	// Generate CLI script for queue/topic configuration
+	cliScript := generateCLIScript(settings)
+	if cliScript == "" {
+		return c, nil
+	}
+	// Write the CLI script to a temp file
+	tmpFile, err := os.CreateTemp("", "solace-queue-setup-*.cli")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp CLI script: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	if _, err := tmpFile.Write([]byte(cliScript)); err != nil {
+		return nil, fmt.Errorf("failed to write CLI script: %w", err)
+	}
+	if err := tmpFile.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close CLI script: %w", err)
+	}
 
-		// Copy the script into the container at the correct location
-		err = c.CopyFileToContainer(ctx, tmpFile.Name(), "/usr/sw/jail/cliscripts/script.cli", 0o644)
-		if err != nil {
-			return nil, fmt.Errorf("failed to copy CLI script to container: %w", err)
-		}
+	// Copy the script into the container at the correct location
+	err = c.CopyFileToContainer(ctx, tmpFile.Name(), "/usr/sw/jail/cliscripts/script.cli", 0o644)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy CLI script to container: %w", err)
+	}
 
-		// Execute the script
-		code, out, err := c.Exec(ctx, []string{"/usr/sw/loads/currentload/bin/cli", "-A", "-es", "script.cli"})
-		output := ""
-		if out != nil {
-			bytes, readErr := io.ReadAll(out)
-			if readErr == nil {
-				output = string(bytes)
-			} else {
-				output = fmt.Sprintf("[ERROR reading CLI output: %v]", readErr)
-			}
+	// Execute the script
+	code, out, err := c.Exec(ctx, []string{"/usr/sw/loads/currentload/bin/cli", "-A", "-es", "script.cli"})
+	output := ""
+	if out != nil {
+		bytes, readErr := io.ReadAll(out)
+		if readErr == nil {
+			output = string(bytes)
+		} else {
+			output = fmt.Sprintf("[ERROR reading CLI output: %v]", readErr)
 		}
-		if err != nil {
-			return nil, fmt.Errorf("failed to execute CLI script for queue/topic setup: %w", err)
-		}
-		if code != 0 {
-			return nil, fmt.Errorf("CLI script execution failed with exit code %d: %s", code, output)
-		}
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute CLI script for queue/topic setup: %w", err)
+	}
+	if code != 0 {
+		return nil, fmt.Errorf("CLI script execution failed with exit code %d: %s", code, output)
 	}
 
 	return c, nil
