@@ -12,27 +12,26 @@ import (
 	"solace.dev/go/messaging/pkg/solace/message"
 	"solace.dev/go/messaging/pkg/solace/resource"
 
-	solacecontainer "github.com/testcontainers/testcontainers-go/modules/solace"
+	"github.com/testcontainers/testcontainers-go"
+	sc "github.com/testcontainers/testcontainers-go/modules/solace"
 )
 
 func ExampleRun() {
 	ctx := context.Background()
-	solaceC := solacecontainer.NewSolaceContainer(ctx, "solace-pubsub-standard:latest").
-		WithCredentials("admin", "admin").
-		WithVpn("test-vpn").
-		WithExposedPorts("5672/tcp", "8080/tcp").
-		WithEnv(map[string]string{
+	ctr, err := sc.Run(ctx, "solace-pubsub-standard:latest",
+		sc.WithCredentials("admin", "admin"),
+		sc.WithExposedPorts("5672/tcp", "8080/tcp"),
+		sc.WithEnv(map[string]string{
 			"username_admin_globalaccesslevel": "admin",
 			"username_admin_password":          "admin",
-		}).
-		WithShmSize(1 << 30)
+		}),
+		sc.WithShmSize(1<<30),
+	)
 	defer func() {
-		if err := solaceC.Terminate(ctx); err != nil {
-			log.Printf("Error terminating Solace container: %v", err)
+		if err := testcontainers.TerminateContainer(ctr); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
-
-	err := solaceC.Run(ctx)
 	fmt.Println(err)
 
 	// Output:
@@ -41,26 +40,25 @@ func ExampleRun() {
 
 func ExampleRun_withTopicAndQueue() {
 	ctx := context.Background()
-	solaceC := solacecontainer.NewSolaceContainer(ctx, "solace-pubsub-standard:latest").
-		WithCredentials("admin", "admin").
-		WithVpn("test-vpn").
-		WithExposedPorts("5672/tcp", "8080/tcp").
-		WithEnv(map[string]string{
+
+	ctr, err := sc.Run(ctx, "solace-pubsub-standard:latest",
+		sc.WithCredentials("admin", "admin"),
+		sc.WithVpn("test-vpn"),
+		sc.WithExposedPorts("5672/tcp", "8080/tcp"),
+		sc.WithEnv(map[string]string{
 			"username_admin_globalaccesslevel": "admin",
 			"username_admin_password":          "admin",
-		}).
-		WithQueue("TestQueue", "Topic/MyTopic").
-		WithShmSize(1 << 30)
+		}),
+		sc.WithShmSize(1<<30),
+		sc.WithQueue("TestQueue", "Topic/MyTopic"),
+	)
 	defer func() {
-		if err := solaceC.Terminate(ctx); err != nil {
-			log.Printf("Error terminating Solace container: %v", err)
+		if err := testcontainers.TerminateContainer(ctr); err != nil {
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
-
-	err := solaceC.Run(ctx)
 	fmt.Println(err)
-
-	err = testMessagePublishAndConsume(solaceC, "TestQueue", "Topic/MyTopic")
+	err = testMessagePublishAndConsume(ctr, "TestQueue", "Topic/MyTopic")
 	fmt.Println(err)
 
 	// Output:
@@ -71,9 +69,9 @@ func ExampleRun_withTopicAndQueue() {
 	// <nil>
 }
 
-func testMessagePublishAndConsume(solaceC *solacecontainer.SolaceContainer, queueName, topicName string) error {
+func testMessagePublishAndConsume(ctr *sc.SolaceContainer, queueName, topicName string) error {
 	// Get the SMF service URL from the container
-	smfURL, err := solaceC.BrokerURLFor(context.Background(), solacecontainer.ServiceSMF)
+	smfURL, err := ctr.BrokerURLFor(context.Background(), sc.ServiceSMF)
 	if err != nil {
 		return fmt.Errorf("failed to get SMF URL: %w", err)
 	}
@@ -81,10 +79,10 @@ func testMessagePublishAndConsume(solaceC *solacecontainer.SolaceContainer, queu
 	// Configure connection properties
 	brokerConfig := config.ServicePropertyMap{
 		config.TransportLayerPropertyHost:                 smfURL,
-		config.ServicePropertyVPNName:                     solaceC.Vpn(),
+		config.ServicePropertyVPNName:                     ctr.Vpn(),
 		config.AuthenticationPropertyScheme:               config.AuthenticationSchemeBasic,
-		config.AuthenticationPropertySchemeBasicUserName:  solaceC.Username(),
-		config.AuthenticationPropertySchemeBasicPassword:  solaceC.Password(),
+		config.AuthenticationPropertySchemeBasicUserName:  ctr.Username(),
+		config.AuthenticationPropertySchemeBasicPassword:  ctr.Password(),
 		config.TransportLayerPropertyReconnectionAttempts: 0,
 	}
 

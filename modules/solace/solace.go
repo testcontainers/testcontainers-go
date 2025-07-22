@@ -14,80 +14,14 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-type SolaceContainer struct {
-	testcontainers.Container
-	username     string
-	password     string
-	vpn          string
-	queues       map[string][]string // queueName -> topics
-	image        string
-	exposedPorts []string
-	envVars      map[string]string
-	shmSize      int64
-}
-
-// WithCredentials sets the client credentials (username, password)
-func (s *SolaceContainer) WithCredentials(username, password string) *SolaceContainer {
-	s.username = username
-	s.password = password
-	return s
-}
-
-// WithVpn sets the VPN name
-func (s *SolaceContainer) WithVpn(vpn string) *SolaceContainer {
-	s.vpn = vpn
-	return s
-}
-
-// WithQueue subscribes a given topic to a queue (for SMF/AMQP testing)
-func (s *SolaceContainer) WithQueue(queueName, topic string) *SolaceContainer {
-	// Store queue/topic mapping in a new field for later use (e.g., CLI script generation)
-	if s.queues == nil {
-		s.queues = make(map[string][]string)
-	}
-	s.queues[queueName] = append(s.queues[queueName], topic)
-	return s
-}
-
-// WithEnv allows adding or overriding environment variables
-func (s *SolaceContainer) WithEnv(env map[string]string) *SolaceContainer {
-	if s.envVars == nil {
-		s.envVars = make(map[string]string)
-	}
-	for k, v := range env {
-		s.envVars[k] = v
-	}
-	return s
-}
-
-// WithExposedPorts allows adding extra exposed ports
-func (s *SolaceContainer) WithExposedPorts(ports ...string) *SolaceContainer {
-	s.exposedPorts = append(s.exposedPorts, ports...)
-	return s
-}
-
 const (
-	DefaultImage = "solace/solace-pubsub-standard:latest"
-	DefaultVpn   = "default"
-	DefaultUser  = "root"
-	DefaultPass  = "password"
+	defaultImage = "solace/solace-pubsub-standard:latest"
+	defaultVpn   = "default"
 )
 
-func NewSolaceContainer(ctx context.Context, image string) *SolaceContainer {
-	if image == "" {
-		image = DefaultImage
-	}
-	return &SolaceContainer{
-		username: DefaultUser,
-		password: DefaultPass,
-		vpn:      DefaultVpn,
-		image:    image,
-	}
-}
-
-func (s *SolaceContainer) WithShmSize(size int64) *SolaceContainer {
-	s.shmSize = size
-	return s
+type SolaceContainer struct {
+	testcontainers.Container
+	Settings options
 }
 
 // waitForSolaceActive waits for the Solace broker to be fully active by checking the system log
@@ -111,48 +45,29 @@ func (s *SolaceContainer) waitForSolaceActive(ctx context.Context) error {
 	return fmt.Errorf("timeout waiting for Solace broker to become active after %d seconds", maxAttempts)
 }
 
-func (s *SolaceContainer) Run(ctx context.Context) error {
-	shmSize := s.shmSize
-	if shmSize == 0 {
-		shmSize = 1 << 30 // Default 1GB
-	}
-
-	// Merge env vars
-	env := map[string]string{
-		"username_admin_globalaccesslevel": "admin",
-		"username_admin_password":          "admin",
-	}
-	for k, v := range s.envVars {
-		env[k] = v
-	}
-
-	// Collect exposed ports from all known services
-	defaultServices := []Service{ServiceAMQP, ServiceManagement, ServiceSMF, ServiceREST, ServiceMQTT}
-	portsMap := make(map[string]struct{})
-	var ports []string
-	for _, svc := range defaultServices {
-		portStr := fmt.Sprintf("%d/tcp", svc.Port)
-		if _, exists := portsMap[portStr]; !exists {
-			ports = append(ports, portStr)
-			portsMap[portStr] = struct{}{}
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*SolaceContainer, error) {
+	// Default to the standard Solace image if none provided
+	settings := defaultOptions()
+	for _, opt := range opts {
+		if apply, ok := opt.(Option); ok {
+			if err := apply(&settings); err != nil {
+				return nil, err
+			}
 		}
-	}
-	if len(s.exposedPorts) > 0 {
-		ports = append(ports, s.exposedPorts...)
 	}
 
 	// --- CLI script generation for queue/topic config ---
 	// Reference: https://docs.solace.com/Admin-Ref/CLI-Reference/VMR_CLI_Commands.html
 	var cliScript string
-	if len(s.queues) > 0 {
+	if len(settings.queues) > 0 {
 		cliScript += "enable\nconfigure\n"
 
 		// Create VPN if not default
-		if s.vpn != DefaultVpn {
-			cliScript += fmt.Sprintf("create message-vpn %s\n", s.vpn)
+		if settings.vpn != defaultVpn {
+			cliScript += fmt.Sprintf("create message-vpn %s\n", settings.vpn)
 			cliScript += "no shutdown\n"
 			cliScript += "exit\n"
-			cliScript += fmt.Sprintf("client-profile default message-vpn %s\n", s.vpn)
+			cliScript += fmt.Sprintf("client-profile default message-vpn %s\n", settings.vpn)
 			cliScript += "message-spool\n"
 			cliScript += "allow-guaranteed-message-send\n"
 			cliScript += "allow-guaranteed-message-receive\n"
@@ -160,27 +75,27 @@ func (s *SolaceContainer) Run(ctx context.Context) error {
 			cliScript += "allow-guaranteed-endpoint-create-durability all\n"
 			cliScript += "exit\n"
 			cliScript += "exit\n"
-			cliScript += fmt.Sprintf("message-spool message-vpn %s\n", s.vpn)
+			cliScript += fmt.Sprintf("message-spool message-vpn %s\n", settings.vpn)
 			cliScript += "max-spool-usage 60000\n"
 			cliScript += "exit\n"
 		}
 
 		// Configure username and password
-		cliScript += fmt.Sprintf("create client-username %s message-vpn %s\n", s.username, s.vpn)
-		cliScript += fmt.Sprintf("password %s\n", s.password)
+		cliScript += fmt.Sprintf("create client-username %s message-vpn %s\n", settings.username, settings.vpn)
+		cliScript += fmt.Sprintf("password %s\n", settings.password)
 		cliScript += "no shutdown\n"
 		cliScript += "exit\n"
 
 		// Configure VPN Basic authentication
-		cliScript += fmt.Sprintf("message-vpn %s\n", s.vpn)
+		cliScript += fmt.Sprintf("message-vpn %s\n", settings.vpn)
 		cliScript += "authentication basic auth-type internal\n"
 		cliScript += "no shutdown\n"
 		cliScript += "end\n"
 
 		// Configure queues and topic subscriptions
 		cliScript += "configure\n"
-		cliScript += fmt.Sprintf("message-spool message-vpn %s\n", s.vpn)
-		for queue, topics := range s.queues {
+		cliScript += fmt.Sprintf("message-spool message-vpn %s\n", settings.vpn)
+		for queue, topics := range settings.queues {
 			// Create the queue first
 			cliScript += fmt.Sprintf("create queue %s\n", queue)
 			cliScript += "access-type exclusive\n"
@@ -199,13 +114,13 @@ func (s *SolaceContainer) Run(ctx context.Context) error {
 	}
 
 	req := testcontainers.ContainerRequest{
-		Image:        s.image,
-		ExposedPorts: ports,
-		Env:          env,
+		Image:        img,
+		ExposedPorts: settings.exposedPorts,
+		Env:          settings.envVars,
 		Cmd:          nil,
 		WaitingFor:   wait.ForHTTP("/").WithPort("8080/tcp").WithStartupTimeout(1 * time.Minute),
 		HostConfigModifier: func(hc *container.HostConfig) {
-			hc.ShmSize = shmSize
+			hc.ShmSize = settings.shmSize
 		},
 	}
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -213,14 +128,19 @@ func (s *SolaceContainer) Run(ctx context.Context) error {
 		Started:          true,
 	})
 	if err != nil {
-		return err
+		return nil, err
+	}
+	var c *SolaceContainer
+	if container != nil {
+		c = &SolaceContainer{
+			Container: container,
+			Settings:  settings,
+		}
 	}
 
-	s.Container = container // assign before using s.Container
-
 	// Wait for Solace broker to be fully active before configuring
-	if err := s.waitForSolaceActive(ctx); err != nil {
-		return fmt.Errorf("failed waiting for Solace broker to become active: %w", err)
+	if err := c.waitForSolaceActive(ctx); err != nil {
+		return nil, fmt.Errorf("failed waiting for Solace broker to become active: %w", err)
 	}
 
 	// Copy and execute CLI script inside the container if it was generated
@@ -228,24 +148,24 @@ func (s *SolaceContainer) Run(ctx context.Context) error {
 		// Write the CLI script to a temp file
 		tmpFile, err := os.CreateTemp("", "solace-queue-setup-*.cli")
 		if err != nil {
-			return fmt.Errorf("failed to create temp CLI script: %w", err)
+			return nil, fmt.Errorf("failed to create temp CLI script: %w", err)
 		}
 		defer os.Remove(tmpFile.Name())
 		if _, err := tmpFile.Write([]byte(cliScript)); err != nil {
-			return fmt.Errorf("failed to write CLI script: %w", err)
+			return nil, fmt.Errorf("failed to write CLI script: %w", err)
 		}
 		if err := tmpFile.Close(); err != nil {
-			return fmt.Errorf("failed to close CLI script: %w", err)
+			return nil, fmt.Errorf("failed to close CLI script: %w", err)
 		}
 
 		// Copy the script into the container at the correct location
-		err = s.CopyFileToContainer(ctx, tmpFile.Name(), "/usr/sw/jail/cliscripts/script.cli", 0o644)
+		err = c.CopyFileToContainer(ctx, tmpFile.Name(), "/usr/sw/jail/cliscripts/script.cli", 0o644)
 		if err != nil {
-			return fmt.Errorf("failed to copy CLI script to container: %w", err)
+			return nil, fmt.Errorf("failed to copy CLI script to container: %w", err)
 		}
 
 		// Execute the script
-		code, out, err := s.Exec(ctx, []string{"/usr/sw/loads/currentload/bin/cli", "-A", "-es", "script.cli"})
+		code, out, err := c.Exec(ctx, []string{"/usr/sw/loads/currentload/bin/cli", "-A", "-es", "script.cli"})
 		output := ""
 		if out != nil {
 			bytes, readErr := io.ReadAll(out)
@@ -256,14 +176,14 @@ func (s *SolaceContainer) Run(ctx context.Context) error {
 			}
 		}
 		if err != nil {
-			return fmt.Errorf("failed to execute CLI script for queue/topic setup: %w", err)
+			return nil, fmt.Errorf("failed to execute CLI script for queue/topic setup: %w", err)
 		}
 		if code != 0 {
-			return fmt.Errorf("CLI script execution failed with exit code %d: %s", code, output)
+			return nil, fmt.Errorf("CLI script execution failed with exit code %d: %s", code, output)
 		}
 	}
 
-	return nil
+	return c, nil
 }
 
 // BrokerURLFor returns the origin URL for a given service
@@ -272,14 +192,14 @@ func (s *SolaceContainer) BrokerURLFor(ctx context.Context, service Service) (st
 	return s.PortEndpoint(ctx, p, service.Protocol)
 }
 
-func (s *SolaceContainer) Username() string {
-	return s.username
+func (c *SolaceContainer) Username() string {
+	return c.Settings.username
 }
 
-func (s *SolaceContainer) Password() string {
-	return s.password
+func (c *SolaceContainer) Password() string {
+	return c.Settings.password
 }
 
-func (s *SolaceContainer) Vpn() string {
-	return s.vpn
+func (c *SolaceContainer) Vpn() string {
+	return c.Settings.vpn
 }
