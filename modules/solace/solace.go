@@ -16,28 +16,26 @@ import (
 
 type SolaceContainer struct {
 	testcontainers.Container
-	Username       string
-	Password       string
-	Vpn            string
-	queues         map[string][]string // queueName -> topics
-	WithClientCert bool
-	Image          string
-	ctx            context.Context
-	exposedPorts   []string
-	envVars        map[string]string
-	shmSize        int64
+	username     string
+	password     string
+	vpn          string
+	queues       map[string][]string // queueName -> topics
+	image        string
+	exposedPorts []string
+	envVars      map[string]string
+	shmSize      int64
 }
 
 // WithCredentials sets the client credentials (username, password)
 func (s *SolaceContainer) WithCredentials(username, password string) *SolaceContainer {
-	s.Username = username
-	s.Password = password
+	s.username = username
+	s.password = password
 	return s
 }
 
 // WithVpn sets the VPN name
 func (s *SolaceContainer) WithVpn(vpn string) *SolaceContainer {
-	s.Vpn = vpn
+	s.vpn = vpn
 	return s
 }
 
@@ -80,11 +78,10 @@ func NewSolaceContainer(ctx context.Context, image string) *SolaceContainer {
 		image = DefaultImage
 	}
 	return &SolaceContainer{
-		Username: DefaultUser,
-		Password: DefaultPass,
-		Vpn:      DefaultVpn,
-		Image:    image,
-		ctx:      ctx,
+		username: DefaultUser,
+		password: DefaultPass,
+		vpn:      DefaultVpn,
+		image:    image,
 	}
 }
 
@@ -151,11 +148,11 @@ func (s *SolaceContainer) Run(ctx context.Context) error {
 		cliScript += "enable\nconfigure\n"
 
 		// Create VPN if not default
-		if s.Vpn != DefaultVpn {
-			cliScript += fmt.Sprintf("create message-vpn %s\n", s.Vpn)
+		if s.vpn != DefaultVpn {
+			cliScript += fmt.Sprintf("create message-vpn %s\n", s.vpn)
 			cliScript += "no shutdown\n"
 			cliScript += "exit\n"
-			cliScript += fmt.Sprintf("client-profile default message-vpn %s\n", s.Vpn)
+			cliScript += fmt.Sprintf("client-profile default message-vpn %s\n", s.vpn)
 			cliScript += "message-spool\n"
 			cliScript += "allow-guaranteed-message-send\n"
 			cliScript += "allow-guaranteed-message-receive\n"
@@ -163,26 +160,26 @@ func (s *SolaceContainer) Run(ctx context.Context) error {
 			cliScript += "allow-guaranteed-endpoint-create-durability all\n"
 			cliScript += "exit\n"
 			cliScript += "exit\n"
-			cliScript += fmt.Sprintf("message-spool message-vpn %s\n", s.Vpn)
+			cliScript += fmt.Sprintf("message-spool message-vpn %s\n", s.vpn)
 			cliScript += "max-spool-usage 60000\n"
 			cliScript += "exit\n"
 		}
 
 		// Configure username and password
-		cliScript += fmt.Sprintf("create client-username %s message-vpn %s\n", s.Username, s.Vpn)
-		cliScript += fmt.Sprintf("password %s\n", s.Password)
+		cliScript += fmt.Sprintf("create client-username %s message-vpn %s\n", s.username, s.vpn)
+		cliScript += fmt.Sprintf("password %s\n", s.password)
 		cliScript += "no shutdown\n"
 		cliScript += "exit\n"
 
 		// Configure VPN Basic authentication
-		cliScript += fmt.Sprintf("message-vpn %s\n", s.Vpn)
+		cliScript += fmt.Sprintf("message-vpn %s\n", s.vpn)
 		cliScript += "authentication basic auth-type internal\n"
 		cliScript += "no shutdown\n"
 		cliScript += "end\n"
 
 		// Configure queues and topic subscriptions
 		cliScript += "configure\n"
-		cliScript += fmt.Sprintf("message-spool message-vpn %s\n", s.Vpn)
+		cliScript += fmt.Sprintf("message-spool message-vpn %s\n", s.vpn)
 		for queue, topics := range s.queues {
 			// Create the queue first
 			cliScript += fmt.Sprintf("create queue %s\n", queue)
@@ -202,7 +199,7 @@ func (s *SolaceContainer) Run(ctx context.Context) error {
 	}
 
 	req := testcontainers.ContainerRequest{
-		Image:        s.Image,
+		Image:        s.image,
 		ExposedPorts: ports,
 		Env:          env,
 		Cmd:          nil,
@@ -270,7 +267,19 @@ func (s *SolaceContainer) Run(ctx context.Context) error {
 }
 
 // BrokerURLFor returns the origin URL for a given service
-func (s *SolaceContainer) BrokerURLFor(service Service) (string, error) {
+func (s *SolaceContainer) BrokerURLFor(ctx context.Context, service Service) (string, error) {
 	p := nat.Port(fmt.Sprintf("%d/tcp", service.Port))
-	return s.PortEndpoint(s.ctx, p, service.Protocol)
+	return s.PortEndpoint(ctx, p, service.Protocol)
+}
+
+func (s *SolaceContainer) Username() string {
+	return s.username
+}
+
+func (s *SolaceContainer) Password() string {
+	return s.password
+}
+
+func (s *SolaceContainer) Vpn() string {
+	return s.vpn
 }

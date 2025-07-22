@@ -33,10 +33,10 @@ func ExampleRun() {
 	}()
 
 	err := solaceC.Run(ctx)
-	fmt.Println(err == nil)
+	fmt.Println(err)
 
 	// Output:
-	// true
+	// <nil>
 }
 
 func ExampleRun_withTopicAndQueue() {
@@ -73,7 +73,7 @@ func ExampleRun_withTopicAndQueue() {
 
 func testMessagePublishAndConsume(solaceC *solacecontainer.SolaceContainer, queueName, topicName string) error {
 	// Get the SMF service URL from the container
-	smfURL, err := solaceC.BrokerURLFor(solacecontainer.ServiceSMF)
+	smfURL, err := solaceC.BrokerURLFor(context.Background(), solacecontainer.ServiceSMF)
 	if err != nil {
 		return fmt.Errorf("failed to get SMF URL: %w", err)
 	}
@@ -81,10 +81,10 @@ func testMessagePublishAndConsume(solaceC *solacecontainer.SolaceContainer, queu
 	// Configure connection properties
 	brokerConfig := config.ServicePropertyMap{
 		config.TransportLayerPropertyHost:                 smfURL,
-		config.ServicePropertyVPNName:                     "test-vpn",
+		config.ServicePropertyVPNName:                     solaceC.Vpn(),
 		config.AuthenticationPropertyScheme:               config.AuthenticationSchemeBasic,
-		config.AuthenticationPropertySchemeBasicUserName:  "admin",
-		config.AuthenticationPropertySchemeBasicPassword:  "admin",
+		config.AuthenticationPropertySchemeBasicUserName:  solaceC.Username(),
+		config.AuthenticationPropertySchemeBasicPassword:  solaceC.Password(),
 		config.TransportLayerPropertyReconnectionAttempts: 0,
 	}
 

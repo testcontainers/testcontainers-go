@@ -40,7 +40,7 @@ func TestSolace(t *testing.T) {
 	require.True(t, state.Running)
 
 	// Assert service origin URL is accessible (format check)
-	origin, err := solaceC.BrokerURLFor(solacecontainer.ServiceAMQP)
+	origin, err := solaceC.BrokerURLFor(ctx, solacecontainer.ServiceAMQP)
 	require.NoError(t, err)
 	require.Contains(t, origin, "amqp://")
 
