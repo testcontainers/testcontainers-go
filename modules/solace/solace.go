@@ -23,27 +23,6 @@ type SolaceContainer struct {
 	settings options
 }
 
-// waitForSolaceActive waits for the Solace broker to be fully active by checking the system log
-func (s *SolaceContainer) waitForSolaceActive(ctx context.Context) error {
-	const maxAttempts = 60
-	const intervalSeconds = 1
-
-	for attempt := 0; attempt < maxAttempts; attempt++ {
-		// Execute grep command to check for "Primary Virtual Router is now active" in system log
-		code, _, err := s.Exec(ctx, []string{"grep", "-R", "Primary Virtual Router is now active", "/usr/sw/jail/logs/system.log"})
-
-		if err == nil && code == 0 {
-			// Found the message, broker is active
-			return nil
-		}
-
-		// Wait before next attempt
-		time.Sleep(intervalSeconds * time.Second)
-	}
-
-	return fmt.Errorf("timeout waiting for Solace broker to become active after %d seconds", maxAttempts)
-}
-
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*SolaceContainer, error) {
 	// Default to the standard Solace image if none provided
 	settings := defaultOptions()
@@ -117,7 +96,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		ExposedPorts: settings.exposedPorts,
 		Env:          settings.envVars,
 		Cmd:          nil,
-		WaitingFor:   wait.ForHTTP("/").WithPort("8080/tcp").WithStartupTimeout(1 * time.Minute),
+		WaitingFor: wait.ForExec([]string{"grep", "-q", "Primary Virtual Router is now active", "/usr/sw/jail/logs/system.log"}).
+			WithStartupTimeout(1 * time.Minute).
+			WithPollInterval(1 * time.Second),
 		HostConfigModifier: func(hc *container.HostConfig) {
 			hc.ShmSize = settings.shmSize
 		},
@@ -135,11 +116,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			Container: container,
 			settings:  settings,
 		}
-	}
-
-	// Wait for Solace broker to be fully active before configuring
-	if err := c.waitForSolaceActive(ctx); err != nil {
-		return nil, fmt.Errorf("failed waiting for Solace broker to become active: %w", err)
 	}
 
 	// Copy and execute CLI script inside the container if it was generated

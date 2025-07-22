@@ -2,10 +2,8 @@ package solace_test
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -35,8 +33,6 @@ func TestSolace(t *testing.T) {
 			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
-
-	fmt.Println("Executing")
 	require.NoError(t, err)
 
 	// Assert container is running
@@ -48,9 +44,6 @@ func TestSolace(t *testing.T) {
 	origin, err := ctr.BrokerURLFor(ctx, sc.ServiceAMQP)
 	require.NoError(t, err)
 	require.Contains(t, origin, "amqp://")
-
-	// Wait a bit for the broker to be fully ready
-	time.Sleep(2 * time.Second)
 
 	// Test message publishing and consumption using Solace SDK
 	err = testMessagePublishAndConsume(ctr, queueName, topicName)
