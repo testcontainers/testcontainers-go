@@ -21,7 +21,7 @@ func TestSolace(t *testing.T) {
 		sc.WithCredentials("admin", "admin"),
 		sc.WithVpn("test-vpn"),
 		sc.WithExposedPorts("5672/tcp", "8080/tcp"),
-		sc.WithEnv(map[string]string{
+		testcontainers.WithEnv(map[string]string{
 			"username_admin_globalaccesslevel": "admin",
 			"username_admin_password":          "admin",
 		}),

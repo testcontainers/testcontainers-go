@@ -21,7 +21,7 @@ func ExampleRun() {
 	ctr, err := sc.Run(ctx, "solace-pubsub-standard:latest",
 		sc.WithCredentials("admin", "admin"),
 		sc.WithExposedPorts("5672/tcp", "8080/tcp"),
-		sc.WithEnv(map[string]string{
+		testcontainers.WithEnv(map[string]string{
 			"username_admin_globalaccesslevel": "admin",
 			"username_admin_password":          "admin",
 		}),
@@ -45,7 +45,7 @@ func ExampleRun_withTopicAndQueue() {
 		sc.WithCredentials("admin", "admin"),
 		sc.WithVpn("test-vpn"),
 		sc.WithExposedPorts("5672/tcp", "8080/tcp"),
-		sc.WithEnv(map[string]string{
+		testcontainers.WithEnv(map[string]string{
 			"username_admin_globalaccesslevel": "admin",
 			"username_admin_password":          "admin",
 		}),
@@ -69,7 +69,7 @@ func ExampleRun_withTopicAndQueue() {
 	// <nil>
 }
 
-func testMessagePublishAndConsume(ctr *sc.SolaceContainer, queueName, topicName string) error {
+func testMessagePublishAndConsume(ctr *sc.Container, queueName, topicName string) error {
 	// Get the SMF service URL from the container
 	smfURL, err := ctr.BrokerURLFor(context.Background(), sc.ServiceSMF)
 	if err != nil {

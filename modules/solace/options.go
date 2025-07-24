@@ -12,7 +12,6 @@ type options struct {
 	password     string
 	exposedPorts []string
 	queues       map[string][]string // queueName -> topics
-	envVars      map[string]string
 	shmSize      int64
 }
 
@@ -30,10 +29,6 @@ func defaultOptions() options {
 		password:     "password",
 		exposedPorts: defaultPorts,
 		shmSize:      1 << 30, // 1 GiB
-		envVars: map[string]string{
-			"username_admin_globalaccesslevel": "admin",
-			"username_admin_password":          "admin",
-		},
 	}
 }
 
@@ -81,19 +76,6 @@ func WithQueue(queueName, topic string) Option {
 			o.queues = make(map[string][]string)
 		}
 		o.queues[queueName] = append(o.queues[queueName], topic)
-		return nil
-	}
-}
-
-// WithEnv allows adding or overriding environment variables
-func WithEnv(env map[string]string) Option {
-	return func(o *options) error {
-		if o.envVars == nil {
-			o.envVars = make(map[string]string)
-		}
-		for k, v := range env {
-			o.envVars[k] = v
-		}
 		return nil
 	}
 }

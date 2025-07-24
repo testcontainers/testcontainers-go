@@ -18,12 +18,13 @@ const (
 	defaultVpn = "default"
 )
 
-type SolaceContainer struct {
+// Container represents a Solace container with additional settings
+type Container struct {
 	testcontainers.Container
 	settings options
 }
 
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*SolaceContainer, error) {
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	// Default to the standard Solace image if none provided
 	settings := defaultOptions()
 	for _, opt := range opts {
@@ -34,31 +35,29 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: settings.exposedPorts,
-		Env:          settings.envVars,
-		Cmd:          nil,
-		WaitingFor: wait.ForExec([]string{"grep", "-q", "Primary Virtual Router is now active", "/usr/sw/jail/logs/system.log"}).
-			WithStartupTimeout(1 * time.Minute).
-			WithPollInterval(1 * time.Second),
-		HostConfigModifier: func(hc *container.HostConfig) {
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(settings.exposedPorts...),
+		testcontainers.WithHostConfigModifier(func(hc *container.HostConfig) {
 			hc.ShmSize = settings.shmSize
-		},
+		}),
+		testcontainers.WithWaitStrategy(wait.ForExec([]string{"grep", "-q", "Primary Virtual Router is now active", "/usr/sw/jail/logs/system.log"}).
+			WithStartupTimeout(1 * time.Minute).
+			WithPollInterval(1 * time.Second)),
 	}
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	if err != nil {
-		return nil, err
-	}
-	var c *SolaceContainer
+
+	moduleOpts = append(moduleOpts, opts...)
+	container, err := testcontainers.Run(ctx, img, moduleOpts...)
+
+	var c *Container
 	if container != nil {
-		c = &SolaceContainer{
+		c = &Container{
 			Container: container,
 			settings:  settings,
 		}
+	}
+
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
 	}
 
 	// Generate CLI script for queue/topic configuration
@@ -107,19 +106,19 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 }
 
 // BrokerURLFor returns the origin URL for a given service
-func (s *SolaceContainer) BrokerURLFor(ctx context.Context, service Service) (string, error) {
+func (s *Container) BrokerURLFor(ctx context.Context, service Service) (string, error) {
 	p := nat.Port(fmt.Sprintf("%d/tcp", service.Port))
 	return s.PortEndpoint(ctx, p, service.Protocol)
 }
 
-func (c *SolaceContainer) Username() string {
+func (c *Container) Username() string {
 	return c.settings.username
 }
 
-func (c *SolaceContainer) Password() string {
+func (c *Container) Password() string {
 	return c.settings.password
 }
 
-func (c *SolaceContainer) Vpn() string {
+func (c *Container) Vpn() string {
 	return c.settings.vpn
 }

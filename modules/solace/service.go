@@ -1,5 +1,6 @@
 package solace
 
+// Service represents a Solace service with its name, port, protocol, and SSL support.
 type Service struct {
 	Name       string
 	Port       int

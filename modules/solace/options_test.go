@@ -43,16 +43,6 @@ func TestDefaultOptions(t *testing.T) {
 			t.Errorf("Expected port %s to be in exposed ports, but it wasn't found", expectedPort)
 		}
 	}
-
-	// Test default environment variables
-	expectedEnvVars := map[string]string{
-		"username_admin_globalaccesslevel": "admin",
-		"username_admin_password":          "admin",
-	}
-
-	if !reflect.DeepEqual(opts.envVars, expectedEnvVars) {
-		t.Errorf("Expected default env vars %v, got %v", expectedEnvVars, opts.envVars)
-	}
 }
 func TestWithExposedPorts(t *testing.T) {
 	tests := []struct {
@@ -248,71 +238,6 @@ func TestWithQueue(t *testing.T) {
 		})
 	}
 }
-
-func TestWithEnv(t *testing.T) {
-	tests := []struct {
-		name        string
-		newEnv      map[string]string
-		existing    map[string]string
-		expectedLen int
-	}{
-		{
-			name:        "add env to empty options",
-			newEnv:      map[string]string{"KEY1": "value1"},
-			existing:    nil,
-			expectedLen: 1,
-		},
-		{
-			name:        "add env to existing options",
-			newEnv:      map[string]string{"KEY2": "value2"},
-			existing:    map[string]string{"KEY1": "value1"},
-			expectedLen: 2,
-		},
-		{
-			name:        "override existing env",
-			newEnv:      map[string]string{"KEY1": "newvalue"},
-			existing:    map[string]string{"KEY1": "oldvalue", "KEY2": "value2"},
-			expectedLen: 2,
-		},
-		{
-			name:        "add multiple env vars",
-			newEnv:      map[string]string{"KEY3": "value3", "KEY4": "value4"},
-			existing:    map[string]string{"KEY1": "value1"},
-			expectedLen: 3,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			opts := &options{envVars: tt.existing}
-			option := WithEnv(tt.newEnv)
-
-			err := option(opts)
-			if err != nil {
-				t.Errorf("WithEnv returned error: %v", err)
-			}
-
-			if opts.envVars == nil {
-				t.Errorf("Expected envVars to be initialized")
-				return
-			}
-
-			if len(opts.envVars) != tt.expectedLen {
-				t.Errorf("Expected %d env vars, got %d", tt.expectedLen, len(opts.envVars))
-			}
-
-			// Check that all new env vars are set
-			for key, expectedValue := range tt.newEnv {
-				if actualValue, exists := opts.envVars[key]; !exists {
-					t.Errorf("Expected env var %s to exist", key)
-				} else if actualValue != expectedValue {
-					t.Errorf("Expected env var %s to have value %s, got %s", key, expectedValue, actualValue)
-				}
-			}
-		})
-	}
-}
-
 func TestWithShmSize(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -365,7 +290,6 @@ func TestOptionChaining(t *testing.T) {
 		WithQueue("queue1", "topic1"),
 		WithQueue("queue1", "topic2"),
 		WithQueue("queue2", "topic3"),
-		WithEnv(map[string]string{"CUSTOM_VAR": "custom_value"}),
 		WithShmSize(2 << 30),
 	}
 
@@ -414,14 +338,5 @@ func TestOptionChaining(t *testing.T) {
 	}
 	if len(opts.queues["queue2"]) != 1 {
 		t.Errorf("Expected 1 topic for queue2, got %d", len(opts.queues["queue2"]))
-	}
-
-	// Check that custom env var was added along with defaults
-	if opts.envVars["CUSTOM_VAR"] != "custom_value" {
-		t.Errorf("Expected CUSTOM_VAR to be 'custom_value', got %s", opts.envVars["CUSTOM_VAR"])
-	}
-	// Default env vars should still be there
-	if opts.envVars["username_admin_globalaccesslevel"] != "admin" {
-		t.Errorf("Expected default env var to still be present")
 	}
 }
