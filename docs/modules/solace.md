@@ -115,7 +115,7 @@ The Solace Pubsub+ container also exposes these public methods:
 
 `Password() string` - returns the configured password for authentication
 
-#### Vpn
+#### VPN
 
-`Vpn() string` - returns the configured VPN name
+`VPN() string` - returns the configured VPN name
 
