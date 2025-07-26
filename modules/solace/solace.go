@@ -35,14 +35,32 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
+	// Build exposed ports from services
+	var exposedPorts []string
+	for _, service := range settings.services {
+		exposedPorts = append(exposedPorts, fmt.Sprintf("%d/tcp", service.Port))
+	}
+
+	// Build wait strategies - combine the default wait strategy with port-based wait strategies for each service
+	var waitStrategies []wait.Strategy
+
+	// Primary wait strategy for Solace to be ready
+	waitStrategies = append(waitStrategies, wait.ForExec([]string{"grep", "-q", "Primary Virtual Router is now active", "/usr/sw/jail/logs/system.log"}).
+		WithStartupTimeout(1*time.Minute).
+		WithPollInterval(1*time.Second))
+
+	// Add port-based wait strategies for each service
+	for _, service := range settings.services {
+		port := nat.Port(fmt.Sprintf("%d/tcp", service.Port))
+		waitStrategies = append(waitStrategies, wait.ForListeningPort(port))
+	}
+
 	moduleOpts := []testcontainers.ContainerCustomizer{
-		testcontainers.WithExposedPorts(settings.exposedPorts...),
+		testcontainers.WithExposedPorts(exposedPorts...),
 		testcontainers.WithHostConfigModifier(func(hc *container.HostConfig) {
 			hc.ShmSize = settings.shmSize
 		}),
-		testcontainers.WithWaitStrategy(wait.ForExec([]string{"grep", "-q", "Primary Virtual Router is now active", "/usr/sw/jail/logs/system.log"}).
-			WithStartupTimeout(1 * time.Minute).
-			WithPollInterval(1 * time.Second)),
+		testcontainers.WithWaitStrategy(wait.ForAll(waitStrategies...)),
 	}
 
 	moduleOpts = append(moduleOpts, opts...)

@@ -1,34 +1,28 @@
 package solace
 
 import (
-	"fmt"
-
 	"github.com/testcontainers/testcontainers-go"
 )
 
 type options struct {
-	vpn          string
-	username     string
-	password     string
-	exposedPorts []string
-	queues       map[string][]string // queueName -> topics
-	shmSize      int64
+	vpn      string
+	username string
+	password string
+	services []Service           // enabled services
+	queues   map[string][]string // queueName -> topics
+	shmSize  int64
 }
 
 func defaultOptions() options {
-	// Collect exposed ports from all known services
-	defaultServices := []Service{ServiceAMQP, ServiceManagement, ServiceSMF, ServiceREST, ServiceMQTT}
-	var defaultPorts []string
-	for _, svc := range defaultServices {
-		defaultPorts = append(defaultPorts, fmt.Sprintf("%d/tcp", svc.Port))
-	}
+	// Default services that should be enabled
+	defaultServices := []Service{ServiceAMQP, ServiceSMF, ServiceREST, ServiceMQTT}
 
 	return options{
-		vpn:          "default",
-		username:     "root",
-		password:     "password",
-		exposedPorts: defaultPorts,
-		shmSize:      1 << 30, // 1 GiB
+		vpn:      "default",
+		username: "root",
+		password: "password",
+		services: defaultServices,
+		shmSize:  1 << 30, // 1 GiB
 	}
 }
 
@@ -44,10 +38,11 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 	return nil
 }
 
-// WithExposedPorts allows adding extra exposed ports
-func WithExposedPorts(ports ...string) Option {
+// WithServices configures the services to be exposed with their wait strategies
+func WithServices(srv ...Service) Option {
 	return func(o *options) error {
-		o.exposedPorts = append(o.exposedPorts, ports...)
+		// Clear existing services and use only the specified ones
+		o.services = srv
 		return nil
 	}
 }
@@ -61,8 +56,8 @@ func WithCredentials(username, password string) Option {
 	}
 }
 
-// WithVpn sets the VPN name
-func WithVpn(vpn string) Option {
+// WithVPN sets the VPN name
+func WithVPN(vpn string) Option {
 	return func(o *options) error {
 		o.vpn = vpn
 		return nil

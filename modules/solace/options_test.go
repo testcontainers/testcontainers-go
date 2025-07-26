@@ -25,69 +25,65 @@ func TestDefaultOptions(t *testing.T) {
 		t.Errorf("Expected default shmSize to be %d, got %d", 1<<30, opts.shmSize)
 	}
 
-	// Test that all default service ports are exposed
-	expectedPorts := []string{"5672/tcp", "8080/tcp", "55555/tcp", "9000/tcp", "1883/tcp"}
-	if len(opts.exposedPorts) != len(expectedPorts) {
-		t.Errorf("Expected %d exposed ports, got %d", len(expectedPorts), len(opts.exposedPorts))
+	// Test that all default services are included
+	expectedServices := []Service{ServiceAMQP, ServiceSMF, ServiceREST, ServiceMQTT}
+	if len(opts.services) != len(expectedServices) {
+		t.Errorf("Expected %d services, got %d", len(expectedServices), len(opts.services))
 	}
 
-	for _, expectedPort := range expectedPorts {
+	for _, expectedService := range expectedServices {
 		found := false
-		for _, port := range opts.exposedPorts {
-			if port == expectedPort {
+		for _, service := range opts.services {
+			if service.Name == expectedService.Name && service.Port == expectedService.Port {
 				found = true
 				break
 			}
 		}
 		if !found {
-			t.Errorf("Expected port %s to be in exposed ports, but it wasn't found", expectedPort)
+			t.Errorf("Expected service %s:%d to be in services, but it wasn't found", expectedService.Name, expectedService.Port)
 		}
 	}
 }
-func TestWithExposedPorts(t *testing.T) {
+
+func TestWithServices(t *testing.T) {
 	tests := []struct {
-		name          string
-		initialPorts  []string
-		newPorts      []string
-		expectedPorts []string
+		name             string
+		services         []Service
+		expectedServices []Service
 	}{
 		{
-			name:          "add single port",
-			initialPorts:  []string{"8080/tcp"},
-			newPorts:      []string{"9090/tcp"},
-			expectedPorts: []string{"8080/tcp", "9090/tcp"},
+			name:             "set single service",
+			services:         []Service{ServiceAMQP},
+			expectedServices: []Service{ServiceAMQP},
 		},
 		{
-			name:          "add multiple ports",
-			initialPorts:  []string{"8080/tcp"},
-			newPorts:      []string{"9090/tcp", "3000/tcp"},
-			expectedPorts: []string{"8080/tcp", "9090/tcp", "3000/tcp"},
+			name:             "set multiple services",
+			services:         []Service{ServiceAMQP, ServiceMQTT, ServiceREST},
+			expectedServices: []Service{ServiceAMQP, ServiceMQTT, ServiceREST},
 		},
 		{
-			name:          "add to empty ports",
-			initialPorts:  []string{},
-			newPorts:      []string{"8080/tcp"},
-			expectedPorts: []string{"8080/tcp"},
+			name:             "set no services",
+			services:         []Service{},
+			expectedServices: []Service{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			opts := &options{exposedPorts: tt.initialPorts}
-			option := WithExposedPorts(tt.newPorts...)
+			opts := &options{}
+			option := WithServices(tt.services...)
 
 			err := option(opts)
 			if err != nil {
-				t.Errorf("WithExposedPorts returned error: %v", err)
+				t.Errorf("WithServices returned error: %v", err)
 			}
 
-			if !reflect.DeepEqual(opts.exposedPorts, tt.expectedPorts) {
-				t.Errorf("Expected exposed ports %v, got %v", tt.expectedPorts, opts.exposedPorts)
+			if !reflect.DeepEqual(opts.services, tt.expectedServices) {
+				t.Errorf("Expected services %v, got %v", tt.expectedServices, opts.services)
 			}
 		})
 	}
 }
-
 func TestWithCredentials(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -154,11 +150,11 @@ func TestWithVpn(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			opts := &options{}
-			option := WithVpn(tt.vpn)
+			option := WithVPN(tt.vpn)
 
 			err := option(opts)
 			if err != nil {
-				t.Errorf("WithVpn returned error: %v", err)
+				t.Errorf("WithVPN returned error: %v", err)
 			}
 
 			if opts.vpn != tt.vpn {
@@ -285,8 +281,8 @@ func TestOptionChaining(t *testing.T) {
 	// Apply multiple options
 	options := []Option{
 		WithCredentials("newuser", "newpass"),
-		WithVpn("testvpn"),
-		WithExposedPorts("3000/tcp", "4000/tcp"),
+		WithVPN("testvpn"),
+		WithServices(ServiceAMQP, ServiceMQTT), // Use WithServices instead of WithExposedPorts
 		WithQueue("queue1", "topic1"),
 		WithQueue("queue1", "topic2"),
 		WithQueue("queue2", "topic3"),
@@ -314,18 +310,14 @@ func TestOptionChaining(t *testing.T) {
 		t.Errorf("Expected shmSize %d, got %d", 2<<30, opts.shmSize)
 	}
 
-	// Check that custom ports were added
-	expectedCustomPorts := []string{"3000/tcp", "4000/tcp"}
-	for _, expectedPort := range expectedCustomPorts {
-		found := false
-		for _, port := range opts.exposedPorts {
-			if port == expectedPort {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("Expected custom port %s to be in exposed ports", expectedPort)
+	// Check that services were set correctly
+	expectedServices := []Service{ServiceAMQP, ServiceMQTT}
+	if len(opts.services) != len(expectedServices) {
+		t.Errorf("Expected %d services, got %d", len(expectedServices), len(opts.services))
+	}
+	for i, expectedService := range expectedServices {
+		if opts.services[i].Name != expectedService.Name || opts.services[i].Port != expectedService.Port {
+			t.Errorf("Expected service %s:%d, got %s:%d", expectedService.Name, expectedService.Port, opts.services[i].Name, opts.services[i].Port)
 		}
 	}
 

@@ -50,9 +50,23 @@ When starting the Solace Pubsub+ container, you can pass options in a variadic w
 - `WithCredentials(username, password string)` - sets the client credentials for authentication
 - `WithVpn(vpn string)` - sets the VPN name (defaults to "default")
 - `WithQueue(queueName, topic string)` - subscribes a given topic to a queue (for SMF/AMQP testing)
-- `WithExposedPorts(ports ...string)` - allows adding extra exposed ports
+- `WithServices(srv ...Service)` - configures which Solace services to expose with their wait strategies (preferred method)
 - `WithEnv(env map[string]string)` - allows adding or overriding environment variables
 - `WithShmSize(size int64)` - sets the shared memory size (defaults to 1 GiB)
+
+#### WithServices Option
+
+The `WithServices` option is the recommended way to configure which Solace services should be exposed and made available in your container. This option automatically handles port exposure and sets up wait strategies for each specified service.
+
+Available services:
+- `ServiceAMQP` - AMQP service (port 5672)
+- `ServiceMQTT` - MQTT service (port 1883)  
+- `ServiceREST` - REST service (port 9000)
+- `ServiceManagement` - Management service (port 8080)
+- `ServiceSMF` - SMF service (port 55555)
+- `ServiceSMFSSL` - SMF SSL service (port 55443)
+
+By default, when no `WithServices` option is specified, the container will expose AMQP, SMF, REST, and MQTT services.
 
 {% include "../features/common_functional_options_list.md" %}
 

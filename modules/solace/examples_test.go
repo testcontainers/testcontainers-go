@@ -20,7 +20,7 @@ func ExampleRun() {
 	ctx := context.Background()
 	ctr, err := sc.Run(ctx, "solace-pubsub-standard:latest",
 		sc.WithCredentials("admin", "admin"),
-		sc.WithExposedPorts("5672/tcp", "8080/tcp"),
+		sc.WithServices(sc.ServiceAMQP, sc.ServiceManagement),
 		testcontainers.WithEnv(map[string]string{
 			"username_admin_globalaccesslevel": "admin",
 			"username_admin_password":          "admin",
@@ -43,8 +43,8 @@ func ExampleRun_withTopicAndQueue() {
 
 	ctr, err := sc.Run(ctx, "solace-pubsub-standard:latest",
 		sc.WithCredentials("admin", "admin"),
-		sc.WithVpn("test-vpn"),
-		sc.WithExposedPorts("5672/tcp", "8080/tcp"),
+		sc.WithVPN("test-vpn"),
+		sc.WithServices(sc.ServiceAMQP, sc.ServiceManagement, sc.ServiceSMF),
 		testcontainers.WithEnv(map[string]string{
 			"username_admin_globalaccesslevel": "admin",
 			"username_admin_password":          "admin",
