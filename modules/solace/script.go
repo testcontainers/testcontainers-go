@@ -16,7 +16,7 @@ configure
 `
 
 	// Create VPN if not default
-	if settings.vpn != defaultVpn {
+	if settings.vpn != defaultVPN {
 		script += generateVPNConfig(settings.vpn)
 	}
 

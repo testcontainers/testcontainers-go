@@ -79,7 +79,7 @@ func testMessagePublishAndConsume(ctr *sc.Container, queueName, topicName string
 	// Configure connection properties
 	brokerConfig := config.ServicePropertyMap{
 		config.TransportLayerPropertyHost:                 smfURL,
-		config.ServicePropertyVPNName:                     ctr.Vpn(),
+		config.ServicePropertyVPNName:                     ctr.VPN(),
 		config.AuthenticationPropertyScheme:               config.AuthenticationSchemeBasic,
 		config.AuthenticationPropertySchemeBasicUserName:  ctr.Username(),
 		config.AuthenticationPropertySchemeBasicPassword:  ctr.Password(),

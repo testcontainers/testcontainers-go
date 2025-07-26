@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	defaultVpn = "default"
+	defaultVPN = "default"
 )
 
 // Container represents a Solace container with additional settings
@@ -24,6 +24,7 @@ type Container struct {
 	settings options
 }
 
+// Run starts a Solace container with the provided image and options
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	// Default to the standard Solace image if none provided
 	settings := defaultOptions()
@@ -111,14 +112,17 @@ func (s *Container) BrokerURLFor(ctx context.Context, service Service) (string, 
 	return s.PortEndpoint(ctx, p, service.Protocol)
 }
 
+// Username returns the username configured for the Solace container
 func (c *Container) Username() string {
 	return c.settings.username
 }
 
+// Password returns the password configured for the Solace container
 func (c *Container) Password() string {
 	return c.settings.password
 }
 
-func (c *Container) Vpn() string {
+// Vpn returns the VPN name configured for the Solace container
+func (c *Container) VPN() string {
 	return c.settings.vpn
 }
