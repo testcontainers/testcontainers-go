@@ -222,6 +222,10 @@
             "path": "../modules/socat"
         },
         {
+            "name": "module / solace",
+            "path": "../modules/solace"
+        },
+        {
             "name": "module / surrealdb",
             "path": "../modules/surrealdb"
         },
