@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"time"
 
 	"github.com/docker/docker/api/types/container"
@@ -66,21 +65,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	if cliScript == "" {
 		return c, nil
 	}
-	// Write the CLI script to a temp file
-	tmpFile, err := os.CreateTemp("", "solace-queue-setup-*.cli")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create temp CLI script: %w", err)
-	}
-	defer os.Remove(tmpFile.Name())
-	if _, err := tmpFile.Write([]byte(cliScript)); err != nil {
-		return nil, fmt.Errorf("failed to write CLI script: %w", err)
-	}
-	if err := tmpFile.Close(); err != nil {
-		return nil, fmt.Errorf("failed to close CLI script: %w", err)
-	}
 
-	// Copy the script into the container at the correct location
-	err = c.CopyFileToContainer(ctx, tmpFile.Name(), "/usr/sw/jail/cliscripts/script.cli", 0o644)
+	// Copy the CLI script directly to the container
+	err = c.CopyToContainer(ctx, []byte(cliScript), "/usr/sw/jail/cliscripts/script.cli", 0o644)
 	if err != nil {
 		return nil, fmt.Errorf("failed to copy CLI script to container: %w", err)
 	}
