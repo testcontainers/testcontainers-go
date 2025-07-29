@@ -75,6 +75,9 @@ func TestWithServices(t *testing.T) {
 
 			err := option(opts)
 			if err != nil {
+				if len(tt.services) == 0 {
+					return
+				}
 				t.Errorf("WithServices returned error: %v", err)
 			}
 

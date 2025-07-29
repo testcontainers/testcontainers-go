@@ -1,6 +1,8 @@
 package solace
 
 import (
+	"errors"
+
 	"github.com/testcontainers/testcontainers-go"
 )
 
@@ -41,6 +43,9 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 // WithServices configures the services to be exposed with their wait strategies
 func WithServices(srv ...Service) Option {
 	return func(o *options) error {
+		if len(srv) == 0 {
+			return errors.New("at least one service must be specified")
+		}
 		// Clear existing services and use only the specified ones
 		o.services = srv
 		return nil
