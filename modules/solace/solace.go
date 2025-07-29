@@ -1,8 +1,11 @@
 package solace
 
 import (
+	"bytes"
 	"context"
+	_ "embed"
 	"fmt"
+	"html/template"
 	"io"
 	"time"
 
@@ -13,9 +16,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const (
-	defaultVPN = "default"
-)
+//go:embed mounts/solace.script.tpl
+var customScriptTpl string
 
 // Container represents a Solace container with additional settings
 type Container struct {
@@ -25,7 +27,7 @@ type Container struct {
 
 // Run starts a Solace container with the provided image and options
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	// Default to the standard Solace image if none provided
+	// Override default options with provided ones
 	settings := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
@@ -78,14 +80,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return c, fmt.Errorf("generic container: %w", err)
 	}
 
-	// Generate CLI script for queue/topic configuration
-	cliScript := generateCLIScript(settings)
-	if cliScript == "" {
-		return c, nil
+	// Render CLI script for queue/topic configuration
+	solaceScript, err := renderSolaceScript(settings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate CLI script: %w", err)
 	}
 
 	// Copy the CLI script directly to the container
-	err = c.CopyToContainer(ctx, []byte(cliScript), "/usr/sw/jail/cliscripts/script.cli", 0o644)
+	err = c.CopyToContainer(ctx, []byte(solaceScript), "/usr/sw/jail/cliscripts/script.cli", 0o644)
 	if err != nil {
 		return nil, fmt.Errorf("failed to copy CLI script to container: %w", err)
 	}
@@ -130,4 +132,33 @@ func (c *Container) Password() string {
 // Vpn returns the VPN name configured for the Solace container
 func (c *Container) VPN() string {
 	return c.settings.vpn
+}
+
+// renderSolaceScript renders the Solace CLI configuration script based on the provided settings.
+// Reference: https://docs.solace.com/Admin-Ref/CLI-Reference/VMR_CLI_Commands.html
+func renderSolaceScript(opts options) (string, error) {
+	tmpl, err := template.New("solace-script").Parse(customScriptTpl)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse Solace script template: %w", err)
+	}
+
+	// Create template data structure
+	data := struct {
+		VPN      string
+		Username string
+		Password string
+		Queues   map[string][]string
+	}{
+		VPN:      opts.vpn,
+		Username: opts.username,
+		Password: opts.password,
+		Queues:   opts.queues,
+	}
+
+	var result bytes.Buffer
+	if err := tmpl.Execute(&result, data); err != nil {
+		return "", fmt.Errorf("failed to execute Solace script template: %w", err)
+	}
+
+	return result.String(), nil
 }
