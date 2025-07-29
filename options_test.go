@@ -906,3 +906,30 @@ func TestWithWaitStrategy(t *testing.T) {
 		})
 	})
 }
+
+func TestWithProvider(t *testing.T) {
+	t.Parallel()
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "alpine",
+		},
+	}
+
+	t.Run("default", func(t *testing.T) {
+		opt := testcontainers.WithProvider(testcontainers.ProviderDefault)
+		require.NoError(t, opt.Customize(&req))
+		require.Equal(t, testcontainers.ProviderDefault, req.ProviderType)
+	})
+
+	t.Run("docker", func(t *testing.T) {
+		opt := testcontainers.WithProvider(testcontainers.ProviderDocker)
+		require.NoError(t, opt.Customize(&req))
+		require.Equal(t, testcontainers.ProviderDocker, req.ProviderType)
+	})
+
+	t.Run("podman", func(t *testing.T) {
+		opt := testcontainers.WithProvider(testcontainers.ProviderPodman)
+		require.NoError(t, opt.Customize(&req))
+		require.Equal(t, testcontainers.ProviderPodman, req.ProviderType)
+	})
+}

@@ -60,6 +60,8 @@ The following options are exposed by the `testcontainers` package.
 - [`CustomizeRequest`](/features/creating_container/#customizerequest) Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 - [`WithName`](/features/creating_container/#withname) Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.38.0"><span class="tc-version">:material-tag: v0.38.0</span></a>
 - [`WithNoStart`](/features/creating_container/#withnostart) Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.38.0"><span class="tc-version">:material-tag: v0.38.0</span></a>
+- [`WithProvider`](/features/creating_container/#withprovider) Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
 
 ### Experimental Options
 
