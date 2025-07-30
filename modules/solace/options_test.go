@@ -1,35 +1,24 @@
 package solace
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDefaultOptions(t *testing.T) {
 	opts := defaultOptions()
 
 	// Test default values
-	if opts.vpn != "default" {
-		t.Errorf("Expected default vpn to be 'default', got %s", opts.vpn)
-	}
-
-	if opts.username != "root" {
-		t.Errorf("Expected default username to be 'root', got %s", opts.username)
-	}
-
-	if opts.password != "password" {
-		t.Errorf("Expected default password to be 'password', got %s", opts.password)
-	}
-
-	if opts.shmSize != 1<<30 {
-		t.Errorf("Expected default shmSize to be %d, got %d", 1<<30, opts.shmSize)
-	}
+	assert.Equal(t, "default", opts.vpn)
+	assert.Equal(t, "root", opts.username)
+	assert.Equal(t, "password", opts.password)
+	assert.Equal(t, int64(1<<30), opts.shmSize)
 
 	// Test that all default services are included
 	expectedServices := []Service{ServiceAMQP, ServiceSMF, ServiceREST, ServiceMQTT}
-	if len(opts.services) != len(expectedServices) {
-		t.Errorf("Expected %d services, got %d", len(expectedServices), len(opts.services))
-	}
+	require.Len(t, opts.services, len(expectedServices))
 
 	for _, expectedService := range expectedServices {
 		found := false
@@ -39,9 +28,7 @@ func TestDefaultOptions(t *testing.T) {
 				break
 			}
 		}
-		if !found {
-			t.Errorf("Expected service %s:%d to be in services, but it wasn't found", expectedService.Name, expectedService.Port)
-		}
+		assert.True(t, found, "Expected service %s:%d to be in services", expectedService.Name, expectedService.Port)
 	}
 }
 
@@ -74,19 +61,17 @@ func TestWithServices(t *testing.T) {
 			option := WithServices(tt.services...)
 
 			err := option(opts)
-			if err != nil {
-				if len(tt.services) == 0 {
-					return
-				}
-				t.Errorf("WithServices returned error: %v", err)
+			if len(tt.services) == 0 {
+				assert.Error(t, err)
+				return
 			}
 
-			if !reflect.DeepEqual(opts.services, tt.expectedServices) {
-				t.Errorf("Expected services %v, got %v", tt.expectedServices, opts.services)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedServices, opts.services)
 		})
 	}
 }
+
 func TestWithCredentials(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -116,17 +101,10 @@ func TestWithCredentials(t *testing.T) {
 			option := WithCredentials(tt.username, tt.password)
 
 			err := option(opts)
-			if err != nil {
-				t.Errorf("WithCredentials returned error: %v", err)
-			}
+			require.NoError(t, err)
 
-			if opts.username != tt.username {
-				t.Errorf("Expected username %s, got %s", tt.username, opts.username)
-			}
-
-			if opts.password != tt.password {
-				t.Errorf("Expected password %s, got %s", tt.password, opts.password)
-			}
+			assert.Equal(t, tt.username, opts.username)
+			assert.Equal(t, tt.password, opts.password)
 		})
 	}
 }
@@ -156,13 +134,9 @@ func TestWithVpn(t *testing.T) {
 			option := WithVPN(tt.vpn)
 
 			err := option(opts)
-			if err != nil {
-				t.Errorf("WithVPN returned error: %v", err)
-			}
+			require.NoError(t, err)
 
-			if opts.vpn != tt.vpn {
-				t.Errorf("Expected vpn %s, got %s", tt.vpn, opts.vpn)
-			}
+			assert.Equal(t, tt.vpn, opts.vpn)
 		})
 	}
 }
@@ -204,39 +178,21 @@ func TestWithQueue(t *testing.T) {
 			option := WithQueue(tt.queueName, tt.topic)
 
 			err := option(opts)
-			if err != nil {
-				t.Errorf("WithQueue returned error: %v", err)
-			}
+			require.NoError(t, err)
 
-			if opts.queues == nil {
-				t.Errorf("Expected queues to be initialized")
-				return
-			}
+			assert.NotNil(t, opts.queues, "Expected queues to be initialized")
 
 			topics, exists := opts.queues[tt.queueName]
-			if !exists {
-				t.Errorf("Expected queue %s to exist", tt.queueName)
-				return
-			}
+			assert.True(t, exists, "Expected queue %s to exist", tt.queueName)
 
-			if len(topics) != tt.expectedLen {
-				t.Errorf("Expected %d topics for queue %s, got %d", tt.expectedLen, tt.queueName, len(topics))
-			}
+			assert.Len(t, topics, tt.expectedLen, "Expected %d topics for queue %s", tt.expectedLen, tt.queueName)
 
 			// Check if the new topic is in the list
-			found := false
-			for _, topic := range topics {
-				if topic == tt.topic {
-					found = true
-					break
-				}
-			}
-			if !found {
-				t.Errorf("Expected topic %s to be in queue %s", tt.topic, tt.queueName)
-			}
+			assert.Contains(t, topics, tt.topic, "Expected topic %s to be in queue %s", tt.topic, tt.queueName)
 		})
 	}
 }
+
 func TestWithShmSize(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -266,13 +222,9 @@ func TestWithShmSize(t *testing.T) {
 			option := WithShmSize(tt.shmSize)
 
 			err := option(opts)
-			if err != nil {
-				t.Errorf("WithShmSize returned error: %v", err)
-			}
+			require.NoError(t, err)
 
-			if opts.shmSize != tt.expected {
-				t.Errorf("Expected shmSize %d, got %d", tt.expected, opts.shmSize)
-			}
+			assert.Equal(t, tt.expected, opts.shmSize)
 		})
 	}
 }
@@ -294,44 +246,25 @@ func TestOptionChaining(t *testing.T) {
 
 	for _, option := range options {
 		err := option(&opts)
-		if err != nil {
-			t.Errorf("Option returned error: %v", err)
-		}
+		require.NoError(t, err)
 	}
 
 	// Verify all options were applied
-	if opts.username != "newuser" {
-		t.Errorf("Expected username 'newuser', got %s", opts.username)
-	}
-	if opts.password != "newpass" {
-		t.Errorf("Expected password 'newpass', got %s", opts.password)
-	}
-	if opts.vpn != "testvpn" {
-		t.Errorf("Expected vpn 'testvpn', got %s", opts.vpn)
-	}
-	if opts.shmSize != 2<<30 {
-		t.Errorf("Expected shmSize %d, got %d", 2<<30, opts.shmSize)
-	}
+	assert.Equal(t, "newuser", opts.username)
+	assert.Equal(t, "newpass", opts.password)
+	assert.Equal(t, "testvpn", opts.vpn)
+	assert.Equal(t, int64(2<<30), opts.shmSize)
 
 	// Check that services were set correctly
 	expectedServices := []Service{ServiceAMQP, ServiceMQTT}
-	if len(opts.services) != len(expectedServices) {
-		t.Errorf("Expected %d services, got %d", len(expectedServices), len(opts.services))
-	}
+	require.Len(t, opts.services, len(expectedServices))
 	for i, expectedService := range expectedServices {
-		if opts.services[i].Name != expectedService.Name || opts.services[i].Port != expectedService.Port {
-			t.Errorf("Expected service %s:%d, got %s:%d", expectedService.Name, expectedService.Port, opts.services[i].Name, opts.services[i].Port)
-		}
+		assert.Equal(t, expectedService.Name, opts.services[i].Name)
+		assert.Equal(t, expectedService.Port, opts.services[i].Port)
 	}
 
 	// Check queues
-	if len(opts.queues) != 2 {
-		t.Errorf("Expected 2 queues, got %d", len(opts.queues))
-	}
-	if len(opts.queues["queue1"]) != 2 {
-		t.Errorf("Expected 2 topics for queue1, got %d", len(opts.queues["queue1"]))
-	}
-	if len(opts.queues["queue2"]) != 1 {
-		t.Errorf("Expected 1 topic for queue2, got %d", len(opts.queues["queue2"]))
-	}
+	assert.Len(t, opts.queues, 2)
+	assert.Len(t, opts.queues["queue1"], 2)
+	assert.Len(t, opts.queues["queue2"], 1)
 }

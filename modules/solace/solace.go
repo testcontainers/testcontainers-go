@@ -110,9 +110,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 }
 
 // BrokerURLFor returns the origin URL for a given service
-func (s *Container) BrokerURLFor(ctx context.Context, service Service) (string, error) {
+func (c *Container) BrokerURLFor(ctx context.Context, service Service) (string, error) {
 	p := nat.Port(fmt.Sprintf("%d/tcp", service.Port))
-	return s.PortEndpoint(ctx, p, service.Protocol)
+	return c.PortEndpoint(ctx, p, service.Protocol)
 }
 
 // Username returns the username configured for the Solace container
