@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/solace
 ## Usage example
 
 <!--codeinclude-->
-[Creating a Solace Pubsub+ container](../../modules/solace/examples_test.go) inside_block:ExampleRun
+[Creating a Solace Pubsub+ container](../../modules/solace/examples_test.go) inside_block:runSolaceContainer
 <!--/codeinclude-->
 
 ## Module Reference
@@ -45,20 +45,38 @@ In example: `Run(context.Background(), "solace/solace-pubsub-standard:latest")`.
 
 When starting the Solace Pubsub+ container, you can pass options in a variadic way to configure it.
 
-#### Available Options
+#### WithCredentials
 
-- `WithCredentials(username, password string)` - sets the client credentials for authentication
-- `WithVpn(vpn string)` - sets the VPN name (defaults to "default")
-- `WithQueue(queueName, topic string)` - subscribes a given topic to a queue (for SMF/AMQP testing)
-- `WithServices(srv ...Service)` - configures which Solace services to expose with their wait strategies (preferred method)
-- `WithEnv(env map[string]string)` - allows adding or overriding environment variables
-- `WithShmSize(size int64)` - sets the shared memory size (defaults to 1 GiB)
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-#### WithServices Option
+`WithCredentials(username, password string)`: sets the client credentials for authentication
+
+#### WithVpn
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+`WithVpn(vpn string)`: sets the VPN name (defaults to "default")
+
+#### WithQueue
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+`WithQueue(queueName, topic string)`: subscribes a given topic to a queue (for SMF/AMQP testing)
+
+#### WithShmSize
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+`WithShmSize(size int64)`: sets the shared memory size (defaults to 1 GiB)
+
+#### WithServices
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 The `WithServices` option is the recommended way to configure which Solace services should be exposed and made available in your container. This option automatically handles port exposure and sets up wait strategies for each specified service.
 
 Available services:
+
 - `ServiceAMQP` - AMQP service (port 5672)
 - `ServiceMQTT` - MQTT service (port 1883)  
 - `ServiceREST` - REST service (port 9000)
@@ -75,6 +93,8 @@ By default, when no `WithServices` option is specified, the container will expos
 The Solace Pubsub+ container exposes the following methods:
 
 #### BrokerURLFor
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 `BrokerURLFor(ctx context.Context, service Service) (string, error)` - returns the connection URL for a given Solace service.
 
@@ -103,19 +123,20 @@ if err != nil {
 // mgmtURL will be something like: http://localhost:32769
 ```
 
-### Container Properties
-
-The Solace Pubsub+ container also exposes these public methods:
-
 #### Username
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 `Username() string` - returns the configured username for authentication
 
 #### Password
 
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
 `Password() string` - returns the configured password for authentication
 
 #### VPN
 
-`VPN() string` - returns the configured VPN name
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
+`VPN() string` - returns the configured VPN name

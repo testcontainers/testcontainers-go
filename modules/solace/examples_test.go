@@ -17,6 +17,7 @@ import (
 )
 
 func ExampleRun() {
+	// runSolaceContainer {
 	ctx := context.Background()
 	ctr, err := sc.Run(ctx, "solace/solace-pubsub-standard:latest",
 		sc.WithCredentials("admin", "admin"),
@@ -33,6 +34,7 @@ func ExampleRun() {
 		}
 	}()
 	fmt.Println(err)
+	// }
 
 	// Output:
 	// <nil>
