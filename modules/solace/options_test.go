@@ -3,7 +3,6 @@ package solace
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -11,10 +10,10 @@ func TestDefaultOptions(t *testing.T) {
 	opts := defaultOptions()
 
 	// Test default values
-	assert.Equal(t, "default", opts.vpn)
-	assert.Equal(t, "root", opts.username)
-	assert.Equal(t, "password", opts.password)
-	assert.Equal(t, int64(1<<30), opts.shmSize)
+	require.Equal(t, "default", opts.vpn)
+	require.Equal(t, "root", opts.username)
+	require.Equal(t, "password", opts.password)
+	require.Equal(t, int64(1<<30), opts.shmSize)
 
 	// Test that all default services are included
 	expectedServices := []Service{ServiceAMQP, ServiceSMF, ServiceREST, ServiceMQTT}
@@ -28,7 +27,7 @@ func TestDefaultOptions(t *testing.T) {
 				break
 			}
 		}
-		assert.True(t, found, "Expected service %s:%d to be in services", expectedService.Name, expectedService.Port)
+		require.True(t, found, "Expected service %s:%d to be in services", expectedService.Name, expectedService.Port)
 	}
 }
 
@@ -62,12 +61,12 @@ func TestWithServices(t *testing.T) {
 
 			err := option(opts)
 			if len(tt.services) == 0 {
-				assert.Error(t, err)
+				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.expectedServices, opts.services)
+			require.Equal(t, tt.expectedServices, opts.services)
 		})
 	}
 }
@@ -103,8 +102,8 @@ func TestWithCredentials(t *testing.T) {
 			err := option(opts)
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.username, opts.username)
-			assert.Equal(t, tt.password, opts.password)
+			require.Equal(t, tt.username, opts.username)
+			require.Equal(t, tt.password, opts.password)
 		})
 	}
 }
@@ -136,7 +135,7 @@ func TestWithVpn(t *testing.T) {
 			err := option(opts)
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.vpn, opts.vpn)
+			require.Equal(t, tt.vpn, opts.vpn)
 		})
 	}
 }
@@ -180,15 +179,15 @@ func TestWithQueue(t *testing.T) {
 			err := option(opts)
 			require.NoError(t, err)
 
-			assert.NotNil(t, opts.queues, "Expected queues to be initialized")
+			require.NotNil(t, opts.queues, "Expected queues to be initialized")
 
 			topics, exists := opts.queues[tt.queueName]
-			assert.True(t, exists, "Expected queue %s to exist", tt.queueName)
+			require.True(t, exists, "Expected queue %s to exist", tt.queueName)
 
-			assert.Len(t, topics, tt.expectedLen, "Expected %d topics for queue %s", tt.expectedLen, tt.queueName)
+			require.Len(t, topics, tt.expectedLen, "Expected %d topics for queue %s", tt.expectedLen, tt.queueName)
 
 			// Check if the new topic is in the list
-			assert.Contains(t, topics, tt.topic, "Expected topic %s to be in queue %s", tt.topic, tt.queueName)
+			require.Contains(t, topics, tt.topic, "Expected topic %s to be in queue %s", tt.topic, tt.queueName)
 		})
 	}
 }
@@ -224,7 +223,7 @@ func TestWithShmSize(t *testing.T) {
 			err := option(opts)
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.expected, opts.shmSize)
+			require.Equal(t, tt.expected, opts.shmSize)
 		})
 	}
 }
@@ -250,21 +249,21 @@ func TestOptionChaining(t *testing.T) {
 	}
 
 	// Verify all options were applied
-	assert.Equal(t, "newuser", opts.username)
-	assert.Equal(t, "newpass", opts.password)
-	assert.Equal(t, "testvpn", opts.vpn)
-	assert.Equal(t, int64(2<<30), opts.shmSize)
+	require.Equal(t, "newuser", opts.username)
+	require.Equal(t, "newpass", opts.password)
+	require.Equal(t, "testvpn", opts.vpn)
+	require.Equal(t, int64(2<<30), opts.shmSize)
 
 	// Check that services were set correctly
 	expectedServices := []Service{ServiceAMQP, ServiceMQTT}
 	require.Len(t, opts.services, len(expectedServices))
 	for i, expectedService := range expectedServices {
-		assert.Equal(t, expectedService.Name, opts.services[i].Name)
-		assert.Equal(t, expectedService.Port, opts.services[i].Port)
+		require.Equal(t, expectedService.Name, opts.services[i].Name)
+		require.Equal(t, expectedService.Port, opts.services[i].Port)
 	}
 
 	// Check queues
-	assert.Len(t, opts.queues, 2)
-	assert.Len(t, opts.queues["queue1"], 2)
-	assert.Len(t, opts.queues["queue2"], 1)
+	require.Len(t, opts.queues, 2)
+	require.Len(t, opts.queues["queue1"], 2)
+	require.Len(t, opts.queues["queue2"], 1)
 }
