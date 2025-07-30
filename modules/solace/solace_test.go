@@ -17,7 +17,7 @@ func TestSolace(t *testing.T) {
 	queueName := "TestQueue"
 	topicName := "Topic/ActualTopic"
 
-	ctr, err := sc.Run(ctx, "solace-pubsub-standard:latest",
+	ctr, err := sc.Run(ctx, "solace/solace-pubsub-standard:latest",
 		sc.WithCredentials("admin", "admin"),
 		sc.WithVPN("test-vpn"),
 		sc.WithServices(sc.ServiceAMQP, sc.ServiceManagement, sc.ServiceSMF),
