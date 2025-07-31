@@ -17,7 +17,7 @@ func ExampleRun() {
 	ctr, err := dmcpg.Run(
 		ctx, "docker/mcp-gateway:latest",
 		dmcpg.WithTools("curl", []string{"curl"}),
-		dmcpg.WithTools("brave", []string{"brave_local_search", "brave_web_search"}),
+		dmcpg.WithTools("duckduckgo", []string{"fetch_content", "search"}),
 		dmcpg.WithTools("github-official", []string{"add_issue_comment"}),
 	)
 	defer func() {
@@ -51,7 +51,7 @@ func ExampleRun_connectMCPClient() {
 	ctr, err := dmcpg.Run(
 		ctx, "docker/mcp-gateway:latest",
 		dmcpg.WithTools("curl", []string{"curl"}),
-		dmcpg.WithTools("brave", []string{"brave_local_search", "brave_web_search"}),
+		dmcpg.WithTools("duckduckgo", []string{"fetch_content", "search"}),
 		dmcpg.WithTools("github-official", []string{"add_issue_comment"}),
 	)
 	defer func() {
