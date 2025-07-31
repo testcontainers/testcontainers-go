@@ -1,6 +1,6 @@
 # Memcached
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.38.0"><span class="tc-version">:material-tag: v0.38.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/memcached
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.38.0"><span class="tc-version">:material-tag: v0.38.0</span></a>
 
 The Memcached module exposes one entrypoint function to create the Memcached container, and this function receives three parameters:
 
@@ -53,7 +53,7 @@ The Memcached container exposes the following methods:
 
 #### HostPort
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.38.0"><span class="tc-version">:material-tag: v0.38.0</span></a>
 
 The `HostPort` method returns the host and port of the Memcached container, in the format `host:port`. Use this method to connect to the Memcached container from your application.
 

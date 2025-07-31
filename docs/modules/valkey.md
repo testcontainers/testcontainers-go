@@ -66,7 +66,7 @@ In the case you have a custom config file for Valkey, it's possible to copy that
 
 #### WithTLS
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.38.0"><span class="tc-version">:material-tag: v0.38.0</span></a>
 
 In the case you want to enable TLS for the Valkey container, you can use the `WithTLS()` option. This options enables TLS on the `6379/tcp` port and uses a secure URL (e.g. `rediss://host:port`).
 
@@ -93,7 +93,7 @@ This method returns the connection string to connect to the Valkey container, us
 
 #### TLSConfig
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.38.0"><span class="tc-version">:material-tag: v0.38.0</span></a>
 
 This method returns the TLS configuration for the Valkey container, nil if TLS is not enabled.
 

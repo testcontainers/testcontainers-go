@@ -7,7 +7,7 @@ toolchain go1.23.6
 require (
 	github.com/amikos-tech/chroma-go v0.1.2
 	github.com/stretchr/testify v1.10.0
-	github.com/testcontainers/testcontainers-go v0.37.0
+	github.com/testcontainers/testcontainers-go v0.38.0
 )
 
 require (

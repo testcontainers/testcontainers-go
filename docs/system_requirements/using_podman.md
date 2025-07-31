@@ -44,6 +44,44 @@ The reaper container needs to connect to the docker daemon to reap containers, s
 > systemctl --user start podman.socket
 ```
 
+## MacOS
+
+Currently, in MacOS the autodetection of podman does not work as intended, which leads to Ryuk failing at boot-up.
+In order to use Testcontainers then either
+1. Disable Ryuk (not recommended): see [here](../features/garbage_collector.md#ryuk)
+2. If you want to use Ryuk then you need
+   1. Run podman in rootful mode by running the following commands
+      ```bash
+        podman machine stop
+        podman machine set --rootful
+        podman machine start 
+      ```
+   2. Add 
+         ```
+         ryuk.container.privileged=true
+         ``` 
+      to `~/.testcontainers.properties`
+   3. Use the `WithProvider` option when running your containers
+        ```go
+        package some_test
+        
+        import (
+            "testing"
+        
+            tc "github.com/testcontainers/testcontainers-go"
+        )
+        
+        func TestSomething(t *testing.T) {
+            ctx := t.Context()
+            ctr, err := tc.Run(ctx,
+                "docker.io/myservice:1.2.3",
+                tc.WithProvider(tc.ProviderPodman),
+            )
+        
+            // ...
+        }
+        ```
+
 ## Fedora
 
 `DOCKER_HOST` environment variable must be set

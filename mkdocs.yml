@@ -80,6 +80,7 @@ nav:
         - modules/couchbase.md
         - modules/databend.md
         - modules/dind.md
+        - modules/dockermcpgateway.md
         - modules/dockermodelrunner.md
         - modules/dolt.md
         - modules/dynamodb.md
@@ -118,6 +119,7 @@ nav:
         - modules/registry.md
         - modules/scylladb.md
         - modules/socat.md
+        - modules/solace.md
         - modules/surrealdb.md
         - modules/toxiproxy.md
         - modules/valkey.md
@@ -149,4 +151,4 @@ nav:
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: v0.37.0
+    latest_version: v0.38.0
