@@ -45,4 +45,7 @@ var (
 		Protocol:   "tcps",
 		SupportSSL: true,
 	}
+
+	// Default services that should be enabled
+	defaultServices = []Service{ServiceAMQP, ServiceSMF, ServiceREST, ServiceMQTT}
 )

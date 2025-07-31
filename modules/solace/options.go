@@ -16,9 +16,6 @@ type options struct {
 }
 
 func defaultOptions() options {
-	// Default services that should be enabled
-	defaultServices := []Service{ServiceAMQP, ServiceSMF, ServiceREST, ServiceMQTT}
-
 	return options{
 		vpn:      "default",
 		username: "root",
