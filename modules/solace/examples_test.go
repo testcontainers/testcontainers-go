@@ -60,6 +60,8 @@ func ExampleRun_withTopicAndQueue() {
 		}
 	}()
 	fmt.Println(err)
+	// the [testMessagePublishAndConsume] function is responsible for printing the output
+	// to the console, so be aware of that when adding it to other examples.
 	err = testMessagePublishAndConsume(ctr, "TestQueue", "Topic/MyTopic")
 	fmt.Println(err)
 
