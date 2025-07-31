@@ -114,9 +114,6 @@ func testMessagePublishAndConsume(ctr *sc.Container, queueName, topicName string
 		return fmt.Errorf("failed to publish message: %w", err)
 	}
 
-	// Wait a moment for message to be delivered to queue
-	time.Sleep(1 * time.Second)
-
 	// Test message consumption from queue
 	err = consumeTestMessage(messagingService, queueName)
 	if err != nil {
