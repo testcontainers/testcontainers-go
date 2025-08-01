@@ -6,6 +6,8 @@ import (
 	"io"
 	"net"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -137,6 +139,128 @@ func TestMongoDBAtlasLocal_WithRunnerLogFile(t *testing.T) {
 
 		assertMongotLog(t, ctr, runnerLogFile, true)
 	})
+}
+
+func TestWithInitScripts(t *testing.T) {
+	cases := []struct {
+		name        string
+		initScripts map[string]string // filename -> content
+		want        []bson.D
+		wantDB      string
+		wantColl    string
+	}{
+		{
+			name: "default db single script",
+			initScripts: map[string]string{
+				"01-seed.sh": `
+#!/bin/bash
+echo "--- shell seed start ---"
+monogsh "$CONNECTION_STRING" --evail 'db.init_check.insertOne({ seeded: true })
+echo "--- shell seed end ---"
+`,
+			},
+
+			//			initScripts: map[string]string{
+			//				"01-seed.js": `
+			//try {
+			//	print("js seed start");
+			//	const db = new Mongo().getDB();
+			//	db.foo.insertOne({ seeded: true});
+			//} catch(e) {
+			//	print("js seed failure", e);
+			//	throw e;
+			//}
+			//`,
+			//},
+			want:     []bson.D{{{"seeded", true}}},
+			wantDB:   "test",
+			wantColl: "foo",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a temporary directory for the init scripts
+			tmpDir := t.TempDir()
+
+			for filename, content := range tc.initScripts {
+				scriptPath := filepath.Join(tmpDir, filename)
+				require.NoError(t, os.WriteFile(scriptPath, []byte(content), 0755))
+
+				// Sanity check to verify that the script content is as expected.
+				got, err := os.ReadFile(scriptPath)
+				require.NoError(t, err, "Failed to read init script %s", filename)
+				assert.Equal(t, string(got), content, "Content of init script %s does not match", filename)
+			}
+
+			// Start container with the init scripts mounted.
+			opts := []testcontainers.ContainerCustomizer{
+				atlaslocal.WithInitScripts(tmpDir),
+			}
+
+			ctr, err := atlaslocal.Run(context.Background(), latestImage, opts...)
+			require.NoError(t, err)
+
+			testcontainers.CleanupContainer(t, ctr)
+
+			defer func() {
+				err := ctr.Terminate(context.Background())
+				require.NoError(t, err)
+			}()
+
+			// TODO: finish this check
+			//// Sanity check on the container's binds.
+			//insp, err := ctr.Inspect(context.Background())
+			//require.NoError(t, err)
+			//fmt.Println("Container Binds:", insp.HostConfig.Binds)
+
+			// Sanity check to verify that all scripts are present.
+			for filename := range tc.initScripts {
+				fmt.Printf("Checking if script %s is present in the container...\n", filename)
+				cmd := []string{"sh", "-c",
+					fmt.Sprintf("cd docker-entrypoint-initdb.d && ls -l")}
+				//fmt.Sprintf("ls -l /docker-entrypoint-initdb.d && cat /docker-entrypoint-initdb.d/%s", filename)}
+
+				exitCode, reader, err := ctr.Exec(context.Background(), cmd)
+				require.NoError(t, err)
+				require.Zero(t, exitCode, "Expected exit code 0 for command: %v", cmd)
+
+				content, _ := io.ReadAll(reader)
+				fmt.Println(string(content))
+			}
+
+			// Connect to the server.
+			uri := createConnectionURI(t, context.Background(), ctr)
+
+			time.Sleep(10 * time.Second)
+
+			fmt.Println("before mongo connect")
+			client, err := mongo.Connect(options.Client().ApplyURI(uri.String()))
+			require.NoError(t, err)
+
+			// Fetch the seeded data.
+			coll := client.Database(tc.wantDB).Collection(tc.wantColl)
+			require.Eventually(t, func() bool {
+				err := coll.FindOne(context.Background(), bson.D{{"seeded", true}}).Decode(&bson.D{})
+				return err == nil
+			}, 30*time.Second, 1*time.Second, "Failed to find seeded document in collection %s", tc.wantColl)
+
+			//fmt.Println("before cursor find")
+
+			//cur, err := coll.Find(context.Background(), bson.D{})
+			//require.NoError(t, err)
+
+			//fmt.Println("before cursor decode")
+			//var results []bson.D
+			//require.NoError(t, cur.All(context.Background(), &results))
+
+			//fmt.Println("length of results:", len(results))
+
+			//for i, result := range results {
+			//	fmt.Printf("Result %d: %v\n", i, result)
+			//}
+		})
+	}
 }
 
 // Test Helper Functions

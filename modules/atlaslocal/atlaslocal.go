@@ -3,7 +3,9 @@ package atlaslocal
 import (
 	"context"
 	"fmt"
+	"os"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -58,6 +60,45 @@ func WithDisableTelemetry() testcontainers.CustomizeRequestOption {
 		}
 
 		req.Env["DO_NOT_TRACK"] = "1"
+
+		return nil
+	}
+}
+
+// WithInitDatabase sets MONGODB_INITDB_DATABASE environment variable so the
+// init scripts and the default connection string target the specified database
+// instead of the default "test" database.
+func WithInitDatabase(database string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		if req.Env == nil {
+			req.Env = make(map[string]string)
+		}
+
+		req.Env["MONGODB_INITDB_DATABASE"] = database
+
+		return nil
+	}
+}
+
+// WithInitScripts mounts a directory containing .sh/.js init scripts into
+// /docker-entrypoint-initdb.d so they run in alphabetical order on startup.
+func WithInitScripts(scriptsDir string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		// Make sure the scripts directory exists.
+		if _, err := os.Stat(scriptsDir); os.IsNotExist(err) {
+			return fmt.Errorf("init scripts directory does not exist: %s", scriptsDir)
+		}
+
+		prev := req.HostConfigModifier
+		req.HostConfigModifier = func(hostConfig *container.HostConfig) {
+			if prev != nil {
+				prev(hostConfig)
+			}
+
+			bind := fmt.Sprintf("%s:/docker-entrypoint-initdb.d:ro", scriptsDir)
+			fmt.Println("bind")
+			hostConfig.Binds = append(hostConfig.Binds, bind)
+		}
 
 		return nil
 	}
