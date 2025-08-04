@@ -20,11 +20,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	req := testcontainers.ContainerRequest{
 		Image:        img,
 		ExposedPorts: []string{"27017/tcp"},
-		WaitingFor: wait.ForAll(
-			wait.ForLog("Waiting for connections"),
-			wait.ForListeningPort("27017/tcp"),
-		),
-		Env: map[string]string{},
+		WaitingFor:   wait.ForAll(wait.ForHealthCheck()),
+		Env:          map[string]string{},
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
@@ -38,8 +35,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	fmt.Println(req.Env)
-
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	var c *Container
 	if container != nil {
@@ -51,6 +46,44 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	return c, nil
+}
+
+// AuthConfig holds the authentication configuration for the MongoDB Atlas Local
+// container.
+type AuthConfig struct {
+	Username     string
+	Password     string
+	UsernameFile string
+	PasswordFile string
+}
+
+// WithAuth sets the authentication configuration for the MongoDB Atlas Local
+// container. This can be done by providing a username and password, or by
+// providing files that contain the username and password.
+func WithAuth(auth AuthConfig) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		if req.Env == nil {
+			req.Env = make(map[string]string)
+		}
+
+		if auth.Username != "" {
+			req.Env["MONGODB_INITDB_ROOT_USERNAME"] = auth.Username
+		}
+
+		if auth.Password != "" {
+			req.Env["MONGODB_INITDB_ROOT_PASSWORD"] = auth.Password
+		}
+
+		if auth.UsernameFile != "" {
+			req.Env["MONGODB_INITDB_ROOT_USERNAME_FILE"] = auth.UsernameFile
+		}
+
+		if auth.PasswordFile != "" {
+			req.Env["MONGODB_INITDB_ROOT_PASSWORD_FILE"] = auth.PasswordFile
+		}
+
+		return nil
+	}
 }
 
 // WithDisableTelemetry opts out of telemetry for the MongoDB Atlas Local

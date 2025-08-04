@@ -38,6 +38,102 @@ func TestMongoDBAtlasLocal(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestWithAuth(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create username and password files.
+	usernameFilepath := filepath.Join(tmpDir, "username.txt")
+
+	err := os.WriteFile(usernameFilepath, []byte("file_testuser"), 0755)
+	require.NoError(t, err)
+
+	_, err = os.Stat(usernameFilepath)
+	require.NoError(t, err, "Username file should exist")
+
+	// Create the password file.
+	passwordFilepath := filepath.Join(tmpDir, "password.txt")
+
+	err = os.WriteFile(passwordFilepath, []byte("file_testpass"), 0755)
+	require.NoError(t, err)
+
+	_, err = os.Stat(passwordFilepath)
+	require.NoError(t, err, "Password file should exist")
+
+	cases := []struct {
+		name    string
+		auth    atlaslocal.AuthConfig
+		creds   *options.Credential
+		wantErr error
+	}{
+		{
+			name:    "without auth",
+			auth:    atlaslocal.AuthConfig{},
+			creds:   nil,
+			wantErr: nil,
+		},
+		{
+			name:    "with auth",
+			auth:    atlaslocal.AuthConfig{Username: "testuser", Password: "testpass"},
+			creds:   &options.Credential{Username: "testuser", Password: "testpass"},
+			wantErr: nil,
+		},
+		{
+			name: "with auth files",
+			auth: atlaslocal.AuthConfig{
+				UsernameFile: filepath.Join(tmpDir, "username.txt"),
+				PasswordFile: filepath.Join(tmpDir, "password.txt"),
+			},
+			creds:   &options.Credential{Username: "file_testuser", Password: "file_testpass"},
+			wantErr: nil,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create the container with the specified authentication configuration.
+			opts := []testcontainers.ContainerCustomizer{atlaslocal.WithAuth(tc.auth)}
+
+			ctr, err := atlaslocal.Run(context.Background(), latestImage, opts...)
+			require.NoError(t, err)
+
+			testcontainers.CleanupContainer(t, ctr)
+
+			defer func() {
+				err := ctr.Terminate(context.Background())
+				require.NoError(t, err)
+			}()
+
+			// Verify the environment variables are set correctly.
+			assertEnvVar(t, ctr, "MONGODB_INITDB_ROOT_USERNAME", tc.auth.Username)
+			assertEnvVar(t, ctr, "MONGODB_INITDB_ROOT_PASSWORD", tc.auth.Password)
+			assertEnvVar(t, ctr, "MONGODB_INITDB_ROOT_USERNAME_FILE", tc.auth.UsernameFile)
+			assertEnvVar(t, ctr, "MONGODB_INITDB_ROOT_PASSWORD_FILE", tc.auth.PasswordFile)
+
+			// Connect to the MongoDB Atlas Local instance using the provided
+			// credentials.
+			clientOpts := options.Client().ApplyURI(createConnectionURI(t, context.Background(), ctr).String())
+			if tc.creds != nil {
+				clientOpts.SetAuth(*tc.creds)
+			}
+
+			client, err := mongo.Connect(clientOpts)
+			require.NoError(t, err)
+
+			defer func() {
+				err := client.Disconnect(context.Background())
+				require.NoError(t, err)
+			}()
+
+			// Execute an insert operation to verify the connection and
+			// authentication.
+			coll := client.Database("test").Collection("foo")
+
+			_, err = coll.InsertOne(context.Background(), bson.D{{Key: "test", Value: "value"}})
+			require.NoError(t, err, "Failed to insert document with authentication")
+		})
+	}
+}
+
 func TestMongoDBAtlasLocal_WithDisableTelemetry(t *testing.T) {
 	t.Run("with", func(t *testing.T) {
 		ctr, err := atlaslocal.Run(context.Background(), latestImage, atlaslocal.WithDisableTelemetry())
@@ -143,9 +239,7 @@ func TestMongoDBAtlasLocal_WithRunnerLogFile(t *testing.T) {
 
 func TestWithInitDatabase(t *testing.T) {
 	initScripts := map[string]string{
-		"01-seed.sh": `
-#!/bin/bash
-mongosh --eval 'db.foo.insertOne({ _id: 1, seeded: true })'`,
+		"01-seed.js": `db.foo.insertOne({ _id: 1, seeded: true });`,
 	}
 
 	tmpDir := createInitScripts(t, initScripts)
@@ -173,7 +267,7 @@ mongosh --eval 'db.foo.insertOne({ _id: 1, seeded: true })'`,
 		require.NoError(t, err)
 	}()
 
-	coll := client.Database("test").Collection("foo")
+	coll := client.Database("mydb").Collection("foo")
 
 	res := coll.FindOne(context.Background(), bson.D{{"_id", int32(1)}})
 	require.NoError(t, res.Err())
@@ -197,34 +291,22 @@ func TestWithInitScripts(t *testing.T) {
 		{
 			name: "single shell script",
 			initScripts: map[string]string{
-				"01-seed.sh": `
-#!/bin/bash
-mongosh "$CONNECTION_STRING" --eval 'db.foo.insertOne({ _id: 1, seeded: true })'
-`,
+				"01-seed.sh": `mongosh --eval 'db.foo.insertOne({ _id: 1, seeded: true })'`,
 			},
 			want: []bson.D{{{"_id", int32(1)}, {"seeded", true}}},
 		},
 		{
 			name: "single js script",
 			initScripts: map[string]string{
-				"01-seed.js": `
-	const db = new Mongo(process.env.CONNECTION_STRING).getDB("test");
-	const res = db.foo.insertOne({ _id: 1, seeded: true });
-`,
+				"01-seed.js": `db.foo.insertOne({ _id: 1, seeded: true });`,
 			},
 			want: []bson.D{{{"_id", int32(1)}, {"seeded", true}}},
 		},
 		{
 			name: "mixed shell and js scripts",
 			initScripts: map[string]string{
-				"01-seed.sh": `
-#!/bin/bash
-mongosh "$CONNECTION_STRING" --eval 'db.foo.insertOne({ _id: 1, seeded: true })'
-`,
-				"02-seed.js": `
-	const db = new Mongo(process.env.CONNECTION_STRING).getDB("test");
-	const res = db.foo.insertOne({ _id: 2, seeded: true });
-`,
+				"01-seed.sh": `mongosh --eval 'db.foo.insertOne({ _id: 1, seeded: true })'`,
+				"02-seed.js": `db.foo.insertOne({ _id: 2, seeded: true });`,
 			},
 			want: []bson.D{
 				{{"_id", int32(1)}, {"seeded", true}},
@@ -234,14 +316,8 @@ mongosh "$CONNECTION_STRING" --eval 'db.foo.insertOne({ _id: 1, seeded: true })'
 		{
 			name: "mixed ordered shell",
 			initScripts: map[string]string{
-				"01-seed.sh": `
-#!/bin/bash
-mongosh "$CONNECTION_STRING" --eval 'db.foo.insertOne({ _id: 1, seeded: true })'
-`,
-				"02-seed.sh": `
-#!/bin/bash
-mongosh "$CONNECTION_STRING" --eval 'db.foo.deleteOne({ _id: 1, seeded: true })'
-`,
+				"01-seed.sh": `mongosh --eval 'db.foo.insertOne({ _id: 1, seeded: true })'`,
+				"02-seed.sh": `mongosh --eval 'db.foo.deleteOne({ _id: 1, seeded: true })'`,
 			},
 			want: []bson.D{},
 		},
@@ -277,19 +353,14 @@ mongosh "$CONNECTION_STRING" --eval 'db.foo.deleteOne({ _id: 1, seeded: true })'
 
 			// Fetch the seeded data.
 			coll := client.Database("test").Collection("foo")
-			require.Eventually(t, func() bool {
-				cur, err := coll.Find(context.Background(), bson.D{})
-				if err != nil {
-					return false
-				}
 
-				var results []bson.D
-				require.NoError(t, cur.All(context.Background(), &results))
+			cur, err := coll.Find(context.Background(), bson.D{})
+			require.NoError(t, err)
 
-				assert.ElementsMatch(t, results, tc.want, "Seeded documents do not match expected values")
+			var results []bson.D
+			require.NoError(t, cur.All(context.Background(), &results))
 
-				return err == nil
-			}, 30*time.Second, 1*time.Second, "Failed to find seeded document in collection 'foo'")
+			assert.ElementsMatch(t, results, tc.want, "Seeded documents do not match expected values")
 		})
 	}
 }
@@ -391,14 +462,14 @@ func executeAggregation(t *testing.T, ctr testcontainers.Container) {
 	client, err := mongo.Connect(options.Client().ApplyURI(createConnectionURI(t, context.Background(), ctr).String()))
 	require.NoError(t, err)
 
-	// Await the server to be ready.
-	require.Eventually(t, func() bool {
-		pingCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
+	//// Await the server to be ready.
+	//require.Eventually(t, func() bool {
+	//	pingCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	//	defer cancel()
 
-		err := client.Ping(pingCtx, nil)
-		return err == nil
-	}, 60*time.Second, 5*time.Second)
+	//	err := client.Ping(pingCtx, nil)
+	//	return err == nil
+	//}, 60*time.Second, 5*time.Second)
 
 	err = client.Database("test").CreateCollection(context.Background(), "search")
 	require.NoError(t, err)
@@ -429,6 +500,7 @@ func executeAggregation(t *testing.T, ctr testcontainers.Container) {
 	require.NoError(t, err)
 }
 
+// TODO: remove this?
 func newMongoClient(t *testing.T, ctx context.Context, ctr testcontainers.Container) *mongo.Client {
 	t.Helper()
 	// Connect to the server.
@@ -436,15 +508,6 @@ func newMongoClient(t *testing.T, ctx context.Context, ctr testcontainers.Contai
 
 	client, err := mongo.Connect(options.Client().ApplyURI(uri.String()))
 	require.NoError(t, err)
-
-	// Await the server to be ready.
-	require.Eventually(t, func() bool {
-		pingCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-
-		err := client.Ping(pingCtx, nil)
-		return err == nil
-	}, 60*time.Second, 5*time.Second)
 
 	return client
 }
