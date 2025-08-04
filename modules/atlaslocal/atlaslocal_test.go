@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
-	"gotest.tools/v3/assert"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/atlaslocal"
@@ -141,57 +141,115 @@ func TestMongoDBAtlasLocal_WithRunnerLogFile(t *testing.T) {
 	})
 }
 
+func TestWithInitDatabase(t *testing.T) {
+	initScripts := map[string]string{
+		"01-seed.sh": `
+#!/bin/bash
+mongosh --eval 'db.foo.insertOne({ _id: 1, seeded: true })'`,
+	}
+
+	tmpDir := createInitScripts(t, initScripts)
+	opts := []testcontainers.ContainerCustomizer{
+		atlaslocal.WithInitDatabase("mydb"),
+		atlaslocal.WithInitScripts(tmpDir),
+	}
+
+	ctr, err := atlaslocal.Run(context.Background(), latestImage, opts...)
+	require.NoError(t, err)
+
+	testcontainers.CleanupContainer(t, ctr)
+
+	defer func() {
+		err := ctr.Terminate(context.Background())
+		require.NoError(t, err)
+	}()
+
+	assertInitScriptsExist(t, ctr, tmpDir, initScripts)
+	assertEnvVar(t, ctr, "MONGODB_INITDB_DATABASE", "mydb")
+
+	client := newMongoClient(t, context.Background(), ctr)
+	defer func() {
+		err := client.Disconnect(context.Background())
+		require.NoError(t, err)
+	}()
+
+	coll := client.Database("test").Collection("foo")
+
+	res := coll.FindOne(context.Background(), bson.D{{"_id", int32(1)}})
+	require.NoError(t, res.Err())
+
+	var doc bson.D
+	require.NoError(t, res.Decode(&doc), "Failed to decode seeded document")
+	assert.Equal(t, bson.D{{"_id", int32(1)}, {"seeded", true}}, doc, "Seeded document does not match expected values")
+}
+
 func TestWithInitScripts(t *testing.T) {
 	cases := []struct {
 		name        string
 		initScripts map[string]string // filename -> content
 		want        []bson.D
-		wantDB      string
-		wantColl    string
 	}{
 		{
-			name: "default db single script",
+			name:        "no scripts",
+			initScripts: map[string]string{},
+			want:        []bson.D{},
+		},
+		{
+			name: "single shell script",
 			initScripts: map[string]string{
 				"01-seed.sh": `
 #!/bin/bash
-echo "--- shell seed start ---"
-monogsh "$CONNECTION_STRING" --evail 'db.init_check.insertOne({ seeded: true })
-echo "--- shell seed end ---"
+mongosh "$CONNECTION_STRING" --eval 'db.foo.insertOne({ _id: 1, seeded: true })'
 `,
 			},
-
-			//			initScripts: map[string]string{
-			//				"01-seed.js": `
-			//try {
-			//	print("js seed start");
-			//	const db = new Mongo().getDB();
-			//	db.foo.insertOne({ seeded: true});
-			//} catch(e) {
-			//	print("js seed failure", e);
-			//	throw e;
-			//}
-			//`,
-			//},
-			want:     []bson.D{{{"seeded", true}}},
-			wantDB:   "test",
-			wantColl: "foo",
+			want: []bson.D{{{"_id", int32(1)}, {"seeded", true}}},
+		},
+		{
+			name: "single js script",
+			initScripts: map[string]string{
+				"01-seed.js": `
+	const db = new Mongo(process.env.CONNECTION_STRING).getDB("test");
+	const res = db.foo.insertOne({ _id: 1, seeded: true });
+`,
+			},
+			want: []bson.D{{{"_id", int32(1)}, {"seeded", true}}},
+		},
+		{
+			name: "mixed shell and js scripts",
+			initScripts: map[string]string{
+				"01-seed.sh": `
+#!/bin/bash
+mongosh "$CONNECTION_STRING" --eval 'db.foo.insertOne({ _id: 1, seeded: true })'
+`,
+				"02-seed.js": `
+	const db = new Mongo(process.env.CONNECTION_STRING).getDB("test");
+	const res = db.foo.insertOne({ _id: 2, seeded: true });
+`,
+			},
+			want: []bson.D{
+				{{"_id", int32(1)}, {"seeded", true}},
+				{{"_id", int32(2)}, {"seeded", true}},
+			},
+		},
+		{
+			name: "mixed ordered shell",
+			initScripts: map[string]string{
+				"01-seed.sh": `
+#!/bin/bash
+mongosh "$CONNECTION_STRING" --eval 'db.foo.insertOne({ _id: 1, seeded: true })'
+`,
+				"02-seed.sh": `
+#!/bin/bash
+mongosh "$CONNECTION_STRING" --eval 'db.foo.deleteOne({ _id: 1, seeded: true })'
+`,
+			},
+			want: []bson.D{},
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Create a temporary directory for the init scripts
-			tmpDir := t.TempDir()
-
-			for filename, content := range tc.initScripts {
-				scriptPath := filepath.Join(tmpDir, filename)
-				require.NoError(t, os.WriteFile(scriptPath, []byte(content), 0755))
-
-				// Sanity check to verify that the script content is as expected.
-				got, err := os.ReadFile(scriptPath)
-				require.NoError(t, err, "Failed to read init script %s", filename)
-				assert.Equal(t, string(got), content, "Content of init script %s does not match", filename)
-			}
+			tmpDir := createInitScripts(t, tc.initScripts)
 
 			// Start container with the init scripts mounted.
 			opts := []testcontainers.ContainerCustomizer{
@@ -208,57 +266,30 @@ echo "--- shell seed end ---"
 				require.NoError(t, err)
 			}()
 
-			// TODO: finish this check
-			//// Sanity check on the container's binds.
-			//insp, err := ctr.Inspect(context.Background())
-			//require.NoError(t, err)
-			//fmt.Println("Container Binds:", insp.HostConfig.Binds)
-
-			// Sanity check to verify that all scripts are present.
-			for filename := range tc.initScripts {
-				fmt.Printf("Checking if script %s is present in the container...\n", filename)
-				cmd := []string{"sh", "-c",
-					fmt.Sprintf("cd docker-entrypoint-initdb.d && ls -l")}
-				//fmt.Sprintf("ls -l /docker-entrypoint-initdb.d && cat /docker-entrypoint-initdb.d/%s", filename)}
-
-				exitCode, reader, err := ctr.Exec(context.Background(), cmd)
-				require.NoError(t, err)
-				require.Zero(t, exitCode, "Expected exit code 0 for command: %v", cmd)
-
-				content, _ := io.ReadAll(reader)
-				fmt.Println(string(content))
-			}
+			assertInitScriptsExist(t, ctr, tmpDir, tc.initScripts)
 
 			// Connect to the server.
-			uri := createConnectionURI(t, context.Background(), ctr)
-
-			time.Sleep(10 * time.Second)
-
-			fmt.Println("before mongo connect")
-			client, err := mongo.Connect(options.Client().ApplyURI(uri.String()))
-			require.NoError(t, err)
+			client := newMongoClient(t, context.Background(), ctr)
+			defer func() {
+				err := client.Disconnect(context.Background())
+				require.NoError(t, err)
+			}()
 
 			// Fetch the seeded data.
-			coll := client.Database(tc.wantDB).Collection(tc.wantColl)
+			coll := client.Database("test").Collection("foo")
 			require.Eventually(t, func() bool {
-				err := coll.FindOne(context.Background(), bson.D{{"seeded", true}}).Decode(&bson.D{})
+				cur, err := coll.Find(context.Background(), bson.D{})
+				if err != nil {
+					return false
+				}
+
+				var results []bson.D
+				require.NoError(t, cur.All(context.Background(), &results))
+
+				assert.ElementsMatch(t, results, tc.want, "Seeded documents do not match expected values")
+
 				return err == nil
-			}, 30*time.Second, 1*time.Second, "Failed to find seeded document in collection %s", tc.wantColl)
-
-			//fmt.Println("before cursor find")
-
-			//cur, err := coll.Find(context.Background(), bson.D{})
-			//require.NoError(t, err)
-
-			//fmt.Println("before cursor decode")
-			//var results []bson.D
-			//require.NoError(t, cur.All(context.Background(), &results))
-
-			//fmt.Println("length of results:", len(results))
-
-			//for i, result := range results {
-			//	fmt.Printf("Result %d: %v\n", i, result)
-			//}
+			}, 30*time.Second, 1*time.Second, "Failed to find seeded document in collection 'foo'")
 		})
 	}
 }
@@ -337,20 +368,37 @@ func createSeachIndex(t *testing.T, ctx context.Context, coll *mongo.Collection,
 	require.NoError(t, err)
 }
 
+// dumpLogs will dump the logs of the MongoDB Atlas Local container to the
+// integration test output.
+func dumpLogs(t *testing.T, ctx context.Context, ctr testcontainers.Container) {
+	t.Helper()
+
+	r, err := ctr.Logs(ctx)
+	require.NoError(t, err)
+
+	bytes, err := io.ReadAll(r)
+	t.Logf("MongoDB Atlas Local logs:\n%s", string(bytes))
+}
+
 // executeAggregation connects to the MongoDB Atlas Local instance, creates a
 // collection with a search index, inserts a document, and performs an
 // aggregation using the search index.
 func executeAggregation(t *testing.T, ctr testcontainers.Container) {
 	t.Helper()
 
-	// TODO: Figure out how to remove this.
-	// Wait for the container to start and log file to be created
-	time.Sleep(10 * time.Second)
-
 	// Connect to a MongoDB Atlas Local instance and create a collection with a
 	// search index.
 	client, err := mongo.Connect(options.Client().ApplyURI(createConnectionURI(t, context.Background(), ctr).String()))
 	require.NoError(t, err)
+
+	// Await the server to be ready.
+	require.Eventually(t, func() bool {
+		pingCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		err := client.Ping(pingCtx, nil)
+		return err == nil
+	}, 60*time.Second, 5*time.Second)
 
 	err = client.Database("test").CreateCollection(context.Background(), "search")
 	require.NoError(t, err)
@@ -379,4 +427,66 @@ func executeAggregation(t *testing.T, ctr testcontainers.Container) {
 
 	err = cur.Close(context.Background())
 	require.NoError(t, err)
+}
+
+func newMongoClient(t *testing.T, ctx context.Context, ctr testcontainers.Container) *mongo.Client {
+	t.Helper()
+	// Connect to the server.
+	uri := createConnectionURI(t, context.Background(), ctr)
+
+	client, err := mongo.Connect(options.Client().ApplyURI(uri.String()))
+	require.NoError(t, err)
+
+	// Await the server to be ready.
+	require.Eventually(t, func() bool {
+		pingCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		err := client.Ping(pingCtx, nil)
+		return err == nil
+	}, 60*time.Second, 5*time.Second)
+
+	return client
+}
+
+func createInitScripts(t *testing.T, scripts map[string]string) string {
+	t.Helper()
+
+	tmpDir := t.TempDir()
+
+	for filename, content := range scripts {
+		scriptPath := filepath.Join(tmpDir, filename)
+		require.NoError(t, os.WriteFile(scriptPath, []byte(content), 0755))
+
+		// Sanity check to verify that the script content is as expected.
+		got, err := os.ReadFile(scriptPath)
+		require.NoError(t, err, "Failed to read init script %s", filename)
+		assert.Equal(t, string(got), content, "Content of init script %s does not match", filename)
+	}
+
+	return tmpDir
+}
+
+func assertInitScriptsExist(t *testing.T, ctr testcontainers.Container, tmpDir string, expectedScripts map[string]string) {
+	t.Helper()
+
+	// Sanity check on the container's binds.
+	insp, err := ctr.Inspect(context.Background())
+	require.NoError(t, err)
+	require.Len(t, insp.HostConfig.Binds, 1, "Expected exactly one bind mount for init scripts")
+
+	want := fmt.Sprintf("%s:/docker-entrypoint-initdb.d:ro", tmpDir)
+	assert.Equal(t, want, insp.HostConfig.Binds[0])
+
+	// Sanity check to verify that all scripts are present.
+	for filename := range expectedScripts {
+		cmd := []string{"sh", "-c", fmt.Sprintf("cd docker-entrypoint-initdb.d && ls -l")}
+
+		exitCode, reader, err := ctr.Exec(context.Background(), cmd)
+		require.NoError(t, err)
+		require.Zero(t, exitCode, "Expected exit code 0 for command: %v", cmd)
+
+		content, _ := io.ReadAll(reader)
+		assert.Contains(t, string(content), filename)
+	}
 }

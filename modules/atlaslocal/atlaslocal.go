@@ -3,7 +3,7 @@ package atlaslocal
 import (
 	"context"
 	"fmt"
-	"os"
+	"path/filepath"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/testcontainers/testcontainers-go"
@@ -37,6 +37,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			return nil, fmt.Errorf("customize: %w", err)
 		}
 	}
+
+	fmt.Println(req.Env)
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	var c *Container
@@ -83,10 +85,16 @@ func WithInitDatabase(database string) testcontainers.CustomizeRequestOption {
 // WithInitScripts mounts a directory containing .sh/.js init scripts into
 // /docker-entrypoint-initdb.d so they run in alphabetical order on startup.
 func WithInitScripts(scriptsDir string) testcontainers.CustomizeRequestOption {
+	abs, err := filepath.Abs(scriptsDir)
+	if err != nil {
+		return func(req *testcontainers.GenericContainerRequest) error {
+			return fmt.Errorf("get absolute path of scripts directory: %w", err)
+		}
+	}
+
 	return func(req *testcontainers.GenericContainerRequest) error {
-		// Make sure the scripts directory exists.
-		if _, err := os.Stat(scriptsDir); os.IsNotExist(err) {
-			return fmt.Errorf("init scripts directory does not exist: %s", scriptsDir)
+		if _, err := filepath.Abs(abs); err != nil {
+			return fmt.Errorf("get absolute path of scripts directory: %w", err)
 		}
 
 		prev := req.HostConfigModifier
@@ -95,8 +103,7 @@ func WithInitScripts(scriptsDir string) testcontainers.CustomizeRequestOption {
 				prev(hostConfig)
 			}
 
-			bind := fmt.Sprintf("%s:/docker-entrypoint-initdb.d:ro", scriptsDir)
-			fmt.Println("bind")
+			bind := fmt.Sprintf("%s:/docker-entrypoint-initdb.d:ro", abs)
 			hostConfig.Binds = append(hostConfig.Binds, bind)
 		}
 
