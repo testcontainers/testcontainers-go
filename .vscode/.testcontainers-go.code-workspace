@@ -66,6 +66,10 @@
             "path": "../modules/dind"
         },
         {
+            "name": "module / dockermcpgateway",
+            "path": "../modules/dockermcpgateway"
+        },
+        {
             "name": "module / dockermodelrunner",
             "path": "../modules/dockermodelrunner"
         },
@@ -216,6 +220,10 @@
         {
             "name": "module / socat",
             "path": "../modules/socat"
+        },
+        {
+            "name": "module / solace",
+            "path": "../modules/solace"
         },
         {
             "name": "module / surrealdb",
