@@ -38,7 +38,7 @@ func TestMongoDBAtlasLocal(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestWithAuth(t *testing.T) {
+func TestSCRAMAuth(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create username and password files.
@@ -60,41 +60,154 @@ func TestWithAuth(t *testing.T) {
 	require.NoError(t, err, "Password file should exist")
 
 	cases := []struct {
-		name    string
-		auth    atlaslocal.AuthConfig
-		creds   *options.Credential
-		wantErr error
+		name         string
+		username     string
+		password     string
+		usernameFile string
+		passwordFile string
+		creds        *options.Credential
+		wantRunErr   string
 	}{
 		{
-			name:    "without auth",
-			auth:    atlaslocal.AuthConfig{},
-			creds:   nil,
-			wantErr: nil,
+			name:         "without auth",
+			username:     "",
+			password:     "",
+			usernameFile: "",
+			passwordFile: "",
+			creds:        nil,
+			wantRunErr:   "",
 		},
 		{
-			name:    "with auth",
-			auth:    atlaslocal.AuthConfig{Username: "testuser", Password: "testpass"},
-			creds:   &options.Credential{Username: "testuser", Password: "testpass"},
-			wantErr: nil,
+			name:         "with auth",
+			username:     "testuser",
+			password:     "testpass",
+			usernameFile: "",
+			passwordFile: "",
+			creds:        &options.Credential{Username: "testuser", Password: "testpass"},
+			wantRunErr:   "",
 		},
 		{
-			name: "with auth files",
-			auth: atlaslocal.AuthConfig{
-				UsernameFile: filepath.Join(tmpDir, "username.txt"),
-				PasswordFile: filepath.Join(tmpDir, "password.txt"),
-			},
-			creds:   &options.Credential{Username: "file_testuser", Password: "file_testpass"},
-			wantErr: nil,
+			name:         "with auth files",
+			username:     "",
+			password:     "",
+			usernameFile: usernameFilepath,
+			passwordFile: passwordFilepath,
+			creds:        &options.Credential{Username: "file_testuser", Password: "file_testpass"},
+			wantRunErr:   "",
+		},
+		{
+			name:         "with inline and files",
+			username:     "testuser",
+			password:     "testpass",
+			usernameFile: usernameFilepath,
+			passwordFile: passwordFilepath,
+			creds:        nil,
+			wantRunErr:   "incompatible SCRAM credentials",
+		},
+		{
+			name:         "username without password",
+			username:     "testuser",
+			password:     "",
+			usernameFile: "",
+			passwordFile: "",
+			creds:        nil,
+			wantRunErr:   "if you specify username or password, you must provide both of them",
+		},
+		{
+			name:         "password without username",
+			username:     "",
+			password:     "testpass",
+			usernameFile: "",
+			passwordFile: "",
+			creds:        nil,
+			wantRunErr:   "if you specify username or password, you must provide both of them",
+		},
+		{
+			name:         "username file without password file",
+			username:     "",
+			password:     "",
+			usernameFile: usernameFilepath,
+			passwordFile: "",
+			creds:        nil,
+			wantRunErr:   "if you specify username file or password file, you must provide both of them",
+		},
+		{
+			name:         "password file without username file",
+			username:     "",
+			password:     "",
+			usernameFile: "",
+			passwordFile: passwordFilepath,
+			creds:        nil,
+			wantRunErr:   "if you specify username file or password file, you must provide both of them",
+		},
+		{
+			name:         "username file invalid mount path",
+			username:     "",
+			password:     "",
+			usernameFile: "nonexistent_username.txt",
+			passwordFile: passwordFilepath,
+			creds:        nil,
+			wantRunErr:   "mount path must be absolute",
+		},
+		{
+			name:         "password file invalid mount path",
+			username:     "",
+			password:     "",
+			usernameFile: usernameFilepath,
+			passwordFile: "nonexistent_password.txt",
+			creds:        nil,
+			wantRunErr:   "mount path must be absolute",
+		},
+		{
+			name:         "username file is absolute but does not exist",
+			username:     "",
+			password:     "",
+			usernameFile: "/nonexistent/username.txt",
+			passwordFile: passwordFilepath,
+			creds:        nil,
+			wantRunErr:   "is not shared from the host",
+		},
+		{
+			name:         "password file is absolute but does not exist",
+			username:     "",
+			password:     "",
+			usernameFile: usernameFilepath,
+			passwordFile: "/nonexistent/password.txt",
+			creds:        nil,
+			wantRunErr:   "is not shared from the host",
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			// Create the container with the specified authentication configuration.
-			opts := []testcontainers.ContainerCustomizer{atlaslocal.WithAuth(tc.auth)}
+			// Construct the custom options for the MongoDB Atlas Local container.
+			opts := []testcontainers.ContainerCustomizer{}
 
+			if tc.username != "" {
+				opts = append(opts, atlaslocal.WithUsername(tc.username))
+			}
+
+			if tc.password != "" {
+				opts = append(opts, atlaslocal.WithPassword(tc.password))
+			}
+
+			if tc.usernameFile != "" {
+				opts = append(opts, atlaslocal.WithUsernameFile(tc.usernameFile))
+			}
+
+			if tc.passwordFile != "" {
+				opts = append(opts, atlaslocal.WithPasswordFile(tc.passwordFile))
+			}
+
+			// Create the MongoDB Atlas Local container with the specified options.
 			ctr, err := atlaslocal.Run(context.Background(), latestImage, opts...)
-			require.NoError(t, err)
+			if tc.wantRunErr != "" {
+				require.ErrorContains(t, err, tc.wantRunErr)
+
+				return
+			} else {
+				require.NoError(t, err)
+			}
 
 			testcontainers.CleanupContainer(t, ctr)
 
@@ -104,10 +217,10 @@ func TestWithAuth(t *testing.T) {
 			}()
 
 			// Verify the environment variables are set correctly.
-			assertEnvVar(t, ctr, "MONGODB_INITDB_ROOT_USERNAME", tc.auth.Username)
-			assertEnvVar(t, ctr, "MONGODB_INITDB_ROOT_PASSWORD", tc.auth.Password)
-			assertEnvVar(t, ctr, "MONGODB_INITDB_ROOT_USERNAME_FILE", tc.auth.UsernameFile)
-			assertEnvVar(t, ctr, "MONGODB_INITDB_ROOT_PASSWORD_FILE", tc.auth.PasswordFile)
+			assertEnvVar(t, ctr, "MONGODB_INITDB_ROOT_USERNAME", tc.username)
+			assertEnvVar(t, ctr, "MONGODB_INITDB_ROOT_PASSWORD", tc.password)
+			assertEnvVar(t, ctr, "MONGODB_INITDB_ROOT_USERNAME_FILE", tc.usernameFile)
+			assertEnvVar(t, ctr, "MONGODB_INITDB_ROOT_PASSWORD_FILE", tc.passwordFile)
 
 			// Connect to the MongoDB Atlas Local instance using the provided
 			// credentials.

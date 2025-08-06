@@ -2,6 +2,7 @@ package atlaslocal
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -31,8 +32,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	for _, opt := range opts {
 		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
+			return nil, fmt.Errorf("failed to create customized request: %w", err)
 		}
+	}
+
+	if err := validateRequest(&genericContainerReq); err != nil {
+		return nil, fmt.Errorf("imcompatible configuration: %w", err)
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
@@ -48,38 +53,106 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
-// AuthConfig holds the authentication configuration for the MongoDB Atlas Local
-// container.
-type AuthConfig struct {
-	Username     string
-	Password     string
-	UsernameFile string
-	PasswordFile string
+func validateRequest(req *testcontainers.GenericContainerRequest) error {
+	username := req.Env["MONGODB_INITDB_ROOT_USERNAME"]
+	password := req.Env["MONGODB_INITDB_ROOT_PASSWORD"]
+
+	// If username or password is specified, both must be provided.
+	if username != "" && password == "" || username == "" && password != "" {
+		return errors.New("if you specify username or password, you must provide both of them")
+	}
+
+	usernameFile := req.Env["MONGODB_INITDB_ROOT_USERNAME_FILE"]
+	passwordFile := req.Env["MONGODB_INITDB_ROOT_PASSWORD_FILE"]
+
+	// If username file or password file is specified, both must be provided.
+	if usernameFile != "" && passwordFile == "" || usernameFile == "" && passwordFile != "" {
+		return errors.New("if you specify username file or password file, you must provide both of them")
+	}
+
+	// Setting credentials both inline and using files will result in an panic
+	// from the container, so we short circuit here.
+	if (username != "" || password != "") && (usernameFile != "" || passwordFile != "") {
+		return errors.New("you cannot specify both inline credentials and files for credentials")
+	}
+
+	return nil
 }
 
-// WithAuth sets the authentication configuration for the MongoDB Atlas Local
-// container. This can be done by providing a username and password, or by
-// providing files that contain the username and password.
-func WithAuth(auth AuthConfig) testcontainers.CustomizeRequestOption {
+func WithUsername(username string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		if req.Env == nil {
 			req.Env = make(map[string]string)
 		}
 
-		if auth.Username != "" {
-			req.Env["MONGODB_INITDB_ROOT_USERNAME"] = auth.Username
+		if username != "" {
+			req.Env["MONGODB_INITDB_ROOT_USERNAME"] = username
 		}
 
-		if auth.Password != "" {
-			req.Env["MONGODB_INITDB_ROOT_PASSWORD"] = auth.Password
+		return nil
+	}
+}
+
+func WithPassword(password string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		if req.Env == nil {
+			req.Env = make(map[string]string)
 		}
 
-		if auth.UsernameFile != "" {
-			req.Env["MONGODB_INITDB_ROOT_USERNAME_FILE"] = auth.UsernameFile
+		if password != "" {
+			req.Env["MONGODB_INITDB_ROOT_PASSWORD"] = password
 		}
 
-		if auth.PasswordFile != "" {
-			req.Env["MONGODB_INITDB_ROOT_PASSWORD_FILE"] = auth.PasswordFile
+		return nil
+	}
+}
+
+func WithUsernameFile(usernameFile string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		if req.Env == nil {
+			req.Env = make(map[string]string)
+		}
+
+		if usernameFile != "" {
+			req.Env["MONGODB_INITDB_ROOT_USERNAME_FILE"] = usernameFile
+		}
+
+		prev := req.HostConfigModifier
+		req.HostConfigModifier = func(hostConfig *container.HostConfig) {
+			if prev != nil {
+				prev(hostConfig)
+			}
+
+			// Mount username file.
+			if usernameFile != "" {
+				hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s:ro", usernameFile, usernameFile))
+			}
+		}
+
+		return nil
+	}
+}
+
+func WithPasswordFile(passewordFile string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		if req.Env == nil {
+			req.Env = make(map[string]string)
+		}
+
+		if passewordFile != "" {
+			req.Env["MONGODB_INITDB_ROOT_PASSWORD_FILE"] = passewordFile
+		}
+
+		prev := req.HostConfigModifier
+		req.HostConfigModifier = func(hostConfig *container.HostConfig) {
+			if prev != nil {
+				prev(hostConfig)
+			}
+
+			// Mount username file.
+			if passewordFile != "" {
+				hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s:ro", passewordFile, passewordFile))
+			}
 		}
 
 		return nil
