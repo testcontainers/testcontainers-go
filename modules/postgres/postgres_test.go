@@ -237,7 +237,7 @@ func TestWithSSL(t *testing.T) {
 
 	db, err := sql.Open("postgres", connStr)
 	require.NoError(t, err)
-	assert.NotNil(t, db)
+	require.NotNil(t, db)
 	defer db.Close()
 
 	result, err := db.Exec("SELECT * FROM testdb;")
