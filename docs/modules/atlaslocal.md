@@ -4,10 +4,11 @@ Not available until the next release <a href="https://github.com/testcontainers/
 
 ## Introduction
 
-The MongoDB Atlas Local module for Testcontainers lets you spin up a local MongoDB Atlas instance in Docker for
-integration tests and development. It supports SCRAM authentication, init scripts, and custom log file mounting.
+The MongoDB Atlas Local module for Testcontainers lets you spin up a local MongoDB Atlas instance in Docker using
+[mongodb/mongoddb-atlas-local](https://hub.docker.com/r/mongodb/mongodb-atlas-local) for integration tests and
+development. This module supports SCRAM authentication, init scripts, and custom log file mounting.
 
-This module differs form the standard modules/mongodb Testcontainers module. This module spins up a full local
+This module differs from the standard modules/mongodb Testcontainers module, allowing users to spin up a full local
 Atlas-like environment complete with Atlas Search and Atlas Vector Search.
 
 ## Adding this module to your project dependencies
