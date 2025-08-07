@@ -55,28 +55,30 @@ When starting the MongoDB Atlas Local container, you can pass options in a varia
 - Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 This functional option sets the initial username to be created when the container starts, populating the
-`MONGODB_INITDB_ROOT_USERNAME` environment variable.
+`MONGODB_INITDB_ROOT_USERNAME` environment variable. Cannot mix this option with `WithUsernameFile`, as it will
+result in an error.
 
 #### WithPassword
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 This functional option sets the initial password to be created when the container starts, populating the
-`MONGODB_INITDB_ROOT_PASSWORD` environment variable.
+`MONGODB_INITDB_ROOT_PASSWORD` environment variable. Cannot mix this option with `WithPasswordFile`, as it will
+result in an error.
 
 #### WithUsernameFile
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 This functional option mounts a file at the given path and sets `MONGODB_INITDB_ROOT_USERNAME_FILE` environment
-variable. Note that this option is mutually exclusive with `WithUsername` and using both will result in an error.
+variable. Cannot mix this option with `WithUsername`, as it will result in an error.
 
 #### WithPasswordFile
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 This functional option mounts a file at the given path and sets `MONGODB_INITDB_ROOT_PASSWORD_FILE` environment
-variable. Note that this option is mutually exclusive with `WithPassword` and using both will result in an error.
+variable. Cannot mix this option with `WithPassword`, as it will result in an error.
 
 #### WithDisableTelemetry
 
@@ -96,8 +98,8 @@ the `MONGODB_INITDB_DATABASE` environment variable.
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-Mounts a directory into `/docker-entrypoint-initdb.d`, running `.sh`/`.js` scripts on startup. This works on a "last
-one wins" basis, meaning that if multiple scripts are provided, the last one will be the only one mounted and executed.
+Mounts a directory into `/docker-entrypoint-initdb.d`, running `.sh`/`.js` scripts on startup. Calling this function
+multiple times mounts only the latest directory.
 
 #### WithMongotLogFile
 

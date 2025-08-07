@@ -27,8 +27,11 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	req := testcontainers.ContainerRequest{
 		Image:        img,
 		ExposedPorts: []string{"27017/tcp"},
-		WaitingFor:   wait.ForAll(wait.ForHealthCheck()),
-		Env:          map[string]string{},
+		WaitingFor: wait.ForAll(
+			wait.ForListeningPort("27017/tcp"),
+			wait.ForHealthCheck(),
+		),
+		Env: map[string]string{},
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
