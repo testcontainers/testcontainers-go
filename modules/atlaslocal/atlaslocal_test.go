@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io"
 	"math/rand/v2"
-	"net"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -32,7 +30,10 @@ func TestMongoDBAtlasLocal(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	client, err := mongo.Connect(options.Client().ApplyURI(createConnectionURI(t, ctx, ctr).String()))
+	connString, err := ctr.ConnectionString(ctx)
+	require.NoError(t, err)
+
+	client, err := mongo.Connect(options.Client().ApplyURI(connString))
 	require.NoError(t, err)
 
 	err = client.Ping(ctx, nil)
@@ -66,7 +67,6 @@ func TestSCRAMAuth(t *testing.T) {
 		password     string
 		usernameFile string
 		passwordFile string
-		creds        *options.Credential
 		wantRunErr   string
 	}{
 		{
@@ -75,7 +75,6 @@ func TestSCRAMAuth(t *testing.T) {
 			password:     "",
 			usernameFile: "",
 			passwordFile: "",
-			creds:        nil,
 			wantRunErr:   "",
 		},
 		{
@@ -84,7 +83,6 @@ func TestSCRAMAuth(t *testing.T) {
 			password:     "testpass",
 			usernameFile: "",
 			passwordFile: "",
-			creds:        &options.Credential{Username: "testuser", Password: "testpass"},
 			wantRunErr:   "",
 		},
 		{
@@ -93,7 +91,6 @@ func TestSCRAMAuth(t *testing.T) {
 			password:     "",
 			usernameFile: usernameFilepath,
 			passwordFile: passwordFilepath,
-			creds:        &options.Credential{Username: "file_testuser", Password: "file_testpass"},
 			wantRunErr:   "",
 		},
 		{
@@ -102,7 +99,6 @@ func TestSCRAMAuth(t *testing.T) {
 			password:     "testpass",
 			usernameFile: usernameFilepath,
 			passwordFile: passwordFilepath,
-			creds:        nil,
 			wantRunErr:   "you cannot specify both inline credentials and files for credentials",
 		},
 		{
@@ -111,7 +107,6 @@ func TestSCRAMAuth(t *testing.T) {
 			password:     "",
 			usernameFile: "",
 			passwordFile: "",
-			creds:        nil,
 			wantRunErr:   "if you specify username or password, you must provide both of them",
 		},
 		{
@@ -120,7 +115,6 @@ func TestSCRAMAuth(t *testing.T) {
 			password:     "testpass",
 			usernameFile: "",
 			passwordFile: "",
-			creds:        nil,
 			wantRunErr:   "if you specify username or password, you must provide both of them",
 		},
 		{
@@ -129,7 +123,6 @@ func TestSCRAMAuth(t *testing.T) {
 			password:     "",
 			usernameFile: usernameFilepath,
 			passwordFile: "",
-			creds:        nil,
 			wantRunErr:   "if you specify username file or password file, you must provide both of them",
 		},
 		{
@@ -138,7 +131,6 @@ func TestSCRAMAuth(t *testing.T) {
 			password:     "",
 			usernameFile: "",
 			passwordFile: passwordFilepath,
-			creds:        nil,
 			wantRunErr:   "if you specify username file or password file, you must provide both of them",
 		},
 		{
@@ -147,7 +139,6 @@ func TestSCRAMAuth(t *testing.T) {
 			password:     "",
 			usernameFile: "nonexistent_username.txt",
 			passwordFile: passwordFilepath,
-			creds:        nil,
 			wantRunErr:   "mount path must be absolute",
 		},
 		{
@@ -156,7 +147,6 @@ func TestSCRAMAuth(t *testing.T) {
 			password:     "",
 			usernameFile: usernameFilepath,
 			passwordFile: "nonexistent_password.txt",
-			creds:        nil,
 			wantRunErr:   "mount path must be absolute",
 		},
 		{
@@ -165,7 +155,6 @@ func TestSCRAMAuth(t *testing.T) {
 			password:     "",
 			usernameFile: "/nonexistent/username.txt",
 			passwordFile: passwordFilepath,
-			creds:        nil,
 			wantRunErr:   "is not shared from the host",
 		},
 		{
@@ -174,7 +163,6 @@ func TestSCRAMAuth(t *testing.T) {
 			password:     "",
 			usernameFile: usernameFilepath,
 			passwordFile: "/nonexistent/password.txt",
-			creds:        nil,
 			wantRunErr:   "is not shared from the host",
 		},
 	}
@@ -223,14 +211,7 @@ func TestSCRAMAuth(t *testing.T) {
 			assertEnvVar(t, ctr, "MONGODB_INITDB_ROOT_USERNAME_FILE", tc.usernameFile)
 			assertEnvVar(t, ctr, "MONGODB_INITDB_ROOT_PASSWORD_FILE", tc.passwordFile)
 
-			// Connect to the MongoDB Atlas Local instance using the provided
-			// credentials.
-			clientOpts := options.Client()
-			if tc.creds != nil {
-				clientOpts.SetAuth(*tc.creds)
-			}
-
-			client, td := newMongoClient(t, context.Background(), ctr, clientOpts)
+			client, td := newMongoClient(t, context.Background(), ctr)
 			defer td()
 
 			// Execute an insert operation to verify the connection and
@@ -493,26 +474,6 @@ func assertFile(t *testing.T, ctr testcontainers.Container, filename string, emp
 	}
 }
 
-func createConnectionURI(t *testing.T, ctx context.Context, ctr testcontainers.Container) *url.URL {
-	t.Helper()
-
-	// perform assertions
-	host, err := ctr.Host(ctx)
-	require.NoError(t, err)
-
-	mappedPort, err := ctr.MappedPort(ctx, "27017")
-	require.NoError(t, err)
-
-	uri := &url.URL{
-		Scheme:   "mongodb",
-		Host:     net.JoinHostPort(host, mappedPort.Port()),
-		Path:     "/",
-		RawQuery: "directConnection=true",
-	}
-
-	return uri
-}
-
 // createSeachIndex creates a search index with the given name on the provided
 // collection and waits for it to be acknowledged server-side.
 func createSeachIndex(t *testing.T, ctx context.Context, coll *mongo.Collection, indexName string) {
@@ -535,9 +496,12 @@ func createSeachIndex(t *testing.T, ctx context.Context, coll *mongo.Collection,
 func executeAggregation(t *testing.T, ctr testcontainers.Container) {
 	t.Helper()
 
+	connString, err := ctr.(*atlaslocal.Container).ConnectionString(context.Background())
+	require.NoError(t, err)
+
 	// Connect to a MongoDB Atlas Local instance and create a collection with a
 	// search index.
-	client, err := mongo.Connect(options.Client().ApplyURI(createConnectionURI(t, context.Background(), ctr).String()))
+	client, err := mongo.Connect(options.Client().ApplyURI(connString))
 	require.NoError(t, err)
 
 	err = client.Database("test").CreateCollection(context.Background(), "search")
@@ -578,10 +542,11 @@ func newMongoClient(
 ) (*mongo.Client, func()) {
 	t.Helper()
 
-	uri := createConnectionURI(t, context.Background(), ctr)
+	connString, err := ctr.(*atlaslocal.Container).ConnectionString(ctx)
+	require.NoError(t, err)
 
 	copts := []*options.ClientOptions{
-		options.Client().ApplyURI(uri.String()),
+		options.Client().ApplyURI(connString),
 	}
 
 	copts = append(copts, opts...)

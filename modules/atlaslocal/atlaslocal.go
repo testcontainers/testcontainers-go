@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -15,6 +18,8 @@ import (
 // Container represents the MongoDBAtlasLocal container type used in the module
 type Container struct {
 	testcontainers.Container
+	username string
+	password string
 }
 
 // Run creates an instance of the MongoDBAtlasLocal container type
@@ -51,6 +56,30 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return c, fmt.Errorf("generic container: %w", err)
 	}
 
+	// Set the username from the username file so that it can be used in the
+	// connection string method.
+	c.username = genericContainerReq.Env["MONGODB_INITDB_ROOT_USERNAME"]
+	if usernameFile := genericContainerReq.Env["MONGODB_INITDB_ROOT_USERNAME_FILE"]; usernameFile != "" {
+		fileContent, err := os.ReadFile(usernameFile)
+		if err != nil {
+			return nil, fmt.Errorf("read username file: %w", err)
+		}
+
+		c.username = strings.TrimSpace(string(fileContent))
+	}
+
+	// Set the password from the password file so that it can be used in the
+	// connection string method.
+	c.password = genericContainerReq.Env["MONGODB_INITDB_ROOT_PASSWORD"]
+	if passwordFile := genericContainerReq.Env["MONGODB_INITDB_ROOT_PASSWORD_FILE"]; passwordFile != "" {
+		fileContent, err := os.ReadFile(passwordFile)
+		if err != nil {
+			return nil, fmt.Errorf("read password file: %w", err)
+		}
+
+		c.password = strings.TrimSpace(string(fileContent))
+	}
+
 	return c, nil
 }
 
@@ -78,6 +107,34 @@ func validateRequest(req *testcontainers.GenericContainerRequest) error {
 	}
 
 	return nil
+}
+
+// ConnectionString returns the connection string for the MongoDB Atlas Local
+// container. If you provide a username and a password, the connection string
+// will also include them.
+func (ctr *Container) ConnectionString(ctx context.Context) (string, error) {
+	host, err := ctr.Host(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	mappedPort, err := ctr.MappedPort(ctx, "27017")
+	if err != nil {
+		return "", err
+	}
+
+	uri := &url.URL{
+		Scheme:   "mongodb",
+		Host:     net.JoinHostPort(host, mappedPort.Port()),
+		Path:     "/",
+		RawQuery: "directConnection=true",
+	}
+
+	if ctr.username != "" && ctr.password != "" {
+		uri.User = url.UserPassword(ctr.username, ctr.password)
+	}
+
+	return uri.String(), nil
 }
 
 // WithUsername sets the MongoDB root username by setting the

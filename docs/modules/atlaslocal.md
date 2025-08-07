@@ -1,10 +1,14 @@
-# MongoDBAtlasLocal
+# MongoDB Atlas Local
 
 Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 ## Introduction
 
-The Testcontainers module for MongoDBAtlasLocal.
+The MongoDB Atlas Local module for Testcontainers lets you spin up a local MongoDB Atlas instance in Docker for
+integration tests and development. It supports SCRAM authentication, init scripts, and custom log file mounting.
+
+This module differs form the standard modules/mongodb Testcontainers module. This module spins up a full local
+Atlas-like environment complete with Atlas Search and Atlas Vector Search.
 
 ## Adding this module to your project dependencies
 
@@ -26,7 +30,8 @@ go get github.com/testcontainers/testcontainers-go/modules/atlaslocal
 
 - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-The MongoDBAtlasLocal module exposes one entrypoint function to create the MongoDBAtlasLocal container, and this function receives three parameters:
+The `atlaslocal` module exposes one entrypoint function to create the MongoDB Atlas Local container, and this
+function receives three parameters:
 
 ```golang
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)
@@ -43,10 +48,88 @@ In example: `Run(context.Background(), "mongodb/mongodb-atlas-local:latest")`.
 
 ### Container Options
 
-When starting the MongoDBAtlasLocal container, you can pass options in a variadic way to configure it.
+When starting the MongoDB Atlas Local container, you can pass options in a variadic way to configure it.
+
+#### WithUsername
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This functional option sets the initial username to be created when the container starts, populating the
+`MONGODB_INITDB_ROOT_USERNAME` environment variable.
+
+#### WithPassword
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This functional option sets the initial password to be created when the container starts, populating the
+`MONGODB_INITDB_ROOT_PASSWORD` environment variable.
+
+#### WithUsernameFile
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This functional option mounts a file at the given path and sets `MONGODB_INITDB_ROOT_USERNAME_FILE` environment
+variable. Note that this option is mutually exclusive with `WithUsername` and using both will result in an error.
+
+#### WithPasswordFile
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This functional option mounts a file at the given path and sets `MONGODB_INITDB_ROOT_PASSWORD_FILE` environment
+variable. Note that this option is mutually exclusive with `WithPassword` and using both will result in an error.
+
+#### WithDisableTelemetry
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This functional option disables the telemetry feature of MongoDB Atlas Local, setting the `DO_NOT_TRACK` environment
+variable to `1`.
+
+#### WithInitDatabase
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This functional option allows you to specify a database name to be initialized when the container starts, populating
+the `MONGODB_INITDB_DATABASE` environment variable.
+
+#### WithInitScripts
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+Mounts a directory into `/docker-entrypoint-initdb.d`, running `.sh`/`.js` scripts on startup. This works on a "last
+one wins" basis, meaning that if multiple scripts are provided, the last one will be the only one mounted and executed.
+
+#### WithMongotLogFile
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This functional option mounts a file at the given path and sets the `MONGOT_LOG_FILE` environment variable to capture
+Atlas Search logs.
+
+#### WithRunnerLogFile
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This functional option mounts a file at the given path and sets the `RUNNER_LOG_FILE` environment variable to capture
+runner process logs.
 
 {% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 
 The MongoDBAtlasLocal container exposes the following methods:
+
+
+#### ConnectionString
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The `ConnectionString` method returns the connection string to connect to the MongoDB Atlas Local container.
+It returns a string with the format `mongodb://<host>:<port>/?directConnection=true`.
+
+It can be used to configure a MongoDB client (`go.mongodb.org/mongo-driver/v2/mongo`), e.g.:
+
+
+<!--codeinclude-->
+[Using ConnectionString with the MongoDB client](../../modules/atlaslocal/examples_test.go) inside_block:connectToMongo
+<!--/codeinclude-->
