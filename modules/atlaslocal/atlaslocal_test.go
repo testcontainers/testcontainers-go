@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math/rand/v2"
 	"net"
 	"net/url"
 	"os"
@@ -102,7 +103,7 @@ func TestSCRAMAuth(t *testing.T) {
 			usernameFile: usernameFilepath,
 			passwordFile: passwordFilepath,
 			creds:        nil,
-			wantRunErr:   "incompatible SCRAM credentials",
+			wantRunErr:   "you cannot specify both inline credentials and files for credentials",
 		},
 		{
 			name:         "username without password",
@@ -199,6 +200,11 @@ func TestSCRAMAuth(t *testing.T) {
 				opts = append(opts, atlaslocal.WithPasswordFile(tc.passwordFile))
 			}
 
+			// Randomize the order of the options
+			rand.Shuffle(len(opts), func(i, j int) {
+				opts[i], opts[j] = opts[j], opts[i]
+			})
+
 			// Create the MongoDB Atlas Local container with the specified options.
 			ctr, err := atlaslocal.Run(context.Background(), latestImage, opts...)
 			if tc.wantRunErr != "" {
@@ -211,11 +217,6 @@ func TestSCRAMAuth(t *testing.T) {
 
 			testcontainers.CleanupContainer(t, ctr)
 
-			defer func() {
-				err := ctr.Terminate(context.Background())
-				require.NoError(t, err)
-			}()
-
 			// Verify the environment variables are set correctly.
 			assertEnvVar(t, ctr, "MONGODB_INITDB_ROOT_USERNAME", tc.username)
 			assertEnvVar(t, ctr, "MONGODB_INITDB_ROOT_PASSWORD", tc.password)
@@ -224,18 +225,13 @@ func TestSCRAMAuth(t *testing.T) {
 
 			// Connect to the MongoDB Atlas Local instance using the provided
 			// credentials.
-			clientOpts := options.Client().ApplyURI(createConnectionURI(t, context.Background(), ctr).String())
+			clientOpts := options.Client()
 			if tc.creds != nil {
 				clientOpts.SetAuth(*tc.creds)
 			}
 
-			client, err := mongo.Connect(clientOpts)
-			require.NoError(t, err)
-
-			defer func() {
-				err := client.Disconnect(context.Background())
-				require.NoError(t, err)
-			}()
+			client, td := newMongoClient(t, context.Background(), ctr, clientOpts)
+			defer td()
 
 			// Execute an insert operation to verify the connection and
 			// authentication.
@@ -247,16 +243,11 @@ func TestSCRAMAuth(t *testing.T) {
 	}
 }
 
-func TestMongoDBAtlasLocal_WithDisableTelemetry(t *testing.T) {
+func TestWithDisableTelemetry(t *testing.T) {
 	t.Run("with", func(t *testing.T) {
 		ctr, err := atlaslocal.Run(context.Background(), latestImage, atlaslocal.WithDisableTelemetry())
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
-
-		defer func() {
-			err := ctr.Terminate(context.Background())
-			require.NoError(t, err)
-		}()
 
 		assertEnvVar(t, ctr, "DO_NOT_TRACK", "1")
 	})
@@ -266,35 +257,23 @@ func TestMongoDBAtlasLocal_WithDisableTelemetry(t *testing.T) {
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 
-		defer func() {
-			err := ctr.Terminate(context.Background())
-			require.NoError(t, err)
-		}()
-
 		assertEnvVar(t, ctr, "DO_NOT_TRACK", "")
 	})
 }
 
-func TestMongoDBAtlasLocal_WithMongotLogFile(t *testing.T) {
+func TestWithMongotLogFile(t *testing.T) {
 	const mongotLogFile = "/tmp/mongot.log"
 
 	t.Run("with", func(t *testing.T) {
-		// This test is to ensure that the DO_NOT_TRACK environment variable is set correctly
-		// when the WithDisableTelemetry option is used.
 		ctr, err := atlaslocal.Run(context.Background(), latestImage, atlaslocal.WithMongotLogFile(mongotLogFile))
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
-
-		defer func() {
-			err := ctr.Terminate(context.Background())
-			require.NoError(t, err)
-		}()
 
 		assertEnvVar(t, ctr, "MONGOT_LOG_FILE", mongotLogFile)
 
 		executeAggregation(t, ctr)
 
-		assertMongotLog(t, ctr, mongotLogFile, false)
+		assertFile(t, ctr, mongotLogFile, false)
 	})
 
 	t.Run("without", func(t *testing.T) {
@@ -302,35 +281,24 @@ func TestMongoDBAtlasLocal_WithMongotLogFile(t *testing.T) {
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 
-		defer func() {
-			err := ctr.Terminate(context.Background())
-			require.NoError(t, err)
-		}()
-
 		assertEnvVar(t, ctr, "MONGOT_LOG_FILE", "")
+
 		executeAggregation(t, ctr)
 
-		assertMongotLog(t, ctr, mongotLogFile, true)
+		assertFile(t, ctr, mongotLogFile, true)
 	})
 }
 
-func TestMongoDBAtlasLocal_WithRunnerLogFile(t *testing.T) {
+func TestWithRunnerLogFile(t *testing.T) {
 	const runnerLogFile = "/tmp/runner.log"
 
 	t.Run("with", func(t *testing.T) {
-		// This test is to ensure that the DO_NOT_TRACK environment variable is set correctly
-		// when the WithDisableTelemetry option is used.
 		ctr, err := atlaslocal.Run(context.Background(), latestImage, atlaslocal.WithRunnerLogFile(runnerLogFile))
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 
-		defer func() {
-			err := ctr.Terminate(context.Background())
-			require.NoError(t, err)
-		}()
-
 		assertEnvVar(t, ctr, "RUNNER_LOG_FILE", runnerLogFile)
-		assertMongotLog(t, ctr, runnerLogFile, false)
+		assertFile(t, ctr, runnerLogFile, false)
 	})
 
 	t.Run("without", func(t *testing.T) {
@@ -338,15 +306,8 @@ func TestMongoDBAtlasLocal_WithRunnerLogFile(t *testing.T) {
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 
-		defer func() {
-			err := ctr.Terminate(context.Background())
-			require.NoError(t, err)
-		}()
-
 		assertEnvVar(t, ctr, "RUNNER_LOG_FILE", "")
-		executeAggregation(t, ctr)
-
-		assertMongotLog(t, ctr, runnerLogFile, true)
+		assertFile(t, ctr, runnerLogFile, true)
 	})
 }
 
@@ -366,31 +327,28 @@ func TestWithInitDatabase(t *testing.T) {
 
 	testcontainers.CleanupContainer(t, ctr)
 
-	defer func() {
-		err := ctr.Terminate(context.Background())
-		require.NoError(t, err)
-	}()
-
 	assertInitScriptsExist(t, ctr, tmpDir, initScripts)
 	assertEnvVar(t, ctr, "MONGODB_INITDB_DATABASE", "mydb")
 
-	client := newMongoClient(t, context.Background(), ctr)
-	defer func() {
-		err := client.Disconnect(context.Background())
-		require.NoError(t, err)
-	}()
+	client, td := newMongoClient(t, context.Background(), ctr)
+	defer td()
 
 	coll := client.Database("mydb").Collection("foo")
 
-	res := coll.FindOne(context.Background(), bson.D{{"_id", int32(1)}})
+	seed := bson.D{{Key: "_id", Value: int32(1)}, {Key: "seeded", Value: true}}
+
+	res := coll.FindOne(context.Background(), seed)
 	require.NoError(t, res.Err())
 
 	var doc bson.D
 	require.NoError(t, res.Decode(&doc), "Failed to decode seeded document")
-	assert.Equal(t, bson.D{{"_id", int32(1)}, {"seeded", true}}, doc, "Seeded document does not match expected values")
+	assert.Equal(t, seed, doc, "Seeded document does not match expected values")
 }
 
 func TestWithInitScripts(t *testing.T) {
+	seed1 := bson.D{{Key: "_id", Value: int32(1)}, {Key: "seeded", Value: true}}
+	seed2 := bson.D{{Key: "_id", Value: int32(2)}, {Key: "seeded", Value: true}}
+
 	cases := []struct {
 		name        string
 		initScripts map[string]string // filename -> content
@@ -406,14 +364,14 @@ func TestWithInitScripts(t *testing.T) {
 			initScripts: map[string]string{
 				"01-seed.sh": `mongosh --eval 'db.foo.insertOne({ _id: 1, seeded: true })'`,
 			},
-			want: []bson.D{{{"_id", int32(1)}, {"seeded", true}}},
+			want: []bson.D{seed1},
 		},
 		{
 			name: "single js script",
 			initScripts: map[string]string{
 				"01-seed.js": `db.foo.insertOne({ _id: 1, seeded: true });`,
 			},
-			want: []bson.D{{{"_id", int32(1)}, {"seeded", true}}},
+			want: []bson.D{seed1},
 		},
 		{
 			name: "mixed shell and js scripts",
@@ -421,10 +379,7 @@ func TestWithInitScripts(t *testing.T) {
 				"01-seed.sh": `mongosh --eval 'db.foo.insertOne({ _id: 1, seeded: true })'`,
 				"02-seed.js": `db.foo.insertOne({ _id: 2, seeded: true });`,
 			},
-			want: []bson.D{
-				{{"_id", int32(1)}, {"seeded", true}},
-				{{"_id", int32(2)}, {"seeded", true}},
-			},
+			want: []bson.D{seed1, seed2},
 		},
 		{
 			name: "mixed ordered shell",
@@ -450,19 +405,11 @@ func TestWithInitScripts(t *testing.T) {
 
 			testcontainers.CleanupContainer(t, ctr)
 
-			defer func() {
-				err := ctr.Terminate(context.Background())
-				require.NoError(t, err)
-			}()
-
 			assertInitScriptsExist(t, ctr, tmpDir, tc.initScripts)
 
 			// Connect to the server.
-			client := newMongoClient(t, context.Background(), ctr)
-			defer func() {
-				err := client.Disconnect(context.Background())
-				require.NoError(t, err)
-			}()
+			client, td := newMongoClient(t, context.Background(), ctr)
+			defer td()
 
 			// Fetch the seeded data.
 			coll := client.Database("test").Collection("foo")
@@ -476,6 +423,36 @@ func TestWithInitScripts(t *testing.T) {
 			assert.ElementsMatch(t, results, tc.want, "Seeded documents do not match expected values")
 		})
 	}
+}
+
+// Ensure that we can chain multiple scripts.
+func TestWithInitScripts_MultipleScripts(t *testing.T) {
+	scripts1 := map[string]string{
+		"01-seed.sh": `mongosh --eval 'db.foo.insertOne({ _id: 1, seeded: true })'`,
+		"02-seed.js": `db.foo.insertOne({ _id: 2, seeded: true });`,
+	}
+
+	tmpDir1 := createInitScripts(t, scripts1)
+
+	scripts2 := map[string]string{
+		"03-seed.sh": `mongosh --eval 'db.foo.insertOne({ _id: 3, seeded: true })'`,
+	}
+
+	tmpDir2 := createInitScripts(t, scripts2)
+
+	// Start container with the init scripts mounted.
+	opts := []testcontainers.ContainerCustomizer{
+		atlaslocal.WithInitScripts(tmpDir1),
+		atlaslocal.WithInitScripts(tmpDir2),
+	}
+
+	ctr, err := atlaslocal.Run(context.Background(), latestImage, opts...)
+	require.NoError(t, err)
+
+	testcontainers.CleanupContainer(t, ctr)
+
+	assertInitScriptsDoesNotExist(t, ctr, scripts1)
+	assertInitScriptsExist(t, ctr, tmpDir2, scripts2)
 }
 
 // Test Helper Functions
@@ -498,11 +475,11 @@ func assertEnvVar(t *testing.T, ctr testcontainers.Container, envVarName, expect
 	assert.Equal(t, expected, out, "DO_NOT_TRACK env var value mismatch")
 }
 
-func assertMongotLog(t *testing.T, ctr testcontainers.Container, mongotLogFile string, empty bool) {
+func assertFile(t *testing.T, ctr testcontainers.Container, filename string, empty bool) {
 	t.Helper()
 
 	// Pull the log file and assert non-empty.
-	reader, _ := ctr.CopyFileFromContainer(context.Background(), mongotLogFile)
+	reader, _ := ctr.CopyFileFromContainer(context.Background(), filename)
 
 	var data []byte
 	if reader != nil {
@@ -552,18 +529,6 @@ func createSeachIndex(t *testing.T, ctx context.Context, coll *mongo.Collection,
 	require.NoError(t, err)
 }
 
-// dumpLogs will dump the logs of the MongoDB Atlas Local container to the
-// integration test output.
-func dumpLogs(t *testing.T, ctx context.Context, ctr testcontainers.Container) {
-	t.Helper()
-
-	r, err := ctr.Logs(ctx)
-	require.NoError(t, err)
-
-	bytes, err := io.ReadAll(r)
-	t.Logf("MongoDB Atlas Local logs:\n%s", string(bytes))
-}
-
 // executeAggregation connects to the MongoDB Atlas Local instance, creates a
 // collection with a search index, inserts a document, and performs an
 // aggregation using the search index.
@@ -574,15 +539,6 @@ func executeAggregation(t *testing.T, ctr testcontainers.Container) {
 	// search index.
 	client, err := mongo.Connect(options.Client().ApplyURI(createConnectionURI(t, context.Background(), ctr).String()))
 	require.NoError(t, err)
-
-	//// Await the server to be ready.
-	//require.Eventually(t, func() bool {
-	//	pingCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	//	defer cancel()
-
-	//	err := client.Ping(pingCtx, nil)
-	//	return err == nil
-	//}, 60*time.Second, 5*time.Second)
 
 	err = client.Database("test").CreateCollection(context.Background(), "search")
 	require.NoError(t, err)
@@ -614,15 +570,29 @@ func executeAggregation(t *testing.T, ctr testcontainers.Container) {
 }
 
 // TODO: remove this?
-func newMongoClient(t *testing.T, ctx context.Context, ctr testcontainers.Container) *mongo.Client {
+func newMongoClient(
+	t *testing.T,
+	ctx context.Context,
+	ctr testcontainers.Container,
+	opts ...*options.ClientOptions,
+) (*mongo.Client, func()) {
 	t.Helper()
-	// Connect to the server.
+
 	uri := createConnectionURI(t, context.Background(), ctr)
 
-	client, err := mongo.Connect(options.Client().ApplyURI(uri.String()))
+	copts := []*options.ClientOptions{
+		options.Client().ApplyURI(uri.String()),
+	}
+
+	copts = append(copts, opts...)
+
+	client, err := mongo.Connect(copts...)
 	require.NoError(t, err)
 
-	return client
+	return client, func() {
+		err := client.Disconnect(context.Background())
+		require.NoError(t, err, "Failed to disconnect MongoDB client")
+	}
 }
 
 func createInitScripts(t *testing.T, scripts map[string]string) string {
@@ -664,5 +634,21 @@ func assertInitScriptsExist(t *testing.T, ctr testcontainers.Container, tmpDir s
 
 		content, _ := io.ReadAll(reader)
 		assert.Contains(t, string(content), filename)
+	}
+}
+
+func assertInitScriptsDoesNotExist(t *testing.T, ctr testcontainers.Container, expectedScripts map[string]string) {
+	t.Helper()
+
+	// Sanity check to verify that all scripts are present.
+	for filename := range expectedScripts {
+		cmd := []string{"sh", "-c", fmt.Sprintf("cd docker-entrypoint-initdb.d && ls -l")}
+
+		exitCode, reader, err := ctr.Exec(context.Background(), cmd)
+		require.NoError(t, err)
+		require.Zero(t, exitCode, "Expected exit code 0 for command: %v", cmd)
+
+		content, _ := io.ReadAll(reader)
+		assert.NotContains(t, string(content), filename)
 	}
 }

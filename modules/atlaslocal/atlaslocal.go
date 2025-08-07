@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/testcontainers/testcontainers-go"
@@ -37,7 +38,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	if err := validateRequest(&genericContainerReq); err != nil {
-		return nil, fmt.Errorf("imcompatible configuration: %w", err)
+		return nil, fmt.Errorf("incompatible configuration: %w", err)
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
@@ -79,12 +80,10 @@ func validateRequest(req *testcontainers.GenericContainerRequest) error {
 	return nil
 }
 
+// WithUsername sets the MongoDB root username by setting the
+// MONGODB_INITDB_ROOT_USERNAME environment variable.
 func WithUsername(username string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		if req.Env == nil {
-			req.Env = make(map[string]string)
-		}
-
 		if username != "" {
 			req.Env["MONGODB_INITDB_ROOT_USERNAME"] = username
 		}
@@ -93,12 +92,10 @@ func WithUsername(username string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// WithPassword sets the MongoDB root password by setting the the
+// MONGODB_INITDB_ROOT_PASSWORD environment variable.
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		if req.Env == nil {
-			req.Env = make(map[string]string)
-		}
-
 		if password != "" {
 			req.Env["MONGODB_INITDB_ROOT_PASSWORD"] = password
 		}
@@ -107,12 +104,11 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 	}
 }
 
+// WithUsernameFile sets the file path to source the MongoDB root username by
+// setting the MONGODB_INITDB_ROOT_USERNAME_FILE environment variable. This
+// function mounts the local file into the container at the same path.
 func WithUsernameFile(usernameFile string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		if req.Env == nil {
-			req.Env = make(map[string]string)
-		}
-
 		if usernameFile != "" {
 			req.Env["MONGODB_INITDB_ROOT_USERNAME_FILE"] = usernameFile
 		}
@@ -133,14 +129,13 @@ func WithUsernameFile(usernameFile string) testcontainers.CustomizeRequestOption
 	}
 }
 
-func WithPasswordFile(passewordFile string) testcontainers.CustomizeRequestOption {
+// WithPasswordFile sets the file path to source the MongoDB root password by
+// setting the MONGODB_INITDB_ROOT_PASSWORD_FILE environment variable. This
+// function mounts the local file into the container at the same path.
+func WithPasswordFile(passwordFile string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		if req.Env == nil {
-			req.Env = make(map[string]string)
-		}
-
-		if passewordFile != "" {
-			req.Env["MONGODB_INITDB_ROOT_PASSWORD_FILE"] = passewordFile
+		if passwordFile != "" {
+			req.Env["MONGODB_INITDB_ROOT_PASSWORD_FILE"] = passwordFile
 		}
 
 		prev := req.HostConfigModifier
@@ -150,8 +145,8 @@ func WithPasswordFile(passewordFile string) testcontainers.CustomizeRequestOptio
 			}
 
 			// Mount username file.
-			if passewordFile != "" {
-				hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s:ro", passewordFile, passewordFile))
+			if passwordFile != "" {
+				hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s:ro", passwordFile, passwordFile))
 			}
 		}
 
@@ -163,10 +158,6 @@ func WithPasswordFile(passewordFile string) testcontainers.CustomizeRequestOptio
 // container by setting the DO_NOT_TRACK environment variable to 1.
 func WithDisableTelemetry() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		if req.Env == nil {
-			req.Env = make(map[string]string)
-		}
-
 		req.Env["DO_NOT_TRACK"] = "1"
 
 		return nil
@@ -178,10 +169,6 @@ func WithDisableTelemetry() testcontainers.CustomizeRequestOption {
 // instead of the default "test" database.
 func WithInitDatabase(database string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		if req.Env == nil {
-			req.Env = make(map[string]string)
-		}
-
 		req.Env["MONGODB_INITDB_DATABASE"] = database
 
 		return nil
@@ -189,7 +176,9 @@ func WithInitDatabase(database string) testcontainers.CustomizeRequestOption {
 }
 
 // WithInitScripts mounts a directory containing .sh/.js init scripts into
-// /docker-entrypoint-initdb.d so they run in alphabetical order on startup.
+// /docker-entrypoint-initdb.d so they run in alphabetical order on startup. If
+// called multiple times, this funcion removes any prior init-scripts bind and
+// uses only the latest on specified.
 func WithInitScripts(scriptsDir string) testcontainers.CustomizeRequestOption {
 	abs, err := filepath.Abs(scriptsDir)
 	if err != nil {
@@ -199,18 +188,24 @@ func WithInitScripts(scriptsDir string) testcontainers.CustomizeRequestOption {
 	}
 
 	return func(req *testcontainers.GenericContainerRequest) error {
-		if _, err := filepath.Abs(abs); err != nil {
-			return fmt.Errorf("get absolute path of scripts directory: %w", err)
-		}
-
 		prev := req.HostConfigModifier
 		req.HostConfigModifier = func(hostConfig *container.HostConfig) {
 			if prev != nil {
 				prev(hostConfig)
 			}
 
-			bind := fmt.Sprintf("%s:/docker-entrypoint-initdb.d:ro", abs)
-			hostConfig.Binds = append(hostConfig.Binds, bind)
+			// Remove any old /docker-entrypoint-initdb.d bind mounts.
+			filtered := hostConfig.Binds[:0]
+			for _, bind := range hostConfig.Binds {
+				if !strings.HasSuffix(bind, ":/docker-entrypoint-initdb.d:ro") {
+					filtered = append(filtered, bind)
+				}
+			}
+			hostConfig.Binds = filtered
+
+			// Mount the new scriptsDir
+			hostConfig.Binds = append(hostConfig.Binds,
+				fmt.Sprintf("%s:/docker-entrypoint-initdb.d:ro", abs))
 		}
 
 		return nil
@@ -222,10 +217,6 @@ func WithInitScripts(scriptsDir string) testcontainers.CustomizeRequestOption {
 // Note that this can be set to /dev/stdout or /dev/stderr for convenience.
 func WithMongotLogFile(logFile string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		if req.Env == nil {
-			req.Env = make(map[string]string)
-		}
-
 		req.Env["MONGOT_LOG_FILE"] = logFile
 
 		return nil
@@ -237,10 +228,6 @@ func WithMongotLogFile(logFile string) testcontainers.CustomizeRequestOption {
 // can be set to /dev/stdout or /dev/stderr for convenience.
 func WithRunnerLogFile(logFile string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		if req.Env == nil {
-			req.Env = make(map[string]string)
-		}
-
 		req.Env["RUNNER_LOG_FILE"] = logFile
 
 		return nil
