@@ -27,7 +27,7 @@ func TestDockerMCPGateway_withServerAndTools(t *testing.T) {
 	ctr, err := dmcpg.Run(
 		ctx, "docker/mcp-gateway:latest",
 		dmcpg.WithTools("curl", []string{"curl"}),
-		dmcpg.WithTools("brave", []string{"brave_local_search", "brave_web_search"}),
+		dmcpg.WithTools("duckduckgo", []string{"fetch_content", "search"}),
 		dmcpg.WithTools("github-official", []string{"add_issue_comment"}),
 	)
 	testcontainers.CleanupContainer(t, ctr)
@@ -39,8 +39,8 @@ func TestDockerMCPGateway_withServerAndTools(t *testing.T) {
 		switch server {
 		case "curl":
 			require.Equal(t, []string{"curl"}, tools)
-		case "brave":
-			require.ElementsMatch(t, []string{"brave_local_search", "brave_web_search"}, tools)
+		case "duckduckgo":
+			require.ElementsMatch(t, []string{"fetch_content", "search"}, tools)
 		case "github-official":
 			require.Equal(t, []string{"add_issue_comment"}, tools)
 		default:

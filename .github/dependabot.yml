@@ -69,6 +69,7 @@ updates:
         - /modules/registry
         - /modules/scylladb
         - /modules/socat
+        - /modules/solace
         - /modules/surrealdb
         - /modules/toxiproxy
         - /modules/valkey
