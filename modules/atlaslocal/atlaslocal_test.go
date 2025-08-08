@@ -155,7 +155,7 @@ func TestSCRAMAuth(t *testing.T) {
 			password:     "",
 			usernameFile: "/nonexistent/username.txt",
 			passwordFile: passwordFilepath,
-			wantRunErr:   "is not shared from the host",
+			wantRunErr:   "does not exist or is not accessible",
 		},
 		{
 			name:         "password file is absolute but does not exist",
@@ -163,7 +163,23 @@ func TestSCRAMAuth(t *testing.T) {
 			password:     "",
 			usernameFile: usernameFilepath,
 			passwordFile: "/nonexistent/password.txt",
-			wantRunErr:   "is not shared from the host",
+			wantRunErr:   "does not exist or is not accessible",
+		},
+		{
+			name:         "username file is a directory",
+			username:     "",
+			password:     "",
+			usernameFile: tmpDir,
+			passwordFile: passwordFilepath,
+			wantRunErr:   "must be a file",
+		},
+		{
+			name:         "password file is a directory",
+			username:     "",
+			password:     "",
+			usernameFile: usernameFilepath,
+			passwordFile: tmpDir,
+			wantRunErr:   "must be a file",
 		},
 	}
 

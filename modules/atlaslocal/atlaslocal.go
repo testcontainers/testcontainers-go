@@ -56,17 +56,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("create container: %w", err)
 	}
 
 	// Set the username from the username file so that it can be used in the
 	// connection string method.
 	c.username = genericContainerReq.Env["MONGODB_INITDB_ROOT_USERNAME"]
 	if usernameFile := genericContainerReq.Env["MONGODB_INITDB_ROOT_USERNAME_FILE"]; usernameFile != "" {
-		fileContent, err := os.ReadFile(usernameFile)
-		if err != nil {
-			return nil, fmt.Errorf("read username file: %w", err)
-		}
+		fileContent, _ := os.ReadFile(usernameFile)
 
 		c.username = strings.TrimSpace(string(fileContent))
 	}
@@ -75,10 +72,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	// connection string method.
 	c.password = genericContainerReq.Env["MONGODB_INITDB_ROOT_PASSWORD"]
 	if passwordFile := genericContainerReq.Env["MONGODB_INITDB_ROOT_PASSWORD_FILE"]; passwordFile != "" {
-		fileContent, err := os.ReadFile(passwordFile)
-		if err != nil {
-			return nil, fmt.Errorf("read password file: %w", err)
-		}
+		fileContent, _ := os.ReadFile(passwordFile)
 
 		c.password = strings.TrimSpace(string(fileContent))
 	}
@@ -169,17 +163,34 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 // function mounts the local file into the container at the same path.
 func WithUsernameFile(usernameFile string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		if usernameFile != "" {
-			req.Env["MONGODB_INITDB_ROOT_USERNAME_FILE"] = usernameFile
+		if usernameFile == "" {
+			return nil
 		}
 
+		// Must be an absolute path.
+		if !filepath.IsAbs(usernameFile) {
+			return fmt.Errorf("username file mount path must be absolute, got: %s", usernameFile)
+		}
+
+		// Must exist and be a file.
+		info, err := os.Stat(usernameFile)
+		if err != nil {
+			return fmt.Errorf("username file does not exist or is not accessible: %w", err)
+		}
+
+		if info.IsDir() {
+			return fmt.Errorf("username file must be a file, got a directory: %s", usernameFile)
+		}
+
+		req.Env["MONGODB_INITDB_ROOT_USERNAME_FILE"] = usernameFile
+
+		// Mount username file as read-only in the container.
 		prev := req.HostConfigModifier
 		req.HostConfigModifier = func(hostConfig *container.HostConfig) {
 			if prev != nil {
 				prev(hostConfig)
 			}
 
-			// Mount username file.
 			if usernameFile != "" {
 				hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s:ro", usernameFile, usernameFile))
 			}
@@ -194,17 +205,34 @@ func WithUsernameFile(usernameFile string) testcontainers.CustomizeRequestOption
 // function mounts the local file into the container at the same path.
 func WithPasswordFile(passwordFile string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		if passwordFile != "" {
-			req.Env["MONGODB_INITDB_ROOT_PASSWORD_FILE"] = passwordFile
+		if passwordFile == "" {
+			return nil
 		}
 
+		// Must be an absolute path.
+		if !filepath.IsAbs(passwordFile) {
+			return fmt.Errorf("password file mount path must be absolute, got: %s", passwordFile)
+		}
+
+		// Must exist and be a file.
+		info, err := os.Stat(passwordFile)
+		if err != nil {
+			return fmt.Errorf("password file does not exist or is not accessible: %w", err)
+		}
+
+		if info.IsDir() {
+			return fmt.Errorf("password file must be a file, got a directory: %s", passwordFile)
+		}
+
+		req.Env["MONGODB_INITDB_ROOT_PASSWORD_FILE"] = passwordFile
+
+		// Mount password file as read-only in the container.
 		prev := req.HostConfigModifier
 		req.HostConfigModifier = func(hostConfig *container.HostConfig) {
 			if prev != nil {
 				prev(hostConfig)
 			}
 
-			// Mount username file.
 			if passwordFile != "" {
 				hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s:ro", passwordFile, passwordFile))
 			}
