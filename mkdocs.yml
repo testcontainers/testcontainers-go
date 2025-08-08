@@ -70,6 +70,7 @@ nav:
         - modules/aerospike.md
         - modules/arangodb.md
         - modules/artemis.md
+        - modules/atlaslocal.md
         - modules/azure.md
         - modules/azurite.md
         - modules/cassandra.md
