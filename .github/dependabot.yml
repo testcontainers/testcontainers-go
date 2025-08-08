@@ -18,6 +18,7 @@ updates:
         - /modules/aerospike
         - /modules/arangodb
         - /modules/artemis
+        - /modules/atlaslocal
         - /modules/azure
         - /modules/azurite
         - /modules/cassandra
