@@ -50,47 +50,34 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+
 	var c *Container
 	if container != nil {
-		c = &Container{Container: container}
+		// No need to check the error here, as we already validated the request.
+		username, _ := parseUsername(genericContainerReq.Env)
+		password, _ := parsePassword(genericContainerReq.Env)
+
+		c = &Container{Container: container, username: username, password: password}
 	}
 
 	if err != nil {
 		return c, fmt.Errorf("create container: %w", err)
 	}
 
-	// Set the username from the username file so that it can be used in the
-	// connection string method.
-	c.username = genericContainerReq.Env["MONGODB_INITDB_ROOT_USERNAME"]
-	if usernameFile := genericContainerReq.Env["MONGODB_INITDB_ROOT_USERNAME_FILE"]; usernameFile != "" {
-		fileContent, _ := os.ReadFile(usernameFile)
-
-		c.username = strings.TrimSpace(string(fileContent))
-	}
-
-	// Set the password from the password file so that it can be used in the
-	// connection string method.
-	c.password = genericContainerReq.Env["MONGODB_INITDB_ROOT_PASSWORD"]
-	if passwordFile := genericContainerReq.Env["MONGODB_INITDB_ROOT_PASSWORD_FILE"]; passwordFile != "" {
-		fileContent, _ := os.ReadFile(passwordFile)
-
-		c.password = strings.TrimSpace(string(fileContent))
-	}
-
 	return c, nil
 }
 
 func validateRequest(req *testcontainers.GenericContainerRequest) error {
-	username := req.Env["MONGODB_INITDB_ROOT_USERNAME"]
-	password := req.Env["MONGODB_INITDB_ROOT_PASSWORD"]
+	username := getRootUsername(req.Env)
+	password := getRootPassword(req.Env)
 
 	// If username or password is specified, both must be provided.
 	if username != "" && password == "" || username == "" && password != "" {
 		return errors.New("if you specify username or password, you must provide both of them")
 	}
 
-	usernameFile := req.Env["MONGODB_INITDB_ROOT_USERNAME_FILE"]
-	passwordFile := req.Env["MONGODB_INITDB_ROOT_PASSWORD_FILE"]
+	usernameFile := getRootUsernameFile(req.Env)
+	passwordFile := getRootPasswordFile(req.Env)
 
 	// If username file or password file is specified, both must be provided.
 	if usernameFile != "" && passwordFile == "" || usernameFile == "" && passwordFile != "" {
@@ -320,4 +307,54 @@ func WithRunnerLogFile(logFile string) testcontainers.CustomizeRequestOption {
 
 		return nil
 	}
+}
+
+func getRootPassword(env map[string]string) string {
+	return env["MONGODB_INITDB_ROOT_PASSWORD"]
+}
+
+func getRootUsername(env map[string]string) string {
+	return env["MONGODB_INITDB_ROOT_USERNAME"]
+}
+
+func getRootUsernameFile(env map[string]string) string {
+	return env["MONGODB_INITDB_ROOT_USERNAME_FILE"]
+}
+
+func getRootPasswordFile(env map[string]string) string {
+	return env["MONGODB_INITDB_ROOT_PASSWORD_FILE"]
+}
+
+// parseUsername will try to parse the username from the environment by either
+// reading the MONGODB_INITDB_ROOT_USERNAME environment variable or from the
+// the file specified in the MONGODB_INITDB_ROOT_USERNAME_FILE environment
+// variable.
+func parseUsername(env map[string]string) (string, error) {
+	if username := getRootUsername(env); username != "" {
+		return username, nil
+	}
+
+	if usernameFile := getRootUsernameFile(env); usernameFile != "" {
+		r, err := os.ReadFile(usernameFile)
+		return strings.TrimSpace(string(r)), err
+	}
+
+	return "", nil
+}
+
+// parsePassword will try to parse the password from the environment by either
+// reading the MONGODB_INITDB_ROOT_PASSWORD environment variable or from
+// the file specified in the MONGODB_INITDB_ROOT_PASSWORD_FILE environment
+// variable.
+func parsePassword(env map[string]string) (string, error) {
+	if password := getRootPassword(env); password != "" {
+		return password, nil
+	}
+
+	if passwordFile := getRootPasswordFile(env); passwordFile != "" {
+		r, err := os.ReadFile(passwordFile)
+		return strings.TrimSpace(string(r)), err
+	}
+
+	return "", nil
 }
