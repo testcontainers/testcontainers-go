@@ -30,11 +30,8 @@ func TestMongoDBAtlasLocal(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	connString, err := ctr.ConnectionString(ctx)
-	require.NoError(t, err)
-
-	client, err := mongo.Connect(options.Client().ApplyURI(connString))
-	require.NoError(t, err)
+	client, td := newMongoClient(t, ctx, ctr)
+	defer td()
 
 	err = client.Ping(ctx, nil)
 	require.NoError(t, err)
@@ -512,15 +509,10 @@ func createSeachIndex(t *testing.T, ctx context.Context, coll *mongo.Collection,
 func executeAggregation(t *testing.T, ctr testcontainers.Container) {
 	t.Helper()
 
-	connString, err := ctr.(*atlaslocal.Container).ConnectionString(context.Background())
-	require.NoError(t, err)
+	client, td := newMongoClient(t, context.Background(), ctr)
+	defer td()
 
-	// Connect to a MongoDB Atlas Local instance and create a collection with a
-	// search index.
-	client, err := mongo.Connect(options.Client().ApplyURI(connString))
-	require.NoError(t, err)
-
-	err = client.Database("test").CreateCollection(context.Background(), "search")
+	err := client.Database("test").CreateCollection(context.Background(), "search")
 	require.NoError(t, err)
 
 	coll := client.Database("test").Collection("search")
@@ -549,7 +541,6 @@ func executeAggregation(t *testing.T, ctr testcontainers.Container) {
 	require.NoError(t, err)
 }
 
-// TODO: remove this?
 func newMongoClient(
 	t *testing.T,
 	ctx context.Context,
