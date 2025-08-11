@@ -25,7 +25,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/network"
 )
 
-const testImage = "docker.redpanda.com/redpandadata/redpanda:v23.3.3"
+const testImage = "docker.redpanda.com/redpandadata/redpanda:v25.2.4"
 
 func TestRedpanda(t *testing.T) {
 	ctx := context.Background()

@@ -59,7 +59,7 @@ type Container struct {
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Redpanda container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	return Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v23.3.3", opts...)
+	return Run(ctx, "docker.redpanda.com/redpandadata/redpanda:v25.2.4", opts...)
 }
 
 // Run creates an instance of the Redpanda container type
