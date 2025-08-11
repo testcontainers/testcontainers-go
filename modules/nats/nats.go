@@ -24,7 +24,7 @@ type NATSContainer struct {
 // Deprecated: use Run instead
 // RunContainer creates an instance of the NATS container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*NATSContainer, error) {
-	return Run(ctx, "nats:2.9", opts...)
+	return Run(ctx, "nats:2.11.7", opts...)
 }
 
 // Run creates an instance of the NATS container type
@@ -33,7 +33,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Image:        img,
 		ExposedPorts: []string{defaultClientPort, defaultRoutingPort, defaultMonitoringPort},
 		Cmd:          []string{"-DV", "-js"},
-		WaitingFor:   wait.ForLog("Listening for client connections on 0.0.0.0:4222"),
+		WaitingFor:   wait.ForLog("Server is ready"),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
