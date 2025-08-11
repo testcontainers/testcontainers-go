@@ -38,6 +38,7 @@ const (
 	defaultKafkaAPIPort       = "9092/tcp"
 	defaultAdminAPIPort       = "9644/tcp"
 	defaultSchemaRegistryPort = "8081/tcp"
+	defaultHTTPProxyPort      = "8082/tcp"
 
 	redpandaDir         = "/etc/redpanda"
 	entrypointFile      = "/entrypoint-tc.sh"
@@ -76,6 +77,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				defaultKafkaAPIPort,
 				defaultAdminAPIPort,
 				defaultSchemaRegistryPort,
+				defaultHTTPProxyPort,
 			},
 			Entrypoint: []string{entrypointFile},
 			Cmd: []string{
@@ -92,6 +94,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				wait.ForMappedPort(defaultKafkaAPIPort),
 				wait.ForMappedPort(defaultAdminAPIPort),
 				wait.ForMappedPort(defaultSchemaRegistryPort),
+				wait.ForMappedPort(defaultHTTPProxyPort),
 			),
 		},
 		Started: true,
@@ -236,6 +239,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		wait.ForListeningPort(defaultKafkaAPIPort),
 		waitHTTP,
 		wait.ForListeningPort(defaultSchemaRegistryPort),
+		wait.ForListeningPort(defaultHTTPProxyPort),
 		wait.ForLog("Successfully started Redpanda!"),
 	).WaitUntilReady(ctx, ctr)
 	if err != nil {
@@ -297,6 +301,12 @@ func (c *Container) AdminAPIAddress(ctx context.Context) (string, error) {
 // is an HTTP-based API and thus the returned format will be: http://host:port.
 func (c *Container) SchemaRegistryAddress(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, nat.Port(defaultSchemaRegistryPort), c.urlScheme)
+}
+
+// HTTPProxyAddress returns the address to the HTTP Proxy API (pandaproxy). This
+// is an HTTP-based API and thus the returned format will be: http://host:port.
+func (c *Container) HTTPProxyAddress(ctx context.Context) (string, error) {
+	return c.PortEndpoint(ctx, nat.Port(defaultHTTPProxyPort), c.urlScheme)
 }
 
 // renderBootstrapConfig renders the config template for the .bootstrap.yaml config,
@@ -362,6 +372,9 @@ func renderNodeConfig(settings options, hostIP string, advertisedKafkaPort int) 
 		SchemaRegistry: redpandaConfigTplParamsSchemaRegistry{
 			AuthenticationMethod: settings.SchemaRegistryAuthenticationMethod,
 		},
+		HTTPProxy: redpandaConfigTplParamsHTTPProxy{
+			AuthenticationMethod: settings.HTTPProxyAuthenticationMethod,
+		},
 		EnableTLS: settings.EnableTLS,
 	}
 
@@ -389,6 +402,7 @@ type redpandaBootstrapConfigTplParams struct {
 type redpandaConfigTplParams struct {
 	KafkaAPI         redpandaConfigTplParamsKafkaAPI
 	SchemaRegistry   redpandaConfigTplParamsSchemaRegistry
+	HTTPProxy        redpandaConfigTplParamsHTTPProxy
 	AutoCreateTopics bool
 	EnableTLS        bool
 }
@@ -403,6 +417,10 @@ type redpandaConfigTplParamsKafkaAPI struct {
 
 type redpandaConfigTplParamsSchemaRegistry struct {
 	AuthenticationMethod string
+}
+
+type redpandaConfigTplParamsHTTPProxy struct {
+	AuthenticationMethod HTTPProxyAuthMethod
 }
 
 type listener struct {
