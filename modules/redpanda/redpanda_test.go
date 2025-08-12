@@ -73,7 +73,9 @@ func TestRedpanda(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// Test HTTP Proxy API
+	// httpProxyAddress {
 	httpProxyURL, err := ctr.HTTPProxyAddress(ctx)
+	// }
 	require.NoError(t, err)
 	req, err = http.NewRequestWithContext(ctx, http.MethodGet, httpProxyURL+"/topics", nil)
 	require.NoError(t, err)
