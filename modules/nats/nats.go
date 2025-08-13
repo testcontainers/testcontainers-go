@@ -33,10 +33,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		Image:        img,
 		ExposedPorts: []string{defaultClientPort, defaultRoutingPort, defaultMonitoringPort},
 		Cmd:          []string{"-DV", "-js"},
-		WaitingFor: wait.ForAll(
-			wait.ForListeningPort(defaultClientPort),
-			wait.ForLog("Server is ready"),
-		),
+		WaitingFor:   wait.ForListeningPort(defaultClientPort),
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
