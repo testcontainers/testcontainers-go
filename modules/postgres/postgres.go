@@ -298,8 +298,8 @@ func (c *PostgresContainer) Restore(ctx context.Context, opts ...SnapshotOption)
 		// Terminate all connections to the template database explicitly as the forced drop below will sometimes
 		// not terminate them and then fail to drop the database.
 		fmt.Sprintf(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '%s' AND pid <> pg_backend_pid()`, snapshotName),
-		// Drop the entire database by connecting to the postgres global database
-		fmt.Sprintf(`DROP DATABASE "%s" with (FORCE)`, c.dbName),
+		// Drop the database if it exists
+		fmt.Sprintf(`DROP DATABASE IF EXISTS "%s" with (FORCE)`, c.dbName),
 		// Then restore the previous snapshot
 		fmt.Sprintf(`CREATE DATABASE "%s" WITH TEMPLATE "%s" OWNER "%s"`, c.dbName, snapshotName, c.user),
 	)
