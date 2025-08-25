@@ -2,6 +2,7 @@ package nebulagraph_test
 
 import (
 	"context"
+	"github.com/testcontainers/testcontainers-go"
 	"net"
 	"strconv"
 	"testing"
@@ -15,11 +16,21 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/nebulagraph"
 )
 
+const (
+	defaultGraphdImage   = "vesoft/nebula-graphd:v3.8.0"
+	defaultMetadImage    = "vesoft/nebula-metad:v3.8.0"
+	defaultStoragedImage = "vesoft/nebula-storaged:v3.8.0"
+)
+
 func TestNebulaGraphContainer(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	container, err := nebulagraph.RunContainer(ctx)
+	container, err := nebulagraph.RunCluster(ctx,
+		defaultGraphdImage, []testcontainers.ContainerCustomizer{},
+		defaultStoragedImage, []testcontainers.ContainerCustomizer{},
+		defaultMetadImage, []testcontainers.ContainerCustomizer{},
+	)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = container.Terminate(ctx) })
 
