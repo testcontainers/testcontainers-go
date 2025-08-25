@@ -14,7 +14,7 @@ permissions:
 jobs:
   lint-pr:
     name: Validate PR title follows Conventional Commits
-    runs-on: ubuntu-latest
+    runs-on: shipfox-2vcpu-ubuntu-2404
     steps:
       - uses: amannn/action-semantic-pull-request@0723387faaf9b38adef4775cd42cfd5155ed6017 # v5
         env:
