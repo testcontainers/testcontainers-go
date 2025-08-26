@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/shirou/gopsutil/v4/process"
+	"github.com/testcontainers/testcontainers-go/internal/config"
 )
 
 // sessionID returns a unique session ID for the current test session. Because each Go package
@@ -45,6 +46,11 @@ var processID string
 const sessionIDPlaceholder = "testcontainers-go:%d:%d"
 
 func init() {
+	cfg := config.Read()
+	if cfg.SessionID != "" {
+		sessionID = cfg.SessionID
+	}
+
 	processID = uuid.New().String()
 
 	parentPid := os.Getppid()
@@ -57,7 +63,9 @@ func init() {
 
 	processes, err := process.Processes()
 	if err != nil {
-		sessionID = uuid.New().String()
+		if sessionID == "" {
+			sessionID = uuid.New().String()
+		}
 		projectPath = fallbackCwd
 		return
 	}
@@ -75,7 +83,9 @@ func init() {
 
 		t, err := p.CreateTime()
 		if err != nil {
-			sessionID = uuid.New().String()
+			if sessionID == "" {
+				sessionID = uuid.New().String()
+			}
 			return
 		}
 
@@ -83,14 +93,16 @@ func init() {
 		break
 	}
 
-	hasher := sha256.New()
-	_, err = fmt.Fprintf(hasher, sessionIDPlaceholder, parentPid, createTime)
-	if err != nil {
-		sessionID = uuid.New().String()
-		return
-	}
+	if sessionID == "" {
+		hasher := sha256.New()
+		_, err = fmt.Fprintf(hasher, sessionIDPlaceholder, parentPid, createTime)
+		if err != nil {
+			sessionID = uuid.New().String()
+			return
+		}
 
-	sessionID = hex.EncodeToString(hasher.Sum(nil))
+		sessionID = hex.EncodeToString(hasher.Sum(nil))
+	}
 }
 
 func ProcessID() string {
