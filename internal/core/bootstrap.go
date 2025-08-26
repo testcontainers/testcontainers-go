@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/shirou/gopsutil/v4/process"
+
 	"github.com/testcontainers/testcontainers-go/internal/config"
 )
 
