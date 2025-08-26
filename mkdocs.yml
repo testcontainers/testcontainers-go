@@ -100,6 +100,7 @@ nav:
         - modules/milvus.md
         - modules/minio.md
         - modules/mockserver.md
+        - modules/mongodb-atlaslocal.md
         - modules/mongodb.md
         - modules/mssql.md
         - modules/mysql.md
