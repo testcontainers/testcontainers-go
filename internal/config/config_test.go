@@ -21,6 +21,7 @@ const (
 func resetTestEnv(t *testing.T) {
 	t.Helper()
 	t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", "")
+	t.Setenv("TESTCONTAINERS_SESSION_ID", "")
 	t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "")
 	t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "")
 	t.Setenv("RYUK_VERBOSE", "")
@@ -76,6 +77,7 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("USERPROFILE", "") // Windows support
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 		t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", defaultHubPrefix)
+		t.Setenv("TESTCONTAINERS_SESSION_ID", "foo")
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 		t.Setenv("RYUK_RECONNECTION_TIMEOUT", "13s")
 		t.Setenv("RYUK_CONNECTION_TIMEOUT", "12s")
@@ -84,6 +86,7 @@ func TestReadTCConfig(t *testing.T) {
 
 		expected := Config{
 			HubImageNamePrefix:      defaultHubPrefix,
+			SessionID:               "foo",
 			RyukDisabled:            true,
 			RyukPrivileged:          true,
 			Host:                    "", // docker socket is empty at the properties file
@@ -124,6 +127,7 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("USERPROFILE", tmpDir) // Windows support
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
 		t.Setenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX", defaultHubPrefix)
+		t.Setenv("TESTCONTAINERS_SESSION_ID", "foo")
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 		t.Setenv("RYUK_VERBOSE", "true")
 		t.Setenv("RYUK_RECONNECTION_TIMEOUT", "13s")
@@ -132,6 +136,7 @@ func TestReadTCConfig(t *testing.T) {
 		config := read()
 		expected := Config{
 			HubImageNamePrefix:      defaultHubPrefix,
+			SessionID:               "foo",
 			RyukDisabled:            true,
 			RyukPrivileged:          true,
 			RyukVerbose:             true,
