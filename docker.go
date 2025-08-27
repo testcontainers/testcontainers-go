@@ -1351,7 +1351,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 			return nil, fmt.Errorf("reaper: %w", err)
 		}
 
-		termSignal, err := r.Connect()
+		termSignal, err = r.Connect()
 		if err != nil {
 			return nil, fmt.Errorf("reaper connect: %w", err)
 		}
@@ -1591,7 +1591,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 			return nil, fmt.Errorf("reaper: %w", err)
 		}
 
-		termSignal, err := r.Connect()
+		termSignal, err = r.Connect()
 		if err != nil {
 			return nil, fmt.Errorf("reaper connect: %w", err)
 		}
