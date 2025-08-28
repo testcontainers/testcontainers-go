@@ -174,13 +174,11 @@ func (c *RegistryContainer) ImageExists(ctx context.Context, imageRef string) er
 // PushImage pushes an image to the Registry container. It will use the internally stored RegistryName
 // to push the image to the container, and it will finally wait for the image to be pushed.
 func (c *RegistryContainer) PushImage(ctx context.Context, ref string) error {
-	dockerProvider, err := testcontainers.NewDockerProvider()
+	dockerCli, err := testcontainers.NewDockerClientWithOpts(ctx)
 	if err != nil {
 		return fmt.Errorf("create docker client: %w", err)
 	}
-	defer dockerProvider.Close()
-
-	dockerCli := dockerProvider.Client()
+	defer dockerCli.Close()
 
 	_, imageAuth, err := testcontainers.DockerImageAuth(ctx, ref)
 	if err != nil {
@@ -211,13 +209,11 @@ func (c *RegistryContainer) PushImage(ctx context.Context, ref string) error {
 // this method downloads (copies) the specified image reference so it becomes
 // available locally for further operations such as tagging or pushing.
 func (c *RegistryContainer) PullImage(ctx context.Context, ref string) error {
-	dockerProvider, err := testcontainers.NewDockerProvider()
+	dockerCli, err := testcontainers.NewDockerClientWithOpts(ctx)
 	if err != nil {
 		return fmt.Errorf("create docker client: %w", err)
 	}
-	defer dockerProvider.Close()
-
-	dockerCli := dockerProvider.Client()
+	defer dockerCli.Close()
 
 	pullOpts := image.PullOptions{
 		All:      false,
@@ -242,13 +238,11 @@ func (c *RegistryContainer) PullImage(ctx context.Context, ref string) error {
 // This function is helpful when you want to push an image to your Registry
 // instance made by testcontainer.
 func (c *RegistryContainer) TagImage(ctx context.Context, image, ref string) error {
-	dockerProvider, err := testcontainers.NewDockerProvider()
+	dockerCli, err := testcontainers.NewDockerClientWithOpts(ctx)
 	if err != nil {
 		return fmt.Errorf("create docker client: %w", err)
 	}
-	defer dockerProvider.Close()
-
-	dockerCli := dockerProvider.Client()
+	defer dockerCli.Close()
 
 	err = dockerCli.ImageTag(ctx, image, ref)
 	if err != nil {
