@@ -173,5 +173,16 @@ The `ReadMongotLogs` returns a reader for the log solution specified when constr
 
 
 <!--codeinclude-->
-[Using ConnectionString with the MongoDB client](../../modules/mongodb/atlaslocal/examples_test.go) inside_block:readMongotLogs
+[Using ReadMongotLogs with the MongoDB client](../../modules/mongodb/atlaslocal/examples_test.go) inside_block:readMongotLogs
+<!--/codeinclude-->
+
+#### ReadRunnerLogs
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The `ReadRunnerLogs` returns a reader for the log solution specified when constructing the container.
+
+
+<!--codeinclude-->
+[Using ReadRunnerLogs with the MongoDB client](../../modules/mongodb/atlaslocal/examples_test.go) inside_block:readRunnerLogs
 <!--/codeinclude-->

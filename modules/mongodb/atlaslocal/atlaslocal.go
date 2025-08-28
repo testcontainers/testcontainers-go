@@ -16,8 +16,18 @@ import (
 )
 
 const (
-	passwordContainerPath = "/run/secrets/mongo-root-password"
-	usernameContainerPath = "/run/secrets/mongo-root-username"
+	passwordContainerPath      = "/run/secrets/mongo-root-password"
+	usernameContainerPath      = "/run/secrets/mongo-root-username"
+	envMongotLogFile           = "MONGOT_LOG_FILE"
+	envRunnerLogFile           = "RUNNER_LOG_FILE"
+	envMongoDBInitDatabase     = "MONGODB_INITDB_DATABASE"
+	envMongoDBInitUsername     = "MONGODB_INITDB_ROOT_USERNAME"
+	envMongoDBInitPassword     = "MONGODB_INITDB_ROOT_PASSWORD"
+	envMongoDBInitUsernameFile = "MONGODB_INITDB_ROOT_USERNAME_FILE"
+	envMongoDBInitPasswordFile = "MONGODB_INITDB_ROOT_PASSWORD_FILE"
+	envDoNotTrack              = "DO_NOT_TRACK"
+	labelUsernameFile          = "com.mongodb.atlaslocal.username_file"
+	labelPasswordFile          = "com.mongodb.atlaslocal.password_file"
 )
 
 // Container represents the MongoDBAtlasLocal container type used in the module
@@ -25,6 +35,7 @@ type Container struct {
 	testcontainers.Container
 	username      string
 	password      string
+	database      string
 	mongotLogPath string
 	runnerLogPath string
 }
@@ -39,6 +50,11 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			wait.ForHealthCheck(),
 		),
 		Env: map[string]string{},
+
+		// Labels is used to store usernameFile and passwordFile paths if they are
+		// provided. We avoid using Env for this purpose, as we don't want to
+		// leak more information than necessary.
+		Labels: map[string]string{},
 	}
 
 	genericContainerReq := testcontainers.GenericContainerRequest{
@@ -61,15 +77,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	var c *Container
 	if container != nil {
 		// No need to check the error here, as we already validated the request.
-		username, _ := parseUsername(genericContainerReq.Env)
-		password, _ := parsePassword(genericContainerReq.Env)
+		username, _ := parseUsername(genericContainerReq)
+		password, _ := parsePassword(genericContainerReq)
 
 		c = &Container{
 			Container:     container,
 			username:      username,
 			password:      password,
-			mongotLogPath: genericContainerReq.Env["MONGOT_LOG_FILE"],
-			runnerLogPath: genericContainerReq.Env["RUNNER_LOG_FILE"],
+			mongotLogPath: genericContainerReq.Env[envMongotLogFile],
+			runnerLogPath: genericContainerReq.Env[envRunnerLogFile],
+			database:      genericContainerReq.Env[envMongoDBInitDatabase],
 		}
 	}
 
@@ -89,15 +106,15 @@ func validateRequest(req *testcontainers.GenericContainerRequest) error {
 		return errors.New("if you specify username or password, you must provide both of them")
 	}
 
-	usernameFile := getRootUsernameFile(req.Env)
-	passwordFile := getRootPasswordFile(req.Env)
+	usernameFile := getRootUsernameFile(req.Labels)
+	passwordFile := getRootPasswordFile(req.Labels)
 
 	// If username file or password file is specified, both must be provided.
 	if usernameFile != "" && passwordFile == "" || usernameFile == "" && passwordFile != "" {
 		return errors.New("if you specify username file or password file, you must provide both of them")
 	}
 
-	// Setting credentials both inline and using files will result in an panic
+	// Setting credentials both inline and using files will result in a panic
 	// from the container, so we short circuit here.
 	if (username != "" || password != "") && (usernameFile != "" || passwordFile != "") {
 		return errors.New("you cannot specify both inline credentials and files for credentials")
@@ -115,7 +132,7 @@ func (ctr *Container) ConnectionString(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	mappedPort, err := ctr.MappedPort(ctx, "27017")
+	mappedPort, err := ctr.MappedPort(ctx, "27017/tcp")
 	if err != nil {
 		return "", err
 	}
@@ -127,6 +144,15 @@ func (ctr *Container) ConnectionString(ctx context.Context) (string, error) {
 		RawQuery: "directConnection=true",
 	}
 
+	// If MONGODB_INITDB_DATABASE is set, use it as the default database in the
+	// connection string.
+	if ctr.database != "" {
+		uri.Path, err = url.JoinPath("/", ctr.database)
+		if err != nil {
+			return "", fmt.Errorf("join path: %w", err)
+		}
+	}
+
 	if ctr.username != "" && ctr.password != "" {
 		uri.User = url.UserPassword(ctr.username, ctr.password)
 	}
@@ -135,7 +161,7 @@ func (ctr *Container) ConnectionString(ctx context.Context) (string, error) {
 }
 
 // ReadMongotLogs returns a reader for mongot logs in the container. Reads from
-// stdout/stderr or the configured log file.
+// stdout/stderr or /tmp/mongot.log if configured.
 //
 // This method return the os.ErrNotExist sentinel error if it is called with
 // no log file configured.
@@ -153,6 +179,11 @@ func (ctr *Container) ReadMongotLogs(ctx context.Context) (io.ReadCloser, error)
 	}
 }
 
+// ReadRunnerLogs() returns a reader for runner logs in the container. Reads
+// from stdout/stderr or /tmp/runner.log if configured.
+//
+// This method return the os.ErrNotExist sentinel error if it is called with
+// no log file configured.
 func (ctr *Container) ReadRunnerLogs(ctx context.Context) (io.ReadCloser, error) {
 	path := ctr.runnerLogPath
 	if path == "" {
@@ -172,7 +203,7 @@ func (ctr *Container) ReadRunnerLogs(ctx context.Context) (io.ReadCloser, error)
 func WithUsername(username string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		if username != "" {
-			req.Env["MONGODB_INITDB_ROOT_USERNAME"] = username
+			req.Env[envMongoDBInitUsername] = username
 		}
 
 		return nil
@@ -184,7 +215,7 @@ func WithUsername(username string) testcontainers.CustomizeRequestOption {
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		if password != "" {
-			req.Env["MONGODB_INITDB_ROOT_PASSWORD"] = password
+			req.Env[envMongoDBInitPassword] = password
 		}
 
 		return nil
@@ -215,19 +246,14 @@ func WithUsernameFile(usernameFile string) testcontainers.CustomizeRequestOption
 			return fmt.Errorf("username file must be a file, got a directory: %s", usernameFile)
 		}
 
-		req.Env["MONGODB_INITDB_ROOT_USERNAME_FILE"] = usernameContainerPath
+		req.Env[envMongoDBInitUsernameFile] = usernameContainerPath
+		req.Labels[labelUsernameFile] = usernameFile
 
 		req.Files = append(req.Files, testcontainers.ContainerFile{
 			HostFilePath:      usernameFile,
 			ContainerFilePath: usernameContainerPath,
 			FileMode:          0444,
 		})
-
-		if b, err := os.ReadFile(usernameFile); err == nil {
-			req.Env["TC_ATLAS_LOCAL_MONGODB_INITDB_ROOT_USERNAME"] = strings.TrimSpace(string(b))
-		} else {
-			return fmt.Errorf("read username file: %w", err)
-		}
 
 		return nil
 	}
@@ -257,19 +283,14 @@ func WithPasswordFile(passwordFile string) testcontainers.CustomizeRequestOption
 			return fmt.Errorf("password file must be a file, got a directory: %s", passwordFile)
 		}
 
-		req.Env["MONGODB_INITDB_ROOT_PASSWORD_FILE"] = passwordContainerPath
+		req.Env[envMongoDBInitPasswordFile] = passwordContainerPath
+		req.Labels[labelPasswordFile] = passwordFile
 
 		req.Files = append(req.Files, testcontainers.ContainerFile{
 			HostFilePath:      passwordFile,
 			ContainerFilePath: passwordContainerPath,
 			FileMode:          0444,
 		})
-
-		if b, err := os.ReadFile(passwordFile); err == nil {
-			req.Env["TC_ATLAS_LOCAL_MONGODB_INITDB_ROOT_PASSWORD"] = strings.TrimSpace(string(b))
-		} else {
-			return fmt.Errorf("read password file: %w", err)
-		}
 
 		return nil
 	}
@@ -279,7 +300,7 @@ func WithPasswordFile(passwordFile string) testcontainers.CustomizeRequestOption
 // container by setting the DO_NOT_TRACK environment variable to 1.
 func WithNoTelemetry() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["DO_NOT_TRACK"] = "1"
+		req.Env[envDoNotTrack] = "1"
 
 		return nil
 	}
@@ -290,7 +311,7 @@ func WithNoTelemetry() testcontainers.CustomizeRequestOption {
 // instead of the default "test" database.
 func WithInitDatabase(database string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["MONGODB_INITDB_DATABASE"] = database
+		req.Env[envMongoDBInitDatabase] = database
 
 		return nil
 	}
@@ -367,7 +388,7 @@ func WithInitScripts(scriptsDir string) testcontainers.CustomizeRequestOption {
 // (*Container).ReadMongotLogs to read the logs locally.
 func WithMongotLogToStdout() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["MONGOT_LOG_FILE"] = "/dev/stdout"
+		req.Env[envMongotLogFile] = "/dev/stdout"
 
 		return nil
 	}
@@ -377,7 +398,7 @@ func WithMongotLogToStdout() testcontainers.CustomizeRequestOption {
 // (*Container).ReadMongotLogs to read the logs locally.
 func WithMongotLogToStderr() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["MONGOT_LOG_FILE"] = "/dev/stderr"
+		req.Env[envMongotLogFile] = "/dev/stderr"
 
 		return nil
 	}
@@ -387,7 +408,7 @@ func WithMongotLogToStderr() testcontainers.CustomizeRequestOption {
 // container. See (*Container).ReadMongotLogs to read the logs locally.
 func WithMongotLogFile() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["MONGOT_LOG_FILE"] = "/tmp/mongot.log"
+		req.Env[envMongotLogFile] = "/tmp/mongot.log"
 
 		return nil
 	}
@@ -397,7 +418,7 @@ func WithMongotLogFile() testcontainers.CustomizeRequestOption {
 // (*Container).ReadRunnerLogs to read the logs locally.
 func WithRunnerLogToStdout() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["RUNNER_LOG_FILE"] = "/dev/stdout"
+		req.Env[envRunnerLogFile] = "/dev/stdout"
 
 		return nil
 	}
@@ -407,7 +428,7 @@ func WithRunnerLogToStdout() testcontainers.CustomizeRequestOption {
 // (*Container).ReadRunnerLogs to read the logs locally.
 func WithRunnerLogToStderr() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["RUNNER_LOG_FILE"] = "/dev/stderr"
+		req.Env[envRunnerLogFile] = "/dev/stderr"
 
 		return nil
 	}
@@ -417,42 +438,38 @@ func WithRunnerLogToStderr() testcontainers.CustomizeRequestOption {
 // container. See (*Container).ReadRunnerLogs to read the logs locally.
 func WithRunnerLogFile() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["RUNNER_LOG_FILE"] = "/tmp/runner.log"
+		req.Env[envRunnerLogFile] = "/tmp/runner.log"
 
 		return nil
 	}
 }
 
 func getRootPassword(env map[string]string) string {
-	return env["MONGODB_INITDB_ROOT_PASSWORD"]
+	return env[envMongoDBInitPassword]
 }
 
 func getRootUsername(env map[string]string) string {
-	return env["MONGODB_INITDB_ROOT_USERNAME"]
+	return env[envMongoDBInitUsername]
 }
 
-func getRootUsernameFile(env map[string]string) string {
-	return env["MONGODB_INITDB_ROOT_USERNAME_FILE"]
+func getRootUsernameFile(labels map[string]string) string {
+	return labels[labelUsernameFile]
 }
 
-func getRootPasswordFile(env map[string]string) string {
-	return env["MONGODB_INITDB_ROOT_PASSWORD_FILE"]
+func getRootPasswordFile(labels map[string]string) string {
+	return labels[labelPasswordFile]
 }
 
 // parseUsername will try to parse the username from the environment by either
 // reading the MONGODB_INITDB_ROOT_USERNAME environment variable or from the
 // the file specified in the MONGODB_INITDB_ROOT_USERNAME_FILE environment
 // variable.
-func parseUsername(env map[string]string) (string, error) {
-	if username := env["TC_ATLAS_LOCAL_MONGODB_INITDB_ROOT_USERNAME"]; username != "" {
+func parseUsername(req testcontainers.GenericContainerRequest) (string, error) {
+	if username := getRootUsername(req.Env); username != "" {
 		return username, nil
 	}
 
-	if username := getRootUsername(env); username != "" {
-		return username, nil
-	}
-
-	if usernameFile := getRootUsernameFile(env); usernameFile != "" {
+	if usernameFile := getRootUsernameFile(req.Labels); usernameFile != "" {
 		r, err := os.ReadFile(usernameFile)
 		return strings.TrimSpace(string(r)), err
 	}
@@ -464,16 +481,12 @@ func parseUsername(env map[string]string) (string, error) {
 // reading the MONGODB_INITDB_ROOT_PASSWORD environment variable or from
 // the file specified in the MONGODB_INITDB_ROOT_PASSWORD_FILE environment
 // variable.
-func parsePassword(env map[string]string) (string, error) {
-	if password := env["TC_ATLAS_LOCAL_MONGODB_INITDB_ROOT_PASSWORD"]; password != "" {
+func parsePassword(req testcontainers.GenericContainerRequest) (string, error) {
+	if password := getRootPassword(req.Env); password != "" {
 		return password, nil
 	}
 
-	if password := getRootPassword(env); password != "" {
-		return password, nil
-	}
-
-	if passwordFile := getRootPasswordFile(env); passwordFile != "" {
+	if passwordFile := getRootPasswordFile(req.Labels); passwordFile != "" {
 		r, err := os.ReadFile(passwordFile)
 		return strings.TrimSpace(string(r)), err
 	}

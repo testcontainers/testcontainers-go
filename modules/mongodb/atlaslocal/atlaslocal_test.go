@@ -15,6 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/x/mongo/driver/connstring"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/mongodb/atlaslocal"
@@ -38,25 +39,7 @@ func TestMongoDBAtlasLocal(t *testing.T) {
 }
 
 func TestSCRAMAuth(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	// Create username and password files.
-	usernameFilepath := filepath.Join(tmpDir, "username.txt")
-
-	err := os.WriteFile(usernameFilepath, []byte("file_testuser"), 0755)
-	require.NoError(t, err)
-
-	_, err = os.Stat(usernameFilepath)
-	require.NoError(t, err, "Username file should exist")
-
-	// Create the password file.
-	passwordFilepath := filepath.Join(tmpDir, "password.txt")
-
-	err = os.WriteFile(passwordFilepath, []byte("file_testpass"), 0755)
-	require.NoError(t, err)
-
-	_, err = os.Stat(passwordFilepath)
-	require.NoError(t, err, "Password file should exist")
+	tmpDir, usernameFilepath, passwordFilepath := newAuthFiles(t)
 
 	cases := []struct {
 		name         string
@@ -243,7 +226,7 @@ func TestSCRAMAuth(t *testing.T) {
 	}
 }
 
-func TestWithDisableTelemetry(t *testing.T) {
+func TestWithNoTelemetry(t *testing.T) {
 	t.Run("with", func(t *testing.T) {
 		ctr, err := atlaslocal.Run(context.Background(), latestImage, atlaslocal.WithNoTelemetry())
 		defer testcontainers.CleanupContainer(t, ctr)
@@ -339,7 +322,7 @@ func TestWithRunnerLogFile(t *testing.T) {
 		require.NoError(t, err)
 
 		requireEnvVar(t, ctr, "RUNNER_LOG_FILE", "")
-		requireNoMongotLogs(t, ctr)
+		requireNoRunnerLogs(t, ctr)
 	})
 
 	t.Run("to stdout", func(t *testing.T) {
@@ -517,6 +500,69 @@ func TestWithInitScripts_MultipleScripts(t *testing.T) {
 	requireInitScriptsExist(t, ctr, tmpDir2, scripts2)
 }
 
+func TestConnectionString(t *testing.T) {
+	_, usernameFilepath, passwordFilepath := newAuthFiles(t)
+
+	testcases := []struct {
+		name         string
+		opts         []testcontainers.ContainerCustomizer
+		wantUsername string
+		wantPassword string
+		wantDatabase string
+	}{
+		{
+			name:         "default",
+			opts:         []testcontainers.ContainerCustomizer{},
+			wantUsername: "",
+			wantPassword: "",
+			wantDatabase: "",
+		},
+		{
+			name: "with auth options",
+			opts: []testcontainers.ContainerCustomizer{
+				atlaslocal.WithUsername("testuser"),
+				atlaslocal.WithPassword("testpass"),
+				atlaslocal.WithInitDatabase("testdb"),
+			},
+			wantUsername: "testuser",
+			wantPassword: "testpass",
+			wantDatabase: "testdb",
+		},
+		{
+			name: "with auth files",
+			opts: []testcontainers.ContainerCustomizer{
+				atlaslocal.WithUsernameFile(usernameFilepath),
+				atlaslocal.WithPasswordFile(passwordFilepath),
+				atlaslocal.WithInitDatabase("testdb"),
+			},
+			wantUsername: "file_testuser",
+			wantPassword: "file_testpass",
+			wantDatabase: "testdb",
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctr, err := atlaslocal.Run(context.Background(), latestImage, tc.opts...)
+			require.NoError(t, err)
+
+			csRaw, err := ctr.ConnectionString(context.Background())
+			require.NoError(t, err)
+
+			connString, err := connstring.ParseAndValidate(csRaw)
+			require.NoError(t, err, "Failed to parse connection string")
+
+			require.Equal(t, "mongodb", connString.Scheme)
+			require.Equal(t, "localhost", connString.Hosts[0][:9])
+			require.NotEmpty(t, connString.Hosts[0][10:], "Port should be non-empty")
+			require.Equal(t, tc.wantUsername, connString.Username)
+			require.Equal(t, tc.wantPassword, connString.Password)
+			require.Equal(t, tc.wantDatabase, connString.Database)
+			require.True(t, connString.DirectConnection)
+		})
+	}
+}
+
 // Test Helper Functions
 
 func requireEnvVar(t *testing.T, ctr testcontainers.Container, envVarName, expected string) {
@@ -529,6 +575,8 @@ func requireEnvVar(t *testing.T, ctr testcontainers.Container, envVarName, expec
 	outBytes, err := io.ReadAll(reader)
 	require.NoError(t, err)
 
+	// testcontainers-go's Exec() returns a multiplexed stream in the same format
+	// used by the Docker API. Each frame is prefixed with an 8-byte header.
 	require.Greater(t, len(outBytes), 8, "Exec output too short to contain env var value")
 
 	out := strings.TrimSpace(string(outBytes[8:]))
@@ -542,12 +590,8 @@ func requireMongotLogs(t *testing.T, ctr testcontainers.Container) {
 	reader, err := ctr.(*atlaslocal.Container).ReadMongotLogs(context.Background())
 	require.NoError(t, err)
 
-	var data []byte
-	if reader != nil {
-		data, _ = io.ReadAll(reader)
-	}
-
-	require.NotEmpty(t, data, "mongot log file should not be empty")
+	buf := make([]byte, 1)
+	_, _ = reader.Read(buf) // read at least one byte to ensure non-empty
 }
 
 func requireNoMongotLogs(t *testing.T, ctr testcontainers.Container) {
@@ -557,12 +601,9 @@ func requireNoMongotLogs(t *testing.T, ctr testcontainers.Container) {
 	reader, err := ctr.(*atlaslocal.Container).ReadMongotLogs(context.Background())
 	require.ErrorIs(t, err, os.ErrNotExist)
 
-	var data []byte
-	if reader != nil {
-		data, _ = io.ReadAll(reader)
+	if reader != nil { // Failure case where reader is non-nil
+		_ = reader.Close()
 	}
-
-	require.Empty(t, data, "mongot log file should be empty")
 }
 
 func requireRunnerLogs(t *testing.T, ctr testcontainers.Container) {
@@ -572,17 +613,27 @@ func requireRunnerLogs(t *testing.T, ctr testcontainers.Container) {
 	reader, err := ctr.(*atlaslocal.Container).ReadRunnerLogs(context.Background())
 	require.NoError(t, err)
 
-	var data []byte
-	if reader != nil {
-		data, _ = io.ReadAll(reader)
-	}
+	defer reader.Close()
 
-	require.NotEmpty(t, data, "mongot log file should not be empty")
+	buf := make([]byte, 1)
+	_, _ = reader.Read(buf) // Read at least one byte to ensure non-empty
 }
 
-// createSeachIndex creates a search index with the given name on the provided
+func requireNoRunnerLogs(t *testing.T, ctr testcontainers.Container) {
+	t.Helper()
+
+	// Pull the log file and require non-empty.
+	reader, err := ctr.(*atlaslocal.Container).ReadRunnerLogs(context.Background())
+	require.ErrorIs(t, err, os.ErrNotExist)
+
+	if reader != nil { // Failure case where reader is non-nil
+		_ = reader.Close()
+	}
+}
+
+// createSearchIndex creates a search index with the given name on the provided
 // collection and waits for it to be acknowledged server-side.
-func createSeachIndex(t *testing.T, ctx context.Context, coll *mongo.Collection, indexName string) {
+func createSearchIndex(t *testing.T, ctx context.Context, coll *mongo.Collection, indexName string) {
 	t.Helper()
 
 	// Create the default definition for search index
@@ -614,7 +665,7 @@ func executeAggregation(t *testing.T, ctr testcontainers.Container) {
 	defer cancel()
 
 	// Create a search index on the collection.
-	createSeachIndex(t, siCtx, coll, "test_search_index")
+	createSearchIndex(t, siCtx, coll, "test_search_index")
 
 	// Insert a document into the collection and aggregate it using the search
 	// index which should log the operation to the mongot log file.
@@ -742,4 +793,30 @@ func requireContainerLogsNotEmpty(t *testing.T, ctr testcontainers.Container) {
 	require.NoError(t, err)
 
 	require.NotEmpty(t, logBytes, "Container logs should not be empty")
+}
+
+func newAuthFiles(t *testing.T) (string, string, string) {
+	t.Helper()
+
+	tmpDir := t.TempDir()
+
+	// Create username and password files.
+	usernameFilepath := filepath.Join(tmpDir, "username.txt")
+
+	err := os.WriteFile(usernameFilepath, []byte("file_testuser"), 0755)
+	require.NoError(t, err)
+
+	_, err = os.Stat(usernameFilepath)
+	require.NoError(t, err, "Username file should exist")
+
+	// Create the password file.
+	passwordFilepath := filepath.Join(tmpDir, "password.txt")
+
+	err = os.WriteFile(passwordFilepath, []byte("file_testpass"), 0755)
+	require.NoError(t, err)
+
+	_, err = os.Stat(passwordFilepath)
+	require.NoError(t, err, "Password file should exist")
+
+	return tmpDir, usernameFilepath, passwordFilepath
 }

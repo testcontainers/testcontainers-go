@@ -125,3 +125,49 @@ func ExampleRun_readMongotLogs() {
 
 	// Output:
 }
+
+func ExampleRun_readRunnerLogs() {
+	// readRunnerLogs {
+	ctx := context.Background()
+
+	atlaslocalContainer, err := atlaslocal.Run(ctx, "mongodb/mongodb-atlas-local:latest",
+		atlaslocal.WithRunnerLogFile())
+
+	defer func() {
+		if err := testcontainers.TerminateContainer(atlaslocalContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
+
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
+
+	connString, err := atlaslocalContainer.ConnectionString(ctx)
+	if err != nil {
+		log.Printf("failed to get connection string: %s", err)
+		return
+	}
+
+	_, err = mongo.Connect(options.Client().ApplyURI(connString))
+	if err != nil {
+		log.Printf("failed to connect to MongoDB: %s", err)
+		return
+	}
+
+	reader, err := atlaslocalContainer.ReadRunnerLogs(ctx)
+	if err != nil {
+		log.Printf("failed to read runner logs: %s", err)
+		return
+	}
+	defer reader.Close()
+
+	if _, err := io.Copy(io.Discard, reader); err != nil {
+		log.Printf("failed to write runner logs: %s", err)
+		return
+	}
+	// }
+
+	// Output:
+}
