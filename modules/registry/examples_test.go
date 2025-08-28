@@ -181,33 +181,58 @@ func ExampleRun_pushImage() {
 		return
 	}
 
-	// pushingImage {
-	// repo is localhost:32878/customredis
-	// tag is v1.2.3
+	newImage := fmt.Sprintf("%s:%s", repo, tag)
 	err = registryContainer.PushImage(context.Background(), fmt.Sprintf("%s:%s", repo, tag))
 	if err != nil {
 		log.Printf("failed to push image: %s", err)
 		return
 	}
-	// }
 
-	newImage := fmt.Sprintf("%s:%s", repo, tag)
+	// pull a redis image from an public registry,
+	// tag it specifying the local registry name,
+	// and push to the private registry.
+
+	defaultRegistryURI := "docker.io/library"
+	defaultImage := "redis"
+	defaultTag := "5.0-alpine"
+
+	imageRef := fmt.Sprintf("%s/%s:%s", defaultRegistryURI, defaultImage, defaultTag)
+	err = registryContainer.PullImage(ctx, imageRef)
+	if err != nil {
+		log.Printf("failed to pull image: %s", err)
+		return
+	}
+
+	taggedImage := fmt.Sprintf("%s/%s:%s", registryContainer.RegistryName, defaultImage, defaultTag)
+	err = registryContainer.TagImage(ctx, imageRef, taggedImage)
+	if err != nil {
+		log.Printf("failed to tag image: %s", err)
+		return
+	}
+
+	err = registryContainer.PushImage(context.Background(), taggedImage)
+	if err != nil {
+		log.Printf("failed to push image: %s", err)
+		return
+	}
 
 	// now run a container from the new image
 	// But first remove the local image to avoid using the local one.
 
-	// deletingImage {
-	// newImage is customredis:v1.2.3
 	err = registryContainer.DeleteImage(context.Background(), newImage)
 	if err != nil {
 		log.Printf("failed to delete image: %s", err)
 		return
 	}
-	// }
+	err = registryContainer.DeleteImage(context.Background(), taggedImage)
+	if err != nil {
+		log.Printf("failed to delete image: %s", err)
+		return
+	}
 
 	newRedisC, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        newImage,
+			Image:        taggedImage,
 			ExposedPorts: []string{"6379/tcp"},
 			WaitingFor:   wait.ForLog("Ready to accept connections"),
 		},
@@ -219,13 +244,13 @@ func ExampleRun_pushImage() {
 		}
 	}()
 	if err != nil {
-		log.Printf("failed to start container from %s: %s", newImage, err)
+		log.Printf("failed to start container from %s: %s", taggedImage, err)
 		return
 	}
 
 	state, err := newRedisC.State(context.Background())
 	if err != nil {
-		log.Printf("failed to get redis container state from %s: %s", newImage, err)
+		log.Printf("failed to get redis container state from %s: %s", taggedImage, err)
 		return
 	}
 
