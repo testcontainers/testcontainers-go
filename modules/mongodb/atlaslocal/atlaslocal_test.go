@@ -264,19 +264,16 @@ func TestWithDisableTelemetry(t *testing.T) {
 }
 
 func TestWithMongotLogFile(t *testing.T) {
-	const mongotLogFile = "/tmp/mongot.log"
-
 	t.Run("with", func(t *testing.T) {
-		ctr, err := atlaslocal.Run(context.Background(), latestImage, atlaslocal.WithMongotLogFile(mongotLogFile))
+		ctr, err := atlaslocal.Run(context.Background(), latestImage, atlaslocal.WithMongotLogFile())
 		defer testcontainers.CleanupContainer(t, ctr)
 
 		require.NoError(t, err)
 
-		requireEnvVar(t, ctr, "MONGOT_LOG_FILE", mongotLogFile)
+		requireEnvVar(t, ctr, "MONGOT_LOG_FILE", "/tmp/mongot.log")
 
 		executeAggregation(t, ctr)
-
-		requireFile(t, ctr, mongotLogFile, false)
+		requireMongotLogs(t, ctr)
 	})
 
 	t.Run("without", func(t *testing.T) {
@@ -288,8 +285,37 @@ func TestWithMongotLogFile(t *testing.T) {
 		requireEnvVar(t, ctr, "MONGOT_LOG_FILE", "")
 
 		executeAggregation(t, ctr)
+		requireNoMongotLogs(t, ctr)
+	})
 
-		requireFile(t, ctr, mongotLogFile, true)
+	t.Run("to stdout", func(t *testing.T) {
+		ctr, err := atlaslocal.Run(context.Background(), latestImage,
+			atlaslocal.WithMongotLogToStdout())
+		defer testcontainers.CleanupContainer(t, ctr)
+
+		require.NoError(t, err)
+
+		requireEnvVar(t, ctr, "MONGOT_LOG_FILE", "/dev/stdout")
+
+		executeAggregation(t, ctr)
+
+		requireMongotLogs(t, ctr)
+		requireContainerLogsNotEmpty(t, ctr)
+	})
+
+	t.Run("to stderr", func(t *testing.T) {
+		ctr, err := atlaslocal.Run(context.Background(), latestImage,
+			atlaslocal.WithMongotLogToStderr())
+		defer testcontainers.CleanupContainer(t, ctr)
+
+		require.NoError(t, err)
+
+		requireEnvVar(t, ctr, "MONGOT_LOG_FILE", "/dev/stderr")
+
+		executeAggregation(t, ctr)
+
+		requireMongotLogs(t, ctr)
+		requireContainerLogsNotEmpty(t, ctr)
 	})
 }
 
@@ -297,13 +323,13 @@ func TestWithRunnerLogFile(t *testing.T) {
 	const runnerLogFile = "/tmp/runner.log"
 
 	t.Run("with", func(t *testing.T) {
-		ctr, err := atlaslocal.Run(context.Background(), latestImage, atlaslocal.WithRunnerLogFile(runnerLogFile))
+		ctr, err := atlaslocal.Run(context.Background(), latestImage, atlaslocal.WithRunnerLogFile())
 		defer testcontainers.CleanupContainer(t, ctr)
 
 		require.NoError(t, err)
 
 		requireEnvVar(t, ctr, "RUNNER_LOG_FILE", runnerLogFile)
-		requireFile(t, ctr, runnerLogFile, false)
+		requireRunnerLogs(t, ctr)
 	})
 
 	t.Run("without", func(t *testing.T) {
@@ -313,7 +339,37 @@ func TestWithRunnerLogFile(t *testing.T) {
 		require.NoError(t, err)
 
 		requireEnvVar(t, ctr, "RUNNER_LOG_FILE", "")
-		requireFile(t, ctr, runnerLogFile, true)
+		requireNoMongotLogs(t, ctr)
+	})
+
+	t.Run("to stdout", func(t *testing.T) {
+		ctr, err := atlaslocal.Run(context.Background(), latestImage,
+			atlaslocal.WithRunnerLogToStdout())
+		defer testcontainers.CleanupContainer(t, ctr)
+
+		require.NoError(t, err)
+
+		requireEnvVar(t, ctr, "RUNNER_LOG_FILE", "/dev/stdout")
+
+		executeAggregation(t, ctr)
+
+		requireRunnerLogs(t, ctr)
+		requireContainerLogsNotEmpty(t, ctr)
+	})
+
+	t.Run("to stderr", func(t *testing.T) {
+		ctr, err := atlaslocal.Run(context.Background(), latestImage,
+			atlaslocal.WithRunnerLogToStderr())
+		defer testcontainers.CleanupContainer(t, ctr)
+
+		require.NoError(t, err)
+
+		requireEnvVar(t, ctr, "RUNNER_LOG_FILE", "/dev/stderr")
+
+		executeAggregation(t, ctr)
+
+		requireRunnerLogs(t, ctr)
+		requireContainerLogsNotEmpty(t, ctr)
 	})
 }
 
@@ -479,27 +535,49 @@ func requireEnvVar(t *testing.T, ctr testcontainers.Container, envVarName, expec
 	require.Equal(t, expected, out, "DO_NOT_TRACK env var value mismatch")
 }
 
-func requireFile(t *testing.T, ctr testcontainers.Container, filename string, empty bool) {
+func requireMongotLogs(t *testing.T, ctr testcontainers.Container) {
 	t.Helper()
 
 	// Pull the log file and require non-empty.
-	reader, err := ctr.CopyFileFromContainer(context.Background(), filename)
-	if empty {
-		require.Error(t, err)
-	} else {
-		require.NoError(t, err)
-	}
+	reader, err := ctr.(*atlaslocal.Container).ReadMongotLogs(context.Background())
+	require.NoError(t, err)
 
 	var data []byte
 	if reader != nil {
 		data, _ = io.ReadAll(reader)
 	}
 
-	if empty {
-		require.Empty(t, data, "mongot log file should be empty")
-	} else {
-		require.NotEmpty(t, data, "mongot log file should not be empty")
+	require.NotEmpty(t, data, "mongot log file should not be empty")
+}
+
+func requireNoMongotLogs(t *testing.T, ctr testcontainers.Container) {
+	t.Helper()
+
+	// Pull the log file and require non-empty.
+	reader, err := ctr.(*atlaslocal.Container).ReadMongotLogs(context.Background())
+	require.ErrorIs(t, err, os.ErrNotExist)
+
+	var data []byte
+	if reader != nil {
+		data, _ = io.ReadAll(reader)
 	}
+
+	require.Empty(t, data, "mongot log file should be empty")
+}
+
+func requireRunnerLogs(t *testing.T, ctr testcontainers.Container) {
+	t.Helper()
+
+	// Pull the log file and require non-empty.
+	reader, err := ctr.(*atlaslocal.Container).ReadRunnerLogs(context.Background())
+	require.NoError(t, err)
+
+	var data []byte
+	if reader != nil {
+		data, _ = io.ReadAll(reader)
+	}
+
+	require.NotEmpty(t, data, "mongot log file should not be empty")
 }
 
 // createSeachIndex creates a search index with the given name on the provided
@@ -650,4 +728,18 @@ func requireInitScriptsDoesNotExist(t *testing.T, ctr testcontainers.Container, 
 		content, _ := io.ReadAll(reader)
 		require.NotContains(t, string(content), filename)
 	}
+}
+
+func requireContainerLogsNotEmpty(t *testing.T, ctr testcontainers.Container) {
+	t.Helper()
+
+	logs, err := ctr.Logs(context.Background())
+	require.NoError(t, err)
+
+	defer logs.Close()
+
+	logBytes, err := io.ReadAll(logs)
+	require.NoError(t, err)
+
+	require.NotEmpty(t, logBytes, "Container logs should not be empty")
 }

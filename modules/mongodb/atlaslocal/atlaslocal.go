@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/url"
 	"os"
@@ -14,11 +15,18 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+const (
+	passwordContainerPath = "/run/secrets/mongo-root-password"
+	usernameContainerPath = "/run/secrets/mongo-root-username"
+)
+
 // Container represents the MongoDBAtlasLocal container type used in the module
 type Container struct {
 	testcontainers.Container
-	username string
-	password string
+	username      string
+	password      string
+	mongotLogPath string
+	runnerLogPath string
 }
 
 // Run creates an instance of the MongoDBAtlasLocal container type
@@ -56,7 +64,13 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		username, _ := parseUsername(genericContainerReq.Env)
 		password, _ := parsePassword(genericContainerReq.Env)
 
-		c = &Container{Container: container, username: username, password: password}
+		c = &Container{
+			Container:     container,
+			username:      username,
+			password:      password,
+			mongotLogPath: genericContainerReq.Env["MONGOT_LOG_FILE"],
+			runnerLogPath: genericContainerReq.Env["RUNNER_LOG_FILE"],
+		}
 	}
 
 	if err != nil {
@@ -120,6 +134,39 @@ func (ctr *Container) ConnectionString(ctx context.Context) (string, error) {
 	return uri.String(), nil
 }
 
+// ReadMongotLogs returns a reader for mongot logs in the container. Reads from
+// stdout/stderr or the configured log file.
+//
+// This method return the os.ErrNotExist sentinel error if it is called with
+// no log file configured.
+func (ctr *Container) ReadMongotLogs(ctx context.Context) (io.ReadCloser, error) {
+	path := ctr.mongotLogPath
+	if path == "" {
+		return nil, os.ErrNotExist
+	}
+
+	switch ctr.mongotLogPath {
+	case "/dev/stdout", "/dev/stderr":
+		return ctr.Logs(ctx)
+	default:
+		return ctr.CopyFileFromContainer(ctx, ctr.mongotLogPath)
+	}
+}
+
+func (ctr *Container) ReadRunnerLogs(ctx context.Context) (io.ReadCloser, error) {
+	path := ctr.runnerLogPath
+	if path == "" {
+		return nil, os.ErrNotExist
+	}
+
+	switch ctr.runnerLogPath {
+	case "/dev/stdout", "/dev/stderr":
+		return ctr.Logs(ctx)
+	default:
+		return ctr.CopyFileFromContainer(ctx, ctr.runnerLogPath)
+	}
+}
+
 // WithUsername sets the MongoDB root username by setting the
 // MONGODB_INITDB_ROOT_USERNAME environment variable.
 func WithUsername(username string) testcontainers.CustomizeRequestOption {
@@ -144,10 +191,9 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithUsernameFile sets the file path to source the MongoDB root username by
-// setting the MONGODB_INITDB_ROOT_USERNAME_FILE environment variable. This
-// function mounts the local file into the container at
-// /run/secrets/mongo-root-username.
+// WithUsernameFile mounts a local file as the MongoDB root username secret at
+// /run/secrets/mongo-root-username and sets MONGODB_INITDB_ROOT_USERNAME_FILE.
+// The path must be absolute and exist; no-op if empty.
 func WithUsernameFile(usernameFile string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		if usernameFile == "" {
@@ -169,12 +215,11 @@ func WithUsernameFile(usernameFile string) testcontainers.CustomizeRequestOption
 			return fmt.Errorf("username file must be a file, got a directory: %s", usernameFile)
 		}
 
-		const containerPath = "/run/secrets/mongo-root-username"
-		req.Env["MONGODB_INITDB_ROOT_USERNAME_FILE"] = containerPath
+		req.Env["MONGODB_INITDB_ROOT_USERNAME_FILE"] = usernameContainerPath
 
 		req.Files = append(req.Files, testcontainers.ContainerFile{
 			HostFilePath:      usernameFile,
-			ContainerFilePath: containerPath,
+			ContainerFilePath: usernameContainerPath,
 			FileMode:          0444,
 		})
 
@@ -188,10 +233,9 @@ func WithUsernameFile(usernameFile string) testcontainers.CustomizeRequestOption
 	}
 }
 
-// WithPasswordFile sets the file path to source the MongoDB root password by
-// setting the MONGODB_INITDB_ROOT_PASSWORD_FILE environment variable. This
-// function mounts the local file into the container at
-// /run/secrets/mongo-root-password.
+// WithPasswordFile mounts a local file as the MongoDB root password secret at
+// /run/secrets/mongo-root-password and sets MONGODB_INITDB_ROOT_PASSWORD_FILE.
+// Path must be absolute and an existing file; no-op if empty.
 func WithPasswordFile(passwordFile string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		if passwordFile == "" {
@@ -213,12 +257,11 @@ func WithPasswordFile(passwordFile string) testcontainers.CustomizeRequestOption
 			return fmt.Errorf("password file must be a file, got a directory: %s", passwordFile)
 		}
 
-		const containerPath = "/run/secrets/mongo-root-password"
-		req.Env["MONGODB_INITDB_ROOT_PASSWORD_FILE"] = containerPath
+		req.Env["MONGODB_INITDB_ROOT_PASSWORD_FILE"] = passwordContainerPath
 
 		req.Files = append(req.Files, testcontainers.ContainerFile{
 			HostFilePath:      passwordFile,
-			ContainerFilePath: containerPath,
+			ContainerFilePath: passwordContainerPath,
 			FileMode:          0444,
 		})
 
@@ -320,23 +363,61 @@ func WithInitScripts(scriptsDir string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithMongotLogFile sets the path to the file where you want to store the logs
-// of Atlas Search (mongot) by setting the MONGOT_LOG_FILE environment variable.
-// Note that this can be set to /dev/stdout or /dev/stderr for convenience.
-func WithMongotLogFile(logFile string) testcontainers.CustomizeRequestOption {
+// WithMongotLogStdout writes to /dev/stdout inside the container. See
+// (*Container).ReadMongotLogs to read the logs locally.
+func WithMongotLogToStdout() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["MONGOT_LOG_FILE"] = logFile
+		req.Env["MONGOT_LOG_FILE"] = "/dev/stdout"
 
 		return nil
 	}
 }
 
-// WithRunnerLogFile sets the path to the file where you want to store the logs
-// of "runner" but setting RUNNER_LOG_FILE environment variable. Note that this
-// can be set to /dev/stdout or /dev/stderr for convenience.
-func WithRunnerLogFile(logFile string) testcontainers.CustomizeRequestOption {
+// WithMongotLogToStderr writes to /dev/stderr inside the container. See
+// (*Container).ReadMongotLogs to read the logs locally.
+func WithMongotLogToStderr() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["RUNNER_LOG_FILE"] = logFile
+		req.Env["MONGOT_LOG_FILE"] = "/dev/stderr"
+
+		return nil
+	}
+}
+
+// WithMongotLogFile writes the mongot logs to /tmp/mongot.log inside the
+// container. See (*Container).ReadMongotLogs to read the logs locally.
+func WithMongotLogFile() testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		req.Env["MONGOT_LOG_FILE"] = "/tmp/mongot.log"
+
+		return nil
+	}
+}
+
+// WithRunnerLogToStdout writes to /dev/stdout inside the container. See
+// (*Container).ReadRunnerLogs to read the logs locally.
+func WithRunnerLogToStdout() testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		req.Env["RUNNER_LOG_FILE"] = "/dev/stdout"
+
+		return nil
+	}
+}
+
+// WithRunnerLogToStderr writes to /dev/stderr inside the container. See
+// (*Container).ReadRunnerLogs to read the logs locally.
+func WithRunnerLogToStderr() testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		req.Env["RUNNER_LOG_FILE"] = "/dev/stderr"
+
+		return nil
+	}
+}
+
+// WithRunnerLogFile writes the runner logs to /tmp/runner.log inside the
+// container. See (*Container).ReadRunnerLogs to read the logs locally.
+func WithRunnerLogFile() testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		req.Env["RUNNER_LOG_FILE"] = "/tmp/runner.log"
 
 		return nil
 	}

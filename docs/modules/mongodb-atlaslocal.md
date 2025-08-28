@@ -71,15 +71,16 @@ result in an error.
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-This functional option mounts a file at the given path and sets the `MONGODB_INITDB_ROOT_USERNAME_FILE` environment
-variable. You cannot mix this option with `WithUsername`, as it will result in an error.
+This functional option mounts a local file as the MongoDB root username secret at`/run/secrets/mongo-root-username`
+and sets the `MONGODB_INITDB_ROOT_USERNAME_FILE` environment variable. The path must be absolute and exist; no-op if
+empty.
 
 #### WithPasswordFile
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-This functional option mounts a file at the given path and sets the `MONGODB_INITDB_ROOT_PASSWORD_FILE` environment
-variable. You cannot mix this option with `WithPassword`, as it will result in an error.
+This functional option mounts a local file as the MongoDB root password secret at `/run/secrets/mongo-root-password` and
+sets the `MONGODB_INITDB_ROOT_PASSWORD_FILE` environment variable. The path must be absolute and exist; no-op if empty.
 
 #### WithNoTelemetry
 
@@ -106,15 +107,43 @@ multiple times mounts only the latest directory.
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-This functional option mounts a file at the given path and sets the `MONGOT_LOG_FILE` environment variable to capture
-Atlas Search logs.
+This functional option writes the mongot logs to `/tmp/mongot.log` inside the container. See
+`(*Container).ReadMongotLogs` to read the logs locally.
+
+#### WithMongotLogToStdout
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This functional option writes the mongot logs to `/dev/stdout` inside the container. See
+`(*Container).ReadMongotLogs` to read the logs locally.
+
+#### WithMongotLogToStderr
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This functional option writes the mongot logs to `/dev/stderr` inside the container. See
+`(*Container).ReadMongotLogs` to read the logs locally.
 
 #### WithRunnerLogFile
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-This functional option mounts a file at the given path and sets the `RUNNER_LOG_FILE` environment variable to capture
-runner process logs.
+This functional option writes the runner logs to `/tmp/runner.log` inside the container. See
+`(*Container).ReadRunnerLogs` to read the logs locally.
+
+#### WithRunnerLogToStdout
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This functional option writes the runner logs to `/dev/stdout` inside the container. See
+`(*Container).ReadRunnerLogs` to read the logs locally.
+
+#### WithRunnerLogToStderr
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This functional option writes the runner logs to `/dev/stderr` inside the container. See
+`(*Container).ReadRunnerLogs` to read the logs locally.
 
 {% include "../features/common_functional_options_list.md" %}
 
@@ -132,7 +161,17 @@ It returns a string with the format `mongodb://<host>:<port>/?directConnection=t
 
 It can be used to configure a MongoDB client (`go.mongodb.org/mongo-driver/v2/mongo`), e.g.:
 
-
 <!--codeinclude-->
 [Using ConnectionString with the MongoDB client](../../modules/mongodb/atlaslocal/examples_test.go) inside_block:connectToMongo
+<!--/codeinclude-->
+
+#### ReadMongotLogs
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The `ReadMongotLogs` returns a reader for the log solution specified when constructing the container.
+
+
+<!--codeinclude-->
+[Using ConnectionString with the MongoDB client](../../modules/mongodb/atlaslocal/examples_test.go) inside_block:readMongotLogs
 <!--/codeinclude-->
