@@ -22,10 +22,6 @@
             "path": "../modules/artemis"
         },
         {
-            "name": "module / atlaslocal",
-            "path": "../modules/atlaslocal"
-        },
-        {
             "name": "module / azure",
             "path": "../modules/azure"
         },

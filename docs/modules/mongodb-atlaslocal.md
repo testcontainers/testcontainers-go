@@ -157,7 +157,7 @@ The MongoDB Atlas Local container exposes the following methods:
 - Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 The `ConnectionString` method returns the connection string to connect to the MongoDB Atlas Local container.
-It returns a string with the format `mongodb://<host>:<port>/?directConnection=true`.
+It returns a string with the format `mongodb://<host>:<port>[/<db>]/?directConnection=true[&authSource=admin]`.
 
 It can be used to configure a MongoDB client (`go.mongodb.org/mongo-driver/v2/mongo`), e.g.:
 
