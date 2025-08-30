@@ -42,6 +42,7 @@ updates:
         - /modules/k3s
         - /modules/k6
         - /modules/kafka
+        - /modules/kafka_native
         - /modules/localstack
         - /modules/mariadb
         - /modules/meilisearch
