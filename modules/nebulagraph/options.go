@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/testcontainers/testcontainers-go/network"
+	"net/http"
 	"time"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -35,7 +36,7 @@ const (
 	storagedPortHTTP = "19779"
 )
 
-func defaultGrapdContainerCustomizers(nw *testcontainers.DockerNetwork) []testcontainers.ContainerCustomizer {
+func defaultGraphdContainerCustomizers(nw *testcontainers.DockerNetwork) []testcontainers.ContainerCustomizer {
 	customizers := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts(graphdPort+"/tcp", graphdPortHTTP+"/tcp"),
 		testcontainers.WithCmdArgs([]string{
@@ -50,7 +51,12 @@ func defaultGrapdContainerCustomizers(nw *testcontainers.DockerNetwork) []testco
 			"--minloglevel=0",
 		}...),
 		testcontainers.WithEnv(map[string]string{"USER": user}),
-		testcontainers.WithWaitStrategy(wait.ForHTTP("/status").WithPort(graphdPortHTTP + "/tcp").WithStartupTimeout(2 * time.Minute)),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/status").WithPort(graphdPortHTTP + "/tcp").
+			WithStatusCodeMatcher(
+				func(status int) bool {
+					return status == http.StatusOK
+				},
+			)),
 		network.WithNetwork([]string{graphdNetworkAlias}, nw),
 	}
 	return customizers
@@ -72,7 +78,12 @@ func defaultMetadContainerCustomizers(nw *testcontainers.DockerNetwork) []testco
 			"--minloglevel=0",
 		}...),
 		testcontainers.WithEnv(map[string]string{"USER": user}),
-		testcontainers.WithWaitStrategy(wait.ForHTTP("/status").WithPort(metadPortHTTP + "/tcp").WithStartupTimeout(2 * time.Minute)),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/status").WithPort(metadPortHTTP + "/tcp").
+			WithStatusCodeMatcher(
+				func(status int) bool {
+					return status == http.StatusOK
+				},
+			)),
 		network.WithNetwork([]string{metadNetworkAlias}, nw),
 	}
 	return customizers
@@ -114,6 +125,9 @@ func defaultActivatorContainerCustomizers(nw *testcontainers.DockerNetwork) []te
 			"USER":            user,
 			"ACTIVATOR_RETRY": "30",
 		}),
+		testcontainers.WithWaitStrategy(
+			wait.ForLog(fmt.Sprintf(`✔️ Storage activated`)).WithStartupTimeout(60 * time.Second),
+		),
 		network.WithNetwork([]string{}, nw),
 	}
 	return customizers

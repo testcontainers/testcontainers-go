@@ -68,7 +68,7 @@ func TestNebulaGraphContainer(t *testing.T) {
 	)
 
 	// Test client connection and basic queries
-	t.Run("basic operations", func(t *testing.T) {
+	t.Run("basic-operations", func(t *testing.T) {
 		// Get a client from the pool
 		clientObj, err := nebulaClientPool.BorrowObject(ctx)
 		require.NoError(t, err)

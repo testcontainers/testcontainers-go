@@ -31,14 +31,13 @@ func RunCluster(ctx context.Context,
     graphdImg string, graphdCustomizers []testcontainers.ContainerCustomizer,
     storagedImg string, storagedCustomizers []testcontainers.ContainerCustomizer,
     metadImg string, metadCustomizers []testcontainers.ContainerCustomizer,
-) (*NebulaGraphCluster, error)
+) (*Cluster, error)
 ```
 
-This function creates a complete NebulaGraph cluster with customizable settings. It returns a `NebulaGraphCluster` struct that contains references to all four components:
+This function creates a complete NebulaGraph cluster with customizable settings. It returns a `Cluster` struct that contains references to all four components:
 - Meta Service (metad)
 - Storage Service (storaged)
 - Graph Service (graphd)
-- Storage Activator (for registering storage with meta service)
 
 ### Container Options
 
@@ -53,12 +52,12 @@ The module supports customization for each service container (Meta, Storage, Gra
 
 ### Container Methods
 
-The `NebulaGraphCluster` struct provides the following methods:
+The `Cluster` struct provides the following methods:
 
 #### ConnectionString
 
 ```golang
-func (c *NebulaGraphCluster) ConnectionString(ctx context.Context) (string, error)
+func (c *Cluster) ConnectionString(ctx context.Context) (string, error)
 ```
 
 Returns the host:port string for connecting to the NebulaGraph graph service (graphd).
@@ -66,7 +65,7 @@ Returns the host:port string for connecting to the NebulaGraph graph service (gr
 #### Terminate
 
 ```golang
-func (c *NebulaGraphCluster) Terminate(ctx context.Context) error
+func (c *Cluster) Terminate(ctx context.Context) error
 ```
 
 Stops and removes all containers in the NebulaGraph cluster (Meta, Storage, Graph, and Activator services) and cleans up the associated Docker network.

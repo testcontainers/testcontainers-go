@@ -4,27 +4,24 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/network"
 )
 
-// NebulaGraphCluster represents a running NebulaGraph cluster for testing
-type NebulaGraphCluster struct {
-	Graphd    testcontainers.Container
-	Metad     testcontainers.Container
-	Storaged  testcontainers.Container
-	Activator testcontainers.Container
-	Network   *testcontainers.DockerNetwork
+// Cluster represents a running NebulaGraph cluster for testing
+type Cluster struct {
+	graphd   testcontainers.Container
+	metad    testcontainers.Container
+	storaged testcontainers.Container
+	network  *testcontainers.DockerNetwork
 }
 
-// RunCluster Run starts NebulaGraphCluster (metad, storaged, graphd) containers within Docker network
+// RunCluster Run starts Cluster (metad, storaged, graphd) containers within Docker network
 func RunCluster(ctx context.Context,
 	graphdImg string, graphdCustomizers []testcontainers.ContainerCustomizer,
 	storagedImg string, storagedCustomizers []testcontainers.ContainerCustomizer,
 	metadImg string, metadCustomizers []testcontainers.ContainerCustomizer,
-) (*NebulaGraphCluster, error) {
+) (*Cluster, error) {
 	// 1. Create a custom network
 	netRes, err := network.New(ctx)
 	if err != nil {
@@ -42,7 +39,7 @@ func RunCluster(ctx context.Context,
 	}
 
 	// 3. Start graphd (needed for storage registration)
-	aggGraphdCustomizers := append(defaultGrapdContainerCustomizers(netRes), graphdCustomizers...)
+	aggGraphdCustomizers := append(defaultGraphdContainerCustomizers(netRes), graphdCustomizers...)
 	graphd, err := testcontainers.Run(ctx, graphdImg, aggGraphdCustomizers...)
 	if err != nil {
 		errs := []error{fmt.Errorf("failed to start graphd: %w", err)}
@@ -71,25 +68,29 @@ func RunCluster(ctx context.Context,
 		return nil, errors.Join(aggErrs...)
 	}
 
-	// Give meta service a moment to process the registration
-	time.Sleep(10 * time.Second)
+	activatorState, err := activator.State(ctx)
+	if !activatorState.Running && activatorState.ExitCode != 0 {
+		errs := []error{fmt.Errorf("activator container exited with code %d", activatorState.ExitCode)}
+		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes, storaged, graphd, metad)
+		aggErrs := append(errs, errs2...)
+		return nil, errors.Join(aggErrs...)
+	}
 
-	return &NebulaGraphCluster{
-		Graphd:    graphd,
-		Metad:     metad,
-		Storaged:  storaged,
-		Activator: activator,
-		Network:   netRes,
+	return &Cluster{
+		graphd:   graphd,
+		metad:    metad,
+		storaged: storaged,
+		network:  netRes,
 	}, nil
 }
 
 // ConnectionString returns the host:port for connecting to NebulaGraph graphd
-func (c *NebulaGraphCluster) ConnectionString(ctx context.Context) (string, error) {
-	host, err := c.Graphd.Host(ctx)
+func (c *Cluster) ConnectionString(ctx context.Context) (string, error) {
+	host, err := c.graphd.Host(ctx)
 	if err != nil {
 		return "", err
 	}
-	port, err := c.Graphd.MappedPort(ctx, graphdPort)
+	port, err := c.graphd.MappedPort(ctx, graphdPort)
 	if err != nil {
 		return "", err
 	}
@@ -97,8 +98,8 @@ func (c *NebulaGraphCluster) ConnectionString(ctx context.Context) (string, erro
 }
 
 // Terminate stops all NebulaGraph containers
-func (c *NebulaGraphCluster) Terminate(ctx context.Context) error {
-	errs := terminateContainersAndRemoveNetwork(ctx, c.Network, c.Graphd, c.Metad, c.Storaged, c.Activator)
+func (c *Cluster) Terminate(ctx context.Context) error {
+	errs := terminateContainersAndRemoveNetwork(ctx, c.network, c.graphd, c.metad, c.storaged)
 	if len(errs) > 0 {
 		return errors.Join(errs...)
 	}
