@@ -181,12 +181,16 @@ func ExampleRun_pushImage() {
 		return
 	}
 
+	// pushingImage {
+	// repo is localhost:32878/customredis
+	// tag is v1.2.3
 	newImage := fmt.Sprintf("%s:%s", repo, tag)
 	err = registryContainer.PushImage(context.Background(), fmt.Sprintf("%s:%s", repo, tag))
 	if err != nil {
 		log.Printf("failed to push image: %s", err)
 		return
 	}
+	// }
 
 	// pull a redis image from an public registry,
 	// tag it specifying the local registry name,
@@ -196,19 +200,29 @@ func ExampleRun_pushImage() {
 	defaultImage := "redis"
 	defaultTag := "5.0-alpine"
 
+	// pullingImage {
+	// defaultRegistryURI is localhost:32878
+	// defaultImage is customredis
+	// defaulTag is v1.2.3
 	imageRef := fmt.Sprintf("%s/%s:%s", defaultRegistryURI, defaultImage, defaultTag)
 	err = registryContainer.PullImage(ctx, imageRef)
 	if err != nil {
 		log.Printf("failed to pull image: %s", err)
 		return
 	}
+	// }
 
+	// taggingImage {
+	// defaultRegistryURI is localhost:32878
+	// defaultImage is customredis
+	// defaulTag is v1.2.3
 	taggedImage := fmt.Sprintf("%s/%s:%s", registryContainer.RegistryName, defaultImage, defaultTag)
 	err = registryContainer.TagImage(ctx, imageRef, taggedImage)
 	if err != nil {
 		log.Printf("failed to tag image: %s", err)
 		return
 	}
+	// }
 
 	err = registryContainer.PushImage(context.Background(), taggedImage)
 	if err != nil {
@@ -219,11 +233,14 @@ func ExampleRun_pushImage() {
 	// now run a container from the new image
 	// But first remove the local image to avoid using the local one.
 
+	// deletingImage {
+	// newImage is customredis:v1.2.3
 	err = registryContainer.DeleteImage(context.Background(), newImage)
 	if err != nil {
 		log.Printf("failed to delete image: %s", err)
 		return
 	}
+	// }
 	err = registryContainer.DeleteImage(context.Background(), taggedImage)
 	if err != nil {
 		log.Printf("failed to delete image: %s", err)
