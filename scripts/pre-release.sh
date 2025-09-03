@@ -76,7 +76,7 @@ function bumpVersion() {
   RELEASED_STRING="Since <a href=\\\"https:\/\/github.com\/testcontainers\/testcontainers-go\/releases\/tag\/v${versionEscapingDots}\\\"><span class=\\\"tc-version\\\">:material-tag: v${versionEscapingDots}<\/span><\/a>"
 
   # find all markdown files, and for each of them, replace the release string
-  find . -name "*.md" | while read -r module_file; do
+  find . -name "*.md" -not -name "contributing.md" | while read -r module_file; do
     if [[ "${DRY_RUN}" == "true" ]]; then
       echo "sed \"s/${NON_RELEASED_STRING}/${RELEASED_STRING}/g\" ${module_file} > ${module_file}.tmp"
       echo "mv ${module_file}.tmp ${module_file}"
