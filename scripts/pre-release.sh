@@ -52,8 +52,16 @@ function bumpVersion() {
       if [[ "${DRY_RUN}" == "true" ]]; then
         echo "sed \"s/testcontainers-go v.*/testcontainers-go v${versionToBumpWithoutV}/g\" ${module_mod_file} > ${module_mod_file}.tmp"
         echo "mv ${module_mod_file}.tmp ${module_mod_file}"
+
+        # Log inter-module dependencies
+        echo "sed \"s/github\.com\/testcontainers\/testcontainers-go\/modules\/\([a-zA-Z0-9_-]*\) v.*/github.com\/testcontainers\/testcontainers-go\/modules\/\1 v${versionToBumpWithoutV}/g\" ${module_mod_file} > ${module_mod_file}.tmp"
+        echo "mv ${module_mod_file}.tmp ${module_mod_file}"
       else
         sed "s/testcontainers-go v.*/testcontainers-go v${versionToBumpWithoutV}/g" ${module_mod_file} > ${module_mod_file}.tmp
+        mv ${module_mod_file}.tmp ${module_mod_file}
+
+        # Update inter-module dependencies
+        sed "s/github\.com\/testcontainers\/testcontainers-go\/modules\/\([a-zA-Z0-9_-]*\) v.*/github.com\/testcontainers\/testcontainers-go\/modules\/\1 v${versionToBumpWithoutV}/g" ${module_mod_file} > ${module_mod_file}.tmp
         mv ${module_mod_file}.tmp ${module_mod_file}
       fi
     done
