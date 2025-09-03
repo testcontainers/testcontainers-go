@@ -72,7 +72,7 @@ func RunCluster(ctx context.Context,
 	activatorState, err := activator.State(ctx)
 	if err != nil {
 		errs := []error{fmt.Errorf("get activator container state: %w", err)}
-		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes, storaged, graphd, metad)
+		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes, storaged, graphd, metad, activator)
 		errs = append(errs, errs2...)
 		return nil, errors.Join(errs...)
 	}
