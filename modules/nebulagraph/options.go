@@ -3,11 +3,11 @@ package nebulagraph
 import (
 	_ "embed"
 	"fmt"
-	"github.com/testcontainers/testcontainers-go/network"
 	"net/http"
 	"time"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -126,7 +126,7 @@ func defaultActivatorContainerCustomizers(nw *testcontainers.DockerNetwork) []te
 			"ACTIVATOR_RETRY": "30",
 		}),
 		testcontainers.WithWaitStrategy(
-			wait.ForLog(fmt.Sprintf(`✔️ Storage activated`)).WithStartupTimeout(60 * time.Second),
+			wait.ForLog(`✔️ Storage activated`).WithStartupTimeout(60 * time.Second),
 		),
 		network.WithNetwork([]string{}, nw),
 	}

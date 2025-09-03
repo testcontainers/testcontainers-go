@@ -2,7 +2,6 @@ package nebulagraph_test
 
 import (
 	"context"
-	"github.com/testcontainers/testcontainers-go"
 	"net"
 	"strconv"
 	"testing"
@@ -13,6 +12,7 @@ import (
 	"github.com/nebula-contrib/nebula-sirius/nebula"
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/nebulagraph"
 )
 
