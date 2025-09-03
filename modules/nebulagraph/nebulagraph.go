@@ -17,7 +17,7 @@ type Cluster struct {
 	network  *testcontainers.DockerNetwork
 }
 
-// RunCluster Run starts Cluster (metad, storaged, graphd) containers within Docker network
+// RunCluster starts a NebulaGraph cluster (metad, storaged, graphd and activator) containers within a Docker network
 func RunCluster(ctx context.Context,
 	graphdImg string, graphdCustomizers []testcontainers.ContainerCustomizer,
 	storagedImg string, storagedCustomizers []testcontainers.ContainerCustomizer,
@@ -94,15 +94,7 @@ func RunCluster(ctx context.Context,
 
 // ConnectionString returns the host:port for connecting to NebulaGraph graphd
 func (c *Cluster) ConnectionString(ctx context.Context) (string, error) {
-	host, err := c.graphd.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-	port, err := c.graphd.MappedPort(ctx, graphdPort)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%s:%s", host, port.Port()), nil
+	return c.graphd.PortEndpoint(ctx, graphdPort, "")
 }
 
 // Terminate stops all NebulaGraph containers
