@@ -26,14 +26,14 @@ func RunCluster(ctx context.Context,
 	// 1. Create a custom network
 	netRes, err := network.New(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create network: %w", err)
+		return nil, fmt.Errorf("new nebulagraph network: %w", err)
 	}
 
 	// 2. Start metad
 	aggMetadCustomizers := append(defaultMetadContainerCustomizers(netRes), metadCustomizers...)
 	metad, err := testcontainers.Run(ctx, metadImg, aggMetadCustomizers...)
 	if err != nil {
-		errs := []error{fmt.Errorf("failed to start metad: %w", err)}
+		errs := []error{fmt.Errorf("run metad container: %w", err)}
 		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes)
 		errs = append(errs, errs2...)
 		return nil, errors.Join(errs...)
@@ -43,7 +43,7 @@ func RunCluster(ctx context.Context,
 	aggGraphdCustomizers := append(defaultGraphdContainerCustomizers(netRes), graphdCustomizers...)
 	graphd, err := testcontainers.Run(ctx, graphdImg, aggGraphdCustomizers...)
 	if err != nil {
-		errs := []error{fmt.Errorf("failed to start graphd: %w", err)}
+		errs := []error{fmt.Errorf("run graphd container: %w", err)}
 		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes, metad)
 		errs = append(errs, errs2...)
 		return nil, errors.Join(errs...)
@@ -53,7 +53,7 @@ func RunCluster(ctx context.Context,
 	aggStoragedCustomizers := append(defaultStoragedContainerCustomizers(netRes), storagedCustomizers...)
 	storaged, err := testcontainers.Run(ctx, storagedImg, aggStoragedCustomizers...)
 	if err != nil {
-		errs := []error{fmt.Errorf("failed to start storaged: %w", err)}
+		errs := []error{fmt.Errorf("run storaged container: %w", err)}
 		fmt.Println("error starting storaged: ", err)
 		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes, graphd, metad)
 		errs = append(errs, errs2...)
@@ -63,7 +63,7 @@ func RunCluster(ctx context.Context,
 	// 5. Run storage registration command with retry logic
 	activator, err := testcontainers.Run(ctx, defaultNebulaConsoleImage, defaultActivatorContainerCustomizers(netRes)...)
 	if err != nil {
-		errs := []error{fmt.Errorf("failed to start activator container: %w", err)}
+		errs := []error{fmt.Errorf("run activator container: %w", err)}
 		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes, storaged, graphd, metad)
 		errs = append(errs, errs2...)
 		return nil, errors.Join(errs...)
@@ -71,14 +71,14 @@ func RunCluster(ctx context.Context,
 
 	activatorState, err := activator.State(ctx)
 	if err != nil {
-		errs := []error{fmt.Errorf("failed to get activator container state: %w", err)}
+		errs := []error{fmt.Errorf("get activator container state: %w", err)}
 		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes, storaged, graphd, metad)
 		errs = append(errs, errs2...)
 		return nil, errors.Join(errs...)
 	}
 
 	if !activatorState.Running && activatorState.ExitCode != 0 {
-		errs := []error{fmt.Errorf("activator container exited with code %d", activatorState.ExitCode)}
+		errs := []error{fmt.Errorf("activator container not running or exited with code %d", activatorState.ExitCode)}
 		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes, storaged, graphd, metad)
 		errs = append(errs, errs2...)
 		return nil, errors.Join(errs...)
@@ -119,7 +119,7 @@ func terminateContainersAndRemoveNetwork(ctx context.Context, netRes *testcontai
 	for _, container := range containers {
 		if container != nil {
 			if err := container.Terminate(ctx); err != nil {
-				errs = append(errs, fmt.Errorf("failed to terminate container: %w", err))
+				errs = append(errs, fmt.Errorf("terminate container: %w", err))
 			}
 		}
 	}
