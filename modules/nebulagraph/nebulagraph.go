@@ -70,6 +70,13 @@ func RunCluster(ctx context.Context,
 	}
 
 	activatorState, err := activator.State(ctx)
+	if err != nil {
+		errs := []error{fmt.Errorf("failed to get activator container state: %w", err)}
+		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes, storaged, graphd, metad)
+		errs = append(errs, errs2...)
+		return nil, errors.Join(errs...)
+	}
+
 	if !activatorState.Running && activatorState.ExitCode != 0 {
 		errs := []error{fmt.Errorf("activator container exited with code %d", activatorState.ExitCode)}
 		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes, storaged, graphd, metad)
