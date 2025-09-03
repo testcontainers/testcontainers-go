@@ -3,7 +3,6 @@ package registry
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -37,7 +36,7 @@ func WithData(dataPath string) testcontainers.CustomizeRequestOption {
 // the htpasswd file, thanks to the REGISTRY_AUTH_HTPASSWD_PATH environment variable.
 func WithHtpasswd(credentials string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		tmpFile, err := os.Create(filepath.Join(os.TempDir(), "htpasswd"))
+		tmpFile, err := os.CreateTemp("", "htpasswd")
 		if err != nil {
 			tmpFile, err = os.Create(".")
 			if err != nil {
