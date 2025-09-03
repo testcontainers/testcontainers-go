@@ -100,10 +100,7 @@ func (c *Cluster) ConnectionString(ctx context.Context) (string, error) {
 // Terminate stops all NebulaGraph containers
 func (c *Cluster) Terminate(ctx context.Context) error {
 	errs := terminateContainersAndRemoveNetwork(ctx, c.network, c.graphd, c.metad, c.storaged)
-	if len(errs) > 0 {
-		return errors.Join(errs...)
-	}
-	return nil
+	return errors.Join(errs...)
 }
 
 func terminateContainersAndRemoveNetwork(ctx context.Context, netRes *testcontainers.DockerNetwork, containers ...testcontainers.Container) []error {
