@@ -35,8 +35,8 @@ func RunCluster(ctx context.Context,
 	if err != nil {
 		errs := []error{fmt.Errorf("failed to start metad: %w", err)}
 		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes)
-		aggErrs := append(errs, errs2...)
-		return nil, errors.Join(aggErrs...)
+		errs = append(errs, errs2...)
+		return nil, errors.Join(errs...)
 	}
 
 	// 3. Start graphd (needed for storage registration)
@@ -45,8 +45,8 @@ func RunCluster(ctx context.Context,
 	if err != nil {
 		errs := []error{fmt.Errorf("failed to start graphd: %w", err)}
 		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes, metad)
-		aggErrs := append(errs, errs2...)
-		return nil, errors.Join(aggErrs...)
+		errs = append(errs, errs2...)
+		return nil, errors.Join(errs...)
 	}
 
 	// 4. Start storaged
@@ -56,8 +56,8 @@ func RunCluster(ctx context.Context,
 		errs := []error{fmt.Errorf("failed to start storaged: %w", err)}
 		fmt.Println("error starting storaged: ", err)
 		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes, graphd, metad)
-		aggErrs := append(errs, errs2...)
-		return nil, errors.Join(aggErrs...)
+		errs = append(errs, errs2...)
+		return nil, errors.Join(errs...)
 	}
 
 	// 5. Run storage registration command with retry logic
@@ -65,16 +65,16 @@ func RunCluster(ctx context.Context,
 	if err != nil {
 		errs := []error{fmt.Errorf("failed to start activator container: %w", err)}
 		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes, storaged, graphd, metad)
-		aggErrs := append(errs, errs2...)
-		return nil, errors.Join(aggErrs...)
+		errs = append(errs, errs2...)
+		return nil, errors.Join(errs...)
 	}
 
 	activatorState, err := activator.State(ctx)
 	if !activatorState.Running && activatorState.ExitCode != 0 {
 		errs := []error{fmt.Errorf("activator container exited with code %d", activatorState.ExitCode)}
 		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes, storaged, graphd, metad)
-		aggErrs := append(errs, errs2...)
-		return nil, errors.Join(aggErrs...)
+		errs = append(errs, errs2...)
+		return nil, errors.Join(errs...)
 	}
 
 	return &Cluster{
