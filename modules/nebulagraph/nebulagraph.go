@@ -116,9 +116,9 @@ func (c *Cluster) Terminate(ctx context.Context) error {
 
 func terminateContainersAndRemoveNetwork(ctx context.Context, netRes *testcontainers.DockerNetwork, containers ...testcontainers.Container) []error {
 	var errs []error
-	for _, container := range containers {
-		if container != nil {
-			if err := container.Terminate(ctx); err != nil {
+	for _, ctr := range containers {
+		if ctr != nil {
+			if err := ctr.Terminate(ctx); err != nil {
 				errs = append(errs, fmt.Errorf("terminate container: %w", err))
 			}
 		}
