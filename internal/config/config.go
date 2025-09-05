@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/magiconair/properties"
+
+	"github.com/testcontainers/testcontainers-go/log"
 )
 
 const ReaperDefaultImage = "testcontainers/ryuk:0.13.0"
@@ -85,6 +87,11 @@ type Config struct {
 	//
 	// Environment variable: TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE
 	TestcontainersHost string `properties:"tc.host,default="`
+
+	// AutoExposePorts is a flag to enable or disable the automatic exposure of ports when no ports are explicitly exposed.
+	//
+	// Environment variable: TESTCONTAINERS_AUTO_EXPOSE_PORTS
+	AutoExposePorts bool `properties:"tc.auto.expose.ports,default=true"`
 }
 
 // }
@@ -139,6 +146,15 @@ func read() Config {
 		ryukConnectionTimeoutEnv := readTestcontainersEnv("RYUK_CONNECTION_TIMEOUT")
 		if timeout, err := time.ParseDuration(ryukConnectionTimeoutEnv); err == nil {
 			config.RyukConnectionTimeout = timeout
+		}
+
+		autoExposePortsEnv := readTestcontainersEnv("TESTCONTAINERS_AUTO_EXPOSE_PORTS")
+		if parseBool(autoExposePortsEnv) {
+			config.AutoExposePorts = autoExposePortsEnv == "true"
+		}
+
+		if config.AutoExposePorts {
+			log.Printf("⚠️ Testcontainers is configured to automatically expose ports from the Image definition, but this is deprecated and will be removed in a future version. Please set `tc.auto.expose.ports=false` in the testcontainers.properties file.")
 		}
 
 		return config
