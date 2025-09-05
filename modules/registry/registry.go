@@ -208,6 +208,7 @@ func (c *RegistryContainer) PushImage(ctx context.Context, ref string) error {
 // Differently from PushImage, which uploads an image to the testcontainers managed registry,
 // this method downloads (copies) the specified image reference so it becomes
 // available locally for further operations such as tagging or pushing.
+// It uses the same platform as the registry container's image.
 func (c *RegistryContainer) PullImage(ctx context.Context, ref string) error {
 	dockerCli, err := testcontainers.NewDockerClientWithOpts(ctx)
 	if err != nil {
@@ -215,9 +216,15 @@ func (c *RegistryContainer) PullImage(ctx context.Context, ref string) error {
 	}
 	defer dockerCli.Close()
 
+	inspect, err := c.Inspect(ctx)
+	if err != nil {
+		return fmt.Errorf("inspect registry container: %w", err)
+	}
+
 	pullOpts := image.PullOptions{
-		All:      false,
-		Platform: "linux/amd64",
+		All: false,
+		// Use the same platform as the registry container's image.
+		Platform: "linux/" + inspect.ImageManifestDescriptor.Platform.Architecture,
 	}
 
 	output, err := dockerCli.ImagePull(ctx, ref, pullOpts)

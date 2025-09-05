@@ -143,7 +143,7 @@ If the push operation is successful, the method will internally wait for the ima
 
 The `PullImage` method allows to pull an image to local Docker daemon.
 This method downloads (copies) the specified image reference so it becomes available locally for further operations such as tagging or pushing.
-It receives the Go context and the image reference as parameters.
+It receives the Go context and the image reference as parameters, pulling the image with the same platform as the registry container's image.
 
 !!! info
     The image reference should be in the format `my-registry:port/image:tag` in order to be pulled from the Registry.
