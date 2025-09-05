@@ -10,6 +10,7 @@ import (
 	"github.com/cpuguy83/dockercfg"
 	"github.com/docker/docker/api/types/image"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/registry"
@@ -170,6 +171,67 @@ func TestRunContainer_authenticated_withCredentials(t *testing.T) {
 	defer resp.Body.Close()
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
+func TestRunContainer_authenticated_htpasswd_atomic_per_container(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	r := require.New(t)
+
+	type container struct {
+		pass     string
+		registry *registry.RegistryContainer
+		addr     string
+	}
+
+	newContainer := func(password string) container {
+		hash, err := bcrypt.GenerateFromPassword([]byte(password), 5)
+		r.NoError(err)
+
+		reg, err := registry.Run(
+			ctx,
+			registry.DefaultImage,
+			registry.WithHtpasswd("testuser:"+string(hash)),
+		)
+		r.NoError(err)
+		testcontainers.CleanupContainer(t, reg)
+
+		addr, err := reg.Address(ctx)
+		r.NoError(err)
+
+		return container{pass: password, registry: reg, addr: addr}
+	}
+
+	// Create two independent registries with different credentials.
+	regA := newContainer("passA")
+	regB := newContainer("passB")
+
+	client := http.Client{}
+
+	// 1. Wrong password against A must fail.
+	req, err := http.NewRequest(http.MethodGet, regA.addr+"/v2/_catalog", nil)
+	r.NoError(err)
+	req.SetBasicAuth("testuser", regB.pass)
+	resp, err := client.Do(req)
+	r.NoError(err)
+	r.Equal(http.StatusUnauthorized, resp.StatusCode)
+	_ = resp.Body.Close()
+
+	// 2. Correct password against A must succeed.
+	req.SetBasicAuth("testuser", regA.pass)
+	resp, err = client.Do(req)
+	r.NoError(err)
+	r.Equal(http.StatusOK, resp.StatusCode)
+	_ = resp.Body.Close()
+
+	// 3. Correct password against B must succeed.
+	req, err = http.NewRequest(http.MethodGet, regB.addr+"/v2/_catalog", nil)
+	r.NoError(err)
+	req.SetBasicAuth("testuser", regB.pass)
+	resp, err = client.Do(req)
+	r.NoError(err)
+	r.Equal(http.StatusOK, resp.StatusCode)
+	_ = resp.Body.Close()
 }
 
 func TestRunContainer_wrongData(t *testing.T) {
