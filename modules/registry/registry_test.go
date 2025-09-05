@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/cpuguy83/dockercfg"
+	"github.com/docker/docker/api/types/image"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -208,6 +209,35 @@ func TestRunContainer_wrongData(t *testing.T) {
 	})
 	testcontainers.CleanupContainer(t, redisC)
 	require.ErrorContains(t, err, "manifest unknown")
+}
+
+func TestPullImage_samePlatform(t *testing.T) {
+	ctx := context.Background()
+	registryContainer, err := registry.Run(ctx, registry.DefaultImage)
+	testcontainers.CleanupContainer(t, registryContainer)
+	require.NoError(t, err)
+
+	inspect, err := registryContainer.Inspect(ctx)
+	require.NoError(t, err)
+
+	dockerCli, err := testcontainers.NewDockerClientWithOpts(ctx)
+	require.NoError(t, err)
+	defer dockerCli.Close()
+
+	// Pull an image that shares the same platform as the registry container's image.
+	const img = "redis:latest"
+
+	err = registryContainer.PullImage(ctx, img)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, err := dockerCli.ImageRemove(ctx, img, image.RemoveOptions{Force: true})
+		require.NoError(t, err)
+	})
+
+	imgInspect, err := dockerCli.ImageInspect(ctx, img)
+	require.NoError(t, err)
+	require.Equal(t, inspect.ImageManifestDescriptor.Platform.Architecture, imgInspect.Architecture)
+	require.Equal(t, inspect.ImageManifestDescriptor.Platform.OS, imgInspect.Os)
 }
 
 // setAuthConfig sets the DOCKER_AUTH_CONFIG environment variable with
