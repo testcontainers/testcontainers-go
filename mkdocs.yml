@@ -104,6 +104,7 @@ nav:
         - modules/mssql.md
         - modules/mysql.md
         - modules/nats.md
+        - modules/nebulagraph.md
         - modules/neo4j.md
         - modules/ollama.md
         - modules/openfga.md
