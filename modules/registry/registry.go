@@ -18,6 +18,7 @@ import (
 	"github.com/docker/docker/api/types/registry"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -220,11 +221,21 @@ func (c *RegistryContainer) PullImage(ctx context.Context, ref string) error {
 	if err != nil {
 		return fmt.Errorf("inspect registry container: %w", err)
 	}
+	platform := "amd64"
+	if inspect.ImageManifestDescriptor != nil {
+		if inspect.ImageManifestDescriptor.Platform != nil {
+			platform = inspect.ImageManifestDescriptor.Platform.Architecture
+		} else {
+			log.Printf("DEBUG: No platform found for image %s: %+v", ref, inspect)
+		}
+	} else {
+		log.Printf("DEBUG: No image manifest descriptor found for image %s: %+v", ref, inspect)
+	}
 
 	pullOpts := image.PullOptions{
 		All: false,
 		// Use the same platform as the registry container's image.
-		Platform: "linux/" + inspect.ImageManifestDescriptor.Platform.Architecture,
+		Platform: "linux/" + platform,
 	}
 
 	output, err := dockerCli.ImagePull(ctx, ref, pullOpts)
