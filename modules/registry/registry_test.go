@@ -224,6 +224,14 @@ func TestPullImage_samePlatform(t *testing.T) {
 	require.NoError(t, err)
 	defer dockerCli.Close()
 
+	t.Logf("Docker info: checking daemon configuration...")
+	info, err := dockerCli.Info(ctx)
+	if err == nil {
+		t.Logf("Docker version: %s", info.ServerVersion)
+		t.Logf("Docker storage driver: %s", info.Driver)
+		t.Logf("Docker experimental: %v", info.ExperimentalBuild)
+	}
+
 	// Pull an image that shares the same platform as the registry container's image.
 	const img = "redis:latest"
 
