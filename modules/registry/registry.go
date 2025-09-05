@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 
@@ -173,13 +175,11 @@ func (c *RegistryContainer) ImageExists(ctx context.Context, imageRef string) er
 // PushImage pushes an image to the Registry container. It will use the internally stored RegistryName
 // to push the image to the container, and it will finally wait for the image to be pushed.
 func (c *RegistryContainer) PushImage(ctx context.Context, ref string) error {
-	dockerProvider, err := testcontainers.NewDockerProvider()
+	dockerCli, err := testcontainers.NewDockerClientWithOpts(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to create Docker provider: %w", err)
+		return fmt.Errorf("create docker client: %w", err)
 	}
-	defer dockerProvider.Close()
-
-	dockerCli := dockerProvider.Client()
+	defer dockerCli.Close()
 
 	_, imageAuth, err := testcontainers.DockerImageAuth(ctx, ref)
 	if err != nil {
@@ -199,10 +199,70 @@ func (c *RegistryContainer) PushImage(ctx context.Context, ref string) error {
 
 	_, err = dockerCli.ImagePush(ctx, ref, pushOpts)
 	if err != nil {
-		return fmt.Errorf("failed to push image %s: %w", ref, err)
+		return fmt.Errorf("push image %q: %w", ref, err)
 	}
 
 	return c.ImageExists(ctx, ref)
+}
+
+// PullImage pulls an image from an external registry into the local Docker daemon.
+// Differently from PushImage, which uploads an image to the testcontainers managed registry,
+// this method downloads (copies) the specified image reference so it becomes
+// available locally for further operations such as tagging or pushing.
+// It uses the same platform as the registry container's image.
+func (c *RegistryContainer) PullImage(ctx context.Context, ref string) error {
+	dockerCli, err := testcontainers.NewDockerClientWithOpts(ctx)
+	if err != nil {
+		return fmt.Errorf("create docker client: %w", err)
+	}
+	defer dockerCli.Close()
+
+	inspect, err := c.Inspect(ctx)
+	if err != nil {
+		return fmt.Errorf("inspect registry container: %w", err)
+	}
+
+	platform := runtime.GOARCH
+	if inspect.ImageManifestDescriptor != nil && inspect.ImageManifestDescriptor.Platform != nil {
+		platform = inspect.ImageManifestDescriptor.Platform.Architecture
+	}
+
+	pullOpts := image.PullOptions{
+		All: false,
+		// Use the same platform as the registry container's image.
+		Platform: "linux/" + platform,
+	}
+
+	output, err := dockerCli.ImagePull(ctx, ref, pullOpts)
+	if err != nil {
+		return fmt.Errorf("pull image %q: %w", ref, err)
+	}
+	defer output.Close()
+
+	_, err = io.Copy(io.Discard, output)
+	if err != nil {
+		return fmt.Errorf("read image pull output: %w", err)
+	}
+
+	return nil
+}
+
+// TagImage tags an image from the local Registry.
+// This function is helpful when you want to push an image to your Registry
+// instance made by testcontainer.
+func (c *RegistryContainer) TagImage(ctx context.Context, image, ref string) error {
+	dockerCli, err := testcontainers.NewDockerClientWithOpts(ctx)
+	if err != nil {
+		return fmt.Errorf("create docker client: %w", err)
+	}
+	defer dockerCli.Close()
+
+	err = dockerCli.ImageTag(ctx, image, ref)
+	if err != nil {
+		return fmt.Errorf("tag image %q: %w", image, err)
+	}
+
+	return nil
 }
 
 // Deprecated: use Run instead

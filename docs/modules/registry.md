@@ -137,6 +137,34 @@ The `PushImage` method allows to push an image to the Registry. It receives the 
 
 If the push operation is successful, the method will internally wait for the image to be available in the Registry, querying the Registry API, returning an error in case of any failure (e.g. pushing or waiting for the image).
 
+#### PullImage
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The `PullImage` method allows to pull an image to local Docker daemon.
+This method downloads (copies) the specified image reference so it becomes available locally for further operations such as tagging or pushing.
+It receives the Go context and the image reference as parameters, pulling the image with the same platform as the registry container's image.
+
+!!! info
+    The image reference should be in the format `my-registry:port/image:tag` in order to be pulled from the Registry.
+
+<!--codeinclude-->
+[Pulling images](../../modules/registry/examples_test.go) inside_block:pullingImage
+<!--/codeinclude-->
+
+#### TagImage
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The `TagImage` method allows to tag an image from the local Registry. It receives the Go context, the image reference and the name of the new tag as parameters.
+
+!!! info
+    The image reference should be in the format `my-registry:port/image:tag` in order to be tagged properly.
+
+<!--codeinclude-->
+[Tagging images](../../modules/registry/examples_test.go) inside_block:taggingImage
+<!--/codeinclude-->
+
 #### DeleteImage
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
