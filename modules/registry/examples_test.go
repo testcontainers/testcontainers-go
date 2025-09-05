@@ -203,7 +203,7 @@ func ExampleRun_pushImage() {
 	// pullingImage {
 	// defaultRegistryURI is localhost:32878
 	// defaultImage is customredis
-	// defaulTag is v1.2.3
+	// defaultTag is v1.2.3
 	imageRef := fmt.Sprintf("%s/%s:%s", defaultRegistryURI, defaultImage, defaultTag)
 	err = registryContainer.PullImage(ctx, imageRef)
 	if err != nil {
@@ -215,7 +215,7 @@ func ExampleRun_pushImage() {
 	// taggingImage {
 	// defaultRegistryURI is localhost:32878
 	// defaultImage is customredis
-	// defaulTag is v1.2.3
+	// defaultTag is v1.2.3
 	taggedImage := fmt.Sprintf("%s/%s:%s", registryContainer.RegistryName, defaultImage, defaultTag)
 	err = registryContainer.TagImage(ctx, imageRef, taggedImage)
 	if err != nil {
