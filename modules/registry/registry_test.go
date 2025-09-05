@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/cpuguy83/dockercfg"
@@ -306,8 +307,14 @@ func TestPullImage_samePlatform(t *testing.T) {
 
 	imgInspect, err := dockerCli.ImageInspect(ctx, img)
 	require.NoError(t, err)
-	require.Equal(t, inspect.ImageManifestDescriptor.Platform.Architecture, imgInspect.Architecture)
-	require.Equal(t, inspect.ImageManifestDescriptor.Platform.OS, imgInspect.Os)
+
+	if inspect.ImageManifestDescriptor != nil && inspect.ImageManifestDescriptor.Platform != nil {
+		require.Equal(t, inspect.ImageManifestDescriptor.Platform.Architecture, imgInspect.Architecture)
+		require.Equal(t, inspect.ImageManifestDescriptor.Platform.OS, imgInspect.Os)
+	} else {
+		require.Equal(t, "linux", imgInspect.Os)
+		require.Equal(t, runtime.GOARCH, imgInspect.Architecture)
+	}
 }
 
 // setAuthConfig sets the DOCKER_AUTH_CONFIG environment variable with

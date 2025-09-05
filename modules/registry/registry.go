@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 
@@ -220,7 +221,8 @@ func (c *RegistryContainer) PullImage(ctx context.Context, ref string) error {
 	if err != nil {
 		return fmt.Errorf("inspect registry container: %w", err)
 	}
-	platform := "amd64"
+
+	platform := runtime.GOARCH
 	if inspect.ImageManifestDescriptor != nil && inspect.ImageManifestDescriptor.Platform != nil {
 		platform = inspect.ImageManifestDescriptor.Platform.Architecture
 	}
