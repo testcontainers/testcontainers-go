@@ -22,6 +22,10 @@ type options struct {
 	// or "http_basic" for HTTP basic authentication.
 	SchemaRegistryAuthenticationMethod string
 
+	// HTTPProxyAuthenticationMethod is the authentication method for HTTP Proxy (pandaproxy).
+	// Valid values are "none", "http_basic", or "oidc".
+	HTTPProxyAuthenticationMethod string
+
 	// EnableWasmTransform is a flag to enable wasm transform.
 	EnableWasmTransform bool
 
@@ -58,6 +62,7 @@ func defaultOptions() options {
 		KafkaEnableAuthorization:           false,
 		KafkaAuthenticationMethod:          "none",
 		SchemaRegistryAuthenticationMethod: "none",
+		HTTPProxyAuthenticationMethod:      "none",
 		ServiceAccounts:                    make(map[string]string, 0),
 		AutoCreateTopics:                   false,
 		EnableTLS:                          false,
@@ -125,6 +130,21 @@ func WithEnableWasmTransform() Option {
 func WithEnableSchemaRegistryHTTPBasicAuth() Option {
 	return func(o *options) {
 		o.SchemaRegistryAuthenticationMethod = "http_basic"
+	}
+}
+
+// WithEnableHTTPProxyBasicAuth enables HTTP basic authentication for
+// HTTP Proxy (pandaproxy).
+func WithEnableHTTPProxyBasicAuth() Option {
+	return func(o *options) {
+		o.HTTPProxyAuthenticationMethod = "http_basic"
+	}
+}
+
+// WithHTTPProxyOIDCAuth enables OIDC authentication for HTTP Proxy (pandaproxy).
+func WithHTTPProxyOIDCAuth() Option {
+	return func(o *options) {
+		o.HTTPProxyAuthenticationMethod = "oidc"
 	}
 }
 
