@@ -3,8 +3,7 @@ package testcontainers
 import (
 	"context"
 
-	"github.com/containerd/platforms"
-	specs "github.com/opencontainers/image-spec/specs-go/v1"
+	"github.com/docker/docker/client"
 )
 
 // ImageInfo represents summary information of an image
@@ -13,23 +12,11 @@ type ImageInfo struct {
 	Name string
 }
 
-type saveOptions struct {
-	Platforms []specs.Platform
+type saveImageOptions struct {
+	dockerSaveOpts []client.ImageSaveOption
 }
 
-type SaveImageOption func(*saveOptions) error
-
-// SaveImageWithPlatforms allows specifying which platform(s) to save
-func SaveImageWithPlatforms(plaforms ...string) SaveImageOption {
-	return func(opts *saveOptions) error {
-		p, err := platforms.ParseAll(plaforms)
-		if err != nil {
-			return err
-		}
-		opts.Platforms = p
-		return nil
-	}
-}
+type SaveImageOption func(*saveImageOptions) error
 
 // ImageProvider allows manipulating images
 type ImageProvider interface {

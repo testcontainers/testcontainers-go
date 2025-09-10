@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/containerd/platforms"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
@@ -90,13 +91,16 @@ func TestSaveImagesWithOpts(t *testing.T) {
 		ImagePlatform: "linux/amd64",
 	}
 
+	p, err := platforms.ParseAll([]string{"linux/amd64"})
+	require.NoError(t, err)
+
 	ctr, err := provider.CreateContainer(context.Background(), req)
 	CleanupContainer(t, ctr)
 	require.NoErrorf(t, err, "creating test container")
 
 	output := filepath.Join(t.TempDir(), "images.tar")
 	err = provider.SaveImagesWithOps(
-		context.Background(), output, []string{req.Image}, SaveImageWithPlatforms("linux/amd64"),
+		context.Background(), output, []string{req.Image}, SaveDockerImageWithPlatforms(p...),
 	)
 	require.NoErrorf(t, err, "saving image %q", req.Image)
 

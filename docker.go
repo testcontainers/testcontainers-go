@@ -1791,18 +1791,12 @@ func (p *DockerProvider) SaveImages(ctx context.Context, output string, images .
 
 // SaveImagesWithOpts exports a list of images as an uncompressed tar, passiong options to the provider
 func (p *DockerProvider) SaveImagesWithOps(ctx context.Context, output string, images []string, opts ...SaveImageOption) error {
-	saveOpts := saveOptions{}
-	dockerOpts := []client.ImageSaveOption{}
+	saveOpts := saveImageOptions{}
 
-	for _, o := range opts {
-		err := o(&saveOpts)
-		if err != nil {
-			return err
+	for _, opt := range opts {
+		if err := opt(&saveOpts); err != nil {
+			return fmt.Errorf("applying save image option: %w", err)
 		}
-	}
-
-	if len(saveOpts.Platforms) > 0 {
-		dockerOpts = append(dockerOpts, client.ImageSaveWithPlatforms(saveOpts.Platforms...))
 	}
 
 	outputFile, err := os.Create(output)
@@ -1813,7 +1807,7 @@ func (p *DockerProvider) SaveImagesWithOps(ctx context.Context, output string, i
 		_ = outputFile.Close()
 	}()
 
-	imageReader, err := p.client.ImageSave(ctx, images, dockerOpts...)
+	imageReader, err := p.client.ImageSave(ctx, images, saveOpts.dockerSaveOpts...)
 	if err != nil {
 		return fmt.Errorf("saving images %w", err)
 	}
@@ -1828,6 +1822,14 @@ func (p *DockerProvider) SaveImagesWithOps(ctx context.Context, output string, i
 	}
 
 	return nil
+}
+
+func SaveDockerImageWithPlatforms(platforms ...specs.Platform) SaveImageOption {
+	return func(opts *saveImageOptions) error {
+		opts.dockerSaveOpts = append(opts.dockerSaveOpts, client.ImageSaveWithPlatforms(platforms...))
+
+		return nil
+	}
 }
 
 // PullImage pulls image from registry

@@ -194,14 +194,11 @@ func unmarshal(bytes []byte) (*KubeConfigValue, error) {
 	return &kubeConfig, nil
 }
 
-// LoadImages loads images into the k3s container.
-type LoadImageOption = testcontainers.SaveImageOption
-
 func (c *K3sContainer) LoadImages(ctx context.Context, images ...string) error {
 	return c.LoadImagesWithOpts(ctx, images)
 }
 
-func (c *K3sContainer) LoadImagesWithOpts(ctx context.Context, images []string, opts ...LoadImageOption) error {
+func (c *K3sContainer) LoadImagesWithOpts(ctx context.Context, images []string, opts ...testcontainers.SaveImageOption) error {
 	provider, err := testcontainers.ProviderDocker.GetProvider()
 	if err != nil {
 		return fmt.Errorf("getting docker provider %w", err)
