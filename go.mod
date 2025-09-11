@@ -10,7 +10,7 @@ require (
 	github.com/containerd/errdefs v1.0.0
 	github.com/containerd/platforms v0.2.1
 	github.com/cpuguy83/dockercfg v0.3.2
-	github.com/docker/docker v28.2.2+incompatible
+	github.com/docker/docker v28.3.3+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/google/uuid v1.6.0
 	github.com/magiconair/properties v1.8.10

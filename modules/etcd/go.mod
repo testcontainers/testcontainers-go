@@ -6,7 +6,7 @@ toolchain go1.23.6
 
 require (
 	github.com/containerd/errdefs v1.0.0
-	github.com/docker/docker v28.2.2+incompatible
+	github.com/docker/docker v28.3.3+incompatible
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.38.0
 	go.etcd.io/etcd/client/v3 v3.5.16
