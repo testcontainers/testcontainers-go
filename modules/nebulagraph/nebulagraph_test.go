@@ -107,6 +107,6 @@ func TestNebulaGraphContainer(t *testing.T) {
 
 		vals := row.GetValues()
 		require.NotEmpty(t, vals, "Row values should not be empty")
-		require.Equal(t, vals[0].GetIVal(), int64(1), "Expected first column to be 1")
+		require.Equal(t, int64(1), vals[0].GetIVal())
 	})
 }
