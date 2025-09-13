@@ -124,11 +124,9 @@ func NewDockerClientWithOpts(ctx context.Context, opt ...client.Opt) (*DockerCli
 		return nil, err
 	}
 
-	tcConfig := config.Read()
-
 	tcClient := DockerClient{
 		Client: dockerClient,
-		config: tcConfig,
+		config: config.Read(),
 	}
 
 	if _, err = tcClient.Info(ctx); err != nil {
