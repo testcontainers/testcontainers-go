@@ -569,7 +569,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
-				"With Ryuk disabled using an env var and properties. Env var wins",
+				"With Session ID set using an env var and properties. Env var wins",
 				`session.id=bar`,
 				map[string]string{
 					"TESTCONTAINERS_SESSION_ID": "foo",
