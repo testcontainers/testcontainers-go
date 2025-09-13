@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go/internal/core/bootstrap"
 )
 
 const (
@@ -43,6 +44,7 @@ func TestReadConfig(t *testing.T) {
 		config := Read()
 
 		expected := Config{
+			SessionID:    bootstrap.SessionID(),
 			RyukDisabled: true,
 			Host:         "", // docker socket is empty at the properties file
 		}
@@ -67,7 +69,9 @@ func TestReadTCConfig(t *testing.T) {
 
 		config := read()
 
-		expected := Config{}
+		expected := Config{
+			SessionID: bootstrap.SessionID(),
+		}
 
 		assert.Equal(t, expected, config)
 	})
@@ -104,7 +108,9 @@ func TestReadTCConfig(t *testing.T) {
 
 		config := read()
 
-		expected := Config{}
+		expected := Config{
+			SessionID: bootstrap.SessionID(),
+		}
 
 		assert.Equal(t, expected, config)
 	})
@@ -116,7 +122,10 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("DOCKER_HOST", tcpDockerHost33293)
 
 		config := read()
-		expected := Config{} // the config does not read DOCKER_HOST, that's why it's empty
+		expected := Config{
+			Host:      "", // the config does not read env var `DOCKER_HOST`, that's why `Host` it's empty
+			SessionID: bootstrap.SessionID(),
+		}
 
 		assert.Equal(t, expected, config)
 	})
@@ -151,6 +160,7 @@ func TestReadTCConfig(t *testing.T) {
 		defaultRyukConnectionTimeout := 60 * time.Second
 		defaultRyukReconnectionTimeout := 10 * time.Second
 		defaultConfig := Config{
+			SessionID:               bootstrap.SessionID(),
 			RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 			RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
 		}
@@ -166,6 +176,7 @@ func TestReadTCConfig(t *testing.T) {
 				"docker.host = " + tcpDockerHost33293,
 				map[string]string{},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					Host:                    tcpDockerHost33293,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
@@ -178,6 +189,7 @@ func TestReadTCConfig(t *testing.T) {
 	`,
 				map[string]string{},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					Host:                    tcpDockerHost4711,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
@@ -192,6 +204,7 @@ func TestReadTCConfig(t *testing.T) {
 	`,
 				map[string]string{},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					Host:                    tcpDockerHost1234,
 					TLSVerify:               1,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
@@ -203,6 +216,7 @@ func TestReadTCConfig(t *testing.T) {
 				"",
 				map[string]string{},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
 				},
@@ -214,6 +228,7 @@ func TestReadTCConfig(t *testing.T) {
 			`,
 				map[string]string{},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					Host:                    tcpDockerHost1234,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
@@ -224,6 +239,7 @@ func TestReadTCConfig(t *testing.T) {
 				"docker.host=" + tcpDockerHost33293,
 				map[string]string{},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					Host:                    tcpDockerHost33293,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
@@ -243,6 +259,7 @@ func TestReadTCConfig(t *testing.T) {
 	docker.cert.path=/tmp/certs`,
 				map[string]string{},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					Host:                    tcpDockerHost1234,
 					CertPath:                "/tmp/certs",
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
@@ -254,6 +271,7 @@ func TestReadTCConfig(t *testing.T) {
 				`ryuk.disabled=true`,
 				map[string]string{},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					RyukDisabled:            true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
@@ -264,6 +282,7 @@ func TestReadTCConfig(t *testing.T) {
 				`ryuk.container.privileged=true`,
 				map[string]string{},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					RyukPrivileged:          true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
@@ -275,6 +294,7 @@ func TestReadTCConfig(t *testing.T) {
 	ryuk.reconnection.timeout=13s`,
 				map[string]string{},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					RyukReconnectionTimeout: 13 * time.Second,
 					RyukConnectionTimeout:   12 * time.Second,
 				},
@@ -287,6 +307,7 @@ func TestReadTCConfig(t *testing.T) {
 					"RYUK_CONNECTION_TIMEOUT":   "12s",
 				},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					RyukReconnectionTimeout: 13 * time.Second,
 					RyukConnectionTimeout:   12 * time.Second,
 				},
@@ -300,6 +321,7 @@ func TestReadTCConfig(t *testing.T) {
 					"RYUK_CONNECTION_TIMEOUT":   "12s",
 				},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					RyukReconnectionTimeout: 13 * time.Second,
 					RyukConnectionTimeout:   12 * time.Second,
 				},
@@ -309,6 +331,7 @@ func TestReadTCConfig(t *testing.T) {
 				`ryuk.verbose=true`,
 				map[string]string{},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					RyukVerbose:             true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
@@ -321,6 +344,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_DISABLED": "true",
 				},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					RyukDisabled:            true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
@@ -333,6 +357,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
 				},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					RyukPrivileged:          true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
@@ -345,6 +370,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_DISABLED": "true",
 				},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					RyukDisabled:            true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
@@ -357,6 +383,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_DISABLED": "true",
 				},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					RyukDisabled:            true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
@@ -385,6 +412,7 @@ func TestReadTCConfig(t *testing.T) {
 					"RYUK_VERBOSE": "true",
 				},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					RyukVerbose:             true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
@@ -397,6 +425,7 @@ func TestReadTCConfig(t *testing.T) {
 					"RYUK_VERBOSE": "true",
 				},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					RyukVerbose:             true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
@@ -425,6 +454,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
 				},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					RyukPrivileged:          true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
@@ -437,6 +467,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
 				},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					RyukPrivileged:          true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
@@ -467,6 +498,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED": "true",
 				},
 				Config{
+					SessionID:      bootstrap.SessionID(),
 					RyukDisabled:   true,
 					RyukPrivileged: true,
 				},
@@ -492,6 +524,7 @@ func TestReadTCConfig(t *testing.T) {
 				`hub.image.name.prefix=` + defaultHubPrefix + `/props/`,
 				map[string]string{},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					HubImageNamePrefix:      defaultHubPrefix + "/props/",
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
@@ -504,6 +537,7 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": defaultHubPrefix + "/env/",
 				},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					HubImageNamePrefix:      defaultHubPrefix + "/env/",
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
@@ -516,7 +550,31 @@ func TestReadTCConfig(t *testing.T) {
 					"TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX": defaultHubPrefix + "/env/",
 				},
 				Config{
+					SessionID:               bootstrap.SessionID(),
 					HubImageNamePrefix:      defaultHubPrefix + "/env/",
+					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
+					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+				},
+			},
+			//
+			{
+				"With Session ID set as a property",
+				`session.id=foo`,
+				map[string]string{},
+				Config{
+					SessionID:               "foo",
+					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
+					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+				},
+			},
+			{
+				"With Ryuk disabled using an env var and properties. Env var wins",
+				`session.id=bar`,
+				map[string]string{
+					"TESTCONTAINERS_SESSION_ID": "foo",
+				},
+				Config{
+					SessionID:               "foo",
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
 				},

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/magiconair/properties"
+	"github.com/testcontainers/testcontainers-go/internal/core/bootstrap"
 )
 
 const ReaperDefaultImage = "testcontainers/ryuk:0.12.0"
@@ -131,6 +132,8 @@ func read() Config {
 		sessionID := os.Getenv("TESTCONTAINERS_SESSION_ID")
 		if sessionID != "" {
 			config.SessionID = sessionID
+		} else if config.SessionID == "" {
+			config.SessionID = bootstrap.SessionID()
 		}
 
 		ryukPrivilegedEnv := os.Getenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED")

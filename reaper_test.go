@@ -126,7 +126,7 @@ func testReaperRunning(t *testing.T) {
 	t.Helper()
 
 	ctx := context.Background()
-	sessionID := core.SessionID()
+	sessionID := config.Read().SessionID
 	reaperContainer, err := spawner.lookupContainer(ctx, sessionID)
 	require.NoError(t, err)
 	require.NotNil(t, reaperContainer)
