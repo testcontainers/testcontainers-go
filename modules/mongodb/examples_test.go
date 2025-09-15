@@ -6,8 +6,8 @@ import (
 	"log"
 	"strings"
 
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/mongodb"
@@ -62,7 +62,7 @@ func ExampleRun_connect() {
 		return
 	}
 
-	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(endpoint))
+	mongoClient, err := mongo.Connect(options.Client().ApplyURI(endpoint))
 	if err != nil {
 		log.Printf("failed to connect to MongoDB: %s", err)
 		return
@@ -105,7 +105,7 @@ func ExampleRun_withCredentials() {
 		return
 	}
 
-	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(connStr))
+	mongoClient, err := mongo.Connect(options.Client().ApplyURI(connStr))
 	if err != nil {
 		log.Printf("failed to connect to MongoDB: %s", err)
 		return

@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "160280c0c2d9beaa296833b5f5e754123020e5a15854a5ee6201df9cf5761554"
+            "sha256": "85cf0b145b1bf3625db055f19d76b73094afa3aa1e7283b348a814c0a294d1ed"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -187,11 +187,11 @@
         },
         "markdown": {
             "hashes": [
-                "sha256:247b9a70dd12e27f67431ce62523e675b866d254f900c4fe75ce3dda62237c45",
-                "sha256:5c83764dbd4e00bdd94d85a19b8d55ccca20fe35b2e678a1422b380324dd5f24"
+                "sha256:9f4d91ed810864ea88a6f32c07ba8bee1346c0cc1f6b1f9f6c822f2a9667d280",
+                "sha256:d2900fe1782bd33bdbbd56859defef70c2e78fc46668f8eb9df3128138f2cb6a"
             ],
             "markers": "python_version >= '3.9'",
-            "version": "==3.8.2"
+            "version": "==3.9"
         },
         "markupsafe": {
             "hashes": [
@@ -288,12 +288,12 @@
         },
         "mkdocs-include-markdown-plugin": {
             "hashes": [
-                "sha256:7975a593514887c18ecb68e11e35c074c5499cfa3e51b18cd16323862e1f7345",
-                "sha256:a0753cb82704c10a287f1e789fc9848f82b6beb8749814b24b03dd9f67816677"
+                "sha256:677637e04c2d3497c50340be522e2a7f614124f592c7982d88b859f88d527a4c",
+                "sha256:a0c13efe4f6b05a419c022e201055bf43145eed90de65f2353c33fb4005b6aa5"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.9'",
-            "version": "==7.1.6"
+            "version": "==7.1.7"
         },
         "mkdocs-markdownextradata-plugin": {
             "hashes": [
@@ -345,11 +345,11 @@
         },
         "platformdirs": {
             "hashes": [
-                "sha256:3d512d96e16bcb959a814c9f348431070822a6496326a4be0911c40b5a74c2bc",
-                "sha256:ff7059bb7eb1179e2685604f4aaf157cfd9535242bd23742eadc3c13542139b4"
+                "sha256:abd01743f24e5287cd7a5db3752faf1a2d65353f38ec26d98e25a6db65958c85",
+                "sha256:ca753cf4d81dc309bc67b0ea38fd15dc97bc30ce419a7f58d13eb3bf14c4febf"
             ],
             "markers": "python_version >= '3.9'",
-            "version": "==4.3.8"
+            "version": "==4.4.0"
         },
         "pygments": {
             "hashes": [

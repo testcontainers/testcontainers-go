@@ -7,6 +7,15 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
+// HTTPProxyAuthMethod defines the authentication method for HTTP Proxy.
+type HTTPProxyAuthMethod string
+
+const (
+	HTTPProxyAuthMethodNone      HTTPProxyAuthMethod = "none"
+	HTTPProxyAuthMethodHTTPBasic HTTPProxyAuthMethod = "http_basic"
+	HTTPProxyAuthMethodOIDC      HTTPProxyAuthMethod = "oidc"
+)
+
 type options struct {
 	// Superusers is a list of service account names.
 	Superusers []string
@@ -21,6 +30,10 @@ type options struct {
 	// SchemaRegistryAuthenticationMethod is either "none" for no authentication
 	// or "http_basic" for HTTP basic authentication.
 	SchemaRegistryAuthenticationMethod string
+
+	// HTTPProxyAuthenticationMethod is the authentication method for HTTP Proxy (pandaproxy).
+	// Valid values are "none", "http_basic", or "oidc".
+	HTTPProxyAuthenticationMethod HTTPProxyAuthMethod
 
 	// EnableWasmTransform is a flag to enable wasm transform.
 	EnableWasmTransform bool
@@ -58,6 +71,7 @@ func defaultOptions() options {
 		KafkaEnableAuthorization:           false,
 		KafkaAuthenticationMethod:          "none",
 		SchemaRegistryAuthenticationMethod: "none",
+		HTTPProxyAuthenticationMethod:      HTTPProxyAuthMethodNone,
 		ServiceAccounts:                    make(map[string]string, 0),
 		AutoCreateTopics:                   false,
 		EnableTLS:                          false,
@@ -125,6 +139,22 @@ func WithEnableWasmTransform() Option {
 func WithEnableSchemaRegistryHTTPBasicAuth() Option {
 	return func(o *options) {
 		o.SchemaRegistryAuthenticationMethod = "http_basic"
+	}
+}
+
+// WithHTTPProxyAuthMethod sets the authentication method for HTTP Proxy.
+// If an invalid method is provided, it defaults to "none".
+func WithHTTPProxyAuthMethod(method HTTPProxyAuthMethod) Option {
+	switch method {
+	case HTTPProxyAuthMethodNone, HTTPProxyAuthMethodHTTPBasic, HTTPProxyAuthMethodOIDC:
+		return func(o *options) {
+			o.HTTPProxyAuthenticationMethod = method
+		}
+	default:
+		return func(o *options) {
+			// Invalid method, default to "none"
+			o.HTTPProxyAuthenticationMethod = HTTPProxyAuthMethodNone
+		}
 	}
 }
 
