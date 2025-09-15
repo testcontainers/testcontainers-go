@@ -66,6 +66,10 @@
             "path": "../modules/dind"
         },
         {
+            "name": "module / dockermcpgateway",
+            "path": "../modules/dockermcpgateway"
+        },
+        {
             "name": "module / dockermodelrunner",
             "path": "../modules/dockermodelrunner"
         },
@@ -158,6 +162,10 @@
             "path": "../modules/nats"
         },
         {
+            "name": "module / nebulagraph",
+            "path": "../modules/nebulagraph"
+        },
+        {
             "name": "module / neo4j",
             "path": "../modules/neo4j"
         },
@@ -216,6 +224,10 @@
         {
             "name": "module / socat",
             "path": "../modules/socat"
+        },
+        {
+            "name": "module / solace",
+            "path": "../modules/solace"
         },
         {
             "name": "module / surrealdb",

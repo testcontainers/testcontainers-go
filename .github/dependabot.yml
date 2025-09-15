@@ -29,6 +29,7 @@ updates:
         - /modules/couchbase
         - /modules/databend
         - /modules/dind
+        - /modules/dockermcpgateway
         - /modules/dockermodelrunner
         - /modules/dolt
         - /modules/dynamodb
@@ -52,6 +53,7 @@ updates:
         - /modules/mssql
         - /modules/mysql
         - /modules/nats
+        - /modules/nebulagraph
         - /modules/neo4j
         - /modules/ollama
         - /modules/openfga
@@ -67,6 +69,7 @@ updates:
         - /modules/registry
         - /modules/scylladb
         - /modules/socat
+        - /modules/solace
         - /modules/surrealdb
         - /modules/toxiproxy
         - /modules/valkey
