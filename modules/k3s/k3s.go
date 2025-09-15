@@ -213,7 +213,7 @@ func (c *K3sContainer) LoadImagesWithOpts(ctx context.Context, images []string, 
 		_ = os.Remove(imagesTar.Name())
 	}()
 
-	err = provider.SaveImagesWithOps(context.Background(), imagesTar.Name(), images, opts...)
+	err = provider.SaveImagesWithOpts(context.Background(), imagesTar.Name(), images, opts...)
 	if err != nil {
 		return fmt.Errorf("saving images %w", err)
 	}

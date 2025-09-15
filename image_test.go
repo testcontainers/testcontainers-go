@@ -99,7 +99,7 @@ func TestSaveImagesWithOpts(t *testing.T) {
 	require.NoErrorf(t, err, "creating test container")
 
 	output := filepath.Join(t.TempDir(), "images.tar")
-	err = provider.SaveImagesWithOps(
+	err = provider.SaveImagesWithOpts(
 		context.Background(), output, []string{req.Image}, SaveDockerImageWithPlatforms(p...),
 	)
 	require.NoErrorf(t, err, "saving image %q", req.Image)

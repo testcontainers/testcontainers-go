@@ -1786,11 +1786,11 @@ func (p *DockerProvider) ListImages(ctx context.Context) ([]ImageInfo, error) {
 
 // SaveImages exports a list of images as an uncompressed tar
 func (p *DockerProvider) SaveImages(ctx context.Context, output string, images ...string) error {
-	return p.SaveImagesWithOps(ctx, output, images)
+	return p.SaveImagesWithOpts(ctx, output, images)
 }
 
-// SaveImagesWithOpts exports a list of images as an uncompressed tar, passiong options to the provider
-func (p *DockerProvider) SaveImagesWithOps(ctx context.Context, output string, images []string, opts ...SaveImageOption) error {
+// SaveImagesWithOpts exports a list of images as an uncompressed tar, passing options to the provider
+func (p *DockerProvider) SaveImagesWithOpts(ctx context.Context, output string, images []string, opts ...SaveImageOption) error {
 	saveOpts := saveImageOptions{}
 
 	for _, opt := range opts {

@@ -22,6 +22,6 @@ type SaveImageOption func(*saveImageOptions) error
 type ImageProvider interface {
 	ListImages(context.Context) ([]ImageInfo, error)
 	SaveImages(context.Context, string, ...string) error
-	SaveImagesWithOps(context.Context, string, []string, ...SaveImageOption) error
+	SaveImagesWithOpts(context.Context, string, []string, ...SaveImageOption) error
 	PullImage(context.Context, string) error
 }
