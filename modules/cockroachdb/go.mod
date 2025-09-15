@@ -14,7 +14,6 @@ require (
 require (
 	github.com/containerd/platforms v0.2.1 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
-	golang.org/x/net v0.38.0 // indirect
 )
 
 require (
