@@ -1,6 +1,8 @@
 module github.com/testcontainers/testcontainers-go/modules/compose
 
-go 1.23.8
+go 1.24
+
+toolchain go1.24.7
 
 replace github.com/testcontainers/testcontainers-go => ../..
 

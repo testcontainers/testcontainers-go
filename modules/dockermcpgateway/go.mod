@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/dockermcpgateway
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/docker/docker v28.3.3+incompatible
