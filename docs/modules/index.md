@@ -96,6 +96,15 @@ go run . new module --name ${NAME_OF_YOUR_MODULE} --image "${REGISTRY}/${MODULE}
     go run . new example --name ${NAME_OF_YOUR_MODULE} --image "${REGISTRY}/${MODULE}:${TAG}" --title ${TITLE_OF_YOUR_MODULE}
     ```
 
+### Technology modules: client/SDK dependency policy
+
+Production modules and images should remain **driver-agnostic**.
+
+- Do not bundle client SDKs (database/message broker/storage drivers, etc.) **in production modules or images.**  
+  Examples: `yugabyte/gocql`, etc.
+- If you need to show how to connect to a given technology, provide bootstrap code as helpers and keep those dependencies in **tests/examples** only.
+- Prefer small helpers that read container state and build a client config. Reference those helpers from examples and tests.
+
 ### Adding types and methods to the module
 
 We are going to propose a set of steps to follow when adding types and methods to the module:

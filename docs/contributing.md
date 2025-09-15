@@ -55,14 +55,9 @@ Please just be sure to:
 
 * when updating the `go.mod` file, please run `make tidy-all` to ensure all modules are updated.
 
-### Technology modules: client/SDK dependency policy
+### Module contribution 
 
-Production modules and images should remain **driver-agnostic**.
-
-- Do not bundle client SDKs (database/message broker/storage drivers, etc.) **in production modules or images.**  
-  Examples: `yugabyte/gocql`, etc.
-- If you need to show how to connect to a given technology, provide bootstrap code as helpers and keep those dependencies in **tests/examples** only.
-- Prefer small helpers that read container state and build a client config. Reference those helpers from examples and tests.
+For detailed policies on module development and contributions, please refer to the [Module Index page](./modules/index.md).
 
 ## Documentation contributions
 
