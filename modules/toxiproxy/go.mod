@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/Shopify/toxiproxy/v2 v2.12.0
-	github.com/docker/go-connections v0.5.0
+	github.com/docker/go-connections v0.6.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.10.0

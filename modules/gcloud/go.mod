@@ -11,7 +11,7 @@ require (
 	cloud.google.com/go/firestore v1.14.0
 	cloud.google.com/go/pubsub v1.36.2
 	cloud.google.com/go/spanner v1.57.0
-	github.com/docker/go-connections v0.5.0
+	github.com/docker/go-connections v0.6.0
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.38.0
 	google.golang.org/api v0.169.0
