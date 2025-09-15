@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/minio
 
-go 1.24
+go 1.24.0
 
 toolchain go1.24.7
 
@@ -70,7 +70,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/net v0.38.0 // indirect
-	golang.org/x/sys v0.32.0 // indirect
+	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
