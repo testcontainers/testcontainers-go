@@ -72,4 +72,24 @@ schema_registry_client:
     - address: localhost
       port: 9093
 
+pandaproxy:
+  pandaproxy_api:
+    - address: 0.0.0.0
+      port: 8082
+      name: main
+      authentication_method: {{ .HTTPProxy.AuthenticationMethod }}
+
+{{ if .EnableTLS }}
+  pandaproxy_api_tls:
+    - name: main
+      enabled: true
+      cert_file: /etc/redpanda/cert.pem
+      key_file: /etc/redpanda/key.pem
+{{ end }}
+
+pandaproxy_client:
+  brokers:
+    - address: localhost
+      port: 9093
+
 auto_create_topics_enabled: {{ .AutoCreateTopics }}
