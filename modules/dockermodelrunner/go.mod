@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/dockermodelrunner
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/openai/openai-go v0.1.0-beta.9

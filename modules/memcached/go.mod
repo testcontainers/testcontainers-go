@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/memcached
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/bradfitz/gomemcache v0.0.0-20250403215159-8d39553ac7cf

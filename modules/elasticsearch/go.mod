@@ -1,8 +1,8 @@
 module github.com/testcontainers/testcontainers-go/modules/elasticsearch
 
-go 1.23.0
+go 1.24
 
-toolchain go1.23.6
+toolchain go1.24.7
 
 require (
 	github.com/elastic/go-elasticsearch/v8 v8.12.1

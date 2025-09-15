@@ -1,8 +1,8 @@
 module github.com/testcontainers/testcontainers-go/modules/gcloud
 
-go 1.23.0
+go 1.24
 
-toolchain go1.23.6
+toolchain go1.24.7
 
 require (
 	cloud.google.com/go/bigquery v1.59.1

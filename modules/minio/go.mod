@@ -1,8 +1,8 @@
 module github.com/testcontainers/testcontainers-go/modules/minio
 
-go 1.23.0
+go 1.24
 
-toolchain go1.23.6
+toolchain go1.24.7
 
 require (
 	github.com/minio/minio-go/v7 v7.0.68

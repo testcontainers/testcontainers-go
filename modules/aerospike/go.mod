@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/aerospike
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/aerospike/aerospike-client-go/v8 v8.2.0
