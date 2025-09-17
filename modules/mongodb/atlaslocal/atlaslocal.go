@@ -50,7 +50,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run container: %w", err)
 	}
 
 	return c, nil
@@ -62,7 +62,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 func (ctr *Container) ConnectionString(ctx context.Context) (string, error) {
 	endpoint, err := ctr.PortEndpoint(ctx, "27017/tcp", "")
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("port endpoint: %w", err)
 	}
 
 	uri := &url.URL{
