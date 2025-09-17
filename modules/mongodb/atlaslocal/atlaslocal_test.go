@@ -26,8 +26,7 @@ func TestMongoDBAtlasLocal(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := atlaslocal.Run(ctx, latestImage)
-	defer testcontainers.CleanupContainer(t, ctr)
-
+	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
 	client, td := newMongoClient(t, ctx, ctr)
@@ -190,7 +189,7 @@ func TestSCRAMAuth(t *testing.T) {
 
 			// Create the MongoDB Atlas Local container with the specified options.
 			ctr, err := atlaslocal.Run(context.Background(), latestImage, opts...)
-			defer testcontainers.CleanupContainer(t, ctr)
+			testcontainers.CleanupContainer(t, ctr)
 
 			if tc.wantRunErr != "" {
 				require.ErrorContains(t, err, tc.wantRunErr)
@@ -228,8 +227,7 @@ func TestSCRAMAuth(t *testing.T) {
 func TestWithNoTelemetry(t *testing.T) {
 	t.Run("with", func(t *testing.T) {
 		ctr, err := atlaslocal.Run(context.Background(), latestImage, atlaslocal.WithNoTelemetry())
-		defer testcontainers.CleanupContainer(t, ctr)
-
+		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 
 		requireEnvVar(t, ctr, "DO_NOT_TRACK", "1")
@@ -237,8 +235,7 @@ func TestWithNoTelemetry(t *testing.T) {
 
 	t.Run("without", func(t *testing.T) {
 		ctr, err := atlaslocal.Run(context.Background(), latestImage)
-		defer testcontainers.CleanupContainer(t, ctr)
-
+		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 
 		requireEnvVar(t, ctr, "DO_NOT_TRACK", "")
@@ -248,8 +245,7 @@ func TestWithNoTelemetry(t *testing.T) {
 func TestWithMongotLogFile(t *testing.T) {
 	t.Run("with", func(t *testing.T) {
 		ctr, err := atlaslocal.Run(context.Background(), latestImage, atlaslocal.WithMongotLogFile())
-		defer testcontainers.CleanupContainer(t, ctr)
-
+		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 
 		requireEnvVar(t, ctr, "MONGOT_LOG_FILE", "/tmp/mongot.log")
@@ -260,8 +256,7 @@ func TestWithMongotLogFile(t *testing.T) {
 
 	t.Run("without", func(t *testing.T) {
 		ctr, err := atlaslocal.Run(context.Background(), latestImage)
-		defer testcontainers.CleanupContainer(t, ctr)
-
+		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 
 		requireEnvVar(t, ctr, "MONGOT_LOG_FILE", "")
@@ -273,7 +268,7 @@ func TestWithMongotLogFile(t *testing.T) {
 	t.Run("to stdout", func(t *testing.T) {
 		ctr, err := atlaslocal.Run(context.Background(), latestImage,
 			atlaslocal.WithMongotLogToStdout())
-		defer testcontainers.CleanupContainer(t, ctr)
+		testcontainers.CleanupContainer(t, ctr)
 
 		require.NoError(t, err)
 
@@ -288,8 +283,7 @@ func TestWithMongotLogFile(t *testing.T) {
 	t.Run("to stderr", func(t *testing.T) {
 		ctr, err := atlaslocal.Run(context.Background(), latestImage,
 			atlaslocal.WithMongotLogToStderr())
-		defer testcontainers.CleanupContainer(t, ctr)
-
+		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 
 		requireEnvVar(t, ctr, "MONGOT_LOG_FILE", "/dev/stderr")
@@ -306,8 +300,7 @@ func TestWithRunnerLogFile(t *testing.T) {
 
 	t.Run("with", func(t *testing.T) {
 		ctr, err := atlaslocal.Run(context.Background(), latestImage, atlaslocal.WithRunnerLogFile())
-		defer testcontainers.CleanupContainer(t, ctr)
-
+		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 
 		requireEnvVar(t, ctr, "RUNNER_LOG_FILE", runnerLogFile)
@@ -316,7 +309,7 @@ func TestWithRunnerLogFile(t *testing.T) {
 
 	t.Run("without", func(t *testing.T) {
 		ctr, err := atlaslocal.Run(context.Background(), latestImage)
-		defer testcontainers.CleanupContainer(t, ctr)
+		testcontainers.CleanupContainer(t, ctr)
 
 		require.NoError(t, err)
 
@@ -327,8 +320,7 @@ func TestWithRunnerLogFile(t *testing.T) {
 	t.Run("to stdout", func(t *testing.T) {
 		ctr, err := atlaslocal.Run(context.Background(), latestImage,
 			atlaslocal.WithRunnerLogToStdout())
-		defer testcontainers.CleanupContainer(t, ctr)
-
+		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 
 		requireEnvVar(t, ctr, "RUNNER_LOG_FILE", "/dev/stdout")
@@ -342,8 +334,7 @@ func TestWithRunnerLogFile(t *testing.T) {
 	t.Run("to stderr", func(t *testing.T) {
 		ctr, err := atlaslocal.Run(context.Background(), latestImage,
 			atlaslocal.WithRunnerLogToStderr())
-		defer testcontainers.CleanupContainer(t, ctr)
-
+		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 
 		requireEnvVar(t, ctr, "RUNNER_LOG_FILE", "/dev/stderr")
@@ -367,8 +358,7 @@ func TestWithInitDatabase(t *testing.T) {
 	}
 
 	ctr, err := atlaslocal.Run(context.Background(), latestImage, opts...)
-	defer testcontainers.CleanupContainer(t, ctr)
-
+	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
 	requireInitScriptsExist(t, ctr, tmpDir, initScripts)
@@ -445,8 +435,7 @@ func TestWithInitScripts(t *testing.T) {
 			}
 
 			ctr, err := atlaslocal.Run(context.Background(), latestImage, opts...)
-			defer testcontainers.CleanupContainer(t, ctr)
-
+			testcontainers.CleanupContainer(t, ctr)
 			require.NoError(t, err)
 
 			requireInitScriptsExist(t, ctr, tmpDir, tc.initScripts)
@@ -491,8 +480,7 @@ func TestWithInitScripts_MultipleScripts(t *testing.T) {
 	}
 
 	ctr, err := atlaslocal.Run(context.Background(), latestImage, opts...)
-	defer testcontainers.CleanupContainer(t, ctr)
-
+	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
 	requireInitScriptsDoesNotExist(t, ctr, scripts1)
