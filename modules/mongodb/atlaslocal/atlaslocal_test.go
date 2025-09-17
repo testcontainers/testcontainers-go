@@ -195,9 +195,9 @@ func TestSCRAMAuth(t *testing.T) {
 				require.ErrorContains(t, err, tc.wantRunErr)
 
 				return
-			} else {
-				require.NoError(t, err)
 			}
+
+			require.NoError(t, err)
 
 			// Verify the environment variables are set correctly.
 			requireEnvVar(t, ctr, "MONGODB_INITDB_ROOT_USERNAME", tc.username)
