@@ -2,7 +2,6 @@ package atlaslocal_test
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"math/rand/v2"
 	"os"
@@ -568,7 +567,7 @@ func TestConnectionString(t *testing.T) {
 func requireEnvVar(t *testing.T, ctr testcontainers.Container, envVarName, expected string) {
 	t.Helper()
 
-	exitCode, reader, err := ctr.Exec(context.Background(), []string{"sh", "-c", fmt.Sprintf("echo $%s", envVarName)})
+	exitCode, reader, err := ctr.Exec(context.Background(), []string{"sh", "-c", "echo $" + envVarName})
 	require.NoError(t, err)
 	require.Equal(t, 0, exitCode)
 
@@ -673,8 +672,8 @@ func executeAggregation(t *testing.T, ctr testcontainers.Container) {
 	require.NoError(t, err)
 
 	pipeline := mongo.Pipeline{{
-		{"$search", bson.D{
-			{"text", bson.D{{"query", "hello"}, {"path", "txt"}}},
+		{Key: "$search", Value: bson.D{
+			{Key: "text", Value: bson.D{{Key: "query", Value: "hello"}, {Key: "path", Value: "txt"}}},
 		}},
 	}}
 
@@ -718,7 +717,7 @@ func createInitScripts(t *testing.T, scripts map[string]string) string {
 
 	for filename, content := range scripts {
 		scriptPath := filepath.Join(tmpDir, filename)
-		require.NoError(t, os.WriteFile(scriptPath, []byte(content), 0755))
+		require.NoError(t, os.WriteFile(scriptPath, []byte(content), 0o755))
 
 		// Sanity check to verify that the script content is as expected.
 		got, err := os.ReadFile(scriptPath)
@@ -734,7 +733,7 @@ func requireInitScriptsExist(t *testing.T, ctr testcontainers.Container, tmpDir 
 
 	const dstDir = "/docker-entrypoint-initdb.d"
 
-	exit, r, err := ctr.Exec(context.Background(), []string{"sh", "-lc", fmt.Sprintf("ls -l %s", dstDir)})
+	exit, r, err := ctr.Exec(context.Background(), []string{"sh", "-lc", "ls -l " + dstDir})
 	require.NoError(t, err)
 
 	// If the map is empty, the command returns exit code 2.
@@ -770,7 +769,7 @@ func requireInitScriptsDoesNotExist(t *testing.T, ctr testcontainers.Container, 
 
 	// Sanity check to verify that all scripts are present.
 	for filename := range expectedScripts {
-		cmd := []string{"sh", "-c", fmt.Sprintf("cd docker-entrypoint-initdb.d && ls -l")}
+		cmd := []string{"sh", "-c", "cd docker-entrypoint-initdb.d && ls -l"}
 
 		exitCode, reader, err := ctr.Exec(context.Background(), cmd)
 		require.NoError(t, err)
@@ -803,7 +802,7 @@ func newAuthFiles(t *testing.T) (string, string, string) {
 	// Create username and password files.
 	usernameFilepath := filepath.Join(tmpDir, "username.txt")
 
-	err := os.WriteFile(usernameFilepath, []byte("file_testuser"), 0755)
+	err := os.WriteFile(usernameFilepath, []byte("file_testuser"), 0o755)
 	require.NoError(t, err)
 
 	_, err = os.Stat(usernameFilepath)
@@ -812,7 +811,7 @@ func newAuthFiles(t *testing.T) (string, string, string) {
 	// Create the password file.
 	passwordFilepath := filepath.Join(tmpDir, "password.txt")
 
-	err = os.WriteFile(passwordFilepath, []byte("file_testpass"), 0755)
+	err = os.WriteFile(passwordFilepath, []byte("file_testpass"), 0o755)
 	require.NoError(t, err)
 
 	_, err = os.Stat(passwordFilepath)

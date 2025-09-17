@@ -113,7 +113,7 @@ func (opts options) parseUsername() (string, error) {
 	}
 
 	if opts.username != "" && opts.localUsernamefile != "" {
-		return "", fmt.Errorf("cannot specify both inline credentials and files for credentials")
+		return "", errors.New("cannot specify both inline credentials and files for credentials")
 	}
 
 	if opts.username != "" {
@@ -134,7 +134,7 @@ func (opts options) parsePassword() (string, error) {
 	}
 
 	if opts.password != "" && opts.localPasswordFile != "" {
-		return "", fmt.Errorf("cannot specify both inline credentials and files for credentials")
+		return "", errors.New("cannot specify both inline credentials and files for credentials")
 	}
 
 	if opts.password != "" {
@@ -207,7 +207,7 @@ func WithUsernameFile(usernameFile string) Option {
 		opts.files = append(opts.files, testcontainers.ContainerFile{
 			HostFilePath:      usernameFile,
 			ContainerFilePath: usernameContainerPath,
-			FileMode:          0444,
+			FileMode:          0o444,
 		})
 
 		return nil
@@ -243,7 +243,7 @@ func WithPasswordFile(passwordFile string) Option {
 		opts.files = append(opts.files, testcontainers.ContainerFile{
 			HostFilePath:      passwordFile,
 			ContainerFilePath: passwordContainerPath,
-			FileMode:          0444,
+			FileMode:          0o444,
 		})
 
 		return nil
@@ -317,18 +317,18 @@ func WithInitScripts(scriptsDir string) Option {
 			}
 
 			name := entry.Name()
-			if !(strings.HasSuffix(name, ".sh") || strings.HasSuffix(name, ".js")) {
+			if !strings.HasSuffix(name, ".sh") && !strings.HasSuffix(name, ".js") {
 				continue
 			}
 
 			f := testcontainers.ContainerFile{
 				HostFilePath:      filepath.Join(abs, name),
 				ContainerFilePath: filepath.Join(dstDir, name),
-				FileMode:          0644,
+				FileMode:          0o644,
 			}
 
 			if strings.HasSuffix(name, ".sh") {
-				f.FileMode = 0755 // Make shell scripts executable.
+				f.FileMode = 0o755 // Make shell scripts executable.
 			}
 
 			opts.files = append(opts.files, f)

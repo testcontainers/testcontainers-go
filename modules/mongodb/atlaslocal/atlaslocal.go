@@ -42,9 +42,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithFiles(userOpts.files...),
 	}
 
-	for _, opt := range opts {
-		moduleOpts = append(moduleOpts, opt)
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
 	container, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
