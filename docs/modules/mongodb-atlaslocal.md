@@ -22,7 +22,7 @@ go get github.com/testcontainers/testcontainers-go/modules/mongodb/atlaslocal
 ## Usage example
 
 <!--codeinclude-->
-[Creating a MongoDB Atlas Local container](../../modules/mongodb/atlaslocal/examples_test.go) inside_block:ExampleRun
+[Creating a MongoDB Atlas Local container](../../modules/mongodb/atlaslocal/examples_test.go) inside_block:runMongoDBAtlasLocalContainer
 <!--/codeinclude-->
 
 ## Module Reference
@@ -173,7 +173,7 @@ The `ReadMongotLogs` returns a reader for the log solution specified when constr
 
 
 <!--codeinclude-->
-[Using ReadMongotLogs with the MongoDB client](../../modules/mongodb/atlaslocal/examples_test.go) inside_block:readMongotLogs
+[Using ReadMongotLogs with the MongoDB client](../../modules/mongodb/atlaslocal/examples_test.go) inside_block:mongotLogsRead
 <!--/codeinclude-->
 
 #### ReadRunnerLogs
@@ -184,5 +184,5 @@ The `ReadRunnerLogs` returns a reader for the log solution specified when constr
 
 
 <!--codeinclude-->
-[Using ReadRunnerLogs with the MongoDB client](../../modules/mongodb/atlaslocal/examples_test.go) inside_block:readRunnerLogs
+[Using ReadRunnerLogs with the MongoDB client](../../modules/mongodb/atlaslocal/examples_test.go) inside_block:runnerLogsRead
 <!--/codeinclude-->

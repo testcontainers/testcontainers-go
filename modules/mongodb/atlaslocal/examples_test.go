@@ -82,7 +82,7 @@ func ExampleRun_connect() {
 }
 
 func ExampleRun_readMongotLogs() {
-	// readMongotLogs {
+	// mongotLogsRead {
 	ctx := context.Background()
 
 	atlaslocalContainer, err := atlaslocal.Run(ctx, "mongodb/mongodb-atlas-local:latest",
@@ -128,7 +128,7 @@ func ExampleRun_readMongotLogs() {
 }
 
 func ExampleRun_readRunnerLogs() {
-	// readRunnerLogs {
+	// runnerLogsRead {
 	ctx := context.Background()
 
 	atlaslocalContainer, err := atlaslocal.Run(ctx, "mongodb/mongodb-atlas-local:latest",
