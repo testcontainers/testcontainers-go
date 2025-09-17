@@ -361,7 +361,7 @@ func TestWithInitDatabase(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	requireInitScriptsExist(t, ctr, tmpDir, initScripts)
+	requireInitScriptsExist(t, ctr, initScripts)
 	requireEnvVar(t, ctr, "MONGODB_INITDB_DATABASE", "mydb")
 
 	client, td := newMongoClient(t, context.Background(), ctr)
@@ -438,7 +438,7 @@ func TestWithInitScripts(t *testing.T) {
 			testcontainers.CleanupContainer(t, ctr)
 			require.NoError(t, err)
 
-			requireInitScriptsExist(t, ctr, tmpDir, tc.initScripts)
+			requireInitScriptsExist(t, ctr, tc.initScripts)
 
 			// Connect to the server.
 			client, td := newMongoClient(t, context.Background(), ctr)
@@ -484,7 +484,7 @@ func TestWithInitScripts_MultipleScripts(t *testing.T) {
 	require.NoError(t, err)
 
 	requireInitScriptsDoesNotExist(t, ctr, scripts1)
-	requireInitScriptsExist(t, ctr, tmpDir2, scripts2)
+	requireInitScriptsExist(t, ctr, scripts2)
 }
 
 func TestConnectionString(t *testing.T) {
@@ -716,7 +716,7 @@ func createInitScripts(t *testing.T, scripts map[string]string) string {
 	return tmpDir
 }
 
-func requireInitScriptsExist(t *testing.T, ctr testcontainers.Container, tmpDir string, expectedScripts map[string]string) {
+func requireInitScriptsExist(t *testing.T, ctr testcontainers.Container, expectedScripts map[string]string) {
 	t.Helper()
 
 	const dstDir = "/docker-entrypoint-initdb.d"
