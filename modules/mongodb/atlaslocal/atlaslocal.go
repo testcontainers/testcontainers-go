@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net"
 	"net/url"
 	"os"
 
@@ -61,19 +60,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // container. If you provide a username and a password, the connection string
 // will also include them.
 func (ctr *Container) ConnectionString(ctx context.Context) (string, error) {
-	host, err := ctr.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	mappedPort, err := ctr.MappedPort(ctx, "27017/tcp")
+	endpoint, err := ctr.PortEndpoint(ctx, "27017/tcp", "")
 	if err != nil {
 		return "", err
 	}
 
 	uri := &url.URL{
 		Scheme: "mongodb",
-		Host:   net.JoinHostPort(host, mappedPort.Port()),
+		Host:   endpoint,
 		Path:   "/",
 	}
 
