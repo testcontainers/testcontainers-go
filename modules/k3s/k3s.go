@@ -194,8 +194,11 @@ func unmarshal(bytes []byte) (*KubeConfigValue, error) {
 	return &kubeConfig, nil
 }
 
-// LoadImages loads images into the k3s container.
 func (c *K3sContainer) LoadImages(ctx context.Context, images ...string) error {
+	return c.LoadImagesWithOpts(ctx, images)
+}
+
+func (c *K3sContainer) LoadImagesWithOpts(ctx context.Context, images []string, opts ...testcontainers.SaveImageOption) error {
 	provider, err := testcontainers.ProviderDocker.GetProvider()
 	if err != nil {
 		return fmt.Errorf("getting docker provider %w", err)
@@ -210,7 +213,7 @@ func (c *K3sContainer) LoadImages(ctx context.Context, images ...string) error {
 		_ = os.Remove(imagesTar.Name())
 	}()
 
-	err = provider.SaveImages(context.Background(), imagesTar.Name(), images...)
+	err = provider.SaveImagesWithOpts(context.Background(), imagesTar.Name(), images, opts...)
 	if err != nil {
 		return fmt.Errorf("saving images %w", err)
 	}
@@ -221,7 +224,7 @@ func (c *K3sContainer) LoadImages(ctx context.Context, images ...string) error {
 		return fmt.Errorf("copying image to container %w", err)
 	}
 
-	_, _, err = c.Exec(ctx, []string{"ctr", "-n=k8s.io", "images", "import", containerPath})
+	_, _, err = c.Exec(ctx, []string{"ctr", "-n=k8s.io", "images", "import", "--all-platforms", containerPath})
 	if err != nil {
 		return fmt.Errorf("importing image %w", err)
 	}

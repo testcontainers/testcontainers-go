@@ -54,6 +54,7 @@ updates:
         - /modules/mssql
         - /modules/mysql
         - /modules/nats
+        - /modules/nebulagraph
         - /modules/neo4j
         - /modules/ollama
         - /modules/openfga

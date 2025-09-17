@@ -162,6 +162,10 @@
             "path": "../modules/nats"
         },
         {
+            "name": "module / nebulagraph",
+            "path": "../modules/nebulagraph"
+        },
+        {
             "name": "module / neo4j",
             "path": "../modules/neo4j"
         },

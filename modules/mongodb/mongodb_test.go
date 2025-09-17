@@ -7,11 +7,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/mongodb"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func TestMongoDB(t *testing.T) {
@@ -127,7 +128,7 @@ func TestMongoDB(t *testing.T) {
 			require.NoError(tt, err)
 
 			// Force direct connection to the container.
-			mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(endpoint).SetDirect(true))
+			mongoClient, err := mongo.Connect(options.Client().ApplyURI(endpoint).SetDirect(true))
 			require.NoError(tt, err)
 
 			err = mongoClient.Ping(ctx, nil)
@@ -141,7 +142,10 @@ func TestMongoDB(t *testing.T) {
 			// If the container is configured with a replica set, run the change stream test.
 			if hasReplica, _ := hasReplicaSet(endpoint); hasReplica {
 				coll := mongoClient.Database("test").Collection("changes")
-				stream, err := coll.Watch(ctx, mongo.Pipeline{})
+				stream, err := coll.Watch(
+					ctx,
+					mongo.Pipeline{},
+					options.ChangeStream().SetFullDocument(options.UpdateLookup))
 				require.NoError(tt, err)
 				defer stream.Close(ctx)
 
@@ -150,17 +154,15 @@ func TestMongoDB(t *testing.T) {
 				require.NoError(tt, err)
 
 				require.True(tt, stream.Next(ctx))
-				var changeEvent bson.M
+				var changeEvent struct {
+					OperationType string `bson:"operationType"`
+					FullDocument  bson.M `bson:"fullDocument"`
+				}
 				err = stream.Decode(&changeEvent)
 				require.NoError(tt, err)
 
-				opType, ok := changeEvent["operationType"].(string)
-				require.True(tt, ok, "Expected operationType field")
-				require.Equal(tt, "insert", opType, "Expected operationType to be 'insert'")
-
-				fullDoc, ok := changeEvent["fullDocument"].(bson.M)
-				require.True(tt, ok, "Expected fullDocument field")
-				require.Equal(tt, "hello change streams", fullDoc["message"])
+				require.Equal(tt, "insert", changeEvent.OperationType, "Expected operationType to be 'insert")
+				require.Equal(tt, "hello change streams", changeEvent.FullDocument["message"])
 			}
 		})
 	}
