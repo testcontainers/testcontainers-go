@@ -29,7 +29,7 @@ var _ testcontainers.ContainerCustomizer = (Option)(nil)
 type options struct {
 	username          string
 	password          string
-	localUsernamefile string
+	localUsernameFile string
 	localPasswordFile string
 	noTelemetry       bool
 	database          string
@@ -50,7 +50,7 @@ func (opts options) env() map[string]string {
 		env[envMongoDBInitPassword] = opts.password
 	}
 
-	if opts.localUsernamefile != "" {
+	if opts.localUsernameFile != "" {
 		env[envMongoDBInitUsernameFile] = usernameContainerPath
 	}
 
@@ -86,7 +86,7 @@ func (opts options) validate() error {
 		return errors.New("if you specify username or password, you must provide both of them")
 	}
 
-	usernameFile := opts.localUsernamefile
+	usernameFile := opts.localUsernameFile
 	passwordFile := opts.localPasswordFile
 
 	// If username file or password file is specified, both must be provided.
@@ -108,11 +108,11 @@ func (opts options) validate() error {
 // function will return an error. If neither is provided, an empty string is
 // returned.
 func (opts options) parseUsername() (string, error) {
-	if opts.username == "" && opts.localUsernamefile == "" {
+	if opts.username == "" && opts.localUsernameFile == "" {
 		return "", nil
 	}
 
-	if opts.username != "" && opts.localUsernamefile != "" {
+	if opts.username != "" && opts.localUsernameFile != "" {
 		return "", errors.New("cannot specify both inline credentials and files for credentials")
 	}
 
@@ -120,7 +120,7 @@ func (opts options) parseUsername() (string, error) {
 		return opts.username, nil
 	}
 
-	r, err := os.ReadFile(opts.localUsernamefile)
+	r, err := os.ReadFile(opts.localUsernameFile)
 	return strings.TrimSpace(string(r)), err
 }
 
@@ -202,7 +202,7 @@ func WithUsernameFile(usernameFile string) Option {
 			return fmt.Errorf("username file must be a file, got a directory: %s", usernameFile)
 		}
 
-		opts.localUsernamefile = usernameFile
+		opts.localUsernameFile = usernameFile
 
 		opts.files = append(opts.files, testcontainers.ContainerFile{
 			HostFilePath:      usernameFile,
