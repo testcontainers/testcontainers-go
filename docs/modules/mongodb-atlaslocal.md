@@ -71,7 +71,7 @@ result in an error.
 
 - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-This functional option mounts a local file as the MongoDB root username secret at`/run/secrets/mongo-root-username`
+This functional option mounts a local file as the MongoDB root username secret at `/run/secrets/mongo-root-username`
 and sets the `MONGODB_INITDB_ROOT_USERNAME_FILE` environment variable. The path must be absolute and exist; no-op if
 empty.
 
