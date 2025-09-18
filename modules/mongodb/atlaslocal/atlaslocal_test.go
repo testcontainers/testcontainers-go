@@ -577,6 +577,7 @@ func requireMongotLogs(t *testing.T, ctr testcontainers.Container) {
 	// Pull the log file and require non-empty.
 	reader, err := ctr.(*atlaslocal.Container).ReadMongotLogs(context.Background())
 	require.NoError(t, err)
+	defer reader.Close()
 
 	buf := make([]byte, 1)
 	_, _ = reader.Read(buf) // read at least one byte to ensure non-empty
