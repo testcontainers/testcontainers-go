@@ -531,6 +531,7 @@ func TestConnectionString(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctr, err := atlaslocal.Run(context.Background(), latestImage, tc.opts...)
+			testcontainers.CleanupContainer(t, ctr)
 			require.NoError(t, err)
 
 			csRaw, err := ctr.ConnectionString(context.Background())
