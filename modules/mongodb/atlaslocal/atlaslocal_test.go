@@ -18,6 +18,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/x/mongo/driver/connstring"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/modules/mongodb/atlaslocal"
 )
 
@@ -560,18 +561,16 @@ func TestConnectionString(t *testing.T) {
 func requireEnvVar(t *testing.T, ctr testcontainers.Container, envVarName, expected string) {
 	t.Helper()
 
-	exitCode, reader, err := ctr.Exec(context.Background(), []string{"sh", "-c", "echo $" + envVarName})
+	// testcontainers-go's Exec() returns a multiplexed stream in the same format
+	// used by the Docker API. Each frame is prefixed with an 8-byte header.
+	exitCode, reader, err := ctr.Exec(context.Background(), []string{"sh", "-c", "echo $" + envVarName}, exec.Multiplexed())
 	require.NoError(t, err)
 	require.Equal(t, 0, exitCode)
 
 	outBytes, err := io.ReadAll(reader)
 	require.NoError(t, err)
 
-	// testcontainers-go's Exec() returns a multiplexed stream in the same format
-	// used by the Docker API. Each frame is prefixed with an 8-byte header.
-	require.Greater(t, len(outBytes), 8, "Exec output too short to contain env var value")
-
-	out := strings.TrimSpace(string(outBytes[8:]))
+	out := strings.TrimSpace(string(outBytes))
 	require.Equal(t, expected, out, "DO_NOT_TRACK env var value mismatch")
 }
 
@@ -727,7 +726,7 @@ func requireInitScriptsExist(t *testing.T, ctr testcontainers.Container, expecte
 
 	const dstDir = "/docker-entrypoint-initdb.d"
 
-	exit, r, err := ctr.Exec(context.Background(), []string{"sh", "-lc", "ls -l " + dstDir})
+	exit, r, err := ctr.Exec(context.Background(), []string{"sh", "-lc", "ls -l " + dstDir}, exec.Multiplexed())
 	require.NoError(t, err)
 
 	// If the map is empty, the command returns exit code 2.
@@ -764,11 +763,13 @@ func requireInitScriptsDoesNotExist(t *testing.T, ctr testcontainers.Container, 
 	// Sanity check to verify that all scripts are present.
 	for filename := range expectedScripts {
 		cmd := []string{"sh", "-lc", "ls -1 /docker-entrypoint-initdb.d 2>/dev/null || true"}
-		_, reader, err := ctr.Exec(context.Background(), cmd)
+		_, reader, err := ctr.Exec(context.Background(), cmd, exec.Multiplexed())
 		require.NoError(t, err)
 
-		content, _ := io.ReadAll(reader)
-		require.NotContains(t, string(content), filename)
+		raw, err := io.ReadAll(reader)
+		require.NoError(t, err)
+
+		require.NotContains(t, string(raw), filename)
 	}
 }
 
