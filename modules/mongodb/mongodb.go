@@ -17,6 +17,7 @@ import (
 var entrypointContent []byte
 
 const (
+	defaultPort         = "27017/tcp"
 	entrypointPath      = "/tmp/entrypoint-tc.sh"
 	keyFilePath         = "/tmp/mongo_keyfile"
 	replicaSetOptEnvKey = "testcontainers.mongodb.replicaset_name"
@@ -40,10 +41,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MongoDBContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        img,
-		ExposedPorts: []string{"27017/tcp"},
+		ExposedPorts: []string{defaultPort},
 		WaitingFor: wait.ForAll(
 			wait.ForLog("Waiting for connections"),
-			wait.ForListeningPort("27017/tcp"),
+			wait.ForListeningPort(defaultPort),
 		),
 		Env: map[string]string{},
 	}
@@ -118,7 +119,7 @@ func WithReplicaSet(replSetName string) testcontainers.CustomizeRequestOption {
 // ConnectionString returns the connection string for the MongoDB container.
 // If you provide a username and a password, the connection string will also include them.
 func (c *MongoDBContainer) ConnectionString(ctx context.Context) (string, error) {
-	endpoint, err := c.PortEndpoint(ctx, "27017/tcp", "")
+	endpoint, err := c.PortEndpoint(ctx, defaultPort, "")
 	if err != nil {
 		return "", err
 	}

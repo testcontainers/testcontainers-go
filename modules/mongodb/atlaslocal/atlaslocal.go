@@ -60,7 +60,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // container. If you provide a username and a password, the connection string
 // will also include them.
 func (ctr *Container) ConnectionString(ctx context.Context) (string, error) {
-	endpoint, err := ctr.PortEndpoint(ctx, "27017/tcp", "")
+	endpoint, err := ctr.PortEndpoint(ctx, defaultPort, "")
 	if err != nil {
 		return "", fmt.Errorf("port endpoint: %w", err)
 	}
