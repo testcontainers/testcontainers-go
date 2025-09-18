@@ -145,7 +145,7 @@ func (opts options) parsePassword() (string, error) {
 	return strings.TrimSpace(string(r)), err
 }
 
-// Option is an option for the Redpanda container.
+// Option is an option for the Atlas Local container.
 type Option func(*options) error
 
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
