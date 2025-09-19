@@ -212,6 +212,11 @@ func validateKRaftVersion(fqName string) error {
 		version = "v" + version
 	}
 
+	// remove the architecture suffix
+	if strings.HasSuffix(version, ".amd64") || strings.HasSuffix(version, ".arm64") {
+		version = version[:strings.LastIndex(version, ".")]
+	}
+
 	if semver.Compare(version, "v7.4.0") < 0 { // version < v7.4.0
 		return fmt.Errorf("version=%s. KRaft mode is only available since version 7.4.0", version)
 	}
