@@ -8,7 +8,7 @@ require (
 	github.com/docker/docker v28.3.3+incompatible
 	github.com/modelcontextprotocol/go-sdk v0.2.0
 	github.com/stretchr/testify v1.10.0
-	github.com/testcontainers/testcontainers-go v0.38.0
+	github.com/testcontainers/testcontainers-go v0.39.0
 )
 
 require (

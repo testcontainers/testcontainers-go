@@ -8,7 +8,7 @@ require (
 	github.com/IBM/sarama v1.42.1
 	github.com/docker/go-connections v0.6.0
 	github.com/stretchr/testify v1.10.0
-	github.com/testcontainers/testcontainers-go v0.38.0
+	github.com/testcontainers/testcontainers-go v0.39.0
 	golang.org/x/mod v0.16.0
 )
 
