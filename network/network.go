@@ -33,13 +33,14 @@ func New(ctx context.Context, opts ...NetworkCustomizer) (*testcontainers.Docker
 
 	//nolint:staticcheck
 	netReq := testcontainers.NetworkRequest{
-		Driver:     nc.Driver,
-		Internal:   nc.Internal,
-		EnableIPv6: nc.EnableIPv6,
-		Name:       uuid.NewString(),
-		Labels:     nc.Labels,
-		Attachable: nc.Attachable,
-		IPAM:       nc.IPAM,
+		Driver:        nc.Driver,
+		DriverOptions: nc.Options,
+		Internal:      nc.Internal,
+		EnableIPv6:    nc.EnableIPv6,
+		Name:          uuid.NewString(),
+		Labels:        nc.Labels,
+		Attachable:    nc.Attachable,
+		IPAM:          nc.IPAM,
 	}
 
 	//nolint:staticcheck
@@ -91,6 +92,15 @@ func WithCheckDuplicate() CustomizeNetworkOption {
 func WithDriver(driver string) CustomizeNetworkOption {
 	return func(original *network.CreateOptions) error {
 		original.Driver = driver
+
+		return nil
+	}
+}
+
+// WithDriverOptions allows to set driver options.
+func WithDriverOptions(options map[string]string) CustomizeNetworkOption {
+	return func(original *network.CreateOptions) error {
+		original.Options = options
 
 		return nil
 	}
