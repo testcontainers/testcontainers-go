@@ -159,16 +159,15 @@ func TestDockerImageAuth(t *testing.T) {
 
 func TestBuildContainerFromDockerfile(t *testing.T) {
 	ctx := context.Background()
-	req := ContainerRequest{
-		FromDockerfile: FromDockerfile{
-			Context: "./testdata",
-		},
-		AlwaysPullImage: true, // make sure the authentication takes place
-		ExposedPorts:    []string{"6379/tcp"},
-		WaitingFor:      wait.ForLog("Ready to accept connections"),
-	}
 
-	redisC, err := prepareRedisImage(ctx, req)
+	redisC, err := Run(ctx, "",
+		WithDockerfile(FromDockerfile{
+			Context: "./testdata",
+		}),
+		WithAlwaysPull(),
+		WithExposedPorts("6379/tcp"),
+		WithWaitStrategy(wait.ForLog("Ready to accept connections")),
+	)
 	CleanupContainer(t, redisC)
 	require.NoError(t, err)
 }
@@ -201,21 +200,19 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 
 	ctx := context.Background()
 
-	req := ContainerRequest{
-		FromDockerfile: FromDockerfile{
+	redisC, err := Run(ctx, "",
+		WithDockerfile(FromDockerfile{
 			Context:    "./testdata",
 			Dockerfile: "auth.Dockerfile",
 			BuildArgs: map[string]*string{
 				"REGISTRY_HOST": &registryHost,
 			},
 			Repo: "localhost",
-		},
-		AlwaysPullImage: true, // make sure the authentication takes place
-		ExposedPorts:    []string{"6379/tcp"},
-		WaitingFor:      wait.ForLog("Ready to accept connections"),
-	}
-
-	redisC, err := prepareRedisImage(ctx, req)
+		}),
+		WithAlwaysPull(),
+		WithExposedPorts("6379/tcp"),
+		WithWaitStrategy(wait.ForLog("Ready to accept connections")),
+	)
 	CleanupContainer(t, redisC)
 	require.NoError(t, err)
 }
@@ -228,20 +225,18 @@ func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *test
 
 	ctx := context.Background()
 
-	req := ContainerRequest{
-		FromDockerfile: FromDockerfile{
+	redisC, err := Run(ctx, "",
+		WithDockerfile(FromDockerfile{
 			Context:    "./testdata",
 			Dockerfile: "auth.Dockerfile",
 			BuildArgs: map[string]*string{
 				"REGISTRY_HOST": &registryHost,
 			},
-		},
-		AlwaysPullImage: true, // make sure the authentication takes place
-		ExposedPorts:    []string{"6379/tcp"},
-		WaitingFor:      wait.ForLog("Ready to accept connections"),
-	}
-
-	redisC, err := prepareRedisImage(ctx, req)
+		}),
+		WithAlwaysPull(),
+		WithExposedPorts("6379/tcp"),
+		WithWaitStrategy(wait.ForLog("Ready to accept connections")),
+	)
 	CleanupContainer(t, redisC)
 	require.Error(t, err)
 }
@@ -253,17 +248,8 @@ func TestCreateContainerFromPrivateRegistry(t *testing.T) {
 	setAuthConfig(t, registryHost, "testuser", "testpassword")
 
 	ctx := context.Background()
-	req := ContainerRequest{
-		Image:           registryHost + "/redis:5.0-alpine",
-		AlwaysPullImage: true, // make sure the authentication takes place
-		ExposedPorts:    []string{"6379/tcp"},
-		WaitingFor:      wait.ForLog("Ready to accept connections"),
-	}
 
-	redisContainer, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	redisContainer, err := Run(ctx, registryHost+"/redis:5.0-alpine", WithAlwaysPull(), WithExposedPorts("6379/tcp"), WithWaitStrategy(wait.ForLog("Ready to accept connections")))
 	CleanupContainer(t, redisContainer)
 	require.NoError(t, err)
 }
@@ -274,36 +260,28 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 	// copyDirectoryToContainer {
-	req := ContainerRequest{
-		Image:        "registry:2",
-		ExposedPorts: []string{"5000/tcp"},
-		Env: map[string]string{
+	registryC, err := Run(ctx, "registry:2",
+		WithAlwaysPull(),
+		WithEnv(map[string]string{
 			"REGISTRY_AUTH":                             "htpasswd",
 			"REGISTRY_AUTH_HTPASSWD_REALM":              "Registry",
 			"REGISTRY_AUTH_HTPASSWD_PATH":               "/auth/htpasswd",
 			"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY": "/data",
-		},
-		Files: []ContainerFile{
-			{
+		}),
+		WithFiles(
+			ContainerFile{
 				HostFilePath:      wd + "/testdata/auth",
 				ContainerFilePath: "/auth",
 			},
-			{
+			ContainerFile{
 				HostFilePath:      wd + "/testdata/data",
 				ContainerFilePath: "/data",
 			},
-		},
-		WaitingFor: wait.ForHTTP("/").WithPort("5000/tcp"),
-	}
+		),
+		WithExposedPorts("5000/tcp"),
+		WithWaitStrategy(wait.ForHTTP("/").WithPort("5000/tcp")),
+	)
 	// }
-
-	genContainerReq := GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	registryC, err := GenericContainer(ctx, genContainerReq)
 	CleanupContainer(t, registryC)
 	require.NoError(t, err)
 
@@ -319,16 +297,6 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 	})
 
 	return addr
-}
-
-func prepareRedisImage(ctx context.Context, req ContainerRequest) (Container, error) {
-	genContainerReq := GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	return GenericContainer(ctx, genContainerReq)
 }
 
 // setAuthConfig sets the DOCKER_AUTH_CONFIG environment variable with

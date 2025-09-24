@@ -278,7 +278,7 @@ func Test_BuildImageWithContexts(t *testing.T) {
 			ContextArchive: func() (io.ReadSeeker, error) {
 				return nil, nil
 			},
-			ExpectedError: "create container: you must specify either a build context or an image",
+			ExpectedError: "generic container: create container: you must specify either a build context or an image",
 		},
 	}
 
@@ -290,19 +290,15 @@ func Test_BuildImageWithContexts(t *testing.T) {
 			a, err := testCase.ContextArchive()
 			require.NoError(t, err)
 
-			req := testcontainers.ContainerRequest{
-				FromDockerfile: testcontainers.FromDockerfile{
+			c, err := testcontainers.Run(
+				ctx, "",
+				testcontainers.WithDockerfile(testcontainers.FromDockerfile{
 					ContextArchive: a,
 					Context:        testCase.ContextPath,
 					Dockerfile:     testCase.Dockerfile,
-				},
-				WaitingFor: wait.ForLog(testCase.ExpectedEchoOutput).WithStartupTimeout(1 * time.Minute),
-			}
-
-			c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-				ContainerRequest: req,
-				Started:          true,
-			})
+				}),
+				testcontainers.WithWaitStrategy(wait.ForLog(testCase.ExpectedEchoOutput).WithStartupTimeout(1*time.Minute)),
+			)
 			testcontainers.CleanupContainer(t, c)
 
 			if testCase.ExpectedError != "" {
@@ -322,17 +318,10 @@ func TestCustomLabelsImage(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:  "alpine:latest",
-			Labels: map[string]string{myLabelName: myLabelValue},
-		},
-	}
 
-	ctr, err := testcontainers.GenericContainer(ctx, req)
-
+	ctr, err := testcontainers.Run(ctx, "alpine:latest", testcontainers.WithLabels(map[string]string{myLabelName: myLabelValue}))
+	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, ctr.Terminate(ctx)) })
 
 	ctrJSON, err := ctr.Inspect(ctx)
 	require.NoError(t, err)
@@ -348,22 +337,20 @@ func TestCustomLabelsBuildOptionsModifier(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			FromDockerfile: testcontainers.FromDockerfile{
-				Context:    "./testdata",
-				Dockerfile: "Dockerfile",
-				BuildOptionsModifier: func(opts *build.ImageBuildOptions) {
-					opts.Labels = map[string]string{
-						myBuildOptionLabel: myBuildOptionValue,
-					}
-				},
-			},
-			Labels: map[string]string{myLabelName: myLabelValue},
-		},
-	}
 
-	ctr, err := testcontainers.GenericContainer(ctx, req)
+	ctr, err := testcontainers.Run(
+		ctx, "",
+		testcontainers.WithDockerfile(testcontainers.FromDockerfile{
+			Context:    "./testdata",
+			Dockerfile: "Dockerfile",
+			BuildOptionsModifier: func(opts *build.ImageBuildOptions) {
+				opts.Labels = map[string]string{
+					myBuildOptionLabel: myBuildOptionValue,
+				}
+			},
+		}),
+		testcontainers.WithLabels(map[string]string{myLabelName: myLabelValue}),
+	)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
