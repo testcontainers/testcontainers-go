@@ -835,7 +835,7 @@ func TestPrintContainerLogsOnError(t *testing.T) {
 	opts := []ContainerCustomizer{
 		WithCmd("echo", "-n", "I am expecting this"),
 		WithLogger(&arrayOfLinesLogger),
-		WithWaitStrategy(wait.ForLog("I was expecting that").WithStartupTimeout(5 * time.Second)),
+		WithWaitStrategy(wait.ForLog("I was expecting that").WithStartupTimeout(2 * time.Second)),
 	}
 
 	ctr, err := Run(ctx, "alpine", opts...)
