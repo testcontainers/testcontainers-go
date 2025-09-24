@@ -270,11 +270,11 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 		}),
 		WithFiles(
 			ContainerFile{
-				HostFilePath:      wd + "/testdata/auth",
+				HostFilePath:      filepath.Join(wd, "testdata", "auth"),
 				ContainerFilePath: "/auth",
 			},
 			ContainerFile{
-				HostFilePath:      wd + "/testdata/data",
+				HostFilePath:      filepath.Join(wd, "testdata", "data"),
 				ContainerFilePath: "/data",
 			},
 		),
