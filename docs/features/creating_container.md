@@ -171,15 +171,15 @@ It's important to notice that the `Readiness` of a container is defined by the w
 In the following example, we are going to create a container using all the lifecycle hooks, all of them printing a message when any of the lifecycle hooks is called:
 
 <!--codeinclude-->
-[Extending container with lifecycle hooks](../../lifecycle_test.go) inside_block:reqWithLifecycleHooks
+[Extending container with lifecycle hooks](../../lifecycle_test.go) inside_block:optsWithLifecycleHooks
 <!--/codeinclude-->
 
 #### Default Logging Hook
 
-_Testcontainers for Go_ comes with a default logging hook that will print a log message for each container lifecycle event, using the default logger. You can add your own logger by passing the `testcontainers.DefaultLoggingHook` option to the `ContainerRequest`, passing a reference to your preferred logger:
+_Testcontainers for Go_ comes with a default logging hook that will print a log message for each container lifecycle event, using the default logger. You can add your own logger by passing the `testcontainers.DefaultLoggingHook` option to the `Run` options, passing a reference to your preferred logger:
 
 <!--codeinclude-->
-[Use a custom logger for container hooks](../../lifecycle_test.go) inside_block:reqWithDefaultLoggingHook
+[Use a custom logger for container hooks](../../lifecycle_test.go) inside_block:optsWithDefaultLoggingHook
 [Custom Logger implementation](../../lifecycle_test.go) inside_block:customLoggerImplementation
 <!--/codeinclude-->
 
