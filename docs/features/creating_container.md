@@ -196,11 +196,12 @@ The aforementioned `Run` function represents a straightforward way to configure 
 
 ## Reusable container
 
-With `Reuse` option you can reuse an existing container. Reusing will work only if you pass an
-existing container name via 'req.Name' field. If the name is not in a list of existing containers,
-the function will create a new generic container. If `Reuse` is true and `Name` is empty, you will get error.
+Using the `WithReuseByName` option you can reuse an existing container. Reusing works only if you pass an
+existing container name via this options. If the name is not in a list of existing containers,
+the function will create a new container. If the name is empty, you get error.
 
 The following test creates an NGINX container, adds a file into it and then reuses the container again for checking the file:
+
 ```go
 package main
 
@@ -220,15 +221,11 @@ const (
 func main() {
 	ctx := context.Background()
 
-	n1, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "nginx:1.17.6",
-			ExposedPorts: []string{"80/tcp"},
-			WaitingFor:   wait.ForListeningPort("80/tcp"),
-			Name:         reusableContainerName,
-		},
-		Started: true,
-	})
+	n1, err := testcontainers.Run(ctx, "nginx:1.17.6",
+		testcontainers.WithExposedPorts("80/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort("80/tcp")),
+		testcontainers.WithReuseByName(reusableContainerName),
+	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(n1); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -247,16 +244,11 @@ func main() {
 		return
 	}
 
-	n2, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "nginx:1.17.6",
-			ExposedPorts: []string{"80/tcp"},
-			WaitingFor:   wait.ForListeningPort("80/tcp"),
-			Name:         reusableContainerName,
-		},
-		Started: true,
-		Reuse:   true,
-	})
+	n2, err := testcontainers.Run(ctx, "nginx:1.17.6",
+		testcontainers.WithExposedPorts("80/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort("80/tcp")),
+		testcontainers.WithReuseByName(reusableContainerName),
+	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(n2); err != nil {
 			log.Printf("failed to terminate container: %s", err)
