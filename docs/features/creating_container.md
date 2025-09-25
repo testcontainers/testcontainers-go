@@ -62,72 +62,72 @@ and `Network.Remove` which can be seen in the examples.
 package main
 
 import (
-	"context"
-	"fmt"
-	"net/http"
-	"testing"
+    "context"
+    "fmt"
+    "net/http"
+    "testing"
 
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
+    "github.com/testcontainers/testcontainers-go"
+    "github.com/testcontainers/testcontainers-go/wait"
 )
 
 type nginxContainer struct {
-	testcontainers.Container
-	URI string
+    testcontainers.Container
+    URI string
 }
 
 
 func setupNginx(ctx context.Context, networkName string) (*nginxContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        "nginx",
-		ExposedPorts: []string{"80/tcp"},
-		Networks:     []string{"bridge", networkName},
-		WaitingFor:   wait.ForHTTP("/"),
-	}
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	var nginxC *nginxContainer
-	if container != nil {
-		nginxC = &nginxContainer{Container: container}
-	}
-	if err != nil {
-		return nginxC, err
-	}
+    req := testcontainers.ContainerRequest{
+        Image:        "nginx",
+        ExposedPorts: []string{"80/tcp"},
+        Networks:     []string{"bridge", networkName},
+        WaitingFor:   wait.ForHTTP("/"),
+    }
+    container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+        ContainerRequest: req,
+        Started:          true,
+    })
+    var nginxC *nginxContainer
+    if container != nil {
+        nginxC = &nginxContainer{Container: container}
+    }
+    if err != nil {
+        return nginxC, err
+    }
 
-	ip, err := container.Host(ctx)
-	if err != nil {
-		return nginxC, err
-	}
+    ip, err := container.Host(ctx)
+    if err != nil {
+        return nginxC, err
+    }
 
-	mappedPort, err := container.MappedPort(ctx, "80")
-	if err != nil {
-		return nginxC, err
-	}
+    mappedPort, err := container.MappedPort(ctx, "80")
+    if err != nil {
+        return nginxC, err
+    }
 
-	nginxC.URI = fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
+    nginxC.URI = fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
 
-	return nginxC, nil
+    return nginxC, nil
 }
 
 func TestIntegrationNginxLatestReturn(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
+    if testing.Short() {
+        t.Skip("skipping integration test")
+    }
 
-	ctx := context.Background()
+    ctx := context.Background()
 
-	nw, err := network.New(ctx)
-	require.NoError(t, err)
-	testcontainers.CleanupNetwork(t, nw)
+    nw, err := network.New(ctx)
+    require.NoError(t, err)
+    testcontainers.CleanupNetwork(t, nw)
 
-	nginxC, err := setupNginx(ctx, nw.Name)
-	testcontainers.CleanupContainer(t, nginxC)
-	require.NoError(t, err)
+    nginxC, err := setupNginx(ctx, nw.Name)
+    testcontainers.CleanupContainer(t, nginxC)
+    require.NoError(t, err)
 
-	resp, err := http.Get(nginxC.URI)
-	require.Equal(t, http.StatusOK, resp.StatusCode)
+    resp, err := http.Get(nginxC.URI)
+    require.Equal(t, http.StatusOK, resp.StatusCode)
 }
 ```
 
@@ -196,9 +196,9 @@ The aforementioned `Run` function represents a straightforward way to configure 
 
 ## Reusable container
 
-Using the `WithReuseByName` option you can reuse an existing container. Reusing works only if you pass an
-existing container name via this options. If the name is not in a list of existing containers,
-the function will create a new container. If the name is empty, you get error.
+Using the `WithReuseByName` option you can reuse an existing container. Reuse works only when you provide an
+existing container name to this option. If the name is not found among existing containers,
+the function will create a new container. If the name is empty, an error is returned.
 
 The following test creates an NGINX container, adds a file into it and then reuses the container again for checking the file:
 
@@ -206,65 +206,65 @@ The following test creates an NGINX container, adds a file into it and then reus
 package main
 
 import (
-	"context"
-	"fmt"
-	"log"
+    "context"
+    "fmt"
+    "log"
 
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
+    "github.com/testcontainers/testcontainers-go"
+    "github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
-	reusableContainerName = "my_test_reusable_container"
+    reusableContainerName = "my_test_reusable_container"
 )
 
 func main() {
-	ctx := context.Background()
+    ctx := context.Background()
 
-	n1, err := testcontainers.Run(ctx, "nginx:1.17.6",
-		testcontainers.WithExposedPorts("80/tcp"),
-		testcontainers.WithWaitStrategy(wait.ForListeningPort("80/tcp")),
-		testcontainers.WithReuseByName(reusableContainerName),
-	)
-	defer func() {
-		if err := testcontainers.TerminateContainer(n1); err != nil {
-			log.Printf("failed to terminate container: %s", err)
-		}
-	}()
-	if err != nil {
-		log.Print(err)
-		return
-	}
+    n1, err := testcontainers.Run(ctx, "nginx:1.17.6",
+        testcontainers.WithExposedPorts("80/tcp"),
+        testcontainers.WithWaitStrategy(wait.ForListeningPort("80/tcp")),
+        testcontainers.WithReuseByName(reusableContainerName),
+    )
+    defer func() {
+        if err := testcontainers.TerminateContainer(n1); err != nil {
+            log.Printf("failed to terminate container: %s", err)
+        }
+    }()
+    if err != nil {
+        log.Print(err)
+        return
+    }
 
-	copiedFileName := "hello_copy.sh"
-	err = n1.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 700)
+    copiedFileName := "hello_copy.sh"
+    err = n1.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 700)
 
-	if err != nil {
-		log.Print(err)
-		return
-	}
+    if err != nil {
+        log.Print(err)
+        return
+    }
 
-	n2, err := testcontainers.Run(ctx, "nginx:1.17.6",
-		testcontainers.WithExposedPorts("80/tcp"),
-		testcontainers.WithWaitStrategy(wait.ForListeningPort("80/tcp")),
-		testcontainers.WithReuseByName(reusableContainerName),
-	)
-	defer func() {
-		if err := testcontainers.TerminateContainer(n2); err != nil {
-			log.Printf("failed to terminate container: %s", err)
-		}
-	}()
-	if err != nil {
-		log.Print(err)
-		return
-	}
+    n2, err := testcontainers.Run(ctx, "nginx:1.17.6",
+        testcontainers.WithExposedPorts("80/tcp"),
+        testcontainers.WithWaitStrategy(wait.ForListeningPort("80/tcp")),
+        testcontainers.WithReuseByName(reusableContainerName),
+    )
+    defer func() {
+        if err := testcontainers.TerminateContainer(n2); err != nil {
+            log.Printf("failed to terminate container: %s", err)
+        }
+    }()
+    if err != nil {
+        log.Print(err)
+        return
+    }
 
-	c, _, err := n2.Exec(ctx, []string{"bash", copiedFileName})
-	if err != nil {
-		log.Print(err)
-		return
-	}
-	fmt.Println(c)
+    c, _, err := n2.Exec(ctx, []string{"bash", copiedFileName})
+    if err != nil {
+        log.Print(err)
+        return
+    }
+    fmt.Println(c)
 }
 ```
 
@@ -278,60 +278,60 @@ The following test creates two NGINX containers in parallel:
 package main
 
 import (
-	"context"
-	"fmt"
-	"log"
+    "context"
+    "fmt"
+    "log"
 
-	"github.com/testcontainers/testcontainers-go"
+    "github.com/testcontainers/testcontainers-go"
 )
 
 func main() {
-	ctx := context.Background()
+    ctx := context.Background()
 
-	requests := testcontainers.ParallelContainerRequest{
-		{
-			ContainerRequest: testcontainers.ContainerRequest{
+    requests := testcontainers.ParallelContainerRequest{
+        {
+            ContainerRequest: testcontainers.ContainerRequest{
 
-				Image: "nginx",
-				ExposedPorts: []string{
-					"10080/tcp",
-				},
-			},
-			Started: true,
-		},
-		{
-			ContainerRequest: testcontainers.ContainerRequest{
+                Image: "nginx",
+                ExposedPorts: []string{
+                    "10080/tcp",
+                },
+            },
+            Started: true,
+        },
+        {
+            ContainerRequest: testcontainers.ContainerRequest{
 
-				Image: "nginx",
-				ExposedPorts: []string{
-					"10081/tcp",
-				},
-			},
-			Started: true,
-		},
-	}
+                Image: "nginx",
+                ExposedPorts: []string{
+                    "10081/tcp",
+                },
+            },
+            Started: true,
+        },
+    }
 
-	res, err := testcontainers.ParallelContainers(ctx, requests, testcontainers.ParallelContainersOptions{})
-	for _, c := range res {
-		c := c
-		defer func() {
-			if err := testcontainers.TerminateContainer(c); err != nil {
-				log.Printf("failed to terminate container: %s", c)
-			}
-		}()
-	}
+    res, err := testcontainers.ParallelContainers(ctx, requests, testcontainers.ParallelContainersOptions{})
+    for _, c := range res {
+        c := c
+        defer func() {
+            if err := testcontainers.TerminateContainer(c); err != nil {
+                log.Printf("failed to terminate container: %s", c)
+            }
+        }()
+    }
 
-	if err != nil {
-		e, ok := err.(testcontainers.ParallelContainersError)
-		if !ok {
-			log.Printf("unknown error: %v", err)
-			return
-		}
+    if err != nil {
+        e, ok := err.(testcontainers.ParallelContainersError)
+        if !ok {
+            log.Printf("unknown error: %v", err)
+            return
+        }
 
-		for _, pe := range e.Errors {
-			fmt.Println(pe.Request, pe.Error)
-		}
-		return
-	}
+        for _, pe := range e.Errors {
+            fmt.Println(pe.Request, pe.Error)
+        }
+        return
+    }
 }
 ```
