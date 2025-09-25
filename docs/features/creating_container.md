@@ -131,14 +131,13 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 }
 ```
 
-
-
-
 ### Lifecycle hooks
 
-_Testcontainers for Go_ allows you to define your own lifecycle hooks for better control over your containers. You just need to define functions that return an error and receive the Go context as first argument, and a `ContainerRequest` for the `Creating` hook, and a `Container` for the rest of them as second argument.
+_Testcontainers for Go_ allows you to define your own lifecycle hooks for better control over your containers. You just need to define functions that return an error and receive the Go context as the first argument.
 
-You'll be able to pass multiple lifecycle hooks at the `ContainerRequest` as an array of `testcontainers.ContainerLifecycleHooks`. The `testcontainers.ContainerLifecycleHooks` struct defines the following lifecycle hooks, each of them backed by an array of functions representing the hooks:
+You'll be able to pass multiple lifecycle hooks using the `WithLifecycleHooks` and `WithAdditionalLifecycleHooks` options, passing an array of `testcontainers.ContainerLifecycleHooks`. The first one replaces the existing lifecycle hooks with the new ones, while the second one appends the new lifecycle hooks to the existing ones.
+
+The `testcontainers.ContainerLifecycleHooks` struct defines the following lifecycle hooks, each of them backed by an array of functions representing the hooks:
 
 * `PreBuilds` - hooks that are executed before the image is built. This hook is only available when creating a container from a Dockerfile
 * `PostBuilds` - hooks that are executed after the image is built. This hook is only available when creating a container from a Dockerfile
@@ -164,7 +163,7 @@ Inside each group, the hooks will be executed in the order they were defined.
 !!!info
 	The default hooks are for logging (applied to all hooks), customising the Docker config (applied to the pre-create hook), copying files in to the container (applied to the post-create hook), adding log consumers (applied to the post-start and pre-terminate hooks), and running the wait strategies as a readiness check (applied to the post-start hook).
 
-It's important to notice that the `Readiness` of a container is defined by the wait strategies defined for the container. **This hook will be executed right after the `PostStarts` hook**. If you want to add your own readiness checks, you can do it by adding a `PostReadies` hook to the container request, which will execute your own readiness check after the default ones. That said, the `PostStarts` hooks don't warrant that the container is ready, so you should not rely on that.
+It's important to note that the `Readiness` of a container is defined by the wait strategies configured for the container. **This hook is executed right after the `PostStarts` hook**. If you want additional readiness checks, add a `PostReadies` hook, which runs after the default ones. The `PostStarts` hooks do not imply readiness; don't rely on them for that.
 
 !!!warning
 	Up to `v0.37.0`, the readiness hook included checks for all the exposed ports to be ready. This is not the case anymore, and the readiness hook only uses the wait strategies defined for the container to determine if the container is ready.
@@ -172,28 +171,28 @@ It's important to notice that the `Readiness` of a container is defined by the w
 In the following example, we are going to create a container using all the lifecycle hooks, all of them printing a message when any of the lifecycle hooks is called:
 
 <!--codeinclude-->
-[Extending container with lifecycle hooks](../../lifecycle_test.go) inside_block:reqWithLifecycleHooks
+[Extending container with lifecycle hooks](../../lifecycle_test.go) inside_block:optsWithLifecycleHooks
 <!--/codeinclude-->
 
 #### Default Logging Hook
 
-_Testcontainers for Go_ comes with a default logging hook that will print a log message for each container lifecycle event, using the default logger. You can add your own logger by passing the `testcontainers.DefaultLoggingHook` option to the `ContainerRequest`, passing a reference to your preferred logger:
+_Testcontainers for Go_ comes with a default logging hook that will print a log message for each container lifecycle event, using the default logger. You can add your own logger by passing the `testcontainers.DefaultLoggingHook` option to the `Run` options, passing a reference to your preferred logger:
 
 <!--codeinclude-->
-[Use a custom logger for container hooks](../../lifecycle_test.go) inside_block:reqWithDefaultLoggingHook
+[Use a custom logger for container hooks](../../lifecycle_test.go) inside_block:optsWithDefaultLoggingHook
 [Custom Logger implementation](../../lifecycle_test.go) inside_block:customLoggerImplementation
 <!--/codeinclude-->
 
 ### Advanced Settings
 
-The aforementioned `GenericContainer` function and the `ContainerRequest` struct represent a straightforward manner to configure the containers, but you could need to create your containers with more advance settings regarding the config, host config and endpoint settings Docker types. For those more advance settings, _Testcontainers for Go_ offers a way to fully customize the container request and those internal Docker types. These customisations, called _modifiers_, will be applied just before the internal call to the Docker client to create the container.
+The aforementioned `Run` function represents a straightforward way to configure containers, but you may need more advanced settings regarding the Docker config, host config, and endpoint settings types. For those advanced settings, _Testcontainers for Go_ offers a way to fully customize the container and those internal Docker types. These customisations, called _modifiers_, are applied just before the internal call to the Docker client to create the container.
 
 <!--codeinclude-->
 [Using modifiers](../../lifecycle_test.go) inside_block:reqWithModifiers
 <!--/codeinclude-->
 
 !!!warning
-	The only special case where the modifiers are not applied last, is when there are no exposed ports in the container request and the container does not use a network mode from a container (e.g. `req.NetworkMode = container.NetworkMode("container:$CONTAINER_ID")`). In that case, _Testcontainers for Go_ will extract the ports from the underlying Docker image and export them.
+	The only special case where the modifiers are not applied last, is when there are no exposed ports and the container does not use a network mode from a container (e.g. `req.NetworkMode = container.NetworkMode("container:$CONTAINER_ID")`). In that case, _Testcontainers for Go_ will extract the ports from the underlying Docker image and export them.
 
 ## Reusable container
 
