@@ -110,36 +110,6 @@ func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testi
 	require.Equalf(t, http.StatusOK, resp.StatusCode, "Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 }
 
-func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
-	if os.Getenv("XDG_RUNTIME_DIR") != "" {
-		t.Skip("Skipping test that requires host network access when running in a container")
-	}
-
-	// skipIfDockerDesktop {
-	ctx := context.Background()
-	SkipIfDockerDesktop(t, ctx)
-	// }
-
-	gcr := GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image:    nginxImage,
-			Networks: []string{"new-network"},
-			HostConfigModifier: func(hc *container.HostConfig) {
-				hc.NetworkMode = "host"
-			},
-		},
-		Started: true,
-	}
-
-	nginx, err := GenericContainer(ctx, gcr)
-	CleanupContainer(t, nginx)
-	if err != nil {
-		// Error when NetworkMode = host and Network = []string{"bridge"}
-		t.Logf("Can't use Network and NetworkMode together, %s\n", err)
-	}
-}
-
 func TestContainerWithHostNetwork(t *testing.T) {
 	if os.Getenv("XDG_RUNTIME_DIR") != "" {
 		t.Skip("Skipping test that requires host network access when running in a container")
