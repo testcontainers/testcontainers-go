@@ -93,6 +93,16 @@ func TestValidateKRaftVersion(t *testing.T) {
 			image:   "my-kafka:1.0.0",
 			wantErr: false,
 		},
+		{
+			name:    "Official: valid, with the amd64 architecture suffix",
+			image:   "confluentinc/confluent-local:7.5.9.amd64",
+			wantErr: false,
+		},
+		{
+			name:    "Official: valid, with the arm64 architecture suffix",
+			image:   "confluentinc/confluent-local:7.5.9.arm64",
+			wantErr: false,
+		},
 	}
 
 	for _, test := range tests {
