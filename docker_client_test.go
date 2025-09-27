@@ -1,7 +1,6 @@
 package testcontainers
 
 import (
-	"context"
 	"sync"
 	"testing"
 
@@ -10,7 +9,7 @@ import (
 
 func TestGetDockerInfo(t *testing.T) {
 	t.Run("works", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		c, err := NewDockerClientWithOpts(ctx)
 		require.NoError(t, err)
 
@@ -20,7 +19,7 @@ func TestGetDockerInfo(t *testing.T) {
 	})
 
 	t.Run("is goroutine safe", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		c, err := NewDockerClientWithOpts(ctx)
 		require.NoError(t, err)
 

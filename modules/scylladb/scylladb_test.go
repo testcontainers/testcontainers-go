@@ -25,7 +25,7 @@ import (
 var scyllaYaml []byte
 
 func TestScyllaDB(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := scylladb.Run(ctx,
 		"scylladb/scylla:6.2",
@@ -64,7 +64,7 @@ func TestScyllaDB(t *testing.T) {
 }
 
 func TestScyllaWithConfig(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := scylladb.Run(ctx,
 		"scylladb/scylla:6.2",
@@ -110,7 +110,7 @@ func TestScyllaWithConfig(t *testing.T) {
 }
 
 func TestScyllaAlternator(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("test-with-alternator", func(t *testing.T) {
 		ctr, err := scylladb.Run(ctx,
@@ -154,12 +154,12 @@ func (r *scyllaAlternatorResolver) ResolveEndpoint(_ context.Context, _ dynamodb
 func getDynamoAlternatorClient(t *testing.T, c *scylladb.Container) (*dynamodb.Client, error) {
 	t.Helper()
 
-	hostPort, err := c.AlternatorConnectionHost(context.Background())
+	hostPort, err := c.AlternatorConnectionHost(t.Context())
 	if err != nil {
 		return nil, fmt.Errorf("connection host: %w", err)
 	}
 
-	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
+	cfg, err := config.LoadDefaultConfig(t.Context(), config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
 		Value: aws.Credentials{
 			AccessKeyID:     "SCYLLA_ALTERNATOR_ACCESS_KEY_ID",
 			SecretAccessKey: "SCYLLA_ALTERNATOR_SECRET_ACCESS",
@@ -176,7 +176,7 @@ func getDynamoAlternatorClient(t *testing.T, c *scylladb.Container) (*dynamodb.C
 func requireCreateTable(t *testing.T, client *dynamodb.Client) {
 	t.Helper()
 
-	_, err := client.CreateTable(context.Background(), &dynamodb.CreateTableInput{
+	_, err := client.CreateTable(t.Context(), &dynamodb.CreateTableInput{
 		TableName: aws.String("demo_table"),
 		KeySchema: []types.KeySchemaElement{
 			{

@@ -29,7 +29,7 @@ type noopLogConsumer struct{}
 func (*noopLogConsumer) Accept(testcontainers.Log) {}
 
 func TestPulsar(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	nw, err := tcnetwork.New(ctx)

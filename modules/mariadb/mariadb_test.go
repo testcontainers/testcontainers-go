@@ -15,7 +15,7 @@ import (
 )
 
 func TestMariaDB(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := mariadb.Run(ctx, "mariadb:11.0.3")
 	testcontainers.CleanupContainer(t, ctr)
@@ -46,7 +46,7 @@ func TestMariaDB(t *testing.T) {
 }
 
 func TestMariaDBWithNonRootUserAndEmptyPassword(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := mariadb.Run(ctx,
 		"mariadb:11.0.3",
@@ -57,7 +57,7 @@ func TestMariaDBWithNonRootUserAndEmptyPassword(t *testing.T) {
 }
 
 func TestMariaDBWithRootUserAndEmptyPassword(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := mariadb.Run(ctx,
 		"mariadb:11.0.3",
@@ -86,7 +86,7 @@ func TestMariaDBWithRootUserAndEmptyPassword(t *testing.T) {
 }
 
 func TestMariaDBWithMySQLEnvVars(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := mariadb.Run(ctx, "mariadb:10.3.29",
 		mariadb.WithScripts(filepath.Join("testdata", "schema.sql")))
@@ -97,7 +97,7 @@ func TestMariaDBWithMySQLEnvVars(t *testing.T) {
 }
 
 func TestMariaDBWithConfigFile(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := mariadb.Run(ctx, "mariadb:11.0.3",
 		mariadb.WithConfigFile(filepath.Join("testdata", "my.cnf")))
@@ -130,7 +130,7 @@ func TestMariaDBWithConfigFile(t *testing.T) {
 }
 
 func TestMariaDBWithScripts(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := mariadb.Run(ctx,
 		"mariadb:11.0.3",

@@ -1,7 +1,6 @@
 package testcontainers
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -10,7 +9,7 @@ import (
 )
 
 func TestProviderTypeGetProviderAutodetect(t *testing.T) {
-	dockerHost := core.MustExtractDockerHost(context.Background())
+	dockerHost := core.MustExtractDockerHost(t.Context())
 	const podmanSocket = "unix://$XDG_RUNTIME_DIR/podman/podman.sock"
 
 	tests := []struct {

@@ -57,7 +57,7 @@ func s3Client(ctx context.Context, l *localstack.LocalStackContainer) (*s3.Clien
 		return nil, err
 	}
 
-	awsCfg, err := config.LoadDefaultConfig(context.TODO(),
+	awsCfg, err := config.LoadDefaultConfig(ctx,
 		config.WithRegion(region),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accesskey, secretkey, token)),
 	)
@@ -78,7 +78,7 @@ func s3Client(ctx context.Context, l *localstack.LocalStackContainer) (*s3.Clien
 // }
 
 func TestS3(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := localstack.Run(ctx, "localstack/localstack:1.4.0")
 	testcontainers.CleanupContainer(t, ctr)

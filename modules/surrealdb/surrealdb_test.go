@@ -1,7 +1,6 @@
 package surrealdb
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -11,7 +10,7 @@ import (
 )
 
 func TestSurrealDBSelect(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := Run(ctx, "surrealdb/surrealdb:v1.1.1")
 	testcontainers.CleanupContainer(t, ctr)
@@ -48,7 +47,7 @@ func TestSurrealDBSelect(t *testing.T) {
 }
 
 func TestSurrealDBWithAuth(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := Run(ctx, "surrealdb/surrealdb:v1.1.1", WithAuthentication())
 	testcontainers.CleanupContainer(t, ctr)

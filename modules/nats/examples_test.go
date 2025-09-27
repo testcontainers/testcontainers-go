@@ -86,7 +86,8 @@ func ExampleRun_cluster() {
 	}
 
 	defer func() {
-		if err := nwr.Remove(context.Background()); err != nil {
+		ctx := context.Background()
+		if err := nwr.Remove(ctx); err != nil {
 			log.Printf("failed to remove network: %s", err)
 		}
 	}()

@@ -1,7 +1,6 @@
 package dockermcpgateway_test
 
 import (
-	"context"
 	"io"
 	"testing"
 
@@ -12,7 +11,7 @@ import (
 )
 
 func TestDockerMCPGateway(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := dmcpg.Run(ctx, "docker/mcp-gateway:latest")
 	testcontainers.CleanupContainer(t, ctr)
@@ -22,7 +21,7 @@ func TestDockerMCPGateway(t *testing.T) {
 }
 
 func TestDockerMCPGateway_withServerAndTools(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := dmcpg.Run(
 		ctx, "docker/mcp-gateway:latest",
@@ -50,7 +49,7 @@ func TestDockerMCPGateway_withServerAndTools(t *testing.T) {
 }
 
 func TestDockerMCPGateway_withSecret(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := dmcpg.Run(
 		ctx, "docker/mcp-gateway:latest",
@@ -68,7 +67,7 @@ func TestDockerMCPGateway_withSecret(t *testing.T) {
 }
 
 func TestDockerMCPGateway_withSecrets(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := dmcpg.Run(
 		ctx, "docker/mcp-gateway:latest",

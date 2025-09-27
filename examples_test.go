@@ -104,7 +104,7 @@ func ExampleRun() {
 
 	// files
 	// copyFileFromContainer {
-	f, err := ctr.CopyFileFromContainer(context.Background(), "/tmp/file.txt")
+	f, err := ctr.CopyFileFromContainer(ctx, "/tmp/file.txt")
 	if err != nil {
 		log.Printf("failed to copy file from container: %s", err)
 		return

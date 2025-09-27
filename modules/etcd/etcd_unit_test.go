@@ -1,7 +1,6 @@
 package etcd
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"testing"
@@ -16,7 +15,7 @@ import (
 )
 
 func TestRunCluster1Node(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := Run(ctx, "gcr.io/etcd-development/etcd:v3.5.14")
 	testcontainers.CleanupContainer(t, ctr)
@@ -33,7 +32,7 @@ func TestRunClusterMultipleNodes(t *testing.T) {
 }
 
 func TestTerminate(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := Run(ctx, "gcr.io/etcd-development/etcd:v3.5.14", WithNodes("etcd-1", "etcd-2", "etcd-3"))
 	require.NoError(t, err)
@@ -41,24 +40,24 @@ func TestTerminate(t *testing.T) {
 
 	// verify that the network and the containers does no longer exist
 
-	cli, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	cli, err := testcontainers.NewDockerClientWithOpts(t.Context())
 	require.NoError(t, err)
 	defer cli.Close()
 
-	_, err = cli.ContainerInspect(context.Background(), ctr.GetContainerID())
+	_, err = cli.ContainerInspect(t.Context(), ctr.GetContainerID())
 	require.True(t, errdefs.IsNotFound(err))
 
 	for _, child := range ctr.childNodes {
-		_, err := cli.ContainerInspect(context.Background(), child.GetContainerID())
+		_, err := cli.ContainerInspect(t.Context(), child.GetContainerID())
 		require.True(t, errdefs.IsNotFound(err))
 	}
 
-	_, err = cli.NetworkInspect(context.Background(), ctr.opts.clusterNetwork.ID, network.InspectOptions{})
+	_, err = cli.NetworkInspect(t.Context(), ctr.opts.clusterNetwork.ID, network.InspectOptions{})
 	require.True(t, errdefs.IsNotFound(err))
 }
 
 func TestTerminate_partiallyInitialised(t *testing.T) {
-	newNetwork, err := tcnetwork.New(context.Background())
+	newNetwork, err := tcnetwork.New(t.Context())
 	require.NoError(t, err)
 
 	ctr := &EtcdContainer{
@@ -67,13 +66,13 @@ func TestTerminate_partiallyInitialised(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, ctr.Terminate(context.Background()))
+	require.NoError(t, ctr.Terminate(t.Context()))
 
-	cli, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	cli, err := testcontainers.NewDockerClientWithOpts(t.Context())
 	require.NoError(t, err)
 	defer cli.Close()
 
-	_, err = cli.NetworkInspect(context.Background(), ctr.opts.clusterNetwork.ID, network.InspectOptions{})
+	_, err = cli.NetworkInspect(t.Context(), ctr.opts.clusterNetwork.ID, network.InspectOptions{})
 	require.True(t, errdefs.IsNotFound(err))
 }
 
@@ -84,7 +83,7 @@ func testCluster(t *testing.T, node1 string, node2 string, nodes ...string) func
 	return func(tt *testing.T) {
 		const clusterToken string = "My-cluster-t0k3n"
 
-		ctx := context.Background()
+		ctx := t.Context()
 
 		ctr, err := Run(ctx, "gcr.io/etcd-development/etcd:v3.5.14", WithNodes(node1, node2, nodes...), WithClusterToken(clusterToken))
 		testcontainers.CleanupContainer(t, ctr)

@@ -15,7 +15,7 @@ import (
 
 func Test_LoadImages(t *testing.T) {
 	// Give up to three minutes to run this test
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(3*time.Minute))
+	ctx, cancel := context.WithDeadline(t.Context(), time.Now().Add(3*time.Minute))
 	defer cancel()
 
 	dindContainer, err := dind.Run(ctx, "docker:28.0.1-dind")

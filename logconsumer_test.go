@@ -68,7 +68,7 @@ func devNullAcceptorChan() chan string {
 }
 
 func Test_LogConsumerGetsCalled(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	g := TestLogConsumer{
 		msgs:     []string{},
@@ -128,7 +128,7 @@ func (t *TestLogTypeConsumer) Accept(l Log) {
 }
 
 func Test_ShouldRecognizeLogTypes(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	g := TestLogTypeConsumer{
 		LogTypes: map[string]string{},
@@ -172,7 +172,7 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 }
 
 func Test_MultipleLogConsumers(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	first := TestLogConsumer{
 		msgs:     []string{},
@@ -233,7 +233,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	// First spin up a docker-in-docker container, then spin up an inner container within that dind container
 	// Logs are being read from the inner container via the dind container's tcp port, which can be briefly
 	// closed to test behaviour in connection-closed situations.
-	ctx := context.Background()
+	ctx := t.Context()
 
 	dind, err := Run(
 		ctx, "docker:dind",
@@ -343,7 +343,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 }
 
 func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := Run(ctx, "alpine:latest",
 		WithCmd("sh", "-c", "echo 'abcdefghi' && echo 'foo'"),
@@ -361,7 +361,7 @@ func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 }
 
 func TestContainerLogsTty(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	opts := []ContainerCustomizer{
 		WithCmd("sh", "-c", "echo 'abcdefghi' && echo 'foo'"),
@@ -384,7 +384,7 @@ func TestContainerLogsTty(t *testing.T) {
 }
 
 func TestContainerLogsEnableAtStart(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	g := TestLogConsumer{
 		msgs:     []string{},
 		Done:     make(chan struct{}),
@@ -430,7 +430,7 @@ func TestContainerLogsEnableAtStart(t *testing.T) {
 }
 
 func Test_StartLogProductionStillStartsWithTooLowTimeout(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	g := TestLogConsumer{
 		msgs:     []string{},
@@ -457,7 +457,7 @@ func Test_StartLogProductionStillStartsWithTooLowTimeout(t *testing.T) {
 }
 
 func Test_StartLogProductionStillStartsWithTooHighTimeout(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	g := TestLogConsumer{
 		msgs:     []string{},
@@ -526,7 +526,7 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	})
 
 	// Context with cancellation functionality for simulating user interruption
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel() // Ensure it gets called.
 
 	first := TestLogConsumer{
@@ -651,7 +651,7 @@ func NewFooLogConsumer(t *testing.T) *FooLogConsumer {
 func TestRestartContainerWithLogConsumer(t *testing.T) {
 	logConsumer := NewFooLogConsumer(t)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctr, err := Run(
 		ctx, "hello-world",
 		WithAlwaysPull(),

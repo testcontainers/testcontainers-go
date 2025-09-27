@@ -1,7 +1,6 @@
 package testcontainers
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -97,7 +96,7 @@ func TestParallelContainers(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			res, err := ParallelContainers(context.Background(), tc.reqs, ParallelContainersOptions{})
+			res, err := ParallelContainers(t.Context(), tc.reqs, ParallelContainersOptions{})
 			for _, c := range res {
 				CleanupContainer(t, c)
 			}
@@ -148,7 +147,7 @@ func TestParallelContainersWithReuse(t *testing.T) {
 		req,
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	res, err := ParallelContainers(ctx, parallelRequest, ParallelContainersOptions{})
 	for _, c := range res {

@@ -1,7 +1,6 @@
 package mongodb_test
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 	"testing"
@@ -118,7 +117,7 @@ func TestMongoDB(t *testing.T) {
 		t.Run(tc.name, func(tt *testing.T) {
 			tt.Parallel()
 
-			ctx := context.Background()
+			ctx := tt.Context()
 
 			mongodbContainer, err := mongodb.Run(ctx, tc.img, tc.opts...)
 			testcontainers.CleanupContainer(t, mongodbContainer)

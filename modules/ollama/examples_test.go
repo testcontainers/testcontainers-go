@@ -149,7 +149,7 @@ func ExampleRun_withModel_llama2_langchain() {
 	}
 
 	completion, err := llm.Call(
-		context.Background(),
+		ctx,
 		"how can Testcontainers help with testing?",
 		llms.WithSeed(42),         // the lower the seed, the more deterministic the completion
 		llms.WithTemperature(0.0), // the lower the temperature, the more creative the completion
@@ -221,7 +221,7 @@ func ExampleRun_withLocal() {
 	}
 
 	completion, err := llm.Call(
-		context.Background(),
+		ctx,
 		"how can Testcontainers help with testing?",
 		llms.WithSeed(42),         // the lower the seed, the more deterministic the completion
 		llms.WithTemperature(0.0), // the lower the temperature, the more creative the completion
@@ -246,13 +246,15 @@ func ExampleRun_withLocal() {
 }
 
 func ExampleRun_withImageMount() {
-	cli, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	ctx := context.Background()
+
+	cli, err := testcontainers.NewDockerClientWithOpts(ctx)
 	if err != nil {
 		log.Printf("failed to create docker client: %s", err)
 		return
 	}
 
-	info, err := cli.Info(context.Background())
+	info, err := cli.Info(ctx)
 	if err != nil {
 		log.Printf("failed to get docker info: %s", err)
 		return
@@ -263,8 +265,6 @@ func ExampleRun_withImageMount() {
 		log.Printf("skipping test because the server version is not v28 or greater")
 		return
 	}
-
-	ctx := context.Background()
 
 	ollamaContainer, err := tcollama.Run(ctx, "ollama/ollama:0.5.12")
 	if err != nil {
@@ -324,6 +324,7 @@ func ExampleRun_withImageMount() {
 		log.Printf("failed to get request: %s", err)
 		return
 	}
+	defer resp.Body.Close()
 
 	fmt.Println(resp.StatusCode)
 

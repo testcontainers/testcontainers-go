@@ -1,7 +1,6 @@
 package rabbitmq_test
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -18,7 +17,7 @@ import (
 )
 
 func TestRunContainer_connectUsingAmqp(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	rabbitmqContainer, err := rabbitmq.Run(ctx, "rabbitmq:3.12.11-management-alpine")
 	testcontainers.CleanupContainer(t, rabbitmqContainer)
@@ -35,7 +34,7 @@ func TestRunContainer_connectUsingAmqp(t *testing.T) {
 }
 
 func TestRunContainer_connectUsingAmqps(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	tmpDir := t.TempDir()
 
@@ -89,7 +88,7 @@ func TestRunContainer_connectUsingAmqps(t *testing.T) {
 }
 
 func TestRunContainer_withAllSettings(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	rabbitmqContainer, err := rabbitmq.Run(ctx,
 		"rabbitmq:3.12.11-management-alpine",
@@ -219,7 +218,7 @@ func TestRunContainer_withAllSettings(t *testing.T) {
 func requireEntity(t *testing.T, container testcontainers.Container, listCommand string, entities ...string) {
 	t.Helper()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	cmd := []string{"rabbitmqadmin", "list", listCommand}
 
@@ -232,7 +231,7 @@ func requireEntity(t *testing.T, container testcontainers.Container, listCommand
 func requireEntityWithVHost(t *testing.T, container testcontainers.Container, listCommand string, vhostID int, entities ...string) {
 	t.Helper()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	cmd := []string{"rabbitmqadmin", "list", listCommand}
 	if vhostID > 0 {
@@ -248,7 +247,7 @@ func requireEntityWithVHost(t *testing.T, container testcontainers.Container, li
 func requirePluginIsEnabled(t *testing.T, container testcontainers.Container, plugins ...string) {
 	t.Helper()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	for _, plugin := range plugins {
 

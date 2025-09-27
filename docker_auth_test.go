@@ -102,7 +102,7 @@ func TestDockerImageAuth(t *testing.T) {
 		username, password := "gopher", "secret"
 		creds := setAuthConfig(t, exampleAuth, username, password)
 
-		registry, cfg, err := DockerImageAuth(context.Background(), exampleAuth+"/my/image:latest")
+		registry, cfg, err := DockerImageAuth(t.Context(), exampleAuth+"/my/image:latest")
 		require.NoError(t, err)
 		require.Equal(t, exampleAuth, registry)
 		require.Equal(t, username, cfg.Username)
@@ -115,7 +115,7 @@ func TestDockerImageAuth(t *testing.T) {
 		imagePath := "/my/image:latest"
 		base64 := setAuthConfig(t, exampleAuth, "gopher", "secret")
 
-		registry, cfg, err := DockerImageAuth(context.Background(), imageReg+imagePath)
+		registry, cfg, err := DockerImageAuth(t.Context(), imageReg+imagePath)
 		require.NoError(t, err)
 		require.Equal(t, imageReg, registry)
 		require.Equal(t, "gopher", cfg.Username)
@@ -130,7 +130,7 @@ func TestDockerImageAuth(t *testing.T) {
 
 		setAuthConfig(t, invalidRegistryURL, "gopher", "secret")
 
-		registry, cfg, err := DockerImageAuth(context.Background(), imageReg+imagePath)
+		registry, cfg, err := DockerImageAuth(t.Context(), imageReg+imagePath)
 		require.ErrorIs(t, err, dockercfg.ErrCredentialsNotFound)
 		require.Empty(t, cfg)
 		require.Equal(t, imageReg, registry)
@@ -150,7 +150,7 @@ func TestDockerImageAuth(t *testing.T) {
 
 		setAuthConfig(t, "example-auth.com", "gopher", "secret")
 
-		registry, cfg, err := DockerImageAuth(context.Background(), imageReg+imagePath)
+		registry, cfg, err := DockerImageAuth(t.Context(), imageReg+imagePath)
 		require.ErrorIs(t, err, dockercfg.ErrCredentialsNotFound)
 		require.Empty(t, cfg)
 		require.Equal(t, imageReg, registry)
@@ -158,7 +158,7 @@ func TestDockerImageAuth(t *testing.T) {
 }
 
 func TestBuildContainerFromDockerfile(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	redisC, err := Run(ctx, "",
 		WithDockerfile(FromDockerfile{
@@ -175,7 +175,7 @@ func TestBuildContainerFromDockerfile(t *testing.T) {
 // removeImageFromLocalCache removes the image from the local cache
 func removeImageFromLocalCache(t *testing.T, img string) {
 	t.Helper()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	testcontainersClient, err := NewDockerClientWithOpts(ctx, client.WithVersion(daemonMaxVersion))
 	if err != nil {
@@ -198,7 +198,7 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 	// using the same credentials as in the Docker Registry
 	setAuthConfig(t, registryHost, "testuser", "testpassword")
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	redisC, err := Run(ctx, "",
 		WithDockerfile(FromDockerfile{
@@ -223,7 +223,7 @@ func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *test
 	// using different credentials than in the Docker Registry
 	setAuthConfig(t, registryHost, "foo", "bar")
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	redisC, err := Run(ctx, "",
 		WithDockerfile(FromDockerfile{
@@ -247,7 +247,7 @@ func TestCreateContainerFromPrivateRegistry(t *testing.T) {
 	// using the same credentials as in the Docker Registry
 	setAuthConfig(t, registryHost, "testuser", "testpassword")
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	redisContainer, err := Run(ctx, registryHost+"/redis:5.0-alpine", WithAlwaysPull(), WithExposedPorts("6379/tcp"), WithWaitStrategy(wait.ForLog("Ready to accept connections")))
 	CleanupContainer(t, redisContainer)
@@ -256,7 +256,7 @@ func TestCreateContainerFromPrivateRegistry(t *testing.T) {
 
 func prepareLocalRegistryWithAuth(t *testing.T) string {
 	t.Helper()
-	ctx := context.Background()
+	ctx := t.Context()
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 	// copyDirectoryToContainer {

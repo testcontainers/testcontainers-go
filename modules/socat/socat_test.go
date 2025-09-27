@@ -1,7 +1,6 @@
 package socat_test
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"testing"
@@ -14,7 +13,7 @@ import (
 )
 
 func TestSocat(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := socat.Run(ctx, socat.DefaultImage)
 	testcontainers.CleanupContainer(t, ctr)
@@ -24,7 +23,7 @@ func TestSocat(t *testing.T) {
 }
 
 func TestRun_helloWorld(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	nw, err := network.New(ctx)
 	testcontainers.CleanupNetwork(t, nw)
@@ -72,7 +71,7 @@ func TestRun_helloWorld(t *testing.T) {
 }
 
 func TestRun_helloWorldDifferentPort(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	nw, err := network.New(ctx)
 	testcontainers.CleanupNetwork(t, nw)
@@ -126,7 +125,7 @@ func TestRun_helloWorldDifferentPort(t *testing.T) {
 }
 
 func TestRun_helloWorld_WrongImage(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	nw, err := network.New(ctx)
 	testcontainers.CleanupNetwork(t, nw)
@@ -161,7 +160,7 @@ func TestRun_helloWorld_WrongImage(t *testing.T) {
 }
 
 func TestRun_multipleTargets(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	nw, err := network.New(ctx)
 	testcontainers.CleanupNetwork(t, nw)

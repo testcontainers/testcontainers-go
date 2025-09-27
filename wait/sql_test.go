@@ -99,7 +99,7 @@ func TestWaitForSQLSucceeds(t *testing.T) {
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
-	err := wg.WaitUntilReady(context.Background(), target)
+	err := wg.WaitUntilReady(t.Context(), target)
 	require.NoError(t, err)
 }
 
@@ -128,7 +128,7 @@ func TestWaitForSQLFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) {
 		WithPollInterval(100 * time.Millisecond)
 
 	{
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		require.EqualError(t, err, "container crashed with out-of-memory (OOMKilled)")
 	}
 }
@@ -159,7 +159,7 @@ func TestWaitForSQLFailsWhileGettingPortDueToExitedContainer(t *testing.T) {
 		WithPollInterval(100 * time.Millisecond)
 
 	{
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		require.EqualError(t, err, "container exited with code 1")
 	}
 }
@@ -189,7 +189,7 @@ func TestWaitForSQLFailsWhileGettingPortDueToUnexpectedContainerStatus(t *testin
 		WithPollInterval(100 * time.Millisecond)
 
 	{
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		require.EqualError(t, err, "unexpected container status \"dead\"")
 	}
 }
@@ -214,7 +214,7 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToOOMKilledContainer(t *testing.T)
 		WithPollInterval(100 * time.Millisecond)
 
 	{
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		require.EqualError(t, err, "container crashed with out-of-memory (OOMKilled)")
 	}
 }
@@ -240,7 +240,7 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToExitedContainer(t *testing.T) {
 		WithPollInterval(100 * time.Millisecond)
 
 	{
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		require.EqualError(t, err, "container exited with code 1")
 	}
 }
@@ -265,7 +265,7 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToUnexpectedContainerStatus(t *tes
 		WithPollInterval(100 * time.Millisecond)
 
 	{
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		require.EqualError(t, err, "unexpected container status \"dead\"")
 	}
 }

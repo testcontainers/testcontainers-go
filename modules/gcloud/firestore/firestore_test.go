@@ -1,7 +1,6 @@
 package firestore_test
 
 import (
-	"context"
 	"testing"
 
 	"cloud.google.com/go/datastore"
@@ -16,7 +15,7 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	firestoreContainer, err := tcfirestore.Run(
 		ctx,
@@ -62,7 +61,7 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunWithDatastore(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	firestoreContainer, err := tcfirestore.Run(
 		ctx,

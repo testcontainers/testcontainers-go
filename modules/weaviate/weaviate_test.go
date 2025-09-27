@@ -1,7 +1,6 @@
 package weaviate_test
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"testing"
@@ -18,7 +17,7 @@ import (
 )
 
 func TestWeaviate(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := weaviate.Run(ctx, "semitechnologies/weaviate:1.29.0")
 	testcontainers.CleanupContainer(t, ctr)
@@ -50,7 +49,7 @@ func TestWeaviate(t *testing.T) {
 		conn, err := grpc.NewClient(host, opts...)
 		require.NoErrorf(t, err, "failed to dial connection")
 		client := grpc_health_v1.NewHealthClient(conn)
-		check, err := client.Check(context.TODO(), &grpc_health_v1.HealthCheckRequest{})
+		check, err := client.Check(ctx, &grpc_health_v1.HealthCheckRequest{})
 		require.NoErrorf(t, err, "failed to get a health check")
 		require.Equalf(t, grpc_health_v1.HealthCheckResponse_SERVING.Enum().Number(), check.Status.Number(), "unexpected status code: %d", check.Status.Number())
 	})

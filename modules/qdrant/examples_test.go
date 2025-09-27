@@ -43,8 +43,9 @@ func ExampleRun() {
 }
 
 func ExampleRun_createPoints() {
+	ctx := context.Background()
 	// fullExample {
-	qdrantContainer, err := qdrant.Run(context.Background(), "qdrant/qdrant:v1.7.4")
+	qdrantContainer, err := qdrant.Run(ctx, "qdrant/qdrant:v1.7.4")
 	defer func() {
 		if err := testcontainers.TerminateContainer(qdrantContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -55,7 +56,7 @@ func ExampleRun_createPoints() {
 		return
 	}
 
-	grpcEndpoint, err := qdrantContainer.GRPCEndpoint(context.Background())
+	grpcEndpoint, err := qdrantContainer.GRPCEndpoint(ctx)
 	if err != nil {
 		log.Printf("failed to get gRPC endpoint: %s", err)
 		return
@@ -79,7 +80,7 @@ func ExampleRun_createPoints() {
 
 	// 1. create the collection
 	var defaultSegmentNumber uint64 = 2
-	_, err = collectionsClient.Create(context.Background(), &pb.CreateCollection{
+	_, err = collectionsClient.Create(ctx, &pb.CreateCollection{
 		CollectionName: collectionName,
 		VectorsConfig: &pb.VectorsConfig{Config: &pb.VectorsConfig_Params{
 			Params: &pb.VectorParams{
@@ -97,7 +98,7 @@ func ExampleRun_createPoints() {
 	}
 
 	// 2. Contact the server and print out its response.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 	r, err := collectionsClient.List(ctx, &pb.ListCollectionsRequest{})
 	if err != nil {
@@ -112,7 +113,7 @@ func ExampleRun_createPoints() {
 	// 4. Create keyword field index
 	fieldIndex1Type := pb.FieldType_FieldTypeKeyword
 	fieldIndex1Name := "city"
-	_, err = pointsClient.CreateFieldIndex(context.Background(), &pb.CreateFieldIndexCollection{
+	_, err = pointsClient.CreateFieldIndex(ctx, &pb.CreateFieldIndexCollection{
 		CollectionName: collectionName,
 		FieldName:      fieldIndex1Name,
 		FieldType:      &fieldIndex1Type,
@@ -125,7 +126,7 @@ func ExampleRun_createPoints() {
 	// 5. Create integer field index
 	fieldIndex2Type := pb.FieldType_FieldTypeInteger
 	fieldIndex2Name := "count"
-	_, err = pointsClient.CreateFieldIndex(context.Background(), &pb.CreateFieldIndexCollection{
+	_, err = pointsClient.CreateFieldIndex(ctx, &pb.CreateFieldIndexCollection{
 		CollectionName: collectionName,
 		FieldName:      fieldIndex2Name,
 		FieldType:      &fieldIndex2Type,
@@ -259,7 +260,7 @@ func ExampleRun_createPoints() {
 			Payload: map[string]*pb.Value{},
 		},
 	}
-	_, err = pointsClient.Upsert(context.Background(), &pb.UpsertPoints{
+	_, err = pointsClient.Upsert(ctx, &pb.UpsertPoints{
 		CollectionName: collectionName,
 		Wait:           &waitUpsert,
 		Points:         upsertPoints,
@@ -270,7 +271,7 @@ func ExampleRun_createPoints() {
 	}
 
 	// 7. Retrieve points by ids
-	pointsByID, err := pointsClient.Get(context.Background(), &pb.GetPoints{
+	pointsByID, err := pointsClient.Get(ctx, &pb.GetPoints{
 		CollectionName: collectionName,
 		Ids: []*pb.PointId{
 			{PointIdOptions: &pb.PointId_Num{Num: 1}},
@@ -285,7 +286,7 @@ func ExampleRun_createPoints() {
 	fmt.Printf("Retrieved points: %d\n", len(pointsByID.GetResult()))
 
 	// 8. Unfiltered search
-	unfilteredSearchResult, err := pointsClient.Search(context.Background(), &pb.SearchPoints{
+	unfilteredSearchResult, err := pointsClient.Search(ctx, &pb.SearchPoints{
 		CollectionName: collectionName,
 		Vector:         []float32{0.2, 0.1, 0.9, 0.7},
 		Limit:          3,

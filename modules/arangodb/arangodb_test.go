@@ -1,7 +1,6 @@
 package arangodb_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/arangodb/go-driver/v2/arangodb"
@@ -13,7 +12,7 @@ import (
 )
 
 func TestArangoDB(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	const password = "t3stc0ntain3rs!"
 
@@ -33,7 +32,7 @@ func TestArangoDB(t *testing.T) {
 
 	client := arangodb.NewClient(conn)
 
-	versionInfo, err := client.Version(context.Background())
+	versionInfo, err := client.Version(ctx)
 	require.NoError(t, err)
 	require.Equal(t, "arango", versionInfo.Server)
 }

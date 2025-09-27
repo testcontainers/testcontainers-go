@@ -1,7 +1,6 @@
 package solace_test
 
 import (
-	"context"
 	"log"
 	"testing"
 
@@ -12,7 +11,7 @@ import (
 )
 
 func TestSolace(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	queueName := "TestQueue"
 	topicName := "Topic/ActualTopic"
@@ -46,6 +45,6 @@ func TestSolace(t *testing.T) {
 	require.Contains(t, origin, "amqp://")
 
 	// Test message publishing and consumption using Solace SDK
-	err = testMessagePublishAndConsume(ctr, queueName, topicName)
+	err = testMessagePublishAndConsume(ctx, ctr, queueName, topicName)
 	require.NoError(t, err, "Message publish and consume test should pass")
 }

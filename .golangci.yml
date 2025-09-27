@@ -20,6 +20,7 @@ linters:
     - testifylint
     - thelper
     - usestdlibvars
+    - usetesting
   exclusions:
     presets:
       - comments
@@ -81,6 +82,10 @@ linters:
         - float-compare
         - go-require
       enable-all: true
+    usetesting:
+      # Enable/disable `os.Setenv()` detections.
+      # Default: true
+      os-setenv: false
 output:
   formats:
     text:

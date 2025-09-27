@@ -98,7 +98,7 @@ func ExampleRun_sendEventsToEventHub() {
 		log.Printf("failed to create producer client: %s", err)
 		return
 	}
-	defer producerClient.Close(context.TODO())
+	defer producerClient.Close(ctx)
 	// }
 
 	// ===== 2. Create sample events =====
@@ -122,7 +122,7 @@ func ExampleRun_sendEventsToEventHub() {
 	// Retry creating the event data batch 3 times, because the event hub is created from the configuration
 	// and Testcontainers cannot add a wait strategy for the event hub to be created.
 	for retries := 0; retries < maxRetries; retries++ {
-		batch, err = producerClient.NewEventDataBatch(context.TODO(), newBatchOptions)
+		batch, err = producerClient.NewEventDataBatch(ctx, newBatchOptions)
 		if err == nil {
 			break
 		}
@@ -144,7 +144,7 @@ func ExampleRun_sendEventsToEventHub() {
 
 	// ===== 4. Send the batch of events to the event hub =====
 	// sendEventDataBatch {
-	err = producerClient.SendEventDataBatch(context.TODO(), batch, nil)
+	err = producerClient.SendEventDataBatch(ctx, batch, nil)
 	if err != nil {
 		log.Printf("failed to send event data batch: %s", err)
 		return
