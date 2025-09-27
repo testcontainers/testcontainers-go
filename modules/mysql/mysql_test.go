@@ -34,13 +34,13 @@ func TestMySQL(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	err = db.Ping()
+	err = db.PingContext(ctx)
 	require.NoError(t, err)
 
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS a_table ( \n" +
-		" `col_1` VARCHAR(128) NOT NULL, \n" +
-		" `col_2` VARCHAR(128) NOT NULL, \n" +
-		" PRIMARY KEY (`col_1`, `col_2`) \n" +
+	_, err = db.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS a_table ( \n"+
+		" `col_1` VARCHAR(128) NOT NULL, \n"+
+		" `col_2` VARCHAR(128) NOT NULL, \n"+
+		" PRIMARY KEY (`col_1`, `col_2`) \n"+
 		")")
 	require.NoError(t, err)
 }
@@ -75,13 +75,13 @@ func TestMySQLWithRootUserAndEmptyPassword(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	err = db.Ping()
+	err = db.PingContext(ctx)
 	require.NoError(t, err)
 
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS a_table ( \n" +
-		" `col_1` VARCHAR(128) NOT NULL, \n" +
-		" `col_2` VARCHAR(128) NOT NULL, \n" +
-		" PRIMARY KEY (`col_1`, `col_2`) \n" +
+	_, err = db.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS a_table ( \n"+
+		" `col_1` VARCHAR(128) NOT NULL, \n"+
+		" `col_2` VARCHAR(128) NOT NULL, \n"+
+		" PRIMARY KEY (`col_1`, `col_2`) \n"+
 		")")
 	require.NoError(t, err)
 }
@@ -102,14 +102,14 @@ func TestMySQLWithScripts(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	err = db.Ping()
+	err = db.PingContext(ctx)
 	require.NoError(t, err)
 
-	stmt, err := db.Prepare("SELECT name from profile")
+	stmt, err := db.PrepareContext(ctx, "SELECT name from profile")
 	require.NoError(t, err)
 	defer stmt.Close()
 
-	row := stmt.QueryRow()
+	row := stmt.QueryRowContext(ctx)
 	var name string
 	err = row.Scan(&name)
 	require.NoError(t, err)

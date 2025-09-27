@@ -37,9 +37,9 @@ func (d *DownloadableFile) getDownloadPath() string {
 	return path.Join(d.DownloadDir, baseName)
 }
 
-func downloadFileFromDescription(d DownloadableFile) error {
+func downloadFileFromDescription(ctx context.Context, d DownloadableFile) error {
 	client := http.Client{Timeout: time.Second * 60}
-	req, err := http.NewRequest(http.MethodGet, d.Uri.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, d.Uri.String(), http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -54,6 +54,7 @@ func downloadFileFromDescription(d DownloadableFile) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	downloadedFile, err := os.Create(d.getDownloadPath())
 	if err != nil {
@@ -105,7 +106,7 @@ func WithTestScriptReader(reader io.Reader, scriptBaseName string) testcontainer
 
 // WithRemoteTestScript takes a RemoteTestFileDescription and copies to container
 func WithRemoteTestScript(d DownloadableFile) testcontainers.CustomizeRequestOption {
-	err := downloadFileFromDescription(d)
+	err := downloadFileFromDescription(context.Background(), d)
 	if err != nil {
 		return func(_ *testcontainers.GenericContainerRequest) error {
 			return fmt.Errorf("not able to download required test script: %w", err)

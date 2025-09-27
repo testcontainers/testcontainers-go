@@ -236,11 +236,19 @@ func ExampleRun_usingLambdas() {
 
 	functionURL = strings.ReplaceAll(functionURL, "4566", mappedPort.Port())
 
-	resp, err := httpClient.Post(functionURL, "application/json", bytes.NewBufferString(`{"num1": "10", "num2": "10"}`))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, functionURL, bytes.NewBufferString(`{"num1": "10", "num2": "10"}`))
+	if err != nil {
+		log.Printf("failed to create request: %s", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		log.Printf("failed to send request to lambda function: %s", err)
 		return
 	}
+	defer resp.Body.Close()
 
 	jsonResponse, err := io.ReadAll(resp.Body)
 	if err != nil {

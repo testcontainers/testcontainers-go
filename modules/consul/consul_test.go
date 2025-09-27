@@ -1,7 +1,6 @@
 package consul_test
 
 import (
-	"context"
 	"net/http"
 	"path/filepath"
 	"testing"
@@ -14,7 +13,6 @@ import (
 )
 
 func TestConsul(t *testing.T) {
-	ctx := context.Background()
 	tests := []struct {
 		name string
 		opts []testcontainers.ContainerCustomizer
@@ -39,6 +37,7 @@ func TestConsul(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			ctx := t.Context()
 			ctr, err := consul.Run(ctx, "hashicorp/consul:1.15", test.opts...)
 			testcontainers.CleanupContainer(t, ctr)
 			require.NoError(t, err)
@@ -48,8 +47,13 @@ func TestConsul(t *testing.T) {
 			require.NoError(t, err)
 			require.NotEmpty(t, host)
 
-			res, err := http.Get("http://" + host)
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+host, http.NoBody)
 			require.NoError(t, err)
+
+			res, err := http.DefaultClient.Do(req)
+			require.NoError(t, err)
+
+			defer res.Body.Close()
 			require.Equal(t, http.StatusOK, res.StatusCode)
 
 			cfg := capi.DefaultConfig()
