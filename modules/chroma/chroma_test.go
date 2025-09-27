@@ -25,11 +25,13 @@ func TestChroma(t *testing.T) {
 		// }
 		require.NoErrorf(tt, err, "failed to get REST endpoint")
 
-		cli := &http.Client{}
-		resp, err := cli.Get(restEndpoint + "/docs")
-		require.NoErrorf(tt, err, "failed to perform GET request")
-		defer resp.Body.Close()
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, restEndpoint+"/docs", http.NoBody)
+		require.NoErrorf(tt, err, "failed to create request")
 
+		resp, err := http.DefaultClient.Do(req)
+		require.NoErrorf(tt, err, "failed to perform GET request")
+
+		defer resp.Body.Close()
 		require.Equalf(tt, http.StatusOK, resp.StatusCode, "unexpected status code: %d", resp.StatusCode)
 	})
 

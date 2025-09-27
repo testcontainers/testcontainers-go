@@ -95,14 +95,24 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 	ep, err := c.Endpoint(ctx, "http")
 	require.NoError(t, err)
 
-	_, err = http.Get(ep + "/stdout?echo=hello")
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ep+"/stdout?echo=hello", http.NoBody)
 	require.NoError(t, err)
 
-	_, err = http.Get(ep + "/stdout?echo=there")
+	_, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 
-	_, err = http.Get(ep + "/stdout?echo=" + lastMessage)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, ep+"/stdout?echo=there", http.NoBody)
 	require.NoError(t, err)
+
+	_, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, ep+"/stdout?echo="+lastMessage, http.NoBody)
+	require.NoError(t, err)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	require.NoError(t, resp.Body.Close())
 
 	select {
 	case <-g.Done:
@@ -154,13 +164,22 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 	ep, err := c.Endpoint(ctx, "http")
 	require.NoError(t, err)
 
-	_, err = http.Get(ep + "/stdout?echo=this-is-stdout")
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ep+"/stdout?echo=this-is-stdout", http.NoBody)
 	require.NoError(t, err)
 
-	_, err = http.Get(ep + "/stderr?echo=this-is-stderr")
+	_, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 
-	_, err = http.Get(ep + "/stdout?echo=" + lastMessage)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, ep+"/stderr?echo=this-is-stderr", http.NoBody)
+	require.NoError(t, err)
+
+	_, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, ep+"/stdout?echo="+lastMessage, http.NoBody)
+	require.NoError(t, err)
+
+	_, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 
 	<-g.Ack
@@ -204,10 +223,16 @@ func Test_MultipleLogConsumers(t *testing.T) {
 	ep, err := c.Endpoint(ctx, "http")
 	require.NoError(t, err)
 
-	_, err = http.Get(ep + "/stdout?echo=mlem")
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ep+"/stdout?echo=mlem", http.NoBody)
 	require.NoError(t, err)
 
-	_, err = http.Get(ep + "/stdout?echo=" + lastMessage)
+	_, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, ep+"/stdout?echo="+lastMessage, http.NoBody)
+	require.NoError(t, err)
+
+	_, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 
 	<-first.Done
@@ -412,13 +437,22 @@ func TestContainerLogsEnableAtStart(t *testing.T) {
 	ep, err := c.Endpoint(ctx, "http")
 	require.NoError(t, err)
 
-	_, err = http.Get(ep + "/stdout?echo=hello")
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ep+"/stdout?echo=hello", http.NoBody)
 	require.NoError(t, err)
 
-	_, err = http.Get(ep + "/stdout?echo=there")
+	_, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 
-	_, err = http.Get(ep + "/stdout?echo=" + lastMessage)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, ep+"/stdout?echo=there", http.NoBody)
+	require.NoError(t, err)
+
+	_, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, ep+"/stdout?echo="+lastMessage, http.NoBody)
+	require.NoError(t, err)
+
+	_, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 
 	select {
@@ -554,10 +588,16 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	ep1, err := c.Endpoint(ctx, "http")
 	require.NoError(t, err)
 
-	_, err = http.Get(ep1 + "/stdout?echo=hello1")
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ep1+"/stdout?echo=hello1", http.NoBody)
 	require.NoError(t, err)
 
-	_, err = http.Get(ep1 + "/stdout?echo=there1")
+	_, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, ep1+"/stdout?echo=there1", http.NoBody)
+	require.NoError(t, err)
+
+	_, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 
 	second := TestLogConsumer{
@@ -585,10 +625,16 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	ep2, err := c2.Endpoint(ctx, "http")
 	require.NoError(t, err)
 
-	_, err = http.Get(ep2 + "/stdout?echo=hello2")
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, ep2+"/stdout?echo=hello2", http.NoBody)
 	require.NoError(t, err)
 
-	_, err = http.Get(ep2 + "/stdout?echo=there2")
+	_, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, ep2+"/stdout?echo=there2", http.NoBody)
+	require.NoError(t, err)
+
+	_, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 
 	// Deliberately calling context cancel

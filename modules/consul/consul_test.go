@@ -48,8 +48,13 @@ func TestConsul(t *testing.T) {
 			require.NoError(t, err)
 			require.NotEmpty(t, host)
 
-			res, err := http.Get("http://" + host)
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+host, http.NoBody)
 			require.NoError(t, err)
+
+			res, err := http.DefaultClient.Do(req)
+			require.NoError(t, err)
+
+			defer res.Body.Close()
 			require.Equal(t, http.StatusOK, res.StatusCode)
 
 			cfg := capi.DefaultConfig()

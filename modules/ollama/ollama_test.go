@@ -17,7 +17,7 @@ import (
 )
 
 func TestOllama(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := ollama.Run(ctx, "ollama/ollama:0.5.7")
 	testcontainers.CleanupContainer(t, ctr)
@@ -29,8 +29,10 @@ func TestOllama(t *testing.T) {
 		// }
 		require.NoError(t, err)
 
-		httpClient := &http.Client{}
-		resp, err := httpClient.Get(connectionStr)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, connectionStr, http.NoBody)
+		require.NoError(t, err)
+
+		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
@@ -108,12 +110,13 @@ func TestOllama_withReuse(t *testing.T) {
 // contains the model name.
 func assertLoadedModel(t *testing.T, c *ollama.OllamaContainer) {
 	t.Helper()
-	url, err := c.ConnectionString(context.Background())
+	url, err := c.ConnectionString(t.Context())
 	require.NoError(t, err)
 
-	httpCli := &http.Client{}
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, url+"/api/tags", nil)
+	require.NoError(t, err)
 
-	resp, err := httpCli.Get(url + "/api/tags")
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 

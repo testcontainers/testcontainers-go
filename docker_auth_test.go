@@ -339,7 +339,8 @@ func localAddress(t *testing.T) string {
 		return "localhost"
 	}
 
-	conn, err := net.Dial("udp", "golang.org:80")
+	d := &net.Dialer{}
+	conn, err := d.DialContext(t.Context(), "udp", "golang.org:80")
 	require.NoError(t, err)
 	defer conn.Close()
 
