@@ -12,6 +12,7 @@ linters:
   enable:
     - errorlint
     - gocritic
+    - govet
     - misspell
     - nakedret
     - nolintlint
@@ -32,6 +33,11 @@ linters:
       comparison: true
       errorf: true
       errorf-multi: true
+    govet:
+      disable:
+        - fieldalignment
+        - shadow
+      enable-all: true
     revive:
       rules:
         - name: blank-imports
