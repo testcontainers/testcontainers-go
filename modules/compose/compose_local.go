@@ -299,7 +299,7 @@ func execute(
 ) ExecError {
 	var errStdout, errStderr error
 
-	cmd := exec.Command(binary, args...)
+	cmd := exec.CommandContext(context.Background(), binary, args...)
 	cmd.Dir = dirContext
 	cmd.Env = os.Environ()
 

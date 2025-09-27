@@ -74,8 +74,12 @@ func TestArtemis(t *testing.T) {
 			// }
 			require.NoError(t, err)
 
-			res, err := http.Get(u)
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
+			require.NoError(t, err)
+
+			res, err := http.DefaultClient.Do(req)
 			require.NoError(t, err, "failed to access console")
+
 			res.Body.Close()
 			require.Equal(t, http.StatusOK, res.StatusCode, "failed to access console")
 
@@ -129,8 +133,12 @@ func expectQueue(t *testing.T, container *artemis.Container, queueName string) {
 	u, err := container.ConsoleURL(context.Background())
 	require.NoError(t, err)
 
-	r, err := http.Get(u + `/jolokia/read/org.apache.activemq.artemis:broker="0.0.0.0"/QueueNames`)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, u+`/jolokia/read/org.apache.activemq.artemis:broker="0.0.0.0"/QueueNames`, http.NoBody)
+	require.NoError(t, err)
+
+	r, err := http.DefaultClient.Do(req)
 	require.NoError(t, err, "failed to request QueueNames")
+
 	defer r.Body.Close()
 
 	var res struct{ Value []string }

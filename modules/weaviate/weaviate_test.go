@@ -30,9 +30,12 @@ func TestWeaviate(t *testing.T) {
 		// }
 		require.NoError(t, err)
 
-		cli := &http.Client{}
-		resp, err := cli.Get(fmt.Sprintf("%s://%s", schema, host))
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s://%s", schema, host), http.NoBody)
 		require.NoError(t, err)
+
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+
 		defer resp.Body.Close()
 
 		require.Equal(t, http.StatusOK, resp.StatusCode)

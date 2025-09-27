@@ -22,12 +22,10 @@ func TestOpenSearch(t *testing.T) {
 		address, err := ctr.Address(ctx)
 		require.NoError(t, err)
 
-		client := &http.Client{}
-
-		req, err := http.NewRequest(http.MethodGet, address, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, address, nil)
 		require.NoError(t, err)
 
-		resp, err := client.Do(req)
+		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 		defer resp.Body.Close()
 	})

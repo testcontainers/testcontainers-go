@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/docker/docker/client"
 
@@ -43,8 +44,10 @@ var (
 // deprecated
 // see https://github.com/testcontainers/testcontainers-java/blob/main/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L46
 func DefaultGatewayIP() (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 	// see https://github.com/testcontainers/testcontainers-java/blob/3ad8d80e2484864e554744a4800a81f6b7982168/core/src/main/java/org/testcontainers/dockerclient/DockerClientConfigUtils.java#L27
-	cmd := exec.Command("sh", "-c", "ip route|awk '/default/ { print $3 }'")
+	cmd := exec.CommandContext(ctx, "sh", "-c", "ip route|awk '/default/ { print $3 }'")
 	stdout, err := cmd.Output()
 	if err != nil {
 		return "", errors.New("failed to detect docker host")

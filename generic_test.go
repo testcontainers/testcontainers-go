@@ -152,7 +152,7 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 func createReuseContainerInSubprocess(t *testing.T) string {
 	t.Helper()
 	// force verbosity in subprocesses, so that the output is printed
-	cmd := exec.Command(os.Args[0], "-test.run=TestHelperContainerStarterProcess", "-test.v=true")
+	cmd := exec.CommandContext(t.Context(), os.Args[0], "-test.run=TestHelperContainerStarterProcess", "-test.v=true")
 	cmd.Env = append(os.Environ(), "GO_WANT_HELPER_PROCESS=1")
 
 	output, err := cmd.CombinedOutput()
