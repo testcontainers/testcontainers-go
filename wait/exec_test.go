@@ -108,14 +108,14 @@ func TestExecStrategyWaitUntilReady(t *testing.T) {
 	target := mockExecTarget{}
 	wg := wait.NewExecStrategy([]string{"true"}).
 		WithStartupTimeout(30 * time.Second)
-	err := wg.WaitUntilReady(context.Background(), target)
+	err := wg.WaitUntilReady(t.Context(), target)
 	require.NoError(t, err)
 }
 
 func TestExecStrategyWaitUntilReadyForExec(t *testing.T) {
 	target := mockExecTarget{}
 	wg := wait.ForExec([]string{"true"})
-	err := wg.WaitUntilReady(context.Background(), target)
+	err := wg.WaitUntilReady(t.Context(), target)
 	require.NoError(t, err)
 }
 
@@ -126,12 +126,12 @@ func TestExecStrategyWaitUntilReady_MultipleChecks(t *testing.T) {
 	}
 	wg := wait.NewExecStrategy([]string{"true"}).
 		WithPollInterval(500 * time.Millisecond)
-	err := wg.WaitUntilReady(context.Background(), target)
+	err := wg.WaitUntilReady(t.Context(), target)
 	require.NoError(t, err)
 }
 
 func TestExecStrategyWaitUntilReady_DeadlineExceeded(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 500*time.Millisecond)
 	defer cancel()
 
 	target := mockExecTarget{
@@ -149,7 +149,7 @@ func TestExecStrategyWaitUntilReady_CustomExitCode(t *testing.T) {
 	wg := wait.NewExecStrategy([]string{"true"}).WithExitCodeMatcher(func(exitCode int) bool {
 		return exitCode == 10
 	})
-	err := wg.WaitUntilReady(context.Background(), target)
+	err := wg.WaitUntilReady(t.Context(), target)
 	require.NoError(t, err)
 }
 
@@ -160,19 +160,19 @@ func TestExecStrategyWaitUntilReady_withExitCode(t *testing.T) {
 	wg := wait.NewExecStrategy([]string{"true"}).WithExitCode(10)
 	// Default is 60. Let's shorten that
 	wg.WithStartupTimeout(time.Second * 2)
-	err := wg.WaitUntilReady(context.Background(), target)
+	err := wg.WaitUntilReady(t.Context(), target)
 	require.NoError(t, err)
 
 	// Ensure we aren't spuriously returning on any code
 	wg = wait.NewExecStrategy([]string{"true"}).WithExitCode(0)
 	wg.WithStartupTimeout(time.Second * 2)
-	err = wg.WaitUntilReady(context.Background(), target)
+	err = wg.WaitUntilReady(t.Context(), target)
 	require.Errorf(t, err, "Expected strategy to timeout out")
 }
 
 func TestExecStrategyWaitUntilReady_CustomResponseMatcher(t *testing.T) {
 	// waitForExecExitCodeResponse {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctr, err := testcontainers.Run(
 		ctx, "nginx:latest",
 		testcontainers.WithWaitStrategy(wait.ForExec([]string{"echo", "hello world!"}).

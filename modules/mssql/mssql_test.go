@@ -16,7 +16,7 @@ import (
 )
 
 func TestMSSQLServer(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := mssql.Run(ctx,
 		"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
@@ -45,7 +45,7 @@ func TestMSSQLServer(t *testing.T) {
 }
 
 func TestMSSQLServerWithMissingEulaOption(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("empty", func(t *testing.T) {
 		ctr, err := mssql.Run(ctx,
@@ -70,7 +70,7 @@ func TestMSSQLServerWithMissingEulaOption(t *testing.T) {
 }
 
 func TestMSSQLServerWithConnectionStringParameters(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := mssql.Run(ctx,
 		"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
@@ -100,7 +100,7 @@ func TestMSSQLServerWithConnectionStringParameters(t *testing.T) {
 }
 
 func TestMSSQLServerWithCustomStrongPassword(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := mssql.Run(ctx,
 		"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
@@ -124,7 +124,7 @@ func TestMSSQLServerWithCustomStrongPassword(t *testing.T) {
 
 // tests that a weak password is not accepted by the container due to Microsoft's password strength policy
 func TestMSSQLServerWithInvalidPassword(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := mssql.Run(ctx,
 		"mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04",
@@ -191,7 +191,7 @@ func TestMSSQLServerWithScriptsDDL(t *testing.T) {
 		require.Equal(t, want, got)
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("WithPassword/beforeWithScripts", func(t *testing.T) {
 		assertContainer(t, ctx,

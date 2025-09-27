@@ -1,7 +1,6 @@
 package toxiproxy
 
 import (
-	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -108,7 +107,7 @@ func TestRun_withConfigFile_and_proxy(t *testing.T) {
     }
 ]`
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	nw, err := network.New(ctx)
 	require.NoError(t, err)

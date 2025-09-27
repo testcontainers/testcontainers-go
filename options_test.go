@@ -80,7 +80,7 @@ func (lc *msgsLogConsumer) Accept(l testcontainers.Log) {
 func TestWithLogConsumers(t *testing.T) {
 	lc := &msgsLogConsumer{}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	c, err := testcontainers.Run(
 		ctx, "mysql:8.0.36",
 		testcontainers.WithWaitStrategy(wait.ForLog("port: 3306  MySQL Community Server - GPL")),
@@ -134,14 +134,14 @@ func TestWithStartupCommand(t *testing.T) {
 	testExec := testcontainers.NewRawCommand([]string{"touch", ".testcontainers"}, exec.WithWorkingDir("/tmp"))
 
 	c, err := testcontainers.Run(
-		context.Background(), "alpine",
+		t.Context(), "alpine",
 		testcontainers.WithEntrypoint("tail", "-f", "/dev/null"),
 		testcontainers.WithStartupCommand(testExec),
 	)
 	testcontainers.CleanupContainer(t, c)
 	require.NoError(t, err)
 
-	_, reader, err := c.Exec(context.Background(), []string{"ls", "/tmp/.testcontainers"}, exec.Multiplexed())
+	_, reader, err := c.Exec(t.Context(), []string{"ls", "/tmp/.testcontainers"}, exec.Multiplexed())
 	require.NoError(t, err)
 
 	content, err := io.ReadAll(reader)
@@ -152,11 +152,11 @@ func TestWithStartupCommand(t *testing.T) {
 func TestWithAfterReadyCommand(t *testing.T) {
 	testExec := testcontainers.NewRawCommand([]string{"touch", "/tmp/.testcontainers"})
 
-	c, err := testcontainers.Run(context.Background(), "alpine", testcontainers.WithEntrypoint("tail", "-f", "/dev/null"), testcontainers.WithAfterReadyCommand(testExec))
+	c, err := testcontainers.Run(t.Context(), "alpine", testcontainers.WithEntrypoint("tail", "-f", "/dev/null"), testcontainers.WithAfterReadyCommand(testExec))
 	testcontainers.CleanupContainer(t, c)
 	require.NoError(t, err)
 
-	_, reader, err := c.Exec(context.Background(), []string{"ls", "/tmp/.testcontainers"}, exec.Multiplexed())
+	_, reader, err := c.Exec(t.Context(), []string{"ls", "/tmp/.testcontainers"}, exec.Multiplexed())
 	require.NoError(t, err)
 
 	content, err := io.ReadAll(reader)
@@ -646,10 +646,10 @@ func TestWithDockerfile(t *testing.T) {
 }
 
 func TestWithImageMount(t *testing.T) {
-	cli, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	cli, err := testcontainers.NewDockerClientWithOpts(t.Context())
 	require.NoError(t, err)
 
-	info, err := cli.Info(context.Background())
+	info, err := cli.Info(t.Context())
 	require.NoError(t, err)
 
 	// skip if the major version of the server is not v28 or greater

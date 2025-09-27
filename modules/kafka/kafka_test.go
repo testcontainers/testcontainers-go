@@ -1,7 +1,6 @@
 package kafka_test
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -15,7 +14,7 @@ import (
 func TestKafka(t *testing.T) {
 	topic := "some-topic"
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	kafkaContainer, err := kafka.Run(ctx, "confluentinc/confluent-local:7.5.0", kafka.WithClusterID("kraftCluster"))
 	testcontainers.CleanupContainer(t, kafkaContainer)
@@ -37,7 +36,7 @@ func TestKafka(t *testing.T) {
 	consumer, ready, done, cancel := NewTestKafkaConsumer(t)
 	defer cancel()
 	go func() {
-		if err := client.Consume(context.Background(), []string{topic}, consumer); err != nil {
+		if err := client.Consume(t.Context(), []string{topic}, consumer); err != nil {
 			cancel()
 		}
 	}()
@@ -67,7 +66,7 @@ func TestKafka(t *testing.T) {
 }
 
 func TestKafka_invalidVersion(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := kafka.Run(ctx, "confluentinc/confluent-local:6.3.3", kafka.WithClusterID("kraftCluster"))
 	testcontainers.CleanupContainer(t, ctr)
@@ -78,12 +77,12 @@ func TestKafka_invalidVersion(t *testing.T) {
 // - The BROKER:// protocol is using the hostname of the Kafka container
 func assertAdvertisedListeners(t *testing.T, container testcontainers.Container) {
 	t.Helper()
-	inspect, err := container.Inspect(context.Background())
+	inspect, err := container.Inspect(t.Context())
 	require.NoError(t, err)
 
 	brokerURL := "BROKER://" + inspect.Config.Hostname + ":9092"
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	bs := testcontainers.RequireContainerExec(ctx, t, container, []string{"cat", "/usr/sbin/testcontainers_start.sh"})
 

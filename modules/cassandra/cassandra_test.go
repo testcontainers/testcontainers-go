@@ -1,7 +1,6 @@
 package cassandra_test
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -18,7 +17,7 @@ type Test struct {
 }
 
 func TestCassandra(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := cassandra.Run(ctx, "cassandra:4.1.3")
 	testcontainers.CleanupContainer(t, ctr)
@@ -50,7 +49,7 @@ func TestCassandra(t *testing.T) {
 }
 
 func TestCassandraWithConfigFile(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithConfigFile(filepath.Join("testdata", "config.yaml")))
 	testcontainers.CleanupContainer(t, ctr)
@@ -72,7 +71,7 @@ func TestCassandraWithConfigFile(t *testing.T) {
 
 func TestCassandraWithInitScripts(t *testing.T) {
 	t.Run("with init cql script", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 
 		// withInitScripts {
 		ctr, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts(filepath.Join("testdata", "init.cql")))
@@ -97,7 +96,7 @@ func TestCassandraWithInitScripts(t *testing.T) {
 	})
 
 	t.Run("with init bash script", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 
 		ctr, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts(filepath.Join("testdata", "init.sh")))
 		testcontainers.CleanupContainer(t, ctr)

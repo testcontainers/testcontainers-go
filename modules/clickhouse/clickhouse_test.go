@@ -28,7 +28,7 @@ type Test struct {
 }
 
 func TestClickHouseDefaultConfig(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := clickhouse.Run(ctx, "clickhouse/clickhouse-server:23.3.8.21-alpine")
 	testcontainers.CleanupContainer(t, ctr)
@@ -49,12 +49,12 @@ func TestClickHouseDefaultConfig(t *testing.T) {
 	require.NotNil(t, conn)
 	defer conn.Close()
 
-	err = conn.Ping(context.Background())
+	err = conn.Ping(t.Context())
 	require.NoError(t, err)
 }
 
 func TestClickHouseConnectionHost(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := clickhouse.Run(ctx,
 		"clickhouse/clickhouse-server:23.3.8.21-alpine",
@@ -89,7 +89,7 @@ func TestClickHouseConnectionHost(t *testing.T) {
 }
 
 func TestClickHouseDSN(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := clickhouse.Run(ctx,
 		"clickhouse/clickhouse-server:23.3.8.21-alpine",
@@ -121,7 +121,7 @@ func TestClickHouseDSN(t *testing.T) {
 }
 
 func TestClickHouseWithInitScripts(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// withInitScripts {
 	ctr, err := clickhouse.Run(ctx,
@@ -151,13 +151,13 @@ func TestClickHouseWithInitScripts(t *testing.T) {
 	defer conn.Close()
 
 	// perform assertions
-	data, err := getAllRows(conn)
+	data, err := getAllRows(ctx, conn)
 	require.NoError(t, err)
 	require.Len(t, data, 1)
 }
 
 func TestClickHouseWithConfigFile(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	testCases := []struct {
 		desc         string
@@ -202,7 +202,7 @@ func TestClickHouseWithConfigFile(t *testing.T) {
 }
 
 func TestClickHouseWithZookeeper(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// withZookeeper {
 	zkPort := nat.Port("2181/tcp")
@@ -257,17 +257,17 @@ func performReplicatedCRUD(t *testing.T, conn driver.Conn) ([]Test, error) {
 	t.Helper()
 	return backoff.RetryNotifyWithData(
 		func() ([]Test, error) {
-			err := conn.Exec(context.Background(), "CREATE TABLE replicated_test_table (id UInt64) ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/mdb.data_transfer_cp_cdc', '{replica}') PRIMARY KEY (id) ORDER BY (id) SETTINGS index_granularity = 8192;")
+			err := conn.Exec(t.Context(), "CREATE TABLE replicated_test_table (id UInt64) ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/mdb.data_transfer_cp_cdc', '{replica}') PRIMARY KEY (id) ORDER BY (id) SETTINGS index_granularity = 8192;")
 			if err != nil {
 				return nil, err
 			}
 
-			err = conn.Exec(context.Background(), "INSERT INTO replicated_test_table (id) VALUES (1);")
+			err = conn.Exec(t.Context(), "INSERT INTO replicated_test_table (id) VALUES (1);")
 			if err != nil {
 				return nil, err
 			}
 
-			rows, err := conn.Query(context.Background(), "SELECT * FROM replicated_test_table;")
+			rows, err := conn.Query(t.Context(), "SELECT * FROM replicated_test_table;")
 			if err != nil {
 				return nil, err
 			}
@@ -296,17 +296,18 @@ func performCRUD(t *testing.T, conn driver.Conn) ([]Test, error) {
 	t.Helper()
 	return backoff.RetryNotifyWithData(
 		func() ([]Test, error) {
-			err := conn.Exec(context.Background(), "create table if not exists test_table (id UInt64) engine = MergeTree PRIMARY KEY (id) ORDER BY (id) SETTINGS index_granularity = 8192;")
+			ctx := t.Context()
+			err := conn.Exec(ctx, "create table if not exists test_table (id UInt64) engine = MergeTree PRIMARY KEY (id) ORDER BY (id) SETTINGS index_granularity = 8192;")
 			if err != nil {
 				return nil, err
 			}
 
-			err = conn.Exec(context.Background(), "INSERT INTO test_table (id) VALUES (1);")
+			err = conn.Exec(ctx, "INSERT INTO test_table (id) VALUES (1);")
 			if err != nil {
 				return nil, err
 			}
 
-			return getAllRows(conn)
+			return getAllRows(ctx, conn)
 		},
 		backoff.NewExponentialBackOff(),
 		func(err error, _ time.Duration) {
@@ -315,8 +316,8 @@ func performCRUD(t *testing.T, conn driver.Conn) ([]Test, error) {
 	)
 }
 
-func getAllRows(conn driver.Conn) ([]Test, error) {
-	rows, err := conn.Query(context.Background(), "SELECT * FROM test_table;")
+func getAllRows(ctx context.Context, conn driver.Conn) ([]Test, error) {
+	rows, err := conn.Query(ctx, "SELECT * FROM test_table;")
 	if err != nil {
 		return nil, err
 	}

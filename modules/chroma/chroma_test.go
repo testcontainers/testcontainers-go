@@ -1,7 +1,6 @@
 package chroma_test
 
 import (
-	"context"
 	"net/http"
 	"testing"
 
@@ -13,7 +12,7 @@ import (
 )
 
 func TestChroma(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := chroma.Run(ctx, "chromadb/chroma:0.4.24")
 	testcontainers.CleanupContainer(t, ctr)
@@ -35,13 +34,14 @@ func TestChroma(t *testing.T) {
 
 	t.Run("GetClient", func(tt *testing.T) {
 		// restEndpoint {
-		endpoint, err := ctr.RESTEndpoint(context.Background())
+		ctx := tt.Context()
+		endpoint, err := ctr.RESTEndpoint(ctx)
 		require.NoErrorf(tt, err, "failed to get REST endpoint")
 		chromaClient, err := chromago.NewClient(endpoint)
 		// }
 		require.NoErrorf(tt, err, "failed to create client")
 
-		hb, err := chromaClient.Heartbeat(context.TODO())
+		hb, err := chromaClient.Heartbeat(ctx)
 		require.NoError(tt, err)
 		require.NotNil(tt, hb["nanosecond heartbeat"])
 	})

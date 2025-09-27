@@ -1,7 +1,6 @@
 package meilisearch_test
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"net/url"
@@ -14,7 +13,7 @@ import (
 )
 
 func TestMeilisearch(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := meilisearch.Run(ctx, "getmeili/meilisearch:v1.10.3")
 	testcontainers.CleanupContainer(t, ctr)
@@ -32,7 +31,7 @@ func TestMeilisearch(t *testing.T) {
 }
 
 func TestMeilisearch_WithDataDump(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := meilisearch.Run(ctx, "getmeili/meilisearch:v1.10.3",
 		meilisearch.WithDumpImport("testdata/movies.dump"),

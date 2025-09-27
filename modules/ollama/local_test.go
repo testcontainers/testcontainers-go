@@ -40,7 +40,7 @@ func TestRun_local(t *testing.T) {
 		t.Skip("local ollama binary not found, skipping")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ollamaContainer, err := ollama.Run(
 		ctx,
 		testImage,
@@ -307,7 +307,7 @@ func TestRun_local(t *testing.T) {
 }
 
 func TestRun_localWithCustomLogFile(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	logFile := filepath.Join(t.TempDir(), "server.log")
 
 	t.Run("parent-env", func(t *testing.T) {
@@ -354,7 +354,7 @@ func TestRun_localWithCustomLogFile(t *testing.T) {
 }
 
 func TestRun_localWithCustomHost(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("parent-env", func(t *testing.T) {
 		t.Setenv("OLLAMA_HOST", "127.0.0.1:1234")
@@ -438,7 +438,7 @@ func TestRun_localExec(t *testing.T) {
 		t.Skip("local ollama binary not found, skipping")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ollamaContainer, err := ollama.Run(ctx, testImage, ollama.WithUseLocal())
 	testcontainers.CleanupContainer(t, ollamaContainer)
@@ -529,7 +529,7 @@ func TestRun_localValidateRequest(t *testing.T) {
 		t.Skip("local ollama binary not found, skipping")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	t.Run("waiting-for-nil", func(t *testing.T) {
 		ollamaContainer, err := ollama.Run(
 			ctx,

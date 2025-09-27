@@ -155,7 +155,7 @@ func ExampleRun_pushImage() {
 	repo := registryContainer.RegistryName + "/customredis"
 	tag := "v1.2.3"
 
-	redisC, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
+	redisC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			FromDockerfile: testcontainers.FromDockerfile{
 				Context: filepath.Join("testdata", "redis"),
@@ -185,7 +185,7 @@ func ExampleRun_pushImage() {
 	// repo is localhost:32878/customredis
 	// tag is v1.2.3
 	newImage := fmt.Sprintf("%s:%s", repo, tag)
-	err = registryContainer.PushImage(context.Background(), fmt.Sprintf("%s:%s", repo, tag))
+	err = registryContainer.PushImage(ctx, fmt.Sprintf("%s:%s", repo, tag))
 	if err != nil {
 		log.Printf("failed to push image: %s", err)
 		return
@@ -224,7 +224,7 @@ func ExampleRun_pushImage() {
 	}
 	// }
 
-	err = registryContainer.PushImage(context.Background(), taggedImage)
+	err = registryContainer.PushImage(ctx, taggedImage)
 	if err != nil {
 		log.Printf("failed to push image: %s", err)
 		return
@@ -235,19 +235,19 @@ func ExampleRun_pushImage() {
 
 	// deletingImage {
 	// newImage is customredis:v1.2.3
-	err = registryContainer.DeleteImage(context.Background(), newImage)
+	err = registryContainer.DeleteImage(ctx, newImage)
 	if err != nil {
 		log.Printf("failed to delete image: %s", err)
 		return
 	}
 	// }
-	err = registryContainer.DeleteImage(context.Background(), taggedImage)
+	err = registryContainer.DeleteImage(ctx, taggedImage)
 	if err != nil {
 		log.Printf("failed to delete image: %s", err)
 		return
 	}
 
-	newRedisC, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
+	newRedisC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:        taggedImage,
 			ExposedPorts: []string{"6379/tcp"},
@@ -265,7 +265,7 @@ func ExampleRun_pushImage() {
 		return
 	}
 
-	state, err := newRedisC.State(context.Background())
+	state, err := newRedisC.State(ctx)
 	if err != nil {
 		log.Printf("failed to get redis container state from %s: %s", taggedImage, err)
 		return

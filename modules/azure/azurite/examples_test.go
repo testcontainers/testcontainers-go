@@ -99,7 +99,7 @@ func ExampleRun_blobOperations() {
 	// ===== 1. Create a container =====
 	// createContainer {
 	containerName := "testcontainer"
-	_, err = client.CreateContainer(context.TODO(), containerName, nil)
+	_, err = client.CreateContainer(ctx, containerName, nil)
 	if err != nil {
 		log.Printf("failed to create container: %s", err)
 		return
@@ -111,7 +111,7 @@ func ExampleRun_blobOperations() {
 	blobData := "Hello world!"
 	blobName := "HelloWorld.txt"
 
-	_, err = client.UploadStream(context.TODO(),
+	_, err = client.UploadStream(ctx,
 		containerName,
 		blobName,
 		strings.NewReader(blobData),
@@ -125,7 +125,7 @@ func ExampleRun_blobOperations() {
 	}
 
 	// Download the blob's contents and ensure that the download worked properly
-	blobDownloadResponse, err := client.DownloadStream(context.TODO(), containerName, blobName, nil)
+	blobDownloadResponse, err := client.DownloadStream(ctx, containerName, blobName, nil)
 	if err != nil {
 		log.Printf("failed to download blob: %s", err)
 		return
@@ -155,7 +155,7 @@ func ExampleRun_blobOperations() {
 	// PageResponse() can be used to iterate over the results of the specific page.
 	pager := client.NewListBlobsFlatPager(containerName, nil)
 	for pager.More() {
-		resp, err := pager.NextPage(context.TODO())
+		resp, err := pager.NextPage(ctx)
 		if err != nil {
 			log.Printf("failed to list blobs: %s", err)
 			return
@@ -167,7 +167,7 @@ func ExampleRun_blobOperations() {
 
 	// Delete the blob.
 	// deleteBlob {
-	_, err = client.DeleteBlob(context.TODO(), containerName, blobName, nil)
+	_, err = client.DeleteBlob(ctx, containerName, blobName, nil)
 	if err != nil {
 		log.Printf("failed to delete blob: %s", err)
 		return
@@ -176,7 +176,7 @@ func ExampleRun_blobOperations() {
 
 	// Delete the container.
 	// deleteContainer {
-	_, err = client.DeleteContainer(context.TODO(), containerName, nil)
+	_, err = client.DeleteContainer(ctx, containerName, nil)
 	if err != nil {
 		log.Printf("failed to delete container: %s", err)
 		return
@@ -239,7 +239,7 @@ func ExampleRun_queueOperations() {
 	// createQueue {
 	queueName := "testqueue"
 
-	_, err = client.CreateQueue(context.TODO(), queueName, &azqueue.CreateOptions{
+	_, err = client.CreateQueue(ctx, queueName, &azqueue.CreateOptions{
 		Metadata: map[string]*string{"hello": to.Ptr("world")},
 	})
 	if err != nil {
@@ -256,7 +256,7 @@ func ExampleRun_queueOperations() {
 
 	// list pre-existing queues
 	for pager.More() {
-		resp, err := pager.NextPage(context.Background())
+		resp, err := pager.NextPage(ctx)
 		if err != nil {
 			log.Printf("failed to list queues: %s", err)
 			return
@@ -269,7 +269,7 @@ func ExampleRun_queueOperations() {
 
 	// ===== 3. Delete the queue =====
 	// deleteQueue {
-	_, err = client.DeleteQueue(context.TODO(), queueName, &azqueue.DeleteOptions{})
+	_, err = client.DeleteQueue(ctx, queueName, &azqueue.DeleteOptions{})
 	if err != nil {
 		log.Printf("failed to delete queue: %s", err)
 		return
@@ -332,7 +332,7 @@ func ExampleRun_tableOperations() {
 	// ===== 1. Create a table =====
 	// createTable {
 	tableName := "fromServiceClient"
-	_, err = client.CreateTable(context.TODO(), tableName, nil)
+	_, err = client.CreateTable(ctx, tableName, nil)
 	if err != nil {
 		log.Printf("failed to create table: %s", err)
 		return
@@ -343,7 +343,7 @@ func ExampleRun_tableOperations() {
 	// listTables {
 	pager := client.NewListTablesPager(nil)
 	for pager.More() {
-		resp, err := pager.NextPage(context.Background())
+		resp, err := pager.NextPage(ctx)
 		if err != nil {
 			log.Printf("failed to list tables: %s", err)
 			return
@@ -356,7 +356,7 @@ func ExampleRun_tableOperations() {
 
 	// ===== 3. Delete a table =====
 	// deleteTable {
-	_, err = client.DeleteTable(context.TODO(), tableName, nil)
+	_, err = client.DeleteTable(ctx, tableName, nil)
 	if err != nil {
 		fmt.Println(err)
 		return

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	client "github.com/BraspagDevelopers/mock-server-client"
 
@@ -16,7 +17,8 @@ import (
 
 func ExampleRun() {
 	// runMockServerContainer {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
 	mockserverContainer, err := mockserver.Run(ctx, "mockserver/mockserver:5.15.0")
 	defer func() {

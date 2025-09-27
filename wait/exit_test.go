@@ -56,6 +56,6 @@ func TestWaitForExit(t *testing.T) {
 		isRunning: false,
 	}
 	wg := NewExitStrategy().WithExitTimeout(100 * time.Millisecond)
-	err := wg.WaitUntilReady(context.Background(), target)
+	err := wg.WaitUntilReady(t.Context(), target)
 	require.NoError(t, err)
 }

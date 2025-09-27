@@ -1,7 +1,6 @@
 package localstack
 
 import (
-	"context"
 	"io"
 	"strings"
 	"testing"
@@ -66,7 +65,7 @@ func TestConfigureDockerHost(t *testing.T) {
 			defer dockerProvider.Close()
 
 			// because the daemon host could be a remote one, we need to get it from the provider
-			expectedDaemonHost, err := dockerProvider.DaemonHost(context.Background())
+			expectedDaemonHost, err := dockerProvider.DaemonHost(t.Context())
 			require.NoError(t, err)
 
 			req := generateContainerRequest()
@@ -169,7 +168,7 @@ func TestRunContainer(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		ctx := context.Background()
+		ctx := t.Context()
 
 		ctr, err := Run(
 			ctx,
@@ -200,7 +199,7 @@ func TestRunContainer(t *testing.T) {
 }
 
 func TestStartWithoutOverride(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := Run(ctx, "localstack/localstack:2.0.0")
 	testcontainers.CleanupContainer(t, ctr)
@@ -209,7 +208,7 @@ func TestStartWithoutOverride(t *testing.T) {
 }
 
 func TestStartV2WithNetwork(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	nw, err := network.New(ctx)
 	require.NoError(t, err)

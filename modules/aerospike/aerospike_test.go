@@ -22,7 +22,7 @@ const (
 // The tests use the testcontainers-go library to manage container lifecycle
 func TestAeroSpike(t *testing.T) {
 	t.Run("valid-image-succeeds", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		container, err := aerospike.Run(ctx, aerospikeImage)
 		testcontainers.CleanupContainer(t, container)
 		require.NoError(t, err)
@@ -30,7 +30,7 @@ func TestAeroSpike(t *testing.T) {
 	})
 
 	t.Run("applies-container-customizations", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		customEnv := "TEST_ENV=value"
 		container, err := aerospike.Run(ctx, aerospikeImage,
 			testcontainers.WithEnv(map[string]string{"CUSTOM_ENV": customEnv}))
@@ -40,7 +40,7 @@ func TestAeroSpike(t *testing.T) {
 	})
 
 	t.Run("respects-context-cancellation", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 1*time.Millisecond)
 		defer cancel()
 		container, err := aerospike.Run(ctx, aerospikeImage)
 		testcontainers.CleanupContainer(t, container)

@@ -1,7 +1,6 @@
 package vearch_test
 
 import (
-	"context"
 	"net/http"
 	"testing"
 
@@ -12,7 +11,7 @@ import (
 )
 
 func TestVearch(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := vearch.Run(ctx, "vearch/vearch:3.5.1")
 	testcontainers.CleanupContainer(t, ctr)

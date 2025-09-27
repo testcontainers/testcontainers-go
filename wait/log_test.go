@@ -33,7 +33,7 @@ func TestWaitForLog(t *testing.T) {
 			ReaderCloser: readCloser("docker"),
 		}
 		wg := wait.NewLogStrategy("docker").WithStartupTimeout(100 * time.Millisecond)
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		require.NoError(t, err)
 	})
 
@@ -44,7 +44,7 @@ func TestWaitForLog(t *testing.T) {
 
 		// get all words that start with "ip", end with "m" and has a whitespace before the "ip"
 		wg := wait.NewLogStrategy(`\sip[\w]+m`).WithStartupTimeout(100 * time.Millisecond).AsRegexp()
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		require.NoError(t, err)
 	})
 
@@ -59,7 +59,7 @@ func TestWaitForLog(t *testing.T) {
 			}
 			return nil
 		})
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		require.NoError(t, err)
 	})
 
@@ -74,7 +74,7 @@ func TestWaitForLog(t *testing.T) {
 			}
 			return nil
 		})
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		require.Error(t, err)
 		var permanentError *wait.PermanentError
 		require.ErrorAs(t, err, &permanentError)
@@ -101,7 +101,7 @@ func TestWaitForLog(t *testing.T) {
 				return wait.NewPermanentError(fmt.Errorf("`%s` matched %d times, expected %d (permanent)", pattern, len(submatches), 3))
 			}
 		})
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		require.NoError(t, err)
 	})
 }
@@ -114,7 +114,7 @@ func TestWaitWithExactNumberOfOccurrences(t *testing.T) {
 		wg := wait.NewLogStrategy("docker").
 			WithStartupTimeout(100 * time.Millisecond).
 			WithOccurrence(2)
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		require.NoError(t, err)
 	})
 
@@ -127,7 +127,7 @@ func TestWaitWithExactNumberOfOccurrences(t *testing.T) {
 		// there are three occurrences of this pattern in the string:
 		// one "ipsum mauris" and two "ipsum dolor sit am"
 		wg := wait.NewLogStrategy(`ip(.*)m`).WithStartupTimeout(100 * time.Millisecond).AsRegexp().WithOccurrence(3)
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		require.NoError(t, err)
 	})
 }
@@ -140,7 +140,7 @@ func TestWaitWithExactNumberOfOccurrencesButItWillNeverHappen(t *testing.T) {
 		wg := wait.NewLogStrategy("containerd").
 			WithStartupTimeout(logTimeout).
 			WithOccurrence(2)
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		require.Error(t, err)
 	})
 
@@ -152,7 +152,7 @@ func TestWaitWithExactNumberOfOccurrencesButItWillNeverHappen(t *testing.T) {
 		// get texts from "ip" to the next "m".
 		// there are only three occurrences matching
 		wg := wait.NewLogStrategy(`do(.*)ck.+`).WithStartupTimeout(100 * time.Millisecond).AsRegexp().WithOccurrence(4)
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		require.Error(t, err)
 	})
 }
@@ -165,7 +165,7 @@ func TestWaitShouldFailWithExactNumberOfOccurrences(t *testing.T) {
 		wg := wait.NewLogStrategy("docker").
 			WithStartupTimeout(logTimeout).
 			WithOccurrence(2)
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		require.Error(t, err)
 	})
 
@@ -177,7 +177,7 @@ func TestWaitShouldFailWithExactNumberOfOccurrences(t *testing.T) {
 		// get "Maecenas".
 		// there are only one occurrence matching
 		wg := wait.NewLogStrategy(`^Mae[\w]?enas\s`).WithStartupTimeout(100 * time.Millisecond).AsRegexp().WithOccurrence(2)
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		require.Error(t, err)
 	})
 }
@@ -197,7 +197,7 @@ func TestWaitForLogFailsDueToOOMKilledContainer(t *testing.T) {
 	t.Run("string", func(t *testing.T) {
 		wg := wait.ForLog("docker").WithStartupTimeout(logTimeout)
 
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		expected := "container crashed with out-of-memory (OOMKilled)"
 		require.EqualError(t, err, expected)
 	})
@@ -205,7 +205,7 @@ func TestWaitForLogFailsDueToOOMKilledContainer(t *testing.T) {
 	t.Run("regexp", func(t *testing.T) {
 		wg := wait.ForLog("docker").WithStartupTimeout(logTimeout).AsRegexp()
 
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		expected := "container crashed with out-of-memory (OOMKilled)"
 		require.EqualError(t, err, expected)
 	})
@@ -227,7 +227,7 @@ func TestWaitForLogFailsDueToExitedContainer(t *testing.T) {
 	t.Run("string", func(t *testing.T) {
 		wg := wait.ForLog("docker").WithStartupTimeout(logTimeout)
 
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		expected := "container exited with code 1"
 		require.EqualError(t, err, expected)
 	})
@@ -235,7 +235,7 @@ func TestWaitForLogFailsDueToExitedContainer(t *testing.T) {
 	t.Run("regexp", func(t *testing.T) {
 		wg := wait.ForLog("docker").WithStartupTimeout(logTimeout).AsRegexp()
 
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		expected := "container exited with code 1"
 		require.EqualError(t, err, expected)
 	})
@@ -256,7 +256,7 @@ func TestWaitForLogFailsDueToUnexpectedContainerStatus(t *testing.T) {
 	t.Run("string", func(t *testing.T) {
 		wg := wait.ForLog("docker").WithStartupTimeout(logTimeout)
 
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		expected := "unexpected container status \"dead\""
 		require.EqualError(t, err, expected)
 	})
@@ -264,7 +264,7 @@ func TestWaitForLogFailsDueToUnexpectedContainerStatus(t *testing.T) {
 	t.Run("regexp", func(t *testing.T) {
 		wg := wait.ForLog("docker").WithStartupTimeout(logTimeout).AsRegexp()
 
-		err := wg.WaitUntilReady(context.Background(), target)
+		err := wg.WaitUntilReady(t.Context(), target)
 		expected := "unexpected container status \"dead\""
 		require.EqualError(t, err, expected)
 	})

@@ -2,7 +2,6 @@ package bigquery_test
 
 import (
 	"bytes"
-	"context"
 	_ "embed"
 	"errors"
 	"testing"
@@ -23,7 +22,7 @@ import (
 var dataYaml []byte
 
 func TestBigQueryWithDataYAML(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("valid", func(t *testing.T) {
 		bigQueryContainer, err := tcbigquery.Run(

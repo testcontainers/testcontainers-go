@@ -46,7 +46,8 @@ func ExampleRun() {
 }
 
 func ExampleRun_connectToPlayground() {
-	openfgaContainer, err := openfga.Run(context.Background(), "openfga/openfga:v1.5.0")
+	ctx := context.Background()
+	openfgaContainer, err := openfga.Run(ctx, "openfga/openfga:v1.5.0")
 	defer func() {
 		if err := testcontainers.TerminateContainer(openfgaContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -58,7 +59,7 @@ func ExampleRun_connectToPlayground() {
 	}
 
 	// playgroundEndpoint {
-	playgroundEndpoint, err := openfgaContainer.PlaygroundEndpoint(context.Background())
+	playgroundEndpoint, err := openfgaContainer.PlaygroundEndpoint(ctx)
 	if err != nil {
 		log.Printf("failed to get playground endpoint: %s", err)
 		return
@@ -80,7 +81,8 @@ func ExampleRun_connectToPlayground() {
 }
 
 func ExampleRun_connectWithSDKClient() {
-	openfgaContainer, err := openfga.Run(context.Background(), "openfga/openfga:v1.5.0")
+	ctx := context.Background()
+	openfgaContainer, err := openfga.Run(ctx, "openfga/openfga:v1.5.0")
 	defer func() {
 		if err := testcontainers.TerminateContainer(openfgaContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -92,7 +94,7 @@ func ExampleRun_connectWithSDKClient() {
 	}
 
 	// httpEndpoint {
-	httpEndpoint, err := openfgaContainer.HttpEndpoint(context.Background())
+	httpEndpoint, err := openfgaContainer.HttpEndpoint(ctx)
 	if err != nil {
 		log.Printf("failed to get HTTP endpoint: %s", err)
 		return
@@ -108,7 +110,7 @@ func ExampleRun_connectWithSDKClient() {
 		return
 	}
 
-	list, err := fgaClient.ListStores(context.Background()).Execute()
+	list, err := fgaClient.ListStores(ctx).Execute()
 	if err != nil {
 		log.Printf("failed to list stores: %s", err)
 		return
@@ -116,7 +118,7 @@ func ExampleRun_connectWithSDKClient() {
 
 	fmt.Println(len(list.Stores))
 
-	store, err := fgaClient.CreateStore(context.Background()).Body(client.ClientCreateStoreRequest{Name: "test"}).Execute()
+	store, err := fgaClient.CreateStore(ctx).Body(client.ClientCreateStoreRequest{Name: "test"}).Execute()
 	if err != nil {
 		log.Printf("failed to create store: %s", err)
 		return
@@ -124,7 +126,7 @@ func ExampleRun_connectWithSDKClient() {
 
 	fmt.Println(store.Name)
 
-	list, err = fgaClient.ListStores(context.Background()).Execute()
+	list, err = fgaClient.ListStores(ctx).Execute()
 	if err != nil {
 		log.Printf("failed to list stores: %s", err)
 		return
@@ -139,10 +141,11 @@ func ExampleRun_connectWithSDKClient() {
 }
 
 func ExampleRun_writeModel() {
+	ctx := context.Background()
 	// openFGAwriteModel {
 	secret := "openfga-secret"
 	openfgaContainer, err := openfga.Run(
-		context.Background(),
+		ctx,
 		"openfga/openfga:v1.5.0",
 		testcontainers.WithEnv(map[string]string{
 			"OPENFGA_LOG_LEVEL":            "warn",
@@ -160,7 +163,7 @@ func ExampleRun_writeModel() {
 		return
 	}
 
-	httpEndpoint, err := openfgaContainer.HttpEndpoint(context.Background())
+	httpEndpoint, err := openfgaContainer.HttpEndpoint(ctx)
 	if err != nil {
 		log.Printf("failed to get HTTP endpoint: %s", err)
 		return
@@ -205,7 +208,7 @@ func ExampleRun_writeModel() {
 		return
 	}
 
-	resp, err := fgaClient.WriteAuthorizationModel(context.Background()).Body(body).Execute()
+	resp, err := fgaClient.WriteAuthorizationModel(ctx).Body(body).Execute()
 	if err != nil {
 		log.Printf("failed to write authorization model: %v", err)
 		return

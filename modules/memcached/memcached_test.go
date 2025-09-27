@@ -1,7 +1,6 @@
 package memcached_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -11,7 +10,7 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := memcached.Run(ctx, "memcached:1.6-alpine")
 	testcontainers.CleanupContainer(t, ctr)

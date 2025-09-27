@@ -1,7 +1,6 @@
 package openfga_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -11,7 +10,7 @@ import (
 )
 
 func TestOpenFGA(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := openfga.Run(ctx, "openfga/openfga:v1.5.0")
 	testcontainers.CleanupContainer(t, ctr)

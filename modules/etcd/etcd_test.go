@@ -15,7 +15,7 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := etcd.Run(ctx, "gcr.io/etcd-development/etcd:v3.5.14")
 	testcontainers.CleanupContainer(t, ctr)
@@ -32,11 +32,11 @@ func TestRun(t *testing.T) {
 
 func TestPutGet(t *testing.T) {
 	t.Run("single_node", func(t *testing.T) {
-		ctr, err := etcd.Run(context.Background(), "gcr.io/etcd-development/etcd:v3.5.14")
+		ctr, err := etcd.Run(t.Context(), "gcr.io/etcd-development/etcd:v3.5.14")
 		testPutGet(t, ctr, err)
 	})
 	t.Run("multiple_nodes", func(t *testing.T) {
-		ctr, err := etcd.Run(context.Background(), "gcr.io/etcd-development/etcd:v3.5.14", etcd.WithNodes("etcd-1", "etcd-2", "etcd-3"))
+		ctr, err := etcd.Run(t.Context(), "gcr.io/etcd-development/etcd:v3.5.14", etcd.WithNodes("etcd-1", "etcd-2", "etcd-3"))
 		testPutGet(t, ctr, err)
 	})
 }
@@ -48,7 +48,7 @@ func testPutGet(t *testing.T, ctr *etcd.EtcdContainer, err error) {
 
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	clientEndpoints, err := ctr.ClientEndpoints(ctx)
 	require.NoError(t, err)

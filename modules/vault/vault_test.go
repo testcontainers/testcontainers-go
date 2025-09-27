@@ -1,7 +1,6 @@
 package vault_test
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"testing"
@@ -22,7 +21,7 @@ const (
 )
 
 func TestVault(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	opts := []testcontainers.ContainerCustomizer{
 		// WithToken {
 		testcontainervault.WithToken(token),
@@ -44,7 +43,7 @@ func TestVault(t *testing.T) {
 
 	t.Run("Get secret path", func(t *testing.T) {
 		t.Run("From vault CLI", func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// containerCliRead {
 			exec, reader, err := vaultContainer.Exec(ctx, []string{"vault", "kv", "get", "-format=json", "secret/test1"})
@@ -75,7 +74,7 @@ func TestVault(t *testing.T) {
 		})
 
 		t.Run("From vault client library", func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// clientLibRead {
 			client, err := vaultClient.New(

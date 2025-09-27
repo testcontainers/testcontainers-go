@@ -84,7 +84,7 @@ func ExampleRun_usingClient() {
 	client := arangodb.NewClient(conn)
 
 	// Ask the version of the server
-	versionInfo, err := client.Version(context.Background())
+	versionInfo, err := client.Version(ctx)
 	if err != nil {
 		log.Printf("Failed to get version info: %v", err)
 		return

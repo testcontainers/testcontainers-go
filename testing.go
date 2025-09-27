@@ -27,7 +27,7 @@ func SkipIfProviderIsNotHealthy(t *testing.T) {
 		}
 	}()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	provider, err := ProviderDocker.GetProvider()
 	if err != nil {
 		t.Skipf("Docker is not running. Testcontainers can't perform is work without it: %s", err)
@@ -105,7 +105,7 @@ func CleanupNetwork(tb testing.TB, network Network) {
 
 	tb.Cleanup(func() {
 		if !isNil(network) {
-			noErrorOrIgnored(tb, network.Remove(context.Background()))
+			noErrorOrIgnored(tb, network.Remove(tb.Context()))
 		}
 	})
 }

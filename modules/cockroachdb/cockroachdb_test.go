@@ -1,7 +1,6 @@
 package cockroachdb_test
 
 import (
-	"context"
 	"database/sql"
 	"testing"
 
@@ -36,7 +35,7 @@ func TestRun_WithInsecure(t *testing.T) {
 	})
 
 	t.Run("invalid-password-insecure", func(t *testing.T) {
-		_, err := cockroachdb.Run(context.Background(), testImage,
+		_, err := cockroachdb.Run(t.Context(), testImage,
 			cockroachdb.WithPassword("testPassword"),
 			cockroachdb.WithInsecure(),
 		)
@@ -44,7 +43,7 @@ func TestRun_WithInsecure(t *testing.T) {
 	})
 
 	t.Run("invalid-insecure-password", func(t *testing.T) {
-		_, err := cockroachdb.Run(context.Background(), testImage,
+		_, err := cockroachdb.Run(t.Context(), testImage,
 			cockroachdb.WithInsecure(),
 			cockroachdb.WithPassword("testPassword"),
 		)
@@ -56,7 +55,7 @@ func TestRun_WithInsecure(t *testing.T) {
 func testContainer(t *testing.T, opts ...testcontainers.ContainerCustomizer) {
 	t.Helper()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctr, err := cockroachdb.Run(ctx, testImage, opts...)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)

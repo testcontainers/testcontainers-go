@@ -20,7 +20,7 @@ const (
 )
 
 func TestCouchbaseWithCommunityContainer(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// withBucket {
 	bucketName := "testBucket"
@@ -43,7 +43,7 @@ func TestCouchbaseWithCommunityContainer(t *testing.T) {
 }
 
 func TestCouchbaseWithEnterpriseContainer(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	bucketName := "testBucket"
 	bucket := tccouchbase.NewBucket(bucketName).
@@ -65,7 +65,7 @@ func TestCouchbaseWithEnterpriseContainer(t *testing.T) {
 }
 
 func TestCouchbaseWithReuse(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	containerName := "couchbase-" + testcontainers.SessionID()
 
@@ -108,7 +108,7 @@ func TestCouchbaseWithReuse(t *testing.T) {
 }
 
 func TestWithCredentials(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	bucketName := "testBucket"
 	ctr, err := tccouchbase.Run(ctx,
@@ -120,7 +120,7 @@ func TestWithCredentials(t *testing.T) {
 }
 
 func TestWithCredentials_Password_LessThan_6(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	bucketName := "testBucket"
 	ctr, err := tccouchbase.Run(ctx,
@@ -132,7 +132,7 @@ func TestWithCredentials_Password_LessThan_6(t *testing.T) {
 }
 
 func TestAnalyticsServiceWithCommunityContainer(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	bucketName := "testBucket"
 	ctr, err := tccouchbase.Run(ctx,
@@ -144,7 +144,7 @@ func TestAnalyticsServiceWithCommunityContainer(t *testing.T) {
 }
 
 func TestEventingServiceWithCommunityContainer(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	bucketName := "testBucket"
 	ctr, err := tccouchbase.Run(ctx,

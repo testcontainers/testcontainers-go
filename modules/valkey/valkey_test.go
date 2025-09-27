@@ -16,7 +16,7 @@ import (
 )
 
 func TestIntegrationSetGet(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	valkeyContainer, err := tcvalkey.Run(ctx, "valkey/valkey:7.2.5")
 	testcontainers.CleanupContainer(t, valkeyContainer)
@@ -26,7 +26,7 @@ func TestIntegrationSetGet(t *testing.T) {
 }
 
 func TestValkeyWithConfigFile(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	valkeyContainer, err := tcvalkey.Run(ctx, "valkey/valkey:7.2.5", tcvalkey.WithConfigFile(filepath.Join("testdata", "valkey7.conf")))
 	testcontainers.CleanupContainer(t, valkeyContainer)
@@ -36,7 +36,7 @@ func TestValkeyWithConfigFile(t *testing.T) {
 }
 
 func TestValkeyWithImage(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	tests := []struct {
 		name  string
@@ -61,7 +61,7 @@ func TestValkeyWithImage(t *testing.T) {
 }
 
 func TestValkeyWithLogLevel(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	valkeyContainer, err := tcvalkey.Run(ctx, "valkey/valkey:7.2.5", tcvalkey.WithLogLevel(tcvalkey.LogLevelVerbose))
 	testcontainers.CleanupContainer(t, valkeyContainer)
@@ -71,7 +71,7 @@ func TestValkeyWithLogLevel(t *testing.T) {
 }
 
 func TestValkeyWithSnapshotting(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	valkeyContainer, err := tcvalkey.Run(ctx, "valkey/valkey:7.2.5", tcvalkey.WithSnapshotting(10, 1))
 	testcontainers.CleanupContainer(t, valkeyContainer)
@@ -81,7 +81,7 @@ func TestValkeyWithSnapshotting(t *testing.T) {
 }
 
 func TestRedisWithTLS(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("mtls-disabled", func(t *testing.T) {
 		valkeyContainer, err := tcvalkey.Run(ctx, "valkey/valkey:7.2.5", tcvalkey.WithTLS())

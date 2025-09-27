@@ -55,7 +55,7 @@ func ExampleChromaContainer_connectWithClient() {
 		return
 	}
 
-	endpoint, err := chromaContainer.RESTEndpoint(context.Background())
+	endpoint, err := chromaContainer.RESTEndpoint(ctx)
 	if err != nil {
 		log.Printf("failed to get REST endpoint: %s", err)
 		return
@@ -66,7 +66,7 @@ func ExampleChromaContainer_connectWithClient() {
 		return
 	}
 
-	hbs, errHb := chromaClient.Heartbeat(context.Background())
+	hbs, errHb := chromaClient.Heartbeat(ctx)
 	// }
 	if _, ok := hbs["nanosecond heartbeat"]; ok {
 		fmt.Println(ok)
@@ -95,7 +95,7 @@ func ExampleChromaContainer_collections() {
 
 	// getClient {
 	// create the client connection and confirm that we can access the server with it
-	endpoint, err := chromaContainer.RESTEndpoint(context.Background())
+	endpoint, err := chromaContainer.RESTEndpoint(ctx)
 	if err != nil {
 		log.Printf("failed to get REST endpoint: %s", err)
 		return
@@ -107,7 +107,7 @@ func ExampleChromaContainer_collections() {
 		return
 	}
 	// reset {
-	reset, err := chromaClient.Reset(context.Background())
+	reset, err := chromaClient.Reset(ctx)
 	// }
 	if err != nil {
 		log.Printf("failed to reset: %s", err)
@@ -117,7 +117,7 @@ func ExampleChromaContainer_collections() {
 
 	// createCollection {
 	// for testing we use a dummy hashing function NewConsistentHashEmbeddingFunction
-	col, err := chromaClient.CreateCollection(context.Background(), "test-collection", map[string]any{}, true, types.NewConsistentHashEmbeddingFunction(), types.L2)
+	col, err := chromaClient.CreateCollection(ctx, "test-collection", map[string]any{}, true, types.NewConsistentHashEmbeddingFunction(), types.L2)
 	// }
 	if err != nil {
 		log.Printf("failed to create collection: %s", err)
@@ -129,7 +129,7 @@ func ExampleChromaContainer_collections() {
 	// addData {
 	// verify it's possible to add data to the collection
 	col1, err := col.Add(
-		context.Background(),
+		ctx,
 		nil,                                      // embeddings
 		[]map[string]any{},                       // metadata
 		[]string{"test-doc-1", "test-doc-2"},     // documents
@@ -141,12 +141,12 @@ func ExampleChromaContainer_collections() {
 		return
 	}
 
-	fmt.Println(col1.Count(context.Background()))
+	fmt.Println(col1.Count(ctx))
 
 	// queryCollection {
 	// verify it's possible to query the collection
 	queryResults, err := col1.QueryWithOptions(
-		context.Background(),
+		ctx,
 		types.WithQueryTexts([]string{"test-doc-1"}),
 		types.WithInclude(types.IDocuments, types.IEmbeddings, types.IMetadatas),
 		types.WithNResults(1),
@@ -160,7 +160,7 @@ func ExampleChromaContainer_collections() {
 	fmt.Printf("Result of query: %v\n", queryResults)
 
 	// listCollections {
-	cols, err := chromaClient.ListCollections(context.Background())
+	cols, err := chromaClient.ListCollections(ctx)
 	// }
 	if err != nil {
 		log.Printf("failed to list collections: %s", err)
@@ -170,7 +170,7 @@ func ExampleChromaContainer_collections() {
 	fmt.Println(len(cols))
 
 	// deleteCollection {
-	_, err = chromaClient.DeleteCollection(context.Background(), "test-collection")
+	_, err = chromaClient.DeleteCollection(ctx, "test-collection")
 	// }
 	if err != nil {
 		log.Printf("failed to delete collection: %s", err)

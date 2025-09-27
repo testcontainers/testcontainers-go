@@ -1,7 +1,6 @@
 package minio_test
 
 import (
-	"context"
 	"io"
 	"strings"
 	"testing"
@@ -15,7 +14,7 @@ import (
 )
 
 func TestMinio(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := tcminio.Run(ctx,
 		"minio/minio:RELEASE.2024-01-16T16-07-38Z",

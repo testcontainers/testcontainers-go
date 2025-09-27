@@ -1,7 +1,6 @@
 package milvus_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
@@ -12,7 +11,7 @@ import (
 )
 
 func TestMilvus(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := milvus.Run(ctx, "milvusdb/milvus:v2.3.9")
 	testcontainers.CleanupContainer(t, ctr)
@@ -24,7 +23,7 @@ func TestMilvus(t *testing.T) {
 		// }
 		require.NoError(t, err)
 
-		milvusClient, err := client.NewGrpcClient(context.Background(), connectionStr)
+		milvusClient, err := client.NewGrpcClient(t.Context(), connectionStr)
 		require.NoError(t, err)
 
 		defer milvusClient.Close()

@@ -1,7 +1,6 @@
 package elasticsearch_test
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -73,7 +72,7 @@ func TestElasticsearch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 
 			opts := []testcontainers.ContainerCustomizer{}
 
@@ -151,7 +150,7 @@ func TestElasticsearch8WithoutSSL(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			ctr, err := elasticsearch.Run(
 				ctx,
 				baseImage8,
@@ -167,7 +166,7 @@ func TestElasticsearch8WithoutSSL(t *testing.T) {
 }
 
 func TestElasticsearch8WithoutCredentials(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := elasticsearch.Run(ctx, baseImage8)
 	testcontainers.CleanupContainer(t, ctr)
@@ -194,7 +193,7 @@ func TestElasticsearch8WithoutCredentials(t *testing.T) {
 }
 
 func TestElasticsearchOSSCannotUseWithPassword(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ossImage := elasticsearch.DefaultBaseImageOSS + ":7.9.2"
 

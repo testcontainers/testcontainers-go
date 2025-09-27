@@ -62,7 +62,7 @@ func ExampleRun_withTopicAndQueue() {
 	fmt.Println(err)
 	// the [testMessagePublishAndConsume] function is responsible for printing the output
 	// to the console, so be aware of that when adding it to other examples.
-	err = testMessagePublishAndConsume(ctr, "TestQueue", "Topic/MyTopic")
+	err = testMessagePublishAndConsume(ctx, ctr, "TestQueue", "Topic/MyTopic")
 	fmt.Println(err)
 
 	// Output:
@@ -73,9 +73,9 @@ func ExampleRun_withTopicAndQueue() {
 	// <nil>
 }
 
-func testMessagePublishAndConsume(ctr *sc.Container, queueName, topicName string) error {
+func testMessagePublishAndConsume(ctx context.Context, ctr *sc.Container, queueName, topicName string) error {
 	// Get the SMF service URL from the container
-	smfURL, err := ctr.BrokerURLFor(context.Background(), sc.ServiceSMF)
+	smfURL, err := ctr.BrokerURLFor(ctx, sc.ServiceSMF)
 	if err != nil {
 		return fmt.Errorf("failed to get SMF URL: %w", err)
 	}

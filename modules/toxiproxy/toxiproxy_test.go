@@ -2,7 +2,6 @@ package toxiproxy_test
 
 import (
 	"bytes"
-	"context"
 	_ "embed"
 	"fmt"
 	"testing"
@@ -20,7 +19,7 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := tctoxiproxy.Run(ctx, "ghcr.io/shopify/toxiproxy:2.12.0")
 	testcontainers.CleanupContainer(t, ctr)
@@ -33,7 +32,7 @@ func TestRun(t *testing.T) {
 var configFile []byte
 
 func TestRun_withConfigFile(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	nw, err := network.New(ctx)
 	require.NoError(t, err)

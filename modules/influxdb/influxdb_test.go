@@ -1,7 +1,6 @@
 package influxdb_test
 
 import (
-	"context"
 	"encoding/json"
 	"path/filepath"
 	"testing"
@@ -17,7 +16,7 @@ import (
 )
 
 func TestV1Container(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	influxDBContainer, err := influxdb.Run(ctx, "influxdb:1.8.10")
 	testcontainers.CleanupContainer(t, influxDBContainer)
 	require.NoError(t, err)
@@ -29,7 +28,7 @@ func TestV1Container(t *testing.T) {
 }
 
 func TestV2Container(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	influxDBContainer, err := influxdb.Run(ctx,
 		"influxdb:2.7.5-alpine",
 		influxdb.WithDatabase("foo"),
@@ -412,7 +411,7 @@ func TestV2Options(t *testing.T) {
 }
 
 func TestRun_V2WithOptions(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	username := "username"
 	password := "password"
@@ -455,7 +454,7 @@ func TestRun_V2WithOptions(t *testing.T) {
 }
 
 func TestWithInitDb(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	influxDBContainer, err := influxdb.Run(ctx,
 		"influxdb:1.8.10",
 		influxdb.WithInitDb("testdata"),
@@ -488,20 +487,20 @@ func TestWithInitDb(t *testing.T) {
 func TestWithConfigFile(t *testing.T) {
 	influxVersion := "1.8.10"
 
-	influxDBContainer, err := influxdb.Run(context.Background(),
+	influxDBContainer, err := influxdb.Run(t.Context(),
 		"influxdb:"+influxVersion,
 		influxdb.WithConfigFile(filepath.Join("testdata", "influxdb.conf")),
 	)
 	testcontainers.CleanupContainer(t, influxDBContainer)
 	require.NoError(t, err)
 
-	if state, err := influxDBContainer.State(context.Background()); err != nil || !state.Running {
+	if state, err := influxDBContainer.State(t.Context()); err != nil || !state.Running {
 		require.NoError(t, err)
 	}
 
 	/// influxConnectionUrl {
 	cli, err := influxclient.NewHTTPClient(influxclient.HTTPConfig{
-		Addr: influxDBContainer.MustConnectionUrl(context.Background()),
+		Addr: influxDBContainer.MustConnectionUrl(t.Context()),
 	})
 	// }
 	require.NoError(t, err)

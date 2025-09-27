@@ -1,7 +1,6 @@
 package nginx
 
 import (
-	"context"
 	"net/http"
 	"testing"
 
@@ -15,7 +14,7 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	nginxC, err := startContainer(ctx)
 	testcontainers.CleanupContainer(t, nginxC)

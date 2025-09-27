@@ -69,7 +69,7 @@ func TestExposeHostPorts(t *testing.T) {
 func testExposeHostPorts(t *testing.T, hostPorts []int, hasNetwork, hasHostAccess bool) {
 	t.Helper()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*10)
 	defer cancel()
 
 	var hostAccessPorts []int
@@ -111,7 +111,7 @@ func testExposeHostPorts(t *testing.T, hostPorts []int, hasNetwork, hasHostAcces
 // [testcontainers.HostInternal] address.
 func httpRequest(t *testing.T, c testcontainers.Container, port int) (int, string) {
 	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 	defer cancel()
 
 	// wgetHostInternal {

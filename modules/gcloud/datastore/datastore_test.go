@@ -1,7 +1,6 @@
 package datastore_test
 
 import (
-	"context"
 	"log"
 	"testing"
 
@@ -16,7 +15,7 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	datastoreContainer, err := tcdatastore.Run(
 		ctx,

@@ -1,7 +1,6 @@
 package registry_test
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"path/filepath"
@@ -19,7 +18,7 @@ import (
 )
 
 func TestRegistry_unauthenticated(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctr, err := registry.Run(ctx, registry.DefaultImage)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
@@ -35,7 +34,7 @@ func TestRegistry_unauthenticated(t *testing.T) {
 }
 
 func TestRunContainer_authenticated(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	registryContainer, err := registry.Run(
 		ctx,
 		registry.DefaultImage,
@@ -96,7 +95,7 @@ func TestRunContainer_authenticated(t *testing.T) {
 	t.Run("build images with wrong credentials fails", func(tt *testing.T) {
 		setAuthConfig(tt, registryHost, "foo", "bar")
 
-		redisC, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
+		redisC, err := testcontainers.GenericContainer(t.Context(), testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				FromDockerfile: testcontainers.FromDockerfile{
 					Context: filepath.Join("testdata", "redis"),
@@ -123,7 +122,7 @@ func TestRunContainer_authenticated(t *testing.T) {
 		// The container should start because the authentication
 		// is correct.
 
-		redisC, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
+		redisC, err := testcontainers.GenericContainer(t.Context(), testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				FromDockerfile: testcontainers.FromDockerfile{
 					Context: filepath.Join("testdata", "redis"),
@@ -140,14 +139,14 @@ func TestRunContainer_authenticated(t *testing.T) {
 		testcontainers.CleanupContainer(tt, redisC)
 		require.NoError(tt, err)
 
-		state, err := redisC.State(context.Background())
+		state, err := redisC.State(t.Context())
 		require.NoError(tt, err)
 		require.True(tt, state.Running, "expected redis container to be running, but it is not")
 	})
 }
 
 func TestRunContainer_authenticated_withCredentials(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	// htpasswdString {
 	registryContainer, err := registry.Run(
 		ctx,
@@ -176,7 +175,7 @@ func TestRunContainer_authenticated_withCredentials(t *testing.T) {
 
 func TestRunContainer_authenticated_htpasswd_atomic_per_container(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	r := require.New(t)
 
 	type container struct {
@@ -236,7 +235,7 @@ func TestRunContainer_authenticated_htpasswd_atomic_per_container(t *testing.T) 
 }
 
 func TestRunContainer_wrongData(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	registryContainer, err := registry.Run(
 		ctx,
 		registry.DefaultImage,
@@ -256,7 +255,7 @@ func TestRunContainer_wrongData(t *testing.T) {
 	// The container won't be able to start because the data
 	// directory is wrong.
 
-	redisC, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
+	redisC, err := testcontainers.GenericContainer(t.Context(), testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			FromDockerfile: testcontainers.FromDockerfile{
 				Context: filepath.Join("testdata", "redis"),
@@ -275,7 +274,7 @@ func TestRunContainer_wrongData(t *testing.T) {
 }
 
 func TestPullImage_samePlatform(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	registryContainer, err := registry.Run(ctx, registry.DefaultImage)
 	testcontainers.CleanupContainer(t, registryContainer)
 	require.NoError(t, err)

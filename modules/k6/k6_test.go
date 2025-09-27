@@ -1,7 +1,6 @@
 package k6_test
 
 import (
-	"context"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -53,12 +52,12 @@ func TestK6(t *testing.T) {
 		require.NoError(t, err)
 		defer provider.Close()
 
-		require.NoError(t, provider.Client().VolumeRemove(context.Background(), cacheMount, true))
+		require.NoError(t, provider.Client().VolumeRemove(t.Context(), cacheMount, true))
 	})
 
 	for _, tc := range testCases {
 		t.Run(tc.title, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 
 			var options testcontainers.CustomizeRequestOption
 			if !strings.HasPrefix(tc.script, "http") {

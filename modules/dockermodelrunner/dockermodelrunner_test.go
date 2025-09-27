@@ -24,7 +24,7 @@ const (
 func TestRun(t *testing.T) {
 	skipIfDockerDesktopNotRunning(t)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("success", func(t *testing.T) {
 		ctr, err := dockermodelrunner.Run(ctx)
@@ -47,7 +47,7 @@ func TestRun(t *testing.T) {
 
 func TestRun_client(t *testing.T) {
 	skipIfDockerDesktopNotRunning(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := dockermodelrunner.Run(ctx)
 	testcontainers.CleanupContainer(t, ctr)

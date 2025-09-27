@@ -1,7 +1,6 @@
 package qdrant_test
 
 import (
-	"context"
 	"net/http"
 	"testing"
 
@@ -14,7 +13,7 @@ import (
 )
 
 func TestQdrant(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := qdrant.Run(ctx, "qdrant/qdrant:v1.7.4")
 	testcontainers.CleanupContainer(t, ctr)

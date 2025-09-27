@@ -118,7 +118,7 @@ func ExampleRun_authenticateCreateClient() {
 		log.Printf("failed to create sender: %s", err)
 		return
 	}
-	defer sender.Close(context.TODO())
+	defer sender.Close(ctx)
 
 	sbMessage := &azservicebus.Message{
 		Body: []byte(message),
@@ -127,7 +127,7 @@ func ExampleRun_authenticateCreateClient() {
 	// Retry sending the message 3 times, because the queue is created from the configuration
 	// and Testcontainers cannot add a wait strategy for the queue to be created.
 	for retries := 0; retries < maxRetries; retries++ {
-		err = sender.SendMessage(context.TODO(), sbMessage, nil)
+		err = sender.SendMessage(ctx, sbMessage, nil)
 		if err == nil {
 			break
 		}
@@ -146,12 +146,12 @@ func ExampleRun_authenticateCreateClient() {
 		fmt.Printf("failed to create receiver: %s", err)
 		return
 	}
-	defer receiver.Close(context.TODO())
+	defer receiver.Close(ctx)
 
 	// Receive 1 message from the queue
 	messagesCount := 1
 
-	messages, err := receiver.ReceiveMessages(context.TODO(), messagesCount, nil)
+	messages, err := receiver.ReceiveMessages(ctx, messagesCount, nil)
 	if err != nil {
 		fmt.Printf("failed to receive messages: %s", err)
 		return
@@ -163,7 +163,7 @@ func ExampleRun_authenticateCreateClient() {
 		body := message.Body
 		fmt.Printf("%s\n", string(body))
 
-		err = receiver.CompleteMessage(context.TODO(), message, nil)
+		err = receiver.CompleteMessage(ctx, message, nil)
 		if err != nil {
 			fmt.Printf("failed to complete message: %s", err)
 			return

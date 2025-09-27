@@ -1,7 +1,6 @@
 package databend_test
 
 import (
-	"context"
 	"database/sql"
 	"testing"
 
@@ -13,7 +12,7 @@ import (
 )
 
 func TestDatabend(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := databend.Run(ctx, "datafuselabs/databend:v1.2.615")
 	testcontainers.CleanupContainer(t, ctr)
@@ -43,7 +42,7 @@ func TestDatabend(t *testing.T) {
 }
 
 func TestDatabendWithDefaultUserAndPassword(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := databend.Run(ctx,
 		"datafuselabs/databend:v1.2.615",

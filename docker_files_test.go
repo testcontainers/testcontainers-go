@@ -16,7 +16,7 @@ import (
 const testBashImage string = "bash:5.2.26"
 
 func TestCopyFileToContainer(t *testing.T) {
-	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cnl := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cnl()
 
 	// copyFileOnCreate {
@@ -42,7 +42,7 @@ func TestCopyFileToContainer(t *testing.T) {
 }
 
 func TestCopyFileToRunningContainer(t *testing.T) {
-	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cnl := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cnl()
 
 	// Not using the assertations here to avoid leaking the library into the example
@@ -74,7 +74,7 @@ func TestCopyFileToRunningContainer(t *testing.T) {
 }
 
 func TestCopyDirectoryToContainer(t *testing.T) {
-	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cnl := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cnl()
 
 	// Not using the assertations here to avoid leaking the library into the example
@@ -100,7 +100,7 @@ func TestCopyDirectoryToContainer(t *testing.T) {
 }
 
 func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
-	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cnl := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cnl()
 
 	// copyDirectoryToRunningContainerAsFile {
@@ -131,7 +131,7 @@ func TestCopyDirectoryToRunningContainerAsFile(t *testing.T) {
 }
 
 func TestCopyDirectoryToRunningContainerAsDir(t *testing.T) {
-	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cnl := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cnl()
 
 	// Not using the assertations here to avoid leaking the library into the example

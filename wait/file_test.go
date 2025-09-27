@@ -40,7 +40,7 @@ func testForFile() *wait.FileStrategy {
 
 func TestForFile(t *testing.T) {
 	errNotFound := errdefs.ErrNotFound.WithMessage("file not found")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("not-found", func(t *testing.T) {
 		target := newRunningTarget()
@@ -78,7 +78,7 @@ func TestForFile(t *testing.T) {
 func TestFileStrategyWaitUntilReady_WithMatcher(t *testing.T) {
 	// waitForFileWithMatcher {
 	var out bytes.Buffer
-	ctx := context.Background()
+	ctx := t.Context()
 	ctr, err := testcontainers.Run(
 		ctx, "nginx:latest",
 		testcontainers.WithWaitStrategy(wait.ForFile("/etc/nginx/nginx.conf").

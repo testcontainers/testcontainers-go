@@ -60,7 +60,7 @@ func ExampleNewDockerComposeWith() {
 	}
 	defer func() {
 		err = stack.Down(
-			context.Background(),
+			ctx,
 			compose.RemoveOrphans(true),
 			compose.RemoveVolumes(true),
 			compose.RemoveImagesLocal,
@@ -82,14 +82,14 @@ func ExampleNewDockerComposeWith() {
 
 	// nginx container is started
 	// getServiceContainer {
-	nginxContainer, err := stack.ServiceContainer(context.Background(), "nginx")
+	nginxContainer, err := stack.ServiceContainer(ctx, "nginx")
 	if err != nil {
 		log.Printf("Failed to get container: %v", err)
 		return
 	}
 	// }
 
-	inspect, err := nginxContainer.Inspect(context.Background())
+	inspect, err := nginxContainer.Inspect(ctx)
 	if err != nil {
 		log.Printf("Failed to inspect container: %v", err)
 		return
@@ -145,7 +145,7 @@ func ExampleNewDockerComposeWith_waitForService() {
 	}
 	defer func() {
 		err = stack.Down(
-			context.Background(),
+			ctx,
 			compose.RemoveOrphans(true),
 			compose.RemoveVolumes(true),
 			compose.RemoveImagesLocal,

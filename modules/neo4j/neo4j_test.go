@@ -18,7 +18,7 @@ const testPassword = "letmein!"
 func TestNeo4j(outer *testing.T) {
 	outer.Parallel()
 
-	ctx := context.Background()
+	ctx := outer.Context()
 
 	ctr, err := setupNeo4j(ctx)
 	testcontainers.CleanupContainer(outer, ctr)
@@ -53,7 +53,7 @@ func TestNeo4j(outer *testing.T) {
 func TestNeo4jWithEnterpriseLicense(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	images := map[string]string{
 		"StandardEdition":   "neo4j:4.4",
@@ -82,7 +82,7 @@ func TestNeo4jWithEnterpriseLicense(t *testing.T) {
 func TestNeo4jWithWrongSettings(outer *testing.T) {
 	outer.Parallel()
 
-	ctx := context.Background()
+	ctx := outer.Context()
 
 	outer.Run("without authentication", func(t *testing.T) {
 		ctr, err := neo4j.Run(ctx, "neo4j:4.4")

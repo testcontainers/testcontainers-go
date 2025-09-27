@@ -1,7 +1,6 @@
 package artemis_test
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"testing"
@@ -16,7 +15,7 @@ import (
 )
 
 func TestArtemis(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	tests := []struct {
 		name       string
@@ -126,7 +125,7 @@ func TestArtemis(t *testing.T) {
 func expectQueue(t *testing.T, container *artemis.Container, queueName string) {
 	t.Helper()
 
-	u, err := container.ConsoleURL(context.Background())
+	u, err := container.ConsoleURL(t.Context())
 	require.NoError(t, err)
 
 	r, err := http.Get(u + `/jolokia/read/org.apache.activemq.artemis:broker="0.0.0.0"/QueueNames`)

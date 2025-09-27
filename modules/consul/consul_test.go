@@ -1,7 +1,6 @@
 package consul_test
 
 import (
-	"context"
 	"net/http"
 	"path/filepath"
 	"testing"
@@ -14,7 +13,7 @@ import (
 )
 
 func TestConsul(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tests := []struct {
 		name string
 		opts []testcontainers.ContainerCustomizer

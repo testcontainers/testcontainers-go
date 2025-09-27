@@ -2,7 +2,6 @@ package nats_test
 
 import (
 	"bufio"
-	"context"
 	"strings"
 	"testing"
 	"time"
@@ -15,7 +14,7 @@ import (
 )
 
 func TestNATS(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	//  createNATSContainer {
 	ctr, err := tcnats.Run(ctx, "nats:2.9")
@@ -68,7 +67,7 @@ authorization {
     token: "s3cr3t"
 }
 `
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := tcnats.Run(ctx, "nats:2.9", tcnats.WithConfigFile(strings.NewReader(natsConf)))
 	testcontainers.CleanupContainer(t, ctr)
