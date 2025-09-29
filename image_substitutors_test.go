@@ -67,7 +67,7 @@ func TestPrependHubRegistrySubstitutor(t *testing.T) {
 			require.Equalf(t, "my-registry/org/user/foo:latest", img, "expected my-registry/org/foo:latest, got %s", img)
 		})
 
-		t.Run("registry with port", func(t *testing.T) {
+		t.Run("registry-with-port", func(t *testing.T) {
 			s := newPrependHubRegistry("my-registry:5000")
 
 			img, err := s.Substitute("foo:latest")
