@@ -1,7 +1,9 @@
 package servicebus
 
 import (
+	"errors"
 	"io"
+	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/mssql"
@@ -62,6 +64,17 @@ func WithConfig(r io.Reader) testcontainers.CustomizeRequestOption {
 			ContainerFilePath: containerConfigFile,
 			FileMode:          0o644,
 		})
+
+		return nil
+	}
+}
+
+// validateEula validates that the EULA is accepted for the servicebus container.
+func validateEula() testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		if strings.ToUpper(req.Env["ACCEPT_EULA"]) != "Y" {
+			return errors.New("EULA not accepted. Please use the WithAcceptEULA option to accept the EULA")
+		}
 
 		return nil
 	}
