@@ -1,7 +1,9 @@
 package eventhubs
 
 import (
+	"errors"
 	"io"
+	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/azure/azurite"
@@ -24,7 +26,7 @@ func defaultOptions() options {
 // Satisfy the testcontainers.CustomizeRequestOption interface
 var _ testcontainers.ContainerCustomizer = (Option)(nil)
 
-// Option is an option for the Redpanda container.
+// Option is an option for the EventHubs container.
 type Option func(*options) error
 
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
@@ -45,11 +47,9 @@ func WithAzurite(img string, opts ...testcontainers.ContainerCustomizer) Option 
 
 // WithAcceptEULA sets the ACCEPT_EULA environment variable to "Y" for the eventhubs container.
 func WithAcceptEULA() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["ACCEPT_EULA"] = "Y"
-
-		return nil
-	}
+	return testcontainers.WithEnv(map[string]string{
+		"ACCEPT_EULA": "Y",
+	})
 }
 
 // WithConfig sets the eventhubs config file for the eventhubs container,
@@ -62,6 +62,17 @@ func WithConfig(r io.Reader) testcontainers.CustomizeRequestOption {
 			ContainerFilePath: containerConfigFile,
 			FileMode:          0o644,
 		})
+
+		return nil
+	}
+}
+
+// validateEula validates that the EULA is accepted for the eventhubs container.
+func validateEula() testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		if strings.ToUpper(req.Env["ACCEPT_EULA"]) != "Y" {
+			return errors.New("EULA not accepted. Please use the WithAcceptEULA option to accept the EULA")
+		}
 
 		return nil
 	}
