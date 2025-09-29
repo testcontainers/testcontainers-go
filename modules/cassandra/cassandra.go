@@ -20,7 +20,7 @@ type CassandraContainer struct {
 	testcontainers.Container
 }
 
-// ConnectionHost returns the host and port of the cassandra container, using the default, native 9000 port, and
+// ConnectionHost returns the host and port of the cassandra container, using the default, native 9042 port, and
 // obtaining the host and exposed port from the container
 func (c *CassandraContainer) ConnectionHost(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, port, "")
