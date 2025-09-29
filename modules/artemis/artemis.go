@@ -3,6 +3,7 @@ package artemis
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/docker/go-connections/nat"
 
@@ -86,39 +87,47 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Artemis container type with a given image
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: img,
-			Env: map[string]string{
-				"ARTEMIS_USER":     "artemis",
-				"ARTEMIS_PASSWORD": "artemis",
-			},
-			ExposedPorts: []string{defaultBrokerPort, defaultHTTPPort},
-			WaitingFor: wait.ForAll(
-				wait.ForLog("Server is now live"),
-				wait.ForLog("REST API available"),
-			),
-		},
-		Started: true,
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultBrokerPort, defaultHTTPPort),
+		testcontainers.WithEnv(map[string]string{
+			"ARTEMIS_USER":     "artemis",
+			"ARTEMIS_PASSWORD": "artemis",
+		}),
+		testcontainers.WithWaitStrategy(wait.ForAll(
+			wait.ForLog("Server is now live"),
+			wait.ForLog("REST API available"),
+		)),
 	}
 
-	for _, opt := range opts {
-		if err := opt.Customize(&req); err != nil {
-			return nil, err
-		}
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	container, err := testcontainers.GenericContainer(ctx, req)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
-	if container != nil {
-		c = &Container{Container: container}
+	if ctr != nil {
+		c = &Container{Container: ctr, user: "artemis", password: "artemis"}
 	}
 	if err != nil {
 		return c, fmt.Errorf("generic container: %w", err)
 	}
 
-	c.user = req.Env["ARTEMIS_USER"]
-	c.password = req.Env["ARTEMIS_PASSWORD"]
+	inspect, err := ctr.Inspect(ctx)
+	if err != nil {
+		return c, fmt.Errorf("inspect artemis: %w", err)
+	}
+
+	for _, env := range inspect.Config.Env {
+		value, ok := strings.CutPrefix(env, "ARTEMIS_USER=")
+		if ok {
+			c.user = value
+			continue
+		}
+
+		value, ok = strings.CutPrefix(env, "ARTEMIS_PASSWORD=")
+		if ok {
+			c.password = value
+			continue
+		}
+	}
 
 	return c, nil
 }
