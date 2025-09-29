@@ -3,6 +3,7 @@ package artemis
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/docker/go-connections/nat"
@@ -43,11 +44,18 @@ func (c *Container) BrokerEndpoint(ctx context.Context) (string, error) {
 
 // ConsoleURL returns the URL for the management console.
 func (c *Container) ConsoleURL(ctx context.Context) (string, error) {
-	host, err := c.PortEndpoint(ctx, nat.Port(defaultHTTPPort), "")
+	hostPort, err := c.PortEndpoint(ctx, nat.Port(defaultHTTPPort), "")
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("http://%s:%s@%s/console", c.user, c.password, host), nil
+
+	u := url.URL{
+		Scheme: "http",
+		User:   url.UserPassword(c.user, c.password),
+		Host:   hostPort,
+		Path:   "/console",
+	}
+	return u.String(), nil
 }
 
 // WithCredentials sets the administrator credentials. The default is artemis:artemis.
