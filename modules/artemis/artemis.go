@@ -108,17 +108,22 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
 	if ctr != nil {
-		c = &Container{Container: ctr, user: defaultUser, password: defaultPassword}
+		c = &Container{Container: ctr}
 	}
 	if err != nil {
 		return c, fmt.Errorf("generic container: %w", err)
 	}
+
+	// initialize the credentials
+	c.user = defaultUser
+	c.password = defaultPassword
 
 	inspect, err := ctr.Inspect(ctx)
 	if err != nil {
 		return c, fmt.Errorf("inspect artemis: %w", err)
 	}
 
+	// refresh the credentials from the environment variables
 	for _, env := range inspect.Config.Env {
 		value, ok := strings.CutPrefix(env, "ARTEMIS_USER=")
 		if ok {
