@@ -108,6 +108,7 @@ func TestArtemis(t *testing.T) {
 			require.NoError(t, err, "failed to send")
 
 			ticker := time.NewTicker(10 * time.Second)
+			defer ticker.Stop()
 			select {
 			case <-ticker.C:
 				t.Fatal("timed out waiting for message")

@@ -111,7 +111,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		c = &Container{Container: ctr}
 	}
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run artemis: %w", err)
 	}
 
 	// initialize the credentials
@@ -124,17 +124,18 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	// refresh the credentials from the environment variables
+	foundUser, foundPass := false, false
 	for _, env := range inspect.Config.Env {
-		value, ok := strings.CutPrefix(env, "ARTEMIS_USER=")
-		if ok {
-			c.user = value
+		if v, ok := strings.CutPrefix(env, "ARTEMIS_USER="); ok {
+			c.user, foundUser = v, true
+			continue
+		} else if v, ok := strings.CutPrefix(env, "ARTEMIS_PASSWORD="); ok {
+			c.password, foundPass = v, true
 			continue
 		}
 
-		value, ok = strings.CutPrefix(env, "ARTEMIS_PASSWORD=")
-		if ok {
-			c.password = value
-			continue
+		if foundUser && foundPass {
+			break
 		}
 	}
 
