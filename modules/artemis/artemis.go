@@ -14,6 +14,8 @@ import (
 const (
 	defaultBrokerPort = "61616/tcp"
 	defaultHTTPPort   = "8161/tcp"
+	defaultUser       = "artemis"
+	defaultPassword   = "artemis"
 )
 
 // Container represents the Artemis container type used in the module.
@@ -90,8 +92,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts(defaultBrokerPort, defaultHTTPPort),
 		testcontainers.WithEnv(map[string]string{
-			"ARTEMIS_USER":     "artemis",
-			"ARTEMIS_PASSWORD": "artemis",
+			"ARTEMIS_USER":     defaultUser,
+			"ARTEMIS_PASSWORD": defaultPassword,
 		}),
 		testcontainers.WithWaitStrategy(wait.ForAll(
 			wait.ForLog("Server is now live"),
@@ -104,7 +106,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
 	if ctr != nil {
-		c = &Container{Container: ctr, user: "artemis", password: "artemis"}
+		c = &Container{Container: ctr, user: defaultUser, password: defaultPassword}
 	}
 	if err != nil {
 		return c, fmt.Errorf("generic container: %w", err)
