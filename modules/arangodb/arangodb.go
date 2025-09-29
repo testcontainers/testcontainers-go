@@ -72,8 +72,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	for _, env := range inspect.Config.Env {
-		if strings.HasPrefix(env, "ARANGO_ROOT_PASSWORD=") {
-			c.password = strings.TrimPrefix(env, "ARANGO_ROOT_PASSWORD=")
+		value, ok := strings.CutPrefix(env, "ARANGO_ROOT_PASSWORD=")
+		if ok {
+			c.password = value
 			break
 		}
 	}
