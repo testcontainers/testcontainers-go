@@ -52,53 +52,48 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the MySQL container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MySQLContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("3306/tcp", "33060/tcp"),
+		testcontainers.WithEnv(map[string]string{
 			"MYSQL_USER":     defaultUser,
 			"MYSQL_PASSWORD": defaultPassword,
 			"MYSQL_DATABASE": defaultDatabaseName,
-		},
-		WaitingFor: wait.ForLog("port: 3306  MySQL Community Server"),
+		}),
+		testcontainers.WithWaitStrategy(wait.ForLog("port: 3306  MySQL Community Server")),
+		WithDefaultCredentials(),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	opts = append(opts, WithDefaultCredentials())
-
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	username, ok := req.Env["MYSQL_USER"]
-	if !ok {
-		username = rootUser
-	}
-	password := req.Env["MYSQL_PASSWORD"]
-
-	if len(password) == 0 && password == "" && !strings.EqualFold(rootUser, username) {
-		return nil, errors.New("empty password can be used only with the root user")
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *MySQLContainer
 	if container != nil {
+		// Extract configuration from the container environment
+		env, err := container.Env(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("get container env: %w", err)
+		}
+
+		username, ok := env["MYSQL_USER"]
+		if !ok {
+			username = rootUser
+		}
+		password := env["MYSQL_PASSWORD"]
+
+		if len(password) == 0 && password == "" && !strings.EqualFold(rootUser, username) {
+			return nil, errors.New("empty password can be used only with the root user")
+		}
+
 		c = &MySQLContainer{
 			Container: container,
 			password:  password,
 			username:  username,
-			database:  req.Env["MYSQL_DATABASE"],
+			database:  env["MYSQL_DATABASE"],
 		}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run mysql: %w", err)
 	}
 
 	return c, nil
