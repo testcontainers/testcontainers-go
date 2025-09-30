@@ -3,7 +3,6 @@ package clickhouse
 import (
 	"bytes"
 	_ "embed"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -133,10 +132,6 @@ func WithDatabase(dbName string) testcontainers.CustomizeRequestOption {
 // This environment variable sets the password for ClickHouse.
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		if password == "" {
-			return errors.New("password cannot be empty")
-		}
-
 		req.Env["CLICKHOUSE_PASSWORD"] = password
 
 		return nil
