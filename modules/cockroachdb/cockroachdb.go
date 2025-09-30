@@ -174,60 +174,50 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			password: defaultPassword,
 		},
 	}
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: img,
-			ExposedPorts: []string{
-				defaultSQLPort,
-				defaultAdminPort,
-			},
-			Env: map[string]string{
-				"COCKROACH_DATABASE": defaultDatabase,
-				"COCKROACH_USER":     defaultUser,
-				"COCKROACH_PASSWORD": defaultPassword,
-			},
-			Files: []testcontainers.ContainerFile{{
-				Reader:            newDefaultsReader(clusterDefaults),
-				ContainerFilePath: clusterDefaultsContainerFile,
-				FileMode:          0o644,
-			}},
-			Cmd: []string{
-				"start-single-node",
-				memStorageFlag + defaultStoreSize,
-			},
-			WaitingFor: wait.ForAll(
-				wait.ForFile(cockroachDir+"/init_success"),
-				wait.ForHTTP("/health").WithPort(defaultAdminPort),
-				wait.ForTLSCert(
-					certsDir+"/client."+defaultUser+".crt",
-					certsDir+"/client."+defaultUser+".key",
-				).WithRootCAs(fileCACert).WithServerName("127.0.0.1"),
-				wait.ForSQL(defaultSQLPort, "pgx/v5", func(host string, port nat.Port) string {
-					connStr, err := ctr.connString(host, port)
-					if err != nil {
-						panic(err)
-					}
-					return connStr
-				}),
-			),
-		},
-		Started: true,
+
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithCmd(
+			"start-single-node",
+			memStorageFlag+defaultStoreSize,
+		),
+		testcontainers.WithExposedPorts(defaultSQLPort, defaultAdminPort),
+		testcontainers.WithEnv(map[string]string{
+			"COCKROACH_DATABASE": defaultDatabase,
+			"COCKROACH_USER":     defaultUser,
+			"COCKROACH_PASSWORD": defaultPassword,
+		}),
+		testcontainers.WithFiles(testcontainers.ContainerFile{
+			Reader:            newDefaultsReader(clusterDefaults),
+			ContainerFilePath: clusterDefaultsContainerFile,
+			FileMode:          0o644,
+		}),
+		testcontainers.WithWaitStrategy(wait.ForAll(
+			wait.ForFile(cockroachDir+"/init_success"),
+			wait.ForHTTP("/health").WithPort(defaultAdminPort),
+			wait.ForTLSCert(
+				certsDir+"/client."+defaultUser+".crt",
+				certsDir+"/client."+defaultUser+".key",
+			).WithRootCAs(fileCACert).WithServerName("127.0.0.1"),
+			wait.ForSQL(defaultSQLPort, "pgx/v5", func(host string, port nat.Port) string {
+				connStr, err := ctr.connString(host, port)
+				if err != nil {
+					panic(err)
+				}
+				return connStr
+			}),
+		)),
 	}
 
-	for _, opt := range opts {
-		if err := opt.Customize(&req); err != nil {
-			return nil, fmt.Errorf("customize request: %w", err)
-		}
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	if err := ctr.configure(&req); err != nil {
-		return nil, fmt.Errorf("set options: %w", err)
-	}
+	// configure the wait strategy after all the options have been applied
+	// It extracts the TLS strategy from the wait strategy and sets it on the container.
+	moduleOpts = append(moduleOpts, ctr.configure())
 
 	var err error
-	ctr.Container, err = testcontainers.GenericContainer(ctx, req)
+	ctr.Container, err = testcontainers.Run(ctx, img, moduleOpts...)
 	if err != nil {
-		return ctr, fmt.Errorf("generic container: %w", err)
+		return ctr, fmt.Errorf("run cockroachdb: %w", err)
 	}
 
 	return ctr, nil
@@ -277,45 +267,4 @@ func (c *CockroachDBContainer) connConfig(host string, port nat.Port) (*pgx.Conn
 	cfg.TLSConfig = tlsConfig
 
 	return cfg, nil
-}
-
-// configure sets the CockroachDBContainer options from the given request and updates the request
-// wait strategies to match the options.
-func (c *CockroachDBContainer) configure(req *testcontainers.GenericContainerRequest) error {
-	c.database = req.Env[envDatabase]
-	c.user = req.Env[envUser]
-	c.password = req.Env[envPassword]
-
-	var insecure bool
-	for _, arg := range req.Cmd {
-		if arg == insecureFlag {
-			insecure = true
-			break
-		}
-	}
-
-	// Walk the wait strategies to find the TLS strategy and either remove it or
-	// update the client certificate files to match the user and configure the
-	// container to use the TLS strategy.
-	if err := wait.Walk(&req.WaitingFor, func(strategy wait.Strategy) error {
-		if cert, ok := strategy.(*wait.TLSStrategy); ok {
-			if insecure {
-				// If insecure mode is enabled, the certificate strategy is removed.
-				return errors.Join(wait.ErrVisitRemove, wait.ErrVisitStop)
-			}
-
-			// Update the client certificate files to match the user which may have changed.
-			cert.WithCert(certsDir+"/client."+c.user+".crt", certsDir+"/client."+c.user+".key")
-
-			c.tlsStrategy = cert
-
-			// Stop the walk as the certificate strategy has been found.
-			return wait.ErrVisitStop
-		}
-		return nil
-	}); err != nil {
-		return fmt.Errorf("walk strategies: %w", err)
-	}
-
-	return nil
 }
