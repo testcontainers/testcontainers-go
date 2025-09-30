@@ -67,44 +67,57 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the ClickHouse container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ClickHouseContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image: img,
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(httpPort.Port(), nativePort.Port()),
+		testcontainers.WithEnv(map[string]string{
 			"CLICKHOUSE_USER":     defaultUser,
 			"CLICKHOUSE_PASSWORD": defaultUser,
 			"CLICKHOUSE_DB":       defaultDatabaseName,
+		}),
+		testcontainers.WithWaitStrategy(wait.NewHTTPStrategy("/").WithPort(httpPort).WithStatusCodeMatcher(func(status int) bool {
+			return status == 200
 		},
-		ExposedPorts: []string{httpPort.Port(), nativePort.Port()},
-		WaitingFor: wait.ForAll(
-			wait.NewHTTPStrategy("/").WithPort(httpPort).WithStatusCodeMatcher(func(status int) bool {
-				return status == 200
-			}),
-		),
+		)),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *ClickHouseContainer
-	if container != nil {
-		c = &ClickHouseContainer{Container: container}
+	if ctr != nil {
+		c = &ClickHouseContainer{Container: ctr}
 	}
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run clickhouse: %w", err)
 	}
 
-	c.User = req.Env["CLICKHOUSE_USER"]
-	c.Password = req.Env["CLICKHOUSE_PASSWORD"]
-	c.DbName = req.Env["CLICKHOUSE_DB"]
+	// initialize the credentials
+	c.User = defaultUser
+	c.Password = defaultUser
+	c.DbName = defaultDatabaseName
+
+	inspect, err := ctr.Inspect(ctx)
+	if err != nil {
+		return c, fmt.Errorf("inspect clickhouse: %w", err)
+	}
+
+	// refresh the credentials from the environment variables
+	foundUser, foundPass, foundDB := false, false, false
+	for _, env := range inspect.Config.Env {
+		if v, ok := strings.CutPrefix(env, "CLICKHOUSE_USER="); ok {
+			c.User, foundUser = v, true
+		}
+		if v, ok := strings.CutPrefix(env, "CLICKHOUSE_PASSWORD="); ok {
+			c.Password, foundPass = v, true
+		}
+		if v, ok := strings.CutPrefix(env, "CLICKHOUSE_DB="); ok {
+			c.DbName, foundDB = v, true
+		}
+
+		if foundUser && foundPass && foundDB {
+			break
+		}
+	}
 
 	return c, nil
 }
