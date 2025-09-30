@@ -243,7 +243,12 @@ func (c *CockroachDBContainer) connConfig(host string, port nat.Port) (*pgx.Conn
 	}
 
 	sslMode := "disable"
-	tlsConfig := c.tlsStrategy.TLSConfig()
+
+	var tlsConfig *tls.Config
+	if c.tlsStrategy != nil {
+		tlsConfig = c.tlsStrategy.TLSConfig()
+	}
+
 	if tlsConfig != nil {
 		sslMode = "verify-full"
 	}
