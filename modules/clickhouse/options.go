@@ -34,7 +34,10 @@ func renderZookeeperConfig(settings ZookeeperOptions) ([]byte, error) {
 	return bootstrapConfig.Bytes(), nil
 }
 
-// WithZookeeper pass a config to connect clickhouse with zookeeper and make clickhouse as cluster
+// WithZookeeper pass a config to connect clickhouse with zookeeper and make clickhouse as cluster.
+// It creates a temporary file in the host filesystem with the config and copies it to the container
+// at /etc/clickhouse-server/config.d/zookeeper_config.xml. This file is not cleaned up automatically,
+// and it's removed by the OS.
 func WithZookeeper(host, port string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		f, err := os.CreateTemp("", "clickhouse-tc-config-")
