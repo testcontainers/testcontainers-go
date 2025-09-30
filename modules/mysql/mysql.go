@@ -30,12 +30,12 @@ func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		username := req.Env["MYSQL_USER"]
 		password := req.Env["MYSQL_PASSWORD"]
-		
+
 		if strings.EqualFold(rootUser, username) {
 			// When using root user, remove MYSQL_USER and MYSQL_PASSWORD
 			delete(req.Env, "MYSQL_USER")
 			delete(req.Env, "MYSQL_PASSWORD")
-			
+
 			// Set root password or allow empty password
 			if len(password) != 0 && password != "" {
 				req.Env["MYSQL_ROOT_PASSWORD"] = password
