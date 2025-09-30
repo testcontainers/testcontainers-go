@@ -68,33 +68,39 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	container, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *MySQLContainer
 	if container != nil {
-		// Extract configuration from the container environment
-		env, err := container.Env(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("get container env: %w", err)
-		}
-
-		username, ok := env["MYSQL_USER"]
-		if !ok {
-			username = rootUser
-		}
-		password := env["MYSQL_PASSWORD"]
-
-		if len(password) == 0 && password == "" && !strings.EqualFold(rootUser, username) {
-			return nil, errors.New("empty password can be used only with the root user")
-		}
-
-		c = &MySQLContainer{
-			Container: container,
-			password:  password,
-			username:  username,
-			database:  env["MYSQL_DATABASE"],
-		}
+		c = &MySQLContainer{Container: container}
 	}
 
 	if err != nil {
 		return c, fmt.Errorf("run mysql: %w", err)
 	}
+
+	// Extract configuration from the container environment
+	inspect, err := container.Inspect(ctx)
+	if err != nil {
+		return c, fmt.Errorf("inspect mysql: %w", err)
+	}
+
+	env := make(map[string]string)
+	for _, envVar := range inspect.Config.Env {
+		if key, value, found := strings.Cut(envVar, "="); found {
+			env[key] = value
+		}
+	}
+
+	username, ok := env["MYSQL_USER"]
+	if !ok {
+		username = rootUser
+	}
+	password := env["MYSQL_PASSWORD"]
+
+	if len(password) == 0 && password == "" && !strings.EqualFold(rootUser, username) {
+		return nil, errors.New("empty password can be used only with the root user")
+	}
+
+	c.password = password
+	c.username = username
+	c.database = env["MYSQL_DATABASE"]
 
 	return c, nil
 }
