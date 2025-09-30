@@ -81,9 +81,9 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithConfigFile sets the XML config file to be used for the clickhouse container
-// It will also set the "configFile" parameter to the path of the config file
-// as a command line argument to the container.
+// WithConfigFile sets the XML config file to be used for the clickhouse container.
+// The file is copied to the container at /etc/clickhouse-server/config.d/config.xml,
+// which is the default location for ClickHouse config files.
 func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		cf := testcontainers.ContainerFile{
@@ -97,9 +97,9 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	}
 }
 
-// WithConfigFile sets the YAML config file to be used for the clickhouse container
-// It will also set the "configFile" parameter to the path of the config file
-// as a command line argument to the container.
+// WithYamlConfigFile sets the YAML config file to be used for the clickhouse container
+// The file is copied to the container at /etc/clickhouse-server/config.d/config.yaml,
+// which is the default location for ClickHouse YAML config files.
 func WithYamlConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		cf := testcontainers.ContainerFile{
