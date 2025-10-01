@@ -9,7 +9,7 @@ require (
 	github.com/docker/docker v28.3.3+incompatible
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.39.0
-	golang.org/x/crypto v0.37.0
+	golang.org/x/crypto v0.42.0
 )
 
 require (
