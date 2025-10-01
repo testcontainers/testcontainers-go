@@ -7,7 +7,7 @@ toolchain go1.24.7
 require (
 	github.com/jolestar/go-commons-pool v2.0.0+incompatible
 	github.com/nebula-contrib/nebula-sirius v1.0.0-rc2
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.39.0
 )
 

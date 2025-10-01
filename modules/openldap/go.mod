@@ -6,7 +6,7 @@ toolchain go1.24.7
 
 require (
 	github.com/go-ldap/ldap/v3 v3.4.6
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.39.0
 )
 
