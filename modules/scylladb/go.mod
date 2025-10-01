@@ -29,7 +29,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.24.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.28.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.1 // indirect
-	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
+	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
 	github.com/containerd/errdefs/pkg v0.3.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
