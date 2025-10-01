@@ -7,7 +7,7 @@ toolchain go1.24.7
 require (
 	github.com/docker/go-connections v0.6.0
 	github.com/go-stomp/stomp/v3 v3.0.5
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.39.0
 )
 
