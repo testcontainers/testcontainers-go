@@ -42,7 +42,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "bitnami/openldap:2.6.6")`.
+In example: `Run(context.Background(), "bitnamilegacy/openldap:2.6.6")`.
 
 ### Container Options
 
