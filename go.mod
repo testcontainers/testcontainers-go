@@ -6,7 +6,7 @@ toolchain go1.24.7
 
 require (
 	dario.cat/mergo v1.0.2
-	github.com/cenkalti/backoff/v4 v4.2.1
+	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/containerd/errdefs v1.0.0
 	github.com/containerd/platforms v0.2.1
 	github.com/cpuguy83/dockercfg v0.3.2
