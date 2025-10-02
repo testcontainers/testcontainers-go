@@ -25,11 +25,14 @@ type DatabendContainer struct {
 	database string
 }
 
+// Deprecated: use testcontainers.ContainerCustomizer instead
 var _ testcontainers.ContainerCustomizer = (*DatabendOption)(nil)
 
+// Deprecated: use testcontainers.ContainerCustomizer instead
 // DatabendOption is an option for the Databend container.
 type DatabendOption func(*DatabendContainer)
 
+// Deprecated: use testcontainers.ContainerCustomizer instead
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
 func (o DatabendOption) Customize(*testcontainers.GenericContainerRequest) error {
 	// NOOP to satisfy interface.
