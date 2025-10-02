@@ -42,7 +42,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "milvusdb/milvus:v2.3.9")`.
+In example: `Run(context.Background(), "milvusdb/milvus:v2.6.3")`.
 
 ### Container Options
 
