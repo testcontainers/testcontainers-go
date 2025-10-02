@@ -91,5 +91,6 @@ output:
   formats:
     text:
       path: stdout
-  path-prefix: .
+run:
+  relative-path-mode: gitroot
 version: "2"
