@@ -14,7 +14,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var defaultDockerDaemonPort = "2375/tcp"
+const defaultDockerDaemonPort = "2375/tcp"
 
 // Container represents the Docker in Docker container type used in the module
 type Container struct {
@@ -23,12 +23,16 @@ type Container struct {
 
 // Run creates an instance of the Docker in Docker container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.ContainerRequest{
-		Image: img,
-		ExposedPorts: []string{
-			defaultDockerDaemonPort,
-		},
-		HostConfigModifier: func(hc *container.HostConfig) {
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithCmd(
+			"dockerd", "-H", "tcp://0.0.0.0:2375", "--tls=false",
+		),
+		testcontainers.WithEnv(map[string]string{
+			"DOCKER_HOST": "tcp://localhost:2375",
+		}),
+		testcontainers.WithExposedPorts(defaultDockerDaemonPort),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort(defaultDockerDaemonPort)),
+		testcontainers.WithHostConfigModifier(func(hc *container.HostConfig) {
 			hc.Privileged = true
 			hc.CgroupnsMode = "host"
 			hc.Tmpfs = map[string]string{
@@ -36,35 +40,19 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				"/var/run": "",
 			}
 			hc.Mounts = []mount.Mount{}
-		},
-		Cmd: []string{
-			"dockerd", "-H", "tcp://0.0.0.0:2375", "--tls=false",
-		},
-		Env: map[string]string{
-			"DOCKER_HOST": "tcp://localhost:2375",
-		},
-		WaitingFor: wait.ForListeningPort("2375/tcp"),
+		}),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
-	if container != nil {
-		c = &Container{Container: container}
+	if ctr != nil {
+		c = &Container{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run dind: %w", err)
 	}
 
 	return c, nil
