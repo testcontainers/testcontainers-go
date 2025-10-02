@@ -27,7 +27,7 @@ func TestMilvus(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		defer milvusClient.Close(t.Context())
+		defer milvusClient.Close(ctx)
 
 		v, err := milvusClient.GetServerVersion(ctx, milvusclient.NewGetServerVersionOption())
 		require.NoError(t, err)
