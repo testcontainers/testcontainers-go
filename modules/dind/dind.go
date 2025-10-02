@@ -64,6 +64,8 @@ func (c *Container) Host(ctx context.Context) (string, error) {
 }
 
 // LoadImage loads an image into the DinD container.
+// It creates a temporary file to save the image and then copies it to the container.
+// This temporary file is deleted after the function returns.
 func (c *Container) LoadImage(ctx context.Context, image string) (err error) {
 	var provider testcontainers.GenericProvider
 	if provider, err = testcontainers.ProviderDocker.GetProvider(); err != nil {
