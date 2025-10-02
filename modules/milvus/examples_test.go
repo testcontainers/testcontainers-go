@@ -62,7 +62,7 @@ func ExampleMilvusContainer_collections() {
 	}
 
 	// Create a client to interact with the Milvus container
-	milvusClient, err := milvusclient.New(context.Background(), &milvusclient.ClientConfig{
+	milvusClient, err := milvusclient.New(ctx, &milvusclient.ClientConfig{
 		Address: connectionStr,
 	})
 	if err != nil {
