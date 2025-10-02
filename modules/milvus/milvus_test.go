@@ -11,7 +11,7 @@ import (
 )
 
 func TestMilvus(t *testing.T) {
-	ctr, err := milvus.Run(t.Context(), "milvusdb/milvus:v2.3.9")
+	ctr, err := milvus.Run(t.Context(), "milvusdb/milvus:v2.6.3")
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 

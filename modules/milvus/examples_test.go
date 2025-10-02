@@ -16,7 +16,7 @@ func ExampleRun() {
 	// runMilvusContainer {
 	ctx := context.Background()
 
-	milvusContainer, err := milvus.Run(ctx, "milvusdb/milvus:v2.3.9")
+	milvusContainer, err := milvus.Run(ctx, "milvusdb/milvus:v2.6.3")
 	defer func() {
 		if err := testcontainers.TerminateContainer(milvusContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -44,7 +44,7 @@ func ExampleMilvusContainer_collections() {
 	// createCollections {
 	ctx := context.Background()
 
-	milvusContainer, err := milvus.Run(ctx, "milvusdb/milvus:v2.3.9")
+	milvusContainer, err := milvus.Run(ctx, "milvusdb/milvus:v2.6.3")
 	defer func() {
 		if err := testcontainers.TerminateContainer(milvusContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
