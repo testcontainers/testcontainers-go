@@ -76,12 +76,15 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithExposedPorts(MGMT_PORT+"/tcp", MGMT_SSL_PORT+"/tcp"),
 	}
 
+	serviceCustomizers := make([]testcontainers.ContainerCustomizer, 0, len(initialServices))
 	for _, srv := range initialServices {
-		opts = append(opts, withService(srv))
+		serviceCustomizers = append(serviceCustomizers, withService(srv))
 	}
 
+	serviceCustomizers = append(serviceCustomizers, opts...)
+
 	// transfer options to the config
-	for _, opt := range opts {
+	for _, opt := range serviceCustomizers {
 		if bucketCustomizer, ok := opt.(bucketCustomizer); ok {
 			// If the option is a bucketCustomizer, we need to add the buckets to the request
 			config.buckets = append(config.buckets, bucketCustomizer.buckets...)
@@ -102,7 +105,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	moduleOpts = append(moduleOpts, opts...)
+	moduleOpts = append(moduleOpts, serviceCustomizers...)
 
 	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var couchbaseContainer *CouchbaseContainer
