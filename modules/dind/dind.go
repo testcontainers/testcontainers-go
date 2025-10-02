@@ -14,7 +14,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const defaultDockerDaemonPort = "2375/tcp"
+const (
+	defaultDockerDaemonPortNumber = "2375"
+	defaultDockerDaemonPort       = defaultDockerDaemonPortNumber + "/tcp"
+)
 
 // Container represents the Docker in Docker container type used in the module
 type Container struct {
@@ -25,10 +28,10 @@ type Container struct {
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithCmd(
-			"dockerd", "-H", "tcp://0.0.0.0:2375", "--tls=false",
+			"dockerd", "-H", "tcp://0.0.0.0:"+defaultDockerDaemonPortNumber, "--tls=false",
 		),
 		testcontainers.WithEnv(map[string]string{
-			"DOCKER_HOST": "tcp://localhost:2375",
+			"DOCKER_HOST": "tcp://localhost:" + defaultDockerDaemonPortNumber,
 		}),
 		testcontainers.WithExposedPorts(defaultDockerDaemonPort),
 		testcontainers.WithWaitStrategy(wait.ForListeningPort(defaultDockerDaemonPort)),
@@ -60,7 +63,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // Host returns the endpoint to connect to the Docker daemon running inside the DinD container.
 func (c *Container) Host(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, "2375/tcp", "http")
+	return c.PortEndpoint(ctx, defaultDockerDaemonPort, "http")
 }
 
 // LoadImage loads an image into the DinD container.
