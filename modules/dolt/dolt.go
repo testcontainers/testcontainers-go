@@ -99,6 +99,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	if !foundUser {
 		// withCredentials found the root user
 		dc.username = rootUser
+		dc.password = ""
 		createUser = false
 	}
 
