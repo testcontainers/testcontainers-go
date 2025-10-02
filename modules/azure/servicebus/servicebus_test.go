@@ -1,7 +1,6 @@
 package servicebus_test
 
 import (
-	"context"
 	_ "embed"
 	"io"
 	"strings"
@@ -17,7 +16,7 @@ import (
 var servicebusConfig string
 
 func TestServiceBus_topology(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	const mssqlImage = "mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04"
 
@@ -50,7 +49,7 @@ func TestServiceBus_topology(t *testing.T) {
 }
 
 func TestServiceBus_withConfig(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	const mssqlImage = "mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04"
 
@@ -75,7 +74,7 @@ func TestServiceBus_withConfig(t *testing.T) {
 }
 
 func TestServiceBus_noEULA(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := servicebus.Run(ctx, "mcr.microsoft.com/azure-messaging/servicebus-emulator:1.1.2")
 	testcontainers.CleanupContainer(t, ctr)

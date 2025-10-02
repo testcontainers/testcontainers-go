@@ -60,7 +60,7 @@ func awsSession(ctx context.Context, l *localstack.LocalStackContainer) (*sessio
 // }
 
 func TestS3(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := localstack.Run(ctx, "localstack/localstack:1.4.0")
 	testcontainers.CleanupContainer(t, ctr)

@@ -76,7 +76,7 @@ func TestWaitForHealthTimesOutForUnhealthy(t *testing.T) {
 		},
 	}
 	wg := NewHealthStrategy().WithStartupTimeout(100 * time.Millisecond)
-	err := wg.WaitUntilReady(context.Background(), target)
+	err := wg.WaitUntilReady(t.Context(), target)
 
 	require.Error(t, err)
 	require.ErrorIs(t, err, context.DeadlineExceeded)
@@ -91,7 +91,7 @@ func TestWaitForHealthSucceeds(t *testing.T) {
 		},
 	}
 	wg := NewHealthStrategy().WithStartupTimeout(100 * time.Millisecond)
-	err := wg.WaitUntilReady(context.Background(), target)
+	err := wg.WaitUntilReady(t.Context(), target)
 
 	require.NoError(t, err)
 }
@@ -116,7 +116,7 @@ func TestWaitForHealthWithNil(t *testing.T) {
 		target.setState(&container.Health{Status: types.Healthy})
 	}(target)
 
-	err := wg.WaitUntilReady(context.Background(), target)
+	err := wg.WaitUntilReady(t.Context(), target)
 	require.NoError(t, err)
 }
 
@@ -132,7 +132,7 @@ func TestWaitFailsForNilHealth(t *testing.T) {
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
-	err := wg.WaitUntilReady(context.Background(), target)
+	err := wg.WaitUntilReady(t.Context(), target)
 	require.Error(t, err)
 	require.ErrorIs(t, err, context.DeadlineExceeded)
 }
@@ -147,7 +147,7 @@ func TestWaitForHealthFailsDueToOOMKilledContainer(t *testing.T) {
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
-	err := wg.WaitUntilReady(context.Background(), target)
+	err := wg.WaitUntilReady(t.Context(), target)
 	require.Error(t, err)
 	require.EqualError(t, err, "container crashed with out-of-memory (OOMKilled)")
 }
@@ -163,7 +163,7 @@ func TestWaitForHealthFailsDueToExitedContainer(t *testing.T) {
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
-	err := wg.WaitUntilReady(context.Background(), target)
+	err := wg.WaitUntilReady(t.Context(), target)
 	require.Error(t, err)
 	require.EqualError(t, err, "container exited with code 1")
 }
@@ -178,7 +178,7 @@ func TestWaitForHealthFailsDueToUnexpectedContainerStatus(t *testing.T) {
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
-	err := wg.WaitUntilReady(context.Background(), target)
+	err := wg.WaitUntilReady(t.Context(), target)
 	require.Error(t, err)
 	require.EqualError(t, err, "unexpected container status \"dead\"")
 }

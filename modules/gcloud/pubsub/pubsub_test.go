@@ -16,7 +16,7 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	pubsubContainer, err := tcpubsub.Run(
 		ctx,

@@ -20,7 +20,7 @@ import (
 
 func Test_LoadImages(t *testing.T) {
 	// Give up to three minutes to run this test
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(3*time.Minute))
+	ctx, cancel := context.WithDeadline(t.Context(), time.Now().Add(3*time.Minute))
 	defer cancel()
 
 	k3sContainer, err := k3s.Run(ctx, "rancher/k3s:v1.27.1-k3s1")
@@ -103,7 +103,7 @@ func getTestPodState(ctx context.Context, k8s *kubernetes.Clientset) (corev1.Con
 }
 
 func Test_APIServerReady(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	k3sContainer, err := k3s.Run(ctx, "rancher/k3s:v1.27.1-k3s1")
 	testcontainers.CleanupContainer(t, k3sContainer)
@@ -136,12 +136,12 @@ func Test_APIServerReady(t *testing.T) {
 		},
 	}
 
-	_, err = k8s.CoreV1().Pods("default").Create(context.Background(), pod, metav1.CreateOptions{})
+	_, err = k8s.CoreV1().Pods("default").Create(t.Context(), pod, metav1.CreateOptions{})
 	require.NoError(t, err)
 }
 
 func Test_WithManifestOption(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	k3sContainer, err := k3s.Run(ctx,
 		"rancher/k3s:v1.27.1-k3s1",

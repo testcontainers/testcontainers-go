@@ -55,7 +55,7 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 		t.Skip("Skipping test that requires host network access when running in a container")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	SkipIfDockerDesktop(t, ctx)
 
 	absPath, err := filepath.Abs(filepath.Join("testdata", "nginx-highport.conf"))
@@ -86,7 +86,7 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 }
 
 func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	opts := []ContainerCustomizer{
 		WithExposedPorts(nginxDefaultPort),
@@ -115,7 +115,7 @@ func TestContainerWithHostNetwork(t *testing.T) {
 		t.Skip("Skipping test that requires host network access when running in a container")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	SkipIfDockerDesktop(t, ctx)
 
 	absPath, err := filepath.Abs(filepath.Join("testdata", "nginx-highport.conf"))
@@ -151,7 +151,7 @@ func TestContainerWithHostNetwork(t *testing.T) {
 }
 
 func TestContainerReturnItsContainerID(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	nginxA, err := Run(ctx, nginxAlpineImage, WithExposedPorts(nginxDefaultPort))
 	CleanupContainer(t, nginxA)
 	require.NoError(t, err)
@@ -173,7 +173,7 @@ func (l *testLogConsumer) Accept(log Log) {
 }
 
 func TestContainerTerminationResetsState(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	nginxA, err := Run(
 		ctx, nginxAlpineImage,
@@ -205,7 +205,7 @@ func TestContainerStateAfterTermination(t *testing.T) {
 	}
 
 	t.Run("after-termination/nil-state", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		nginx, err := createContainerFn(ctx)
 		CleanupContainer(t, nginx)
 		require.NoError(t, err)
@@ -221,7 +221,7 @@ func TestContainerStateAfterTermination(t *testing.T) {
 	})
 
 	t.Run("termination-timeout", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		nginx, err := createContainerFn(ctx)
 		require.NoError(t, err)
 
@@ -233,7 +233,7 @@ func TestContainerStateAfterTermination(t *testing.T) {
 	})
 
 	t.Run("after-termination/nil-state-if-raw", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		nginx, err := createContainerFn(ctx)
 		CleanupContainer(t, nginx)
 		require.NoError(t, err)
@@ -254,7 +254,7 @@ func TestContainerStateAfterTermination(t *testing.T) {
 
 func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 	t.Run("not-built-from-Dockerfile", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		dockerClient, err := NewDockerClientWithOpts(ctx)
 		require.NoError(t, err)
 		defer dockerClient.Close()
@@ -271,7 +271,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 	})
 
 	t.Run("built-from-Dockerfile", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		dockerClient, err := NewDockerClientWithOpts(ctx)
 		require.NoError(t, err)
 		defer dockerClient.Close()
@@ -300,7 +300,7 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 }
 
 func TestTwoContainersExposingTheSamePort(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	nginxA, err := Run(ctx, nginxAlpineImage,
 		WithExposedPorts(nginxDefaultPort),
 		WithWaitStrategy(wait.ForHTTP("/").WithPort(nginxDefaultPort)),
@@ -335,7 +335,7 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 }
 
 func TestContainerCreation(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	nginxC, err := Run(ctx, nginxAlpineImage,
 		WithExposedPorts(nginxDefaultPort),
@@ -365,7 +365,7 @@ func TestContainerCreation(t *testing.T) {
 }
 
 func TestContainerCreationWithName(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	creationName := fmt.Sprintf("%s_%d", "test_container", time.Now().Unix())
 	expectedName := "/" + creationName // inspect adds '/' in the beginning
@@ -416,7 +416,7 @@ func TestContainerCreationWithName(t *testing.T) {
 }
 
 func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// delayed-nginx will wait 2s before opening port
 	nginxC, err := Run(ctx, nginxDelayedImage,
@@ -436,7 +436,7 @@ func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 }
 
 func TestContainerCreationTimesOut(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	// delayed-nginx will wait 2s before opening port
 	nginxC, err := Run(ctx, nginxDelayedImage,
 		WithExposedPorts(nginxDefaultPort),
@@ -448,7 +448,7 @@ func TestContainerCreationTimesOut(t *testing.T) {
 }
 
 func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	nginxC, err := Run(ctx, nginxAlpineImage,
 		WithExposedPorts(nginxDefaultPort),
@@ -467,7 +467,7 @@ func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
 }
 
 func TestContainerCreationTimesOutWithHttp(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	// delayed-nginx will wait 2s before opening port
 	nginxC, err := Run(ctx, nginxDelayedImage,
 		WithExposedPorts(nginxDefaultPort),
@@ -478,7 +478,7 @@ func TestContainerCreationTimesOutWithHttp(t *testing.T) {
 }
 
 func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	c, err := Run(ctx, mysqlImage,
 		WithExposedPorts("3306/tcp", "33060/tcp"),
 		WithEnv(map[string]string{
@@ -492,7 +492,7 @@ func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
 }
 
 func TestContainerCreationWaitsForLog(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	mysqlC, err := Run(ctx, mysqlImage,
 		WithExposedPorts("3306/tcp", "33060/tcp"),
 		WithEnv(map[string]string{
@@ -506,7 +506,7 @@ func TestContainerCreationWaitsForLog(t *testing.T) {
 }
 
 func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// fromDockerfileWithBuildArgs {
 	ba := "build args value"
@@ -549,7 +549,7 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 		os.Stderr = oldStderr
 	})
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	opts := []ContainerCustomizer{
 		WithDockerfile(FromDockerfile{
@@ -576,7 +576,7 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 func Test_BuildContainerFromDockerfileWithBuildLogWriter(t *testing.T) {
 	var buffer bytes.Buffer
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	opts := []ContainerCustomizer{
 		WithDockerfile(FromDockerfile{
@@ -596,7 +596,7 @@ func Test_BuildContainerFromDockerfileWithBuildLogWriter(t *testing.T) {
 }
 
 func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	c, err := Run(
 		ctx, mysqlImage,
 		WithExposedPorts("3306/tcp", "33060/tcp"),
@@ -614,7 +614,7 @@ func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 }
 
 func TestContainerCreationWaitingForHostPort(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	// exposePorts {
 	nginx, err := Run(ctx, nginxAlpineImage,
 		WithExposedPorts(nginxDefaultPort),
@@ -626,7 +626,7 @@ func TestContainerCreationWaitingForHostPort(t *testing.T) {
 }
 
 func TestContainerCreationWaitingForHostPortWithoutBashThrowsAnError(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	nginx, err := Run(ctx, nginxAlpineImage,
 		WithExposedPorts(nginxDefaultPort),
 		WithWaitStrategy(wait.ForListeningPort(nginxDefaultPort)),
@@ -642,7 +642,7 @@ func TestCMD(t *testing.T) {
 		and it will be run when we run the container
 	*/
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	c, err := Run(ctx, alpineImage,
 		WithCmd("echo", "command override!"),
@@ -661,7 +661,7 @@ func TestEntrypoint(t *testing.T) {
 		and it will be run when we run the container
 	*/
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	c, err := Run(ctx, alpineImage,
 		WithEntrypoint("echo", "entrypoint override!"),
@@ -680,7 +680,7 @@ func TestWorkingDir(t *testing.T) {
 		ContainerRequest and it will be used for the container
 	*/
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	c, err := Run(ctx, alpineImage,
 		WithEntrypoint("pwd"),
@@ -862,7 +862,7 @@ func ExampleContainer_MappedPort() {
 func TestContainerCreationWithVolumeAndFileWritingToIt(t *testing.T) {
 	absPath, err := filepath.Abs(filepath.Join(".", "testdata", "hello.sh"))
 	require.NoError(t, err)
-	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cnl := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cnl()
 
 	// Create the volume.
@@ -886,7 +886,7 @@ func TestContainerCreationWithVolumeAndFileWritingToIt(t *testing.T) {
 func TestContainerCreationWithVolumeCleaning(t *testing.T) {
 	absPath, err := filepath.Abs(filepath.Join(".", "testdata", "hello.sh"))
 	require.NoError(t, err)
-	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cnl := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cnl()
 
 	// Create the volume.
@@ -939,7 +939,7 @@ func TestContainerTerminationOptions(t *testing.T) {
 }
 
 func TestContainerWithTmpFs(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctr, err := Run(ctx, "busybox",
 		WithCmd("sleep", "10"),
 		WithTmpfs(map[string]string{"/testtmpfs": "rw"}),
@@ -975,14 +975,14 @@ func TestContainerWithTmpFs(t *testing.T) {
 
 func TestContainerContextCancellation(t *testing.T) {
 	t.Run("image-not-found/no-propagate-error", func(t *testing.T) {
-		ctr, err := Run(context.Background(), "postgres:nonexistent-version")
+		ctr, err := Run(t.Context(), "postgres:nonexistent-version")
 		CleanupContainer(t, ctr)
 
 		require.ErrorIs(t, err, errdefs.ErrNotFound, "the error should have been an errdefs.ErrNotFound: %v", err)
 	})
 
 	t.Run("propagate-error", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
 		defer cancel()
 		c, err := Run(ctx, "postgres:12", WithWaitStrategy(wait.ForLog("log")))
 		CleanupContainer(t, c)
@@ -997,7 +997,7 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 	t.Run("non-existent-platform", func(t *testing.T) {
 		t.Parallel()
 		nonExistentPlatform := "windows/arm12"
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 1*time.Second)
 		defer cancel()
 		c, err := Run(ctx, "redis:latest", WithImagePlatform(nonExistentPlatform), WithNoStart())
 		CleanupContainer(t, c)
@@ -1006,7 +1006,7 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 
 	t.Run("valid-platform", func(t *testing.T) {
 		t.Parallel()
-		ctx := context.Background()
+		ctx := t.Context()
 
 		c, err := Run(ctx, "mysql:8.0.36", WithImagePlatform("linux/amd64"), WithNoStart())
 		CleanupContainer(t, c)
@@ -1027,7 +1027,7 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 }
 
 func TestContainerWithCustomHostname(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	name := fmt.Sprintf("some-nginx-%s-%d", t.Name(), rand.Int())
 	hostname := fmt.Sprintf("my-nginx-%s-%d", t.Name(), rand.Int())
 
@@ -1045,32 +1045,34 @@ func TestContainerWithCustomHostname(t *testing.T) {
 }
 
 func TestContainerInspect_RawInspectIsCleanedOnStop(t *testing.T) {
-	ctr, err := Run(context.Background(), nginxImage)
+	ctr, err := Run(t.Context(), nginxImage)
 	CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	inspect, err := ctr.Inspect(context.Background())
+	inspect, err := ctr.Inspect(t.Context())
 	require.NoError(t, err)
 
 	require.NotEmpty(t, inspect.ID)
 
-	require.NoError(t, ctr.Stop(context.Background(), nil))
+	require.NoError(t, ctr.Stop(t.Context(), nil))
 }
 
 func readHostname(tb testing.TB, containerID string) string {
 	tb.Helper()
-	containerClient, err := NewDockerClientWithOpts(context.Background())
+	ctx := tb.Context()
+
+	containerClient, err := NewDockerClientWithOpts(ctx)
 	require.NoErrorf(tb, err, "Failed to create Docker client")
 	defer containerClient.Close()
 
-	containerDetails, err := containerClient.ContainerInspect(context.Background(), containerID)
+	containerDetails, err := containerClient.ContainerInspect(ctx, containerID)
 	require.NoErrorf(tb, err, "Failed to inspect container")
 
 	return containerDetails.Config.Hostname
 }
 
 func TestDockerContainerCopyFileToContainer(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	tests := []struct {
 		name           string
@@ -1105,7 +1107,7 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 }
 
 func TestDockerContainerCopyDirToContainer(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	nginxC, err := Run(ctx, nginxImage,
 		WithExposedPorts(nginxDefaultPort),
@@ -1126,7 +1128,7 @@ func TestDockerContainerCopyDirToContainer(t *testing.T) {
 }
 
 func TestDockerCreateContainerWithFiles(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	hostFileName := filepath.Join(".", "testdata", "hello.sh")
 	copiedFileName := "/hello_copy.sh"
 	tests := []struct {
@@ -1191,7 +1193,7 @@ func TestDockerCreateContainerWithFiles(t *testing.T) {
 }
 
 func TestDockerCreateContainerWithDirs(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	hostDirName := "testdata"
 
 	abs, err := filepath.Abs(filepath.Join(".", hostDirName))
@@ -1261,7 +1263,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 }
 
 func TestDockerContainerCopyToContainer(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	tests := []struct {
 		name           string
@@ -1300,7 +1302,7 @@ func TestDockerContainerCopyToContainer(t *testing.T) {
 func TestDockerContainerCopyFileFromContainer(t *testing.T) {
 	fileContent, err := os.ReadFile(filepath.Join(".", "testdata", "hello.sh"))
 	require.NoError(t, err)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	nginxC, err := Run(ctx, nginxImage,
 		WithExposedPorts(nginxDefaultPort),
@@ -1325,7 +1327,7 @@ func TestDockerContainerCopyFileFromContainer(t *testing.T) {
 }
 
 func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	nginxC, err := Run(ctx, nginxImage,
 		WithExposedPorts(nginxDefaultPort),
@@ -1357,7 +1359,7 @@ func TestDockerContainerResources(t *testing.T) {
 		t.Skip("Rootless Docker does not support setting rlimit")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	expected := []*container.Ulimit{
 		{
@@ -1401,7 +1403,7 @@ func TestContainerCapAdd(t *testing.T) {
 		t.Skip("Rootless Podman does not support setting cap-add/cap-drop")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	expected := "CAP_IPC_LOCK"
 
@@ -1427,7 +1429,7 @@ func TestContainerCapAdd(t *testing.T) {
 }
 
 func TestContainerRunningCheckingStatusCode(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	influx, err := Run(ctx, "influxdb:1.8.10-alpine",
 		WithExposedPorts("8086/tcp"),
 		WithImagePlatform("linux/amd64"), // influxdb doesn't provide an alpine+arm build (https://github.com/influxdata/influxdata-docker/issues/335)
@@ -1446,7 +1448,7 @@ func TestContainerRunningCheckingStatusCode(t *testing.T) {
 func TestContainerWithUserID(t *testing.T) {
 	const expectedUserID = "60125"
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctr, err := Run(ctx, alpineImage,
 		WithCmd("sh", "-c", "id -u"),
 		WithWaitStrategy(wait.ForExit()),
@@ -1467,7 +1469,7 @@ func TestContainerWithUserID(t *testing.T) {
 }
 
 func TestContainerWithNoUserID(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctr, err := Run(ctx, alpineImage,
 		WithCmd("sh", "-c", "id -u"),
 		WithWaitStrategy(wait.ForExit()),
@@ -1496,13 +1498,13 @@ func TestGetGatewayIP(t *testing.T) {
 		t.Skip("provider is not a DockerProvider")
 	}
 
-	ip, err := dockerProvider.GetGatewayIP(context.Background())
+	ip, err := dockerProvider.GetGatewayIP(t.Context())
 	require.NoError(t, err)
 	require.NotEmpty(t, ip)
 }
 
 func TestNetworkModeWithContainerReference(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	nginxA, err := Run(ctx, nginxAlpineImage)
 	CleanupContainer(t, nginxA)
 	require.NoError(t, err)
@@ -1564,7 +1566,7 @@ func assertExtractedFiles(t *testing.T, ctx context.Context, container Container
 }
 
 func TestDockerProviderFindContainerByName(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	provider, err := NewDockerProvider(WithLogger(log.TestLogger(t)))
 	require.NoError(t, err)
 	defer provider.Close()
@@ -1605,7 +1607,7 @@ func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(strconv.FormatBool(tt.keepBuiltImage), func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			// Set up CLI.
 			provider, err := NewDockerProvider()
 			require.NoError(t, err, "get docker provider should not fail")
@@ -1734,7 +1736,7 @@ func TestDockerProvider_BuildImage_Retries(t *testing.T) {
 			p.client = m
 
 			// give a chance to retry
-			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 1*time.Second)
 			defer cancel()
 			_, err = p.BuildImage(ctx, &ContainerRequest{
 				FromDockerfile: FromDockerfile{
@@ -1794,7 +1796,7 @@ func TestDockerProvider_waitContainerCreation_retries(t *testing.T) {
 			p.client = m
 
 			// give a chance to retry
-			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 1*time.Second)
 			defer cancel()
 			_, _ = p.waitContainerCreation(ctx, "someID")
 
@@ -1855,7 +1857,7 @@ func TestDockerProvider_attemptToPullImage_retries(t *testing.T) {
 			p.client = m
 
 			// give a chance to retry
-			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 1*time.Second)
 			defer cancel()
 			_ = p.attemptToPullImage(ctx, "someTag", image.PullOptions{})
 
@@ -1869,7 +1871,7 @@ func TestCustomPrefixTrailingSlashIsProperlyRemovedIfPresent(t *testing.T) {
 	hubPrefixWithTrailingSlash := "public.ecr.aws/"
 	dockerImage := "amazonlinux/amazonlinux:2023"
 
-	ctx := context.Background()
+	ctx := t.Context()
 	c, err := Run(ctx, dockerImage, WithImageSubstitutors(newPrependHubRegistry(hubPrefixWithTrailingSlash)))
 	CleanupContainer(t, c)
 	require.NoError(t, err)
@@ -1879,7 +1881,7 @@ func TestCustomPrefixTrailingSlashIsProperlyRemovedIfPresent(t *testing.T) {
 
 // TODO: remove this skip check when context rework is merged alongside [core.DockerEnvFile] removal.
 func Test_Provider_DaemonHost_Issue2897(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	provider, err := NewDockerProvider()
 	require.NoError(t, err)
 	t.Cleanup(func() {

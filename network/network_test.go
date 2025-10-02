@@ -23,7 +23,7 @@ const (
 )
 
 func TestNew(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	net, err := network.New(ctx,
 		network.WithAttachable(),
@@ -44,10 +44,10 @@ func TestNew(t *testing.T) {
 	testcontainers.CleanupContainer(t, nginxC)
 	require.NoError(t, err)
 
-	client, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	client, err := testcontainers.NewDockerClientWithOpts(t.Context())
 	require.NoError(t, err)
 
-	resources, err := client.NetworkList(context.Background(), dockernetwork.ListOptions{
+	resources, err := client.NetworkList(t.Context(), dockernetwork.ListOptions{
 		Filters: filters.NewArgs(filters.Arg("name", networkName)),
 	})
 	require.NoError(t, err)
@@ -65,7 +65,7 @@ func TestNew(t *testing.T) {
 
 // testNetworkAliases {
 func TestContainerAttachedToNewNetwork(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	newNetwork, err := network.New(ctx)
 	require.NoError(t, err)
@@ -108,7 +108,7 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 // }
 
 func TestContainerIPs(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	newNetwork, err := network.New(ctx)
 	require.NoError(t, err)
@@ -133,7 +133,7 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 		t.Skip("Skip for Windows. See https://stackoverflow.com/questions/43784916/docker-for-windows-networking-container-with-multiple-network-interfaces")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	networks := []string{}
 
 	maxNetworksCount := 2
@@ -173,7 +173,7 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 }
 
 func TestMultipleContainersInTheNewNetwork(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	net, err := network.New(ctx, network.WithDriver("bridge"))
 	require.NoError(t, err)
@@ -208,7 +208,7 @@ func TestMultipleContainersInTheNewNetwork(t *testing.T) {
 
 func TestNew_withOptions(t *testing.T) {
 	// newNetworkWithOptions {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// dockernetwork is the alias used for github.com/docker/docker/api/types/network
 	ipamConfig := dockernetwork.IPAM{
@@ -253,7 +253,7 @@ func TestNew_withOptions(t *testing.T) {
 
 func TestWithNetwork(t *testing.T) {
 	// first create the network to be reused
-	nw, err := network.New(context.Background(), network.WithLabels(map[string]string{"network-type": "unique"}))
+	nw, err := network.New(t.Context(), network.WithLabels(map[string]string{"network-type": "unique"}))
 	require.NoError(t, err)
 	testcontainers.CleanupNetwork(t, nw)
 
@@ -276,10 +276,10 @@ func TestWithNetwork(t *testing.T) {
 	}
 
 	// verify that the network is created only once
-	client, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	client, err := testcontainers.NewDockerClientWithOpts(t.Context())
 	require.NoError(t, err)
 
-	resources, err := client.NetworkList(context.Background(), dockernetwork.ListOptions{
+	resources, err := client.NetworkList(t.Context(), dockernetwork.ListOptions{
 		Filters: filters.NewArgs(filters.Arg("name", networkName)),
 	})
 	require.NoError(t, err)
@@ -357,10 +357,10 @@ func TestWithSyntheticNetwork(t *testing.T) {
 	require.Equal(t, map[string][]string{networkName: {"alias"}}, req.NetworkAliases)
 
 	// verify that the network is created only once
-	client, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	client, err := testcontainers.NewDockerClientWithOpts(t.Context())
 	require.NoError(t, err)
 
-	resources, err := client.NetworkList(context.Background(), dockernetwork.ListOptions{
+	resources, err := client.NetworkList(t.Context(), dockernetwork.ListOptions{
 		Filters: filters.NewArgs(filters.Arg("name", networkName)),
 	})
 	require.NoError(t, err)
@@ -372,7 +372,7 @@ func TestWithNewNetwork(t *testing.T) {
 		ContainerRequest: testcontainers.ContainerRequest{},
 	}
 
-	err := network.WithNewNetwork(context.Background(), []string{"alias"},
+	err := network.WithNewNetwork(t.Context(), []string{"alias"},
 		network.WithAttachable(),
 		network.WithInternal(),
 		network.WithLabels(map[string]string{"this-is-a-test": "value"}),
@@ -385,10 +385,10 @@ func TestWithNewNetwork(t *testing.T) {
 	require.Len(t, req.NetworkAliases, 1)
 	require.Equal(t, map[string][]string{networkName: {"alias"}}, req.NetworkAliases)
 
-	client, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	client, err := testcontainers.NewDockerClientWithOpts(t.Context())
 	require.NoError(t, err)
 
-	resources, err := client.NetworkList(context.Background(), dockernetwork.ListOptions{
+	resources, err := client.NetworkList(t.Context(), dockernetwork.ListOptions{
 		Filters: filters.NewArgs(filters.Arg("name", networkName)),
 	})
 	require.NoError(t, err)
@@ -396,7 +396,7 @@ func TestWithNewNetwork(t *testing.T) {
 
 	newNetwork := resources[0]
 	defer func() {
-		require.NoError(t, client.NetworkRemove(context.Background(), newNetwork.ID))
+		require.NoError(t, client.NetworkRemove(t.Context(), newNetwork.ID))
 	}()
 
 	expectedLabels := testcontainers.GenericLabels()
@@ -413,7 +413,7 @@ func TestWithNewNetworkContextTimeout(t *testing.T) {
 		ContainerRequest: testcontainers.ContainerRequest{},
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 1*time.Millisecond)
 	defer cancel()
 
 	err := network.WithNewNetwork(ctx, []string{"alias"},
@@ -439,7 +439,7 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 	}
 
 	// skipIfDockerDesktop {
-	ctx := context.Background()
+	ctx := t.Context()
 	testcontainers.SkipIfDockerDesktop(t, ctx)
 	// }
 

@@ -28,7 +28,7 @@ const (
 var image2_2_1 = baseImage + "2.2.1"
 
 func TestRun(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := tcdynamodb.Run(ctx, image2_2_1)
 	testcontainers.CleanupContainer(t, ctr)
@@ -47,7 +47,7 @@ func TestRun(t *testing.T) {
 }
 
 func TestRun_withCustomImageVersion(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := tcdynamodb.Run(ctx, "amazon/dynamodb-local:2.2.0")
 	testcontainers.CleanupContainer(t, ctr)
@@ -55,14 +55,14 @@ func TestRun_withCustomImageVersion(t *testing.T) {
 }
 
 func TestRun_withInvalidCustomImageVersion(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := tcdynamodb.Run(ctx, "amazon/dynamodb-local:0.0.7")
 	require.Error(t, err)
 }
 
 func TestRun_withoutEndpointResolver(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := tcdynamodb.Run(ctx, image2_2_1)
 	testcontainers.CleanupContainer(t, ctr)
@@ -70,12 +70,12 @@ func TestRun_withoutEndpointResolver(t *testing.T) {
 
 	cli := dynamodb.New(dynamodb.Options{})
 
-	err = createTable(cli)
+	err = createTable(ctx, cli)
 	require.Error(t, err)
 }
 
 func TestRun_withSharedDB(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := tcdynamodb.Run(ctx, image2_2_1, tcdynamodb.WithSharedDB())
 	testcontainers.CleanupContainer(t, ctr)
@@ -96,7 +96,7 @@ func TestRun_withSharedDB(t *testing.T) {
 
 	// list tables and verify
 
-	result, err := cli2.ListTables(context.Background(), nil)
+	result, err := cli2.ListTables(t.Context(), nil)
 	require.NoError(t, err, "dynamodb list tables operation failed")
 
 	actualTableName := result.TableNames[0]
@@ -113,7 +113,7 @@ func TestRun_withSharedDB(t *testing.T) {
 }
 
 func TestRun_withoutSharedDB(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr1, err := tcdynamodb.Run(ctx, image2_2_1)
 	testcontainers.CleanupContainer(t, ctr1)
@@ -135,13 +135,13 @@ func TestRun_withoutSharedDB(t *testing.T) {
 
 	// list tables and verify
 
-	result, err := cli.ListTables(context.Background(), nil)
+	result, err := cli.ListTables(t.Context(), nil)
 	require.NoError(t, err, "dynamodb list tables operation failed")
 	require.Empty(t, result.TableNames, "table should not exist after restarting container")
 }
 
 func TestRun_shouldStartWithTelemetryDisabled(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := tcdynamodb.Run(ctx, image2_2_1, tcdynamodb.WithDisableTelemetry())
 	testcontainers.CleanupContainer(t, ctr)
@@ -149,15 +149,15 @@ func TestRun_shouldStartWithTelemetryDisabled(t *testing.T) {
 }
 
 func TestRun_shouldStartWithSharedDBEnabledAndTelemetryDisabled(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := tcdynamodb.Run(ctx, image2_2_1, tcdynamodb.WithSharedDB(), tcdynamodb.WithDisableTelemetry())
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 }
 
-func createTable(client *dynamodb.Client) error {
-	_, err := client.CreateTable(context.Background(), &dynamodb.CreateTableInput{
+func createTable(ctx context.Context, client *dynamodb.Client) error {
+	_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
 		TableName: aws.String(tableName),
 		KeySchema: []types.KeySchemaElement{
 			{
@@ -183,7 +183,7 @@ func createTable(client *dynamodb.Client) error {
 func addDataToTable(t *testing.T, client *dynamodb.Client, val string) {
 	t.Helper()
 
-	_, err := client.PutItem(context.Background(), &dynamodb.PutItemInput{
+	_, err := client.PutItem(t.Context(), &dynamodb.PutItemInput{
 		TableName: aws.String(tableName),
 		Item: map[string]types.AttributeValue{
 			pkColumnName: &types.AttributeValueMemberS{Value: val},
@@ -195,7 +195,7 @@ func addDataToTable(t *testing.T, client *dynamodb.Client, val string) {
 func queryItem(t *testing.T, client *dynamodb.Client, val string) string {
 	t.Helper()
 
-	output, err := client.GetItem(context.Background(), &dynamodb.GetItemInput{
+	output, err := client.GetItem(t.Context(), &dynamodb.GetItemInput{
 		TableName: aws.String(tableName),
 		Key: map[string]types.AttributeValue{
 			pkColumnName: &types.AttributeValueMemberS{Value: val},
@@ -225,12 +225,12 @@ func getDynamoDBClient(t *testing.T, c *tcdynamodb.DynamoDBContainer) *dynamodb.
 	// createClient {
 	var errs []error
 
-	hostPort, err := c.ConnectionString(context.Background())
+	hostPort, err := c.ConnectionString(t.Context())
 	if err != nil {
 		errs = append(errs, fmt.Errorf("get connection string: %w", err))
 	}
 
-	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
+	cfg, err := config.LoadDefaultConfig(t.Context(), config.WithCredentialsProvider(credentials.StaticCredentialsProvider{
 		Value: aws.Credentials{
 			AccessKeyID:     "DUMMYIDEXAMPLE",
 			SecretAccessKey: "DUMMYEXAMPLEKEY",
@@ -249,10 +249,12 @@ func getDynamoDBClient(t *testing.T, c *tcdynamodb.DynamoDBContainer) *dynamodb.
 func requireTableExists(t *testing.T, cli *dynamodb.Client, tableName string) {
 	t.Helper()
 
-	err := createTable(cli)
+	ctx := t.Context()
+
+	err := createTable(ctx, cli)
 	require.NoError(t, err)
 
-	result, err := cli.ListTables(context.Background(), nil)
+	result, err := cli.ListTables(ctx, nil)
 	require.NoError(t, err, "dynamodb list tables operation failed")
 
 	actualTableName := result.TableNames[0]

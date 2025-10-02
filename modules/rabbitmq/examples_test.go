@@ -187,7 +187,7 @@ func ExampleRun_withPlugins() {
 		return
 	}
 
-	if err = assertPlugins(rabbitmqContainer, "rabbitmq_shovel", "rabbitmq_random_exchange"); err != nil {
+	if err = assertPlugins(ctx, rabbitmqContainer, "rabbitmq_shovel", "rabbitmq_random_exchange"); err != nil {
 		log.Printf("failed to find plugin: %s", err)
 		return
 	}
@@ -232,9 +232,7 @@ func ExampleRun_withCustomConfigFile() {
 	// true
 }
 
-func assertPlugins(container testcontainers.Container, plugins ...string) error {
-	ctx := context.Background()
-
+func assertPlugins(ctx context.Context, container testcontainers.Container, plugins ...string) error {
 	for _, plugin := range plugins {
 		_, out, err := container.Exec(ctx, []string{"rabbitmq-plugins", "is_enabled", plugin})
 		if err != nil {

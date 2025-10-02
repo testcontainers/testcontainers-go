@@ -1,7 +1,6 @@
 package bigtable_test
 
 import (
-	"context"
 	"testing"
 
 	"cloud.google.com/go/bigtable"
@@ -15,7 +14,7 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	bigTableContainer, err := tcbigtable.Run(
 		ctx,

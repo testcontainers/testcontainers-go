@@ -27,7 +27,7 @@ func TestMultiStrategy_WaitUntilReady(t *testing.T) {
 			name:     "returns error when no WaitStrategies are passed",
 			strategy: ForAll(),
 			args: args{
-				ctx:    context.Background(),
+				ctx:    t.Context(),
 				target: NopStrategyTarget{},
 			},
 			wantErr: true,
@@ -42,7 +42,7 @@ func TestMultiStrategy_WaitUntilReady(t *testing.T) {
 				),
 			),
 			args: args{
-				ctx:    context.Background(),
+				ctx:    t.Context(),
 				target: NopStrategyTarget{},
 			},
 			wantErr: true,
@@ -61,7 +61,7 @@ func TestMultiStrategy_WaitUntilReady(t *testing.T) {
 				ForLog("docker"),
 			).WithDeadline(1 * time.Second),
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
 				target: NopStrategyTarget{
 					ReaderCloser: io.NopCloser(bytes.NewReader([]byte("docker"))),
 				},
@@ -82,7 +82,7 @@ func TestMultiStrategy_WaitUntilReady(t *testing.T) {
 				ForLog("docker"),
 			).WithStartupTimeoutDefault(1 * time.Second),
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
 				target: NopStrategyTarget{
 					ReaderCloser: io.NopCloser(bytes.NewReader([]byte("docker"))),
 				},
@@ -103,7 +103,7 @@ func TestMultiStrategy_WaitUntilReady(t *testing.T) {
 				ForLog("docker"),
 			).WithStartupTimeoutDefault(1 * time.Second),
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
 				target: NopStrategyTarget{
 					ReaderCloser: io.NopCloser(bytes.NewReader([]byte("docker"))),
 				},
@@ -128,13 +128,13 @@ func TestMultiStrategy_WaitUntilReady(t *testing.T) {
 func TestMultiStrategy_handleNils(t *testing.T) {
 	t.Run("nil-strategy", func(t *testing.T) {
 		strategy := ForAll(nil)
-		err := strategy.WaitUntilReady(context.Background(), NopStrategyTarget{})
+		err := strategy.WaitUntilReady(t.Context(), NopStrategyTarget{})
 		require.NoError(t, err)
 	})
 
 	t.Run("nil-strategy-in-the-middle", func(t *testing.T) {
 		strategy := ForAll(nil, ForLog("docker"))
-		err := strategy.WaitUntilReady(context.Background(), NopStrategyTarget{
+		err := strategy.WaitUntilReady(t.Context(), NopStrategyTarget{
 			ReaderCloser: io.NopCloser(bytes.NewReader([]byte("docker"))),
 		})
 		require.NoError(t, err)
@@ -142,7 +142,7 @@ func TestMultiStrategy_handleNils(t *testing.T) {
 
 	t.Run("nil-strategy-last", func(t *testing.T) {
 		strategy := ForAll(ForLog("docker"), nil)
-		err := strategy.WaitUntilReady(context.Background(), NopStrategyTarget{
+		err := strategy.WaitUntilReady(t.Context(), NopStrategyTarget{
 			ReaderCloser: io.NopCloser(bytes.NewReader([]byte("docker"))),
 		})
 		require.NoError(t, err)
@@ -152,7 +152,7 @@ func TestMultiStrategy_handleNils(t *testing.T) {
 		var nilStrategy Strategy
 
 		strategy := ForAll(ForLog("docker"), nilStrategy)
-		err := strategy.WaitUntilReady(context.Background(), NopStrategyTarget{
+		err := strategy.WaitUntilReady(t.Context(), NopStrategyTarget{
 			ReaderCloser: io.NopCloser(bytes.NewReader([]byte("docker"))),
 		})
 		require.NoError(t, err)
@@ -166,7 +166,7 @@ func TestMultiStrategy_handleNils(t *testing.T) {
 		var strategyInterface Strategy = nilPointerStrategy
 
 		strategy := ForAll(ForLog("docker"), strategyInterface)
-		err := strategy.WaitUntilReady(context.Background(), NopStrategyTarget{
+		err := strategy.WaitUntilReady(t.Context(), NopStrategyTarget{
 			ReaderCloser: io.NopCloser(bytes.NewReader([]byte("docker"))),
 		})
 		require.NoError(t, err)

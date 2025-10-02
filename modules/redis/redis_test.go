@@ -16,7 +16,7 @@ import (
 )
 
 func TestIntegrationSetGet(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	redisContainer, err := tcredis.Run(ctx, "redis:7")
 	testcontainers.CleanupContainer(t, redisContainer)
@@ -26,7 +26,7 @@ func TestIntegrationSetGet(t *testing.T) {
 }
 
 func TestRedisWithConfigFile(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	redisContainer, err := tcredis.Run(ctx, "redis:7", tcredis.WithConfigFile(filepath.Join("testdata", "redis7.conf")))
 	testcontainers.CleanupContainer(t, redisContainer)
@@ -41,7 +41,7 @@ func TestRedisWithConfigFile(t *testing.T) {
 }
 
 func TestRedisWithLogLevel(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	redisContainer, err := tcredis.Run(ctx, "redis:7", tcredis.WithLogLevel(tcredis.LogLevelVerbose))
 	testcontainers.CleanupContainer(t, redisContainer)
@@ -56,7 +56,7 @@ func TestRedisWithLogLevel(t *testing.T) {
 }
 
 func TestRedisWithSnapshotting(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	redisContainer, err := tcredis.Run(ctx, "redis:7", tcredis.WithSnapshotting(10, 1))
 	testcontainers.CleanupContainer(t, redisContainer)
@@ -71,7 +71,7 @@ func TestRedisWithSnapshotting(t *testing.T) {
 }
 
 func TestRedisWithTLS(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("mtls-disabled", func(t *testing.T) {
 		redisContainer, err := tcredis.Run(ctx, "redis:7", tcredis.WithTLS())

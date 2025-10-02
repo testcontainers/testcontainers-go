@@ -46,7 +46,7 @@ func testForTLSCert() *wait.TLSStrategy {
 
 func TestForCert(t *testing.T) {
 	errNotFound := errdefs.ErrNotFound.WithMessage("file not found")
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("ca-not-found", func(t *testing.T) {
 		target := newRunningTarget()

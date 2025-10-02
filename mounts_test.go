@@ -1,7 +1,6 @@
 package testcontainers_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/docker/docker/api/types/mount"
@@ -224,7 +223,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 func TestCreateContainerWithVolume(t *testing.T) {
 	// volumeMounts {
 	volumeName := "test-volume"
-	ctx := context.Background()
+	ctx := t.Context()
 
 	c, err := testcontainers.Run(ctx, "alpine",
 		testcontainers.WithMounts(testcontainers.ContainerMount{
@@ -250,7 +249,7 @@ func TestCreateContainerWithVolume(t *testing.T) {
 
 func TestMountsReceiveRyukLabels(t *testing.T) {
 	volumeName := "app-data"
-	ctx := context.Background()
+	ctx := t.Context()
 
 	client, err := testcontainers.NewDockerClientWithOpts(ctx)
 	require.NoError(t, err)

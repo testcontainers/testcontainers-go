@@ -1,7 +1,6 @@
 package yugabytedb_test
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"net"
@@ -18,7 +17,7 @@ import (
 
 func TestYugabyteDB_YSQL(t *testing.T) {
 	t.Run("Run", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 
 		ctr, err := yugabytedb.Run(ctx, "yugabytedb/yugabyte:2024.1.3.0-b105")
 		testcontainers.CleanupContainer(t, ctr)
@@ -43,7 +42,7 @@ func TestYugabyteDB_YSQL(t *testing.T) {
 	})
 
 	t.Run("custom-options", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 		ctr, err := yugabytedb.Run(ctx, "yugabytedb/yugabyte:2024.1.3.0-b105",
 			yugabytedb.WithDatabaseName("custom-db"),
 			yugabytedb.WithDatabaseUser("custom-user"),
@@ -73,7 +72,7 @@ func TestYugabyteDB_YSQL(t *testing.T) {
 
 func TestYugabyteDB_YCQL(t *testing.T) {
 	t.Run("Run", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 
 		ctr, err := yugabytedb.Run(ctx, "yugabytedb/yugabyte:2024.1.3.0-b105")
 		testcontainers.CleanupContainer(t, ctr)
@@ -98,7 +97,7 @@ func TestYugabyteDB_YCQL(t *testing.T) {
 	})
 
 	t.Run("custom-options", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := t.Context()
 
 		ctr, err := yugabytedb.Run(ctx, "yugabytedb/yugabyte:2024.1.3.0-b105",
 			yugabytedb.WithKeyspace("custom-keyspace"),

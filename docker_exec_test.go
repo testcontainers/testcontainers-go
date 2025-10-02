@@ -2,7 +2,6 @@ package testcontainers
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"testing"
 
@@ -46,7 +45,7 @@ func TestExecWithOptions(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 
 			ctr, err := Run(ctx, nginxAlpineImage)
 			CleanupContainer(t, ctr)
@@ -72,7 +71,7 @@ func TestExecWithOptions(t *testing.T) {
 }
 
 func TestExecWithMultiplexedResponse(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := Run(ctx, nginxAlpineImage)
 	CleanupContainer(t, ctr)
@@ -93,7 +92,7 @@ func TestExecWithMultiplexedResponse(t *testing.T) {
 }
 
 func TestExecWithNonMultiplexedResponse(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := Run(ctx, nginxAlpineImage)
 	CleanupContainer(t, ctr)

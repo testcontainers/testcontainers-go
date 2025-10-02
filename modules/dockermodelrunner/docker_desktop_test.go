@@ -15,7 +15,7 @@ import (
 // using the testing library and the log.TestLogger of Testcontainers
 func skipIfDockerDesktopNotRunning(t *testing.T) {
 	t.Helper()
-	isDDRunning, err := isDockerDesktopRunning(log.TestLogger(t))
+	isDDRunning, err := isDockerDesktopRunning(t.Context(), log.TestLogger(t))
 	require.NoError(t, err)
 
 	if !isDDRunning {
@@ -24,13 +24,13 @@ func skipIfDockerDesktopNotRunning(t *testing.T) {
 }
 
 // isDockerDesktopRunning checks if Docker Desktop is running.
-func isDockerDesktopRunning(l log.Logger) (bool, error) {
-	cli, err := testcontainers.NewDockerClientWithOpts(context.Background())
+func isDockerDesktopRunning(ctx context.Context, l log.Logger) (bool, error) {
+	cli, err := testcontainers.NewDockerClientWithOpts(ctx)
 	if err != nil {
 		return false, fmt.Errorf("failed to create docker client: %w", err)
 	}
 
-	info, err := cli.Info(context.Background())
+	info, err := cli.Info(ctx)
 	if err != nil {
 		return false, fmt.Errorf("failed to get docker info: %w", err)
 	}

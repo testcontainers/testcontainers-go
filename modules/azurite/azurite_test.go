@@ -1,7 +1,6 @@
 package azurite_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -11,7 +10,7 @@ import (
 )
 
 func TestAzurite(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := azurite.Run(ctx, "mcr.microsoft.com/azure-storage/azurite:3.23.0")
 	testcontainers.CleanupContainer(t, ctr)
