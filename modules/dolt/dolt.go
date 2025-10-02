@@ -27,7 +27,14 @@ type DoltContainer struct {
 	database string
 }
 
+// Deprecated: this function will be removed in the next major release.
 func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
+	return withDefaultCredentials()
+}
+
+// withDefaultCredentials is the function that applies the default credentials to the container request.
+// In case the provided username is the root user, the credentials will be removed.
+func withDefaultCredentials() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		username := req.Env["DOLT_USER"]
 		if strings.EqualFold(rootUser, username) {
@@ -90,6 +97,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	createUser := true
 	if !foundUser {
+		// withCredentials found the root user
 		dc.username = rootUser
 		createUser = false
 	}
