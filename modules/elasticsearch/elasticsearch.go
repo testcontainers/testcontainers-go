@@ -222,6 +222,7 @@ func configureJvmOpts() testcontainers.CustomizeRequestOption {
 
 						tmpDir := os.TempDir()
 
+						// The temp file is closed to not leak a file descriptor.
 						tmpFile, err := os.CreateTemp(tmpDir, "elasticsearch-default-memory-vm.options")
 						if err != nil {
 							return err
@@ -229,6 +230,13 @@ func configureJvmOpts() testcontainers.CustomizeRequestOption {
 						defer os.Remove(tmpFile.Name()) // clean up
 
 						if _, err := tmpFile.WriteString(defaultJVMOpts); err != nil {
+							if cerr := tmpFile.Close(); cerr != nil {
+								return errors.Join(err, cerr)
+							}
+							return err
+						}
+
+						if err := tmpFile.Close(); err != nil {
 							return err
 						}
 
