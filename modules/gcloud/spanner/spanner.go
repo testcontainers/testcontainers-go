@@ -51,6 +51,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
+	moduleOpts = append(moduleOpts, opts...)
+
 	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
 	if ctr != nil {

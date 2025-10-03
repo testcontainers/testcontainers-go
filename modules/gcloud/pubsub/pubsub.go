@@ -57,6 +57,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		"gcloud beta emulators pubsub start --host-port 0.0.0.0:"+defaultPortNumber+" --project="+settings.ProjectID,
 	))
 
+	moduleOpts = append(moduleOpts, opts...)
+
 	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
 	if ctr != nil {
