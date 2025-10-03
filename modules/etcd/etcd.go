@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
+	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	tcnetwork "github.com/testcontainers/testcontainers-go/network"
 )
 
@@ -59,24 +60,16 @@ func (c *EtcdContainer) Terminate(ctx context.Context, opts ...testcontainers.Te
 
 // Run creates an instance of the etcd container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*EtcdContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{clientPort, peerPort},
-		Cmd:          []string{},
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(clientPort, peerPort),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	settings := defaultOptions(&req)
+	settings := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
 			apply(&settings)
-		}
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
 		}
 	}
 
@@ -86,7 +79,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	// configure CMD with the nodes
-	genericContainerReq.Cmd = configureCMD(settings)
+	moduleOpts = append(moduleOpts, testcontainers.WithCmd(configureCMD(settings)...))
 
 	// Initialise the etcd container with the current settings.
 	// The cluster network, if needed, is already part of the settings,
@@ -96,21 +89,33 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	if settings.clusterNetwork != nil {
 		// apply the network to the current node
-		err := tcnetwork.WithNetwork([]string{settings.nodeNames[settings.currentNode]}, settings.clusterNetwork)(&genericContainerReq)
-		if err != nil {
-			return c, fmt.Errorf("with network: %w", err)
-		}
+		moduleOpts = append(moduleOpts, tcnetwork.WithNetwork([]string{settings.nodeNames[settings.currentNode]}, settings.clusterNetwork))
 	}
 
-	if c.Container, err = testcontainers.GenericContainer(ctx, genericContainerReq); err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+	if settings.mountDataDir {
+		moduleOpts = append(moduleOpts, testcontainers.WithAdditionalLifecycleHooks(testcontainers.ContainerLifecycleHooks{
+			PostStarts: []testcontainers.ContainerHook{
+				func(ctx context.Context, c testcontainers.Container) error {
+					_, _, err := c.Exec(ctx, []string{"chmod", "o+rwx", "-R", dataDir}, tcexec.Multiplexed())
+					if err != nil {
+						return fmt.Errorf("chmod etcd data dir: %w", err)
+					}
+
+					return nil
+				},
+			},
+		}))
+	}
+
+	if c.Container, err = testcontainers.Run(ctx, img, moduleOpts...); err != nil {
+		return c, fmt.Errorf("run etcd: %w", err)
 	}
 
 	// only the first node creates the cluster
 	if settings.currentNode == 0 {
 		for i := 1; i < len(settings.nodeNames); i++ {
 			// move to the next node
-			childNode, err := Run(ctx, req.Image, append(clusterOpts, withCurrentNode(i))...)
+			childNode, err := Run(ctx, img, append(clusterOpts, withCurrentNode(i))...)
 			if err != nil {
 				// return the parent cluster node and the error, so the caller can clean up.
 				return c, fmt.Errorf("run cluster node: %w", err)
