@@ -28,38 +28,28 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the InfluxDB container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*InfluxDbContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{"8086/tcp", "8088/tcp"},
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("8086/tcp", "8088/tcp"),
+		testcontainers.WithEnv(map[string]string{
 			"INFLUXDB_BIND_ADDRESS":          ":8088",
 			"INFLUXDB_HTTP_BIND_ADDRESS":     ":8086",
 			"INFLUXDB_REPORTING_DISABLED":    "true",
 			"INFLUXDB_MONITOR_STORE_ENABLED": "false",
 			"INFLUXDB_HTTP_HTTPS_ENABLED":    "false",
 			"INFLUXDB_HTTP_AUTH_ENABLED":     "false",
-		},
-		WaitingFor: waitForHTTPHealth(),
+		}),
+		testcontainers.WithWaitStrategy(waitForHTTPHealth()),
 	}
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *InfluxDbContainer
 	if container != nil {
 		c = &InfluxDbContainer{Container: container}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run influxdb: %w", err)
 	}
 
 	return c, nil
