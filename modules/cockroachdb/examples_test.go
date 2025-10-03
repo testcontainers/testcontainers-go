@@ -104,20 +104,20 @@ func ExampleRun_withInitOptions() {
 	}()
 
 	var interval string
-	if err := db.QueryRow("SHOW CLUSTER SETTING kv.range_merge.queue_interval").Scan(&interval); err != nil {
+	if err := db.QueryRowContext(ctx, "SHOW CLUSTER SETTING kv.range_merge.queue_interval").Scan(&interval); err != nil {
 		log.Printf("failed to scan row: %s", err)
 		return
 	}
 	fmt.Println(interval)
 
-	if err := db.QueryRow("SHOW CLUSTER SETTING jobs.registry.interval.gc").Scan(&interval); err != nil {
+	if err := db.QueryRowContext(ctx, "SHOW CLUSTER SETTING jobs.registry.interval.gc").Scan(&interval); err != nil {
 		log.Printf("failed to scan row: %s", err)
 		return
 	}
 	fmt.Println(interval)
 
 	var statsCollectionEnabled bool
-	if err := db.QueryRow("SHOW CLUSTER SETTING sql.stats.automatic_collection.enabled").Scan(&statsCollectionEnabled); err != nil {
+	if err := db.QueryRowContext(ctx, "SHOW CLUSTER SETTING sql.stats.automatic_collection.enabled").Scan(&statsCollectionEnabled); err != nil {
 		log.Printf("failed to scan row: %s", err)
 		return
 	}

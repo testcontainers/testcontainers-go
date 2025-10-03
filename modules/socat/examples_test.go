@@ -65,11 +65,15 @@ func ExampleRun() {
 	}()
 
 	// readFromSocat {
-	httpClient := http.DefaultClient
-
 	baseURI := socatContainer.TargetURL(target.ExposedPort())
 
-	resp, err := httpClient.Get(baseURI.String() + "/ping")
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURI.String()+"/ping", http.NoBody)
+	if err != nil {
+		log.Printf("failed to create request: %v", err)
+		return
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Printf("failed to get response: %v", err)
 		return
@@ -170,7 +174,13 @@ func ExampleRun_multipleTargets() {
 	for _, target := range targets {
 		baseURI := socatContainer.TargetURL(target.ExposedPort())
 
-		resp, err := httpClient.Get(baseURI.String() + "/ping")
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURI.String()+"/ping", http.NoBody)
+		if err != nil {
+			log.Printf("failed to create request: %v", err)
+			return
+		}
+
+		resp, err := httpClient.Do(req)
 		if err != nil {
 			log.Printf("failed to get response: %v", err)
 			return

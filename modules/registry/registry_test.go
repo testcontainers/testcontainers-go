@@ -19,7 +19,7 @@ import (
 )
 
 func TestRegistry_unauthenticated(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctr, err := registry.Run(ctx, registry.DefaultImage)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
@@ -27,15 +27,19 @@ func TestRegistry_unauthenticated(t *testing.T) {
 	httpAddress, err := ctr.Address(ctx)
 	require.NoError(t, err)
 
-	resp, err := http.Get(httpAddress + "/v2/_catalog")
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, httpAddress+"/v2/_catalog", http.NoBody)
 	require.NoError(t, err)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
 	defer resp.Body.Close()
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
 func TestRunContainer_authenticated(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	registryContainer, err := registry.Run(
 		ctx,
 		registry.DefaultImage,
@@ -54,11 +58,10 @@ func TestRunContainer_authenticated(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("HTTP connection without basic auth fails", func(t *testing.T) {
-		httpCli := http.Client{}
-		req, err := http.NewRequest(http.MethodGet, httpAddress+"/v2/_catalog", nil)
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, httpAddress+"/v2/_catalog", nil)
 		require.NoError(t, err)
 
-		resp, err := httpCli.Do(req)
+		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
@@ -66,13 +69,12 @@ func TestRunContainer_authenticated(t *testing.T) {
 	})
 
 	t.Run("HTTP connection with incorrect basic auth fails", func(t *testing.T) {
-		httpCli := http.Client{}
-		req, err := http.NewRequest(http.MethodGet, httpAddress+"/v2/_catalog", nil)
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, httpAddress+"/v2/_catalog", nil)
 		require.NoError(t, err)
 
 		req.SetBasicAuth("foo", "bar")
 
-		resp, err := httpCli.Do(req)
+		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
@@ -80,13 +82,12 @@ func TestRunContainer_authenticated(t *testing.T) {
 	})
 
 	t.Run("HTTP connection with basic auth succeeds", func(t *testing.T) {
-		httpCli := http.Client{}
-		req, err := http.NewRequest(http.MethodGet, httpAddress+"/v2/_catalog", nil)
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, httpAddress+"/v2/_catalog", nil)
 		require.NoError(t, err)
 
 		req.SetBasicAuth("testuser", "testpassword")
 
-		resp, err := httpCli.Do(req)
+		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
@@ -161,13 +162,12 @@ func TestRunContainer_authenticated_withCredentials(t *testing.T) {
 	httpAddress, err := registryContainer.Address(ctx)
 	require.NoError(t, err)
 
-	httpCli := http.Client{}
-	req, err := http.NewRequest(http.MethodGet, httpAddress+"/v2/_catalog", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, httpAddress+"/v2/_catalog", nil)
 	require.NoError(t, err)
 
 	req.SetBasicAuth("testuser", "testpassword")
 
-	resp, err := httpCli.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
@@ -210,7 +210,7 @@ func TestRunContainer_authenticated_htpasswd_atomic_per_container(t *testing.T) 
 	client := http.Client{}
 
 	// 1. Wrong password against A must fail.
-	req, err := http.NewRequest(http.MethodGet, regA.addr+"/v2/_catalog", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, regA.addr+"/v2/_catalog", nil)
 	r.NoError(err)
 	req.SetBasicAuth("testuser", regB.pass)
 	resp, err := client.Do(req)
@@ -226,7 +226,7 @@ func TestRunContainer_authenticated_htpasswd_atomic_per_container(t *testing.T) 
 	_ = resp.Body.Close()
 
 	// 3. Correct password against B must succeed.
-	req, err = http.NewRequest(http.MethodGet, regB.addr+"/v2/_catalog", nil)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, regB.addr+"/v2/_catalog", nil)
 	r.NoError(err)
 	req.SetBasicAuth("testuser", regB.pass)
 	resp, err = client.Do(req)
