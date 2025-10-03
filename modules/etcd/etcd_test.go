@@ -30,6 +30,22 @@ func TestRun(t *testing.T) {
 	require.Contains(t, string(output), "default")
 }
 
+func TestRunWithDataDir(t *testing.T) {
+	ctx := context.Background()
+
+	ctr, err := etcd.Run(ctx, "gcr.io/etcd-development/etcd:v3.5.14", etcd.WithDataDir())
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	c, r, err := ctr.Exec(ctx, []string{"etcdctl", "member", "list"}, tcexec.Multiplexed())
+	require.NoError(t, err)
+	require.Zero(t, c)
+
+	output, err := io.ReadAll(r)
+	require.NoError(t, err)
+	require.Contains(t, string(output), "default")
+}
+
 func TestPutGet(t *testing.T) {
 	t.Run("single_node", func(t *testing.T) {
 		ctr, err := etcd.Run(context.Background(), "gcr.io/etcd-development/etcd:v3.5.14")
