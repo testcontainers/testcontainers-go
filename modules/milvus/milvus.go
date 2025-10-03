@@ -46,6 +46,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return nil, fmt.Errorf("render config: %w", err)
 	}
 
+	// Adapted from https://github.com/milvus-io/milvus/blob/v2.6.3/scripts/standalone_embed.sh
 	req := testcontainers.ContainerRequest{
 		Image:        img,
 		ExposedPorts: []string{"19530/tcp", "9091/tcp", "2379/tcp"},
@@ -54,6 +55,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"ETCD_DATA_DIR":      "/var/lib/milvus/etcd",
 			"ETCD_CONFIG_PATH":   embedEtcdContainerPath,
 			"COMMON_STORAGETYPE": "local",
+			"DEPLOY_MODE":        "STANDALONE",
 		},
 		Cmd: []string{"milvus", "run", "standalone"},
 		WaitingFor: wait.ForHTTP("/healthz").
