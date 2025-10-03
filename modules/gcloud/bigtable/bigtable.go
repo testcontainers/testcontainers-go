@@ -10,7 +10,9 @@ import (
 
 const (
 	// DefaultProjectID is the default project ID for the BigTable container.
-	DefaultProjectID = "test-project"
+	DefaultProjectID  = "test-project"
+	defaultPortNumber = "9000"
+	defaultPort       = defaultPortNumber + "/tcp"
 )
 
 // Container represents the BigTable container type used in the module
@@ -33,9 +35,9 @@ func (c *Container) URI() string {
 // The URI uses the empty string as the protocol.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	moduleOpts := []testcontainers.ContainerCustomizer{
-		testcontainers.WithExposedPorts("9000/tcp"),
+		testcontainers.WithExposedPorts(defaultPort),
 		testcontainers.WithWaitStrategy(wait.ForAll(
-			wait.ForListeningPort("9000/tcp"),
+			wait.ForListeningPort(defaultPort),
 			wait.ForLog("running"),
 		)),
 	}
@@ -52,7 +54,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts = append(moduleOpts, testcontainers.WithCmd(
 		"/bin/sh",
 		"-c",
-		"gcloud beta emulators bigtable start --host-port 0.0.0.0:9000 --project="+settings.ProjectID,
+		"gcloud beta emulators bigtable start --host-port 0.0.0.0:"+defaultPortNumber+" --project="+settings.ProjectID,
 	))
 
 	moduleOpts = append(moduleOpts, opts...)
@@ -66,7 +68,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return c, fmt.Errorf("run bigtable: %w", err)
 	}
 
-	portEndpoint, err := c.PortEndpoint(ctx, "9000/tcp", "")
+	portEndpoint, err := c.PortEndpoint(ctx, defaultPort, "")
 	if err != nil {
 		return c, fmt.Errorf("port endpoint: %w", err)
 	}

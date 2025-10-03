@@ -10,7 +10,9 @@ import (
 
 const (
 	// DefaultProjectID is the default project ID for the Datastore container.
-	DefaultProjectID = "test-project"
+	DefaultProjectID  = "test-project"
+	defaultPortNumber = "8081"
+	defaultPort       = defaultPortNumber + "/tcp"
 )
 
 // Container represents the Datastore container type used in the module
@@ -33,10 +35,10 @@ func (c *Container) URI() string {
 // The URI uses the empty string as the protocol.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	moduleOpts := []testcontainers.ContainerCustomizer{
-		testcontainers.WithExposedPorts("8081/tcp"),
+		testcontainers.WithExposedPorts(defaultPort),
 		testcontainers.WithWaitStrategy(wait.ForAll(
-			wait.ForListeningPort("8081/tcp"),
-			wait.ForHTTP("/").WithPort("8081/tcp"),
+			wait.ForListeningPort(defaultPort),
+			wait.ForHTTP("/").WithPort(defaultPort),
 		)),
 	}
 
@@ -52,7 +54,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts = append(moduleOpts, testcontainers.WithCmd(
 		"/bin/sh",
 		"-c",
-		"gcloud beta emulators datastore start --host-port 0.0.0.0:8081 --project="+settings.ProjectID,
+		"gcloud beta emulators datastore start --host-port 0.0.0.0:"+defaultPortNumber+" --project="+settings.ProjectID,
 	))
 
 	moduleOpts = append(moduleOpts, opts...)
@@ -66,7 +68,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return c, fmt.Errorf("run datastore: %w", err)
 	}
 
-	portEndpoint, err := c.PortEndpoint(ctx, "8081/tcp", "")
+	portEndpoint, err := c.PortEndpoint(ctx, defaultPort, "")
 	if err != nil {
 		return c, fmt.Errorf("port endpoint: %w", err)
 	}

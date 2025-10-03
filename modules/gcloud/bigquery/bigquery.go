@@ -15,6 +15,11 @@ const (
 
 	// bigQueryDataYamlPath is the path to the data yaml file in the container.
 	bigQueryDataYamlPath = "/testcontainers-data.yaml"
+
+	defaultPortNumber9050 = "9050"
+	defaultPortNumber9060 = "9060"
+	defaultPort9050       = defaultPortNumber9050 + "/tcp"
+	defaultPort9060       = defaultPortNumber9060 + "/tcp"
 )
 
 // Container represents the BigQuery container type used in the module
@@ -37,10 +42,10 @@ func (c *Container) URI() string {
 // The URI uses http:// as the protocol.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	moduleOpts := []testcontainers.ContainerCustomizer{
-		testcontainers.WithExposedPorts("9050/tcp", "9060/tcp"),
+		testcontainers.WithExposedPorts(defaultPort9050, defaultPort9060),
 		testcontainers.WithWaitStrategy(wait.ForAll(
-			wait.ForListeningPort("9050/tcp"),
-			wait.ForHTTP("/discovery/v1/apis/bigquery/v2/rest").WithPort("9050/tcp").WithStatusCodeMatcher(func(status int) bool {
+			wait.ForListeningPort(defaultPort9050),
+			wait.ForHTTP("/discovery/v1/apis/bigquery/v2/rest").WithPort(defaultPort9050).WithStatusCodeMatcher(func(status int) bool {
 				return status == 200
 			}).WithStartupTimeout(time.Second*5),
 		)),
@@ -68,7 +73,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return c, fmt.Errorf("run bigquery: %w", err)
 	}
 
-	portEndpoint, err := c.PortEndpoint(ctx, "9050/tcp", "http")
+	portEndpoint, err := c.PortEndpoint(ctx, defaultPort9050, "http")
 	if err != nil {
 		return c, fmt.Errorf("port endpoint: %w", err)
 	}
