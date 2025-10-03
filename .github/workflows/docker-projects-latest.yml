@@ -13,7 +13,7 @@ jobs:
         containerd-integration: [true, false]
 
     name: "Core tests using latest moby/moby"
-    runs-on: 'ubuntu-latest'
+    runs-on: 'shipfox-2vcpu-ubuntu-2404'
     continue-on-error: true
     steps:
       - name: Set the Docker Install type
@@ -84,7 +84,7 @@ jobs:
             latest_compose-spec_version: false
 
     name: "Compose tests using a local copy of the compose and compose-spec projects"
-    runs-on: 'ubuntu-latest'
+    runs-on: 'shipfox-2vcpu-ubuntu-2404'
     continue-on-error: true
     steps:
       - name: Check out code into the Go module directory
