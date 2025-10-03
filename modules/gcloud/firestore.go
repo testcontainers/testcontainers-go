@@ -16,25 +16,26 @@ func RunFirestoreContainer(ctx context.Context, opts ...testcontainers.Container
 // Deprecated: use [firestore.Run] instead
 // RunFirestore creates an instance of the GCloud container type for Firestore.
 func RunFirestore(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        img,
-			ExposedPorts: []string{"8080/tcp"},
-			WaitingFor:   wait.ForLog("running"),
-		},
-		Started: true,
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("8080/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForAll(
+			wait.ForListeningPort("8080/tcp"),
+			wait.ForLog("running"),
+		)),
 	}
 
-	settings, err := applyOptions(&req, opts)
+	moduleOpts = append(moduleOpts, opts...)
+
+	settings, err := applyOptions(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Cmd = []string{
+	moduleOpts = append(moduleOpts, testcontainers.WithCmd(
 		"/bin/sh",
 		"-c",
-		"gcloud beta emulators firestore start --host-port 0.0.0.0:8080 --project=" + settings.ProjectID,
-	}
+		"gcloud beta emulators firestore start --host-port 0.0.0.0:8080 --project="+settings.ProjectID,
+	))
 
-	return newGCloudContainer(ctx, req, 8080, settings, "")
+	return newGCloudContainer(ctx, img, 8080, settings, "", moduleOpts...)
 }
