@@ -32,16 +32,12 @@ func (c *Container) URI() string {
 // Run creates an instance of the Datastore GCloud container type.
 // The URI uses the empty string as the protocol.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        img,
-			ExposedPorts: []string{"8081/tcp"},
-			WaitingFor: wait.ForAll(
-				wait.ForListeningPort("8081/tcp"),
-				wait.ForHTTP("/").WithPort("8081/tcp"),
-			),
-		},
-		Started: true,
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("8081/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForAll(
+			wait.ForListeningPort("8081/tcp"),
+			wait.ForHTTP("/").WithPort("8081/tcp"),
+		)),
 	}
 
 	settings := defaultOptions()
@@ -51,24 +47,23 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				return nil, err
 			}
 		}
-		if err := opt.Customize(&req); err != nil {
-			return nil, err
-		}
 	}
 
-	req.Cmd = []string{
+	moduleOpts = append(moduleOpts, testcontainers.WithCmd(
 		"/bin/sh",
 		"-c",
-		"gcloud beta emulators datastore start --host-port 0.0.0.0:8081 --project=" + settings.ProjectID,
-	}
+		"gcloud beta emulators datastore start --host-port 0.0.0.0:8081 --project="+settings.ProjectID,
+	))
 
-	container, err := testcontainers.GenericContainer(ctx, req)
+	moduleOpts = append(moduleOpts, opts...)
+
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
-	if container != nil {
-		c = &Container{Container: container, settings: settings}
+	if ctr != nil {
+		c = &Container{Container: ctr, settings: settings}
 	}
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run datastore: %w", err)
 	}
 
 	portEndpoint, err := c.PortEndpoint(ctx, "8081/tcp", "")
