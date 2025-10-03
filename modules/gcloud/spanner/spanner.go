@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	// DefaultProjectID is the default project ID for the Pubsub container.
+	// DefaultProjectID is the default project ID for the Spanner container.
 	DefaultProjectID  = "test-project"
 	defaultPortNumber = "9010"
 	defaultPort       = defaultPortNumber + "/tcp"
