@@ -10,7 +10,9 @@ import (
 
 const (
 	// DefaultProjectID is the default project ID for the Pubsub container.
-	DefaultProjectID = "test-project"
+	DefaultProjectID  = "test-project"
+	defaultPortNumber = "9010"
+	defaultPort       = defaultPortNumber + "/tcp"
 )
 
 // Container represents the Spanner container type used in the module
@@ -32,16 +34,12 @@ func (c *Container) URI() string {
 // Run creates an instance of the Spanner GCloud container type.
 // The URI uses the empty string as the protocol.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        img,
-			ExposedPorts: []string{"9010/tcp"},
-			WaitingFor: wait.ForAll(
-				wait.ForListeningPort("9010/tcp"),
-				wait.ForLog("Cloud Spanner emulator running"),
-			),
-		},
-		Started: true,
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultPort),
+		testcontainers.WithWaitStrategy(wait.ForAll(
+			wait.ForListeningPort(defaultPort),
+			wait.ForLog("Cloud Spanner emulator running"),
+		)),
 	}
 
 	settings := defaultOptions()
@@ -51,21 +49,18 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				return nil, err
 			}
 		}
-		if err := opt.Customize(&req); err != nil {
-			return nil, err
-		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, req)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
-	if container != nil {
-		c = &Container{Container: container, settings: settings}
+	if ctr != nil {
+		c = &Container{Container: ctr, settings: settings}
 	}
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run spanner: %w", err)
 	}
 
-	portEndpoint, err := c.PortEndpoint(ctx, "9010/tcp", "")
+	portEndpoint, err := c.PortEndpoint(ctx, defaultPort, "")
 	if err != nil {
 		return c, fmt.Errorf("port endpoint: %w", err)
 	}
