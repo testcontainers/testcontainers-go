@@ -30,14 +30,18 @@ func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		username := req.Env["MYSQL_USER"]
 		password := req.Env["MYSQL_PASSWORD"]
+
 		if strings.EqualFold(rootUser, username) {
+			// When using root user, remove MYSQL_USER and MYSQL_PASSWORD
 			delete(req.Env, "MYSQL_USER")
-		}
-		if len(password) != 0 && password != "" {
-			req.Env["MYSQL_ROOT_PASSWORD"] = password
-		} else if strings.EqualFold(rootUser, username) {
-			req.Env["MYSQL_ALLOW_EMPTY_PASSWORD"] = "yes"
 			delete(req.Env, "MYSQL_PASSWORD")
+
+			// Set root password or allow empty password
+			if len(password) != 0 && password != "" {
+				req.Env["MYSQL_ROOT_PASSWORD"] = password
+			} else {
+				req.Env["MYSQL_ALLOW_EMPTY_PASSWORD"] = "yes"
+			}
 		}
 
 		return nil
@@ -52,54 +56,55 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the MySQL container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MySQLContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("3306/tcp", "33060/tcp"),
+		testcontainers.WithEnv(map[string]string{
 			"MYSQL_USER":     defaultUser,
 			"MYSQL_PASSWORD": defaultPassword,
 			"MYSQL_DATABASE": defaultDatabaseName,
-		},
-		WaitingFor: wait.ForLog("port: 3306  MySQL Community Server"),
+		}),
+		testcontainers.WithWaitStrategy(wait.ForLog("port: 3306  MySQL Community Server")),
+		WithDefaultCredentials(),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+	moduleOpts = append(moduleOpts, opts...)
+
+	container, err := testcontainers.Run(ctx, img, moduleOpts...)
+	var c *MySQLContainer
+	if container != nil {
+		c = &MySQLContainer{Container: container}
 	}
 
-	opts = append(opts, WithDefaultCredentials())
+	if err != nil {
+		return c, fmt.Errorf("run mysql: %w", err)
+	}
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
+	// Extract configuration from the container environment
+	inspect, err := container.Inspect(ctx)
+	if err != nil {
+		return c, fmt.Errorf("inspect mysql: %w", err)
+	}
+
+	env := make(map[string]string)
+	for _, envVar := range inspect.Config.Env {
+		if key, value, found := strings.Cut(envVar, "="); found {
+			env[key] = value
 		}
 	}
 
-	username, ok := req.Env["MYSQL_USER"]
+	username, ok := env["MYSQL_USER"]
 	if !ok {
 		username = rootUser
 	}
-	password := req.Env["MYSQL_PASSWORD"]
+	password := env["MYSQL_PASSWORD"]
 
 	if len(password) == 0 && password == "" && !strings.EqualFold(rootUser, username) {
 		return nil, errors.New("empty password can be used only with the root user")
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	var c *MySQLContainer
-	if container != nil {
-		c = &MySQLContainer{
-			Container: container,
-			password:  password,
-			username:  username,
-			database:  req.Env["MYSQL_DATABASE"],
-		}
-	}
-
-	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
-	}
+	c.password = password
+	c.username = username
+	c.database = env["MYSQL_DATABASE"]
 
 	return c, nil
 }
