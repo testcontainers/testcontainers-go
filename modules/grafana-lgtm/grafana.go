@@ -3,6 +3,7 @@ package grafanalgtm
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/log"
@@ -25,29 +26,29 @@ type GrafanaLGTMContainer struct {
 
 // Run creates an instance of the Grafana LGTM container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GrafanaLGTMContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{GrafanaPort, LokiPort, TempoPort, OtlpGrpcPort, OtlpHttpPort, PrometheusPort},
-		WaitingFor:   wait.ForLog(".*The OpenTelemetry collector and the Grafana LGTM stack are up and running.*\\s").AsRegexp().WithOccurrence(1),
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(GrafanaPort, LokiPort, TempoPort, OtlpGrpcPort, OtlpHttpPort, PrometheusPort),
+		testcontainers.WithWaitStrategyAndDeadline(2*time.Minute,
+			wait.ForLog(".*The OpenTelemetry collector and the Grafana LGTM stack are up and running.*\\s").AsRegexp().WithOccurrence(1),
+			wait.ForListeningPort(GrafanaPort),
+			wait.ForListeningPort(LokiPort),
+			wait.ForListeningPort(TempoPort),
+			wait.ForListeningPort(OtlpGrpcPort),
+			wait.ForListeningPort(OtlpHttpPort),
+			wait.ForListeningPort(PrometheusPort),
+		),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
-		}
+	var c *GrafanaLGTMContainer
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
+	if ctr != nil {
+		c = &GrafanaLGTMContainer{Container: ctr}
 	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	if err != nil {
-		return nil, fmt.Errorf("generic container: %w", err)
+		return nil, fmt.Errorf("run grafana lgtm: %w", err)
 	}
-
-	c := &GrafanaLGTMContainer{Container: container}
 
 	url, err := c.OtlpHttpEndpoint(ctx)
 	if err != nil {
