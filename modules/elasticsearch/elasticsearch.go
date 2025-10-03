@@ -55,7 +55,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	options := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
-			apply(options)
+			if err := apply(options); err != nil {
+				return nil, fmt.Errorf("apply option: %w", err)
+			}
 		}
 	}
 
@@ -179,7 +181,9 @@ func configurePassword(settings *Options) testcontainers.CustomizeRequestOption 
 	return func(req *testcontainers.GenericContainerRequest) error {
 		// set "changeme" as default password for Elasticsearch 8
 		if isAtLeastVersion(req.Image, 8) && settings.Password == "" {
-			WithPassword(defaultPassword)(settings)
+			if err := WithPassword(defaultPassword)(settings); err != nil {
+				return fmt.Errorf("with password: %w", err)
+			}
 		}
 
 		if settings.Password != "" {
