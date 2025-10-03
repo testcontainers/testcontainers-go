@@ -60,9 +60,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	moduleOpts = append(moduleOpts, opts...)
-
 	moduleOpts = append(moduleOpts, testcontainers.WithCmdArgs("--project", settings.ProjectID))
+
+	moduleOpts = append(moduleOpts, opts...)
 
 	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
