@@ -64,55 +64,39 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 // Run creates an instance of the LocalStack container type
 // - overrideReq: a function that can be used to override the default container request, usually used to set the image version, environment variables for localstack, etc.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*LocalStackContainer, error) {
+	if !isMinimumVersion(img, "v0.11") {
+		return nil, fmt.Errorf("version=%s. Testcontainers for Go does not support running LocalStack in legacy mode. Please use a version >= 0.11.0", img)
+	}
+
 	dockerHost := testcontainers.MustExtractDockerSocket(ctx)
 
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		WaitingFor:   wait.ForHTTP("/_localstack/health").WithPort("4566/tcp").WithStartupTimeout(120 * time.Second),
-		ExposedPorts: []string{fmt.Sprintf("%d/tcp", defaultPort)},
-		Env:          map[string]string{},
-		HostConfigModifier: func(hostConfig *container.HostConfig) {
-			hostConfig.Binds = []string{dockerHost + ":/var/run/docker.sock"}
-		},
-	}
-
-	localStackReq := LocalStackContainerRequest{
-		GenericContainerRequest: testcontainers.GenericContainerRequest{
-			ContainerRequest: req,
-			Logger:           log.Default(),
-			Started:          true,
-		},
-	}
-
-	for _, opt := range opts {
-		if err := opt.Customize(&localStackReq.GenericContainerRequest); err != nil {
-			return nil, err
-		}
-	}
-
-	if !isMinimumVersion(localStackReq.Image, "v0.11") {
-		return nil, fmt.Errorf("version=%s. Testcontainers for Go does not support running LocalStack in legacy mode. Please use a version >= 0.11.0", localStackReq.Image)
-	}
-
 	envVar := hostnameExternalEnvVar
-	if isMinimumVersion(localStackReq.Image, "v2") {
+	if isMinimumVersion(img, "v2") {
 		envVar = localstackHostEnvVar
 	}
 
-	hostnameExternalReason, err := configureDockerHost(&localStackReq, envVar)
-	if err != nil {
-		return nil, err
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(fmt.Sprintf("%d/tcp", defaultPort)),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/_localstack/health").WithPort("4566/tcp").WithStartupTimeout(120 * time.Second)),
+		testcontainers.WithEnv(map[string]string{}),
+		testcontainers.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
+			hostConfig.Binds = []string{dockerHost + ":/var/run/docker.sock"}
+		}),
+		testcontainers.WithLogger(log.Default()),
 	}
-	localStackReq.Logger.Printf("Setting %s to %s (%s)\n", envVar, req.Env[envVar], hostnameExternalReason)
 
-	container, err := testcontainers.GenericContainer(ctx, localStackReq.GenericContainerRequest)
+	moduleOpts = append(moduleOpts, opts...)
+
+	// configure the docker host after all the options have been applied
+	moduleOpts = append(moduleOpts, configureDockerHostOption(ctx, envVar))
+
 	var c *LocalStackContainer
-	if container != nil {
-		c = &LocalStackContainer{Container: container}
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
+	if ctr != nil {
+		c = &LocalStackContainer{Container: ctr}
 	}
-
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run localstack: %w", err)
 	}
 
 	return c, nil
@@ -125,9 +109,18 @@ func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOpt
 	return RunContainer(ctx, overrideReq)
 }
 
-func configureDockerHost(req *LocalStackContainerRequest, envVar string) (string, error) {
-	reason := ""
+func configureDockerHostOption(ctx context.Context, envVar string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		reason, err := configureDockerHost(ctx, req, envVar)
+		if err != nil {
+			return err
+		}
+		req.Logger.Printf("Setting %s to %s (%s)\n", envVar, req.Env[envVar], reason)
+		return nil
+	}
+}
 
+func configureDockerHost(ctx context.Context, req *testcontainers.GenericContainerRequest, envVar string) (string, error) {
 	if _, ok := req.Env[envVar]; ok {
 		return "explicitly as environment variable", nil
 	}
@@ -143,13 +136,13 @@ func configureDockerHost(req *LocalStackContainerRequest, envVar string) (string
 
 	dockerProvider, err := testcontainers.NewDockerProvider()
 	if err != nil {
-		return reason, err
+		return "", err
 	}
 	defer dockerProvider.Close()
 
-	daemonHost, err := dockerProvider.DaemonHost(context.Background())
+	daemonHost, err := dockerProvider.DaemonHost(ctx)
 	if err != nil {
-		return reason, err
+		return "", err
 	}
 
 	req.Env[envVar] = daemonHost

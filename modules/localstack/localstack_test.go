@@ -39,7 +39,7 @@ func TestConfigureDockerHost(t *testing.T) {
 
 			req.Env[tt.envVar] = "foo"
 
-			reason, err := configureDockerHost(req, tt.envVar)
+			reason, err := configureDockerHost(context.Background(), &req.GenericContainerRequest, tt.envVar)
 			require.NoError(t, err)
 			require.Equal(t, "explicitly as environment variable", reason)
 		})
@@ -54,7 +54,7 @@ func TestConfigureDockerHost(t *testing.T) {
 				"baaz": {"baaz0", "baaz1", "baaz2", "baaz3"},
 			}
 
-			reason, err := configureDockerHost(req, tt.envVar)
+			reason, err := configureDockerHost(context.Background(), &req.GenericContainerRequest, tt.envVar)
 			require.NoError(t, err)
 			require.Equal(t, "to match last network alias on container with non-default network", reason)
 			require.Equal(t, "foo3", req.Env[tt.envVar])
@@ -74,7 +74,7 @@ func TestConfigureDockerHost(t *testing.T) {
 			req.Networks = []string{"foo", "bar", "baaz"}
 			req.NetworkAliases = map[string][]string{}
 
-			reason, err := configureDockerHost(req, tt.envVar)
+			reason, err := configureDockerHost(context.Background(), &req.GenericContainerRequest, tt.envVar)
 			require.NoError(t, err)
 			require.Equal(t, "to match host-routable address for container", reason)
 			require.Equal(t, expectedDaemonHost, req.Env[tt.envVar])
