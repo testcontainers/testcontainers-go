@@ -73,7 +73,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithEntrypoint("sh"),
 		// this CMD will wait for the starter script to be copied into the container and then execute it
 		testcontainers.WithCmd("-c", "while [ ! -f "+starterScript+" ]; do sleep 0.1; done; bash "+starterScript),
-		testcontainers.WithAdditionalLifecycleHooks(testcontainers.ContainerLifecycleHooks{
+		testcontainers.WithLifecycleHooks(testcontainers.ContainerLifecycleHooks{
 			PostStarts: []testcontainers.ContainerHook{
 				// Use a single hook to copy the starter script and wait for
 				// the Kafka server to be ready. This prevents the wait running
