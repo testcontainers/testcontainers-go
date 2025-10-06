@@ -14,18 +14,16 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func generateContainerRequest() *LocalStackContainerRequest {
-	return &LocalStackContainerRequest{
-		GenericContainerRequest: testcontainers.GenericContainerRequest{
-			ContainerRequest: testcontainers.ContainerRequest{
-				Env:          map[string]string{},
-				ExposedPorts: []string{},
-			},
+func generateContainerRequest() *testcontainers.GenericContainerRequest {
+	return &testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Env:          map[string]string{},
+			ExposedPorts: []string{},
 		},
 	}
 }
 
-func TestConfigureDockerHost(t *testing.T) {
+func TestSetDockerHost(t *testing.T) {
 	tests := []struct {
 		envVar string
 	}{
@@ -39,9 +37,10 @@ func TestConfigureDockerHost(t *testing.T) {
 
 			req.Env[tt.envVar] = "foo"
 
-			reason, err := configureDockerHost(context.Background(), &req.GenericContainerRequest, tt.envVar)
+			reason, err := setDockerHost(context.Background(), req, tt.envVar)
 			require.NoError(t, err)
 			require.Equal(t, "explicitly as environment variable", reason)
+			require.Equal(t, "foo", req.Env[tt.envVar])
 		})
 
 		t.Run("HOSTNAME_EXTERNAL matches the last network alias on a container with non-default network", func(t *testing.T) {
@@ -54,7 +53,7 @@ func TestConfigureDockerHost(t *testing.T) {
 				"baaz": {"baaz0", "baaz1", "baaz2", "baaz3"},
 			}
 
-			reason, err := configureDockerHost(context.Background(), &req.GenericContainerRequest, tt.envVar)
+			reason, err := setDockerHost(context.Background(), req, tt.envVar)
 			require.NoError(t, err)
 			require.Equal(t, "to match last network alias on container with non-default network", reason)
 			require.Equal(t, "foo3", req.Env[tt.envVar])
@@ -74,7 +73,7 @@ func TestConfigureDockerHost(t *testing.T) {
 			req.Networks = []string{"foo", "bar", "baaz"}
 			req.NetworkAliases = map[string][]string{}
 
-			reason, err := configureDockerHost(context.Background(), &req.GenericContainerRequest, tt.envVar)
+			reason, err := setDockerHost(context.Background(), req, tt.envVar)
 			require.NoError(t, err)
 			require.Equal(t, "to match host-routable address for container", reason)
 			require.Equal(t, expectedDaemonHost, req.Env[tt.envVar])

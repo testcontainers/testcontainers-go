@@ -88,7 +88,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts = append(moduleOpts, opts...)
 
 	// configure the docker host after all the options have been applied
-	moduleOpts = append(moduleOpts, configureDockerHostOption(ctx, envVar))
+	moduleOpts = append(moduleOpts, configureDockerHost(ctx, envVar))
 
 	var c *LocalStackContainer
 	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
@@ -109,9 +109,10 @@ func StartContainer(ctx context.Context, overrideReq OverrideContainerRequestOpt
 	return RunContainer(ctx, overrideReq)
 }
 
-func configureDockerHostOption(ctx context.Context, envVar string) testcontainers.CustomizeRequestOption {
+// configureDockerHost returns an option that configures the docker host environment variable
+func configureDockerHost(ctx context.Context, envVar string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		reason, err := configureDockerHost(ctx, req, envVar)
+		reason, err := setDockerHost(ctx, req, envVar)
 		if err != nil {
 			return err
 		}
@@ -120,7 +121,7 @@ func configureDockerHostOption(ctx context.Context, envVar string) testcontainer
 	}
 }
 
-func configureDockerHost(ctx context.Context, req *testcontainers.GenericContainerRequest, envVar string) (string, error) {
+func setDockerHost(ctx context.Context, req *testcontainers.GenericContainerRequest, envVar string) (string, error) {
 	if _, ok := req.Env[envVar]; ok {
 		return "explicitly as environment variable", nil
 	}
