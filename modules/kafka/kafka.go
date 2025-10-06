@@ -199,8 +199,13 @@ func validateKRaftVersion(fqName string) error {
 		return errors.New("image cannot be empty")
 	}
 
-	image := fqName[:strings.LastIndex(fqName, ":")]
-	version := fqName[strings.LastIndex(fqName, ":")+1:]
+	idx := strings.LastIndex(fqName, ":")
+	if idx == -1 || idx == len(fqName)-1 {
+		return nil
+	}
+
+	image := fqName[:idx]
+	version := fqName[idx+1:]
 
 	if !strings.EqualFold(image, "confluentinc/confluent-local") {
 		// do not validate if the image is not the official one.

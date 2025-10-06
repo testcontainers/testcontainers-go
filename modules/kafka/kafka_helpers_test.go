@@ -94,6 +94,11 @@ func TestValidateKRaftVersion(t *testing.T) {
 			image:   "my-kafka:1.0.0",
 			wantErr: false,
 		},
+		{
+			name:    "lacks tag",
+			image:   "my-kafka",
+			wantErr: false,
+		},
 	}
 
 	for _, test := range tests {
