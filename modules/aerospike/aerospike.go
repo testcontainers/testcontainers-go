@@ -29,39 +29,29 @@ type Container struct {
 
 // Run creates an instance of the Aerospike container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{port, fabricPort, heartbeatPort, infoPort},
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(port, fabricPort, heartbeatPort, infoPort),
+		testcontainers.WithEnv(map[string]string{
 			"AEROSPIKE_CONFIG_FILE": "/etc/aerospike/aerospike.conf",
-		},
-		WaitingFor: wait.ForAll(
+		}),
+		testcontainers.WithWaitStrategy(wait.ForAll(
 			wait.ForLog("migrations: complete"),
 			wait.ForListeningPort(port).WithStartupTimeout(10*time.Second),
 			wait.ForListeningPort(fabricPort).WithStartupTimeout(10*time.Second),
 			wait.ForListeningPort(heartbeatPort).WithStartupTimeout(10*time.Second),
-		),
+		)),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
 	if container != nil {
 		c = &Container{Container: container}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run aerospike: %w", err)
 	}
 
 	return c, nil

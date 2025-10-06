@@ -72,26 +72,15 @@ func (c *Container) serviceURL(ctx context.Context, srv service) (string, error)
 
 // Run creates an instance of the Azurite container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{BlobPort, QueuePort, TablePort},
-		Env:          map[string]string{},
-		Entrypoint:   []string{"azurite"},
-		Cmd:          []string{},
-	}
+	moduleCmd := []string{}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithEntrypoint("azurite"),
+		testcontainers.WithExposedPorts(BlobPort, QueuePort, TablePort),
 	}
 
 	// 1. Gather all config options (defaults and then apply provided options)
 	settings := defaultOptions()
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
-		}
-	}
 
 	// 2. evaluate the enabled services to apply the right wait strategy and Cmd options
 	if len(settings.EnabledServices) > 0 {
@@ -99,32 +88,31 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		for _, srv := range settings.EnabledServices {
 			switch srv {
 			case BlobService:
-				genericContainerReq.Cmd = append(genericContainerReq.Cmd, "--blobHost", "0.0.0.0")
+				moduleCmd = append(moduleCmd, "--blobHost", "0.0.0.0")
 				waitingFor = append(waitingFor, wait.ForListeningPort(BlobPort))
 			case QueueService:
-				genericContainerReq.Cmd = append(genericContainerReq.Cmd, "--queueHost", "0.0.0.0")
+				moduleCmd = append(moduleCmd, "--queueHost", "0.0.0.0")
 				waitingFor = append(waitingFor, wait.ForListeningPort(QueuePort))
 			case TableService:
-				genericContainerReq.Cmd = append(genericContainerReq.Cmd, "--tableHost", "0.0.0.0")
+				moduleCmd = append(moduleCmd, "--tableHost", "0.0.0.0")
 				waitingFor = append(waitingFor, wait.ForListeningPort(TablePort))
 			}
 		}
 
-		if genericContainerReq.WaitingFor != nil {
-			genericContainerReq.WaitingFor = wait.ForAll(genericContainerReq.WaitingFor, wait.ForAll(waitingFor...))
-		} else {
-			genericContainerReq.WaitingFor = wait.ForAll(waitingFor...)
-		}
+		moduleOpts = append(moduleOpts, testcontainers.WithCmd(moduleCmd...))
+		moduleOpts = append(moduleOpts, testcontainers.WithWaitStrategy(wait.ForAll(waitingFor...)))
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	moduleOpts = append(moduleOpts, opts...)
+
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
-	if container != nil {
-		c = &Container{Container: container, opts: settings}
+	if ctr != nil {
+		c = &Container{Container: ctr, opts: settings}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run azurite: %w", err)
 	}
 
 	return c, nil

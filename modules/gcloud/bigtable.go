@@ -16,25 +16,26 @@ func RunBigTableContainer(ctx context.Context, opts ...testcontainers.ContainerC
 // Deprecated: use [bigtable.Run] instead
 // RunBigTable creates an instance of the GCloud container type for BigTable.
 func RunBigTable(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        img,
-			ExposedPorts: []string{"9000/tcp"},
-			WaitingFor:   wait.ForLog("running"),
-		},
-		Started: true,
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("9000/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForAll(
+			wait.ForListeningPort("9000/tcp"),
+			wait.ForLog("running")),
+		),
 	}
 
-	settings, err := applyOptions(&req, opts)
+	moduleOpts = append(moduleOpts, opts...)
+
+	settings, err := applyOptions(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Cmd = []string{
+	moduleOpts = append(moduleOpts, testcontainers.WithCmd(
 		"/bin/sh",
 		"-c",
-		"gcloud beta emulators bigtable start --host-port 0.0.0.0:9000 --project=" + settings.ProjectID,
-	}
+		"gcloud beta emulators bigtable start --host-port 0.0.0.0:9000 --project="+settings.ProjectID,
+	))
 
-	return newGCloudContainer(ctx, req, 9000, settings, "")
+	return newGCloudContainer(ctx, img, 9000, settings, "", moduleOpts...)
 }

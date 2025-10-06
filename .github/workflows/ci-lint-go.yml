@@ -45,6 +45,12 @@ jobs:
           make generate
           git --no-pager diff && [[ 0 -eq $(git status --porcelain | wc -l) ]]
 
+      - name: generate project files by modulegen
+        if: ${{ inputs.project-directory == 'modulegen' }}
+        working-directory: ./${{ inputs.project-directory }}
+        shell: bash
+        run: go run . refresh
+
       - name: modTidy
         working-directory: ./${{ inputs.project-directory }}
         shell: bash

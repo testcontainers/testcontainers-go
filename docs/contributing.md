@@ -55,6 +55,10 @@ Please just be sure to:
 
 * when updating the `go.mod` file, please run `make tidy-all` to ensure all modules are updated.
 
+### Module contribution 
+
+For detailed policies on module development and contributions, please refer to the [Module Index page](./modules/index.md).
+
 ## Documentation contributions
 
 The _Testcontainers for Go_ documentation is a static site built with [MkDocs](https://www.mkdocs.org/).

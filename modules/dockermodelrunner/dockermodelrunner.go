@@ -53,7 +53,7 @@ func Run(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Cont
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("socat run: %w", err)
+		return c, fmt.Errorf("run model runner: %w", err)
 	}
 
 	c.baseURL = socatCtr.TargetURL(modelRunnerPort).String()

@@ -14,12 +14,12 @@ import (
 )
 
 const (
-	defaultHTTPPort     = "9200"
-	defaultTCPPort      = "9300"
-	defaultPassword     = "changeme"
-	defaultUsername     = "elastic"
-	defaultCaCertPath   = "/usr/share/elasticsearch/config/certs/http_ca.crt"
-	minimalImageVersion = "7.9.2"
+	defaultHTTPPort   = "9200"
+	defaultTCPPort    = "9300"
+	defaultPassword   = "changeme"
+	defaultUsername   = "elastic"
+	defaultCaCertPath = "/usr/share/elasticsearch/config/certs/http_ca.crt"
+	envPassword       = "ELASTIC_PASSWORD"
 )
 
 const (
@@ -43,52 +43,37 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Elasticsearch container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ElasticsearchContainer, error) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: img,
-			Env: map[string]string{
-				"discovery.type": "single-node",
-				"cluster.routing.allocation.disk.threshold_enabled": "false",
-			},
-			ExposedPorts: []string{
-				defaultHTTPPort + "/tcp",
-				defaultTCPPort + "/tcp",
-			},
-		},
-		Started: true,
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultHTTPPort+"/tcp", defaultTCPPort+"/tcp"),
+		testcontainers.WithEnv(map[string]string{
+			"discovery.type": "single-node",
+			"cluster.routing.allocation.disk.threshold_enabled": "false",
+		}),
 	}
 
 	// Gather all config options (defaults and then apply provided options)
 	options := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
-			apply(options)
-		}
-		if err := opt.Customize(&req); err != nil {
-			return nil, err
+			if err := apply(options); err != nil {
+				return nil, fmt.Errorf("apply option: %w", err)
+			}
 		}
 	}
+
+	moduleOpts = append(moduleOpts, opts...)
 
 	// Transfer the password settings to the container request
-	if err := configurePassword(options, &req); err != nil {
-		return nil, err
-	}
-
-	if isAtLeastVersion(req.Image, 7) {
-		req.LifecycleHooks = append(req.LifecycleHooks,
-			testcontainers.ContainerLifecycleHooks{
-				PostCreates: []testcontainers.ContainerHook{configureJvmOpts},
-			},
-		)
-	}
+	moduleOpts = append(moduleOpts, configurePassword(options))
+	moduleOpts = append(moduleOpts, configureJvmOpts())
 
 	// Set the default waiting strategy if not already set.
-	setWaitFor(options, &req.ContainerRequest)
+	moduleOpts = append(moduleOpts, configureWaitFor(options))
 
-	container, err := testcontainers.GenericContainer(ctx, req)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var esContainer *ElasticsearchContainer
-	if container != nil {
-		esContainer = &ElasticsearchContainer{Container: container, Settings: *options}
+	if ctr != nil {
+		esContainer = &ElasticsearchContainer{Container: ctr, Settings: *options}
 	}
 	if err != nil {
 		return esContainer, fmt.Errorf("generic container: %w", err)
@@ -120,40 +105,32 @@ func (w *certWriter) Read(r io.Reader) error {
 	return nil
 }
 
-// setWaitFor sets the req.WaitingFor strategy based on settings.
-func setWaitFor(options *Options, req *testcontainers.ContainerRequest) {
-	var strategies []wait.Strategy
-	if req.WaitingFor != nil {
-		// Custom waiting strategy, ensure we honour it.
-		strategies = append(strategies, req.WaitingFor)
-	}
+// configureWaitFor sets the req.WaitingFor strategy based on settings.
+func configureWaitFor(options *Options) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		var strategies []wait.Strategy
 
-	waitHTTP := wait.ForHTTP("/").WithPort(defaultHTTPPort)
-	if sslRequired(req) {
-		waitHTTP = waitHTTP.WithTLS(true).WithAllowInsecure(true)
-		cw := &certWriter{
-			options:  options,
-			certPool: x509.NewCertPool(),
+		waitHTTP := wait.ForHTTP("/").WithPort(defaultHTTPPort)
+		if sslRequired(req) {
+			cw := &certWriter{
+				options:  options,
+				certPool: x509.NewCertPool(),
+			}
+
+			waitHTTP = waitHTTP.
+				WithTLS(true, &tls.Config{RootCAs: cw.certPool}).WithAllowInsecure(true)
+
+			strategies = append(strategies, wait.ForFile(defaultCaCertPath).WithMatcher(cw.Read))
 		}
 
-		waitHTTP = waitHTTP.
-			WithTLS(true, &tls.Config{RootCAs: cw.certPool})
+		if options.Password != "" || options.Username != "" {
+			waitHTTP = waitHTTP.WithBasicAuth(options.Username, options.Password)
+		}
 
-		strategies = append(strategies, wait.ForFile(defaultCaCertPath).WithMatcher(cw.Read))
+		strategies = append(strategies, waitHTTP)
+
+		return testcontainers.WithAdditionalWaitStrategy(strategies...)(req)
 	}
-
-	if options.Password != "" || options.Username != "" {
-		waitHTTP = waitHTTP.WithBasicAuth(options.Username, options.Password)
-	}
-
-	strategies = append(strategies, waitHTTP)
-
-	if len(strategies) > 1 {
-		req.WaitingFor = wait.ForAll(strategies...)
-		return
-	}
-
-	req.WaitingFor = strategies[0]
 }
 
 // configureAddress sets the address of the Elasticsearch container.
@@ -175,7 +152,7 @@ func (c *ElasticsearchContainer) configureAddress(ctx context.Context) error {
 }
 
 // sslRequired returns true if the SSL is required, otherwise false.
-func sslRequired(req *testcontainers.ContainerRequest) bool {
+func sslRequired(req *testcontainers.GenericContainerRequest) bool {
 	if !isAtLeastVersion(req.Image, 8) {
 		return false
 	}
@@ -200,58 +177,84 @@ func sslRequired(req *testcontainers.ContainerRequest) bool {
 
 // configurePassword transfers the password settings to the container request.
 // If the password is not set, it will be set to "changeme" for Elasticsearch 8
-func configurePassword(settings *Options, req *testcontainers.GenericContainerRequest) error {
-	// set "changeme" as default password for Elasticsearch 8
-	if isAtLeastVersion(req.Image, 8) && settings.Password == "" {
-		WithPassword(defaultPassword)(settings)
+func configurePassword(settings *Options) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		// set "changeme" as default password for Elasticsearch 8
+		if isAtLeastVersion(req.Image, 8) && settings.Password == "" {
+			if err := WithPassword(defaultPassword)(settings); err != nil {
+				return fmt.Errorf("with password: %w", err)
+			}
+		}
+
+		if settings.Password != "" {
+			if isOSS(req.Image) {
+				return errors.New("it's not possible to activate security on Elastic OSS Image. Please switch to the default distribution")
+			}
+
+			if _, ok := req.Env[envPassword]; !ok {
+				req.Env[envPassword] = settings.Password
+			}
+
+			// major version 8 is secure by default and does not need this to enable authentication
+			if !isAtLeastVersion(req.Image, 8) {
+				req.Env["xpack.security.enabled"] = "true"
+			}
+		}
+
+		return nil
 	}
-
-	if settings.Password != "" {
-		if isOSS(req.Image) {
-			return errors.New("it's not possible to activate security on Elastic OSS Image. Please switch to the default distribution")
-		}
-
-		if _, ok := req.Env["ELASTIC_PASSWORD"]; !ok {
-			req.Env["ELASTIC_PASSWORD"] = settings.Password
-		}
-
-		// major version 8 is secure by default and does not need this to enable authentication
-		if !isAtLeastVersion(req.Image, 8) {
-			req.Env["xpack.security.enabled"] = "true"
-		}
-	}
-
-	return nil
 }
 
 // configureJvmOpts sets the default memory of the Elasticsearch instance to 2GB.
 // This functions, which is only available since version 7, is called as a post create hook
 // for the container request.
-func configureJvmOpts(ctx context.Context, container testcontainers.Container) error {
-	// Sets default memory of elasticsearch instance to 2GB
-	defaultJVMOpts := `-Xms2G
+func configureJvmOpts() testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		if !isAtLeastVersion(req.Image, 7) {
+			return nil
+		}
+
+		return testcontainers.WithAdditionalLifecycleHooks(
+			testcontainers.ContainerLifecycleHooks{
+				PostCreates: []testcontainers.ContainerHook{
+					func(ctx context.Context, container testcontainers.Container) error {
+						// Sets default memory of elasticsearch instance to 2GB
+						defaultJVMOpts := `-Xms2G
 -Xmx2G
 -Dingest.geoip.downloader.enabled.default=false
 `
 
-	tmpDir := os.TempDir()
+						tmpDir := os.TempDir()
 
-	tmpFile, err := os.CreateTemp(tmpDir, "elasticsearch-default-memory-vm.options")
-	if err != nil {
-		return err
+						// The temp file is closed to not leak a file descriptor.
+						tmpFile, err := os.CreateTemp(tmpDir, "elasticsearch-default-memory-vm.options")
+						if err != nil {
+							return err
+						}
+						defer os.Remove(tmpFile.Name()) // clean up
+
+						if _, err := tmpFile.WriteString(defaultJVMOpts); err != nil {
+							if cerr := tmpFile.Close(); cerr != nil {
+								return errors.Join(err, cerr)
+							}
+							return err
+						}
+
+						if err := tmpFile.Close(); err != nil {
+							return err
+						}
+
+						// Spaces are deliberate to allow user to define additional jvm options as elasticsearch resolves option files lexicographically
+						if err := container.CopyFileToContainer(
+							ctx, tmpFile.Name(),
+							"/usr/share/elasticsearch/config/jvm.options.d/ elasticsearch-default-memory-vm.options", 0o644); err != nil {
+							return err
+						}
+
+						return nil
+					},
+				},
+			},
+		)(req)
 	}
-	defer os.Remove(tmpFile.Name()) // clean up
-
-	if _, err := tmpFile.WriteString(defaultJVMOpts); err != nil {
-		return err
-	}
-
-	// Spaces are deliberate to allow user to define additional jvm options as elasticsearch resolves option files lexicographically
-	if err := container.CopyFileToContainer(
-		ctx, tmpFile.Name(),
-		"/usr/share/elasticsearch/config/jvm.options.d/ elasticsearch-default-memory-vm.options", 0o644); err != nil {
-		return err
-	}
-
-	return nil
 }
