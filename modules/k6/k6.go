@@ -86,19 +86,17 @@ func WithTestScript(scriptPath string) testcontainers.CustomizeRequestOption {
 func WithTestScriptReader(reader io.Reader, scriptBaseName string) testcontainers.CustomizeRequestOption {
 	opt := func(req *testcontainers.GenericContainerRequest) error {
 		target := "/home/k6x/" + scriptBaseName
-		req.Files = append(
-			req.Files,
-			testcontainers.ContainerFile{
-				Reader:            reader,
-				ContainerFilePath: target,
-				FileMode:          0o644,
-			},
-		)
+
+		if err := testcontainers.WithFiles(testcontainers.ContainerFile{
+			Reader:            reader,
+			ContainerFilePath: target,
+			FileMode:          0o644,
+		})(req); err != nil {
+			return err
+		}
 
 		// add script to the k6 run command
-		req.Cmd = append(req.Cmd, target)
-
-		return nil
+		return testcontainers.WithCmdArgs(target)(req)
 	}
 	return opt
 }
@@ -123,11 +121,7 @@ func WithCmdOptions(options ...string) testcontainers.CustomizeRequestOption {
 
 // SetEnvVar adds a '--env' command-line flag to the k6 command in the container for setting an environment variable for the test script.
 func SetEnvVar(variable string, value string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Cmd = append(req.Cmd, "--env", fmt.Sprintf("%s=%s", variable, value))
-
-		return nil
-	}
+	return testcontainers.WithCmdArgs("--env", variable+"="+value)
 }
 
 // WithCache sets a volume as a cache for building the k6 binary
@@ -146,18 +140,13 @@ func WithCache() testcontainers.CustomizeRequestOption {
 		}
 	}
 
-	return func(req *testcontainers.GenericContainerRequest) error {
-		mount := testcontainers.ContainerMount{
-			Source: testcontainers.DockerVolumeMountSource{
-				Name:          cacheVol,
-				VolumeOptions: volOptions,
-			},
-			Target: cacheTarget,
-		}
-		req.Mounts = append(req.Mounts, mount)
-
-		return nil
-	}
+	return testcontainers.WithMounts(testcontainers.ContainerMount{
+		Source: testcontainers.DockerVolumeMountSource{
+			Name:          cacheVol,
+			VolumeOptions: volOptions,
+		},
+		Target: cacheTarget,
+	})
 }
 
 // Deprecated: use Run instead
@@ -168,31 +157,20 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the K6 container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*K6Container, error) {
-	req := testcontainers.ContainerRequest{
-		Image:      img,
-		Cmd:        []string{"run"},
-		WaitingFor: wait.ForExit(),
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithCmdArgs("run"),
+		testcontainers.WithWaitStrategy(wait.ForExit()),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
 	var c *K6Container
-	if container != nil {
-		c = &K6Container{Container: container}
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
+	if ctr != nil {
+		c = &K6Container{Container: ctr}
 	}
-
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run k6: %w", err)
 	}
 
 	return c, nil
