@@ -115,12 +115,7 @@ func withV2(req *testcontainers.GenericContainerRequest, org, bucket string) err
 // WithV2 configures the influxdb container to be compatible with InfluxDB v2
 func WithV2(org, bucket string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		err := withV2(req, org, bucket)
-		if err != nil {
-			return err
-		}
-
-		return nil
+		return withV2(req, org, bucket)
 	}
 }
 
