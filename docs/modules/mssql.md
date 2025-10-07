@@ -15,7 +15,7 @@ go get github.com/testcontainers/testcontainers-go/modules/mssql
 ```
 
 !!!info
-    In order to use this module, you must set the `GODEBUG=x509negativeserial=1` environment variable. See https://github.com/microsoft/mssql-docker/issues/895 for more details.
+    In order to use this module, you must set the `GODEBUG=x509negativeserial=1` environment variable. See [https://github.com/microsoft/mssql-docker/issues/895](https://github.com/microsoft/mssql-docker/issues/895) for more details.
 
 This is happening because:
 - The MSSQL Docker image uses a self-signed certificate with a negative serial number
@@ -25,8 +25,7 @@ This is happening because:
 The error you're seeing is a security feature in Go 1.23+ that was introduced to prevent potential certificate-related attacks. The MSSQL Docker image hasn't been updated to use certificates with positive serial numbers yet, which is why we need to use this workaround.
 
 !!!info
-    This is fixed in SQL2019 CU32 and SQL2022 CU18:
-https://learn.microsoft.com/en-us/troubleshoot/sql/releases/sqlserver-2022/cumulativeupdate18#3867855
+    This is fixed in SQL2019 CU32 and SQL2022 CU18: [https://learn.microsoft.com/en-us/troubleshoot/sql/releases/sqlserver-2022/cumulativeupdate18#3867855](https://learn.microsoft.com/en-us/troubleshoot/sql/releases/sqlserver-2022/cumulativeupdate18#3867855)
 
 ## Usage example
 
