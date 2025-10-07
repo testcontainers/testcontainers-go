@@ -19,6 +19,8 @@ var embedEtcdConfigTpl string
 const (
 	embedEtcdContainerPath = "/milvus/configs/embedEtcd.yaml"
 	defaultClientPort      = 2379
+	etcdPort               = "2379/tcp"
+	httpPort               = "9091/tcp"
 	grpcPort               = "19530/tcp"
 )
 
@@ -48,7 +50,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	// Adapted from https://github.com/milvus-io/milvus/blob/v2.6.3/scripts/standalone_embed.sh
 	moduleOpts := []testcontainers.ContainerCustomizer{
-		testcontainers.WithExposedPorts("19530/tcp", "9091/tcp", "2379/tcp"),
+		testcontainers.WithExposedPorts(grpcPort, httpPort, etcdPort),
 		testcontainers.WithEnv(map[string]string{
 			"ETCD_USE_EMBED":     "true",
 			"ETCD_DATA_DIR":      "/var/lib/milvus/etcd",
@@ -57,10 +59,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"DEPLOY_MODE":        "STANDALONE",
 		}),
 		testcontainers.WithCmd("milvus", "run", "standalone"),
-		testcontainers.WithWaitStrategy(wait.ForHTTP("/healthz").
-			WithPort("9091").
-			WithStartupTimeout(time.Minute).
-			WithPollInterval(time.Second)),
+		testcontainers.WithWaitStrategy(wait.ForAll(
+			wait.ForHTTP("/healthz").
+				WithPort(httpPort).
+				WithStartupTimeout(time.Minute).
+				WithPollInterval(time.Second),
+			wait.ForListeningPort(httpPort).
+				WithStartupTimeout(time.Minute),
+			wait.ForListeningPort(grpcPort).
+				WithStartupTimeout(time.Minute),
+		)),
 		testcontainers.WithFiles(testcontainers.ContainerFile{
 			ContainerFilePath: embedEtcdContainerPath,
 			Reader:            config,
