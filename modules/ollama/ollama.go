@@ -74,41 +74,40 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Ollama container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*OllamaContainer, error) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        img,
-			ExposedPorts: []string{"11434/tcp"},
-			WaitingFor:   wait.ForListeningPort("11434/tcp").WithStartupTimeout(60 * time.Second),
-		},
-		Started: true,
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("11434/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort("11434/tcp").WithStartupTimeout(60 * time.Second)),
 	}
 
-	// Always request a GPU if the host supports it.
-	opts = append(opts, withGpu())
-
+	// Check if we need to use the local process
 	var local *localProcess
 	for _, opt := range opts {
-		if err := opt.Customize(&req); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
-		}
 		if l, ok := opt.(*localProcess); ok {
 			local = l
+			break
 		}
 	}
+
+	// Only request a GPU if NOT using local process and the host supports it.
+	if local == nil {
+		opts = append(opts, withGpu())
+	}
+
+	moduleOpts = append(moduleOpts, opts...)
 
 	// Now we have processed all the options, we can check if we need to use the local process.
 	if local != nil {
-		return local.run(ctx, req)
+		return local.run(ctx, img, moduleOpts)
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, req)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *OllamaContainer
-	if container != nil {
-		c = &OllamaContainer{Container: container}
+	if ctr != nil {
+		c = &OllamaContainer{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run ollama: %w", err)
 	}
 
 	return c, nil
