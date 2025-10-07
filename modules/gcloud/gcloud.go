@@ -27,14 +27,14 @@ type GCloudContainer struct {
 }
 
 // newGCloudContainer creates a new GCloud container, obtaining the URL to access the container from the specified port.
-func newGCloudContainer(ctx context.Context, req testcontainers.GenericContainerRequest, port int, settings options, proto string) (*GCloudContainer, error) {
-	container, err := testcontainers.GenericContainer(ctx, req)
+func newGCloudContainer(ctx context.Context, img string, port int, settings options, proto string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
+	container, err := testcontainers.Run(ctx, img, opts...)
 	var c *GCloudContainer
 	if container != nil {
 		c = &GCloudContainer{Container: container, Settings: settings}
 	}
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run gcloud container: %w", err)
 	}
 
 	endpoint, err := c.PortEndpoint(ctx, nat.Port(fmt.Sprintf("%d/tcp", port)), proto)
@@ -97,16 +97,13 @@ func WithDataYAML(r io.Reader) Option {
 }
 
 // applyOptions applies the options to the container request and returns the settings.
-func applyOptions(req *testcontainers.GenericContainerRequest, opts []testcontainers.ContainerCustomizer) (options, error) {
+func applyOptions(opts []testcontainers.ContainerCustomizer) (options, error) {
 	settings := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
 			if err := apply(&settings); err != nil {
-				return options{}, err
+				return options{}, fmt.Errorf("apply option: %w", err)
 			}
-		}
-		if err := opt.Customize(req); err != nil {
-			return options{}, err
 		}
 	}
 

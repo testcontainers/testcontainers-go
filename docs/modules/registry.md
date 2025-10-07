@@ -139,7 +139,7 @@ If the push operation is successful, the method will internally wait for the ima
 
 #### PullImage
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.39.0"><span class="tc-version">:material-tag: v0.39.0</span></a>
 
 The `PullImage` method allows to pull an image to local Docker daemon.
 This method downloads (copies) the specified image reference so it becomes available locally for further operations such as tagging or pushing.
@@ -154,7 +154,7 @@ It receives the Go context and the image reference as parameters, pulling the im
 
 #### TagImage
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.39.0"><span class="tc-version">:material-tag: v0.39.0</span></a>
 
 The `TagImage` method allows to tag an image from the local Registry. It receives the Go context, the image reference and the name of the new tag as parameters.
 

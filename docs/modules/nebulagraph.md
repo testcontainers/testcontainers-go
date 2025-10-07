@@ -1,6 +1,6 @@
 # NebulaGraph
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.39.0"><span class="tc-version">:material-tag: v0.39.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/nebulagraph
 
 ### RunCluster function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.39.0"><span class="tc-version">:material-tag: v0.39.0</span></a>
 
 The NebulaGraph module provides a function to create a complete NebulaGraph cluster within a Docker network:
 
@@ -92,7 +92,7 @@ The `Cluster` struct provides the following methods:
 
 #### ConnectionString
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.39.0"><span class="tc-version">:material-tag: v0.39.0</span></a>
 
 Returns the host:port string for connecting to the NebulaGraph graph service (graphd).
 
@@ -102,7 +102,7 @@ func (c *Cluster) ConnectionString(ctx context.Context) (string, error)
 
 #### Terminate
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.39.0"><span class="tc-version">:material-tag: v0.39.0</span></a>
 
 Stops and removes all containers in the NebulaGraph cluster (Meta, Storage, Graph, and Activator services) and cleans up the associated Docker network.
 

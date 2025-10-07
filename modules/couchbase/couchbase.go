@@ -72,27 +72,19 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		indexStorageMode: MemoryOptimized,
 	}
 
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{MGMT_PORT + "/tcp", MGMT_SSL_PORT + "/tcp"},
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(MGMT_PORT+"/tcp", MGMT_SSL_PORT+"/tcp"),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
+	serviceCustomizers := make([]testcontainers.ContainerCustomizer, 0, len(initialServices))
 	for _, srv := range initialServices {
-		opts = append(opts, withService(srv))
+		serviceCustomizers = append(serviceCustomizers, withService(srv))
 	}
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
+	serviceCustomizers = append(serviceCustomizers, opts...)
 
-		// transfer options to the config
-
+	// transfer options to the config
+	for _, opt := range serviceCustomizers {
 		if bucketCustomizer, ok := opt.(bucketCustomizer); ok {
 			// If the option is a bucketCustomizer, we need to add the buckets to the request
 			config.buckets = append(config.buckets, bucketCustomizer.buckets...)
@@ -113,13 +105,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	moduleOpts = append(moduleOpts, serviceCustomizers...)
+
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var couchbaseContainer *CouchbaseContainer
-	if container != nil {
-		couchbaseContainer = &CouchbaseContainer{container, config}
+	if ctr != nil {
+		couchbaseContainer = &CouchbaseContainer{Container: ctr, config: config}
 	}
+
 	if err != nil {
-		return couchbaseContainer, err
+		return couchbaseContainer, fmt.Errorf("run couchbase: %w", err)
 	}
 
 	if err = couchbaseContainer.initCluster(ctx); err != nil {

@@ -311,6 +311,10 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 //
 // Default: timeout is 10 seconds.
 func (c *DockerContainer) Terminate(ctx context.Context, opts ...TerminateOption) error {
+	if c == nil {
+		return nil
+	}
+
 	options := NewTerminateOptions(ctx, opts...)
 	err := c.Stop(options.Context(), options.StopTimeout())
 	if err != nil && !isCleanupSafe(err) {
@@ -1786,6 +1790,19 @@ func (p *DockerProvider) ListImages(ctx context.Context) ([]ImageInfo, error) {
 
 // SaveImages exports a list of images as an uncompressed tar
 func (p *DockerProvider) SaveImages(ctx context.Context, output string, images ...string) error {
+	return p.SaveImagesWithOpts(ctx, output, images)
+}
+
+// SaveImagesWithOpts exports a list of images as an uncompressed tar, passing options to the provider
+func (p *DockerProvider) SaveImagesWithOpts(ctx context.Context, output string, images []string, opts ...SaveImageOption) error {
+	saveOpts := saveImageOptions{}
+
+	for _, opt := range opts {
+		if err := opt(&saveOpts); err != nil {
+			return fmt.Errorf("applying save image option: %w", err)
+		}
+	}
+
 	outputFile, err := os.Create(output)
 	if err != nil {
 		return fmt.Errorf("opening output file %w", err)
@@ -1794,7 +1811,7 @@ func (p *DockerProvider) SaveImages(ctx context.Context, output string, images .
 		_ = outputFile.Close()
 	}()
 
-	imageReader, err := p.client.ImageSave(ctx, images)
+	imageReader, err := p.client.ImageSave(ctx, images, saveOpts.dockerSaveOpts...)
 	if err != nil {
 		return fmt.Errorf("saving images %w", err)
 	}
@@ -1809,6 +1826,14 @@ func (p *DockerProvider) SaveImages(ctx context.Context, output string, images .
 	}
 
 	return nil
+}
+
+func SaveDockerImageWithPlatforms(platforms ...specs.Platform) SaveImageOption {
+	return func(opts *saveImageOptions) error {
+		opts.dockerSaveOpts = append(opts.dockerSaveOpts, client.ImageSaveWithPlatforms(platforms...))
+
+		return nil
+	}
 }
 
 // PullImage pulls image from registry

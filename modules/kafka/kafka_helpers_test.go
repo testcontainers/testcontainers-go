@@ -55,7 +55,8 @@ func TestConfigureQuorumVoters(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			configureControllerQuorumVoters(test.req)
+			err := configureControllerQuorumVoters()(test.req)
+			require.NoError(t, err)
 
 			require.Equalf(t, test.expectedVoters, test.req.Env["KAFKA_CONTROLLER_QUORUM_VOTERS"], "expected KAFKA_CONTROLLER_QUORUM_VOTERS to be %s, got %s", test.expectedVoters, test.req.Env["KAFKA_CONTROLLER_QUORUM_VOTERS"])
 		})
@@ -101,6 +102,10 @@ func TestValidateKRaftVersion(t *testing.T) {
 		{
 			name:    "Official: valid, with the arm64 architecture suffix",
 			image:   "confluentinc/confluent-local:7.5.9.arm64",
+		},
+		{
+			name:    "lacks tag",
+			image:   "my-kafka",
 			wantErr: false,
 		},
 	}

@@ -34,14 +34,14 @@ func WithDataYAML(r io.Reader) testcontainers.CustomizeRequestOption {
 			return errors.New("data yaml already exists")
 		}
 
-		req.Cmd = append(req.Cmd, "--data-from-yaml", bigQueryDataYamlPath)
+		if err := testcontainers.WithCmdArgs("--data-from-yaml", bigQueryDataYamlPath)(req); err != nil {
+			return err
+		}
 
-		req.Files = append(req.Files, testcontainers.ContainerFile{
+		return testcontainers.WithFiles(testcontainers.ContainerFile{
 			Reader:            r,
 			ContainerFilePath: bigQueryDataYamlPath,
 			FileMode:          0o644,
-		})
-
-		return nil
+		})(req)
 	}
 }
