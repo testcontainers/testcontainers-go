@@ -33,11 +33,9 @@ func (c *MSSQLServerContainer) Password() string {
 
 // WithAcceptEULA sets the ACCEPT_EULA environment variable to "Y"
 func WithAcceptEULA() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["ACCEPT_EULA"] = "Y"
-
-		return nil
-	}
+	return testcontainers.WithEnv(map[string]string{
+		"ACCEPT_EULA": "Y",
+	})
 }
 
 // WithPassword sets the MSSQL_SA_PASSWORD environment variable to the provided password
@@ -46,9 +44,10 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 		if password == "" {
 			password = defaultPassword
 		}
-		req.Env["MSSQL_SA_PASSWORD"] = password
 
-		return nil
+		return testcontainers.WithEnv(map[string]string{
+			"MSSQL_SA_PASSWORD": password,
+		})(req)
 	}
 }
 
@@ -96,11 +95,9 @@ func WithInitSQL(files ...io.Reader) testcontainers.CustomizeRequestOption {
 			hooks = append(hooks, hook)
 		}
 
-		req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
+		return testcontainers.WithAdditionalLifecycleHooks(testcontainers.ContainerLifecycleHooks{
 			PostReadies: hooks,
-		})
-
-		return nil
+		})(req)
 	}
 }
 
