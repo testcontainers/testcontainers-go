@@ -22,34 +22,24 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Qdrant container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*QdrantContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{"6333/tcp", "6334/tcp"},
-		WaitingFor: wait.ForAll(
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("6333/tcp", "6334/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForAll(
 			wait.ForListeningPort("6333/tcp").WithStartupTimeout(5*time.Second),
 			wait.ForListeningPort("6334/tcp").WithStartupTimeout(5*time.Second),
-		),
+		)),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *QdrantContainer
-	if container != nil {
-		c = &QdrantContainer{Container: container}
+	if ctr != nil {
+		c = &QdrantContainer{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run qdrant: %w", err)
 	}
 
 	return c, nil
