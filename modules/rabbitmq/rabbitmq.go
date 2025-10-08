@@ -80,45 +80,11 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the RabbitMQ container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*RabbitMQContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image: img,
-		Env: map[string]string{
-			"RABBITMQ_DEFAULT_USER": defaultUser,
-			"RABBITMQ_DEFAULT_PASS": defaultPassword,
-		},
-		ExposedPorts: []string{
-			DefaultAMQPPort,
-			DefaultAMQPSPort,
-			DefaultHTTPSPort,
-			DefaultHTTPPort,
-		},
-		WaitingFor: wait.ForLog(".*Server startup complete.*").AsRegexp().WithStartupTimeout(60 * time.Second),
-		LifecycleHooks: []testcontainers.ContainerLifecycleHooks{
-			{
-				PostStarts: []testcontainers.ContainerHook{},
-			},
-		},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
 	// Gather all config options (defaults and then apply provided options)
 	settings := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
 			apply(&settings)
-		}
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	if settings.SSLSettings != nil {
-		if err := applySSLSettings(settings.SSLSettings)(&genericContainerReq); err != nil {
-			return nil, err
 		}
 	}
 
@@ -133,22 +99,39 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return nil, err
 	}
 
-	if err := withConfig(tmpConfigFile)(&genericContainerReq); err != nil {
-		return nil, err
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithEnv(map[string]string{
+			"RABBITMQ_DEFAULT_USER": defaultUser,
+			"RABBITMQ_DEFAULT_PASS": defaultPassword,
+		}),
+		testcontainers.WithExposedPorts(
+			DefaultAMQPPort,
+			DefaultAMQPSPort,
+			DefaultHTTPSPort,
+			DefaultHTTPPort,
+		),
+		testcontainers.WithWaitStrategy(wait.ForLog(".*Server startup complete.*").AsRegexp().WithStartupTimeout(60 * time.Second)),
+		withConfig(tmpConfigFile),
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	if settings.SSLSettings != nil {
+		moduleOpts = append(moduleOpts, applySSLSettings(settings.SSLSettings))
+	}
+
+	moduleOpts = append(moduleOpts, opts...)
+
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *RabbitMQContainer
-	if container != nil {
+	if ctr != nil {
 		c = &RabbitMQContainer{
-			Container:     container,
+			Container:     ctr,
 			AdminUsername: settings.AdminUsername,
 			AdminPassword: settings.AdminPassword,
 		}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run rabbitmq: %w", err)
 	}
 
 	return c, nil
@@ -156,15 +139,15 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 func withConfig(hostPath string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["RABBITMQ_CONFIG_FILE"] = defaultCustomConfPath
+		if err := testcontainers.WithEnv(map[string]string{"RABBITMQ_CONFIG_FILE": defaultCustomConfPath})(req); err != nil {
+			return err
+		}
 
-		req.Files = append(req.Files, testcontainers.ContainerFile{
+		return testcontainers.WithFiles(testcontainers.ContainerFile{
 			HostFilePath:      hostPath,
 			ContainerFilePath: defaultCustomConfPath,
 			FileMode:          0o644,
-		})
-
-		return nil
+		})(req)
 	}
 }
 
@@ -177,27 +160,29 @@ func applySSLSettings(sslSettings *SSLSettings) testcontainers.CustomizeRequestO
 	const defaultPermission = 0o644
 
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Files = append(req.Files, testcontainers.ContainerFile{
-			HostFilePath:      sslSettings.CACertFile,
-			ContainerFilePath: rabbitCaCertPath,
-			FileMode:          defaultPermission,
-		})
-		req.Files = append(req.Files, testcontainers.ContainerFile{
-			HostFilePath:      sslSettings.CertFile,
-			ContainerFilePath: rabbitCertPath,
-			FileMode:          defaultPermission,
-		})
-		req.Files = append(req.Files, testcontainers.ContainerFile{
-			HostFilePath:      sslSettings.KeyFile,
-			ContainerFilePath: rabbitKeyPath,
-			FileMode:          defaultPermission,
-		})
+		if err := testcontainers.WithFiles(
+			testcontainers.ContainerFile{
+				HostFilePath:      sslSettings.CACertFile,
+				ContainerFilePath: rabbitCaCertPath,
+				FileMode:          defaultPermission,
+			},
+			testcontainers.ContainerFile{
+				HostFilePath:      sslSettings.CertFile,
+				ContainerFilePath: rabbitCertPath,
+				FileMode:          defaultPermission,
+			},
+			testcontainers.ContainerFile{
+				HostFilePath:      sslSettings.KeyFile,
+				ContainerFilePath: rabbitKeyPath,
+				FileMode:          defaultPermission,
+			},
+		)(req); err != nil {
+			return err
+		}
 
 		// To verify that TLS has been enabled on the node, container logs should contain an entry about a TLS listener being enabled
 		// See https://www.rabbitmq.com/ssl.html#enabling-tls-verify-configuration
-		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForLog("started TLS (SSL) listener on [::]:5671"))
-
-		return nil
+		return testcontainers.WithAdditionalWaitStrategy(wait.ForLog("started TLS (SSL) listener on [::]:5671"))(req)
 	}
 }
 
