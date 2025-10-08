@@ -346,6 +346,10 @@ func withListeners(listeners []listener) testcontainers.CustomizeRequestOption {
 			return errors.New("container must be attached to at least one network")
 		}
 
+		if req.NetworkAliases == nil {
+			req.NetworkAliases = map[string][]string{}
+		}
+
 		for _, listener := range listeners {
 			if listener.Port < 0 || listener.Port > math.MaxUint16 {
 				return fmt.Errorf("invalid port on listener %s:%d (must be between 0 and 65535)", listener.Address, listener.Port)
