@@ -24,10 +24,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*QdrantContainer, error) {
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts("6333/tcp", "6334/tcp"),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort("6333/tcp").WithStartupTimeout(5*time.Second),
 			wait.ForListeningPort("6334/tcp").WithStartupTimeout(5*time.Second),
-		)),
+		),
 	}
 
 	moduleOpts = append(moduleOpts, opts...)
