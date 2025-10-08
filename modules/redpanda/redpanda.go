@@ -214,7 +214,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	// 7. Wait until Redpanda is ready to serve requests.
-	waitHTTP := wait.ForHTTP(defaultAdminAPIPort).
+	waitHTTP := wait.ForHTTP("/").
+		WithPort(defaultAdminAPIPort).
 		WithStatusCodeMatcher(func(status int) bool {
 			// Redpanda's admin API returns 404 for requests to "/".
 			return status == http.StatusNotFound
