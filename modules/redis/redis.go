@@ -66,18 +66,15 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	waitStrategies := []wait.Strategy{
-		wait.ForLog("* Ready to accept connections"),
-	}
-
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts(redisPort),
+		testcontainers.WithWaitStrategy(
+			wait.ForListeningPort(redisPort).WithStartupTimeout(time.Second*10),
+			wait.ForLog("* Ready to accept connections"),
+		),
 	}
 
 	if settings.tlsEnabled {
-		// wait for the TLS port to be available
-		waitStrategies = append(waitStrategies, wait.ForListeningPort(redisPort).WithStartupTimeout(time.Second*10))
-
 		// Generate TLS certificates in the fly and add them to the container before it starts.
 		// Update the CMD to use the TLS certificates.
 		caCert, clientCert, serverCert, err := createTLSCerts()
@@ -124,8 +121,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			ServerName:   "localhost", // Match the server cert's common name
 		}
 	}
-
-	moduleOpts = append(moduleOpts, testcontainers.WithWaitStrategy(waitStrategies...))
 
 	// Append the customizers passed to the Run function.
 	moduleOpts = append(moduleOpts, opts...)
