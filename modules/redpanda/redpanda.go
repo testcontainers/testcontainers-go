@@ -146,12 +146,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		{
 			Reader:            bytes.NewReader(entrypoint),
 			ContainerFilePath: entrypointFile,
-			FileMode:          700,
+			FileMode:          0o700,
 		},
 		{
 			Reader:            bytes.NewReader(bootstrapConfig),
 			ContainerFilePath: path.Join(redpandaDir, bootstrapConfigFile),
-			FileMode:          600,
+			FileMode:          0o600,
 		},
 	}
 
@@ -161,12 +161,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			testcontainers.ContainerFile{
 				Reader:            bytes.NewReader(settings.cert),
 				ContainerFilePath: path.Join(redpandaDir, certFile),
-				FileMode:          600,
+				FileMode:          0o600,
 			},
 			testcontainers.ContainerFile{
 				Reader:            bytes.NewReader(settings.key),
 				ContainerFilePath: path.Join(redpandaDir, keyFile),
-				FileMode:          600,
+				FileMode:          0o600,
 			},
 		)
 	}
