@@ -73,6 +73,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts(valkeyPort),
+		testcontainers.WithEntrypoint(valkeyServerProcess),
 	}
 
 	waitStrategies := []wait.Strategy{
@@ -145,8 +146,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
-// WithConfigFile sets the config file to be used for the valkey container, and sets the command to run the valkey server
-// using the passed config file
+// WithConfigFile sets the config file to be used for the valkey container.
+// The config file must be the first argument to valkey-server.
 func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	const defaultConfigFile = "/usr/local/valkey.conf"
 
@@ -161,18 +162,8 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 			return err
 		}
 
-		if len(req.Cmd) == 0 {
-			return testcontainers.WithCmd(valkeyServerProcess, defaultConfigFile)(req)
-		}
-
-		// prepend the command to run the valkey server with the config file, which must be the first argument of the valkey server process
-		if req.Cmd[0] == valkeyServerProcess {
-			// just insert the config file, then the rest of the args
-			return testcontainers.WithCmd(append([]string{valkeyServerProcess, defaultConfigFile}, req.Cmd[1:]...)...)(req)
-		}
-
-		// prepend the valkey server and the config file, then the rest of the args
-		return testcontainers.WithCmd(append([]string{valkeyServerProcess, defaultConfigFile}, req.Cmd...)...)(req)
+		// Prepend the config file as the first argument
+		return testcontainers.WithCmd(append([]string{defaultConfigFile}, req.Cmd...)...)(req)
 	}
 }
 
@@ -180,7 +171,7 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 // See https://redis.io/docs/reference/modules/modules-api-ref/#redismodule_log for more information.
 func WithLogLevel(level LogLevel) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		return processValkeyServerArgs(req, []string{"--loglevel", string(level)})
+		return testcontainers.WithCmdArgs("--loglevel", string(level))(req)
 	}
 }
 
@@ -197,20 +188,6 @@ func WithSnapshotting(seconds int, changedKeys int) testcontainers.CustomizeRequ
 	}
 
 	return func(req *testcontainers.GenericContainerRequest) error {
-		return processValkeyServerArgs(req, []string{"--save", strconv.Itoa(seconds), strconv.Itoa(changedKeys)})
+		return testcontainers.WithCmdArgs("--save", strconv.Itoa(seconds), strconv.Itoa(changedKeys))(req)
 	}
-}
-
-func processValkeyServerArgs(req *testcontainers.GenericContainerRequest, args []string) error {
-	if len(req.Cmd) == 0 {
-		return testcontainers.WithCmd(append([]string{valkeyServerProcess}, args...)...)(req)
-	}
-
-	// If valkey server is already set as the first argument, just append the args
-	if req.Cmd[0] == valkeyServerProcess {
-		return testcontainers.WithCmdArgs(args...)(req)
-	}
-
-	// valkey server is not set as the first argument, so prepend it alongside the existing command and args
-	return testcontainers.WithCmd(append(append([]string{valkeyServerProcess}, req.Cmd...), args...)...)(req)
 }
