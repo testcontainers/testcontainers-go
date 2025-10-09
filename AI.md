@@ -46,7 +46,7 @@ Each module in `./modules/` is a separate Go module with:
 - **Branch naming**: Use descriptive names like `chore-module-use-run`, `feat-add-xyz`, `fix-module-issue`
   - **NEVER** use `main` branch for PRs (they will be auto-closed)
 - **Commit format**: Conventional commits (enforced by CI)
-  ```
+  ```text
   type(scope): description
 
   Longer explanation if needed.
