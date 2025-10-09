@@ -137,11 +137,11 @@ type Container struct {
 
 - **Make sure a `Run` function exists and is public**. This function is the entrypoint to the module with signature: `func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)`
 - The function should:
-  1. Process custom module options first (if using an intermediate config struct)
-  2. Build `moduleOpts` slice with default container configuration
-  3. Append user-provided options to `moduleOpts`
-  4. Call `testcontainers.Run(ctx, img, moduleOpts...)`
-  5. Return the module-specific container with proper error wrapping
+1. Process custom module options first (if using an intermediate config struct)
+2. Build `moduleOpts` slice with default container configuration
+3. Append user-provided options to `moduleOpts`
+4. Call `testcontainers.Run(ctx, img, moduleOpts...)`
+5. Return the module-specific container with proper error wrapping
 
 ```golang
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
