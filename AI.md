@@ -44,7 +44,8 @@ Each module in `./modules/` is a separate Go module with:
 
 ### Git Workflow
 - **Branch naming**: Use descriptive names like `chore-module-use-run`, `feat-add-xyz`, `fix-module-issue`
-- **Commit format**: Conventional commits
+  - **NEVER** use `main` branch for PRs (they will be auto-closed)
+- **Commit format**: Conventional commits (enforced by CI)
   ```
   type(scope): description
 
@@ -54,12 +55,24 @@ Each module in `./modules/` is a separate Go module with:
 
   Co-Authored-By: Claude <noreply@anthropic.com>
   ```
-- **Commit types**: `feat`, `fix`, `chore`, `docs`, `test`, `refactor`
+- **Commit types** (enforced): `security`, `fix`, `feat`, `docs`, `chore`, `deps`
+- **Scope rules**:
+  - Optional (can be omitted for repo-level changes)
+  - Must be lowercase (uppercase scopes are rejected)
+  - Examples: `feat(redis)`, `chore(kafka)`, `docs`, `fix(postgres)`
+- **Subject rules**:
+  - Must NOT start with uppercase letter
+  - ✅ Good: `feat(redis): add support for clustering`
+  - ❌ Bad: `feat(redis): Add support for clustering`
+- **Breaking changes**: Add `!` after type: `feat(redis)!: remove deprecated API`
 - **Always include co-author footer** when AI assists with changes
 
 ### Pull Requests
-- **Title format**: `type(scope): description`
-- **Labels**: Use appropriate labels (`chore`, `breaking change`, etc.)
+- **Title format**: Same as commit format (validated by CI)
+  - `type(scope): description`
+  - Examples: `feat(redis): add clustering support`, `docs: improve module guide`, `chore(kafka): update tests`
+- **Title validation** enforced by `.github/workflows/conventions.yml`
+- **Labels**: Use appropriate labels (`chore`, `breaking change`, `documentation`, etc.)
 - **Body template**:
   ```markdown
   ## What does this PR do?
@@ -302,6 +315,10 @@ testcontainers.WithFiles([]ContainerFile{file1, file2})
 - ❌ Forgetting co-author footer in commits
 - ❌ Not running tests before committing
 - ❌ Committing files outside module scope (use `git add modules/{module}/`)
+- ❌ Using uppercase in scope: `feat(Redis)` → use `feat(redis)`
+- ❌ Starting subject with uppercase: `fix: Add feature` → use `fix: add feature`
+- ❌ Using wrong commit type (only: `security`, `fix`, `feat`, `docs`, `chore`, `deps`)
+- ❌ Creating PR from `main` branch (will be auto-closed)
 
 ### Testing Issues
 - ❌ Running tests without pre-commit checks first
