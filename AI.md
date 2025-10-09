@@ -14,11 +14,15 @@ This is a **Go monorepo** containing:
 ## Environment Setup
 
 ### Go Version
-- **Required**: Go 1.24.7 (arm64 for Apple Silicon, amd64 for others)
+- **Required**: Go 1.24.7
 - **Tool**: Use [gvm](https://github.com/andrewkroh/gvm) for version management
 - **CRITICAL**: Always run this before ANY Go command:
   ```bash
+  # For Apple Silicon (M1/M2/M3)
   eval "$(gvm 1.24.7 --arch=arm64)"
+
+  # For Intel/AMD (x86_64)
+  eval "$(gvm 1.24.7 --arch=amd64)"
   ```
 
 ### Project Structure
