@@ -14,29 +14,19 @@ type Container struct {
 
 // {{ $entrypoint }} creates an instance of the {{ $title }} container type
 func {{ $entrypoint }}(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.ContainerRequest{
-		Image: img,
-	}
+	moduleOpts := []testcontainers.ContainerCustomizer{}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	// Add default options
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
-	if container != nil {
-		c = &Container{Container: container}
+	if ctr != nil {
+		c = &Container{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run {{ $lower }}: %w", err)
 	}
 
 	return c, nil
