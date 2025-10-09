@@ -209,9 +209,13 @@ func (c *K3sContainer) LoadImagesWithOpts(ctx context.Context, images []string, 
 		return fmt.Errorf("copying image to container %w", err)
 	}
 
-	_, _, err = c.Exec(ctx, []string{"ctr", "-n=k8s.io", "images", "import", "--all-platforms", containerPath})
+	exit, reader, err := c.Exec(ctx, []string{"ctr", "-n=k8s.io", "images", "import", "--all-platforms", containerPath})
 	if err != nil {
 		return fmt.Errorf("importing image %w", err)
+	}
+	if exit != 0 {
+		b, _ := io.ReadAll(reader)
+		return fmt.Errorf("importing image %s", string(b))
 	}
 
 	return nil
