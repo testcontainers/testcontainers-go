@@ -58,7 +58,7 @@ func WithStrictMode() testcontainers.CustomizeRequestOption {
 // WithAllowAllCaps enables all caps for the SurrealDB instance
 func WithAllowAllCaps() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		return testcontainers.WithEnv(map[string]string{"SURREAL_CAPS_ALLOW_ALL": "false"})(req)
+		return testcontainers.WithEnv(map[string]string{"SURREAL_CAPS_ALLOW_ALL": "true"})(req)
 	}
 }
 
