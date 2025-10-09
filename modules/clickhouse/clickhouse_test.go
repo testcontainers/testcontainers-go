@@ -207,7 +207,7 @@ func TestClickHouseWithZookeeper(t *testing.T) {
 	// withZookeeper {
 	zkPort := nat.Port("2181/tcp")
 
-	zkcontainer, err := testcontainers.Run(ctx, "zookeeper:3.7", testcontainers.WithExposedPorts(zkPort.String()), testcontainers.WithWaitStrategy(wait.ForListeningPort(zkPort)))
+	zkcontainer, err := testcontainers.Run(ctx, "zookeeper:3.7", testcontainers.WithExposedPorts(zkPort.Port()), testcontainers.WithWaitStrategy(wait.ForListeningPort(zkPort)))
 	testcontainers.CleanupContainer(t, zkcontainer)
 	require.NoError(t, err)
 
