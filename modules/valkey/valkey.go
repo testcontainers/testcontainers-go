@@ -109,17 +109,17 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				testcontainers.ContainerFile{
 					Reader:            bytes.NewReader(caCert.Bytes),
 					ContainerFilePath: "/tls/ca.crt",
-					FileMode:          0o644,
+					FileMode:          0o600,
 				},
 				testcontainers.ContainerFile{
 					Reader:            bytes.NewReader(serverCert.Bytes),
 					ContainerFilePath: "/tls/server.crt",
-					FileMode:          0o644,
+					FileMode:          0o600,
 				},
 				testcontainers.ContainerFile{
 					Reader:            bytes.NewReader(serverCert.KeyBytes),
 					ContainerFilePath: "/tls/server.key",
-					FileMode:          0o644,
+					FileMode:          0o600,
 				}),
 		)
 
