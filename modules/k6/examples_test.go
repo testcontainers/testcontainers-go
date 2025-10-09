@@ -17,7 +17,7 @@ func ExampleRun() {
 
 	// create a container with the httpbin application that will be the target
 	// for the test script that runs in the k6 container
-	httpbin, err := testcontainers.Run(ctx, "kennethreitz/httpbin", testcontainers.WithExposedPorts("80"), testcontainers.WithWaitStrategy(wait.ForExposedPort()))
+	httpbin, err := testcontainers.Run(ctx, "kennethreitz/httpbin", testcontainers.WithExposedPorts("80/tcp"), testcontainers.WithWaitStrategy(wait.ForExposedPort()))
 	defer func() {
 		if err := testcontainers.TerminateContainer(httpbin); err != nil {
 			log.Printf("failed to terminate container: %s", err)
