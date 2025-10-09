@@ -14,9 +14,10 @@ type Container struct {
 
 // {{ $entrypoint }} creates an instance of the {{ $title }} container type
 func {{ $entrypoint }}(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+	// Initialize with module defaults
 	moduleOpts := []testcontainers.ContainerCustomizer{}
 
-	// Add default options
+	// Add user-provided options
 	moduleOpts = append(moduleOpts, opts...)
 
 	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
