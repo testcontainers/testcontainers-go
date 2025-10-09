@@ -1918,6 +1918,27 @@ func (p *DockerProvider) PullImageWithPlatform(ctx context.Context, img, platfor
 	return p.attemptToPullImage(ctx, img, pullOpt)
 }
 
+// PullImageWithOpts pulls image from registry, passing options to the provider
+func (p *DockerProvider) PullImageWithOpts(ctx context.Context, img string, opts ...PullImageOption) error {
+	pullOpts := pullImageOptions{}
+
+	for _, opt := range opts {
+		if err := opt(&pullOpts); err != nil {
+			return fmt.Errorf("applying pull image option: %w", err)
+		}
+	}
+
+	return p.attemptToPullImage(ctx, img, pullOpts.dockerPullOpts)
+}
+
+func PullDockerImageWithPlatform(platform specs.Platform) PullImageOption {
+	return func(opts *pullImageOptions) error {
+		opts.dockerPullOpts.Platform = platforms.Format(platform)
+
+		return nil
+	}
+}
+
 var permanentClientErrors = []func(error) bool{
 	errdefs.IsNotFound,
 	errdefs.IsInvalidArgument,

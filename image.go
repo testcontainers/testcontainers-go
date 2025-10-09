@@ -18,6 +18,12 @@ type saveImageOptions struct {
 
 type SaveImageOption func(*saveImageOptions) error
 
+type pullImageOptions struct {
+	dockerPullOpts client.ImagePullOptions
+}
+
+type PullImageOption func(*pullImageOptions) error
+
 // ImageProvider allows manipulating images
 type ImageProvider interface {
 	ListImages(context.Context) ([]ImageInfo, error)
