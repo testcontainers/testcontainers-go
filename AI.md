@@ -90,198 +90,66 @@ Each module in `./modules/` is a separate Go module with:
 
 ## Module Development Best Practices
 
-### Container Struct Design
+**📖 Detailed guide**: See [`docs/modules/index.md`](docs/modules/index.md) for comprehensive module development documentation.
+
+### Quick Reference
+
+#### Container Struct
+- **Name**: Use `Container`, not module-specific names like `PostgresContainer`
+- **Fields**: Use private fields for state management
+- **Embedding**: Always embed `testcontainers.Container`
+
 ```go
-// ✅ Correct: Use "Container" not "ModuleContainer" or "PostgresContainer"
 type Container struct {
     testcontainers.Container
-    // Use private fields for state
-    dbName   string
-    user     string
-    password string
+    dbName   string  // private
+    user     string  // private
 }
 ```
 
-**Key principles:**
-- **Name**: Use `Container`, not module-specific names (some legacy modules use old naming, they will be updated)
-- **Fields**: Private fields for internal state, public only when needed for API
-- **Embedding**: Always embed `testcontainers.Container` to promote methods
-
-### The Run Function Pattern
+#### Run Function Pattern
+Five-step implementation:
+1. Process custom options (if using intermediate settings)
+2. Build `moduleOpts` with defaults
+3. Add conditional options based on settings
+4. Append user options (allows overrides)
+5. Call `testcontainers.Run` and return with proper error wrapping
 
 ```go
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-    // 1. Process custom options first (if using intermediate settings struct)
-    var settings options
-    for _, opt := range opts {
-        if opt, ok := opt.(Option); ok {
-            if err := opt(&settings); err != nil {
-                return nil, err
-            }
-        }
-    }
-
-    // 2. Build moduleOpts with defaults
+    // See docs/modules/index.md for complete implementation
     moduleOpts := []testcontainers.ContainerCustomizer{
         testcontainers.WithExposedPorts("5432/tcp"),
-        testcontainers.WithEnv(map[string]string{"DB": "default"}),
-        testcontainers.WithWaitStrategy(wait.ForListeningPort("5432/tcp")),
+        // ... defaults
     }
-
-    // 3. Add conditional options based on settings
-    if settings.tlsEnabled {
-        moduleOpts = append(moduleOpts, /* TLS config */)
-    }
-
-    // 4. Append user options (allows users to override defaults)
     moduleOpts = append(moduleOpts, opts...)
 
-    // 5. Call testcontainers.Run
     ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
-    var c *Container
-    if ctr != nil {
-        c = &Container{Container: ctr, settings: settings}
-    }
-
-    // 6. Return with proper error wrapping
     if err != nil {
-        return c, fmt.Errorf("run modulename: %w", err)
+        return nil, fmt.Errorf("run modulename: %w", err)
     }
-
-    return c, nil
+    return &Container{Container: ctr}, nil
 }
 ```
 
-**Key patterns:**
-- Process custom options **before** building moduleOpts
-- Module defaults → user options → post-processing (order matters!)
-- Always initialize container variable before error check
-- Error format: `fmt.Errorf("run modulename: %w", err)`
+#### Container Options
+- **Simple config**: Use built-in `testcontainers.With*` options
+- **Complex logic**: Use `testcontainers.CustomizeRequestOption`
+- **State transfer**: Create custom `Option` type
 
-### Container Options
+**Critical rules:**
+- ✅ Return struct types (not interfaces)
+- ✅ Call built-in options directly: `testcontainers.WithFiles(f)(req)`
+- ❌ Don't use `.Customize()` method
+- ❌ Don't pass slices to variadic functions
 
-#### When to Use Built-in Options
-Use `testcontainers.With*` for simple configuration:
+#### Common Patterns
+- **Env inspection**: Use `strings.CutPrefix` with early exit
+- **Variadic args**: Pass directly, not as slices
+- **Option order**: defaults → user options → post-processing
+- **Error format**: `fmt.Errorf("run modulename: %w", err)`
 
-```go
-// ✅ Good: Simple env var setting
-func WithDatabase(dbName string) testcontainers.CustomizeRequestOption {
-    return testcontainers.WithEnv(map[string]string{"POSTGRES_DB": dbName})
-}
-```
-
-#### When to Use CustomizeRequestOption
-Use for complex logic requiring multiple operations:
-
-```go
-// ✅ Good: Multiple operations needed
-func WithConfigFile(cfg string) testcontainers.CustomizeRequestOption {
-    return func(req *testcontainers.GenericContainerRequest) error {
-        if err := testcontainers.WithFiles(cfgFile)(req); err != nil {
-            return err
-        }
-        return testcontainers.WithCmdArgs("-c", "config_file=/etc/app.conf")(req)
-    }
-}
-```
-
-#### When to Create Custom Option Types
-Create custom `Option` type when you need to transfer state:
-
-```go
-type options struct {
-    tlsEnabled bool
-    tlsConfig  *tls.Config
-}
-
-type Option func(*options) error
-
-func (o Option) Customize(req *testcontainers.GenericContainerRequest) error {
-    return nil  // Can be empty if only setting internal state
-}
-
-func WithTLS() Option {
-    return func(opts *options) error {
-        opts.tlsEnabled = true
-        return nil
-    }
-}
-```
-
-#### Critical Rules for Options
-
-**✅ DO:**
-- Return struct types (`testcontainers.CustomizeRequestOption` or custom `Option`)
-- Call built-in options directly: `testcontainers.WithFiles(f)(req)`
-- Use variadic arguments correctly: `WithCmd("arg1", "arg2")`
-- Handle errors properly in option functions
-
-**❌ DON'T:**
-- Return interface types (`testcontainers.ContainerCustomizer`)
-- Use `.Customize()` method: `WithFiles(f).Customize(req)`
-- Pass slices to variadic functions: `WithCmd([]string{"arg1", "arg2"})`
-- Ignore errors from built-in options
-
-### Container State Inspection
-
-When reading environment variables after container creation:
-
-```go
-inspect, err := ctr.Inspect(ctx)
-if err != nil {
-    return c, fmt.Errorf("inspect modulename: %w", err)
-}
-
-// Use strings.CutPrefix with early exit optimization
-var foundDB, foundUser, foundPass bool
-for _, env := range inspect.Config.Env {
-    if v, ok := strings.CutPrefix(env, "POSTGRES_DB="); ok {
-        c.dbName, foundDB = v, true
-    }
-    if v, ok := strings.CutPrefix(env, "POSTGRES_USER="); ok {
-        c.user, foundUser = v, true
-    }
-    if v, ok := strings.CutPrefix(env, "POSTGRES_PASSWORD="); ok {
-        c.password, foundPass = v, true
-    }
-
-    // Early exit once all values found
-    if foundDB && foundUser && foundPass {
-        break
-    }
-}
-```
-
-**Key techniques:**
-- Use `strings.CutPrefix` (standard library) for prefix checking
-- Set default values when creating container struct
-- Use individual `found` flags for each variable
-- Check all flags together and break early
-
-### Variadic Arguments
-
-**Correct usage:**
-```go
-// ✅ Pass arguments directly
-testcontainers.WithCmd("redis-server", "--port", "6379")
-testcontainers.WithFiles(file1, file2, file3)
-testcontainers.WithWaitStrategy(wait1, wait2)
-
-// For initial setup
-testcontainers.WithCmd(...)           // Sets command
-testcontainers.WithEntrypoint(...)    // Sets entrypoint
-
-// For appending to user values
-testcontainers.WithCmdArgs(...)       // Appends to command
-testcontainers.WithEntrypointArgs(...) // Appends to entrypoint
-```
-
-**Wrong usage:**
-```go
-// ❌ Don't pass slices to variadic functions
-testcontainers.WithCmd([]string{"redis-server", "--port", "6379"})
-testcontainers.WithFiles([]ContainerFile{file1, file2})
-```
+**For complete examples and detailed explanations**, see [`docs/modules/index.md`](docs/modules/index.md).
 
 ## Testing Guidelines
 
