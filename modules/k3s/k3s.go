@@ -39,12 +39,10 @@ func WithManifest(manifestPath string) testcontainers.CustomizeRequestOption {
 		manifest := filepath.Base(manifestPath)
 		target := k3sManifests + manifest
 
-		req.Files = append(req.Files, testcontainers.ContainerFile{
+		return testcontainers.WithFiles(testcontainers.ContainerFile{
 			HostFilePath:      manifestPath,
 			ContainerFilePath: target,
-		})
-
-		return nil
+		})(req)
 	}
 }
 
@@ -61,13 +59,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return nil, err
 	}
 
-	req := testcontainers.ContainerRequest{
-		Image: img,
-		ExposedPorts: []string{
-			defaultKubeSecurePort,
-			defaultRancherWebhookPort,
-		},
-		HostConfigModifier: func(hc *container.HostConfig) {
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultKubeSecurePort, defaultRancherWebhookPort),
+		testcontainers.WithHostConfigModifier(func(hc *container.HostConfig) {
 			hc.Privileged = true
 			hc.CgroupnsMode = "host"
 			hc.Tmpfs = map[string]string{
@@ -75,37 +69,28 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				"/var/run": "",
 			}
 			hc.Mounts = []mount.Mount{}
-		},
-		Cmd: []string{
+		}),
+		testcontainers.WithCmd(
 			"server",
 			"--disable=traefik",
-			"--tls-san=" + host, // Host which will be used to access the Kubernetes server from tests.
-		},
-		Env: map[string]string{
+			"--tls-san="+host, // Host which will be used to access the Kubernetes server from tests.
+		),
+		testcontainers.WithEnv(map[string]string{
 			"K3S_KUBECONFIG_MODE": "644",
-		},
-		WaitingFor: wait.ForLog(".*Node controller sync successful.*").AsRegexp(),
+		}),
+		testcontainers.WithWaitStrategy(wait.ForLog(".*Node controller sync successful.*").AsRegexp()),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *K3sContainer
-	if container != nil {
-		c = &K3sContainer{Container: container}
+	if ctr != nil {
+		c = &K3sContainer{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run k3s: %w", err)
 	}
 
 	return c, nil

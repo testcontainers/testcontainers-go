@@ -197,7 +197,7 @@ func requireCreateTable(t *testing.T, client *dynamodb.Client) {
 
 func TestWithCustomCommands(t *testing.T) {
 	t.Run("invalid-flag", func(t *testing.T) {
-		req := testcontainers.GenericContainerRequest{
+		req := &testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Cmd: []string{"--memory=1G", "--smp=2"},
 			},
@@ -206,7 +206,7 @@ func TestWithCustomCommands(t *testing.T) {
 		// Same commands as in the Cmd, overriding the values.
 		opt := scylladb.WithCustomCommands("--memory=2G", "--smp=4", "invalid-flag")
 
-		err := opt.Customize(&req)
+		err := opt.Customize(req)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "invalid flag")
 
@@ -217,7 +217,7 @@ func TestWithCustomCommands(t *testing.T) {
 	})
 
 	t.Run("equals-override", func(t *testing.T) {
-		req := testcontainers.GenericContainerRequest{
+		req := &testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Cmd: []string{"--memory=1G", "--smp=2"},
 			},
@@ -226,7 +226,7 @@ func TestWithCustomCommands(t *testing.T) {
 		// Same commands as in the Cmd, overriding the values.
 		opt := scylladb.WithCustomCommands("--memory=2G", "--smp=4")
 
-		err := opt.Customize(&req)
+		err := opt.Customize(req)
 		require.NoError(t, err)
 
 		require.Len(t, req.Cmd, 2)
@@ -235,7 +235,7 @@ func TestWithCustomCommands(t *testing.T) {
 	})
 
 	t.Run("equals-override/no-equals", func(t *testing.T) {
-		req := testcontainers.GenericContainerRequest{
+		req := &testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Cmd: []string{"--memory=1G", "--flag1=true", "--flag2"},
 			},
@@ -245,7 +245,7 @@ func TestWithCustomCommands(t *testing.T) {
 		// of several types: with and without equals.
 		opt := scylladb.WithCustomCommands("--memory=2G", "--smp=4", "--flag1=false", "--flag2", "--flag3")
 
-		err := opt.Customize(&req)
+		err := opt.Customize(req)
 		require.NoError(t, err)
 
 		require.Len(t, req.Cmd, 5)
@@ -259,7 +259,7 @@ func TestWithCustomCommands(t *testing.T) {
 	})
 
 	t.Run("equals-override/different-order", func(t *testing.T) {
-		req := testcontainers.GenericContainerRequest{
+		req := &testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image: "scylladb/scylla:6.2",
 				Cmd:   []string{"--memory=1G", "--smp=2"},
@@ -268,7 +268,7 @@ func TestWithCustomCommands(t *testing.T) {
 
 		opt := scylladb.WithCustomCommands("--smp=4", "--memory=2G")
 
-		err := opt.Customize(&req)
+		err := opt.Customize(req)
 		require.NoError(t, err)
 
 		require.Len(t, req.Cmd, 2)

@@ -72,3 +72,14 @@ func TestDatabendWithDefaultUserAndPassword(t *testing.T) {
 		")")
 	require.NoError(t, err)
 }
+
+func TestDatabendWithEmptyCredentials(t *testing.T) {
+	ctx := context.Background()
+
+	ctr, err := databend.Run(ctx,
+		"datafuselabs/databend:v1.2.615",
+		databend.WithUsername(""),
+		databend.WithPassword(""))
+	testcontainers.CleanupContainer(t, ctr)
+	require.Error(t, err)
+}
