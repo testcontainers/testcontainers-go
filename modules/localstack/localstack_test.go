@@ -224,35 +224,31 @@ func TestStartV2WithNetwork(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, localstack)
 
-	networkName := nw.Name
-
-	cli, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:      "amazon/aws-cli:2.7.27",
-			Networks:   []string{networkName},
-			Entrypoint: []string{"tail"},
-			Cmd:        []string{"-f", "/dev/null"},
-			Env: map[string]string{
-				"AWS_ACCESS_KEY_ID":     "accesskey",
-				"AWS_SECRET_ACCESS_KEY": "secretkey",
-				"AWS_REGION":            "eu-west-1",
-			},
-			WaitingFor: wait.ForExec([]string{
-				"/usr/local/bin/aws", "sqs", "create-queue", "--queue-name", "baz", "--region", "eu-west-1",
-				"--endpoint-url", "http://localstack:4566", "--no-verify-ssl",
+	cli, err := testcontainers.Run(
+		ctx, "amazon/aws-cli:2.7.27",
+		network.WithNetwork([]string{"cli"}, nw),
+		testcontainers.WithEntrypoint("tail"),
+		testcontainers.WithCmd("-f", "/dev/null"),
+		testcontainers.WithEnv(map[string]string{
+			"AWS_ACCESS_KEY_ID":     "accesskey",
+			"AWS_SECRET_ACCESS_KEY": "secretkey",
+			"AWS_REGION":            "eu-west-1",
+		}),
+		testcontainers.WithWaitStrategy(wait.ForExec([]string{
+			"/usr/local/bin/aws", "sqs", "create-queue", "--queue-name", "baz", "--region", "eu-west-1",
+			"--endpoint-url", "http://localstack:4566", "--no-verify-ssl",
+		}).
+			WithStartupTimeout(time.Second*10).
+			WithExitCodeMatcher(func(exitCode int) bool {
+				return exitCode == 0
 			}).
-				WithStartupTimeout(time.Second * 10).
-				WithExitCodeMatcher(func(exitCode int) bool {
-					return exitCode == 0
-				}).
-				WithResponseMatcher(func(r io.Reader) bool {
-					respBytes, _ := io.ReadAll(r)
-					resp := string(respBytes)
-					return strings.Contains(resp, "http://localstack:4566")
-				}),
-		},
-		Started: true,
-	})
+			WithResponseMatcher(func(r io.Reader) bool {
+				respBytes, _ := io.ReadAll(r)
+				resp := string(respBytes)
+				return strings.Contains(resp, "http://localstack:4566")
+			}),
+		),
+	)
 	testcontainers.CleanupContainer(t, cli)
 	require.NoError(t, err)
 	require.NotNil(t, cli)
