@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/containerd/platforms"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,8 +40,18 @@ func Test_LoadImages(t *testing.T) {
 	provider, err := testcontainers.ProviderDocker.GetProvider()
 	require.NoError(t, err)
 
+	dockerProvider, _ := provider.(*testcontainers.DockerProvider)
+
+	// This function only works for single architecture images
+	// Forces the test to use a single-arch version of the image
+	arch := platforms.DefaultSpec().Architecture
+	if platforms.DefaultSpec().Variant != "" {
+		arch += platforms.DefaultSpec().Variant
+	}
+	nginxImg := arch + "/nginx"
+
 	// ensure nginx image is available locally
-	err = provider.PullImage(ctx, "nginx")
+	err = provider.PullImage(ctx, nginxImg)
 	require.NoError(t, err)
 
 	t.Run("Test load image not available", func(t *testing.T) {
@@ -48,8 +59,115 @@ func Test_LoadImages(t *testing.T) {
 		require.Error(t, err)
 	})
 
+	t.Run("Test load image with wrong architecture", func(t *testing.T) {
+		p, _ := platforms.Parse("linux/s390x")
+		img := "nginx:mainline"
+		err = dockerProvider.PullImageWithOpts(ctx, img, testcontainers.PullDockerImageWithPlatform(p))
+		require.NoError(t, err)
+
+		err := k3sContainer.LoadImages(ctx, img)
+		require.Error(t, err)
+		require.Regexp(t, "content digest .* not found", err)
+	})
+
 	t.Run("Test load image in cluster", func(t *testing.T) {
-		err := k3sContainer.LoadImages(ctx, "nginx")
+		err := k3sContainer.LoadImages(ctx, nginxImg)
+		require.NoError(t, err)
+
+		pod := &corev1.Pod{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Pod",
+				APIVersion: "v1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "test-pod",
+			},
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{
+					{
+						Name:            "nginx",
+						Image:           nginxImg,
+						ImagePullPolicy: corev1.PullNever, // use image only if already present
+					},
+				},
+			},
+		}
+
+		_, err = k8s.CoreV1().Pods("default").Create(ctx, pod, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		err = kwait.PollUntilContextCancel(ctx, time.Second, true, func(ctx context.Context) (bool, error) {
+			state, err := getTestPodState(ctx, k8s)
+			if err != nil {
+				return false, err
+			}
+			if state.Terminated != nil {
+				return false, fmt.Errorf("pod terminated: %v", state.Terminated)
+			}
+			return state.Running != nil, nil
+		})
+		require.NoError(t, err)
+
+		state, err := getTestPodState(ctx, k8s)
+		require.NoError(t, err)
+		require.NotNil(t, state.Running)
+	})
+}
+
+func Test_LoadImagesWithPlatform(t *testing.T) {
+	// Give up to three minutes to run this test
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(3*time.Minute))
+	defer cancel()
+
+	k3sContainer, err := k3s.Run(ctx, "rancher/k3s:v1.27.1-k3s1")
+	testcontainers.CleanupContainer(t, k3sContainer)
+	require.NoError(t, err)
+
+	kubeConfigYaml, err := k3sContainer.GetKubeConfig(ctx)
+	require.NoError(t, err)
+
+	restcfg, err := clientcmd.RESTConfigFromKubeConfig(kubeConfigYaml)
+	require.NoError(t, err)
+
+	k8s, err := kubernetes.NewForConfig(restcfg)
+	require.NoError(t, err)
+
+	provider, err := testcontainers.ProviderDocker.GetProvider()
+	require.NoError(t, err)
+
+	dockerProvider, _ := provider.(*testcontainers.DockerProvider)
+
+	// ensure nginx image is available locally
+	err = provider.PullImage(ctx, "nginx")
+	require.NoError(t, err)
+
+	t.Run("Test load image not available", func(t *testing.T) {
+		p, _ := platforms.Parse("linux/amd64")
+		err := k3sContainer.LoadImagesWithPlatform(ctx, []string{"fake.registry/fake:non-existing"}, &p)
+		require.Error(t, err)
+	})
+
+	t.Run("Test load image with wrong architecture", func(t *testing.T) {
+		pullPlatform, _ := platforms.Parse("linux/s390x")
+		img := "nginx:mainline"
+		err = dockerProvider.PullImageWithOpts(ctx, img, testcontainers.PullDockerImageWithPlatform(pullPlatform))
+		require.NoError(t, err)
+
+		loadPlatform, _ := platforms.Parse("linux/amd64")
+		err := k3sContainer.LoadImagesWithPlatform(ctx, []string{img}, &loadPlatform)
+		require.Error(t, err)
+		expected := fmt.Sprintf(
+			"image with reference %s was found but does not provide the specified platform (%s)",
+			img,
+			platforms.Format(loadPlatform),
+		)
+		require.Contains(t, err.Error(), expected)
+	})
+
+	t.Run("Test load image in cluster", func(t *testing.T) {
+		p := platforms.DefaultSpec()
+		p.OS = "linux"
+		err := k3sContainer.LoadImagesWithPlatform(ctx, []string{"nginx"}, &p)
 		require.NoError(t, err)
 
 		pod := &corev1.Pod{
