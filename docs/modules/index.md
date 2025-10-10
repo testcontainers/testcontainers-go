@@ -209,7 +209,7 @@ Define container options for the module leveraging the `testcontainers.Container
 
 ##### When to use built-in options vs custom options
 
-**Prefer built-in options** (`testcontainers.With*`) for simple configuration. These options return `testcontainers.CustomizeRequestOption`, which is a struct type (not an interface):
+**Prefer built-in options** (`testcontainers.With*`) for simple configuration. These options return `testcontainers.CustomizeRequestOption`, which is a concrete function type (not an interface) that implements the `testcontainers.ContainerCustomizer` interface:
 
 ```golang
 // ✅ Good: Use built-in options for simple env var settings
