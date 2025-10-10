@@ -375,6 +375,24 @@ ctr, err = mymodule.Run(ctx, "docker.io/myservice:1.2.3", testcontainers.WithHos
 
 To understand more about this feature, please read the [Exposing host ports to the container](/features/networking/#exposing-host-ports-to-the-container) documentation.
 
+##### WithReadOnlyRootFilesystem
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.40.0"><span class="tc-version">:material-tag: v0.40.0</span></a>
+
+If you need to run a container with a read-only root filesystem for enhanced security, you can use `testcontainers.WithReadOnlyRootFilesystem`. This is equivalent to using the `--read-only` flag with `docker run`:
+
+```golang
+ctr, err = mymodule.Run(ctx, "docker.io/myservice:1.2.3", testcontainers.WithReadOnlyRootFilesystem())
+```
+
+This option mounts the container's root filesystem as read-only, preventing any writes to the root filesystem. This is useful for security hardening and ensuring that your application doesn't write to unexpected locations. If your application needs to write temporary files, you can combine this with `WithTmpfs` to provide writable temporary directories:
+
+```golang
+ctr, err = mymodule.Run(ctx, "docker.io/myservice:1.2.3", 
+    testcontainers.WithReadOnlyRootFilesystem(),
+    testcontainers.WithTmpfs(map[string]string{"/tmp": "rw,noexec,nosuid,size=100m"}))
+```
+
 ##### WithConfigModifier
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
