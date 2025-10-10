@@ -60,12 +60,7 @@ func (c *EtcdContainer) Terminate(ctx context.Context, opts ...testcontainers.Te
 
 // Run creates an instance of the etcd container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*EtcdContainer, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
-		testcontainers.WithExposedPorts(clientPort, peerPort),
-	}
-
-	moduleOpts = append(moduleOpts, opts...)
-
+	// Process custom options first to extract settings
 	settings := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
@@ -79,6 +74,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	if err != nil {
 		return nil, fmt.Errorf("configure cluster: %w", err)
 	}
+
+	// Build moduleOpts with defaults
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(clientPort, peerPort),
+	}
+
+	// Append user options
+	moduleOpts = append(moduleOpts, opts...)
 
 	// configure CMD with the nodes
 	moduleOpts = append(moduleOpts, testcontainers.WithCmd(configureCMD(settings)...))

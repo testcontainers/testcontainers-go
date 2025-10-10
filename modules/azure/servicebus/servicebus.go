@@ -73,6 +73,19 @@ func (c *Container) Terminate(ctx context.Context, opts ...testcontainers.Termin
 
 // Run creates an instance of the Azure ServiceBus container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+	// Process custom options first to extract settings
+	defaultOptions := defaultOptions()
+	for _, opt := range opts {
+		if o, ok := opt.(Option); ok {
+			if err := o(&defaultOptions); err != nil {
+				return nil, fmt.Errorf("servicebus option: %w", err)
+			}
+		}
+	}
+
+	c := &Container{mssqlOptions: &defaultOptions}
+
+	// Build moduleOpts with defaults
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts(defaultPort, defaultHTTPPort),
 		testcontainers.WithEnv(map[string]string{
@@ -86,17 +99,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			}),
 		)),
 	}
-
-	defaultOptions := defaultOptions()
-	for _, opt := range opts {
-		if o, ok := opt.(Option); ok {
-			if err := o(&defaultOptions); err != nil {
-				return nil, fmt.Errorf("servicebus option: %w", err)
-			}
-		}
-	}
-
-	c := &Container{mssqlOptions: &defaultOptions}
 
 	if defaultOptions.mssqlContainer == nil {
 		mssqlNetwork, err := network.New(ctx)
