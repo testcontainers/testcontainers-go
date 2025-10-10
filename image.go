@@ -3,6 +3,7 @@ package testcontainers
 import (
 	"context"
 
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 )
 
@@ -18,10 +19,17 @@ type saveImageOptions struct {
 
 type SaveImageOption func(*saveImageOptions) error
 
+type pullImageOptions struct {
+	dockerPullOpts image.PullOptions
+}
+
+type PullImageOption func(*pullImageOptions) error
+
 // ImageProvider allows manipulating images
 type ImageProvider interface {
 	ListImages(context.Context) ([]ImageInfo, error)
 	SaveImages(context.Context, string, ...string) error
 	SaveImagesWithOpts(context.Context, string, []string, ...SaveImageOption) error
 	PullImage(context.Context, string) error
+	PullImageWithOpts(context.Context, string, ...PullImageOption) error
 }
