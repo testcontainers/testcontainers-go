@@ -68,17 +68,7 @@ func (c *Container) Terminate(ctx context.Context, opts ...testcontainers.Termin
 
 // Run creates an instance of the Azure Event Hubs container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
-		testcontainers.WithExposedPorts(defaultAMPQPort, defaultHTTPPort),
-		testcontainers.WithWaitStrategy(wait.ForAll(
-			wait.ForListeningPort(defaultAMPQPort),
-			wait.ForListeningPort(defaultHTTPPort),
-			wait.ForHTTP("/health").WithPort(defaultHTTPPort).WithStatusCodeMatcher(func(status int) bool {
-				return status == http.StatusOK
-			}),
-		)),
-	}
-
+	// Process custom options first to extract settings
 	defaultOptions := defaultOptions()
 	for _, opt := range opts {
 		if o, ok := opt.(Option); ok {
@@ -89,6 +79,18 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	c := &Container{azuriteOptions: &defaultOptions}
+
+	// Build moduleOpts with defaults
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultAMPQPort, defaultHTTPPort),
+		testcontainers.WithWaitStrategy(wait.ForAll(
+			wait.ForListeningPort(defaultAMPQPort),
+			wait.ForListeningPort(defaultHTTPPort),
+			wait.ForHTTP("/health").WithPort(defaultHTTPPort).WithStatusCodeMatcher(func(status int) bool {
+				return status == http.StatusOK
+			}),
+		)),
+	}
 
 	if defaultOptions.azuriteContainer == nil {
 		azuriteNetwork, err := network.New(ctx)
