@@ -342,7 +342,7 @@ func WithConfigFile(cfg string) testcontainers.CustomizeRequestOption {
 // ❌ Wrong: Don't use .Customize() method
 func WithConfigFile(cfg string) testcontainers.CustomizeRequestOption {
     return func(req *testcontainers.GenericContainerRequest) error {
-        return testcontainers.WithFiles(cfgFile).Customize(req)  // Wrong!
+        return testcontainers.WithFiles(cfgFile).Customize(req)  // Wrong!: adds unnecessary indirection
     }
 }
 ```
