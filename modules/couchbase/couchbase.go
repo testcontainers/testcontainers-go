@@ -97,7 +97,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			config.password = credentialsCustomizer.password
 
 			if len(credentialsCustomizer.password) < 6 {
-				return nil, errors.New("admin password must be at most 6 characters long")
+				return nil, errors.New("admin password must be at least 6 characters long")
 			}
 		}
 	}
