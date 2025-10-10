@@ -25,7 +25,7 @@ ctr, err = mymodule.Run(ctx, "docker.io/myservice:1.2.3", testcontainers.WithEnv
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
-If you need to set a different wait strategy for the container, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy.
+If you need to set a different wait strategy for the container, replacing the existing one, you can use `testcontainers.WithWaitStrategy` with a valid wait strategy.
 
 !!!info
     The default deadline for the wait strategy is 60 seconds.
