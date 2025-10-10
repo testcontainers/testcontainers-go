@@ -121,9 +121,13 @@ We are going to propose a set of steps to follow when adding types and methods t
 // Container represents the container type used in the module
 type Container struct {
     testcontainers.Container
-    dbName   string  // private field
-    user     string  // private field
-    password string  // private field
+    // private fields, maybe obtained from the settings struct (i.e. settings.dbName, settings.user, settings.password, etc.)
+    dbName   string
+    user     string
+    password string
+    ...
+    // Or you can directly store all the options
+    settings options // keep processed Option state
 }
 ```
 
