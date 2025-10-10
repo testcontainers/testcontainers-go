@@ -34,13 +34,13 @@ func TestMariaDB(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	err = db.Ping()
+	err = db.PingContext(ctx)
 	require.NoError(t, err)
 
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS a_table ( \n" +
-		" `col_1` VARCHAR(128) NOT NULL, \n" +
-		" `col_2` VARCHAR(128) NOT NULL, \n" +
-		" PRIMARY KEY (`col_1`, `col_2`) \n" +
+	_, err = db.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS a_table ( \n"+
+		" `col_1` VARCHAR(128) NOT NULL, \n"+
+		" `col_2` VARCHAR(128) NOT NULL, \n"+
+		" PRIMARY KEY (`col_1`, `col_2`) \n"+
 		")")
 	require.NoError(t, err)
 }
@@ -74,13 +74,13 @@ func TestMariaDBWithRootUserAndEmptyPassword(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	err = db.Ping()
+	err = db.PingContext(ctx)
 	require.NoError(t, err)
 
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS a_table ( \n" +
-		" `col_1` VARCHAR(128) NOT NULL, \n" +
-		" `col_2` VARCHAR(128) NOT NULL, \n" +
-		" PRIMARY KEY (`col_1`, `col_2`) \n" +
+	_, err = db.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS a_table ( \n"+
+		" `col_1` VARCHAR(128) NOT NULL, \n"+
+		" `col_2` VARCHAR(128) NOT NULL, \n"+
+		" PRIMARY KEY (`col_1`, `col_2`) \n"+
 		")")
 	require.NoError(t, err)
 }
@@ -111,18 +111,18 @@ func TestMariaDBWithConfigFile(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	err = db.Ping()
+	err = db.PingContext(ctx)
 	require.NoError(t, err)
 
 	// In MariaDB 10.2.2 and later, the default file format is Barracuda and Antelope is deprecated.
 	// Barracuda is a newer InnoDB file format. It supports the COMPACT, REDUNDANT, DYNAMIC and
 	// COMPRESSED row formats. Tables with large BLOB or TEXT columns in particular could benefit
 	// from the dynamic row format.
-	stmt, err := db.Prepare("SELECT @@GLOBAL.innodb_default_row_format")
+	stmt, err := db.PrepareContext(ctx, "SELECT @@GLOBAL.innodb_default_row_format")
 	require.NoError(t, err)
 
 	defer stmt.Close()
-	row := stmt.QueryRow()
+	row := stmt.QueryRowContext(ctx)
 	innodbFileFormat := ""
 	err = row.Scan(&innodbFileFormat)
 	require.NoError(t, err)
@@ -149,14 +149,14 @@ func assertDataCanBeFetched(t *testing.T, ctx context.Context, container *mariad
 	require.NoError(t, err)
 	defer db.Close()
 
-	err = db.Ping()
+	err = db.PingContext(ctx)
 	require.NoError(t, err)
 
-	stmt, err := db.Prepare("SELECT name from profile")
+	stmt, err := db.PrepareContext(ctx, "SELECT name from profile")
 	require.NoError(t, err)
 	defer stmt.Close()
 
-	row := stmt.QueryRow()
+	row := stmt.QueryRowContext(ctx)
 	var name string
 	err = row.Scan(&name)
 	require.NoError(t, err)

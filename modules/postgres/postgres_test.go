@@ -128,11 +128,11 @@ func TestPostgres(t *testing.T) {
 			require.NotNil(t, db)
 			defer db.Close()
 
-			result, err := db.Exec("CREATE TABLE IF NOT EXISTS test (id int, name varchar(255));")
+			result, err := db.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS test (id int, name varchar(255));")
 			require.NoError(t, err)
 			require.NotNil(t, result)
 
-			result, err = db.Exec("INSERT INTO test (id, name) VALUES (1, 'test');")
+			result, err = db.ExecContext(ctx, "INSERT INTO test (id, name) VALUES (1, 'test');")
 			require.NoError(t, err)
 			require.NotNil(t, result)
 		})
@@ -239,7 +239,7 @@ func TestWithSSL(t *testing.T) {
 	require.NotNil(t, db)
 	defer db.Close()
 
-	result, err := db.Exec("SELECT * FROM testdb;")
+	result, err := db.ExecContext(ctx, "SELECT * FROM testdb;")
 	require.NoError(t, err)
 	require.NotNil(t, result)
 }
@@ -285,7 +285,7 @@ func TestWithInitScript(t *testing.T) {
 	defer db.Close()
 
 	// database created in init script. See testdata/init-user-db.sh
-	result, err := db.Exec("SELECT * FROM testdb;")
+	result, err := db.ExecContext(ctx, "SELECT * FROM testdb;")
 	require.NoError(t, err)
 	require.NotNil(t, result)
 }
@@ -335,9 +335,10 @@ func TestWithOrderedInitScript(t *testing.T) {
 	defer db.Close()
 
 	// database created in init script. See testdata/init-user-db.sh
-	rows, err := db.Query("SELECT COUNT(*) FROM testdb;")
+	rows, err := db.QueryContext(ctx, "SELECT COUNT(*) FROM testdb;")
 	require.NoError(t, err)
 	require.NotNil(t, rows)
+	defer rows.Close()
 	for rows.Next() {
 		var count int
 		err := rows.Scan(&count)
