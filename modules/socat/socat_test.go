@@ -30,17 +30,10 @@ func TestRun_helloWorld(t *testing.T) {
 	testcontainers.CleanupNetwork(t, nw)
 	require.NoError(t, err)
 
-	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "testcontainers/helloworld:1.2.0",
-			ExposedPorts: []string{"8080/tcp"},
-			Networks:     []string{nw.Name},
-			NetworkAliases: map[string][]string{
-				nw.Name: {"helloworld"},
-			},
-		},
-		Started: true,
-	})
+	ctr, err := testcontainers.Run(ctx, "testcontainers/helloworld:1.2.0",
+		network.WithNetwork([]string{"helloworld"}, nw),
+		testcontainers.WithExposedPorts("8080/tcp"),
+	)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -82,17 +75,10 @@ func TestRun_helloWorldDifferentPort(t *testing.T) {
 	testcontainers.CleanupNetwork(t, nw)
 	require.NoError(t, err)
 
-	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "testcontainers/helloworld:1.2.0",
-			ExposedPorts: []string{"8080/tcp"},
-			Networks:     []string{nw.Name},
-			NetworkAliases: map[string][]string{
-				nw.Name: {"helloworld"},
-			},
-		},
-		Started: true,
-	})
+	ctr, err := testcontainers.Run(ctx, "testcontainers/helloworld:1.2.0",
+		network.WithNetwork([]string{"helloworld"}, nw),
+		testcontainers.WithExposedPorts("8080/tcp"),
+	)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -139,17 +125,10 @@ func TestRun_helloWorld_WrongImage(t *testing.T) {
 	testcontainers.CleanupNetwork(t, nw)
 	require.NoError(t, err)
 
-	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "testcontainers/helloworld:1.2.0",
-			ExposedPorts: []string{"8080/tcp"},
-			Networks:     []string{nw.Name},
-			NetworkAliases: map[string][]string{
-				nw.Name: {"helloworld"},
-			},
-		},
-		Started: true,
-	})
+	ctr, err := testcontainers.Run(ctx, "testcontainers/helloworld:1.2.0",
+		network.WithNetwork([]string{"helloworld"}, nw),
+		testcontainers.WithExposedPorts("8080/tcp"),
+	)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -174,17 +153,10 @@ func TestRun_multipleTargets(t *testing.T) {
 	testcontainers.CleanupNetwork(t, nw)
 	require.NoError(t, err)
 
-	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "testcontainers/helloworld:1.2.0",
-			ExposedPorts: []string{"8080/tcp"},
-			Networks:     []string{nw.Name},
-			NetworkAliases: map[string][]string{
-				nw.Name: {"helloworld"},
-			},
-		},
-		Started: true,
-	})
+	ctr, err := testcontainers.Run(ctx, "testcontainers/helloworld:1.2.0",
+		network.WithNetwork([]string{"helloworld"}, nw),
+		testcontainers.WithExposedPorts("8080/tcp"),
+	)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 

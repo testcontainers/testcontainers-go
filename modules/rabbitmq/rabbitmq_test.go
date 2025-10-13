@@ -258,3 +258,33 @@ func requirePluginIsEnabled(t *testing.T, container testcontainers.Container, pl
 		require.Contains(t, check, plugin+" is enabled")
 	}
 }
+
+func TestRunContainer_withCustomCredentials(t *testing.T) {
+	ctx := context.Background()
+
+	customUsername := "admin"
+	customPassword := "s3cr3t"
+
+	rabbitmqContainer, err := rabbitmq.Run(ctx,
+		"rabbitmq:3.12.11-management-alpine",
+		rabbitmq.WithAdminUsername(customUsername),
+		rabbitmq.WithAdminPassword(customPassword),
+	)
+	testcontainers.CleanupContainer(t, rabbitmqContainer)
+	require.NoError(t, err)
+
+	// Verify the container reports the custom credentials
+	require.Equal(t, customUsername, rabbitmqContainer.AdminUsername)
+	require.Equal(t, customPassword, rabbitmqContainer.AdminPassword)
+
+	// Get the AMQP URL - this will include the custom credentials
+	amqpURL, err := rabbitmqContainer.AmqpURL(ctx)
+	require.NoError(t, err)
+	require.Contains(t, amqpURL, customUsername)
+	require.Contains(t, amqpURL, customPassword)
+
+	// Try to connect using the URL with custom credentials
+	amqpConnection, err := amqp.Dial(amqpURL)
+	require.NoError(t, err)
+	require.NoError(t, amqpConnection.Close())
+}

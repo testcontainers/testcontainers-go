@@ -26,17 +26,10 @@ func ExampleRun() {
 		}
 	}()
 
-	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "testcontainers/helloworld:1.2.0",
-			ExposedPorts: []string{"8080/tcp"},
-			Networks:     []string{nw.Name},
-			NetworkAliases: map[string][]string{
-				nw.Name: {"helloworld"},
-			},
-		},
-		Started: true,
-	})
+	ctr, err := testcontainers.Run(ctx, "testcontainers/helloworld:1.2.0",
+		testcontainers.WithExposedPorts("8080/tcp"),
+		network.WithNetwork([]string{"helloworld"}, nw),
+	)
 	if err != nil {
 		log.Printf("failed to create container: %v", err)
 		return
@@ -110,17 +103,10 @@ func ExampleRun_multipleTargets() {
 	// }
 
 	// createHelloWorldContainer {
-	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "testcontainers/helloworld:1.2.0",
-			ExposedPorts: []string{"8080/tcp"},
-			Networks:     []string{nw.Name},
-			NetworkAliases: map[string][]string{
-				nw.Name: {"helloworld"},
-			},
-		},
-		Started: true,
-	})
+	ctr, err := testcontainers.Run(ctx, "testcontainers/helloworld:1.2.0",
+		network.WithNetwork([]string{"helloworld"}, nw),
+		testcontainers.WithExposedPorts("8080/tcp"),
+	)
 	if err != nil {
 		log.Printf("failed to create container: %v", err)
 		return

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/azure/azurite"
@@ -69,41 +68,29 @@ func (c *Container) Terminate(ctx context.Context, opts ...testcontainers.Termin
 
 // Run creates an instance of the Azure Event Hubs container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{defaultAMPQPort, defaultHTTPPort},
-		Env:          make(map[string]string),
-		WaitingFor: wait.ForAll(
+	// Process custom options first to extract settings
+	defaultOptions := defaultOptions()
+	for _, opt := range opts {
+		if o, ok := opt.(Option); ok {
+			if err := o(&defaultOptions); err != nil {
+				return nil, fmt.Errorf("eventhubs option: %w", err)
+			}
+		}
+	}
+
+	c := &Container{azuriteOptions: &defaultOptions}
+
+	// Build moduleOpts with defaults
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultAMPQPort, defaultHTTPPort),
+		testcontainers.WithWaitStrategy(wait.ForAll(
 			wait.ForListeningPort(defaultAMPQPort),
 			wait.ForListeningPort(defaultHTTPPort),
 			wait.ForHTTP("/health").WithPort(defaultHTTPPort).WithStatusCodeMatcher(func(status int) bool {
 				return status == http.StatusOK
 			}),
-		),
+		)),
 	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	defaultOptions := defaultOptions()
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
-		}
-		if o, ok := opt.(Option); ok {
-			if err := o(&defaultOptions); err != nil {
-				return nil, fmt.Errorf("eventhubsoption: %w", err)
-			}
-		}
-	}
-
-	if strings.ToUpper(genericContainerReq.Env["ACCEPT_EULA"]) != "Y" {
-		return nil, errors.New("EULA not accepted. Please use the WithAcceptEULA option to accept the EULA")
-	}
-
-	c := &Container{azuriteOptions: &defaultOptions}
 
 	if defaultOptions.azuriteContainer == nil {
 		azuriteNetwork, err := network.New(ctx)
@@ -124,20 +111,24 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 		defaultOptions.azuriteContainer = azuriteContainer
 
-		genericContainerReq.Env["BLOB_SERVER"] = aliasAzurite
-		genericContainerReq.Env["METADATA_SERVER"] = aliasAzurite
+		moduleOpts = append(moduleOpts, testcontainers.WithEnv(map[string]string{
+			"BLOB_SERVER":     aliasAzurite,
+			"METADATA_SERVER": aliasAzurite,
+		}))
 
 		// apply the network to the eventhubs container
-		err = network.WithNetwork([]string{aliasEventhubs}, azuriteNetwork)(&genericContainerReq)
-		if err != nil {
-			return c, fmt.Errorf("with network: %w", err)
-		}
+		moduleOpts = append(moduleOpts, network.WithNetwork([]string{aliasEventhubs}, azuriteNetwork))
 	}
 
+	moduleOpts = append(moduleOpts, opts...)
+
+	// validate the EULA after all the options are applied
+	moduleOpts = append(moduleOpts, validateEula())
+
 	var err error
-	c.Container, err = testcontainers.GenericContainer(ctx, genericContainerReq)
+	c.Container, err = testcontainers.Run(ctx, img, moduleOpts...)
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run eventhubs: %w", err)
 	}
 
 	return c, nil

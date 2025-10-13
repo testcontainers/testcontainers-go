@@ -587,22 +587,12 @@ func TestRedpandaListener_Simple(t *testing.T) {
 
 	// 3. Start KCat container
 	// withListenerKcat {
-	kcat, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "confluentinc/cp-kcat:7.4.1",
-			Networks: []string{
-				rpNetwork.Name,
-			},
-			Entrypoint: []string{
-				"sh",
-			},
-			Cmd: []string{
-				"-c",
-				"tail -f /dev/null",
-			},
-		},
-		Started: true,
-	})
+	kcat, err := testcontainers.Run(
+		ctx, "confluentinc/cp-kcat:7.4.1",
+		network.WithNetwork([]string{"kcat"}, rpNetwork),
+		testcontainers.WithEntrypoint("sh"),
+		testcontainers.WithCmd("-c", "tail -f /dev/null"),
+	)
 	// }
 	testcontainers.CleanupContainer(t, kcat)
 	require.NoError(t, err)

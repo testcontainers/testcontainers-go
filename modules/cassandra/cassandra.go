@@ -7,14 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/docker/go-connections/nat"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
-	port = nat.Port("9042/tcp")
+	port = "9042/tcp"
 )
 
 // CassandraContainer represents the Cassandra container type used in the module
@@ -22,7 +20,7 @@ type CassandraContainer struct {
 	testcontainers.Container
 }
 
-// ConnectionHost returns the host and port of the cassandra container, using the default, native 9000 port, and
+// ConnectionHost returns the host and port of the cassandra container, using the default, native 9042 port, and
 // obtaining the host and exposed port from the container
 func (c *CassandraContainer) ConnectionHost(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, port, "")
@@ -73,45 +71,35 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Cassandra container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*CassandraContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{string(port)},
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(port),
+		testcontainers.WithEnv(map[string]string{
 			"CASSANDRA_SNITCH":          "GossipingPropertyFileSnitch",
 			"JVM_OPTS":                  "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.initial_token=0",
 			"HEAP_NEWSIZE":              "128M",
 			"MAX_HEAP_SIZE":             "1024M",
 			"CASSANDRA_ENDPOINT_SNITCH": "GossipingPropertyFileSnitch",
 			"CASSANDRA_DC":              "datacenter1",
-		},
-		WaitingFor: wait.ForAll(
+		}),
+		testcontainers.WithWaitStrategy(wait.ForAll(
 			wait.ForListeningPort(port),
 			wait.ForExec([]string{"cqlsh", "-e", "SELECT bootstrapped FROM system.local"}).WithResponseMatcher(func(body io.Reader) bool {
 				data, _ := io.ReadAll(body)
 				return strings.Contains(string(data), "COMPLETED")
 			}),
-		),
+		)),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *CassandraContainer
-	if container != nil {
-		c = &CassandraContainer{Container: container}
+	if ctr != nil {
+		c = &CassandraContainer{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run cassandra: %w", err)
 	}
 
 	return c, nil

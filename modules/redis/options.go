@@ -43,17 +43,16 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	const defaultConfigFile = "/usr/local/redis.conf"
 
 	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := testcontainers.ContainerFile{
+		if err := testcontainers.WithFiles(testcontainers.ContainerFile{
 			HostFilePath:      configFile,
 			ContainerFilePath: defaultConfigFile,
 			FileMode:          0o755,
+		})(req); err != nil {
+			return err
 		}
-		req.Files = append(req.Files, cf)
 
 		// prepend the command to run the redis server with the config file, which must be the first argument of the redis server process
-		req.Cmd = append([]string{defaultConfigFile}, req.Cmd...)
-
-		return nil
+		return testcontainers.WithCmd(append([]string{defaultConfigFile}, req.Cmd...)...)(req)
 	}
 }
 

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/go-stomp/stomp/v3"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -54,8 +53,8 @@ func TestArtemis(t *testing.T) {
 				artemis.WithExtraArgs("--http-host 0.0.0.0 --relax-jolokia --queues ArgsTestQueue"),
 				// }
 			},
-			user: "artemis",
-			pass: "artemis",
+			user: "artemis", // default user
+			pass: "artemis", // default password
 			hook: func(t *testing.T, container *artemis.Container) {
 				t.Helper()
 				expectQueue(t, container, "ArgsTestQueue")
@@ -84,11 +83,11 @@ func TestArtemis(t *testing.T) {
 			require.NoError(t, res.Body.Close())
 
 			if test.user != "" {
-				assert.Equal(t, test.user, ctr.User(), "unexpected user")
+				require.Equal(t, test.user, ctr.User(), "unexpected user")
 			}
 
 			if test.pass != "" {
-				assert.Equal(t, test.pass, ctr.Password(), "unexpected password")
+				require.Equal(t, test.pass, ctr.Password(), "unexpected password")
 			}
 
 			// brokerEndpoint {
@@ -113,6 +112,7 @@ func TestArtemis(t *testing.T) {
 			require.NoError(t, err, "failed to send")
 
 			ticker := time.NewTicker(10 * time.Second)
+			defer ticker.Stop()
 			select {
 			case <-ticker.C:
 				t.Fatal("timed out waiting for message")

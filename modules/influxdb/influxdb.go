@@ -28,38 +28,28 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the InfluxDB container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*InfluxDbContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{"8086/tcp", "8088/tcp"},
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("8086/tcp", "8088/tcp"),
+		testcontainers.WithEnv(map[string]string{
 			"INFLUXDB_BIND_ADDRESS":          ":8088",
 			"INFLUXDB_HTTP_BIND_ADDRESS":     ":8086",
 			"INFLUXDB_REPORTING_DISABLED":    "true",
 			"INFLUXDB_MONITOR_STORE_ENABLED": "false",
 			"INFLUXDB_HTTP_HTTPS_ENABLED":    "false",
 			"INFLUXDB_HTTP_AUTH_ENABLED":     "false",
-		},
-		WaitingFor: waitForHTTPHealth(),
+		}),
+		testcontainers.WithWaitStrategy(waitForHTTPHealth()),
 	}
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *InfluxDbContainer
 	if container != nil {
 		c = &InfluxDbContainer{Container: container}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run influxdb: %w", err)
 	}
 
 	return c, nil
@@ -80,36 +70,29 @@ func (c *InfluxDbContainer) ConnectionUrl(ctx context.Context) (string, error) {
 }
 
 func WithUsername(username string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["INFLUXDB_USER"] = username
-		return nil
-	}
+	return testcontainers.WithEnv(map[string]string{
+		"INFLUXDB_USER": username,
+	})
 }
 
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["INFLUXDB_PASSWORD"] = password
-		return nil
-	}
+	return testcontainers.WithEnv(map[string]string{
+		"INFLUXDB_PASSWORD": password,
+	})
 }
 
 func WithDatabase(database string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["INFLUXDB_DATABASE"] = database
-		return nil
-	}
+	return testcontainers.WithEnv(map[string]string{
+		"INFLUXDB_DATABASE": database,
+	})
 }
 
 func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := testcontainers.ContainerFile{
-			HostFilePath:      configFile,
-			ContainerFilePath: "/etc/influxdb/influxdb.conf",
-			FileMode:          0o755,
-		}
-		req.Files = append(req.Files, cf)
-		return nil
-	}
+	return testcontainers.WithFiles(testcontainers.ContainerFile{
+		HostFilePath:      configFile,
+		ContainerFilePath: "/etc/influxdb/influxdb.conf",
+		FileMode:          0o755,
+	})
 }
 
 // withV2 configures the influxdb container to be compatible with InfluxDB v2
@@ -122,21 +105,17 @@ func withV2(req *testcontainers.GenericContainerRequest, org, bucket string) err
 		return errors.New("bucket name is required")
 	}
 
-	req.Env["DOCKER_INFLUXDB_INIT_ORG"] = org
-	req.Env["DOCKER_INFLUXDB_INIT_BUCKET"] = bucket
-	req.Env["DOCKER_INFLUXDB_INIT_MODE"] = "setup" // Always setup, we wont be migrating from v1 to v2
-	return nil
+	return testcontainers.WithEnv(map[string]string{
+		"DOCKER_INFLUXDB_INIT_ORG":    org,
+		"DOCKER_INFLUXDB_INIT_BUCKET": bucket,
+		"DOCKER_INFLUXDB_INIT_MODE":   "setup", // Always setup, we wont be migrating from v1 to v2
+	})(req)
 }
 
 // WithV2 configures the influxdb container to be compatible with InfluxDB v2
 func WithV2(org, bucket string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		err := withV2(req, org, bucket)
-		if err != nil {
-			return err
-		}
-
-		return nil
+		return withV2(req, org, bucket)
 	}
 }
 
@@ -168,9 +147,10 @@ func WithV2Auth(org, bucket, username, password string) testcontainers.Customize
 			return errors.New("username and password file already set, use either WithV2Auth or WithV2SecretsAuth")
 		}
 
-		req.Env["DOCKER_INFLUXDB_INIT_USERNAME"] = username
-		req.Env["DOCKER_INFLUXDB_INIT_PASSWORD"] = password
-		return nil
+		return testcontainers.WithEnv(map[string]string{
+			"DOCKER_INFLUXDB_INIT_USERNAME": username,
+			"DOCKER_INFLUXDB_INIT_PASSWORD": password,
+		})(req)
 	}
 }
 
@@ -195,9 +175,10 @@ func WithV2SecretsAuth(org, bucket, usernameFile, passwordFile string) testconta
 			return err
 		}
 
-		req.Env["DOCKER_INFLUXDB_INIT_USERNAME_FILE"] = secretsPath(usernameFile)
-		req.Env["DOCKER_INFLUXDB_INIT_PASSWORD_FILE"] = secretsPath(passwordFile)
-		return nil
+		return testcontainers.WithEnv(map[string]string{
+			"DOCKER_INFLUXDB_INIT_USERNAME_FILE": secretsPath(usernameFile),
+			"DOCKER_INFLUXDB_INIT_PASSWORD_FILE": secretsPath(passwordFile),
+		})(req)
 	}
 }
 
@@ -208,9 +189,9 @@ func WithV2Retention(retention time.Duration) testcontainers.CustomizeRequestOpt
 			return errors.New("retention is required")
 		}
 
-		req.Env["DOCKER_INFLUXDB_INIT_RETENTION"] = retention.String()
-
-		return nil
+		return testcontainers.WithEnv(map[string]string{
+			"DOCKER_INFLUXDB_INIT_RETENTION": retention.String(),
+		})(req)
 	}
 }
 
@@ -225,9 +206,9 @@ func WithV2AdminToken(token string) testcontainers.CustomizeRequestOption {
 			return errors.New("admin token file already set, use either WithV2AdminToken or WithV2SecretsAdminToken")
 		}
 
-		req.Env["DOCKER_INFLUXDB_INIT_ADMIN_TOKEN"] = token
-
-		return nil
+		return testcontainers.WithEnv(map[string]string{
+			"DOCKER_INFLUXDB_INIT_ADMIN_TOKEN": token,
+		})(req)
 	}
 }
 
@@ -242,9 +223,9 @@ func WithV2SecretsAdminToken(tokenFile string) testcontainers.CustomizeRequestOp
 			return errors.New("admin token already set, use either WithV2AdminToken or WithV2SecretsAdminToken")
 		}
 
-		req.Env["DOCKER_INFLUXDB_INIT_ADMIN_TOKEN_FILE"] = secretsPath(tokenFile)
-
-		return nil
+		return testcontainers.WithEnv(map[string]string{
+			"DOCKER_INFLUXDB_INIT_ADMIN_TOKEN_FILE": secretsPath(tokenFile),
+		})(req)
 	}
 }
 
@@ -254,18 +235,18 @@ func WithV2SecretsAdminToken(tokenFile string) testcontainers.CustomizeRequestOp
 //nolint:staticcheck //FIXME
 func WithInitDb(srcPath string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		cf := testcontainers.ContainerFile{
+		if err := testcontainers.WithFiles(testcontainers.ContainerFile{
 			HostFilePath:      path.Join(srcPath, "docker-entrypoint-initdb.d"),
 			ContainerFilePath: "/",
 			FileMode:          0o755,
+		})(req); err != nil {
+			return err
 		}
-		req.Files = append(req.Files, cf)
 
-		req.WaitingFor = wait.ForAll(
+		return testcontainers.WithAdditionalWaitStrategy(
 			wait.ForLog("Server shutdown completed"),
 			waitForHTTPHealth(),
-		)
-		return nil
+		)(req)
 	}
 }
 

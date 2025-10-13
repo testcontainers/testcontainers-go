@@ -61,26 +61,20 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Valkey container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ValkeyContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{valkeyPort},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
+	// Process custom options first
 	var settings options
 	for _, opt := range opts {
 		if opt, ok := opt.(Option); ok {
 			if err := opt(&settings); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("apply option: %w", err)
 			}
 		}
 	}
 
-	tcOpts := []testcontainers.ContainerCustomizer{}
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(valkeyPort),
+		testcontainers.WithEntrypoint(valkeyServerProcess),
+	}
 
 	waitStrategies := []wait.Strategy{
 		wait.ForListeningPort(valkeyPort).WithStartupTimeout(time.Second * 10),
@@ -109,23 +103,25 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"--tls-auth-clients", "yes",
 		}
 
-		tcOpts = append(tcOpts, testcontainers.WithCmdArgs(cmds...)) // Append the default CMD with the TLS certificates.
-		tcOpts = append(tcOpts, testcontainers.WithFiles(
-			testcontainers.ContainerFile{
-				Reader:            bytes.NewReader(caCert.Bytes),
-				ContainerFilePath: "/tls/ca.crt",
-				FileMode:          0o644,
-			},
-			testcontainers.ContainerFile{
-				Reader:            bytes.NewReader(serverCert.Bytes),
-				ContainerFilePath: "/tls/server.crt",
-				FileMode:          0o644,
-			},
-			testcontainers.ContainerFile{
-				Reader:            bytes.NewReader(serverCert.KeyBytes),
-				ContainerFilePath: "/tls/server.key",
-				FileMode:          0o644,
-			}))
+		moduleOpts = append(moduleOpts,
+			testcontainers.WithCmdArgs(cmds...),
+			testcontainers.WithFiles(
+				testcontainers.ContainerFile{
+					Reader:            bytes.NewReader(caCert.Bytes),
+					ContainerFilePath: "/tls/ca.crt",
+					FileMode:          0o600,
+				},
+				testcontainers.ContainerFile{
+					Reader:            bytes.NewReader(serverCert.Bytes),
+					ContainerFilePath: "/tls/server.crt",
+					FileMode:          0o600,
+				},
+				testcontainers.ContainerFile{
+					Reader:            bytes.NewReader(serverCert.KeyBytes),
+					ContainerFilePath: "/tls/server.key",
+					FileMode:          0o600,
+				}),
+		)
 
 		settings.tlsConfig = &tls.Config{
 			MinVersion:   tls.VersionTLS12,
@@ -135,33 +131,23 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	tcOpts = append(tcOpts, testcontainers.WithWaitStrategy(waitStrategies...))
+	moduleOpts = append(moduleOpts, testcontainers.WithWaitStrategy(waitStrategies...))
 
-	// Append the customizers passed to the Run function.
-	tcOpts = append(tcOpts, opts...)
-
-	// Apply the testcontainers customizers.
-	for _, opt := range tcOpts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, append(moduleOpts, opts...)...)
 	var c *ValkeyContainer
-	if container != nil {
-		c = &ValkeyContainer{Container: container, settings: settings}
+	if ctr != nil {
+		c = &ValkeyContainer{Container: ctr, settings: settings}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run valkey: %w", err)
 	}
 
 	return c, nil
 }
 
-// WithConfigFile sets the config file to be used for the valkey container, and sets the command to run the valkey server
-// using the passed config file
+// WithConfigFile sets the config file to be used for the valkey container.
+// The config file must be the first argument to valkey-server.
 func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 	const defaultConfigFile = "/usr/local/valkey.conf"
 
@@ -171,23 +157,13 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 			ContainerFilePath: defaultConfigFile,
 			FileMode:          0o755,
 		}
-		req.Files = append(req.Files, cf)
 
-		if len(req.Cmd) == 0 {
-			req.Cmd = []string{valkeyServerProcess, defaultConfigFile}
-			return nil
+		if err := testcontainers.WithFiles(cf)(req); err != nil {
+			return err
 		}
 
-		// prepend the command to run the redis server with the config file, which must be the first argument of the redis server process
-		if req.Cmd[0] == valkeyServerProcess {
-			// just insert the config file, then the rest of the args
-			req.Cmd = append([]string{valkeyServerProcess, defaultConfigFile}, req.Cmd[1:]...)
-		} else if req.Cmd[0] != valkeyServerProcess {
-			// prepend the redis server and the config file, then the rest of the args
-			req.Cmd = append([]string{valkeyServerProcess, defaultConfigFile}, req.Cmd...)
-		}
-
-		return nil
+		// Prepend the config file as the first argument
+		return testcontainers.WithCmd(append([]string{defaultConfigFile}, req.Cmd...)...)(req)
 	}
 }
 
@@ -195,9 +171,7 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 // See https://redis.io/docs/reference/modules/modules-api-ref/#redismodule_log for more information.
 func WithLogLevel(level LogLevel) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		processValkeyServerArgs(req, []string{"--loglevel", string(level)})
-
-		return nil
+		return testcontainers.WithCmdArgs("--loglevel", string(level))(req)
 	}
 }
 
@@ -214,24 +188,6 @@ func WithSnapshotting(seconds int, changedKeys int) testcontainers.CustomizeRequ
 	}
 
 	return func(req *testcontainers.GenericContainerRequest) error {
-		processValkeyServerArgs(req, []string{"--save", strconv.Itoa(seconds), strconv.Itoa(changedKeys)})
-		return nil
-	}
-}
-
-func processValkeyServerArgs(req *testcontainers.GenericContainerRequest, args []string) {
-	if len(req.Cmd) == 0 {
-		req.Cmd = append([]string{valkeyServerProcess}, args...)
-		return
-	}
-
-	// prepend the command to run the valkey server with the config file
-	if req.Cmd[0] == valkeyServerProcess {
-		// valkey server is already set as the first argument, so just append the config file
-		req.Cmd = append(req.Cmd, args...)
-	} else if req.Cmd[0] != valkeyServerProcess {
-		// valkey server is not set as the first argument, so prepend it alongside the config file
-		req.Cmd = append([]string{valkeyServerProcess}, req.Cmd...)
-		req.Cmd = append(req.Cmd, args...)
+		return testcontainers.WithCmdArgs("--save", strconv.Itoa(seconds), strconv.Itoa(changedKeys))(req)
 	}
 }

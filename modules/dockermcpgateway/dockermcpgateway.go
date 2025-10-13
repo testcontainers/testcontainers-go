@@ -27,19 +27,7 @@ type Container struct {
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	dockerHostMount := core.MustExtractDockerSocket(ctx)
 
-	moduleOpts := []testcontainers.ContainerCustomizer{
-		testcontainers.WithExposedPorts(defaultPort),
-		testcontainers.WithHostConfigModifier(func(hc *container.HostConfig) {
-			hc.Binds = []string{
-				dockerHostMount + ":/var/run/docker.sock",
-			}
-		}),
-		testcontainers.WithWaitStrategy(wait.ForAll(
-			wait.ForListeningPort(defaultPort),
-			wait.ForLog(".*Start sse server on port.*").AsRegexp(),
-		)),
-	}
-
+	// Process custom options first to extract settings
 	settings := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
@@ -56,6 +44,21 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			cmds = append(cmds, "--tools="+tool)
 		}
 	}
+
+	// Build moduleOpts with defaults
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultPort),
+		testcontainers.WithHostConfigModifier(func(hc *container.HostConfig) {
+			hc.Binds = []string{
+				dockerHostMount + ":/var/run/docker.sock",
+			}
+		}),
+		testcontainers.WithWaitStrategy(wait.ForAll(
+			wait.ForListeningPort(defaultPort),
+			wait.ForLog(".*Start sse server on port.*").AsRegexp(),
+		)),
+	}
+
 	if len(settings.secrets) > 0 {
 		cmds = append(cmds, "--secrets="+secretsPath)
 
@@ -73,7 +76,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	moduleOpts = append(moduleOpts, testcontainers.WithCmd(cmds...))
 
-	// append user-defined options
+	// Append user options
 	moduleOpts = append(moduleOpts, opts...)
 
 	container, err := testcontainers.Run(ctx, img, moduleOpts...)
@@ -83,7 +86,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run mcp gateway: %w", err)
 	}
 
 	return c, nil
