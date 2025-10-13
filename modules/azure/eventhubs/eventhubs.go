@@ -83,13 +83,13 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	// Build moduleOpts with defaults
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts(defaultAMPQPort, defaultHTTPPort),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort(defaultAMPQPort),
 			wait.ForListeningPort(defaultHTTPPort),
 			wait.ForHTTP("/health").WithPort(defaultHTTPPort).WithStatusCodeMatcher(func(status int) bool {
 				return status == http.StatusOK
 			}),
-		)),
+		),
 	}
 
 	if defaultOptions.azuriteContainer == nil {

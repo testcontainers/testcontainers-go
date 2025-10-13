@@ -91,13 +91,13 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithEnv(map[string]string{
 			"SQL_WAIT_INTERVAL": "0", // default is zero because the MSSQL container is started first
 		}),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort(defaultPort),
 			wait.ForListeningPort(defaultHTTPPort),
 			wait.ForHTTP("/health").WithPort(defaultHTTPPort).WithStatusCodeMatcher(func(status int) bool {
 				return status == http.StatusOK
 			}),
-		)),
+		),
 	}
 
 	if defaultOptions.mssqlContainer == nil {

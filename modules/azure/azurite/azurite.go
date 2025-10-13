@@ -100,7 +100,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 
 		moduleOpts = append(moduleOpts, testcontainers.WithCmd(moduleCmd...))
-		moduleOpts = append(moduleOpts, testcontainers.WithWaitStrategy(wait.ForAll(waitingFor...)))
+		moduleOpts = append(moduleOpts, testcontainers.WithWaitStrategy(waitingFor...))
 	}
 
 	moduleOpts = append(moduleOpts, opts...)

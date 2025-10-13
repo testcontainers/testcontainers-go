@@ -82,7 +82,7 @@ func WithFunctionsWorker() testcontainers.CustomizeRequestOption {
 
 		ss = append(ss, defaultWaitStrategies.Strategies...)
 
-		return testcontainers.WithWaitStrategy(wait.ForAll(ss...))(req)
+		return testcontainers.WithWaitStrategy(ss...)(req)
 	}
 }
 
@@ -122,7 +122,7 @@ func WithTransactions() testcontainers.CustomizeRequestOption {
 
 		ss = append(ss, defaultWaitStrategies.Strategies...)
 
-		return testcontainers.WithWaitStrategy(wait.ForAll(ss...))(req)
+		return testcontainers.WithWaitStrategy(ss...)(req)
 	}
 }
 
