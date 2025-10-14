@@ -5,11 +5,12 @@ Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/
 ## Introduction
 
 Redpanda is a streaming data platform for developers. Kafka API compatible. 10x faster. No ZooKeeper. No JVM!
-This Testcontainers module provides three APIs:
+This Testcontainers module provides the following APIs:
 
 - Kafka API
 - Schema Registry API
 - Redpanda Admin API
+- HTTP Proxy API (PandaProxy)
 
 ## Adding this module to your project dependencies
 
@@ -121,6 +122,12 @@ The `WithEnableWasmTransform` enables wasm transform.
 
 The `WithEnableSchemaRegistryHTTPBasicAuth` enables HTTP basic authentication for the Schema Registry.
 
+#### WithHTTPProxyAuthMethod
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.39.0"><span class="tc-version">:material-tag: v0.39.0</span></a>
+
+The `WithHTTPProxyAuthMethod` sets the authentication method for the HTTP Proxy API (PandaProxy). For HTTP Proxy to have BasicAuth, SASL must be enabled. See `WithEnableSASL()`.
+
 #### WithAutoCreateTopics
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.22.0"><span class="tc-version">:material-tag: v0.22.0</span></a>
@@ -188,4 +195,15 @@ is an HTTP-based API and thus the returned format will be: http://host:port.
 
 <!--codeinclude-->
 [Get admin API address](../../modules/redpanda/redpanda_test.go) inside_block:adminAPIAddress
+<!--/codeinclude-->
+
+#### HTTPProxyAddress
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.39.0"><span class="tc-version">:material-tag: v0.39.0</span></a>
+
+HTTPProxyAddress returns the address to the HTTP Proxy API (PandaProxy). This
+is an HTTP-based API and thus the returned format will be: http://host:port.
+
+<!--codeinclude-->
+[Get HTTP Proxy address](../../modules/redpanda/redpanda_test.go) inside_block:httpProxyAddress
 <!--/codeinclude-->

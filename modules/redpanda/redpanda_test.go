@@ -25,7 +25,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/network"
 )
 
-const testImage = "docker.redpanda.com/redpandadata/redpanda:v23.3.3"
+const testImage = "docker.redpanda.com/redpandadata/redpanda:v25.2.4"
 
 func TestRedpanda(t *testing.T) {
 	ctx := context.Background()
@@ -66,6 +66,18 @@ func TestRedpanda(t *testing.T) {
 	// }
 	require.NoError(t, err)
 	req, err = http.NewRequestWithContext(ctx, http.MethodGet, adminAPIURL+"/v1/cluster/health_overview", nil)
+	require.NoError(t, err)
+	resp, err = httpCl.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	// Test HTTP Proxy API
+	// httpProxyAddress {
+	httpProxyURL, err := ctr.HTTPProxyAddress(ctx)
+	// }
+	require.NoError(t, err)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, httpProxyURL+"/topics", nil)
 	require.NoError(t, err)
 	resp, err = httpCl.Do(req)
 	require.NoError(t, err)
@@ -575,22 +587,12 @@ func TestRedpandaListener_Simple(t *testing.T) {
 
 	// 3. Start KCat container
 	// withListenerKcat {
-	kcat, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "confluentinc/cp-kcat:7.4.1",
-			Networks: []string{
-				rpNetwork.Name,
-			},
-			Entrypoint: []string{
-				"sh",
-			},
-			Cmd: []string{
-				"-c",
-				"tail -f /dev/null",
-			},
-		},
-		Started: true,
-	})
+	kcat, err := testcontainers.Run(
+		ctx, "confluentinc/cp-kcat:7.4.1",
+		network.WithNetwork([]string{"kcat"}, rpNetwork),
+		testcontainers.WithEntrypoint("sh"),
+		testcontainers.WithCmd("-c", "tail -f /dev/null"),
+	)
 	// }
 	testcontainers.CleanupContainer(t, kcat)
 	require.NoError(t, err)
@@ -699,6 +701,88 @@ func TestRedpandaBootstrapConfig(t *testing.T) {
 		needsRestart := data[0]["restart"].(bool)
 		require.False(t, needsRestart)
 	}
+}
+
+func TestRedpandaHTTPProxy(t *testing.T) {
+	ctx := context.Background()
+
+	ctr, err := redpanda.Run(ctx, testImage)
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	httpCl := &http.Client{Timeout: 10 * time.Second}
+
+	// Get HTTP Proxy URL
+	httpProxyURL, err := ctr.HTTPProxyAddress(ctx)
+	require.NoError(t, err)
+
+	// Test getting list of topics
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, httpProxyURL+"/topics", nil)
+	require.NoError(t, err)
+	resp, err := httpCl.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var topics []string
+	err = json.NewDecoder(resp.Body).Decode(&topics)
+	require.NoError(t, err)
+
+	// Test getting brokers list
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, httpProxyURL+"/brokers", nil)
+	require.NoError(t, err)
+	resp, err = httpCl.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var brokers map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&brokers)
+	require.NoError(t, err)
+	require.Contains(t, brokers, "brokers")
+}
+
+func TestHTTPProxyWithBasicAuthentication(t *testing.T) {
+	ctx := context.Background()
+
+	ctr, err := redpanda.Run(ctx, testImage,
+		redpanda.WithEnableKafkaAuthorization(),
+		redpanda.WithEnableSASL(),
+		redpanda.WithHTTPProxyAuthMethod(redpanda.HTTPProxyAuthMethodHTTPBasic),
+		redpanda.WithNewServiceAccount("proxy-user", "proxy-pass"),
+		redpanda.WithSuperusers("proxy-user"),
+	)
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	httpCl := &http.Client{Timeout: 10 * time.Second}
+
+	// Get HTTP Proxy URL
+	httpProxyURL, err := ctr.HTTPProxyAddress(ctx)
+	require.NoError(t, err)
+
+	// Test authentication failure
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, httpProxyURL+"/topics", nil)
+	require.NoError(t, err)
+
+	// Test no authentication
+	resp, err := httpCl.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+
+	// Test successful authentication
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, httpProxyURL+"/topics", nil)
+	require.NoError(t, err)
+	req.SetBasicAuth("proxy-user", "proxy-pass")
+	resp, err = httpCl.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var topics []string
+	err = json.NewDecoder(resp.Body).Decode(&topics)
+	require.NoError(t, err)
 }
 
 func containerHost(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (string, error) {

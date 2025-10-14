@@ -28,9 +28,7 @@ func (c *SurrealDBContainer) URL(ctx context.Context) (string, error) {
 // It will create the specified user with superuser power.
 func WithUsername(username string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["SURREAL_USER"] = username
-
-		return nil
+		return testcontainers.WithEnv(map[string]string{"SURREAL_USER": username})(req)
 	}
 }
 
@@ -39,36 +37,28 @@ func WithUsername(username string) testcontainers.CustomizeRequestOption {
 // It will set the superuser password for SurrealDB.
 func WithPassword(password string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["SURREAL_PASS"] = password
-
-		return nil
+		return testcontainers.WithEnv(map[string]string{"SURREAL_PASS": password})(req)
 	}
 }
 
 // WithAuthentication enables authentication for the SurrealDB instance
 func WithAuthentication() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["SURREAL_AUTH"] = "true"
-
-		return nil
+		return testcontainers.WithEnv(map[string]string{"SURREAL_AUTH": "true"})(req)
 	}
 }
 
 // WithStrictMode enables strict mode for the SurrealDB instance
 func WithStrictMode() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["SURREAL_STRICT"] = "true"
-
-		return nil
+		return testcontainers.WithEnv(map[string]string{"SURREAL_STRICT": "true"})(req)
 	}
 }
 
 // WithAllowAllCaps enables all caps for the SurrealDB instance
 func WithAllowAllCaps() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["SURREAL_CAPS_ALLOW_ALL"] = "false"
-
-		return nil
+		return testcontainers.WithEnv(map[string]string{"SURREAL_CAPS_ALLOW_ALL": "true"})(req)
 	}
 }
 
@@ -80,42 +70,28 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the SurrealDB container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*SurrealDBContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image: img,
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithEnv(map[string]string{
 			"SURREAL_USER":           "root",
 			"SURREAL_PASS":           "root",
 			"SURREAL_AUTH":           "false",
 			"SURREAL_STRICT":         "false",
 			"SURREAL_CAPS_ALLOW_ALL": "false",
 			"SURREAL_PATH":           "memory",
-		},
-		ExposedPorts: []string{"8000/tcp"},
-		WaitingFor: wait.ForAll(
-			wait.ForLog("Started web server on "),
-		),
-		Cmd: []string{"start"},
+		}),
+		testcontainers.WithExposedPorts("8000/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForLog("Started web server on ")),
+		testcontainers.WithCmd("start"),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, append(moduleOpts, opts...)...)
 	var c *SurrealDBContainer
-	if container != nil {
-		c = &SurrealDBContainer{Container: container}
+	if ctr != nil {
+		c = &SurrealDBContainer{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run surrealdb: %w", err)
 	}
 
 	return c, nil

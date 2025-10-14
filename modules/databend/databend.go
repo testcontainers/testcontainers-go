@@ -11,10 +11,10 @@ import (
 )
 
 const (
-	databendUser        = "databend"
 	defaultUser         = "databend"
 	defaultPassword     = "databend"
 	defaultDatabaseName = "default"
+	defaultPort         = "8000/tcp"
 )
 
 // DatabendContainer represents the Databend container type used in the module
@@ -25,11 +25,14 @@ type DatabendContainer struct {
 	database string
 }
 
+// Deprecated: use testcontainers.ContainerCustomizer instead
 var _ testcontainers.ContainerCustomizer = (*DatabendOption)(nil)
 
+// Deprecated: use testcontainers.ContainerCustomizer instead
 // DatabendOption is an option for the Databend container.
 type DatabendOption func(*DatabendContainer)
 
+// Deprecated: use testcontainers.ContainerCustomizer instead
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
 func (o DatabendOption) Customize(*testcontainers.GenericContainerRequest) error {
 	// NOOP to satisfy interface.
@@ -38,46 +41,55 @@ func (o DatabendOption) Customize(*testcontainers.GenericContainerRequest) error
 
 // Run creates an instance of the Databend container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*DatabendContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{"8000/tcp"},
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultPort),
+		testcontainers.WithEnv(map[string]string{
 			"QUERY_DEFAULT_USER":     defaultUser,
 			"QUERY_DEFAULT_PASSWORD": defaultPassword,
-		},
-		WaitingFor: wait.ForListeningPort("8000/tcp"),
+		}),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort(defaultPort)),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	username := req.Env["QUERY_DEFAULT_USER"]
-	password := req.Env["QUERY_DEFAULT_PASSWORD"]
-	if password == "" && username == "" {
-		return nil, errors.New("empty password and user")
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *DatabendContainer
-	if container != nil {
+	if ctr != nil {
+		// set default credentials
 		c = &DatabendContainer{
-			Container: container,
-			password:  password,
-			username:  username,
+			Container: ctr,
+			password:  defaultPassword,
+			username:  defaultUser,
 			database:  defaultDatabaseName,
 		}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run databend: %w", err)
+	}
+
+	// refresh the credentials from the environment variables
+	inspect, err := ctr.Inspect(ctx)
+	if err != nil {
+		return c, fmt.Errorf("inspect databend: %w", err)
+	}
+
+	foundUser, foundPass := false, false
+	for _, env := range inspect.Config.Env {
+		if v, ok := strings.CutPrefix(env, "QUERY_DEFAULT_USER="); ok {
+			c.username, foundUser = v, true
+		}
+		if v, ok := strings.CutPrefix(env, "QUERY_DEFAULT_PASSWORD="); ok {
+			c.password, foundPass = v, true
+		}
+
+		if foundUser && foundPass {
+			break
+		}
+	}
+
+	if c.username == "" && c.password == "" {
+		return c, errors.New("empty password and user")
 	}
 
 	return c, nil

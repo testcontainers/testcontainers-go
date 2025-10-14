@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/go-connections/nat"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -131,7 +129,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run cassandra: %w", err)
 	}
 
 	return c, nil

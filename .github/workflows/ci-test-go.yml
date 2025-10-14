@@ -118,7 +118,7 @@ jobs:
       - name: Decide if Sonar must be run
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: |
-          if [[ "1.23.x" == "${{ inputs.go-version }}" ]] && \
+          if [[ "1.24.x" == "${{ inputs.go-version }}" ]] && \
              [[ "true" != "${{ inputs.rootless-docker }}" ]] && \
              [[ "true" != "${{ inputs.testcontainers-cloud }}" ]] && \
              [[ "true" != "${{ inputs.ryuk-disabled }}" ]] && \
