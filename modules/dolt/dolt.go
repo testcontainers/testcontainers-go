@@ -133,26 +133,26 @@ func (c *DoltContainer) initialize(ctx context.Context, createUser bool) error {
 		}
 	}()
 
-	if err = db.Ping(); err != nil {
+	if err = db.PingContext(ctx); err != nil {
 		return fmt.Errorf("error pinging db: %w", err)
 	}
 
 	// create database
-	_, err = db.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s;", c.database))
+	_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s;", c.database))
 	if err != nil {
 		return fmt.Errorf("error creating database %s: %w", c.database, err)
 	}
 
 	if createUser {
 		// create user
-		_, err = db.Exec(fmt.Sprintf("CREATE USER IF NOT EXISTS '%s' IDENTIFIED BY '%s';", c.username, c.password))
+		_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE USER IF NOT EXISTS '%s' IDENTIFIED BY '%s';", c.username, c.password))
 		if err != nil {
 			return fmt.Errorf("error creating user %s: %w", c.username, err)
 		}
 
 		q := fmt.Sprintf("GRANT ALL ON %s.* TO '%s';", c.database, c.username)
 		// grant user privileges
-		_, err = db.Exec(q)
+		_, err = db.ExecContext(ctx, q)
 		if err != nil {
 			return fmt.Errorf("error creating user %s: %w", c.username, err)
 		}
