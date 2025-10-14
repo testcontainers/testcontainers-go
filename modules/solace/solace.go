@@ -58,7 +58,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithHostConfigModifier(func(hc *container.HostConfig) {
 			hc.ShmSize = settings.shmSize
 		}),
-		testcontainers.WithWaitStrategy(wait.ForAll(waitStrategies...)),
+		testcontainers.WithWaitStrategy(waitStrategies...),
 	}
 
 	moduleOpts = append(moduleOpts, opts...)

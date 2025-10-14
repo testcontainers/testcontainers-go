@@ -23,10 +23,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MockServerContainer, error) {
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts("1080/tcp"),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForLog("started on port: 1080"),
 			wait.ForListeningPort("1080/tcp").SkipInternalCheck(),
-		)),
+		),
 	}
 
 	moduleOpts = append(moduleOpts, opts...)

@@ -118,10 +118,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"LDAP_ROOT":           defaultRoot,
 		}),
 		testcontainers.WithExposedPorts("1389/tcp"),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForLog("** Starting slapd **"),
 			wait.ForListeningPort("1389/tcp"),
-		)),
+		),
 	}
 
 	moduleOpts = append(moduleOpts, opts...)

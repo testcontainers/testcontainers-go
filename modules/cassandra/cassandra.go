@@ -81,13 +81,13 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"CASSANDRA_ENDPOINT_SNITCH": "GossipingPropertyFileSnitch",
 			"CASSANDRA_DC":              "datacenter1",
 		}),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort(port),
 			wait.ForExec([]string{"cqlsh", "-e", "SELECT bootstrapped FROM system.local"}).WithResponseMatcher(func(body io.Reader) bool {
 				data, _ := io.ReadAll(body)
 				return strings.Contains(string(data), "COMPLETED")
 			}),
-		)),
+		),
 	}
 
 	moduleOpts = append(moduleOpts, opts...)

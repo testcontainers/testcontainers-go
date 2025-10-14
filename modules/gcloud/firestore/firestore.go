@@ -52,10 +52,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	// Build moduleOpts with defaults
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts(defaultPort),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort(defaultPort),
 			wait.ForLog("running"),
-		)),
+		),
 		testcontainers.WithCmd(
 			"/bin/sh",
 			"-c",

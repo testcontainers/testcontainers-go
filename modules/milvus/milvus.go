@@ -59,7 +59,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"DEPLOY_MODE":        "STANDALONE",
 		}),
 		testcontainers.WithCmd("milvus", "run", "standalone"),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForHTTP("/healthz").
 				WithPort(httpPort).
 				WithStartupTimeout(time.Minute).
@@ -68,7 +68,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				WithStartupTimeout(time.Minute),
 			wait.ForListeningPort(grpcPort).
 				WithStartupTimeout(time.Minute),
-		)),
+		),
 		testcontainers.WithFiles(testcontainers.ContainerFile{
 			ContainerFilePath: embedEtcdContainerPath,
 			Reader:            config,
