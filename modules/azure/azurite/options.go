@@ -32,11 +32,15 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 // WithEnabledServices is a custom option to specify which services should be enabled.
 func WithEnabledServices(services ...service) Option {
 	return func(o *options) error {
-		for _, s := range services {
-			switch s {
-			case blobService, queueService, tableService:
-			default:
-				return fmt.Errorf("unknown service: %s", s)
+		if len(services) == 0 {
+			services = []service{blobService, queueService, tableService}
+		} else {
+			for _, s := range services {
+				switch s {
+				case blobService, queueService, tableService:
+				default:
+					return fmt.Errorf("unknown service: %s", s)
+				}
 			}
 		}
 
