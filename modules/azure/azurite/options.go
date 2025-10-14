@@ -17,7 +17,7 @@ func defaultOptions() options {
 	}
 }
 
-// Satisfy the testcontainers.CustomizeRequestOption interface
+// Satisfy the testcontainers.ContainerCustomizer interface
 var _ testcontainers.ContainerCustomizer = (Option)(nil)
 
 // Option is an option for the Azurite container.
@@ -38,6 +38,7 @@ func WithEnabledServices(services ...service) Option {
 			for _, s := range services {
 				switch s {
 				case blobService, queueService, tableService:
+					// valid service, continue
 				default:
 					return fmt.Errorf("unknown service: %s", s)
 				}
