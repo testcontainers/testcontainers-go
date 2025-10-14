@@ -72,35 +72,50 @@ func (c *Container) serviceURL(ctx context.Context, srv service) (string, error)
 
 // Run creates an instance of the Azurite container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	moduleCmd := []string{}
-
-	moduleOpts := []testcontainers.ContainerCustomizer{
-		testcontainers.WithEntrypoint("azurite"),
-		testcontainers.WithExposedPorts(BlobPort, QueuePort, TablePort),
-	}
-
 	// 1. Gather all config options (defaults and then apply provided options)
 	settings := defaultOptions()
+	for _, opt := range opts {
+		if o, ok := opt.(Option); ok {
+			if err := o(&settings); err != nil {
+				return nil, fmt.Errorf("azurite option: %w", err)
+			}
+		}
+	}
+
+	entrypoint := "azurite"
+	if len(settings.EnabledServices) == 1 && settings.EnabledServices[0] != tableService {
+		// Use azurite-table in future once it matures. Graceful shutdown is currently very slow.
+		entrypoint = fmt.Sprintf("%s-%s", entrypoint, settings.EnabledServices[0])
+	}
+	moduleOpts := []testcontainers.ContainerCustomizer{testcontainers.WithEntrypoint(entrypoint)}
 
 	// 2. evaluate the enabled services to apply the right wait strategy and Cmd options
 	if len(settings.EnabledServices) > 0 {
+		cmd := make([]string, 0, len(settings.EnabledServices))
+		exposedPorts := make([]string, 0, len(settings.EnabledServices))
 		waitingFor := make([]wait.Strategy, 0, len(settings.EnabledServices))
 		for _, srv := range settings.EnabledServices {
 			switch srv {
 			case BlobService:
-				moduleCmd = append(moduleCmd, "--blobHost", "0.0.0.0")
+				cmd = append(cmd, "--blobHost", "0.0.0.0", "--blobPort", BlobPort)
+				exposedPorts = append(exposedPorts, BlobPort)
 				waitingFor = append(waitingFor, wait.ForListeningPort(BlobPort))
 			case QueueService:
-				moduleCmd = append(moduleCmd, "--queueHost", "0.0.0.0")
+				cmd = append(cmd, "--queueHost", "0.0.0.0", "--queuePort", QueuePort)
+				exposedPorts = append(exposedPorts, QueuePort)
 				waitingFor = append(waitingFor, wait.ForListeningPort(QueuePort))
 			case TableService:
-				moduleCmd = append(moduleCmd, "--tableHost", "0.0.0.0")
+				cmd = append(cmd, "--tableHost", "0.0.0.0", "--tablePort", TablePort)
+				exposedPorts = append(exposedPorts, TablePort)
 				waitingFor = append(waitingFor, wait.ForListeningPort(TablePort))
 			}
 		}
 
-		moduleOpts = append(moduleOpts, testcontainers.WithCmd(moduleCmd...))
-		moduleOpts = append(moduleOpts, testcontainers.WithWaitStrategy(waitingFor...))
+		moduleOpts = append(moduleOpts,
+			testcontainers.WithCmd(cmd...),
+			testcontainers.WithExposedPorts(exposedPorts...),
+			testcontainers.WithWaitStrategy(waitingFor...),
+		)
 	}
 
 	moduleOpts = append(moduleOpts, opts...)
