@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -900,5 +901,45 @@ func TestWithProvider(t *testing.T) {
 		opt := testcontainers.WithProvider(testcontainers.ProviderPodman)
 		require.NoError(t, opt.Customize(&req))
 		require.Equal(t, testcontainers.ProviderPodman, req.ProviderType)
+	})
+}
+
+func TestWithReadOnlyRootFilesystem(t *testing.T) {
+	t.Run("sets ReadonlyRootfs to true when no existing HostConfigModifier", func(t *testing.T) {
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: "alpine",
+			},
+		}
+
+		opt := testcontainers.WithReadOnlyRootFilesystem()
+		require.NoError(t, opt.Customize(req))
+		require.NotNil(t, req.HostConfigModifier)
+
+		// Test that the modifier sets ReadonlyRootfs to true
+		hostConfig := &container.HostConfig{}
+		req.HostConfigModifier(hostConfig)
+		require.True(t, hostConfig.ReadonlyRootfs)
+	})
+
+	t.Run("preserves existing HostConfigModifier and sets ReadonlyRootfs", func(t *testing.T) {
+		req := &testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: "alpine",
+				HostConfigModifier: func(hc *container.HostConfig) {
+					hc.Privileged = true
+				},
+			},
+		}
+
+		opt := testcontainers.WithReadOnlyRootFilesystem()
+		require.NoError(t, opt.Customize(req))
+		require.NotNil(t, req.HostConfigModifier)
+
+		// Test that the modifier preserves existing settings and sets ReadonlyRootfs
+		hostConfig := &container.HostConfig{}
+		req.HostConfigModifier(hostConfig)
+		require.True(t, hostConfig.Privileged)
+		require.True(t, hostConfig.ReadonlyRootfs)
 	})
 }
