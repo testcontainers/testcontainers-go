@@ -21,14 +21,14 @@ const (
 	transactionTopicEndpoint               = "/admin/v2/persistent/pulsar/system/transaction_coordinator_assign/partitions"
 )
 
-var defaultWaitStrategies = wait.ForAll(
+var defaultWaitStrategies = []wait.Strategy{
 	wait.ForHTTP("/admin/v2/clusters").WithPort(defaultPulsarAdminPort).WithResponseMatcher(func(r io.Reader) bool {
 		respBytes, _ := io.ReadAll(r)
 		resp := string(respBytes)
 		return resp == `["standalone"]`
 	}),
 	wait.ForLog("Successfully updated the policies on namespace public/default"),
-)
+}
 
 type Container struct {
 	testcontainers.Container
@@ -80,7 +80,7 @@ func WithFunctionsWorker() testcontainers.CustomizeRequestOption {
 			wait.ForLog("Function worker service started"),
 		}
 
-		ss = append(ss, defaultWaitStrategies.Strategies...)
+		ss = append(ss, defaultWaitStrategies...)
 
 		return testcontainers.WithWaitStrategy(ss...)(req)
 	}
@@ -120,7 +120,7 @@ func WithTransactions() testcontainers.CustomizeRequestOption {
 			}),
 		}
 
-		ss = append(ss, defaultWaitStrategies.Strategies...)
+		ss = append(ss, defaultWaitStrategies...)
 
 		return testcontainers.WithWaitStrategy(ss...)(req)
 	}
@@ -144,7 +144,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts(defaultPulsarPort, defaultPulsarAdminPort),
-		testcontainers.WithWaitStrategy(defaultWaitStrategies),
+		testcontainers.WithWaitStrategy(defaultWaitStrategies...),
 		testcontainers.WithCmd("/bin/bash", "-c", strings.Join([]string{defaultPulsarCmd, defaultPulsarCmdWithoutFunctionsWorker}, " ")),
 	}
 
