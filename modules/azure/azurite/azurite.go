@@ -102,7 +102,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				return nil, err
 			}
 
-			cmd = append(cmd, fmt.Sprintf("--%sHost", srv), "0.0.0.0", fmt.Sprintf("--%sPort", srv), string(port))
+			cmd = append(cmd, fmt.Sprintf("--%sHost", srv), "0.0.0.0", fmt.Sprintf("--%sPort", srv), port.Port())
 			exposedPorts = append(exposedPorts, string(port))
 			waitingFor = append(waitingFor, wait.ForListeningPort(port))
 		}
