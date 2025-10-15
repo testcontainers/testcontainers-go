@@ -23,7 +23,7 @@ func defaultOptions() options {
 	}
 }
 
-// Satisfy the testcontainers.CustomizeRequestOption interface
+// Satisfy the testcontainers.ContainerCustomizer interface
 var _ testcontainers.ContainerCustomizer = (Option)(nil)
 
 // Option is an option for the EventHubs container.

@@ -36,6 +36,32 @@ func TestAzurite_inMemoryPersistence(t *testing.T) {
 	})
 }
 
+func TestAzurite_enabledServices(t *testing.T) {
+	ctx := context.Background()
+
+	services := []azurite.Service{azurite.BlobService, azurite.QueueService, azurite.TableService, "invalid"}
+	for _, service := range services {
+		t.Run(string(service), func(t *testing.T) {
+			ctr, err := azurite.Run(ctx, "mcr.microsoft.com/azure-storage/azurite:3.33.0", azurite.WithInMemoryPersistence(0), azurite.WithEnabledServices(service))
+			testcontainers.CleanupContainer(t, ctr)
+			if service == "invalid" {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+
+			for _, srv := range services {
+				_, err = ctr.ServiceURL(ctx, srv)
+				if srv == service {
+					require.NoError(t, err)
+				} else {
+					require.Error(t, err)
+				}
+			}
+		})
+	}
+}
+
 func TestAzurite_serviceURL(t *testing.T) {
 	ctx := context.Background()
 
