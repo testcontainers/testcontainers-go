@@ -36,17 +36,17 @@ func WithEnabledServices(services ...Service) Option {
 			services = []Service{BlobService, QueueService, TableService}
 		} else {
 			seen := make(map[Service]bool, len(services))
-			for _, s := range services {
-				if seen[s] {
-					return fmt.Errorf("duplicate service: %s", s)
+			for _, srv := range services {
+				if seen[srv] {
+					return fmt.Errorf("duplicate service: %s", srv)
 				}
-				seen[s] = true
+				seen[srv] = true
 
-				switch s {
+				switch srv {
 				case BlobService, QueueService, TableService:
 					// valid service, continue
 				default:
-					return fmt.Errorf("unknown service: %s", s)
+					return fmt.Errorf("unknown service: %s", srv)
 				}
 			}
 		}
