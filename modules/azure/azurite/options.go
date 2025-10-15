@@ -8,12 +8,12 @@ import (
 
 type options struct {
 	// EnabledServices is a list of services that should be enabled
-	EnabledServices []service
+	EnabledServices []Service
 }
 
 func defaultOptions() options {
 	return options{
-		EnabledServices: []service{blobService, queueService, tableService},
+		EnabledServices: []Service{BlobService, QueueService, TableService},
 	}
 }
 
@@ -30,12 +30,12 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 }
 
 // WithEnabledServices is a custom option to specify which services should be enabled.
-func WithEnabledServices(services ...service) Option {
+func WithEnabledServices(services ...Service) Option {
 	return func(o *options) error {
 		if len(services) == 0 {
-			services = []service{blobService, queueService, tableService}
+			services = []Service{BlobService, QueueService, TableService}
 		} else {
-			seen := make(map[service]bool, len(services))
+			seen := make(map[Service]bool, len(services))
 			for _, s := range services {
 				if seen[s] {
 					return fmt.Errorf("duplicate service: %s", s)
@@ -43,7 +43,7 @@ func WithEnabledServices(services ...service) Option {
 				seen[s] = true
 
 				switch s {
-				case blobService, queueService, tableService:
+				case BlobService, QueueService, TableService:
 					// valid service, continue
 				default:
 					return fmt.Errorf("unknown service: %s", s)

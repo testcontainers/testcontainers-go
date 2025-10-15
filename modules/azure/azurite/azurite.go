@@ -33,7 +33,6 @@ type Container struct {
 	opts options
 }
 
-// Deprecated: Use [azure.BlobServiceURL], [azure.QueueServiceURL], or [azure.TableServiceURL] methods instead.
 // ServiceURL returns the URL of the given service
 func (c *Container) ServiceURL(ctx context.Context, srv Service) (string, error) {
 	return c.serviceURL(ctx, srv)
@@ -41,27 +40,27 @@ func (c *Container) ServiceURL(ctx context.Context, srv Service) (string, error)
 
 // BlobServiceURL returns the URL of the Blob service
 func (c *Container) BlobServiceURL(ctx context.Context) (string, error) {
-	return c.serviceURL(ctx, blobService)
+	return c.ServiceURL(ctx, BlobService)
 }
 
 // QueueServiceURL returns the URL of the Queue service
 func (c *Container) QueueServiceURL(ctx context.Context) (string, error) {
-	return c.serviceURL(ctx, queueService)
+	return c.ServiceURL(ctx, QueueService)
 }
 
 // TableServiceURL returns the URL of the Table service
 func (c *Container) TableServiceURL(ctx context.Context) (string, error) {
-	return c.serviceURL(ctx, tableService)
+	return c.ServiceURL(ctx, TableService)
 }
 
-func (c *Container) serviceURL(ctx context.Context, srv service) (string, error) {
+func (c *Container) serviceURL(ctx context.Context, srv Service) (string, error) {
 	var port nat.Port
 	switch srv {
-	case blobService:
+	case BlobService:
 		port = BlobPort
-	case queueService:
+	case QueueService:
 		port = QueuePort
-	case tableService:
+	case TableService:
 		port = TablePort
 	default:
 		return "", fmt.Errorf("unknown service: %s", srv)
@@ -83,7 +82,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	entrypoint := "azurite"
-	if len(settings.EnabledServices) == 1 && settings.EnabledServices[0] != tableService {
+	if len(settings.EnabledServices) == 1 && settings.EnabledServices[0] != TableService {
 		// Use azurite-table in future once it matures. Graceful shutdown is currently very slow.
 		entrypoint = fmt.Sprintf("%s-%s", entrypoint, settings.EnabledServices[0])
 	}
