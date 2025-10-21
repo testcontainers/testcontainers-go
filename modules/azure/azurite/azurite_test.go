@@ -39,15 +39,11 @@ func TestAzurite_inMemoryPersistence(t *testing.T) {
 func TestAzurite_enabledServices(t *testing.T) {
 	ctx := context.Background()
 
-	services := []azurite.Service{azurite.BlobService, azurite.QueueService, azurite.TableService, "invalid"}
+	services := []azurite.Service{azurite.BlobService, azurite.QueueService, azurite.TableService}
 	for _, service := range services {
 		t.Run(string(service), func(t *testing.T) {
-			ctr, err := azurite.Run(ctx, "mcr.microsoft.com/azure-storage/azurite:3.33.0", azurite.WithInMemoryPersistence(0), azurite.WithEnabledServices(service))
+			ctr, err := azurite.Run(ctx, "mcr.microsoft.com/azure-storage/azurite:3.33.0", azurite.WithEnabledServices(service))
 			testcontainers.CleanupContainer(t, ctr)
-			if service == "invalid" {
-				require.Error(t, err)
-				return
-			}
 			require.NoError(t, err)
 
 			for _, srv := range services {
@@ -60,6 +56,16 @@ func TestAzurite_enabledServices(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("unknown", func(t *testing.T) {
+		_, err := azurite.Run(ctx, "mcr.microsoft.com/azure-storage/azurite:3.33.0", azurite.WithEnabledServices("foo"))
+		require.EqualError(t, err, "azurite option: unknown service: foo")
+	})
+
+	t.Run("duplicate", func(t *testing.T) {
+		_, err := azurite.Run(ctx, "mcr.microsoft.com/azure-storage/azurite:3.33.0", azurite.WithEnabledServices(azurite.BlobService, azurite.BlobService))
+		require.EqualError(t, err, "azurite option: duplicate service: blob")
+	})
 }
 
 func TestAzurite_serviceURL(t *testing.T) {
