@@ -63,7 +63,7 @@ When starting the Azurite container, you can pass options in a variadic way to c
 
 #### WithEnabledServices
 
-- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.40.0"><span class="tc-version">:material-tag: v0.40.0</span></a>
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 The default Azurite container entrypoint runs all three storage services: blob, queue, and table. Use this option to specify the required services for fewer exposed ports and slightly reduced container resources. E.g. `azurite.WithEnabledServices(azurite.BlobService)`.
 
