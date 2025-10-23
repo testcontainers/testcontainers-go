@@ -11,7 +11,7 @@ import (
 )
 
 // ContainerPolicy ensures that the request always points to the container. It is required to
-// override globalEndpointManager of CosmosDD client, which dynamically updates the [http.Request.Host].
+// override globalEndpointManager of CosmosDB client, which dynamically updates the [http.Request.Host].
 type ContainerPolicy struct {
 	endpoint string
 }
