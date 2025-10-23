@@ -54,6 +54,10 @@
             "path": "../modules/consul"
         },
         {
+            "name": "module / cosmosdb",
+            "path": "../modules/cosmosdb"
+        },
+        {
             "name": "module / couchbase",
             "path": "../modules/couchbase"
         },
