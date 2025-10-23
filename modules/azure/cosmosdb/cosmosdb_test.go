@@ -7,9 +7,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 	"github.com/stretchr/testify/require"
-
+	
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/cosmosdb"
+	"github.com/testcontainers/testcontainers-go/modules/azure/cosmosdb"
 )
 
 func TestCosmosDB(t *testing.T) {

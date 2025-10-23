@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/cosmosdb
 ## Usage example
 
 <!--codeinclude-->
-[Creating a CosmosDB container](../../modules/cosmosdb/examples_test.go) inside_block:ExampleRun
+[Creating a CosmosDB container](../../modules/azure/cosmosdb/examples_test.go) inside_block:ExampleRun
 <!--/codeinclude-->
 
 ## Module Reference

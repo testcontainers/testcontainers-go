@@ -7,8 +7,9 @@ import (
 	"net/http"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
+
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/cosmosdb"
+	"github.com/testcontainers/testcontainers-go/modules/azure/cosmosdb"
 )
 
 func ExampleRun() {
