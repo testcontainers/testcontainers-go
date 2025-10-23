@@ -77,7 +77,6 @@ nav:
         - modules/clickhouse.md
         - modules/cockroachdb.md
         - modules/consul.md
-        - modules/cosmosdb.md
         - modules/couchbase.md
         - modules/databend.md
         - modules/dind.md

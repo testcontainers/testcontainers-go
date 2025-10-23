@@ -26,7 +26,6 @@ updates:
         - /modules/cockroachdb
         - /modules/compose
         - /modules/consul
-        - /modules/cosmosdb
         - /modules/couchbase
         - /modules/databend
         - /modules/dind
