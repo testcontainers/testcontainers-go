@@ -34,14 +34,7 @@ func (c *Container) URI() string {
 // Run creates an instance of the Firestore GCloud container type.
 // The URI uses the empty string as the protocol.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
-		testcontainers.WithExposedPorts(defaultPort),
-		testcontainers.WithWaitStrategy(wait.ForAll(
-			wait.ForListeningPort(defaultPort),
-			wait.ForLog("running"),
-		)),
-	}
-
+	// Process custom options first to extract settings
 	settings := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
@@ -56,12 +49,21 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		gcloudParameters += " --database-mode=datastore-mode"
 	}
 
-	moduleOpts = append(moduleOpts, testcontainers.WithCmd(
-		"/bin/sh",
-		"-c",
-		"gcloud beta emulators firestore start --host-port 0.0.0.0:"+defaultPortNumber+" "+gcloudParameters,
-	))
+	// Build moduleOpts with defaults
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultPort),
+		testcontainers.WithWaitStrategy(
+			wait.ForListeningPort(defaultPort),
+			wait.ForLog("running"),
+		),
+		testcontainers.WithCmd(
+			"/bin/sh",
+			"-c",
+			"gcloud beta emulators firestore start --host-port 0.0.0.0:"+defaultPortNumber+" "+gcloudParameters,
+		),
+	}
 
+	// Append user options
 	moduleOpts = append(moduleOpts, opts...)
 
 	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)

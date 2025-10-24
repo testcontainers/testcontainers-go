@@ -36,7 +36,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	moduleOpts := []testcontainers.ContainerCustomizer{ // Set the defaults
 		testcontainers.WithExposedPorts(defaultPort),
-		testcontainers.WithWaitStrategy(wait.ForAll(wait.ForListeningPort(defaultPort), wait.ForHealthCheck())),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort(defaultPort), wait.ForHealthCheck()),
 		testcontainers.WithEnv(userOpts.env()),
 		testcontainers.WithFiles(userOpts.files...),
 	}

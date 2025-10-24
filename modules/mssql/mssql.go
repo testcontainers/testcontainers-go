@@ -114,10 +114,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithEnv(map[string]string{
 			"MSSQL_SA_PASSWORD": defaultPassword,
 		}),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort(defaultPort).WithStartupTimeout(time.Minute),
 			wait.ForLog("Recovery is complete."),
-		)),
+		),
 	}
 
 	moduleOpts = append(moduleOpts, opts...)

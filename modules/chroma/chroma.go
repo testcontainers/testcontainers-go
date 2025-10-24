@@ -23,13 +23,13 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ChromaContainer, error) {
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts("8000/tcp"),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort("8000/tcp"),
 			wait.ForLog("Application startup complete"),
 			wait.ForHTTP("/api/v1/heartbeat").WithStatusCodeMatcher(func(status int) bool {
 				return status == 200
 			}),
-		)),
+		),
 	}
 
 	moduleOpts = append(moduleOpts, opts...)

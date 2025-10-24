@@ -89,6 +89,7 @@ readonly excluded_files=(
     "scripts/bump-*.sh"
     "scripts/check_environment.sh"
     "scripts/*release.sh"
+    "AI.md"
     "CONTRIBUTING.md"
     "LICENSE"
     "mkdocs.yml"

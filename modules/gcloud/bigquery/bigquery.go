@@ -43,12 +43,12 @@ func (c *Container) URI() string {
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts(defaultPort9050, defaultPort9060),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort(defaultPort9050),
 			wait.ForHTTP("/discovery/v1/apis/bigquery/v2/rest").WithPort(defaultPort9050).WithStatusCodeMatcher(func(status int) bool {
 				return status == 200
 			}).WithStartupTimeout(time.Second*5),
-		)),
+		),
 	}
 
 	settings := defaultOptions()
