@@ -74,11 +74,13 @@ func ExampleRun_connectMCPClient() {
 	// }
 
 	// connect_mcp_client {
-	transport := mcp.NewSSEClientTransport(gatewayEndpoint, nil)
+	transport := &mcp.SSEClientTransport{
+		Endpoint: gatewayEndpoint,
+	}
 
 	client := mcp.NewClient(&mcp.Implementation{Name: "mcp-client", Version: "v1.0.0"}, nil)
 
-	cs, err := client.Connect(context.Background(), transport)
+	cs, err := client.Connect(context.Background(), transport, nil)
 	if err != nil {
 		log.Printf("Failed to connect to MCP gateway: %v", err)
 		return
