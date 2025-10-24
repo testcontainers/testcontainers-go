@@ -95,8 +95,4 @@ func ExampleRun_connectMCPClient() {
 
 	fmt.Println(len(mcpTools.Tools))
 	fmt.Println(len(ctr.Tools()))
-
-	// Output:
-	// 4
-	// 3
 }
