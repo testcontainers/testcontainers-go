@@ -513,14 +513,13 @@ func (c *DockerContainer) ContainerIP(ctx context.Context) (string, error) {
 
 // ContainerIPs gets the IP addresses of all the networks within the container.
 func (c *DockerContainer) ContainerIPs(ctx context.Context) ([]string, error) {
-	ips := make([]string, 0)
-
 	inspect, err := c.Inspect(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	networks := inspect.NetworkSettings.Networks
+	ips := make([]string, 0, len(networks))
 	for _, nw := range networks {
 		ips = append(ips, nw.IPAddress)
 	}

@@ -17,6 +17,7 @@ linters:
     - nakedret
     - nolintlint
     - perfsprint
+    - prealloc
     - revive
     - testifylint
     - thelper
