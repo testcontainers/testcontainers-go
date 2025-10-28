@@ -66,7 +66,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 // Run creates an instance of the Couchbase container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*CouchbaseContainer, error) {
 	config := &Config{
-		enabledServices:  make([]Service, 0),
+		enabledServices:  []Service{},
 		username:         "Administrator",
 		password:         "password",
 		indexStorageMode: MemoryOptimized,
