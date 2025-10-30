@@ -23,7 +23,7 @@ type Logger interface {
 var defaultLogger Logger = log.New(os.Stderr, "", log.LstdFlags)
 
 func init() {
-	// Enable default logger in the testing with a verbose flag.
+	// Disable default logger in testing mode if explicitly disabled via -test.v=false.
 	if testing.Testing() {
 		// Disable logging if explicitly disabled via -test.v=false
 		for _, arg := range os.Args {
