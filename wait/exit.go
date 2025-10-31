@@ -59,6 +59,10 @@ func (ws *ExitStrategy) Timeout() *time.Duration {
 	return ws.timeout
 }
 
+func (ws *ExitStrategy) String() string {
+	return "container to exit"
+}
+
 // WaitUntilReady implements Strategy.WaitUntilReady
 func (ws *ExitStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) error {
 	if ws.timeout != nil {

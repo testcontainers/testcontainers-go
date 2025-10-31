@@ -3,7 +3,9 @@ package wait
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -49,6 +51,30 @@ func ForAll(strategies ...Strategy) *MultiStrategy {
 
 func (ms *MultiStrategy) Timeout() *time.Duration {
 	return ms.timeout
+}
+
+func (ms *MultiStrategy) String() string {
+	if len(ms.Strategies) == 0 {
+		return "all of: (none)"
+	}
+
+	var strategies []string
+	for _, strategy := range ms.Strategies {
+		if strategy == nil || reflect.ValueOf(strategy).IsNil() {
+			continue
+		}
+		if s, ok := strategy.(fmt.Stringer); ok {
+			strategies = append(strategies, s.String())
+		} else {
+			strategies = append(strategies, fmt.Sprintf("%T", strategy))
+		}
+	}
+
+	if len(strategies) == 1 {
+		return strategies[0]
+	}
+
+	return "all of: [" + strings.Join(strategies, ", ") + "]"
 }
 
 func (ms *MultiStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) error {

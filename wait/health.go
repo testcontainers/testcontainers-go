@@ -60,6 +60,10 @@ func (ws *HealthStrategy) Timeout() *time.Duration {
 	return ws.timeout
 }
 
+func (ws *HealthStrategy) String() string {
+	return "container to become healthy"
+}
+
 // WaitUntilReady implements Strategy.WaitUntilReady
 func (ws *HealthStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) error {
 	timeout := defaultStartupTimeout()

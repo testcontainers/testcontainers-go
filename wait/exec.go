@@ -2,6 +2,7 @@ package wait
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"time"
 
@@ -74,6 +75,10 @@ func ForExec(cmd []string) *ExecStrategy {
 
 func (ws *ExecStrategy) Timeout() *time.Duration {
 	return ws.timeout
+}
+
+func (ws *ExecStrategy) String() string {
+	return fmt.Sprintf("exec command %v", ws.cmd)
 }
 
 func (ws *ExecStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) error {

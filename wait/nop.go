@@ -33,6 +33,10 @@ func (ws *NopStrategy) Timeout() *time.Duration {
 	return ws.timeout
 }
 
+func (ws *NopStrategy) String() string {
+	return "custom wait condition"
+}
+
 func (ws *NopStrategy) WithStartupTimeout(timeout time.Duration) *NopStrategy {
 	ws.timeout = &timeout
 	return ws
