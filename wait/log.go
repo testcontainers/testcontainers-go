@@ -123,6 +123,7 @@ func (ws *LogStrategy) Timeout() *time.Duration {
 	return ws.timeout
 }
 
+// String returns a human-readable description of the wait strategy.
 func (ws *LogStrategy) String() string {
 	logType := "log message"
 	if ws.IsRegexp {

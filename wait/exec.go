@@ -77,6 +77,7 @@ func (ws *ExecStrategy) Timeout() *time.Duration {
 	return ws.timeout
 }
 
+// String returns a human-readable description of the wait strategy.
 func (ws *ExecStrategy) String() string {
 	if len(ws.cmd) == 0 {
 		return "exec command"

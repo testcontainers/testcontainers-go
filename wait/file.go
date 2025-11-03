@@ -61,6 +61,7 @@ func (ws *FileStrategy) Timeout() *time.Duration {
 	return ws.timeout
 }
 
+// String returns a human-readable description of the wait strategy.
 func (ws *FileStrategy) String() string {
 	if ws.matcher != nil {
 		return fmt.Sprintf("file %q to exist and match condition", ws.file)

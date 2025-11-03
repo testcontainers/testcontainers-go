@@ -61,6 +61,7 @@ func (w *waitForSQL) Timeout() *time.Duration {
 	return w.timeout
 }
 
+// String returns a human-readable description of the wait strategy.
 func (w *waitForSQL) String() string {
 	port := "default"
 	if w.Port != "" {

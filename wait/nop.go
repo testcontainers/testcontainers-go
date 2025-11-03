@@ -33,6 +33,7 @@ func (ws *NopStrategy) Timeout() *time.Duration {
 	return ws.timeout
 }
 
+// String returns a human-readable description of the wait strategy.
 func (ws *NopStrategy) String() string {
 	return "custom wait condition"
 }

@@ -60,6 +60,7 @@ func (ws *HealthStrategy) Timeout() *time.Duration {
 	return ws.timeout
 }
 
+// String returns a human-readable description of the wait strategy.
 func (ws *HealthStrategy) String() string {
 	return "container to become healthy"
 }

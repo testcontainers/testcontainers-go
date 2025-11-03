@@ -100,6 +100,7 @@ func (ws *TLSStrategy) TLSConfig() *tls.Config {
 	return ws.tlsConfig
 }
 
+// String returns a human-readable description of the wait strategy.
 func (ws *TLSStrategy) String() string {
 	var parts []string
 

@@ -114,6 +114,7 @@ func (hp *HostPortStrategy) Timeout() *time.Duration {
 	return hp.timeout
 }
 
+// String returns a human-readable description of the wait strategy.
 func (hp *HostPortStrategy) String() string {
 	port := "first exposed port"
 	if hp.Port != "" {

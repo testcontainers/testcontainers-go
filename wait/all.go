@@ -53,6 +53,7 @@ func (ms *MultiStrategy) Timeout() *time.Duration {
 	return ms.timeout
 }
 
+// String returns a human-readable description of the wait strategy.
 func (ms *MultiStrategy) String() string {
 	if len(ms.Strategies) == 0 {
 		return "all of: (none)"
