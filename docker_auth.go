@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/cpuguy83/dockercfg"
@@ -41,6 +42,11 @@ func DockerImageAuth(ctx context.Context, image string) (string, registry.AuthCo
 func dockerImageAuth(ctx context.Context, image string, configs map[string]registry.AuthConfig) (string, registry.AuthConfig, error) {
 	defaultRegistry := defaultRegistryFn(ctx)
 	reg := core.ExtractRegistry(image, defaultRegistry)
+
+	// Make comparison case-insensitive and handle both aliases
+	if strings.EqualFold(reg, "docker.io") || strings.EqualFold(reg, "registry.hub.docker.com") {
+		reg = defaultRegistry
+	}
 
 	if cfg, ok := getRegistryAuth(reg, configs); ok {
 		return reg, cfg, nil
