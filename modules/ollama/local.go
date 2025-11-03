@@ -461,6 +461,7 @@ func (c *localProcess) Inspect(ctx context.Context) (*container.InspectResponse,
 					},
 				},
 			},
+			//nolint:staticcheck // SA1019: DefaultNetworkSettings is deprecated, but we need it for compatibility until v29
 			DefaultNetworkSettings: container.DefaultNetworkSettings{
 				IPAddress: c.host,
 			},
