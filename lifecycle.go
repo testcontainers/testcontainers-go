@@ -224,7 +224,10 @@ var defaultReadinessHook = func() ContainerLifecycleHooks {
 					if s, ok := strategy.(fmt.Stringer); ok {
 						strategyDesc = s.String()
 					}
-					dockerContainer.logger.Printf("Waiting for container to be ready", "containerID", dockerContainer.ID[:12], "image", dockerContainer.Image, "strategy", strategyDesc)
+					dockerContainer.logger.Printf(
+						"⏳ Waiting for container id %s image: %s. Waiting for: %+v",
+						dockerContainer.ID[:12], dockerContainer.Image, strategyDesc,
+					)
 					if err := strategy.WaitUntilReady(ctx, dockerContainer); err != nil {
 						return fmt.Errorf("wait until ready: %w", err)
 					}
