@@ -78,7 +78,13 @@ func (ws *ExecStrategy) Timeout() *time.Duration {
 }
 
 func (ws *ExecStrategy) String() string {
-	return fmt.Sprintf("exec command %v", ws.cmd)
+	if len(ws.cmd) == 0 {
+		return "exec command"
+	}
+	if len(ws.cmd) == 1 {
+		return fmt.Sprintf("exec command %q", ws.cmd[0])
+	}
+	return fmt.Sprintf("exec command %q with %d arguments", ws.cmd[0], len(ws.cmd)-1)
 }
 
 func (ws *ExecStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) error {
