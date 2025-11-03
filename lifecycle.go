@@ -13,6 +13,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
 
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/log"
 )
 
@@ -525,12 +526,9 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 	exposedPorts := req.ExposedPorts
 	// this check must be done after the pre-creation Modifiers are called, so the network mode is already set
 	if len(exposedPorts) == 0 && !hostConfig.NetworkMode.IsContainer() {
-		image, err := p.client.ImageInspect(ctx, dockerInput.Image)
-		if err != nil {
-			return err
-		}
-		for p := range image.Config.ExposedPorts {
-			exposedPorts = append(exposedPorts, string(p))
+		// Only expose the ports defined in the image if configured in the Testcontainers properties file.
+		if config.Read().AutoExposePorts {
+			hostConfig.PublishAllPorts = true
 		}
 	}
 
