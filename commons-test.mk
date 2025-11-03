@@ -41,6 +41,7 @@ test-%: $(GOBIN)/gotestsum
 	@echo "Running $* tests..."
 	gotestsum \
 		--format short-verbose \
+		--rerun-fails=5 \
 		--packages="./..." \
 		--junitfile TEST-unit.xml \
 		-- \
