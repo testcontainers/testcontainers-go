@@ -70,10 +70,8 @@ func (ms *MultiStrategy) String() string {
 		}
 	}
 
-	if len(strategies) == 1 {
-		return strategies[0]
-	}
-
+	// Always include "all of:" prefix to make it clear this is a MultiStrategy
+	// even when there's only one strategy after filtering out nils
 	return "all of: [" + strings.Join(strategies, ", ") + "]"
 }
 
