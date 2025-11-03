@@ -100,6 +100,11 @@ func ExtractRegistry(image string, fallback string) string {
 
 	registry := exp[1]
 
+	// Make comparison case-insensitive and handle both aliases
+	if strings.EqualFold(registry, "docker.io") || strings.EqualFold(registry, "registry.hub.docker.com") {
+		return fallback
+	}
+
 	if IsURL(registry) {
 		return registry
 	}
