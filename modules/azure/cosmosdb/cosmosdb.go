@@ -56,6 +56,8 @@ func (c *Container) ConnectionString(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("port endpoint: %w", err)
 	}
 
+	// Well-known key for Azure Cosmos DB Emulator
+	// See: https://learn.microsoft.com/azure/cosmos-db/emulator
 	const testAccKey = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
 	return fmt.Sprintf("AccountEndpoint=%s;AccountKey=%s;", endpoint, testAccKey), nil
 }
