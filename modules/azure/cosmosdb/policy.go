@@ -20,7 +20,7 @@ type ContainerPolicy struct {
 func NewContainerPolicy(ctx context.Context, c *Container) (*ContainerPolicy, error) {
 	endpoint, err := c.PortEndpoint(ctx, defaultPort, "")
 	if err != nil {
-		return nil, fmt.Errorf("port endpoint: %v", err)
+		return nil, fmt.Errorf("port endpoint: %w", err)
 	}
 
 	return &ContainerPolicy{
