@@ -613,6 +613,18 @@ func mergePortBindings(configPortMap, exposedPortMap nat.PortMap, exposedPorts [
 			exposedPortMap[k] = v
 		}
 	}
+
+	// Fix: Ensure that ports with empty HostPort get "0" for automatic allocation
+	// This fixes the UDP port binding issue where ports were getting HostPort:0 instead of being allocated
+	for k, v := range exposedPortMap {
+		for i := range v {
+			if v[i].HostPort == "" {
+				v[i].HostPort = "0" // Tell Docker to allocate a random port
+			}
+		}
+		exposedPortMap[k] = v
+	}
+
 	return exposedPortMap
 }
 
