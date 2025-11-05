@@ -27,9 +27,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithExposedPorts(defaultPort),
 		testcontainers.WithCmdArgs("--enable-explorer", "false"),
 		testcontainers.WithWaitStrategy(
-			wait.ForAll(wait.ForAll(
+			wait.ForAll(
 				wait.ForLog("Started"),
-				wait.ForListeningPort(nat.Port(defaultPort))),
+				wait.ForListeningPort(nat.Port(defaultPort)),
 			),
 		),
 	}
