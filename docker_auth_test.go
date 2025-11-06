@@ -198,7 +198,7 @@ func TestBuildContainerFromDockerfileWithDockerAuthConfig(t *testing.T) {
 	// using the same credentials as in the Docker Registry
 	setAuthConfig(t, registryHost, "testuser", "testpassword")
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	redisC, err := Run(ctx, "",
 		WithDockerfile(FromDockerfile{
@@ -223,7 +223,7 @@ func TestBuildContainerFromDockerfileShouldFailWithWrongDockerAuthConfig(t *test
 	// using different credentials than in the Docker Registry
 	setAuthConfig(t, registryHost, "foo", "bar")
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	redisC, err := Run(ctx, "",
 		WithDockerfile(FromDockerfile{
@@ -247,7 +247,7 @@ func TestCreateContainerFromPrivateRegistry(t *testing.T) {
 	// using the same credentials as in the Docker Registry
 	setAuthConfig(t, registryHost, "testuser", "testpassword")
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	redisContainer, err := Run(ctx, registryHost+"/redis:5.0-alpine", WithAlwaysPull(), WithExposedPorts("6379/tcp"), WithWaitStrategy(wait.ForLog("Ready to accept connections")))
 	CleanupContainer(t, redisContainer)
@@ -256,7 +256,7 @@ func TestCreateContainerFromPrivateRegistry(t *testing.T) {
 
 func prepareLocalRegistryWithAuth(t *testing.T) string {
 	t.Helper()
-	ctx := context.Background()
+	ctx := t.Context()
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 	// copyDirectoryToContainer {
@@ -338,8 +338,10 @@ func localAddress(t *testing.T) string {
 	if os.Getenv("WSL_DISTRO_NAME") == "" {
 		return "localhost"
 	}
+	ctx := context.Background()
 
-	conn, err := net.Dial("udp", "golang.org:80")
+	d := &net.Dialer{}
+	conn, err := d.DialContext(ctx, "udp", "golang.org:80")
 	require.NoError(t, err)
 	defer conn.Close()
 
