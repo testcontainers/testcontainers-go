@@ -12,7 +12,7 @@ require (
 	github.com/aws/smithy-go v1.22.1
 	github.com/gocql/gocql v1.7.0
 	github.com/stretchr/testify v1.11.1
-	github.com/testcontainers/testcontainers-go v0.39.0
+	github.com/testcontainers/testcontainers-go v0.40.0
 )
 
 require (

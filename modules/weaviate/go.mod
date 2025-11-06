@@ -6,7 +6,7 @@ toolchain go1.24.7
 
 require (
 	github.com/stretchr/testify v1.11.1
-	github.com/testcontainers/testcontainers-go v0.39.0
+	github.com/testcontainers/testcontainers-go v0.40.0
 	github.com/weaviate/weaviate-go-client/v5 v5.0.2
 	google.golang.org/grpc v1.69.4
 )

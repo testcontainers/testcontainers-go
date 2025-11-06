@@ -9,7 +9,7 @@ require (
 	github.com/couchbase/gocb/v2 v2.7.2
 	github.com/docker/go-connections v0.6.0
 	github.com/stretchr/testify v1.11.1
-	github.com/testcontainers/testcontainers-go v0.39.0
+	github.com/testcontainers/testcontainers-go v0.40.0
 	github.com/tidwall/gjson v1.17.1
 )
 

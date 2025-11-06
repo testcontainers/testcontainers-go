@@ -7,7 +7,7 @@ toolchain go1.24.7
 require (
 	github.com/elastic/go-elasticsearch/v8 v8.12.1
 	github.com/stretchr/testify v1.11.1
-	github.com/testcontainers/testcontainers-go v0.39.0
+	github.com/testcontainers/testcontainers-go v0.40.0
 	golang.org/x/mod v0.16.0
 )
 

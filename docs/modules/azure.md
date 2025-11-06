@@ -63,7 +63,7 @@ When starting the Azurite container, you can pass options in a variadic way to c
 
 #### WithEnabledServices
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.40.0"><span class="tc-version">:material-tag: v0.40.0</span></a>
 
 The default Azurite container entrypoint runs all three storage services: blob, queue, and table. Use this option to specify the required services for fewer exposed ports and slightly reduced container resources. E.g. `azurite.WithEnabledServices(azurite.BlobService)`.
 
@@ -313,7 +313,7 @@ In the following example, inspired by the [Azure Event Hubs Go SDK](https://lear
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.40.0"><span class="tc-version">:material-tag: v0.40.0</span></a>
 
 The CosmosDB module exposes one entrypoint function to create the CosmosDB container, and this function receives three parameters:
 
@@ -342,7 +342,7 @@ The CosmosDB container exposes the following methods:
 
 #### ConnectionString
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.40.0"><span class="tc-version">:material-tag: v0.40.0</span></a>
 
 Returns the connection string to connect to the CosmosDB container and an error, passing the Go context as parameter.
 

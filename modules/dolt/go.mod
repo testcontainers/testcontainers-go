@@ -7,7 +7,7 @@ toolchain go1.24.7
 require (
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/stretchr/testify v1.11.1
-	github.com/testcontainers/testcontainers-go v0.39.0
+	github.com/testcontainers/testcontainers-go v0.40.0
 )
 
 require (
