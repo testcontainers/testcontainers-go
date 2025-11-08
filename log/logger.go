@@ -22,13 +22,17 @@ type Logger interface {
 // defaultLogger would print available information to stderr
 var defaultLogger Logger = log.New(os.Stderr, "", log.LstdFlags)
 
+func NewNoopLogger() Logger {
+	return &noopLogger{}
+}
+
 func init() {
 	// Disable default logger in testing mode if explicitly disabled via -test.v=false.
 	if testing.Testing() {
 		// Disable logging if explicitly disabled via -test.v=false
 		for _, arg := range os.Args {
 			if strings.EqualFold(arg, "-test.v=false") {
-				defaultLogger = &noopLogger{}
+				defaultLogger = NewNoopLogger()
 				break
 			}
 		}
