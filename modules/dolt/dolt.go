@@ -27,7 +27,14 @@ type DoltContainer struct {
 	database string
 }
 
+// Deprecated: this function will be removed in the next major release.
 func WithDefaultCredentials() testcontainers.CustomizeRequestOption {
+	return withDefaultCredentials()
+}
+
+// withDefaultCredentials is the function that applies the default credentials to the container request.
+// In case the provided username is the root user, the credentials will be removed.
+func withDefaultCredentials() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		username := req.Env["DOLT_USER"]
 		if strings.EqualFold(rootUser, username) {
@@ -47,54 +54,57 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Dolt container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*DoltContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("3306/tcp", "33060/tcp"),
+		testcontainers.WithEnv(map[string]string{
 			"DOLT_USER":     defaultUser,
 			"DOLT_PASSWORD": defaultPassword,
 			"DOLT_DATABASE": defaultDatabaseName,
-		},
-		WaitingFor: wait.ForLog("Server ready. Accepting connections."),
+		}),
+		testcontainers.WithWaitStrategy(wait.ForLog("Server ready. Accepting connections.")),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
+	moduleOpts = append(moduleOpts, opts...)
+	moduleOpts = append(moduleOpts, WithDefaultCredentials())
+
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
+	var dc *DoltContainer
+	if ctr != nil {
+		dc = &DoltContainer{Container: ctr, username: defaultUser, password: defaultPassword, database: defaultDatabaseName}
+	}
+	if err != nil {
+		return dc, fmt.Errorf("run dolt: %w", err)
 	}
 
-	opts = append(opts, WithDefaultCredentials())
+	// refresh the credentials from the environment variables
+	inspect, err := ctr.Inspect(ctx)
+	if err != nil {
+		return dc, fmt.Errorf("inspect dolt: %w", err)
+	}
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
+	foundUser := false
+	for _, env := range inspect.Config.Env {
+		if v, ok := strings.CutPrefix(env, "DOLT_USER="); ok {
+			dc.username, foundUser = v, true
+		}
+		if v, ok := strings.CutPrefix(env, "DOLT_PASSWORD="); ok {
+			dc.password = v
+		}
+		if v, ok := strings.CutPrefix(env, "DOLT_DATABASE="); ok {
+			dc.database = v
 		}
 	}
 
 	createUser := true
-	username, ok := req.Env["DOLT_USER"]
-	if !ok {
-		username = rootUser
+	if !foundUser {
+		// withCredentials found the root user
+		dc.username = rootUser
+		dc.password = ""
 		createUser = false
 	}
-	password := req.Env["DOLT_PASSWORD"]
 
-	database := req.Env["DOLT_DATABASE"]
-	if database == "" {
-		database = defaultDatabaseName
-	}
-
-	if len(password) == 0 && password == "" && !strings.EqualFold(rootUser, username) {
+	if len(dc.password) == 0 && dc.password == "" && !strings.EqualFold(rootUser, dc.username) {
 		return nil, errors.New("empty password can be used only with the root user")
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	var dc *DoltContainer
-	if container != nil {
-		dc = &DoltContainer{Container: container, username: username, password: password, database: database}
-	}
-	if err != nil {
-		return dc, err
 	}
 
 	// dolthub/dolt-sql-server does not create user or database, so we do so here
@@ -249,7 +259,7 @@ func WithCredsFile(credsFile string) testcontainers.CustomizeRequestOption {
 
 func WithScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		var initScripts []testcontainers.ContainerFile
+		initScripts := make([]testcontainers.ContainerFile, 0, len(scripts))
 		for _, script := range scripts {
 			cf := testcontainers.ContainerFile{
 				HostFilePath:      script,

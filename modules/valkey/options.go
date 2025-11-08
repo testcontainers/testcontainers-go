@@ -18,7 +18,7 @@ type options struct {
 // Compiler check to ensure that Option implements the testcontainers.ContainerCustomizer interface.
 var _ testcontainers.ContainerCustomizer = (Option)(nil)
 
-// Option is an option for the Redpanda container.
+// Option is an option for the Valkey container.
 type Option func(*options) error
 
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.

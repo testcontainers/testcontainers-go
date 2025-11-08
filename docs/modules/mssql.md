@@ -14,6 +14,23 @@ Please run the following command to add the MS SQL Server module to your Go depe
 go get github.com/testcontainers/testcontainers-go/modules/mssql
 ```
 
+!!!info
+    To use this module with Go 1.23+, set `GODEBUG=x509negativeserial=1`. See the related issue in the [mssql-docker repository](https://github.com/microsoft/mssql-docker/issues/895) for details.
+    
+    ```shell
+    # append to any existing GODEBUG flags instead of overwriting
+    export GODEBUG="${GODEBUG:+$GODEBUG,}x509negativeserial=1"
+    ```
+This occurs because:
+- Go 1.23+ has stricter certificate validation that rejects certificates with negative serial numbers by default
+- The `x509negativeserial=1` flag temporarily re‑enables acceptance of such certificates
+Note: This stricter check in Go 1.23+ is a security hardening. Prefer using images with fixed certificates (see below). Use the GODEBUG workaround only with affected images and in test environments.
+
+!!!info
+    This is fixed in SQL2019 CU32 and SQL2022 CU18 (see [SQL Server 2022 CU18 — KB 3867855](https://learn.microsoft.com/en-us/troubleshoot/sql/releases/sqlserver-2022/cumulativeupdate18#3867855)).
+    
+    Prefer using container images based on these (or newer) CUs to avoid setting `GODEBUG`.
+
 ## Usage example
 
 <!--codeinclude-->

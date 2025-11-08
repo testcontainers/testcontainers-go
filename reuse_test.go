@@ -14,17 +14,12 @@ import (
 func TestGenericContainer_stop_start_withReuse(t *testing.T) {
 	containerName := "my-nginx"
 
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        nginxAlpineImage,
-			ExposedPorts: []string{"8080/tcp"},
-			Name:         containerName,
-		},
-		Reuse:   true,
-		Started: true,
+	opts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("8080/tcp"),
+		testcontainers.WithReuseByName(containerName),
 	}
 
-	ctr, err := testcontainers.GenericContainer(context.Background(), req)
+	ctr, err := testcontainers.Run(context.Background(), nginxAlpineImage, opts...)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 	require.NotNil(t, ctr)
@@ -34,7 +29,7 @@ func TestGenericContainer_stop_start_withReuse(t *testing.T) {
 
 	// Run another container with same container name:
 	// The checks for the exposed ports must not fail when restarting the container.
-	ctr1, err := testcontainers.GenericContainer(context.Background(), req)
+	ctr1, err := testcontainers.Run(context.Background(), nginxAlpineImage, opts...)
 	testcontainers.CleanupContainer(t, ctr1)
 	require.NoError(t, err)
 	require.NotNil(t, ctr1)
@@ -43,17 +38,12 @@ func TestGenericContainer_stop_start_withReuse(t *testing.T) {
 func TestGenericContainer_pause_start_withReuse(t *testing.T) {
 	containerName := "my-nginx"
 
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        nginxAlpineImage,
-			ExposedPorts: []string{"8080/tcp"},
-			Name:         containerName,
-		},
-		Reuse:   true,
-		Started: true,
+	opts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("8080/tcp"),
+		testcontainers.WithReuseByName(containerName),
 	}
 
-	ctr, err := testcontainers.GenericContainer(context.Background(), req)
+	ctr, err := testcontainers.Run(context.Background(), nginxAlpineImage, opts...)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 	require.NotNil(t, ctr)
@@ -67,7 +57,7 @@ func TestGenericContainer_pause_start_withReuse(t *testing.T) {
 	require.NoError(t, err)
 
 	// Because the container is paused, it should not be possible to start it again.
-	ctr1, err := testcontainers.GenericContainer(context.Background(), req)
+	ctr1, err := testcontainers.Run(context.Background(), nginxAlpineImage, opts...)
 	testcontainers.CleanupContainer(t, ctr1)
 	require.ErrorIs(t, err, errors.ErrUnsupported)
 }
