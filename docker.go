@@ -497,6 +497,7 @@ func (c *DockerContainer) ContainerIP(ctx context.Context) (string, error) {
 		return "", err
 	}
 
+	//nolint:staticcheck // SA1019: IPAddress is deprecated, but we need it for compatibility until v29
 	ip := inspect.NetworkSettings.IPAddress
 	if ip == "" {
 		// use IP from "Networks" if only single network defined
