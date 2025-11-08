@@ -149,7 +149,7 @@ func TestKafkaGracefulShutdown(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := context.Background()
 			kafkaContainer, err := kafka.Run(ctx, tc.image)
-			testcontainers.CleanupContainer(t, kafkaContainer, testcontainers.StopTimeout(0))
+			testcontainers.CleanupContainer(t, kafkaContainer)
 			require.NoError(t, err)
 
 			done := make(chan struct{})
