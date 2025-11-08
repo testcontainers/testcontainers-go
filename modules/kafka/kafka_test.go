@@ -153,14 +153,16 @@ func TestKafkaGracefulShutdown(t *testing.T) {
 			require.NoError(t, err)
 
 			done := make(chan struct{})
+			var stopErr error
 			go func() {
 				stopTimeout := 120 * time.Second
-				_ = kafkaContainer.Stop(ctx, &stopTimeout)
+				stopErr = kafkaContainer.Stop(ctx, &stopTimeout)
 				close(done)
 			}()
 			gracefulShutdownTimeout := 60 * time.Second
 			select {
 			case <-done:
+				require.NoError(t, stopErr)
 			case <-time.After(gracefulShutdownTimeout):
 				require.Failf(t, "Kafka did not gracefully exit", "Kafka did not gracefully exit in %v", gracefulShutdownTimeout)
 			}
