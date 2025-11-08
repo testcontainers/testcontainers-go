@@ -32,6 +32,10 @@ go get github.com/testcontainers/testcontainers-go/modules/kafka
 
 The native container ([apache/kafka-native](https://hub.docker.com/r/apache/kafka-native/)) is based on GraalVM and typically starts several seconds faster than alternatives.
 
+It is recommended to prefer Apache Kafka images over Confluent images, as Confluent has [unresolved issue with graceful shutdown](https://github.com/testcontainers/testcontainers-go/issues/2206).
+
+Apache Kafka Native images are also smallest (under 150Mb), with standard Apache about 400Mb and Confluent close to 600Mb.
+
 ## Module Reference
 
 ### Run function
