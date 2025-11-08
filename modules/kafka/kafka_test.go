@@ -12,12 +12,12 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/kafka"
 )
 
-func TestKafka(t *testing.T) {
+func testFor(image string, t *testing.T) {
 	topic := "some-topic"
 
 	ctx := context.Background()
 
-	kafkaContainer, err := kafka.Run(ctx, "confluentinc/confluent-local:7.5.0", kafka.WithClusterID("kraftCluster"))
+	kafkaContainer, err := kafka.Run(ctx, image, kafka.WithClusterID("kraftCluster"))
 	testcontainers.CleanupContainer(t, kafkaContainer)
 	require.NoError(t, err)
 
@@ -64,6 +64,32 @@ func TestKafka(t *testing.T) {
 
 	require.Truef(t, strings.EqualFold(string(consumer.message.Key), "key"), "expected key to be %s, got %s", "key", string(consumer.message.Key))
 	require.Truef(t, strings.EqualFold(string(consumer.message.Value), "value"), "expected value to be %s, got %s", "value", string(consumer.message.Value))
+}
+
+func TestKafka(t *testing.T) {
+	testCases := []struct {
+		name  string
+		image string
+	}{
+		{
+			name:  "confluentinc",
+			image: "confluentinc/confluent-local:7.5.0",
+		},
+		{
+			name:  "apache native",
+			image: "apache/kafka-native:4.0.1",
+		},
+		{
+			name:  "apache not-native",
+			image: "apache/kafka:4.0.1",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			testFor(tc.image, t)
+		})
+	}
 }
 
 func TestKafka_invalidVersion(t *testing.T) {

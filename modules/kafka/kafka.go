@@ -19,8 +19,8 @@ const publicPort = nat.Port("9093/tcp")
 const (
 	starterScript = "/usr/sbin/testcontainers_start.sh"
 
-	// starterScript {
-	starterScriptContent = `#!/bin/bash
+	// starterScriptConfluentinc {
+	confluentincStarterScriptContent = `#!/bin/bash
 source /etc/confluent/docker/bash-config
 export KAFKA_ADVERTISED_LISTENERS=%s,BROKER://%s:9092
 echo Starting Kafka KRaft mode
@@ -29,6 +29,13 @@ echo 'kafka-storage format --ignore-formatted -t "$(kafka-storage random-uuid)" 
 echo '' > /etc/confluent/docker/ensure
 /etc/confluent/docker/configure
 /etc/confluent/docker/launch`
+	// }
+
+	// starterScriptApache {
+	apacheStarterScriptContent = `#!/bin/bash
+export KAFKA_ADVERTISED_LISTENERS=%s,BROKER://%s:9092
+echo Starting Apache Kafka
+exec /etc/kafka/docker/run`
 	// }
 )
 
@@ -78,7 +85,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 					// if the starter script fails to copy.
 					func(ctx context.Context, c testcontainers.Container) error {
 						// 1. copy the starter script into the container
-						if err := copyStarterScript(ctx, c); err != nil {
+						if err := copyStarterScript(ctx, img, c); err != nil {
 							return fmt.Errorf("copy starter script: %w", err)
 						}
 
@@ -122,7 +129,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 }
 
 // copyStarterScript copies the starter script into the container.
-func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
+func copyStarterScript(ctx context.Context, img string, c testcontainers.Container) error {
 	if err := wait.ForMappedPort(publicPort).
 		WaitUntilReady(ctx, c); err != nil {
 		return fmt.Errorf("wait for mapped port: %w", err)
@@ -140,7 +147,7 @@ func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
 
 	hostname := inspect.Config.Hostname
 
-	scriptContent := fmt.Sprintf(starterScriptContent, endpoint, hostname)
+	scriptContent := fmt.Sprintf(getStarterScriptContent(img), endpoint, hostname)
 
 	if err := c.CopyToContainer(ctx, []byte(scriptContent), starterScript, 0o755); err != nil {
 		return fmt.Errorf("copy to container: %w", err)
@@ -200,7 +207,7 @@ func validateKRaftVersion(fqName string) error {
 	image := fqName[:strings.LastIndex(fqName, ":")]
 	version := fqName[strings.LastIndex(fqName, ":")+1:]
 
-	if !strings.EqualFold(image, "confluentinc/confluent-local") {
+	if !isConfluentinc(image) {
 		// do not validate if the image is not the official one.
 		// not raising an error here, letting the image start and
 		// eventually evaluate an error if it exists.

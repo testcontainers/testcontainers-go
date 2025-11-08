@@ -93,7 +93,6 @@ nav:
         - modules/k3s.md
         - modules/k6.md
         - modules/kafka.md
-        - modules/kafka_native.md
         - modules/localstack.md
         - modules/mariadb.md
         - modules/meilisearch.md

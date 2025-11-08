@@ -1,10 +1,12 @@
-# Kafka (KRaft)
+# Kafka
 
 Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.24.0"><span class="tc-version">:material-tag: v0.24.0</span></a>
 
 ## Introduction
 
-The Testcontainers module for KRaft: [Apache Kafka Without ZooKeeper](https://developer.confluent.io/learn/kraft).
+The Testcontainers module for Kafka.
+
+This module would run Kafka in Kraft mode: [Apache Kafka Without ZooKeeper](https://developer.confluent.io/learn/kraft/) and it supports both [Apache Kafka](https://kafka.apache.org/) and [Confluent](https://docs.confluent.io/kafka/overview.html) images.
 
 ## Adding this module to your project dependencies
 
@@ -17,8 +19,18 @@ go get github.com/testcontainers/testcontainers-go/modules/kafka
 ## Usage example
 
 <!--codeinclude-->
-[Creating a Kafka container](../../modules/kafka/examples_test.go) inside_block:runKafkaContainer
+[Apache Native Kafka](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerApacheNative
 <!--/codeinclude-->
+
+<!--codeinclude-->
+[Apache Kafka](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerApacheNotNative
+<!--/codeinclude-->
+
+<!--codeinclude-->
+[Confluent Kafka](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerConfluent
+<!--/codeinclude-->
+
+The native container ([apache/kafka-native](https://hub.docker.com/r/apache/kafka-native/)) is based on GraalVM and typically starts several seconds faster than alternatives.
 
 ## Module Reference
 
@@ -42,12 +54,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "confluentinc/confluent-local:7.5.0")`.
+In example: `Run(context.Background(), "apache/kafka-native:4.0.1")`.
 
 !!! warning
-    The minimal required version of Kafka for KRaft mode is `confluentinc/confluent-local:7.4.0`. If you are using an image that
-    is different from the official one, please make sure that it's compatible with KRaft mode, as the module won't check
-    the version for you.
+    Module expects that the image in use supports Kraft mode (Kafka without ZooKeeper).
+    The minimal required version of Confluent images for KRaft mode is `confluentinc/confluent-local:7.4.0`.
+    All Apache images support Kraft mode.
 
 #### Environment variables
 
@@ -59,10 +71,19 @@ The environment variables that are already set by default are:
 
 #### Init script
 
-The Kafka container will be started using a custom shell script:
+The Kafka container will be started using a custom shell script.
+
+Module would vary the starter script depending on the image in use, using following logic:
+
+- image starts with `apache/kafka`: use Apache Kafka starter script.
+- image starts with `confluentinc/`: use Confluent starter script.
 
 <!--codeinclude-->
-[Init script](../../modules/kafka/kafka.go) inside_block:starterScript
+[Apache Kafka starter script](../../modules/kafka/kafka.go) inside_block:starterScriptApache
+<!--/codeinclude-->
+
+<!--codeinclude-->
+[Confluent starter script](../../modules/kafka/kafka.go) inside_block:starterScriptConfluentinc
 <!--/codeinclude-->
 
 ### Container Options
