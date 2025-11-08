@@ -75,11 +75,11 @@ func TestKafka(t *testing.T) {
 		image string
 	}{
 		{
-			name:  "confluentinc",
+			name:  "confluentinc 7.4.0",
 			image: "confluentinc/confluent-local:7.4.0",
 		},
 		{
-			name:  "confluentinc",
+			name:  "confluentinc 7.5.0",
 			image: "confluentinc/confluent-local:7.5.0",
 		},
 		{
