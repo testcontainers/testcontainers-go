@@ -19,11 +19,8 @@ func isConfluentinc(image string) bool {
 func getStarterScriptContent(image string) string {
 	if isApache(image) {
 		return apacheStarterScriptContent
-	} else if isConfluentinc(image) {
-		return confluentincStarterScriptContent
-	} else {
-		// Default to confluentinc for backward compatibility
-		// in situations when image was custom specified based on confluentinc
-		return confluentincStarterScriptContent
 	}
+	// Default to confluentinc for backward compatibility
+	// in situations when image was custom specified based on confluentinc
+	return confluentincStarterScriptContent
 }
