@@ -19,7 +19,7 @@ go get github.com/testcontainers/testcontainers-go/modules/kafka
 ## Usage example
 
 <!--codeinclude-->
-[Apache Native Kafka](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerApacheNative
+[Apache Kafka Native](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerApacheNative
 <!--/codeinclude-->
 
 <!--codeinclude-->
