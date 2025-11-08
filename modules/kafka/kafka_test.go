@@ -12,7 +12,9 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/kafka"
 )
 
-func testFor(image string, t *testing.T) {
+func testFor(t *testing.T, image string) {
+	t.Helper()
+
 	topic := "some-topic"
 
 	ctx := context.Background()
@@ -87,7 +89,7 @@ func TestKafka(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			testFor(tc.image, t)
+			testFor(t, tc.image)
 		})
 	}
 }
