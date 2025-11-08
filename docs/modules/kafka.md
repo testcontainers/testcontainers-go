@@ -77,6 +77,7 @@ Module would vary the starter script depending on the image in use, using follow
 
 - image starts with `apache/kafka`: use Apache Kafka starter script.
 - image starts with `confluentinc/`: use Confluent starter script.
+- otherwise: use Confluent starter script (for backward compatibility).
 
 <!--codeinclude-->
 [Apache Kafka starter script](../../modules/kafka/kafka.go) inside_block:starterScriptApache
