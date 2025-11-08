@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/require"
@@ -116,4 +117,41 @@ func assertAdvertisedListeners(t *testing.T, container testcontainers.Container)
 	bs := testcontainers.RequireContainerExec(ctx, t, container, []string{"cat", "/usr/sbin/testcontainers_start.sh"})
 
 	require.Containsf(t, bs, brokerURL, "expected advertised listeners to contain %s, got %s", brokerURL, bs)
+}
+
+func TestKafkaGracefulShutdown(t *testing.T) {
+	testCases := []struct {
+		name  string
+		image string
+	}{
+		{
+			name:  "apache native",
+			image: "apache/kafka-native:4.0.1",
+		},
+		{
+			name:  "apache not-native",
+			image: "apache/kafka:4.0.1",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			kafkaContainer, err := kafka.Run(ctx, tc.image)
+			testcontainers.CleanupContainer(t, kafkaContainer, testcontainers.StopTimeout(0))
+			require.NoError(t, err)
+
+			done := make(chan struct{})
+			go func() {
+				stopTimeout := 120 * time.Second
+				_ = kafkaContainer.Stop(ctx, &stopTimeout)
+				close(done)
+			}()
+			gracefulShutdownTimeout := 60 * time.Second
+			select {
+			case <-done:
+			case <-time.After(gracefulShutdownTimeout):
+				require.Failf(t, "Kafka did not gracefully exit", "Kafka did not gracefully exit in %v", gracefulShutdownTimeout)
+			}
+		})
+	}
 }
