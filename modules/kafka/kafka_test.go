@@ -76,15 +76,27 @@ func TestKafka(t *testing.T) {
 	}{
 		{
 			name:  "confluentinc",
+			image: "confluentinc/confluent-local:7.4.0",
+		},
+		{
+			name:  "confluentinc",
 			image: "confluentinc/confluent-local:7.5.0",
 		},
 		{
-			name:  "apache native",
+			name:  "apache native 4",
 			image: "apache/kafka-native:4.0.1",
 		},
 		{
-			name:  "apache not-native",
+			name:  "apache not-native 4",
 			image: "apache/kafka:4.0.1",
+		},
+		{
+			name:  "apache native 3.9",
+			image: "apache/kafka-native:3.9.1",
+		},
+		{
+			name:  "apache not-native 3.9",
+			image: "apache/kafka:3.9.1",
 		},
 	}
 
