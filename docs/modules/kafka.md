@@ -6,7 +6,7 @@ Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/
 
 The Testcontainers module for Kafka.
 
-This module would run Kafka in Kraft mode: [Apache Kafka Without ZooKeeper](https://developer.confluent.io/learn/kraft/) and it supports both [Apache Kafka](https://kafka.apache.org/) and [Confluent](https://docs.confluent.io/kafka/overview.html) images.
+This module runs Kafka in Kraft mode: [Apache Kafka Without ZooKeeper](https://developer.confluent.io/learn/kraft/) and it supports both [Apache Kafka](https://kafka.apache.org/) and [Confluent](https://docs.confluent.io/kafka/overview.html) images.
 
 ## Adding this module to your project dependencies
 
