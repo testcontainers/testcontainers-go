@@ -17,10 +17,10 @@ import (
 
 const publicPort = nat.Port("9093/tcp")
 const (
-	starterScript = "/usr/sbin/testcontainers_start.sh"
+	starterScriptPath = "/usr/sbin/testcontainers_start.sh"
 
 	// starterScriptConfluentinc {
-	confluentincStarterScriptContent = `#!/bin/bash
+	ConfluentStarterScript = `#!/bin/bash
 source /etc/confluent/docker/bash-config
 export KAFKA_ADVERTISED_LISTENERS=%s,BROKER://%s:9092
 echo Starting Kafka KRaft mode
@@ -32,7 +32,7 @@ echo '' > /etc/confluent/docker/ensure
 	// }
 
 	// starterScriptApache {
-	apacheStarterScriptContent = `#!/bin/bash
+	ApacheStarterScript = `#!/bin/bash
 export KAFKA_ADVERTISED_LISTENERS=%s,BROKER://%s:9092
 echo Starting Apache Kafka
 exec /etc/kafka/docker/run`
@@ -42,6 +42,7 @@ exec /etc/kafka/docker/run`
 // KafkaContainer represents the Kafka container type used in the module
 type KafkaContainer struct {
 	testcontainers.Container
+	options   *runOptions
 	ClusterID string
 }
 
@@ -55,6 +56,17 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*KafkaContainer, error) {
 	if err := validateKRaftVersion(img); err != nil {
 		return nil, err
+	}
+
+	runOptions := runOptions{
+		image: img,
+	}
+	for _, opt := range opts {
+		if apply, ok := opt.(Option); ok {
+			if err := apply(&runOptions); err != nil {
+				return nil, fmt.Errorf("apply option: %w", err)
+			}
+		}
 	}
 
 	moduleOpts := []testcontainers.ContainerCustomizer{
@@ -79,7 +91,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}),
 		testcontainers.WithEntrypoint("sh"),
 		// this CMD will wait for the starter script to be copied into the container and then execute it
-		testcontainers.WithCmd("-c", "while [ ! -f "+starterScript+" ]; do sleep 0.1; done; bash "+starterScript),
+		testcontainers.WithCmd("-c", "while [ ! -f "+starterScriptPath+" ]; do sleep 0.1; done; bash "+starterScriptPath),
 		testcontainers.WithLifecycleHooks(testcontainers.ContainerLifecycleHooks{
 			PostStarts: []testcontainers.ContainerHook{
 				// Use a single hook to copy the starter script and wait for
@@ -87,7 +99,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				// if the starter script fails to copy.
 				func(ctx context.Context, c testcontainers.Container) error {
 					// 1. copy the starter script into the container
-					if err := copyStarterScript(ctx, img, c); err != nil {
+					if err := copyStarterScript(ctx, &runOptions, c); err != nil {
 						return fmt.Errorf("copy starter script: %w", err)
 					}
 
@@ -129,7 +141,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 }
 
 // copyStarterScript copies the starter script into the container.
-func copyStarterScript(ctx context.Context, img string, c testcontainers.Container) error {
+func copyStarterScript(ctx context.Context, opts *runOptions, c testcontainers.Container) error {
 	if err := wait.ForMappedPort(publicPort).
 		WaitUntilReady(ctx, c); err != nil {
 		return fmt.Errorf("wait for mapped port: %w", err)
@@ -147,9 +159,9 @@ func copyStarterScript(ctx context.Context, img string, c testcontainers.Contain
 
 	hostname := inspect.Config.Hostname
 
-	scriptContent := fmt.Sprintf(getStarterScriptContent(img), endpoint, hostname)
+	scriptContent := fmt.Sprintf(opts.getStarterScriptContent(), endpoint, hostname)
 
-	if err := c.CopyToContainer(ctx, []byte(scriptContent), starterScript, 0o755); err != nil {
+	if err := c.CopyToContainer(ctx, []byte(scriptContent), starterScriptPath, 0o755); err != nil {
 		return fmt.Errorf("copy to container: %w", err)
 	}
 

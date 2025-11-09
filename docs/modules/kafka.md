@@ -36,6 +36,9 @@ It is recommended to prefer Apache Kafka images over Confluent images, as Conflu
 
 Apache Kafka Native images are also smallest (under 150Mb), with standard Apache about 400Mb and Confluent close to 600Mb.
 
+!!!info
+    If you use image from custom registry, you might need to override starter script, see "Starter script" section below.
+
 ## Module Reference
 
 ### Run function
@@ -73,7 +76,7 @@ The environment variables that are already set by default are:
 [Environment variables](../../modules/kafka/kafka.go) inside_block:envVars
 <!--/codeinclude-->
 
-#### Init script
+#### Starter script
 
 The Kafka container will be started using a custom shell script.
 
@@ -83,12 +86,18 @@ Module would vary the starter script depending on the image in use, using follow
 - image starts with `confluentinc/`: use Confluent starter script.
 - otherwise: use Confluent starter script (for backward compatibility).
 
+This behavior can be overridden using the `kafka.WithStarterScript` option.
+
 <!--codeinclude-->
 [Apache Kafka starter script](../../modules/kafka/kafka.go) inside_block:starterScriptApache
 <!--/codeinclude-->
 
 <!--codeinclude-->
 [Confluent starter script](../../modules/kafka/kafka.go) inside_block:starterScriptConfluentinc
+<!--/codeinclude-->
+
+<!--codeinclude-->
+[Overriding starter script](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerWithOverrideScript
 <!--/codeinclude-->
 
 ### Container Options
