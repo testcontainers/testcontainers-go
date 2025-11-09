@@ -1,6 +1,10 @@
 package kafka
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func Test_runOptions_getStarterScriptContent(t *testing.T) {
 	tests := []struct {
@@ -58,7 +62,7 @@ func Test_runOptions_getStarterScriptContent(t *testing.T) {
 				t.Errorf("getStarterScriptContent() = %v, want %v", got, tt.want)
 			}
 
-			WithStarterScript("mytestsript")(opts)
+			assert.NoError(t, WithStarterScript("mytestsript")(opts))
 			if got := opts.getStarterScriptContent(); got != "mytestsript" {
 				t.Errorf("getStarterScriptContent() with explicit setting = %v, want %v", got, "mytestsript")
 			}

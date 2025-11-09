@@ -7,15 +7,21 @@ type runOptions struct {
 	starterScript string
 }
 
-type Option func(*runOptions) error
+// RunOption is an option that configures how Kafka container is started.
+type RunOption func(*runOptions) error
 
-var _ testcontainers.ContainerCustomizer = (Option)(nil)
+var _ testcontainers.ContainerCustomizer = (RunOption)(nil)
 
-func (o Option) Customize(req *testcontainers.GenericContainerRequest) error {
+func (o RunOption) Customize(_req *testcontainers.GenericContainerRequest) error {
 	return nil
 }
 
-func WithStarterScript(content string) Option {
+// WithStarterScript is an option to set a custom starter script content for the Kafka container.
+//
+// You would typically use this option when the image you are using is different from
+// the standard ones or the image is in your custom registry and automatic inference
+// of the starter script does not work as expected.
+func WithStarterScript(content string) RunOption {
 	return func(o *runOptions) error {
 		o.starterScript = content
 		return nil

@@ -42,7 +42,6 @@ exec /etc/kafka/docker/run`
 // KafkaContainer represents the Kafka container type used in the module
 type KafkaContainer struct {
 	testcontainers.Container
-	options   *runOptions
 	ClusterID string
 }
 
@@ -62,7 +61,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		image: img,
 	}
 	for _, opt := range opts {
-		if apply, ok := opt.(Option); ok {
+		if apply, ok := opt.(RunOption); ok {
 			if err := apply(&runOptions); err != nil {
 				return nil, fmt.Errorf("apply option: %w", err)
 			}
