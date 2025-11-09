@@ -11,6 +11,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/kafka"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func testFor(t *testing.T, image string) {
@@ -166,6 +167,46 @@ func TestKafkaGracefulShutdown(t *testing.T) {
 			case <-time.After(gracefulShutdownTimeout):
 				require.Failf(t, "Kafka did not gracefully exit", "Kafka did not gracefully exit in %v", gracefulShutdownTimeout)
 			}
+		})
+	}
+}
+
+func TestKafkaLocalhostListener(t *testing.T) {
+	testCases := []struct {
+		name           string
+		image          string
+		topicsExecPath string
+	}{
+		{
+			name:           "confluentinc 7.5.0",
+			image:          "confluentinc/confluent-local:7.5.0",
+			topicsExecPath: "/bin/kafka-topics",
+		},
+		{
+			name:           "apache 4",
+			image:          "apache/kafka:4.0.1",
+			topicsExecPath: "/opt/kafka/bin/kafka-topics.sh",
+		},
+		// Note: this will not work for native images, because they do not include command line tools
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+
+			kafkaContainer, err := kafka.Run(ctx, tc.image,
+				testcontainers.WithWaitStrategy(
+					wait.NewExecStrategy([]string{
+						tc.topicsExecPath,
+						"--bootstrap-server",
+						"localhost:9095",
+						"--list",
+					}).
+						WithExitCode(0).
+						WithPollInterval(2*time.Second).
+						WithStartupTimeout(120*time.Second)))
+			testcontainers.CleanupContainer(t, kafkaContainer, testcontainers.StopTimeout(0))
+			require.NoError(t, err)
 		})
 	}
 }

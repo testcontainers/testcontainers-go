@@ -22,7 +22,7 @@ const (
 	// starterScriptConfluentinc {
 	ConfluentStarterScript = `#!/bin/bash
 source /etc/confluent/docker/bash-config
-export KAFKA_ADVERTISED_LISTENERS=%s,BROKER://%s:9092
+export KAFKA_ADVERTISED_LISTENERS=%s,BROKER://%s:9092,LOCALHOST://localhost:9095
 echo Starting Kafka KRaft mode
 sed -i '/KAFKA_ZOOKEEPER_CONNECT/d' /etc/confluent/docker/configure
 echo 'kafka-storage format --ignore-formatted -t "$(kafka-storage random-uuid)" -c /etc/kafka/kafka.properties' >> /etc/confluent/docker/configure
@@ -33,7 +33,7 @@ echo '' > /etc/confluent/docker/ensure
 
 	// starterScriptApache {
 	ApacheStarterScript = `#!/bin/bash
-export KAFKA_ADVERTISED_LISTENERS=%s,BROKER://%s:9092
+export KAFKA_ADVERTISED_LISTENERS=%s,BROKER://%s:9092,LOCALHOST://localhost:9095
 echo Starting Apache Kafka
 exec /etc/kafka/docker/run`
 	// }
@@ -72,9 +72,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithExposedPorts(string(publicPort)),
 		testcontainers.WithEnv(map[string]string{
 			// envVars {
-			"KAFKA_LISTENERS":                                "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
-			"KAFKA_REST_BOOTSTRAP_SERVERS":                   "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
-			"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP":           "BROKER:PLAINTEXT,PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT",
+			"KAFKA_LISTENERS":                                "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094,LOCALHOST://localhost:9095",
+			"KAFKA_REST_BOOTSTRAP_SERVERS":                   "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094,LOCALHOST://localhost:9095",
+			"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP":           "BROKER:PLAINTEXT,PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,LOCALHOST:PLAINTEXT",
 			"KAFKA_INTER_BROKER_LISTENER_NAME":               "BROKER",
 			"KAFKA_BROKER_ID":                                "1",
 			"KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR":         "1",
