@@ -3,7 +3,7 @@ package kafka
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_runOptions_getStarterScriptContent(t *testing.T) {
@@ -62,7 +62,7 @@ func Test_runOptions_getStarterScriptContent(t *testing.T) {
 				t.Errorf("getStarterScriptContent() = %v, want %v", got, tt.want)
 			}
 
-			assert.NoError(t, WithStarterScript("mytestsript")(opts))
+			require.NoError(t, WithStarterScript("mytestsript")(opts))
 			if got := opts.getStarterScriptContent(); got != "mytestsript" {
 				t.Errorf("getStarterScriptContent() with explicit setting = %v, want %v", got, "mytestsript")
 			}

@@ -12,7 +12,7 @@ type RunOption func(*runOptions) error
 
 var _ testcontainers.ContainerCustomizer = (RunOption)(nil)
 
-func (o RunOption) Customize(_req *testcontainers.GenericContainerRequest) error {
+func (o RunOption) Customize(_ *testcontainers.GenericContainerRequest) error {
 	return nil
 }
 
