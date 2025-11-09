@@ -27,7 +27,7 @@ go get github.com/testcontainers/testcontainers-go/modules/kafka
 <!--/codeinclude-->
 
 <!--codeinclude-->
-[Confluent Kafka](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerConfluent
+[Confluent Kafka](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerConfluentinc
 <!--/codeinclude-->
 
 The native container ([apache/kafka-native](https://hub.docker.com/r/apache/kafka-native/)) is based on GraalVM and typically starts several seconds faster than alternatives.
