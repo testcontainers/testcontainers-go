@@ -135,7 +135,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 			"80/tcp": []nat.PortBinding{
 				{
 					HostIP:   "",
-					HostPort: "",
+					HostPort: "0",
 				},
 			},
 		}, inputHostConfig.PortBindings,
@@ -422,12 +422,12 @@ func TestMergePortBindings(t *testing.T) {
 			arg: arg{
 				configPortMap: nil,
 				parsedPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "", HostPort: ""}},
+					"80/tcp": {{HostIP: "", HostPort: "0"}},
 				},
 				exposedPorts: nil,
 			},
 			expected: map[nat.Port][]nat.PortBinding{
-				"80/tcp": {{HostIP: "", HostPort: ""}},
+				"80/tcp": {{HostIP: "", HostPort: "0"}},
 			},
 		},
 		{
@@ -442,7 +442,7 @@ func TestMergePortBindings(t *testing.T) {
 				exposedPorts: nil,
 			},
 			expected: map[nat.Port][]nat.PortBinding{
-				"80/tcp": {{HostIP: "", HostPort: ""}},
+				"80/tcp": {{HostIP: "", HostPort: "0"}},
 			},
 		},
 		{
@@ -454,15 +454,15 @@ func TestMergePortBindings(t *testing.T) {
 					"80/tcp": {{HostIP: "1", HostPort: "2"}},
 				},
 				parsedPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "", HostPort: ""}},
-					"90/tcp": {{HostIP: "", HostPort: ""}},
+					"80/tcp": {{HostIP: "", HostPort: "0"}},
+					"90/tcp": {{HostIP: "", HostPort: "0"}},
 				},
 				exposedPorts: []string{"70", "80/tcp"},
 			},
 			expected: map[nat.Port][]nat.PortBinding{
 				"70/tcp": {{HostIP: "1", HostPort: "2"}},
 				"80/tcp": {{HostIP: "1", HostPort: "2"}},
-				"90/tcp": {{HostIP: "", HostPort: ""}},
+				"90/tcp": {{HostIP: "", HostPort: "0"}},
 			},
 		},
 	}

@@ -163,6 +163,7 @@ func TestWaitForExposedPortSkipChecksSucceeds(t *testing.T) {
 				// Simulate a container that hasn't bound any ports yet.
 				return &container.InspectResponse{
 					NetworkSettings: &container.NetworkSettings{
+						//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 						NetworkSettingsBase: container.NetworkSettingsBase{
 							Ports: nat.PortMap{},
 						},
@@ -172,6 +173,7 @@ func TestWaitForExposedPortSkipChecksSucceeds(t *testing.T) {
 
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"80": []nat.PortBinding{
@@ -518,6 +520,7 @@ func TestHostPortStrategySucceedsGivenShellIsNotInstalled(t *testing.T) {
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"80": []nat.PortBinding{
@@ -581,6 +584,7 @@ func TestHostPortStrategySucceedsGivenShellIsNotFound(t *testing.T) {
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"80": []nat.PortBinding{

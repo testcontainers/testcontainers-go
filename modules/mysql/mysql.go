@@ -186,7 +186,7 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 
 func WithScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		var initScripts []testcontainers.ContainerFile
+		initScripts := make([]testcontainers.ContainerFile, 0, len(scripts))
 		for _, script := range scripts {
 			cf := testcontainers.ContainerFile{
 				HostFilePath:      script,

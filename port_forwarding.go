@@ -108,6 +108,7 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, ports ...int) (
 	}
 
 	// TODO: remove once we have docker context support via #2810
+	//nolint:staticcheck // SA1019: IPAddress is deprecated, but we need it for compatibility until v29
 	sshdIP := inspect.NetworkSettings.IPAddress
 	if sshdIP == "" {
 		single := len(inspect.NetworkSettings.Networks) == 1
