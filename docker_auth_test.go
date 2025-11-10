@@ -123,6 +123,20 @@ func TestDockerImageAuth(t *testing.T) {
 		require.Equal(t, base64, cfg.Auth)
 	})
 
+	t.Run("match the default registry authentication by host", func(t *testing.T) {
+		imageReg := "docker.io"
+		imagePath := "/my/image:latest"
+		reg := defaultRegistry(context.Background())
+		base64 := setAuthConfig(t, reg, "gopher", "secret")
+
+		registry, cfg, err := DockerImageAuth(context.Background(), imageReg+imagePath)
+		require.NoError(t, err)
+		require.Equal(t, reg, registry)
+		require.Equal(t, "gopher", cfg.Username)
+		require.Equal(t, "secret", cfg.Password)
+		require.Equal(t, base64, cfg.Auth)
+	})
+
 	t.Run("fail to match registry authentication due to invalid host", func(t *testing.T) {
 		imageReg := "example-auth.com"
 		imagePath := "/my/image:latest"
