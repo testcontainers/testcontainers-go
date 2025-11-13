@@ -7,7 +7,7 @@ replace github.com/testcontainers/testcontainers-go => ../..
 require (
 	github.com/compose-spec/compose-go/v2 v2.9.0
 	github.com/docker/cli v28.5.1+incompatible
-	github.com/docker/compose/v2 v2.40.2
+	github.com/docker/compose/v5 v5.0.0-rc.2
 	github.com/docker/docker v28.5.1+incompatible
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.11.1
