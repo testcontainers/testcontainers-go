@@ -45,8 +45,8 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 // WithInitScripts sets the init cassandra queries to be run when the container starts
 func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		var initScripts []testcontainers.ContainerFile
-		var execs []testcontainers.Executable
+		initScripts := make([]testcontainers.ContainerFile, 0, len(scripts))
+		execs := make([]testcontainers.Executable, 0, len(scripts))
 		for _, script := range scripts {
 			cf := testcontainers.ContainerFile{
 				HostFilePath:      script,
@@ -81,13 +81,13 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"CASSANDRA_ENDPOINT_SNITCH": "GossipingPropertyFileSnitch",
 			"CASSANDRA_DC":              "datacenter1",
 		}),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort(port),
 			wait.ForExec([]string{"cqlsh", "-e", "SELECT bootstrapped FROM system.local"}).WithResponseMatcher(func(body io.Reader) bool {
 				data, _ := io.ReadAll(body)
 				return strings.Contains(string(data), "COMPLETED")
 			}),
-		)),
+		),
 	}
 
 	moduleOpts = append(moduleOpts, opts...)

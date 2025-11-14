@@ -46,15 +46,13 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			defaultHTTPPort,
 			defaultHTTPSPort,
 		),
-		testcontainers.WithWaitStrategy(&wait.MultiStrategy{
-			Strategies: []wait.Strategy{
-				wait.NewLogStrategy("Bolt enabled on"),
-				&wait.HTTPStrategy{
-					Port:              defaultHTTPPort,
-					StatusCodeMatcher: isHTTPOk(),
-				},
+		testcontainers.WithWaitStrategy(
+			wait.NewLogStrategy("Bolt enabled on"),
+			&wait.HTTPStrategy{
+				Port:              defaultHTTPPort,
+				StatusCodeMatcher: isHTTPOk(),
 			},
-		}),
+		),
 	}
 
 	if len(opts) == 0 {

@@ -27,40 +27,28 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Weaviate container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*WeaviateContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		Cmd:          []string{"--host", "0.0.0.0", "--scheme", "http", "--port", "8080"},
-		ExposedPorts: []string{httpPort, grpcPort},
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithCmd("--host", "0.0.0.0", "--scheme", "http", "--port", "8080"),
+		testcontainers.WithExposedPorts(httpPort, grpcPort),
+		testcontainers.WithEnv(map[string]string{
 			"AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED": "true",
 			"PERSISTENCE_DATA_PATH":                   "/var/lib/weaviate",
-		},
-		WaitingFor: wait.ForAll(
+		}),
+		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort(httpPort).WithStartupTimeout(5*time.Second),
 			wait.ForListeningPort(grpcPort).WithStartupTimeout(5*time.Second),
 			wait.ForHTTP("/v1/.well-known/ready").WithPort(httpPort),
 		),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, append(moduleOpts, opts...)...)
 	var c *WeaviateContainer
-	if container != nil {
-		c = &WeaviateContainer{Container: container}
+	if ctr != nil {
+		c = &WeaviateContainer{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run weaviate: %w", err)
 	}
 
 	return c, nil

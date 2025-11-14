@@ -18,10 +18,10 @@ func RunFirestoreContainer(ctx context.Context, opts ...testcontainers.Container
 func RunFirestore(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts("8080/tcp"),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort("8080/tcp"),
 			wait.ForLog("running"),
-		)),
+		),
 	}
 
 	moduleOpts = append(moduleOpts, opts...)

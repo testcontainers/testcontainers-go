@@ -36,10 +36,10 @@ func (c *Container) URI() string {
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts(defaultPort),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort(defaultPort),
 			wait.ForHTTP("/").WithPort(defaultPort),
-		)),
+		),
 	}
 
 	settings := defaultOptions()

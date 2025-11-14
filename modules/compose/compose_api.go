@@ -212,7 +212,7 @@ type DockerCompose struct {
 	networks map[string]*testcontainers.DockerNetwork
 
 	// docker/compose API service instance used to control the compose stack
-	composeService api.Service
+	composeService api.Compose
 
 	// Docker API client used to interact with single container instances and the Docker API e.g. to list containers
 	dockerClient client.APIClient

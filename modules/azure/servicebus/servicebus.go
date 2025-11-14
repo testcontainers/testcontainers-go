@@ -73,20 +73,7 @@ func (c *Container) Terminate(ctx context.Context, opts ...testcontainers.Termin
 
 // Run creates an instance of the Azure ServiceBus container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
-		testcontainers.WithExposedPorts(defaultPort, defaultHTTPPort),
-		testcontainers.WithEnv(map[string]string{
-			"SQL_WAIT_INTERVAL": "0", // default is zero because the MSSQL container is started first
-		}),
-		testcontainers.WithWaitStrategy(wait.ForAll(
-			wait.ForListeningPort(defaultPort),
-			wait.ForListeningPort(defaultHTTPPort),
-			wait.ForHTTP("/health").WithPort(defaultHTTPPort).WithStatusCodeMatcher(func(status int) bool {
-				return status == http.StatusOK
-			}),
-		)),
-	}
-
+	// Process custom options first to extract settings
 	defaultOptions := defaultOptions()
 	for _, opt := range opts {
 		if o, ok := opt.(Option); ok {
@@ -97,6 +84,21 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	c := &Container{mssqlOptions: &defaultOptions}
+
+	// Build moduleOpts with defaults
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultPort, defaultHTTPPort),
+		testcontainers.WithEnv(map[string]string{
+			"SQL_WAIT_INTERVAL": "0", // default is zero because the MSSQL container is started first
+		}),
+		testcontainers.WithWaitStrategy(
+			wait.ForListeningPort(defaultPort),
+			wait.ForListeningPort(defaultHTTPPort),
+			wait.ForHTTP("/health").WithPort(defaultHTTPPort).WithStatusCodeMatcher(func(status int) bool {
+				return status == http.StatusOK
+			}),
+		),
+	}
 
 	if defaultOptions.mssqlContainer == nil {
 		mssqlNetwork, err := network.New(ctx)

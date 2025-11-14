@@ -57,6 +57,7 @@ func ExampleRun_blobOperations() {
 		ctx,
 		"mcr.microsoft.com/azure-storage/azurite:3.33.0",
 		azurite.WithInMemoryPersistence(64),
+		azurite.WithEnabledServices(azurite.BlobService),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(azuriteContainer); err != nil {
@@ -198,6 +199,7 @@ func ExampleRun_queueOperations() {
 		ctx,
 		"mcr.microsoft.com/azure-storage/azurite:3.28.0",
 		azurite.WithInMemoryPersistence(64),
+		azurite.WithEnabledServices(azurite.QueueService),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(azuriteContainer); err != nil {
@@ -292,6 +294,7 @@ func ExampleRun_tableOperations() {
 		ctx,
 		"mcr.microsoft.com/azure-storage/azurite:3.28.0",
 		azurite.WithInMemoryPersistence(64),
+		azurite.WithEnabledServices(azurite.TableService),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(azuriteContainer); err != nil {

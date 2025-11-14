@@ -61,10 +61,10 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ConsulContainer, error) {
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts(defaultHTTPAPIPort+"/tcp", defaultBrokerPort+"/tcp", defaultBrokerPort+"/udp"),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForLog("Consul agent running!"),
 			wait.ForListeningPort(defaultHTTPAPIPort+"/tcp"),
-		)),
+		),
 	}
 
 	moduleOpts = append(moduleOpts, opts...)

@@ -90,8 +90,21 @@ type localProcess struct {
 	binary string
 }
 
-// runLocal returns an OllamaContainer that uses the local Ollama binary instead of using a Docker container.
-func (c *localProcess) run(ctx context.Context, req testcontainers.GenericContainerRequest) (*OllamaContainer, error) {
+// run returns an OllamaContainer that uses the local Ollama binary instead of using a Docker container.
+func (c *localProcess) run(ctx context.Context, img string, opts []testcontainers.ContainerCustomizer) (*OllamaContainer, error) {
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: img,
+		},
+		Started: true,
+	}
+
+	for _, opt := range opts {
+		if err := opt.Customize(&req); err != nil {
+			return nil, fmt.Errorf("customize: %w", err)
+		}
+	}
+
 	if err := c.validateRequest(req); err != nil {
 		return nil, fmt.Errorf("validate request: %w", err)
 	}
@@ -439,6 +452,7 @@ func (c *localProcess) Inspect(ctx context.Context) (*container.InspectResponse,
 		},
 		NetworkSettings: &container.NetworkSettings{
 			Networks: map[string]*network.EndpointSettings{},
+			//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 			NetworkSettingsBase: container.NetworkSettingsBase{
 				Bridge: "bridge",
 				Ports: nat.PortMap{
@@ -447,6 +461,7 @@ func (c *localProcess) Inspect(ctx context.Context) (*container.InspectResponse,
 					},
 				},
 			},
+			//nolint:staticcheck // SA1019: DefaultNetworkSettings is deprecated, but we need it for compatibility until v29
 			DefaultNetworkSettings: container.DefaultNetworkSettings{
 				IPAddress: c.host,
 			},
@@ -714,7 +729,11 @@ func (c *localProcess) Customize(req *testcontainers.GenericContainerRequest) er
 	if req.WaitingFor == nil {
 		req.WaitingFor = logStrategy
 	} else {
-		req.WaitingFor = wait.ForAll(req.WaitingFor, logStrategy)
+		if w, ok := req.WaitingFor.(*wait.MultiStrategy); ok && len(w.Strategies) == 0 {
+			w.Strategies = append(w.Strategies, logStrategy)
+		} else {
+			req.WaitingFor = logStrategy
+		}
 	}
 
 	// Setup the environment variables using a random port by default

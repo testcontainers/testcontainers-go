@@ -18,9 +18,9 @@ func RunBigTableContainer(ctx context.Context, opts ...testcontainers.ContainerC
 func RunBigTable(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts("9000/tcp"),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort("9000/tcp"),
-			wait.ForLog("running")),
+			wait.ForLog("running"),
 		),
 	}
 

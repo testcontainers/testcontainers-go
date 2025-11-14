@@ -66,25 +66,22 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 // Run creates an instance of the Couchbase container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*CouchbaseContainer, error) {
 	config := &Config{
-		enabledServices:  make([]Service, 0),
+		enabledServices:  []Service{},
 		username:         "Administrator",
 		password:         "password",
 		indexStorageMode: MemoryOptimized,
 	}
 
-	moduleOpts := []testcontainers.ContainerCustomizer{
-		testcontainers.WithExposedPorts(MGMT_PORT+"/tcp", MGMT_SSL_PORT+"/tcp"),
-	}
-
-	serviceCustomizers := make([]testcontainers.ContainerCustomizer, 0, len(initialServices))
+	// Process custom options first to extract config
+	// Start with initial services
+	allCustomizers := make([]testcontainers.ContainerCustomizer, 0, len(initialServices)+len(opts))
 	for _, srv := range initialServices {
-		serviceCustomizers = append(serviceCustomizers, withService(srv))
+		allCustomizers = append(allCustomizers, withService(srv))
 	}
+	allCustomizers = append(allCustomizers, opts...)
 
-	serviceCustomizers = append(serviceCustomizers, opts...)
-
-	// transfer options to the config
-	for _, opt := range serviceCustomizers {
+	// Transfer custom options to the config
+	for _, opt := range allCustomizers {
 		if bucketCustomizer, ok := opt.(bucketCustomizer); ok {
 			// If the option is a bucketCustomizer, we need to add the buckets to the request
 			config.buckets = append(config.buckets, bucketCustomizer.buckets...)
@@ -100,12 +97,18 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			config.password = credentialsCustomizer.password
 
 			if len(credentialsCustomizer.password) < 6 {
-				return nil, errors.New("admin password must be at most 6 characters long")
+				return nil, errors.New("admin password must be at least 6 characters long")
 			}
 		}
 	}
 
-	moduleOpts = append(moduleOpts, serviceCustomizers...)
+	// Build moduleOpts with defaults
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(MGMT_PORT+"/tcp", MGMT_SSL_PORT+"/tcp"),
+	}
+
+	// Append all customizers (initial services + user opts)
+	moduleOpts = append(moduleOpts, allCustomizers...)
 
 	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var couchbaseContainer *CouchbaseContainer
