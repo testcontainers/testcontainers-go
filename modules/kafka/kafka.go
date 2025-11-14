@@ -221,7 +221,7 @@ func validateKRaftVersion(fqName string) error {
 
 	// remove the architecture suffix
 	if strings.HasSuffix(version, ".amd64") || strings.HasSuffix(version, ".arm64") {
-		version = version[:strings.LastIndex(version, ".")]
+		return fmt.Errorf("invalid image tag %q: architecture suffixes like .arm64 or .amd64 are not valid semver; please use a multi-architecture image instead", tag)
 	}
 
 	if semver.Compare(version, "v7.4.0") < 0 { // version < v7.4.0
