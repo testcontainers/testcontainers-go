@@ -34,7 +34,13 @@ The native container ([apache/kafka-native](https://hub.docker.com/r/apache/kafk
 
 It is recommended to prefer Apache Kafka images over Confluent images, as Confluent has [unresolved issue with graceful shutdown](https://github.com/testcontainers/testcontainers-go/issues/2206).
 
-Apache Kafka Native images are also smallest (under 150Mb), with standard Apache about 400Mb and Confluent close to 600Mb.
+Apache Kafka Native images are also smallest, however they do not include CLI tools such as `kafka-topics.sh`.
+
+| Docker Image        | Size                     | Startup time    | Notes                   |
+|---------------------|--------------------------|-----------------|-------------------------|
+| Apache Kafka Native | 137MB (4.0.1 linux amd)  | ~1-3 seconds    | Does not have CLI tools |
+| Apache Kafka        | 393MB (4.0.1 linux amd)  | ~4-5 seconds    |                         |
+| Confluent Kafka     | 649MB (7.5.0 linux amd)  | ~13-15 seconds  | Shutdown issues         |
 
 !!!info
     If you use image from custom registry, you might need to override starter script, see "Starter script" section below.
