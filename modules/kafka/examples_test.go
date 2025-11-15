@@ -108,8 +108,8 @@ func ExampleRun_apacheNotNative() {
 	// true
 }
 
-func ExampleRun_apacheNative_withOverrideScript() {
-	// runKafkaContainerWithOverrideScript {
+func ExampleRun_apacheNative_withApacheFlavor() {
+	// runKafkaContainerWithApacheFlavor {
 	ctx := context.Background()
 
 	kafkaContainer, err := kafka.Run(ctx,
@@ -123,6 +123,7 @@ func ExampleRun_apacheNative_withOverrideScript() {
 		// the one compatible with Apache images
 		kafka.WithApacheFlavor(),
 	)
+	// }
 	defer func() {
 		if err := testcontainers.TerminateContainer(kafkaContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -132,7 +133,46 @@ func ExampleRun_apacheNative_withOverrideScript() {
 		log.Printf("failed to start container: %s", err)
 		return
 	}
+
+	state, err := kafkaContainer.State(ctx)
+	if err != nil {
+		log.Printf("failed to get container state: %s", err)
+		return
+	}
+
+	fmt.Println(kafkaContainer.ClusterID)
+	fmt.Println(state.Running)
+
+	// Output:
+	// test-cluster
+	// true
+}
+
+func ExampleRun_confluentinc_withConfluentFlavor() {
+	// runKafkaContainerWithConfluentFlavor {
+	ctx := context.Background()
+
+	kafkaContainer, err := kafka.Run(ctx,
+		// the image might be different, for example
+		// custom-registry/confluentinc/confluent-local:7.5.0,
+		// in which case the starter script might not
+		// be correctly inferred, and should be overridden
+		"confluentinc/confluent-local:7.5.0",
+		kafka.WithClusterID("test-cluster"),
+		// this explicitly sets the starter script to use
+		// the one compatible with Confluent images
+		kafka.WithConfluentFlavor(),
+	)
 	// }
+	defer func() {
+		if err := testcontainers.TerminateContainer(kafkaContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
 
 	state, err := kafkaContainer.State(ctx)
 	if err != nil {

@@ -105,12 +105,28 @@ You can also provide a completely custom starter script using the `kafka.WithSta
 <!--/codeinclude-->
 
 <!--codeinclude-->
-[Overriding starter script](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerWithOverrideScript
+[Overriding starter script](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerWithApacheFlavor
 <!--/codeinclude-->
 
 ### Container Options
 
 When starting the Kafka container, you can pass options in a variadic way to configure it.
+
+#### WithApacheFlavor/WithConfluentFlavor
+
+You can manually specify which flavor of starter script to use with the following options:
+
+<!--codeinclude-->
+[With Apache Flavor](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerWithApacheFlavor
+<!--/codeinclude-->
+
+<!--codeinclude-->
+[With Confluent Flavor](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerWithConfluentFlavor
+<!--/codeinclude-->
+
+#### WithStarterScript
+
+This allows to provide a completely custom starter script for the Kafka container. Be careful when using this option, as compatibility with any image and module version cannot be guaranteed.
 
 {% include "../features/common_functional_options_list.md" %}
 
