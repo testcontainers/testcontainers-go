@@ -22,20 +22,6 @@ go get github.com/testcontainers/testcontainers-go/modules/kafka
 
 Images `apache/kafka`, `apache/kafka-native` ([Apache Kafka](https://kafka.apache.org/)) are supported by this module in addition to `confluentinc/confluent-local` ([Confluent](https://docs.confluent.io/kafka/overview.html)).
 
-## Usage example
-
-<!--codeinclude-->
-[Apache Kafka Native](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerApacheNative
-<!--/codeinclude-->
-
-<!--codeinclude-->
-[Apache Kafka](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerApacheNotNative
-<!--/codeinclude-->
-
-<!--codeinclude-->
-[Confluent Kafka](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerConfluentinc
-<!--/codeinclude-->
-
 The native container ([apache/kafka-native](https://hub.docker.com/r/apache/kafka-native/)) is based on GraalVM and typically starts several seconds faster than alternatives.
 
 It is recommended to prefer Apache Kafka images over Confluent images, as Confluent has [unresolved issue with graceful shutdown](https://github.com/testcontainers/testcontainers-go/issues/2206).
@@ -50,6 +36,20 @@ Apache Kafka Native images are also smallest, however they do not include CLI to
 
 !!!info
     If you use image from custom registry, you might need to override starter script, see "Starter script" section below.
+
+## Usage example
+
+<!--codeinclude-->
+[Apache Kafka Native](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerApacheNative
+<!--/codeinclude-->
+
+<!--codeinclude-->
+[Apache Kafka](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerApacheNotNative
+<!--/codeinclude-->
+
+<!--codeinclude-->
+[Confluent Kafka](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerConfluentinc
+<!--/codeinclude-->
 
 ## Module Reference
 
