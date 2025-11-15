@@ -6,7 +6,7 @@ Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/
 
 The Testcontainers module for Kafka.
 
-This module runs Kafka in Kraft mode: [Apache Kafka Without ZooKeeper](https://developer.confluent.io/learn/kraft/) and it supports both [Apache Kafka](https://kafka.apache.org/) and [Confluent](https://docs.confluent.io/kafka/overview.html) images.
+This module runs Kafka in Kraft mode: [Apache Kafka Without ZooKeeper](https://developer.confluent.io/learn/kraft/).
 
 ## Adding this module to your project dependencies
 
@@ -15,6 +15,12 @@ Please run the following command to add the Kafka module to your Go dependencies
 ```
 go get github.com/testcontainers/testcontainers-go/modules/kafka
 ```
+
+## Apache Kafka images
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+Images `apache/kafka`, `apache/kafka-native` ([Apache Kafka](https://kafka.apache.org/)) are supported by this module in addition to `confluentinc/confluent-local` ([Confluent](https://docs.confluent.io/kafka/overview.html)).
 
 ## Usage example
 
