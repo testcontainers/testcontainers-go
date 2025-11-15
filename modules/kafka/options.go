@@ -56,11 +56,11 @@ var errFlavorAlreadySet = errors.New("flavor was already set, provide only one o
 // WithApacheFlavor sets the starter script to the one compatible with Apache Kafka images.
 func WithApacheFlavor() RunOption {
 	return func(o *runOptions) error {
-		o.starterScript = apacheStarterScript
 		if o.flavorWasSet {
 			return errFlavorAlreadySet
 		}
 		o.flavorWasSet = true
+		o.starterScript = apacheStarterScript
 		return nil
 	}
 }
@@ -68,11 +68,11 @@ func WithApacheFlavor() RunOption {
 // WithConfluentFlavor sets the starter script to the one compatible with Confluent Kafka images.
 func WithConfluentFlavor() RunOption {
 	return func(o *runOptions) error {
-		o.starterScript = confluentStarterScript
 		if o.flavorWasSet {
 			return errFlavorAlreadySet
 		}
 		o.flavorWasSet = true
+		o.starterScript = confluentStarterScript
 		return nil
 	}
 }
