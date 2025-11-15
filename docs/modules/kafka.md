@@ -35,7 +35,7 @@ Apache Kafka Native images are also smallest, however they do not include CLI to
 | Confluent Kafka     | 649MB (7.5.0 linux amd)  | ~13-14 seconds  | Yes       | [issue](https://github.com/testcontainers/testcontainers-go/issues/2206) |
 
 !!!info
-    If you use image from custom registry, you might need to override starter script, see "Starter script" section below.
+    If you use image from custom registry, you might need to override starter script, see [Starter script](#starter-script) section below.
 
 ## Usage example
 
