@@ -154,6 +154,8 @@ The `Brokers(ctx)` method returns the Kafka brokers as a string slice, containin
 
 ## Localhost listener
 
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
 Kafka container would by default be configured with `localhost:9095` as one of advertised listeners. This can be used when you need to run CLI commands inside the container, for example with custom wait strategies or to prepare test data.
 
 Here is an example that uses custom wait strategy that checks if listing topics works:
