@@ -114,6 +114,8 @@ When starting the Kafka container, you can pass options in a variadic way to con
 
 #### WithApacheFlavor/WithConfluentFlavor
 
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
 You can manually specify which flavor of starter script to use with the following options:
 
 <!--codeinclude-->
@@ -125,6 +127,8 @@ You can manually specify which flavor of starter script to use with the followin
 <!--/codeinclude-->
 
 #### WithStarterScript
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 This allows to provide a completely custom starter script for the Kafka container. Be careful when using this option, as compatibility with any image and module version cannot be guaranteed.
 
