@@ -17,18 +17,25 @@ import (
 
 const publicPort = nat.Port("9093/tcp")
 const (
-	starterScript = "/usr/sbin/testcontainers_start.sh"
+	starterScriptPath = "/usr/sbin/testcontainers_start.sh"
 
-	// starterScript {
-	starterScriptContent = `#!/bin/bash
+	// starterScriptConfluentinc {
+	confluentStarterScript = `#!/bin/bash
 source /etc/confluent/docker/bash-config
-export KAFKA_ADVERTISED_LISTENERS=%s,BROKER://%s:9092
+export KAFKA_ADVERTISED_LISTENERS=%s,BROKER://%s:9092,LOCALHOST://localhost:9095
 echo Starting Kafka KRaft mode
 sed -i '/KAFKA_ZOOKEEPER_CONNECT/d' /etc/confluent/docker/configure
 echo 'kafka-storage format --ignore-formatted -t "$(kafka-storage random-uuid)" -c /etc/kafka/kafka.properties' >> /etc/confluent/docker/configure
 echo '' > /etc/confluent/docker/ensure
 /etc/confluent/docker/configure
 /etc/confluent/docker/launch`
+	// }
+
+	// starterScriptApache {
+	apacheStarterScript = `#!/bin/bash
+export KAFKA_ADVERTISED_LISTENERS=%s,BROKER://%s:9092,LOCALHOST://localhost:9095
+echo Starting Apache Kafka
+exec /etc/kafka/docker/run`
 	// }
 )
 
@@ -50,13 +57,24 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return nil, err
 	}
 
+	runOptions := runOptions{
+		image: img,
+	}
+	for _, opt := range opts {
+		if apply, ok := opt.(RunOption); ok {
+			if err := apply(&runOptions); err != nil {
+				return nil, fmt.Errorf("apply option: %w", err)
+			}
+		}
+	}
+
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts(string(publicPort)),
 		testcontainers.WithEnv(map[string]string{
 			// envVars {
-			"KAFKA_LISTENERS":                                "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
-			"KAFKA_REST_BOOTSTRAP_SERVERS":                   "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",
-			"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP":           "BROKER:PLAINTEXT,PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT",
+			"KAFKA_LISTENERS":                                "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094,LOCALHOST://localhost:9095",
+			"KAFKA_REST_BOOTSTRAP_SERVERS":                   "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094,LOCALHOST://localhost:9095",
+			"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP":           "BROKER:PLAINTEXT,PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,LOCALHOST:PLAINTEXT",
 			"KAFKA_INTER_BROKER_LISTENER_NAME":               "BROKER",
 			"KAFKA_BROKER_ID":                                "1",
 			"KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR":         "1",
@@ -72,7 +90,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}),
 		testcontainers.WithEntrypoint("sh"),
 		// this CMD will wait for the starter script to be copied into the container and then execute it
-		testcontainers.WithCmd("-c", "while [ ! -f "+starterScript+" ]; do sleep 0.1; done; bash "+starterScript),
+		testcontainers.WithCmd("-c", "while [ ! -f "+starterScriptPath+" ]; do sleep 0.1; done; bash "+starterScriptPath),
 		testcontainers.WithLifecycleHooks(testcontainers.ContainerLifecycleHooks{
 			PostStarts: []testcontainers.ContainerHook{
 				// Use a single hook to copy the starter script and wait for
@@ -80,7 +98,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				// if the starter script fails to copy.
 				func(ctx context.Context, c testcontainers.Container) error {
 					// 1. copy the starter script into the container
-					if err := copyStarterScript(ctx, c); err != nil {
+					if err := copyStarterScript(ctx, &runOptions, c); err != nil {
 						return fmt.Errorf("copy starter script: %w", err)
 					}
 
@@ -122,7 +140,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 }
 
 // copyStarterScript copies the starter script into the container.
-func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
+func copyStarterScript(ctx context.Context, opts *runOptions, c testcontainers.Container) error {
 	if err := wait.ForMappedPort(publicPort).
 		WaitUntilReady(ctx, c); err != nil {
 		return fmt.Errorf("wait for mapped port: %w", err)
@@ -140,19 +158,13 @@ func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
 
 	hostname := inspect.Config.Hostname
 
-	scriptContent := fmt.Sprintf(starterScriptContent, endpoint, hostname)
+	scriptContent := fmt.Sprintf(opts.getStarterScriptContent(), endpoint, hostname)
 
-	if err := c.CopyToContainer(ctx, []byte(scriptContent), starterScript, 0o755); err != nil {
+	if err := c.CopyToContainer(ctx, []byte(scriptContent), starterScriptPath, 0o755); err != nil {
 		return fmt.Errorf("copy to container: %w", err)
 	}
 
 	return nil
-}
-
-func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
-	return testcontainers.WithEnv(map[string]string{
-		"CLUSTER_ID": clusterID,
-	})
 }
 
 // Brokers retrieves the broker connection strings from Kafka with only one entry,
@@ -207,7 +219,7 @@ func validateKRaftVersion(fqName string) error {
 	image := fqName[:idx]
 	version := fqName[idx+1:]
 
-	if !strings.EqualFold(image, "confluentinc/confluent-local") {
+	if !isConfluentinc(image) {
 		// do not validate if the image is not the official one.
 		// not raising an error here, letting the image start and
 		// eventually evaluate an error if it exists.
