@@ -2,7 +2,6 @@ package kafka_test
 
 import (
 	"context"
-	"log"
 	"testing"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -15,12 +14,11 @@ func startStopBenchmark(b *testing.B, image string) {
 			image,
 		)
 		if err != nil {
-			log.Printf("failed to start container: %s", err)
-			panic(err)
+			b.Fatalf("failed to start container: %s", err)
 		}
 
 		if err := testcontainers.TerminateContainer(kafkaContainer); err != nil {
-			log.Printf("failed to terminate container: %s", err)
+			b.Errorf("failed to terminate container: %s", err)
 		}
 	}
 }
