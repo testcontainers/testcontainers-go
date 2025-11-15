@@ -24,8 +24,7 @@ func (o RunOption) Customize(_ *testcontainers.GenericContainerRequest) error {
 // WithStarterScript is an option to set a custom starter script content for the Kafka container.
 //
 // You would typically use this option when the image you are using is different from
-// the standard ones or the image is in your custom registry and automatic inference
-// of the starter script does not work as expected.
+// the standard ones and the default starter script does not work as expected.
 func WithStarterScript(content string) RunOption {
 	return func(o *runOptions) error {
 		o.starterScript = content
