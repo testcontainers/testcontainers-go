@@ -45,18 +45,6 @@ Apache Kafka Native images are also smallest, however they do not include CLI to
 !!!info
     If you use image from custom registry, you might need to override starter script, see "Starter script" section below.
 
-### Localhost listener
-
-Kafka container would by default be configured with `localhost:9095` as one of advertised listeners. This can be used when you need to run CLI commands inside the container, for example with custom wait strategies or to prepare test data.
-
-Here is an example that uses custom wait strategy that checks if listing topics works:
-
-<!--codeinclude-->
-[Custom wait strategy](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerAndUseLocalhostListener
-<!--/codeinclude-->
-
-Note: this will not work with `apache/kafka-native` images, as they do not include CLI tools.
-
 ## Module Reference
 
 ### Run function
@@ -155,3 +143,15 @@ The `Brokers(ctx)` method returns the Kafka brokers as a string slice, containin
 <!--codeinclude-->
 [Get Kafka brokers](../../modules/kafka/kafka_test.go) inside_block:getBrokers
 <!--/codeinclude-->
+
+## Localhost listener
+
+Kafka container would by default be configured with `localhost:9095` as one of advertised listeners. This can be used when you need to run CLI commands inside the container, for example with custom wait strategies or to prepare test data.
+
+Here is an example that uses custom wait strategy that checks if listing topics works:
+
+<!--codeinclude-->
+[Custom wait strategy](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerAndUseLocalhostListener
+<!--/codeinclude-->
+
+Note: this will not work with `apache/kafka-native` images, as they do not include CLI tools.
