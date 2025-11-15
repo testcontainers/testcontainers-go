@@ -210,3 +210,14 @@ func TestKafkaLocalhostListener(t *testing.T) {
 		})
 	}
 }
+
+func TestFailOnBothFlavors(t *testing.T) {
+	ctx := context.Background()
+
+	_, err := kafka.Run(ctx, "apache/kafka-native:4.0.1",
+		kafka.WithApacheFlavor(),
+		kafka.WithConfluentFlavor(),
+	)
+	require.Error(t, err)
+	require.EqualError(t, err, "apply option: flavor was already set, provide only one of WithApacheFlavor or WithConfluentFlavor")
+}

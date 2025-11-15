@@ -1,10 +1,15 @@
 package kafka
 
-import "github.com/testcontainers/testcontainers-go"
+import (
+	"errors"
+
+	"github.com/testcontainers/testcontainers-go"
+)
 
 type runOptions struct {
 	image         string
 	starterScript string
+	flavorWasSet  bool
 }
 
 // RunOption is an option that configures how Kafka container is started.
@@ -31,11 +36,42 @@ func WithStarterScript(content string) RunOption {
 func (o *runOptions) getStarterScriptContent() string {
 	if o.starterScript == "" {
 		if isApache(o.image) {
-			return ApacheStarterScript
+			return apacheStarterScript
 		}
 		// Default to confluentinc for backward compatibility
 		// in situations when image was custom specified based on confluentinc
-		return ConfluentStarterScript
+		return confluentStarterScript
 	}
 	return o.starterScript
+}
+
+// WithClusterID sets the CLUSTER_ID environment variable for the Kafka container.
+func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
+	return testcontainers.WithEnv(map[string]string{
+		"CLUSTER_ID": clusterID,
+	})
+}
+
+var errFlavorAlreadySet = errors.New("flavor was already set, provide only one of WithApacheFlavor or WithConfluentFlavor")
+
+func WithApacheFlavor() RunOption {
+	return func(o *runOptions) error {
+		o.starterScript = apacheStarterScript
+		if o.flavorWasSet {
+			return errFlavorAlreadySet
+		}
+		o.flavorWasSet = true
+		return nil
+	}
+}
+
+func WithConfluentFlavor() RunOption {
+	return func(o *runOptions) error {
+		o.starterScript = confluentStarterScript
+		if o.flavorWasSet {
+			return errFlavorAlreadySet
+		}
+		o.flavorWasSet = true
+		return nil
+	}
 }

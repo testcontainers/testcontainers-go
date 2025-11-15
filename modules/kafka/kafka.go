@@ -20,7 +20,7 @@ const (
 	starterScriptPath = "/usr/sbin/testcontainers_start.sh"
 
 	// starterScriptConfluentinc {
-	ConfluentStarterScript = `#!/bin/bash
+	confluentStarterScript = `#!/bin/bash
 source /etc/confluent/docker/bash-config
 export KAFKA_ADVERTISED_LISTENERS=%s,BROKER://%s:9092,LOCALHOST://localhost:9095
 echo Starting Kafka KRaft mode
@@ -32,7 +32,7 @@ echo '' > /etc/confluent/docker/ensure
 	// }
 
 	// starterScriptApache {
-	ApacheStarterScript = `#!/bin/bash
+	apacheStarterScript = `#!/bin/bash
 export KAFKA_ADVERTISED_LISTENERS=%s,BROKER://%s:9092,LOCALHOST://localhost:9095
 echo Starting Apache Kafka
 exec /etc/kafka/docker/run`
@@ -165,12 +165,6 @@ func copyStarterScript(ctx context.Context, opts *runOptions, c testcontainers.C
 	}
 
 	return nil
-}
-
-func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
-	return testcontainers.WithEnv(map[string]string{
-		"CLUSTER_ID": clusterID,
-	})
 }
 
 // Brokers retrieves the broker connection strings from Kafka with only one entry,

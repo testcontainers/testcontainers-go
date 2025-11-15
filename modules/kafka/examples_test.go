@@ -121,7 +121,7 @@ func ExampleRun_apacheNative_withOverrideScript() {
 		kafka.WithClusterID("test-cluster"),
 		// this explicitly sets the starter script to use
 		// the one compatible with Apache images
-		kafka.WithStarterScript(kafka.ApacheStarterScript),
+		kafka.WithApacheFlavor(),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(kafkaContainer); err != nil {
