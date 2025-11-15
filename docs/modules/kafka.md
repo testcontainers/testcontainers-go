@@ -36,10 +36,10 @@ It is recommended to prefer Apache Kafka images over Confluent images, as Conflu
 
 Apache Kafka Native images are also smallest, however they do not include CLI tools such as `kafka-topics.sh`.
 
-| Docker Image        | Size                     | Startup time    | Notes                   |
+| Docker Image        | Size                     | Start/stop time | Notes                   |
 |---------------------|--------------------------|-----------------|-------------------------|
-| Apache Kafka Native | 137MB (4.0.1 linux amd)  | ~1-3 seconds    | Does not have CLI tools |
-| Apache Kafka        | 393MB (4.0.1 linux amd)  | ~4-5 seconds    |                         |
+| Apache Kafka Native | 137MB (4.0.1 linux amd)  | <1 seconds      | Does not have CLI tools |
+| Apache Kafka        | 393MB (4.0.1 linux amd)  | ~3-4 seconds    |                         |
 | Confluent Kafka     | 649MB (7.5.0 linux amd)  | ~13-15 seconds  | Shutdown issues         |
 
 !!!info
