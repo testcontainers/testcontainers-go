@@ -86,7 +86,7 @@ Module would vary the starter script depending on the image in use, using follow
 - image starts with `confluentinc/`: use Confluent starter script.
 - otherwise: use Confluent starter script (for backward compatibility).
 
-This behavior can be overridden using the `kafka.WithApacheFlavor` or `kafka.WithConfluentFlavor` options.
+This behavior can be overridden using the `kafka.WithApacheFlavor` or `kafka.WithConfluentFlavor` options. You can only provide one of these two options, otherwise an error would be returned when starting the container.
 
 You can also provide a completely custom starter script using the `kafka.WithStarterScript` option, however note that if your script would become incompatible with the image in use, the container might fail to start.
 
