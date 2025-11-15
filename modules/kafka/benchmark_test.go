@@ -9,6 +9,7 @@ import (
 )
 
 func startStopBenchmark(b *testing.B, image string) {
+	b.Helper()
 	for b.Loop() {
 		kafkaContainer, err := kafka.Run(context.Background(),
 			image,
