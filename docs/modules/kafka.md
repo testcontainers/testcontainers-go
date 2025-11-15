@@ -36,11 +36,11 @@ It is recommended to prefer Apache Kafka images over Confluent images, as Conflu
 
 Apache Kafka Native images are also smallest, however they do not include CLI tools such as `kafka-topics.sh`.
 
-| Docker Image        | Size                     | Start/stop time | Notes                   |
-|---------------------|--------------------------|-----------------|-------------------------|
-| Apache Kafka Native | 137MB (4.0.1 linux amd)  | <1 second       | Does not have CLI tools |
-| Apache Kafka        | 393MB (4.0.1 linux amd)  | ~3-4 seconds    |                         |
-| Confluent Kafka     | 649MB (7.5.0 linux amd)  | ~13-15 seconds  | Shutdown issues         |
+| Docker Image        | Size                     | Start/stop time | CLI Tools | Graceful Shutdown |
+|---------------------|--------------------------|-----------------|-----------|-------------------|
+| Apache Kafka Native | 137MB (4.0.1 linux amd)  | <1 second       | No        | OK                |
+| Apache Kafka        | 393MB (4.0.1 linux amd)  | ~3-4 seconds    | Yes       | OK                |
+| Confluent Kafka     | 649MB (7.5.0 linux amd)  | ~13-14 seconds  | Yes       | [issue](https://github.com/testcontainers/testcontainers-go/issues/2206) |
 
 !!!info
     If you use image from custom registry, you might need to override starter script, see "Starter script" section below.
