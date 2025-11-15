@@ -38,7 +38,7 @@ Apache Kafka Native images are also smallest, however they do not include CLI to
 
 | Docker Image        | Size                     | Start/stop time | Notes                   |
 |---------------------|--------------------------|-----------------|-------------------------|
-| Apache Kafka Native | 137MB (4.0.1 linux amd)  | <1 seconds      | Does not have CLI tools |
+| Apache Kafka Native | 137MB (4.0.1 linux amd)  | <1 second       | Does not have CLI tools |
 | Apache Kafka        | 393MB (4.0.1 linux amd)  | ~3-4 seconds    |                         |
 | Confluent Kafka     | 649MB (7.5.0 linux amd)  | ~13-15 seconds  | Shutdown issues         |
 
