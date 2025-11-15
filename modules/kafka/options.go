@@ -54,6 +54,7 @@ func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
 
 var errFlavorAlreadySet = errors.New("flavor was already set, provide only one of WithApacheFlavor or WithConfluentFlavor")
 
+// WithApacheFlavor sets the starter script to the one compatible with Apache Kafka images.
 func WithApacheFlavor() RunOption {
 	return func(o *runOptions) error {
 		o.starterScript = apacheStarterScript
@@ -65,6 +66,7 @@ func WithApacheFlavor() RunOption {
 	}
 }
 
+// WithConfluentFlavor sets the starter script to the one compatible with Confluent Kafka images.
 func WithConfluentFlavor() RunOption {
 	return func(o *runOptions) error {
 		o.starterScript = confluentStarterScript
