@@ -11,7 +11,7 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      golang: 1.23
+      golang: 1.24
   build:
     commands:
       - go test ./...

@@ -66,33 +66,22 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 // Run creates an instance of the Couchbase container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*CouchbaseContainer, error) {
 	config := &Config{
-		enabledServices:  make([]Service, 0),
+		enabledServices:  []Service{},
 		username:         "Administrator",
 		password:         "password",
 		indexStorageMode: MemoryOptimized,
 	}
 
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{MGMT_PORT + "/tcp", MGMT_SSL_PORT + "/tcp"},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
+	// Process custom options first to extract config
+	// Start with initial services
+	allCustomizers := make([]testcontainers.ContainerCustomizer, 0, len(initialServices)+len(opts))
 	for _, srv := range initialServices {
-		opts = append(opts, withService(srv))
+		allCustomizers = append(allCustomizers, withService(srv))
 	}
+	allCustomizers = append(allCustomizers, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-
-		// transfer options to the config
-
+	// Transfer custom options to the config
+	for _, opt := range allCustomizers {
 		if bucketCustomizer, ok := opt.(bucketCustomizer); ok {
 			// If the option is a bucketCustomizer, we need to add the buckets to the request
 			config.buckets = append(config.buckets, bucketCustomizer.buckets...)
@@ -108,18 +97,27 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			config.password = credentialsCustomizer.password
 
 			if len(credentialsCustomizer.password) < 6 {
-				return nil, errors.New("admin password must be at most 6 characters long")
+				return nil, errors.New("admin password must be at least 6 characters long")
 			}
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-	var couchbaseContainer *CouchbaseContainer
-	if container != nil {
-		couchbaseContainer = &CouchbaseContainer{container, config}
+	// Build moduleOpts with defaults
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(MGMT_PORT+"/tcp", MGMT_SSL_PORT+"/tcp"),
 	}
+
+	// Append all customizers (initial services + user opts)
+	moduleOpts = append(moduleOpts, allCustomizers...)
+
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
+	var couchbaseContainer *CouchbaseContainer
+	if ctr != nil {
+		couchbaseContainer = &CouchbaseContainer{Container: ctr, config: config}
+	}
+
 	if err != nil {
-		return couchbaseContainer, err
+		return couchbaseContainer, fmt.Errorf("run couchbase: %w", err)
 	}
 
 	if err = couchbaseContainer.initCluster(ctx); err != nil {

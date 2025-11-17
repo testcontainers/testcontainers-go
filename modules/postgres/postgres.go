@@ -70,22 +70,19 @@ func WithConfigFile(cfg string) testcontainers.CustomizeRequestOption {
 			FileMode:          0o755,
 		}
 
-		req.Files = append(req.Files, cfgFile)
-		req.Cmd = append(req.Cmd, "-c", "config_file=/etc/postgresql.conf")
+		if err := testcontainers.WithFiles(cfgFile)(req); err != nil {
+			return err
+		}
 
-		return nil
+		return testcontainers.WithCmdArgs("-c", "config_file=/etc/postgresql.conf")(req)
 	}
 }
 
 // WithDatabase sets the initial database to be created when the container starts
 // It can be used to define a different name for the default database that is created when the image is first started.
 // If it is not specified, then the value of WithUser will be used.
-func WithDatabase(dbName string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["POSTGRES_DB"] = dbName
-
-		return nil
-	}
+func WithDatabase(dbName string) testcontainers.ContainerCustomizer {
+	return testcontainers.WithEnv(map[string]string{"POSTGRES_DB": dbName})
 }
 
 // WithInitScripts sets the init scripts to be run when the container starts.
@@ -124,28 +121,19 @@ func WithOrderedInitScripts(scripts ...string) testcontainers.CustomizeRequestOp
 // WithPassword sets the initial password of the user to be created when the container starts
 // It is required for you to use the PostgreSQL image. It must not be empty or undefined.
 // This environment variable sets the superuser password for PostgreSQL.
-func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["POSTGRES_PASSWORD"] = password
-
-		return nil
-	}
+func WithPassword(password string) testcontainers.ContainerCustomizer {
+	return testcontainers.WithEnv(map[string]string{"POSTGRES_PASSWORD": password})
 }
 
 // WithUsername sets the initial username to be created when the container starts
 // It is used in conjunction with WithPassword to set a user and its password.
 // It will create the specified user with superuser power and a database with the same name.
 // If it is not specified, then the default user of postgres will be used.
-func WithUsername(user string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		if user == "" {
-			user = defaultUser
-		}
-
-		req.Env["POSTGRES_USER"] = user
-
-		return nil
+func WithUsername(user string) testcontainers.ContainerCustomizer {
+	if user == "" {
+		user = defaultUser
 	}
+	return testcontainers.WithEnv(map[string]string{"POSTGRES_USER": user})
 }
 
 // Deprecated: use Run instead
@@ -156,48 +144,64 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Postgres container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*PostgresContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image: img,
-		Env: map[string]string{
-			"POSTGRES_USER":     defaultUser,
-			"POSTGRES_PASSWORD": defaultPassword,
-			"POSTGRES_DB":       defaultUser, // defaults to the user name
-		},
-		ExposedPorts: []string{"5432/tcp"},
-		Cmd:          []string{"postgres", "-c", "fsync=off"},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
 	// Gather all config options (defaults and then apply provided options)
 	settings := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
 			apply(&settings)
 		}
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithEnv(map[string]string{
+			"POSTGRES_USER":     defaultUser,
+			"POSTGRES_PASSWORD": defaultPassword,
+			"POSTGRES_DB":       defaultUser, // defaults to the user name
+		}),
+		testcontainers.WithExposedPorts("5432/tcp"),
+		testcontainers.WithCmd("postgres", "-c", "fsync=off"),
+	}
+
+	moduleOpts = append(moduleOpts, opts...)
+
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *PostgresContainer
-	if container != nil {
+	if ctr != nil {
 		c = &PostgresContainer{
-			Container:     container,
-			dbName:        req.Env["POSTGRES_DB"],
-			password:      req.Env["POSTGRES_PASSWORD"],
-			user:          req.Env["POSTGRES_USER"],
+			Container:     ctr,
+			dbName:        defaultUser,
+			password:      defaultPassword,
+			user:          defaultUser,
 			sqlDriverName: settings.SQLDriverName,
 			snapshotName:  settings.Snapshot,
 		}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run postgres: %w", err)
+	}
+
+	// Retrieve the actual env vars set on the container
+	inspect, err := ctr.Inspect(ctx)
+	if err != nil {
+		return c, fmt.Errorf("inspect postgres: %w", err)
+	}
+
+	var foundDB, foundUser, foundPass bool
+	for _, env := range inspect.Config.Env {
+		if v, ok := strings.CutPrefix(env, "POSTGRES_DB="); ok {
+			c.dbName, foundDB = v, true
+		}
+		if v, ok := strings.CutPrefix(env, "POSTGRES_USER="); ok {
+			c.user, foundUser = v, true
+		}
+		if v, ok := strings.CutPrefix(env, "POSTGRES_PASSWORD="); ok {
+			c.password, foundPass = v, true
+		}
+
+		if foundDB && foundUser && foundPass {
+			break
+		}
 	}
 
 	return c, nil
@@ -228,7 +232,7 @@ func WithSSLCert(caCertFile string, certFile string, keyFile string) testcontain
 	return func(req *testcontainers.GenericContainerRequest) error {
 		const entrypointPath = "/usr/local/bin/docker-entrypoint-ssl.bash"
 
-		req.Files = append(req.Files,
+		if err := testcontainers.WithFiles(
 			testcontainers.ContainerFile{
 				HostFilePath:      caCertFile,
 				ContainerFilePath: "/tmp/testcontainers-go/postgres/ca_cert.pem",
@@ -249,10 +253,11 @@ func WithSSLCert(caCertFile string, certFile string, keyFile string) testcontain
 				ContainerFilePath: entrypointPath,
 				FileMode:          defaultPermission,
 			},
-		)
-		req.Entrypoint = []string{"sh", entrypointPath}
+		)(req); err != nil {
+			return err
+		}
 
-		return nil
+		return testcontainers.WithEntrypoint("sh", entrypointPath)(req)
 	}
 }
 

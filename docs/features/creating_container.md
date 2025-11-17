@@ -62,83 +62,82 @@ and `Network.Remove` which can be seen in the examples.
 package main
 
 import (
-	"context"
-	"fmt"
-	"net/http"
-	"testing"
+    "context"
+    "fmt"
+    "net/http"
+    "testing"
 
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
+    "github.com/testcontainers/testcontainers-go"
+    "github.com/testcontainers/testcontainers-go/wait"
 )
 
 type nginxContainer struct {
-	testcontainers.Container
-	URI string
+    testcontainers.Container
+    URI string
 }
 
 
 func setupNginx(ctx context.Context, networkName string) (*nginxContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        "nginx",
-		ExposedPorts: []string{"80/tcp"},
-		Networks:     []string{"bridge", networkName},
-		WaitingFor:   wait.ForHTTP("/"),
-	}
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	var nginxC *nginxContainer
-	if container != nil {
-		nginxC = &nginxContainer{Container: container}
-	}
-	if err != nil {
-		return nginxC, err
-	}
+    req := testcontainers.ContainerRequest{
+        Image:        "nginx",
+        ExposedPorts: []string{"80/tcp"},
+        Networks:     []string{"bridge", networkName},
+        WaitingFor:   wait.ForHTTP("/"),
+    }
+    container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+        ContainerRequest: req,
+        Started:          true,
+    })
+    var nginxC *nginxContainer
+    if container != nil {
+        nginxC = &nginxContainer{Container: container}
+    }
+    if err != nil {
+        return nginxC, err
+    }
 
-	ip, err := container.Host(ctx)
-	if err != nil {
-		return nginxC, err
-	}
+    ip, err := container.Host(ctx)
+    if err != nil {
+        return nginxC, err
+    }
 
-	mappedPort, err := container.MappedPort(ctx, "80")
-	if err != nil {
-		return nginxC, err
-	}
+    mappedPort, err := container.MappedPort(ctx, "80")
+    if err != nil {
+        return nginxC, err
+    }
 
-	nginxC.URI = fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
+    nginxC.URI = fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
 
-	return nginxC, nil
+    return nginxC, nil
 }
 
 func TestIntegrationNginxLatestReturn(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
+    if testing.Short() {
+        t.Skip("skipping integration test")
+    }
 
-	ctx := context.Background()
+    ctx := context.Background()
 
-	nw, err := network.New(ctx)
-	require.NoError(t, err)
-	testcontainers.CleanupNetwork(t, nw)
+    nw, err := network.New(ctx)
+    require.NoError(t, err)
+    testcontainers.CleanupNetwork(t, nw)
 
-	nginxC, err := setupNginx(ctx, nw.Name)
-	testcontainers.CleanupContainer(t, nginxC)
-	require.NoError(t, err)
+    nginxC, err := setupNginx(ctx, nw.Name)
+    testcontainers.CleanupContainer(t, nginxC)
+    require.NoError(t, err)
 
-	resp, err := http.Get(nginxC.URI)
-	require.Equal(t, http.StatusOK, resp.StatusCode)
+    resp, err := http.Get(nginxC.URI)
+    require.Equal(t, http.StatusOK, resp.StatusCode)
 }
 ```
 
-
-
-
 ### Lifecycle hooks
 
-_Testcontainers for Go_ allows you to define your own lifecycle hooks for better control over your containers. You just need to define functions that return an error and receive the Go context as first argument, and a `ContainerRequest` for the `Creating` hook, and a `Container` for the rest of them as second argument.
+_Testcontainers for Go_ allows you to define your own lifecycle hooks for better control over your containers. You just need to define functions that return an error and receive the Go context as the first argument.
 
-You'll be able to pass multiple lifecycle hooks at the `ContainerRequest` as an array of `testcontainers.ContainerLifecycleHooks`. The `testcontainers.ContainerLifecycleHooks` struct defines the following lifecycle hooks, each of them backed by an array of functions representing the hooks:
+You'll be able to pass multiple lifecycle hooks using the `WithLifecycleHooks` and `WithAdditionalLifecycleHooks` options, passing an array of `testcontainers.ContainerLifecycleHooks`. The first one replaces the existing lifecycle hooks with the new ones, while the second one appends the new lifecycle hooks to the existing ones.
+
+The `testcontainers.ContainerLifecycleHooks` struct defines the following lifecycle hooks, each of them backed by an array of functions representing the hooks:
 
 * `PreBuilds` - hooks that are executed before the image is built. This hook is only available when creating a container from a Dockerfile
 * `PostBuilds` - hooks that are executed after the image is built. This hook is only available when creating a container from a Dockerfile
@@ -164,7 +163,7 @@ Inside each group, the hooks will be executed in the order they were defined.
 !!!info
 	The default hooks are for logging (applied to all hooks), customising the Docker config (applied to the pre-create hook), copying files in to the container (applied to the post-create hook), adding log consumers (applied to the post-start and pre-terminate hooks), and running the wait strategies as a readiness check (applied to the post-start hook).
 
-It's important to notice that the `Readiness` of a container is defined by the wait strategies defined for the container. **This hook will be executed right after the `PostStarts` hook**. If you want to add your own readiness checks, you can do it by adding a `PostReadies` hook to the container request, which will execute your own readiness check after the default ones. That said, the `PostStarts` hooks don't warrant that the container is ready, so you should not rely on that.
+It's important to note that the `Readiness` of a container is defined by the wait strategies configured for the container. **This hook is executed right after the `PostStarts` hook**. If you want additional readiness checks, add a `PostReadies` hook, which runs after the default ones. The `PostStarts` hooks do not imply readiness; don't rely on them for that.
 
 !!!warning
 	Up to `v0.37.0`, the readiness hook included checks for all the exposed ports to be ready. This is not the case anymore, and the readiness hook only uses the wait strategies defined for the container to determine if the container is ready.
@@ -172,108 +171,100 @@ It's important to notice that the `Readiness` of a container is defined by the w
 In the following example, we are going to create a container using all the lifecycle hooks, all of them printing a message when any of the lifecycle hooks is called:
 
 <!--codeinclude-->
-[Extending container with lifecycle hooks](../../lifecycle_test.go) inside_block:reqWithLifecycleHooks
+[Extending container with lifecycle hooks](../../lifecycle_test.go) inside_block:optsWithLifecycleHooks
 <!--/codeinclude-->
 
 #### Default Logging Hook
 
-_Testcontainers for Go_ comes with a default logging hook that will print a log message for each container lifecycle event, using the default logger. You can add your own logger by passing the `testcontainers.DefaultLoggingHook` option to the `ContainerRequest`, passing a reference to your preferred logger:
+_Testcontainers for Go_ comes with a default logging hook that will print a log message for each container lifecycle event, using the default logger. You can add your own logger by passing the `testcontainers.DefaultLoggingHook` option to the `Run` options, passing a reference to your preferred logger:
 
 <!--codeinclude-->
-[Use a custom logger for container hooks](../../lifecycle_test.go) inside_block:reqWithDefaultLoggingHook
+[Use a custom logger for container hooks](../../lifecycle_test.go) inside_block:optsWithDefaultLoggingHook
 [Custom Logger implementation](../../lifecycle_test.go) inside_block:customLoggerImplementation
 <!--/codeinclude-->
 
 ### Advanced Settings
 
-The aforementioned `GenericContainer` function and the `ContainerRequest` struct represent a straightforward manner to configure the containers, but you could need to create your containers with more advance settings regarding the config, host config and endpoint settings Docker types. For those more advance settings, _Testcontainers for Go_ offers a way to fully customize the container request and those internal Docker types. These customisations, called _modifiers_, will be applied just before the internal call to the Docker client to create the container.
+The aforementioned `Run` function represents a straightforward way to configure containers, but you may need more advanced settings regarding the Docker config, host config, and endpoint settings types. For those advanced settings, _Testcontainers for Go_ offers a way to fully customize the container and those internal Docker types. These customisations, called _modifiers_, are applied just before the internal call to the Docker client to create the container.
 
 <!--codeinclude-->
 [Using modifiers](../../lifecycle_test.go) inside_block:reqWithModifiers
 <!--/codeinclude-->
 
 !!!warning
-	The only special case where the modifiers are not applied last, is when there are no exposed ports in the container request and the container does not use a network mode from a container (e.g. `req.NetworkMode = container.NetworkMode("container:$CONTAINER_ID")`). In that case, _Testcontainers for Go_ will extract the ports from the underlying Docker image and export them.
+	The only special case where the modifiers are not applied last, is when there are no exposed ports and the container does not use a network mode from a container (e.g. `req.NetworkMode = container.NetworkMode("container:$CONTAINER_ID")`). In that case, _Testcontainers for Go_ will extract the ports from the underlying Docker image and export them.
 
 ## Reusable container
 
-With `Reuse` option you can reuse an existing container. Reusing will work only if you pass an
-existing container name via 'req.Name' field. If the name is not in a list of existing containers,
-the function will create a new generic container. If `Reuse` is true and `Name` is empty, you will get error.
+Using the `WithReuseByName` option you can reuse an existing container. Reuse works only when you provide an
+existing container name to this option. If the name is not found among existing containers,
+the function will create a new container. If the name is empty, an error is returned.
 
 The following test creates an NGINX container, adds a file into it and then reuses the container again for checking the file:
+
 ```go
 package main
 
 import (
-	"context"
-	"fmt"
-	"log"
+    "context"
+    "fmt"
+    "log"
 
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
+    "github.com/testcontainers/testcontainers-go"
+    "github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
-	reusableContainerName = "my_test_reusable_container"
+    reusableContainerName = "my_test_reusable_container"
 )
 
 func main() {
-	ctx := context.Background()
+    ctx := context.Background()
 
-	n1, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "nginx:1.17.6",
-			ExposedPorts: []string{"80/tcp"},
-			WaitingFor:   wait.ForListeningPort("80/tcp"),
-			Name:         reusableContainerName,
-		},
-		Started: true,
-	})
-	defer func() {
-		if err := testcontainers.TerminateContainer(n1); err != nil {
-			log.Printf("failed to terminate container: %s", err)
-		}
-	}()
-	if err != nil {
-		log.Print(err)
-		return
-	}
+    n1, err := testcontainers.Run(ctx, "nginx:1.17.6",
+        testcontainers.WithExposedPorts("80/tcp"),
+        testcontainers.WithWaitStrategy(wait.ForListeningPort("80/tcp")),
+        testcontainers.WithReuseByName(reusableContainerName),
+    )
+    defer func() {
+        if err := testcontainers.TerminateContainer(n1); err != nil {
+            log.Printf("failed to terminate container: %s", err)
+        }
+    }()
+    if err != nil {
+        log.Print(err)
+        return
+    }
 
-	copiedFileName := "hello_copy.sh"
-	err = n1.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 700)
+    copiedFileName := "hello_copy.sh"
+    err = n1.CopyFileToContainer(ctx, "./testdata/hello.sh", "/"+copiedFileName, 700)
 
-	if err != nil {
-		log.Print(err)
-		return
-	}
+    if err != nil {
+        log.Print(err)
+        return
+    }
 
-	n2, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "nginx:1.17.6",
-			ExposedPorts: []string{"80/tcp"},
-			WaitingFor:   wait.ForListeningPort("80/tcp"),
-			Name:         reusableContainerName,
-		},
-		Started: true,
-		Reuse:   true,
-	})
-	defer func() {
-		if err := testcontainers.TerminateContainer(n2); err != nil {
-			log.Printf("failed to terminate container: %s", err)
-		}
-	}()
-	if err != nil {
-		log.Print(err)
-		return
-	}
+    n2, err := testcontainers.Run(ctx, "nginx:1.17.6",
+        testcontainers.WithExposedPorts("80/tcp"),
+        testcontainers.WithWaitStrategy(wait.ForListeningPort("80/tcp")),
+        testcontainers.WithReuseByName(reusableContainerName),
+    )
+    defer func() {
+        if err := testcontainers.TerminateContainer(n2); err != nil {
+            log.Printf("failed to terminate container: %s", err)
+        }
+    }()
+    if err != nil {
+        log.Print(err)
+        return
+    }
 
-	c, _, err := n2.Exec(ctx, []string{"bash", copiedFileName})
-	if err != nil {
-		log.Print(err)
-		return
-	}
-	fmt.Println(c)
+    c, _, err := n2.Exec(ctx, []string{"bash", copiedFileName})
+    if err != nil {
+        log.Print(err)
+        return
+    }
+    fmt.Println(c)
 }
 ```
 
@@ -287,60 +278,60 @@ The following test creates two NGINX containers in parallel:
 package main
 
 import (
-	"context"
-	"fmt"
-	"log"
+    "context"
+    "fmt"
+    "log"
 
-	"github.com/testcontainers/testcontainers-go"
+    "github.com/testcontainers/testcontainers-go"
 )
 
 func main() {
-	ctx := context.Background()
+    ctx := context.Background()
 
-	requests := testcontainers.ParallelContainerRequest{
-		{
-			ContainerRequest: testcontainers.ContainerRequest{
+    requests := testcontainers.ParallelContainerRequest{
+        {
+            ContainerRequest: testcontainers.ContainerRequest{
 
-				Image: "nginx",
-				ExposedPorts: []string{
-					"10080/tcp",
-				},
-			},
-			Started: true,
-		},
-		{
-			ContainerRequest: testcontainers.ContainerRequest{
+                Image: "nginx",
+                ExposedPorts: []string{
+                    "10080/tcp",
+                },
+            },
+            Started: true,
+        },
+        {
+            ContainerRequest: testcontainers.ContainerRequest{
 
-				Image: "nginx",
-				ExposedPorts: []string{
-					"10081/tcp",
-				},
-			},
-			Started: true,
-		},
-	}
+                Image: "nginx",
+                ExposedPorts: []string{
+                    "10081/tcp",
+                },
+            },
+            Started: true,
+        },
+    }
 
-	res, err := testcontainers.ParallelContainers(ctx, requests, testcontainers.ParallelContainersOptions{})
-	for _, c := range res {
-		c := c
-		defer func() {
-			if err := testcontainers.TerminateContainer(c); err != nil {
-				log.Printf("failed to terminate container: %s", c)
-			}
-		}()
-	}
+    res, err := testcontainers.ParallelContainers(ctx, requests, testcontainers.ParallelContainersOptions{})
+    for _, c := range res {
+        c := c
+        defer func() {
+            if err := testcontainers.TerminateContainer(c); err != nil {
+                log.Printf("failed to terminate container: %s", c)
+            }
+        }()
+    }
 
-	if err != nil {
-		e, ok := err.(testcontainers.ParallelContainersError)
-		if !ok {
-			log.Printf("unknown error: %v", err)
-			return
-		}
+    if err != nil {
+        e, ok := err.(testcontainers.ParallelContainersError)
+        if !ok {
+            log.Printf("unknown error: %v", err)
+            return
+        }
 
-		for _, pe := range e.Errors {
-			fmt.Println(pe.Request, pe.Error)
-		}
-		return
-	}
+        for _, pe := range e.Errors {
+            fmt.Println(pe.Request, pe.Error)
+        }
+        return
+    }
 }
 ```

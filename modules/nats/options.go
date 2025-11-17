@@ -13,7 +13,7 @@ type options struct {
 
 func defaultOptions() options {
 	return options{
-		CmdArgs: make(map[string]string, 0),
+		CmdArgs: make(map[string]string),
 	}
 }
 

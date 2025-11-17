@@ -14,24 +14,20 @@ type nginxContainer struct {
 }
 
 func startContainer(ctx context.Context) (*nginxContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        "nginx",
-		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
-	}
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	ctr, err := testcontainers.Run(
+		ctx, "nginx",
+		testcontainers.WithExposedPorts("80/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/").WithStartupTimeout(10*time.Second)),
+	)
 	var nginxC *nginxContainer
-	if container != nil {
-		nginxC = &nginxContainer{Container: container}
+	if ctr != nil {
+		nginxC = &nginxContainer{Container: ctr}
 	}
 	if err != nil {
 		return nginxC, err
 	}
 
-	endpoint, err := container.PortEndpoint(ctx, "80", "http")
+	endpoint, err := ctr.PortEndpoint(ctx, "80", "http")
 	if err != nil {
 		return nginxC, err
 	}

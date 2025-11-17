@@ -32,11 +32,9 @@ func (c *ConsulContainer) ApiEndpoint(ctx context.Context) (string, error) {
 
 // WithConfigString takes in a JSON string of keys and values to define a configuration to be used by the instance.
 func WithConfigString(config string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["CONSUL_LOCAL_CONFIG"] = config
-
-		return nil
-	}
+	return testcontainers.WithEnv(map[string]string{
+		"CONSUL_LOCAL_CONFIG": config,
+	})
 }
 
 // WithConfigFile takes in a path to a JSON file to define a configuration to be used by the instance.
@@ -61,37 +59,24 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Consul container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ConsulContainer, error) {
-	containerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: img,
-			ExposedPorts: []string{
-				defaultHTTPAPIPort + "/tcp",
-				defaultBrokerPort + "/tcp",
-				defaultBrokerPort + "/udp",
-			},
-			Env: map[string]string{},
-			WaitingFor: wait.ForAll(
-				wait.ForLog("Consul agent running!"),
-				wait.ForListeningPort(defaultHTTPAPIPort+"/tcp"),
-			),
-		},
-		Started: true,
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultHTTPAPIPort+"/tcp", defaultBrokerPort+"/tcp", defaultBrokerPort+"/udp"),
+		testcontainers.WithWaitStrategy(
+			wait.ForLog("Consul agent running!"),
+			wait.ForListeningPort(defaultHTTPAPIPort+"/tcp"),
+		),
 	}
 
-	for _, opt := range opts {
-		if err := opt.Customize(&containerReq); err != nil {
-			return nil, err
-		}
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	container, err := testcontainers.GenericContainer(ctx, containerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *ConsulContainer
-	if container != nil {
-		c = &ConsulContainer{Container: container}
+	if ctr != nil {
+		c = &ConsulContainer{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run consul: %w", err)
 	}
 
 	return c, nil

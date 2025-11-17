@@ -98,27 +98,24 @@ func testExposeHostPorts(t *testing.T, hostPorts []int, hasNetwork, hasHostAcces
 	if hasHostAccess {
 		hostAccessPorts = hostPorts
 	}
-	req := testcontainers.GenericContainerRequest{
-		// hostAccessPorts {
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:           "alpine:3.17",
-			HostAccessPorts: hostAccessPorts,
-			Cmd:             []string{"top"},
-		},
-		// }
-		Started: true,
+
+	// hostAccessPorts {
+	opts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithHostPortAccess(hostAccessPorts...),
+		testcontainers.WithCmd("top"),
 	}
+	// }
 
 	if hasNetwork {
 		nw, err := network.New(ctx)
 		require.NoError(t, err)
 		testcontainers.CleanupNetwork(t, nw)
 
-		req.Networks = []string{nw.Name}
-		req.NetworkAliases = map[string][]string{nw.Name: {"myalpine"}}
+		opts = append(opts, network.WithNetwork([]string{"myalpine"}, nw))
+
 	}
 
-	c, err := testcontainers.GenericContainer(ctx, req)
+	c, err := testcontainers.Run(ctx, "alpine", opts...)
 	testcontainers.CleanupContainer(t, c)
 	require.NoError(t, err)
 
