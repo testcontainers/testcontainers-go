@@ -19,7 +19,8 @@ import (
 )
 
 func TestWaitForListeningPortSucceeds(t *testing.T) {
-	listener, err := net.Listen("tcp", "localhost:0")
+	ln := &net.ListenConfig{}
+	listener, err := ln.Listen(t.Context(), "tcp", "localhost:0")
 	require.NoError(t, err)
 	defer listener.Close()
 
@@ -144,7 +145,8 @@ func TestWaitForMappedPortSucceeds(t *testing.T) {
 }
 
 func TestWaitForExposedPortSkipChecksSucceeds(t *testing.T) {
-	listener, err := net.Listen("tcp", "localhost:0")
+	ln := &net.ListenConfig{}
+	listener, err := ln.Listen(t.Context(), "tcp", "localhost:0")
 	require.NoError(t, err)
 	defer listener.Close()
 
@@ -384,7 +386,8 @@ func TestHostPortStrategyFailsWhileExternalCheckingDueToUnexpectedContainerStatu
 }
 
 func TestHostPortStrategyFailsWhileInternalCheckingDueToOOMKilledContainer(t *testing.T) {
-	listener, err := net.Listen("tcp", "localhost:0")
+	ln := &net.ListenConfig{}
+	listener, err := ln.Listen(t.Context(), "tcp", "localhost:0")
 	require.NoError(t, err)
 	defer listener.Close()
 
@@ -424,7 +427,8 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToOOMKilledContainer(t *te
 }
 
 func TestHostPortStrategyFailsWhileInternalCheckingDueToExitedContainer(t *testing.T) {
-	listener, err := net.Listen("tcp", "localhost:0")
+	ln := &net.ListenConfig{}
+	listener, err := ln.Listen(t.Context(), "tcp", "localhost:0")
 	require.NoError(t, err)
 	defer listener.Close()
 
@@ -465,7 +469,8 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToExitedContainer(t *testi
 }
 
 func TestHostPortStrategyFailsWhileInternalCheckingDueToUnexpectedContainerStatus(t *testing.T) {
-	listener, err := net.Listen("tcp", "localhost:0")
+	ln := &net.ListenConfig{}
+	listener, err := ln.Listen(t.Context(), "tcp", "localhost:0")
 	require.NoError(t, err)
 	defer listener.Close()
 
@@ -505,7 +510,8 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToUnexpectedContainerStatu
 }
 
 func TestHostPortStrategySucceedsGivenShellIsNotInstalled(t *testing.T) {
-	listener, err := net.Listen("tcp", "localhost:0")
+	ln := &net.ListenConfig{}
+	listener, err := ln.Listen(t.Context(), "tcp", "localhost:0")
 	require.NoError(t, err)
 	defer listener.Close()
 
@@ -569,7 +575,8 @@ func TestHostPortStrategySucceedsGivenShellIsNotInstalled(t *testing.T) {
 }
 
 func TestHostPortStrategySucceedsGivenShellIsNotFound(t *testing.T) {
-	listener, err := net.Listen("tcp", "localhost:0")
+	ln := &net.ListenConfig{}
+	listener, err := ln.Listen(t.Context(), "tcp", "localhost:0")
 	require.NoError(t, err)
 	defer listener.Close()
 

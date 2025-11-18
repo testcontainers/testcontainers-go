@@ -38,7 +38,7 @@ func TestYugabyteDB_YSQL(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, db)
 
-		err = db.Ping()
+		err = db.PingContext(ctx)
 		require.NoError(t, err)
 	})
 
@@ -66,7 +66,7 @@ func TestYugabyteDB_YSQL(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, db)
 
-		err = db.Ping()
+		err = db.PingContext(ctx)
 		require.NoError(t, err)
 	})
 }
