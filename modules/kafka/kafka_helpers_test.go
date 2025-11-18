@@ -95,13 +95,19 @@ func TestValidateKRaftVersion(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "Official: valid, with the amd64 architecture suffix",
+			name:    "Official: invalid, with the amd64 architecture suffix",
 			image:   "confluentinc/confluent-local:7.5.9.amd64",
-			wantErr: false,
+			wantErr: true,
 		},
 		{
-			name:  "Official: valid, with the arm64 architecture suffix",
-			image: "confluentinc/confluent-local:7.5.9.arm64",
+			name:    "Official: invalid, with the arm64 architecture suffix",
+			image:   "confluentinc/confluent-local:7.5.9.arm64",
+			wantErr: true,
+		},
+		{
+			name:    "Official: valid, without the architecture suffix",
+			image:   "confluentinc/confluent-local:7.5.9",
+			wantErr: false,
 		},
 		{
 			name:    "lacks tag",
