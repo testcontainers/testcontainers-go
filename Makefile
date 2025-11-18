@@ -67,7 +67,7 @@ compose-clone: compose-clean
 
 .PHONY: compose-replace
 compose-replace:
-	cd modules/compose && echo "replace github.com/docker/compose/v2 => ../../.build/compose" >> go.mod
+	cd modules/compose && echo "replace github.com/docker/compose/v5 => ../../.build/compose" >> go.mod
 
 .PHONY: compose-spec-replace
 compose-spec-replace:
