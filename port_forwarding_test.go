@@ -33,14 +33,12 @@ func TestExposeHostPorts(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			fmt.Fprint(w, expectedResponse)
 		}))
-		hostPorts[i] = server.Listener.Addr().(*net.TCPAddr).Port
 
 		servers[i] = server
-		freePort := server.Listener.Addr().(*net.TCPAddr).Port
-		hostPorts[i] = freePort
+		hostPorts[i] = server.Listener.Addr().(*net.TCPAddr).Port
 
 		waitStrategies[i] = wait.
-			ForExec([]string{"wget", "-q", "-O", "-", fmt.Sprintf("http://%s:%d", testcontainers.HostInternal, freePort)}).
+			ForExec([]string{"wget", "-q", "-O", "-", fmt.Sprintf("http://%s:%d", testcontainers.HostInternal, hostPorts[i])}).
 			WithExitCodeMatcher(func(code int) bool {
 				return code == 0
 			}).
