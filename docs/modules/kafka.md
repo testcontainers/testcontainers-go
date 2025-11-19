@@ -152,7 +152,7 @@ The `Brokers(ctx)` method returns the Kafka brokers as a string slice, containin
 [Get Kafka brokers](../../modules/kafka/kafka_test.go) inside_block:getBrokers
 <!--/codeinclude-->
 
-## Localhost listener
+#### Localhost listener
 
 - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
