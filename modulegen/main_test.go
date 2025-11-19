@@ -297,10 +297,12 @@ func TestRefresh(t *testing.T) {
 	err := internal.Refresh(testProject.ctx)
 	require.NoError(t, err)
 
-	var modulesAndExamples []context.TestcontainersModule
-
 	examples, err := testProject.ctx.GetExamples()
 	require.NoError(t, err)
+	modules, err := testProject.ctx.GetModules()
+	require.NoError(t, err)
+
+	modulesAndExamples := make([]context.TestcontainersModule, 0, len(examples)+len(modules))
 
 	for _, example := range examples {
 		modulesAndExamples = append(modulesAndExamples, context.TestcontainersModule{
@@ -308,9 +310,6 @@ func TestRefresh(t *testing.T) {
 			IsModule: false,
 		})
 	}
-
-	modules, err := testProject.ctx.GetModules()
-	require.NoError(t, err)
 
 	for _, module := range modules {
 		modulesAndExamples = append(modulesAndExamples, context.TestcontainersModule{
