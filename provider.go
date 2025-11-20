@@ -108,7 +108,7 @@ func (t ProviderType) UnderlyingProviderType() ProviderType {
 		return ProviderPodman
 	}
 
-	// Attempt to auto-detect Podman from the the Docker configuration
+	// Attempt to auto-detect Podman from the Docker configuration
 	if strings.Contains(core.MustExtractDockerHost(context.Background()), "podman.sock") {
 		return ProviderPodman
 	}
