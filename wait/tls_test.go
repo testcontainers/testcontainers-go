@@ -8,6 +8,7 @@ import (
 	_ "embed"
 	"fmt"
 	"io"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -106,18 +107,14 @@ func ExampleForTLSCert() {
 	// be copied to in the container as detailed by the Dockerfile.
 	forCert := wait.ForTLSCert("/app/tls.pem", "/app/tls-key.pem").
 		WithServerName("testcontainer.go.test")
-	req := testcontainers.ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context: "testdata/http",
-		},
-		WaitingFor: forCert,
-	}
-	// }
 
-	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	c, err := testcontainers.Run(ctx, "",
+		testcontainers.WithDockerfile(testcontainers.FromDockerfile{
+			Context: filepath.Join("testdata", "http"),
+		}),
+		testcontainers.WithWaitStrategy(forCert),
+	)
+	// }
 	defer func() {
 		if err := testcontainers.TerminateContainer(c); err != nil {
 			log.Printf("failed to terminate container: %s", err)

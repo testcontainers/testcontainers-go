@@ -1,6 +1,6 @@
 # Docker MCP Gateway
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.39.0"><span class="tc-version">:material-tag: v0.39.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/dockermcpgateway
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.39.0"><span class="tc-version">:material-tag: v0.39.0</span></a>
 
 The DockerMCPGateway module exposes one entrypoint function to create the DockerMCPGateway container, and this function receives three parameters:
 
@@ -49,7 +49,7 @@ When starting the DockerMCPGateway container, you can pass options in a variadic
 
 #### WithTools
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.39.0"><span class="tc-version">:material-tag: v0.39.0</span></a>
 
 Use the `WithTools` option to set the tools from a server to be available in the MCP Gateway container. Adding multiple tools for the same server will append to the existing tools for that server, and no duplicate tools will be added for the same server.
 
@@ -59,7 +59,7 @@ dockermcpgateway.WithTools("brave", []string{"brave_local_search", "brave_web_se
 
 #### WithSecrets
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.39.0"><span class="tc-version">:material-tag: v0.39.0</span></a>
 
 Use the `WithSecrets` option to set the tools from a server to be available in the MCP Gateway container. Empty keys are not allowed, although empty values are allowed for a key.
 
@@ -77,7 +77,7 @@ The DockerMCPGateway container exposes the following methods:
 
 #### Tools
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.39.0"><span class="tc-version">:material-tag: v0.39.0</span></a>
 
 Returns a map of tools available in the MCP Gateway container, where the key is the server name and the value is a slice of tool names.
 
@@ -87,7 +87,7 @@ tools := ctr.Tools()
 
 #### GatewayEndpoint
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.39.0"><span class="tc-version">:material-tag: v0.39.0</span></a>
 
 Returns the endpoint of the MCP Gateway container, which is a string containing the host and mapped port for the default MCP Gateway port (8811/tcp).
 

@@ -96,6 +96,15 @@ go run . new module --name ${NAME_OF_YOUR_MODULE} --image "${REGISTRY}/${MODULE}
     go run . new example --name ${NAME_OF_YOUR_MODULE} --image "${REGISTRY}/${MODULE}:${TAG}" --title ${TITLE_OF_YOUR_MODULE}
     ```
 
+### Technology modules: client/SDK dependency policy
+
+Production modules and images should remain **driver-agnostic**.
+
+- Do not bundle client SDKs (database/message broker/storage drivers, etc.) **in production modules or images.**  
+  Examples: `yugabyte/gocql`, etc.
+- If you need to show how to connect to a given technology, provide bootstrap code as helpers and keep those dependencies in **tests/examples** only.
+- Prefer small helpers that read container state and build a client config. Reference those helpers from examples and tests.
+
 ### Adding types and methods to the module
 
 We are going to propose a set of steps to follow when adding types and methods to the module:
@@ -103,9 +112,86 @@ We are going to propose a set of steps to follow when adding types and methods t
 !!!warning
     The `StartContainer` function will be eventually deprecated and replaced with `Run`. We are keeping it in certain modules for backwards compatibility, but they will be removed in the future.
 
-- Make sure a public `Container` type exists for the module. This type has to use composition to embed the `testcontainers.Container` type, promoting all the methods from it.
-- Make sure a `Run` function exists and is public. This function is the entrypoint to the module and will define the initial values for a `testcontainers.GenericContainerRequest` struct, including the image in the function signature, the default exposed ports, wait strategies, etc. Therefore, the function must initialise the container request with the default values.
-- Define container options for the module leveraging the `testcontainers.ContainerCustomizer` interface, that has one single method: `Customize(req *GenericContainerRequest) error`.
+#### Container struct design
+
+- **Make sure a public `Container` type exists for the module**. This type has to use composition to embed the `testcontainers.Container` type, promoting all the methods from it.
+- **Use the name `Container`**, not a module-specific name like `PostgresContainer` or `RedisContainer`. This keeps the API consistent across modules.
+
+```golang
+// Container represents the container type used in the module
+type Container struct {
+    testcontainers.Container
+    // private fields, maybe obtained from the settings struct (i.e. settings.dbName, settings.user, settings.password, etc.)
+    dbName   string
+    user     string
+    password string
+    ...
+    // Or you can directly store all the options
+    settings options // keep processed Option state
+}
+```
+
+!!!info
+    Some existing modules still use module-specific container names (e.g., `PostgresContainer`). These will eventually be changed to follow the `Container` naming convention.
+
+- **Use private fields** for storing container state (e.g., connection details, credentials, settings). This prevents external mutation and keeps the API clean.
+- **Public fields are acceptable** when they are part of the public API and users need direct access, but prefer private fields with public accessor methods when possible.
+
+#### The Run function
+
+- **Make sure a `Run` function exists and is public**. This function is the entrypoint to the module with signature: `func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)`
+- The function should:
+1. Process custom module options first (if using an intermediate config struct)
+2. Build `moduleOpts` slice with default container configuration
+3. Append user-provided options to `moduleOpts`
+4. Call `testcontainers.Run(ctx, img, moduleOpts...)`
+5. Return the module-specific container with proper error wrapping
+
+```golang
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+    // 1. Process custom options to extract settings (if needed)
+    var settings options
+    for _, opt := range opts {
+        if opt, ok := opt.(Option); ok {
+            if err := opt(&settings); err != nil {
+                return nil, err
+            }
+        }
+    }
+
+    // 2. Build moduleOpts with defaults
+    moduleOpts := []testcontainers.ContainerCustomizer{
+        testcontainers.WithExposedPorts("6379/tcp"),
+        testcontainers.WithWaitStrategy(wait.ForListeningPort("6379/tcp")),
+    }
+
+    // Add conditional options based on settings
+    if settings.tlsEnabled {
+        moduleOpts = append(moduleOpts, /* TLS configuration */)
+    }
+
+    // 3. Append user options
+    moduleOpts = append(moduleOpts, opts...)
+
+    // 4. Call testcontainers.Run
+    ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
+    var c *Container
+    if ctr != nil {
+        c = &Container{Container: ctr, settings: settings}
+    }
+
+    // 5. Return with proper error wrapping
+    if err != nil {
+        return c, fmt.Errorf("run redis: %w", err)
+    }
+
+    return c, nil
+}
+```
+
+#### Container options
+
+Define container options for the module leveraging the `testcontainers.ContainerCustomizer` interface, that has one single method: `Customize(req *GenericContainerRequest) error`.
 
 !!!warning
     The interface definition for `ContainerCustomizer` was changed to allow errors to be correctly processed.
@@ -121,68 +207,223 @@ We are going to propose a set of steps to follow when adding types and methods t
     Customize(req *GenericContainerRequest) error
     ```
 
-- We consider that a best practice for the options is to define a function using the `With` prefix, that returns a function returning a modified `testcontainers.GenericContainerRequest` type. For that, the library already provides a `testcontainers.CustomizeRequestOption` type implementing the `ContainerCustomizer` interface, and we encourage you to use this type for creating your own customizer functions.
-- At the same time, you could need to create your own container customizers for your module. Make sure they implement the `testcontainers.ContainerCustomizer` interface. Defining your own customizer functions is useful when you need to transfer a certain state that is not present at the `ContainerRequest` for the container, possibly using an intermediate Config struct.
-- The options will be passed to the `Run` function as variadic arguments after the Go context, and they will be processed right after defining the initial `testcontainers.GenericContainerRequest` struct using a for loop.
+##### When to use built-in options vs custom options
+
+**Prefer built-in options** (`testcontainers.With*`) for simple configuration. These options return `testcontainers.CustomizeRequestOption`, which is a concrete function type (not an interface) that implements the `testcontainers.ContainerCustomizer` interface:
 
 ```golang
-// Config type represents an intermediate struct for transferring state from the options to the container
-type Config struct {
-    data string
+// ✅ Good: Use built-in options for simple env var settings
+// Returns testcontainers.CustomizeRequestOption (struct, not interface)
+func WithDatabase(dbName string) testcontainers.CustomizeRequestOption {
+    return testcontainers.WithEnv(map[string]string{"POSTGRES_DB": dbName})
 }
 
-// Run function is the entrypoint to the module
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-    cfg := Config{}
-
-    req := testcontainers.ContainerRequest{
-        Image: img,
-        ...
-    }
-    genericContainerReq := testcontainers.GenericContainerRequest{
-        ContainerRequest: req,
-        Started:          true,
-    }
-    ...
-    for _, opt := range opts {
-        if err := opt.Customize(&genericContainerReq); err != nil {
-            return nil, fmt.Errorf("customise: %w", err)
-        }
-
-        // If you need to transfer some state from the options to the container, you can do it here
-        if myCustomizer, ok := opt.(MyCustomizer); ok {
-            config.data = customizer.data
-        }
-    }
-    ...
-    container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
-    ...
-    moduleContainer := &Container{Container: container}
-    moduleContainer.initializeState(ctx, cfg)
-    ...
-    return moduleContainer, nil
-}
-
-// MyCustomizer type represents a container customizer for transferring state from the options to the container
-type MyCustomizer struct {
-    data string
-}
-// Customize method implementation
-func (c MyCustomizer) Customize(req *testcontainers.GenericContainerRequest) testcontainers.ContainerRequest {
-    req.ExposedPorts = append(req.ExposedPorts, "1234/tcp")
-    return req.ContainerRequest
-}
-// WithMy function option to use the customizer
-func WithMy(data string) testcontainers.ContainerCustomizer {
-    return MyCustomizer{data: data}
+func WithPassword(password string) testcontainers.CustomizeRequestOption {
+    return testcontainers.WithEnv(map[string]string{"POSTGRES_PASSWORD": password})
 }
 ```
+
+**Use `testcontainers.CustomizeRequestOption`** for complex logic requiring multiple operations. Always return the struct type, not the interface:
+
+```golang
+// ✅ Good: Return testcontainers.CustomizeRequestOption (struct type)
+func WithConfigFile(cfg string) testcontainers.CustomizeRequestOption {
+    return func(req *testcontainers.GenericContainerRequest) error {
+        cfgFile := testcontainers.ContainerFile{
+            HostFilePath:      cfg,
+            ContainerFilePath: "/etc/postgresql.conf",
+            FileMode:          0o755,
+        }
+
+        if err := testcontainers.WithFiles(cfgFile)(req); err != nil {
+            return err
+        }
+
+        return testcontainers.WithCmdArgs("-c", "config_file=/etc/postgresql.conf")(req)
+    }
+}
+```
+
+**Create your own `Option` type** when you need to transfer state that isn't part of the container request. Return the struct type, not an interface:
+
+```golang
+// Options struct for transferring state
+type options struct {
+    tlsEnabled bool
+    tlsConfig  *tls.Config
+}
+
+// Option function type for custom module options
+type Option func(*options) error
+
+// ✅ Good: Return Option struct type, not testcontainers.ContainerCustomizer interface
+func WithTLS() Option {
+    return func(opts *options) error {
+        opts.tlsEnabled = true
+        return nil
+    }
+}
+
+// Implement ContainerCustomizer interface to satisfy testcontainers.ContainerCustomizer
+func (o Option) Customize(req *testcontainers.GenericContainerRequest) error {
+    // This method can be empty if the option only sets internal state
+    return nil
+}
+
+// In Run function, process these before building moduleOpts
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+    var settings options
+    for _, opt := range opts {
+        if opt, ok := opt.(Option); ok {
+            if err := opt(&settings); err != nil {
+                return nil, err
+            }
+        }
+    }
+    // Now use settings.tlsEnabled to conditionally add options
+    ...
+}
+```
+
+##### Option patterns and best practices
+
+**Always return struct types, not interfaces:**
+
+```golang
+// ✅ Correct: Return concrete struct type
+func WithUsername(user string) testcontainers.CustomizeRequestOption {
+    return testcontainers.WithEnv(map[string]string{"USER": user})
+}
+
+// ❌ Wrong: Don't return interface type
+func WithUsername(user string) testcontainers.ContainerCustomizer {
+    return testcontainers.WithEnv(map[string]string{"USER": user})
+}
+```
+
+**Error handling in options:**
+- Simple options returning `testcontainers.CustomizeRequestOption` should propagate errors from built-in options
+- Custom `Option` types should return errors for validation failures
+
+```golang
+// CustomizeRequestOption - propagate errors
+func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
+    return func(req *testcontainers.GenericContainerRequest) error {
+        containerFiles := []testcontainers.ContainerFile{/* ... */}
+        return testcontainers.WithFiles(containerFiles...)(req)
+    }
+}
+
+// Custom Option type - return validation errors
+type Option func(*Options) error
+
+func WithListener(hostPort string) Option {
+    return func(opts *Options) error {
+        host, port, err := net.SplitHostPort(hostPort)
+        if err != nil {
+            return fmt.Errorf("invalid host:port format: %w", err)
+        }
+        opts.Listeners = append(opts.Listeners, Listener{Host: host, Port: port})
+        return nil
+    }
+}
+```
+
+**Calling built-in options from custom options:**
+
+```golang
+// ✅ Correct: Call built-in options directly
+func WithConfigFile(cfg string) testcontainers.CustomizeRequestOption {
+    return func(req *testcontainers.GenericContainerRequest) error {
+        return testcontainers.WithFiles(cfgFile)(req)
+    }
+}
+
+// ❌ Wrong: Don't use .Customize() method
+func WithConfigFile(cfg string) testcontainers.CustomizeRequestOption {
+    return func(req *testcontainers.GenericContainerRequest) error {
+        return testcontainers.WithFiles(cfgFile).Customize(req)  // Wrong!: adds unnecessary indirection
+    }
+}
+```
+
+##### Option ordering
+
+The order in which options are applied matters:
+
+1. **Module defaults** (in `moduleOpts` slice) - base configuration
+2. **User-provided options** (via `opts...`) - user customizations
+3. **Post-processing options** (appended last) - validation, network config, etc.
+
+```golang
+moduleOpts := []testcontainers.ContainerCustomizer{
+    // 1. Defaults
+    testcontainers.WithEnv(map[string]string{"DB": "default"}),
+}
+
+// 2. User options
+moduleOpts = append(moduleOpts, opts...)
+
+// 3. Post-processing (after user options, if needed)
+moduleOpts = append(moduleOpts, validateConfiguration)
+```
+
+##### Inspecting container state after Run
+
+When you need to read environment variables or other container state after creation:
+
+```golang
+ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
+if err != nil {
+    return nil, fmt.Errorf("run postgres: %w", err)
+}
+
+// Retrieve actual env vars set on the container
+inspect, err := ctr.Inspect(ctx)
+if err != nil {
+    return nil, fmt.Errorf("inspect postgres: %w", err)
+}
+
+var foundDB, foundUser, foundPass bool
+for _, env := range inspect.Config.Env {
+    if v, ok := strings.CutPrefix(env, "POSTGRES_DB="); ok {
+        c.dbName, foundDB = v, true
+    }
+    if v, ok := strings.CutPrefix(env, "POSTGRES_USER="); ok {
+        c.user, foundUser = v, true
+    }
+    if v, ok := strings.CutPrefix(env, "POSTGRES_PASSWORD="); ok {
+        c.password, foundPass = v, true
+    }
+
+    // Early exit optimization
+    if foundDB && foundUser && foundPass {
+        break
+    }
+}
+```
+
+**Best practices:**
+- Use `strings.CutPrefix` (standard library) instead of manual string manipulation
+- Set defaults when creating the container struct, not in the loop
+- Use individual `found` flags and check all together for early exit
+- Break early once all required values are found
+
+#### Container methods
 
 - If needed, define public methods to extract information from the running container, using the `Container` type as receiver. E.g. a connection string to access a database:
 
 ```golang
-func (c *Container) ConnectionString(ctx context.Context) (string, error) {...}
+func (c *Container) ConnectionString(ctx context.Context, args ...string) (string, error) {
+    endpoint, err := c.PortEndpoint(ctx, "5432/tcp", "")
+    if err != nil {
+        return "", err
+    }
+    return fmt.Sprintf("postgres://%s:%s@%s/%s", c.user, c.password, endpoint, c.dbName), nil
+}
 ```
+
+#### Documentation
 
 - Document the public API with Go comments.
 - Extend the docs to describe the new API of the module. We usually define a parent `Module reference` section, including a `Container options` and a `Container methods` subsections; within each subsection, we define a nested subsection for each option and method, respectively.

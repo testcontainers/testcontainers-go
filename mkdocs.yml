@@ -100,10 +100,12 @@ nav:
         - modules/milvus.md
         - modules/minio.md
         - modules/mockserver.md
+        - modules/mongodb-atlaslocal.md
         - modules/mongodb.md
         - modules/mssql.md
         - modules/mysql.md
         - modules/nats.md
+        - modules/nebulagraph.md
         - modules/neo4j.md
         - modules/ollama.md
         - modules/openfga.md
@@ -151,4 +153,4 @@ nav:
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: v0.38.0
+    latest_version: v0.40.0

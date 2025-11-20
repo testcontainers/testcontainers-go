@@ -31,16 +31,10 @@ var caBytes []byte
 func ExampleHTTPStrategy() {
 	// waitForHTTPWithDefaultPort {
 	ctx := context.Background()
-	req := testcontainers.ContainerRequest{
-		Image:        "nginx:latest",
-		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
-	}
-
-	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	c, err := testcontainers.Run(ctx, "nginx:latest",
+		testcontainers.WithExposedPorts("80/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/").WithStartupTimeout(10*time.Second)),
+	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(c); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -82,26 +76,24 @@ func ExampleHTTPStrategy_WithHeaders() {
 
 	// waitForHTTPHeaders {
 	tlsconfig := &tls.Config{RootCAs: certpool, ServerName: "testcontainer.go.test"}
-	req := testcontainers.ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context: "testdata/http",
-		},
-		ExposedPorts: []string{"6443/tcp"},
-		WaitingFor: wait.ForHTTP("/headers").
-			WithTLS(true, tlsconfig).
-			WithPort("6443/tcp").
-			WithHeaders(map[string]string{"X-request-header": "value"}).
-			WithResponseHeadersMatcher(func(headers http.Header) bool {
-				return headers.Get("X-response-header") == "value"
-			},
-			),
-	}
-	// }
 
-	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	c, err := testcontainers.Run(
+		ctx, "",
+		testcontainers.WithDockerfile(testcontainers.FromDockerfile{
+			Context: filepath.Join("testdata", "http"),
+		}),
+		testcontainers.WithExposedPorts("6443/tcp"),
+		testcontainers.WithWaitStrategy(
+			wait.ForHTTP("/headers").
+				WithTLS(true, tlsconfig).
+				WithPort("6443/tcp").
+				WithHeaders(map[string]string{"X-request-header": "value"}).
+				WithResponseHeadersMatcher(func(headers http.Header) bool {
+					return headers.Get("X-response-header") == "value"
+				}),
+		),
+	)
+	// }
 	defer func() {
 		if err := testcontainers.TerminateContainer(c); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -127,16 +119,11 @@ func ExampleHTTPStrategy_WithHeaders() {
 func ExampleHTTPStrategy_WithPort() {
 	// waitForHTTPWithPort {
 	ctx := context.Background()
-	req := testcontainers.ContainerRequest{
-		Image:        "nginx:latest",
-		ExposedPorts: []string{"8080/tcp", "80/tcp"},
-		WaitingFor:   wait.ForHTTP("/").WithPort("80/tcp"),
-	}
-
-	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	c, err := testcontainers.Run(
+		ctx, "nginx:latest",
+		testcontainers.WithExposedPorts("8080/tcp", "80/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/").WithPort("80/tcp")),
+	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(c); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -162,16 +149,11 @@ func ExampleHTTPStrategy_WithPort() {
 
 func ExampleHTTPStrategy_WithForcedIPv4LocalHost() {
 	ctx := context.Background()
-	req := testcontainers.ContainerRequest{
-		Image:        "nginx:latest",
-		ExposedPorts: []string{"8080/tcp", "80/tcp"},
-		WaitingFor:   wait.ForHTTP("/").WithForcedIPv4LocalHost(),
-	}
-
-	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	c, err := testcontainers.Run(
+		ctx, "nginx:latest",
+		testcontainers.WithExposedPorts("8080/tcp", "80/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/").WithForcedIPv4LocalHost()),
+	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(c); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -197,16 +179,10 @@ func ExampleHTTPStrategy_WithForcedIPv4LocalHost() {
 func ExampleHTTPStrategy_WithBasicAuth() {
 	// waitForBasicAuth {
 	ctx := context.Background()
-	req := testcontainers.ContainerRequest{
-		Image:        "gogs/gogs:0.11.91",
-		ExposedPorts: []string{"3000/tcp"},
-		WaitingFor:   wait.ForHTTP("/").WithBasicAuth("username", "password"),
-	}
-
-	gogs, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	gogs, err := testcontainers.Run(ctx, "gogs/gogs:0.11.91",
+		testcontainers.WithExposedPorts("3000/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/").WithBasicAuth("username", "password")),
+	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(gogs); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -235,12 +211,12 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 	require.Truef(t, certpool.AppendCertsFromPEM(caBytes), "the ca file isn't valid")
 
 	tlsconfig := &tls.Config{RootCAs: certpool, ServerName: "testcontainer.go.test"}
-	dockerReq := testcontainers.ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context: "testdata/http",
-		},
-		ExposedPorts: []string{"6443/tcp"},
-		WaitingFor: wait.NewHTTPStrategy("/auth-ping").WithTLS(true, tlsconfig).
+	opts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithDockerfile(testcontainers.FromDockerfile{
+			Context: filepath.Join("testdata", "http"),
+		}),
+		testcontainers.WithExposedPorts("6443/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/auth-ping").WithTLS(true, tlsconfig).
 			WithStartupTimeout(time.Second*10).WithPort("6443/tcp").
 			WithResponseMatcher(func(body io.Reader) bool {
 				data, _ := io.ReadAll(body)
@@ -248,10 +224,10 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 			}).
 			WithBasicAuth("admin", "admin").
 			WithMethod(http.MethodPost).WithBody(bytes.NewReader([]byte("ping"))),
+		),
 	}
 
-	ctr, err := testcontainers.GenericContainer(context.Background(),
-		testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
+	ctr, err := testcontainers.Run(context.Background(), "", opts...)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -289,22 +265,20 @@ func TestHTTPStrategyWaitUntilReadyWithQueryString(t *testing.T) {
 	require.Truef(t, certpool.AppendCertsFromPEM(caBytes), "the ca file isn't valid")
 
 	tlsconfig := &tls.Config{RootCAs: certpool, ServerName: "testcontainer.go.test"}
-	dockerReq := testcontainers.ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context: "testdata/http",
-		},
-
-		ExposedPorts: []string{"6443/tcp"},
-		WaitingFor: wait.NewHTTPStrategy("/query-params-ping?v=pong").WithTLS(true, tlsconfig).
+	opts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithDockerfile(testcontainers.FromDockerfile{
+			Context: filepath.Join("testdata", "http"),
+		}),
+		testcontainers.WithExposedPorts("6443/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/query-params-ping?v=pong").WithTLS(true, tlsconfig).
 			WithStartupTimeout(time.Second * 10).WithPort("6443/tcp").
 			WithResponseMatcher(func(body io.Reader) bool {
 				data, _ := io.ReadAll(body)
 				return bytes.Equal(data, []byte("pong"))
-			}),
+			})),
 	}
 
-	ctr, err := testcontainers.GenericContainer(context.Background(),
-		testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
+	ctr, err := testcontainers.Run(context.Background(), "", opts...)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -344,13 +318,13 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 	// waitForHTTPStatusCode {
 	tlsconfig := &tls.Config{RootCAs: certpool, ServerName: "testcontainer.go.test"}
 	var i int
-	dockerReq := testcontainers.ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context: "testdata/http",
-		},
-		ExposedPorts: []string{"6443/tcp"},
-		WaitingFor: wait.NewHTTPStrategy("/ping").WithTLS(true, tlsconfig).
-			WithStartupTimeout(time.Second * 10).
+	opts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithDockerfile(testcontainers.FromDockerfile{
+			Context: filepath.Join("testdata", "http"),
+		}),
+		testcontainers.WithExposedPorts("6443/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/ping").WithTLS(true, tlsconfig).
+			WithStartupTimeout(time.Second * 10).WithPort("6443/tcp").
 			WithResponseMatcher(func(body io.Reader) bool {
 				data, _ := io.ReadAll(body)
 				return bytes.Equal(data, []byte("pong"))
@@ -360,11 +334,12 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 				return i > 1 && status == 200
 			}).
 			WithMethod(http.MethodPost).WithBody(bytes.NewReader([]byte("ping"))),
+		),
 	}
 	// }
 
 	ctx := context.Background()
-	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
+	ctr, err := testcontainers.Run(ctx, "", opts...)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -418,6 +393,7 @@ func TestHttpStrategyFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) 
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/tcp": []nat.PortBinding{
@@ -464,6 +440,7 @@ func TestHttpStrategyFailsWhileGettingPortDueToExitedContainer(t *testing.T) {
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/tcp": []nat.PortBinding{
@@ -509,6 +486,7 @@ func TestHttpStrategyFailsWhileGettingPortDueToUnexpectedContainerStatus(t *test
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/tcp": []nat.PortBinding{
@@ -549,6 +527,7 @@ func TestHTTPStrategyFailsWhileRequestSendingDueToOOMKilledContainer(t *testing.
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/tcp": []nat.PortBinding{
@@ -590,6 +569,7 @@ func TestHttpStrategyFailsWhileRequestSendingDueToExitedContainer(t *testing.T) 
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/tcp": []nat.PortBinding{
@@ -630,6 +610,7 @@ func TestHttpStrategyFailsWhileRequestSendingDueToUnexpectedContainerStatus(t *t
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/tcp": []nat.PortBinding{
@@ -676,6 +657,7 @@ func TestHttpStrategyFailsWhileGettingPortDueToNoExposedPorts(t *testing.T) {
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{},
 					},
@@ -715,6 +697,7 @@ func TestHttpStrategyFailsWhileGettingPortDueToOnlyUDPPorts(t *testing.T) {
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/udp": []nat.PortBinding{
@@ -761,6 +744,7 @@ func TestHttpStrategyFailsWhileGettingPortDueToExposedPortNoBindings(t *testing.
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/tcp": []nat.PortBinding{},

@@ -107,16 +107,7 @@ func testContainerStart(t *testing.T) {
 	t.Helper()
 	ctx := context.Background()
 
-	ctr, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image: nginxAlpineImage,
-			ExposedPorts: []string{
-				nginxDefaultPort,
-			},
-		},
-		Started: true,
-	})
+	ctr, err := Run(ctx, nginxAlpineImage, WithExposedPorts(nginxDefaultPort))
 	CleanupContainer(t, ctr)
 	require.NoError(t, err)
 }
@@ -171,16 +162,7 @@ func testContainerStop(t *testing.T) {
 
 	ctx := context.Background()
 
-	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image: nginxAlpineImage,
-			ExposedPorts: []string{
-				nginxDefaultPort,
-			},
-		},
-		Started: true,
-	})
+	nginxA, err := Run(ctx, nginxAlpineImage, WithExposedPorts(nginxDefaultPort))
 	CleanupContainer(t, nginxA)
 	require.NoError(t, err)
 
@@ -203,16 +185,7 @@ func testContainerTerminate(t *testing.T) {
 	t.Helper()
 	ctx := context.Background()
 
-	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image: nginxAlpineImage,
-			ExposedPorts: []string{
-				nginxDefaultPort,
-			},
-		},
-		Started: true,
-	})
+	nginxA, err := Run(ctx, nginxAlpineImage, WithExposedPorts(nginxDefaultPort))
 	CleanupContainer(t, nginxA)
 	require.NoError(t, err)
 

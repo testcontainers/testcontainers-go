@@ -21,37 +21,27 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Chroma container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ChromaContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{"8000/tcp"},
-		WaitingFor: wait.ForAll(
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("8000/tcp"),
+		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort("8000/tcp"),
 			wait.ForLog("Application startup complete"),
 			wait.ForHTTP("/api/v1/heartbeat").WithStatusCodeMatcher(func(status int) bool {
 				return status == 200
 			}),
-		), // 5 seconds it's not enough for the container to start
+		),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *ChromaContainer
-	if container != nil {
-		c = &ChromaContainer{Container: container}
+	if ctr != nil {
+		c = &ChromaContainer{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run chroma: %w", err)
 	}
 
 	return c, nil

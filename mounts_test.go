@@ -91,7 +91,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 		{
 			name:   "Empty",
 			mounts: nil,
-			want:   make([]mount.Mount, 0),
+			want:   []mount.Mount{},
 		},
 		{
 			name:   "Single volume mount",
@@ -222,26 +222,19 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 }
 
 func TestCreateContainerWithVolume(t *testing.T) {
-	volumeName := "test-volume"
 	// volumeMounts {
-	req := testcontainers.ContainerRequest{
-		Image: "alpine",
-		Mounts: testcontainers.ContainerMounts{
-			{
-				Source: testcontainers.GenericVolumeMountSource{
-					Name: volumeName,
-				},
-				Target: "/data",
-			},
-		},
-	}
-	// }
-
+	volumeName := "test-volume"
 	ctx := context.Background()
-	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+
+	c, err := testcontainers.Run(ctx, "alpine",
+		testcontainers.WithMounts(testcontainers.ContainerMount{
+			Source: testcontainers.GenericVolumeMountSource{
+				Name: volumeName,
+			},
+			Target: "/data",
+		}),
+	)
+	// }
 	testcontainers.CleanupContainer(t, c, testcontainers.RemoveVolumes(volumeName))
 	require.NoError(t, err)
 
@@ -257,19 +250,8 @@ func TestCreateContainerWithVolume(t *testing.T) {
 
 func TestMountsReceiveRyukLabels(t *testing.T) {
 	volumeName := "app-data"
-	req := testcontainers.ContainerRequest{
-		Image: "alpine",
-		Mounts: testcontainers.ContainerMounts{
-			{
-				Source: testcontainers.GenericVolumeMountSource{
-					Name: volumeName,
-				},
-				Target: "/data",
-			},
-		},
-	}
-
 	ctx := context.Background()
+
 	client, err := testcontainers.NewDockerClientWithOpts(ctx)
 	require.NoError(t, err)
 	defer client.Close()
@@ -279,10 +261,14 @@ func TestMountsReceiveRyukLabels(t *testing.T) {
 	err = client.VolumeRemove(ctx, volumeName, true)
 	require.NoError(t, err)
 
-	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	c, err := testcontainers.Run(ctx, "alpine",
+		testcontainers.WithMounts(testcontainers.ContainerMount{
+			Source: testcontainers.GenericVolumeMountSource{
+				Name: volumeName,
+			},
+			Target: "/data",
+		}),
+	)
 	testcontainers.CleanupContainer(t, c, testcontainers.RemoveVolumes(volumeName))
 	require.NoError(t, err)
 

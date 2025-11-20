@@ -177,13 +177,26 @@ func TestExtractDockerHost(t *testing.T) {
 		t.Cleanup(resetSocketOverrideFn)
 
 		t.Run("Testcontainers host is defined in properties", func(t *testing.T) {
-			content := "tc.host=" + testRemoteHost
+			t.Run("TCP host", func(t *testing.T) {
+				content := "tc.host=" + testRemoteHost
 
-			setupTestcontainersProperties(t, content)
+				setupTestcontainersProperties(t, content)
 
-			socket, err := testcontainersHostFromProperties(context.Background())
-			require.NoError(t, err)
-			require.Equal(t, testRemoteHost, socket)
+				socket, err := testcontainersHostFromProperties(context.Background())
+				require.NoError(t, err)
+				require.Equal(t, testRemoteHost, socket)
+			})
+
+			t.Run("Unix socket host preserves schema", func(t *testing.T) {
+				unixSocket := "unix:///var/run/docker.sock"
+				content := "tc.host=" + unixSocket
+
+				setupTestcontainersProperties(t, content)
+
+				socket, err := testcontainersHostFromProperties(context.Background())
+				require.NoError(t, err)
+				require.Equal(t, unixSocket, socket)
+			})
 		})
 
 		t.Run("Testcontainers host is not defined in properties", func(t *testing.T) {

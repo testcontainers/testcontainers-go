@@ -3,6 +3,8 @@ package artemis
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"strings"
 
 	"github.com/docker/go-connections/nat"
 
@@ -13,6 +15,8 @@ import (
 const (
 	defaultBrokerPort = "61616/tcp"
 	defaultHTTPPort   = "8161/tcp"
+	defaultUser       = "artemis"
+	defaultPassword   = "artemis"
 )
 
 // Container represents the Artemis container type used in the module.
@@ -40,11 +44,18 @@ func (c *Container) BrokerEndpoint(ctx context.Context) (string, error) {
 
 // ConsoleURL returns the URL for the management console.
 func (c *Container) ConsoleURL(ctx context.Context) (string, error) {
-	host, err := c.PortEndpoint(ctx, nat.Port(defaultHTTPPort), "")
+	hostPort, err := c.PortEndpoint(ctx, nat.Port(defaultHTTPPort), "")
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("http://%s:%s@%s/console", c.user, c.password, host), nil
+
+	u := url.URL{
+		Scheme: "http",
+		User:   url.UserPassword(c.user, c.password),
+		Host:   hostPort,
+		Path:   "/console",
+	}
+	return u.String(), nil
 }
 
 // WithCredentials sets the administrator credentials. The default is artemis:artemis.
@@ -86,39 +97,55 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Artemis container type with a given image
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: img,
-			Env: map[string]string{
-				"ARTEMIS_USER":     "artemis",
-				"ARTEMIS_PASSWORD": "artemis",
-			},
-			ExposedPorts: []string{defaultBrokerPort, defaultHTTPPort},
-			WaitingFor: wait.ForAll(
-				wait.ForLog("Server is now live"),
-				wait.ForLog("REST API available"),
-			),
-		},
-		Started: true,
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultBrokerPort, defaultHTTPPort),
+		testcontainers.WithEnv(map[string]string{
+			"ARTEMIS_USER":     defaultUser,
+			"ARTEMIS_PASSWORD": defaultPassword,
+		}),
+		testcontainers.WithWaitStrategy(
+			wait.ForListeningPort(defaultBrokerPort),
+			wait.ForListeningPort(defaultHTTPPort),
+			wait.ForLog("Server is now live"),
+			wait.ForLog("REST API available"),
+		),
 	}
 
-	for _, opt := range opts {
-		if err := opt.Customize(&req); err != nil {
-			return nil, err
-		}
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	container, err := testcontainers.GenericContainer(ctx, req)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
-	if container != nil {
-		c = &Container{Container: container}
+	if ctr != nil {
+		c = &Container{Container: ctr}
 	}
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run artemis: %w", err)
 	}
 
-	c.user = req.Env["ARTEMIS_USER"]
-	c.password = req.Env["ARTEMIS_PASSWORD"]
+	// initialize the credentials
+	c.user = defaultUser
+	c.password = defaultPassword
+
+	inspect, err := ctr.Inspect(ctx)
+	if err != nil {
+		return c, fmt.Errorf("inspect artemis: %w", err)
+	}
+
+	// refresh the credentials from the environment variables
+	foundUser, foundPass := false, false
+	for _, env := range inspect.Config.Env {
+		if v, ok := strings.CutPrefix(env, "ARTEMIS_USER="); ok {
+			c.user, foundUser = v, true
+			continue
+		} else if v, ok := strings.CutPrefix(env, "ARTEMIS_PASSWORD="); ok {
+			c.password, foundPass = v, true
+			continue
+		}
+
+		if foundUser && foundPass {
+			break
+		}
+	}
 
 	return c, nil
 }

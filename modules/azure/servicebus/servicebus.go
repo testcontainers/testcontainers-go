@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/mssql"
@@ -72,33 +71,11 @@ func (c *Container) Terminate(ctx context.Context, opts ...testcontainers.Termin
 	return errors.Join(errs...)
 }
 
-// Run creates an instance of the Azure Event Hubs container type
+// Run creates an instance of the Azure ServiceBus container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.ContainerRequest{
-		Image: img,
-		Env: map[string]string{
-			"SQL_WAIT_INTERVAL": "0", // default is zero because the MSSQL container is started first
-		},
-		ExposedPorts: []string{defaultPort, defaultHTTPPort},
-		WaitingFor: wait.ForAll(
-			wait.ForListeningPort(defaultPort),
-			wait.ForListeningPort(defaultHTTPPort),
-			wait.ForHTTP("/health").WithPort(defaultHTTPPort).WithStatusCodeMatcher(func(status int) bool {
-				return status == http.StatusOK
-			}),
-		),
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
+	// Process custom options first to extract settings
 	defaultOptions := defaultOptions()
 	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
-		}
 		if o, ok := opt.(Option); ok {
 			if err := o(&defaultOptions); err != nil {
 				return nil, fmt.Errorf("servicebus option: %w", err)
@@ -106,11 +83,22 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	if strings.ToUpper(genericContainerReq.Env["ACCEPT_EULA"]) != "Y" {
-		return nil, errors.New("EULA not accepted. Please use the WithAcceptEULA option to accept the EULA")
-	}
-
 	c := &Container{mssqlOptions: &defaultOptions}
+
+	// Build moduleOpts with defaults
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultPort, defaultHTTPPort),
+		testcontainers.WithEnv(map[string]string{
+			"SQL_WAIT_INTERVAL": "0", // default is zero because the MSSQL container is started first
+		}),
+		testcontainers.WithWaitStrategy(
+			wait.ForListeningPort(defaultPort),
+			wait.ForListeningPort(defaultHTTPPort),
+			wait.ForHTTP("/health").WithPort(defaultHTTPPort).WithStatusCodeMatcher(func(status int) bool {
+				return status == http.StatusOK
+			}),
+		),
+	}
 
 	if defaultOptions.mssqlContainer == nil {
 		mssqlNetwork, err := network.New(ctx)
@@ -133,26 +121,30 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 		defaultOptions.mssqlContainer = mssqlContainer
 
-		genericContainerReq.Env["SQL_SERVER"] = aliasMSSQL
-		genericContainerReq.Env["MSSQL_SA_PASSWORD"] = mssqlContainer.Password()
+		moduleOpts = append(moduleOpts, testcontainers.WithEnv(map[string]string{
+			"SQL_SERVER":        aliasMSSQL,
+			"MSSQL_SA_PASSWORD": mssqlContainer.Password(),
+		}))
 
-		// apply the network to the eventhubs container
-		err = network.WithNetwork([]string{aliasServiceBus}, mssqlNetwork)(&genericContainerReq)
-		if err != nil {
-			return c, fmt.Errorf("with network: %w", err)
-		}
+		// apply the network to the servicebus container
+		moduleOpts = append(moduleOpts, network.WithNetwork([]string{aliasServiceBus}, mssqlNetwork))
 	}
 
+	moduleOpts = append(moduleOpts, opts...)
+
+	// validate the EULA after all the options are applied
+	moduleOpts = append(moduleOpts, validateEula())
+
 	var err error
-	c.Container, err = testcontainers.GenericContainer(ctx, genericContainerReq)
+	c.Container, err = testcontainers.Run(ctx, img, moduleOpts...)
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run servicebus: %w", err)
 	}
 
 	return c, nil
 }
 
-// ConnectionString returns the connection string for the eventhubs container,
+// ConnectionString returns the connection string for the servicebus container,
 // using the following format:
 // Endpoint=sb://<hostname>:<port>;SharedAccessKeyName=<key-name>;SharedAccessKey=<key>;UseDevelopmentEmulator=true;
 func (c *Container) ConnectionString(ctx context.Context) (string, error) {

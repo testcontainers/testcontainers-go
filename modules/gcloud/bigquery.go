@@ -18,34 +18,32 @@ func RunBigQueryContainer(ctx context.Context, opts ...testcontainers.ContainerC
 // RunBigQuery creates an instance of the GCloud container type for BigQuery.
 // The URI uses http:// as the protocol.
 func RunBigQuery(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        img,
-			ExposedPorts: []string{"9050/tcp", "9060/tcp"},
-			WaitingFor:   wait.ForHTTP("/discovery/v1/apis/bigquery/v2/rest").WithPort("9050/tcp").WithStartupTimeout(time.Second * 5),
-		},
-		Started: true,
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("9050/tcp", "9060/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/discovery/v1/apis/bigquery/v2/rest").WithPort("9050/tcp").WithStartupTimeout(time.Second * 5)),
 	}
 
-	settings, err := applyOptions(&req, opts)
+	moduleOpts = append(moduleOpts, opts...)
+
+	settings, err := applyOptions(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Cmd = append(req.Cmd, "--project", settings.ProjectID)
+	moduleOpts = append(moduleOpts, testcontainers.WithCmdArgs("--project", settings.ProjectID))
 
 	// Process data yaml file only for the BigQuery container.
 	if settings.bigQueryDataYaml != nil {
 		containerPath := "/testcontainers-data.yaml"
 
-		req.Cmd = append(req.Cmd, "--data-from-yaml", containerPath)
+		moduleOpts = append(moduleOpts, testcontainers.WithCmdArgs("--data-from-yaml", containerPath))
 
-		req.Files = append(req.Files, testcontainers.ContainerFile{
+		moduleOpts = append(moduleOpts, testcontainers.WithFiles(testcontainers.ContainerFile{
 			Reader:            settings.bigQueryDataYaml,
 			ContainerFilePath: containerPath,
 			FileMode:          0o644,
-		})
+		}))
 	}
 
-	return newGCloudContainer(ctx, req, 9050, settings, "http")
+	return newGCloudContainer(ctx, img, 9050, settings, "http", moduleOpts...)
 }

@@ -10,7 +10,9 @@ import (
 
 const (
 	// DefaultProjectID is the default project ID for the Pubsub container.
-	DefaultProjectID = "test-project"
+	DefaultProjectID  = "test-project"
+	defaultPortNumber = "8085"
+	defaultPort       = defaultPortNumber + "/tcp"
 )
 
 // Container represents the Pubsub container type used in the module
@@ -32,16 +34,12 @@ func (c *Container) URI() string {
 // Run creates an instance of the Pubsub GCloud container type.
 // The URI uses the empty string as the protocol.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        img,
-			ExposedPorts: []string{"8085/tcp"},
-			WaitingFor: wait.ForAll(
-				wait.ForListeningPort("8085/tcp"),
-				wait.ForLog("started"),
-			),
-		},
-		Started: true,
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultPort),
+		testcontainers.WithWaitStrategy(
+			wait.ForListeningPort(defaultPort),
+			wait.ForLog("started"),
+		),
 	}
 
 	settings := defaultOptions()
@@ -51,27 +49,26 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				return nil, err
 			}
 		}
-		if err := opt.Customize(&req); err != nil {
-			return nil, err
-		}
 	}
 
-	req.Cmd = []string{
+	moduleOpts = append(moduleOpts, testcontainers.WithCmd(
 		"/bin/sh",
 		"-c",
-		"gcloud beta emulators pubsub start --host-port 0.0.0.0:8085 --project=" + settings.ProjectID,
-	}
+		"gcloud beta emulators pubsub start --host-port 0.0.0.0:"+defaultPortNumber+" --project="+settings.ProjectID,
+	))
 
-	container, err := testcontainers.GenericContainer(ctx, req)
+	moduleOpts = append(moduleOpts, opts...)
+
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
-	if container != nil {
-		c = &Container{Container: container, settings: settings}
+	if ctr != nil {
+		c = &Container{Container: ctr, settings: settings}
 	}
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run pubsub: %w", err)
 	}
 
-	portEndpoint, err := c.PortEndpoint(ctx, "8085/tcp", "")
+	portEndpoint, err := c.PortEndpoint(ctx, defaultPort, "")
 	if err != nil {
 		return c, fmt.Errorf("port endpoint: %w", err)
 	}

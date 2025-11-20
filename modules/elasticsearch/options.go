@@ -24,7 +24,7 @@ func defaultOptions() *Options {
 var _ testcontainers.ContainerCustomizer = (*Option)(nil)
 
 // Option is an option for the Elasticsearch container.
-type Option func(*Options)
+type Option func(*Options) error
 
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
 func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
@@ -34,7 +34,8 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 
 // WithPassword sets the password for the Elasticsearch container.
 func WithPassword(password string) Option {
-	return func(o *Options) {
+	return func(o *Options) error {
 		o.Password = password
+		return nil
 	}
 }
