@@ -58,14 +58,9 @@ func Test_runOptions_getStarterScriptContent(t *testing.T) {
 			opts := &runOptions{
 				image: tt.image,
 			}
-			if got := opts.getStarterScriptContent(); got != tt.want {
-				t.Errorf("getStarterScriptContent() = %v, want %v", got, tt.want)
-			}
-
+			require.Equal(t, tt.want, opts.getStarterScriptContent())
 			require.NoError(t, WithStarterScript("mytestsript")(opts))
-			if got := opts.getStarterScriptContent(); got != "mytestsript" {
-				t.Errorf("getStarterScriptContent() with explicit setting = %v, want %v", got, "mytestsript")
-			}
+			require.Equal(t, "mytestsript", opts.getStarterScriptContent())
 		})
 	}
 }
