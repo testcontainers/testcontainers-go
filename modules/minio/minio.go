@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -57,42 +58,58 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Minio container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MinioContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{"9000/tcp"},
-		WaitingFor:   wait.ForHTTP("/minio/health/live").WithPort("9000"),
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts("9000/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/minio/health/live").WithPort("9000")),
+		testcontainers.WithEnv(map[string]string{
 			"MINIO_ROOT_USER":     defaultUser,
 			"MINIO_ROOT_PASSWORD": defaultPassword,
-		},
-		Cmd: []string{"server", "/data"},
+		}),
+		testcontainers.WithCmd("server", "/data"),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
+	// Validate credentials after applying user options
+	validateCreds := func(req *testcontainers.GenericContainerRequest) error {
+		username := req.Env["MINIO_ROOT_USER"]
+		password := req.Env["MINIO_ROOT_PASSWORD"]
+		if username == "" || password == "" {
+			return errors.New("username or password has not been set")
 		}
+		return nil
 	}
 
-	username := req.Env["MINIO_ROOT_USER"]
-	password := req.Env["MINIO_ROOT_PASSWORD"]
-	if username == "" || password == "" {
-		return nil, errors.New("username or password has not been set")
-	}
+	moduleOpts = append(moduleOpts, testcontainers.CustomizeRequestOption(validateCreds))
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *MinioContainer
-	if container != nil {
-		c = &MinioContainer{Container: container, Username: username, Password: password}
+	if ctr != nil {
+		c = &MinioContainer{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run minio: %w", err)
+	}
+
+	// Retrieve credentials from container environment
+	inspect, err := ctr.Inspect(ctx)
+	if err != nil {
+		return c, fmt.Errorf("inspect minio: %w", err)
+	}
+
+	var foundUser, foundPass bool
+	for _, env := range inspect.Config.Env {
+		if v, ok := strings.CutPrefix(env, "MINIO_ROOT_USER="); ok {
+			c.Username, foundUser = v, true
+		}
+		if v, ok := strings.CutPrefix(env, "MINIO_ROOT_PASSWORD="); ok {
+			c.Password, foundPass = v, true
+		}
+
+		if foundUser && foundPass {
+			break
+		}
 	}
 
 	return c, nil

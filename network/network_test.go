@@ -140,10 +140,10 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 
 	opts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts(nginxDefaultPort),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort(nginxDefaultPort),
 			wait.ForLog("Configuration complete; ready for start up"),
-		)),
+		),
 	}
 
 	for range maxNetworksCount {

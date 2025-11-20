@@ -18,10 +18,10 @@ func RunSpannerContainer(ctx context.Context, opts ...testcontainers.ContainerCu
 func RunSpanner(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts("9010/tcp"),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort("9010/tcp"),
 			wait.ForLog("Cloud Spanner emulator running"),
-		)),
+		),
 	}
 
 	moduleOpts = append(moduleOpts, opts...)

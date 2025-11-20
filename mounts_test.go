@@ -91,7 +91,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 		{
 			name:   "Empty",
 			mounts: nil,
-			want:   make([]mount.Mount, 0),
+			want:   []mount.Mount{},
 		},
 		{
 			name:   "Single volume mount",

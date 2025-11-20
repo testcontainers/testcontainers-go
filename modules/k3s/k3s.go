@@ -39,12 +39,10 @@ func WithManifest(manifestPath string) testcontainers.CustomizeRequestOption {
 		manifest := filepath.Base(manifestPath)
 		target := k3sManifests + manifest
 
-		req.Files = append(req.Files, testcontainers.ContainerFile{
+		return testcontainers.WithFiles(testcontainers.ContainerFile{
 			HostFilePath:      manifestPath,
 			ContainerFilePath: target,
-		})
-
-		return nil
+		})(req)
 	}
 }
 

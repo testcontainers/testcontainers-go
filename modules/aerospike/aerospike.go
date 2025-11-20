@@ -34,12 +34,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithEnv(map[string]string{
 			"AEROSPIKE_CONFIG_FILE": "/etc/aerospike/aerospike.conf",
 		}),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForLog("migrations: complete"),
 			wait.ForListeningPort(port).WithStartupTimeout(10*time.Second),
 			wait.ForListeningPort(fabricPort).WithStartupTimeout(10*time.Second),
 			wait.ForListeningPort(heartbeatPort).WithStartupTimeout(10*time.Second),
-		)),
+		),
 	}
 
 	moduleOpts = append(moduleOpts, opts...)

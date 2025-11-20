@@ -96,20 +96,18 @@ func TestRunContainer_authenticated(t *testing.T) {
 	t.Run("build images with wrong credentials fails", func(tt *testing.T) {
 		setAuthConfig(tt, registryHost, "foo", "bar")
 
-		redisC, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
-			ContainerRequest: testcontainers.ContainerRequest{
-				FromDockerfile: testcontainers.FromDockerfile{
-					Context: filepath.Join("testdata", "redis"),
-					BuildArgs: map[string]*string{
-						"REGISTRY_HOST": &registryHost,
-					},
+		redisC, err := testcontainers.Run(
+			context.Background(), "",
+			testcontainers.WithDockerfile(testcontainers.FromDockerfile{
+				Context: filepath.Join("testdata", "redis"),
+				BuildArgs: map[string]*string{
+					"REGISTRY_HOST": &registryHost,
 				},
-				AlwaysPullImage: true, // make sure the authentication takes place
-				ExposedPorts:    []string{"6379/tcp"},
-				WaitingFor:      wait.ForLog("Ready to accept connections"),
-			},
-			Started: true,
-		})
+			}),
+			testcontainers.WithAlwaysPull(), // make sure the authentication takes place
+			testcontainers.WithExposedPorts("6379/tcp"),
+			testcontainers.WithWaitStrategy(wait.ForLog("Ready to accept connections")),
+		)
 		testcontainers.CleanupContainer(tt, redisC)
 		require.Error(tt, err)
 		require.Contains(tt, err.Error(), "unauthorized: authentication required")
@@ -123,20 +121,18 @@ func TestRunContainer_authenticated(t *testing.T) {
 		// The container should start because the authentication
 		// is correct.
 
-		redisC, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
-			ContainerRequest: testcontainers.ContainerRequest{
-				FromDockerfile: testcontainers.FromDockerfile{
-					Context: filepath.Join("testdata", "redis"),
-					BuildArgs: map[string]*string{
-						"REGISTRY_HOST": &registryHost,
-					},
+		redisC, err := testcontainers.Run(
+			context.Background(), "",
+			testcontainers.WithDockerfile(testcontainers.FromDockerfile{
+				Context: filepath.Join("testdata", "redis"),
+				BuildArgs: map[string]*string{
+					"REGISTRY_HOST": &registryHost,
 				},
-				AlwaysPullImage: true, // make sure the authentication takes place
-				ExposedPorts:    []string{"6379/tcp"},
-				WaitingFor:      wait.ForLog("Ready to accept connections"),
-			},
-			Started: true,
-		})
+			}),
+			testcontainers.WithAlwaysPull(), // make sure the authentication takes place
+			testcontainers.WithExposedPorts("6379/tcp"),
+			testcontainers.WithWaitStrategy(wait.ForLog("Ready to accept connections")),
+		)
 		testcontainers.CleanupContainer(tt, redisC)
 		require.NoError(tt, err)
 
@@ -256,20 +252,17 @@ func TestRunContainer_wrongData(t *testing.T) {
 	// The container won't be able to start because the data
 	// directory is wrong.
 
-	redisC, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			FromDockerfile: testcontainers.FromDockerfile{
-				Context: filepath.Join("testdata", "redis"),
-				BuildArgs: map[string]*string{
-					"REGISTRY_HOST": &registryHost,
-				},
+	redisC, err := testcontainers.Run(context.Background(), "",
+		testcontainers.WithDockerfile(testcontainers.FromDockerfile{
+			Context: filepath.Join("testdata", "redis"),
+			BuildArgs: map[string]*string{
+				"REGISTRY_HOST": &registryHost,
 			},
-			AlwaysPullImage: true, // make sure the authentication takes place
-			ExposedPorts:    []string{"6379/tcp"},
-			WaitingFor:      wait.ForLog("Ready to accept connections"),
-		},
-		Started: true,
-	})
+		}),
+		testcontainers.WithAlwaysPull(), // make sure the authentication takes place
+		testcontainers.WithExposedPorts("6379/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForLog("Ready to accept connections")),
+	)
 	testcontainers.CleanupContainer(t, redisC)
 	require.ErrorContains(t, err, "manifest unknown")
 }
