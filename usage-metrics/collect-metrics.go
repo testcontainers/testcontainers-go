@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
@@ -51,38 +52,91 @@ func main() {
 }
 
 func collectMetrics(versions []string, csvPath string) error {
-	for i, version := range versions {
+	date := time.Now().Format("2006-01-02")
+	var metrics []usageMetric
+
+	// Query all versions sequentially
+	for _, version := range versions {
 		version = strings.TrimSpace(version)
 		if version == "" {
 			continue
 		}
 
-		count, err := queryGitHubUsage(version)
+		count, err := queryGitHubUsageWithRetry(version)
 		if err != nil {
-			log.Printf("Warning: Failed to query version %s: %v", version, err)
+			log.Printf("Warning: Failed to query version %s after retries: %v", version, err)
 			continue
 		}
 
 		metric := usageMetric{
-			Date:    time.Now().Format("2006-01-02"),
+			Date:    date,
 			Version: version,
 			Count:   count,
 		}
 
+		metrics = append(metrics, metric)
+		fmt.Printf("Successfully queried: %s has %d usages on %s\n", version, count, metric.Date)
+	}
+
+	// Sort metrics by version
+	sort.Slice(metrics, func(i, j int) bool {
+		return metrics[i].Version < metrics[j].Version
+	})
+
+	// Write all metrics to CSV
+	for _, metric := range metrics {
 		if err := appendToCSV(csvPath, metric); err != nil {
-			log.Printf("Warning: Failed to write metric for %s: %v", version, err)
+			log.Printf("Warning: Failed to write metric for %s: %v", metric.Version, err)
 			continue
 		}
-
-		fmt.Printf("Successfully recorded: %s has %d usages on %s\n", version, count, metric.Date)
-
-		// Rate limiting between requests (not after last one)
-		if i < len(versions)-1 {
-			time.Sleep(2 * time.Second)
-		}
+		fmt.Printf("Successfully recorded: %s has %d usages on %s\n", metric.Version, metric.Count, metric.Date)
 	}
 
 	return nil
+}
+
+func queryGitHubUsageWithRetry(version string) (int, error) {
+	var lastErr error
+	// Backoff intervals: 5s, 10s, 20s, 40s, 60s
+	backoffIntervals := []time.Duration{
+		5 * time.Second,
+		10 * time.Second,
+		20 * time.Second,
+		40 * time.Second,
+		60 * time.Second,
+	}
+
+	maxRetries := len(backoffIntervals)
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		if attempt > 0 {
+			// Use predefined backoff intervals, capping at the last value
+			waitTime := backoffIntervals[attempt-1]
+			if attempt-1 >= len(backoffIntervals) {
+				waitTime = backoffIntervals[len(backoffIntervals)-1]
+			}
+			log.Printf("Retrying version %s in %v (attempt %d/%d)", version, waitTime, attempt+1, maxRetries)
+			time.Sleep(waitTime)
+		}
+
+		count, err := queryGitHubUsage(version)
+		if err == nil {
+			return count, nil
+		}
+
+		lastErr = err
+
+		// Check if it's a rate limit error
+		if strings.Contains(err.Error(), "rate limit") || strings.Contains(err.Error(), "403") {
+			log.Printf("Rate limit hit for version %s, will retry with backoff", version)
+			continue
+		}
+
+		// For non-rate-limit errors, retry but with shorter backoff
+		log.Printf("Error querying version %s: %v", version, err)
+	}
+
+	return 0, fmt.Errorf("max retries reached: %w", lastErr)
 }
 
 func queryGitHubUsage(version string) (int, error) {

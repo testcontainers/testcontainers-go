@@ -37,28 +37,24 @@ The system automatically collects usage metrics by querying the GitHub Code Sear
 
 ## Versions Tracked
 
-The system tracks all minor versions from **v0.13.0** to the **latest release** (currently v0.39.0).
+The system tracks all versions (including patch versions) from **v0.13.0** to the **latest release** (currently v0.40.0). This includes versions like v0.34.1, v0.29.1, etc.
 
 ## Usage
 
 ### Manual Collection
 
-To manually collect metrics for specific versions:
+To manually collect metrics for specific versions (queries run sequentially with automatic retry and backoff):
 
 ```bash
 cd usage-metrics
-go run collect-metrics.go -version v0.27.0 -version v0.28.0 -csv ../docs/usage-metrics.csv
+go run collect-metrics.go -version v0.37.0 -version v0.38.0 -version v0.39.0 -csv ../docs/usage-metrics.csv
 ```
 
-You can specify multiple `-version` flags to collect data for multiple versions in a single run:
+The collection script includes automatic retry with exponential backoff (5s, 10s, 20s, 40s, 60s) for rate limit resilience. For example, to test with a few recent versions:
 
 ```bash
 cd usage-metrics
-go run collect-metrics.go \
-  -version v0.37.0 \
-  -version v0.38.0 \
-  -version v0.39.0 \
-  -csv ../docs/usage-metrics.csv
+go run collect-metrics.go -version v0.38.0 -version v0.39.0 -version v0.40.0 -csv ../docs/usage-metrics.csv
 ```
 
 ### Running Locally
@@ -116,7 +112,7 @@ GitHub API rate limits:
 - **Unauthenticated**: 10 requests/minute
 - **Authenticated**: 30 requests/minute
 
-The collection script includes a built-in 2-second delay between version queries to avoid hitting rate limits when querying multiple versions.
+The collection script queries versions sequentially with automatic retry and exponential backoff (5s, 10s, 20s, 40s, 60s) to handle rate limit errors gracefully. The script will automatically retry up to 5 times if it encounters rate limiting.
 
 ## Customization
 
@@ -163,9 +159,9 @@ By default, the workflow queries all versions from v0.13.0 onwards. To change th
 
 ### API Rate Limiting
 If you hit rate limits:
-1. The collection script includes built-in 2-second delays between requests
-2. For manual runs, you can query specific versions only using multiple `-version` flags
-3. The workflow uses the `gh` CLI which automatically uses GitHub's token
+1. The collection script includes automatic retry with exponential backoff (5s, 10s, 20s, 40s, 60s up to 5 attempts)
+2. Queries run sequentially to minimize rate limit issues
+3. The workflow uses the `gh` CLI which automatically uses GitHub's token for higher limits
 
 ### CSV Not Updating
 Check the workflow logs:
