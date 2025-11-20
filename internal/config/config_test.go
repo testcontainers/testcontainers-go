@@ -30,6 +30,7 @@ func resetTestEnv(t *testing.T) {
 	t.Setenv("RYUK_VERBOSE", "")
 	t.Setenv("RYUK_RECONNECTION_TIMEOUT", "")
 	t.Setenv("RYUK_CONNECTION_TIMEOUT", "")
+	t.Setenv("TESTCONTAINERS_PROVIDER", "")
 }
 
 func TestReadConfig(t *testing.T) {
@@ -42,6 +43,7 @@ func TestReadConfig(t *testing.T) {
 		t.Setenv("USERPROFILE", "") // Windows support
 		t.Setenv("DOCKER_HOST", "")
 		t.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
+		t.Setenv("TESTCONTAINERS_PROVIDER", "podman")
 
 		config := Read()
 
@@ -49,6 +51,7 @@ func TestReadConfig(t *testing.T) {
 			SessionID:    bootstrap.SessionID(),
 			RyukDisabled: true,
 			Host:         "", // docker socket is empty at the properties file
+			Provider:     "podman",
 		}
 
 		require.Equal(t, expected, config)
@@ -87,6 +90,7 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 		t.Setenv("RYUK_RECONNECTION_TIMEOUT", "13s")
 		t.Setenv("RYUK_CONNECTION_TIMEOUT", "12s")
+		t.Setenv("TESTCONTAINERS_PROVIDER", "docker")
 
 		config := read()
 
@@ -98,6 +102,7 @@ func TestReadTCConfig(t *testing.T) {
 			Host:                    "", // docker socket is empty at the properties file
 			RyukReconnectionTimeout: 13 * time.Second,
 			RyukConnectionTimeout:   12 * time.Second,
+			Provider:                "docker",
 		}
 
 		assert.Equal(t, expected, config)
@@ -570,6 +575,16 @@ func TestReadTCConfig(t *testing.T) {
 				},
 			},
 			{
+				"With Provider set as property",
+				`provider=podman`,
+				map[string]string{},
+				Config{
+					Provider:                "podman",
+					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
+					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+				},
+			},
+			{
 				"With Session ID set using an env var and properties. Env var wins",
 				`session.id=bar`,
 				map[string]string{
@@ -577,6 +592,30 @@ func TestReadTCConfig(t *testing.T) {
 				},
 				Config{
 					SessionID:               "foo",
+					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
+					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+				},
+			},
+			{
+				"With Provider set as env var",
+				``,
+				map[string]string{
+					"TESTCONTAINERS_PROVIDER": "podman",
+				},
+				Config{
+					Provider:                "podman",
+					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
+					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+				},
+			},
+			{
+				"With Provider set as env var and properties: Env var wins",
+				`provider=docker`,
+				map[string]string{
+					"TESTCONTAINERS_PROVIDER": "podman",
+				},
+				Config{
+					Provider:                "podman",
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
 				},
