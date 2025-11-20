@@ -94,8 +94,8 @@ The Kafka container will be started using a custom shell script.
 
 Module would vary the starter script depending on the image in use, using following logic:
 
-- image starts with `apache/kafka`: use Apache Kafka starter script.
-- image starts with `confluentinc/`: use Confluent starter script.
+- image starts with `apache/kafka` or `docker.io/apache/kafka`: use Apache Kafka starter script.
+- image starts with `confluentinc/` or `docker.io/confluentinc/`: use Confluent starter script.
 - otherwise: use Confluent starter script (for backward compatibility).
 
 See also [WithApacheFlavor/WithConfluentFlavor](#withapacheflavorwithconfluentflavor) and [WithStarterScript](#withstarterscript) options to override this behavior.
