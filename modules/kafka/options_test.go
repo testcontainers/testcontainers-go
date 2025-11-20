@@ -59,8 +59,8 @@ func Test_runOptions_getStarterScriptContent(t *testing.T) {
 				image: tt.image,
 			}
 			require.Equal(t, tt.want, opts.getStarterScriptContent())
-			require.NoError(t, WithStarterScript("mytestsript")(opts))
-			require.Equal(t, "mytestsript", opts.getStarterScriptContent())
+			require.NoError(t, WithStarterScript("mytestcript")(opts))
+			require.Equal(t, "mytestcript", opts.getStarterScriptContent())
 		})
 	}
 }
