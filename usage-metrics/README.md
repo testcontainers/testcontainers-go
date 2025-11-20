@@ -29,11 +29,11 @@ The system automatically collects usage metrics by querying the GitHub Code Sear
 - Responsive design for mobile and desktop
 
 ### 🤖 Automation (`.github/workflows/usage-metrics.yml`)
-- Runs weekly on Monday at 9 AM UTC
+- Runs monthly on the 1st at 9 AM UTC
 - Can be manually triggered with custom versions
 - Automatically queries all versions from v0.13.0 to latest
-- Automatically commits updated data
-- Data is deployed via the main MkDocs site
+- Creates pull requests for metrics updates (not direct commits)
+- Data is deployed via the main MkDocs site when PR is merged
 
 ## Versions Tracked
 
@@ -43,18 +43,22 @@ The system tracks all minor versions from **v0.13.0** to the **latest release** 
 
 ### Manual Collection
 
-To manually collect metrics for a specific version:
+To manually collect metrics for specific versions:
 
 ```bash
-cd usage-metrics/scripts
-go run collect-metrics.go -version v0.27.0 -csv ../../docs/usage-metrics.csv
+cd usage-metrics
+go run collect-metrics.go -version v0.27.0 -version v0.28.0 -csv ../docs/usage-metrics.csv
 ```
 
-With GitHub token for higher rate limits:
+You can specify multiple `-version` flags to collect data for multiple versions in a single run:
 
 ```bash
-export GITHUB_TOKEN=your_token_here
-go run collect-metrics.go -version v0.27.0 -csv ../../docs/usage-metrics.csv -token $GITHUB_TOKEN
+cd usage-metrics
+go run collect-metrics.go \
+  -version v0.37.0 \
+  -version v0.38.0 \
+  -version v0.39.0 \
+  -csv ../docs/usage-metrics.csv
 ```
 
 ### Running Locally
@@ -62,11 +66,8 @@ go run collect-metrics.go -version v0.27.0 -csv ../../docs/usage-metrics.csv -to
 To view the dashboard locally with the full MkDocs site:
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
-
 # Serve the docs
-mkdocs serve
+make serve-docs
 
 # Open http://localhost:8000/usage-metrics/
 ```
@@ -99,7 +100,7 @@ date,version,count
 
 The dashboard is integrated into the main documentation site:
 - **Production**: https://golang.testcontainers.org/usage-metrics/
-- **Local**: http://localhost:8000/usage-metrics/ (when running `mkdocs serve`)
+- **Local**: http://localhost:8000/usage-metrics/ (when running `make serve-docs`)
 
 The dashboard displays:
 - Total repositories using testcontainers-go
@@ -115,7 +116,7 @@ GitHub API rate limits:
 - **Unauthenticated**: 10 requests/minute
 - **Authenticated**: 30 requests/minute
 
-The collection script includes a 3-second delay between version queries to avoid hitting rate limits when querying all versions.
+The collection script includes a built-in 2-second delay between version queries to avoid hitting rate limits when querying multiple versions.
 
 ## Customization
 
@@ -125,7 +126,7 @@ Edit the cron schedule in the workflow:
 
 ```yaml
 schedule:
-  - cron: '0 9 * * 1'  # Weekly on Monday at 9 AM UTC
+  - cron: '0 9 1 * *'  # Monthly on the 1st at 9 AM UTC
 ```
 
 ### Customizing Charts
@@ -162,9 +163,9 @@ By default, the workflow queries all versions from v0.13.0 onwards. To change th
 
 ### API Rate Limiting
 If you hit rate limits:
-1. Use a GitHub token (increases limit to 30 req/min)
-2. The workflow uses 3-second delays between requests
-3. For manual runs, you can query specific versions only
+1. The collection script includes built-in 2-second delays between requests
+2. For manual runs, you can query specific versions only using multiple `-version` flags
+3. The workflow uses the `gh` CLI which automatically uses GitHub's token
 
 ### CSV Not Updating
 Check the workflow logs:
