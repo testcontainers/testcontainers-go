@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/kafka"
 )
@@ -14,13 +15,10 @@ func startStopBenchmark(b *testing.B, image string) {
 		kafkaContainer, err := kafka.Run(context.Background(),
 			image,
 		)
-		if err != nil {
-			b.Fatalf("failed to start container: %s", err)
-		}
+		require.NoError(b, err)
 
-		if err := testcontainers.TerminateContainer(kafkaContainer); err != nil {
-			b.Errorf("failed to terminate container: %s", err)
-		}
+		err = testcontainers.TerminateContainer(kafkaContainer)
+		require.NoError(b, err)
 	}
 }
 
