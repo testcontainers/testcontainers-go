@@ -106,15 +106,13 @@ func queryGitHubUsageWithRetry(version string) (int, error) {
 		60 * time.Second,
 	}
 
-	maxRetries := len(backoffIntervals)
+	// maxRetries includes the initial attempt plus one retry per backoff interval
+	maxRetries := len(backoffIntervals) + 1
 
 	for attempt := 0; attempt < maxRetries; attempt++ {
 		if attempt > 0 {
-			// Use predefined backoff intervals, capping at the last value
+			// Use predefined backoff intervals
 			waitTime := backoffIntervals[attempt-1]
-			if attempt-1 >= len(backoffIntervals) {
-				waitTime = backoffIntervals[len(backoffIntervals)-1]
-			}
 			log.Printf("Retrying version %s in %v (attempt %d/%d)", version, waitTime, attempt+1, maxRetries)
 			time.Sleep(waitTime)
 		}
