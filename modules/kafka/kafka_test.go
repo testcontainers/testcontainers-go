@@ -219,4 +219,16 @@ func TestFailOnBothFlavors(t *testing.T) {
 		kafka.WithConfluentFlavor(),
 	)
 	require.Error(t, err)
+
+	_, err = kafka.Run(ctx, "apache/kafka-native:4.0.1",
+		kafka.WithApacheFlavor(),
+		kafka.WithStarterScript("testscript"),
+	)
+	require.Error(t, err)
+
+	_, err = kafka.Run(ctx, "apache/kafka-native:4.0.1",
+		kafka.WithConfluentFlavor(),
+		kafka.WithStarterScript("testscript"),
+	)
+	require.Error(t, err)
 }

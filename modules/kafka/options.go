@@ -26,9 +26,13 @@ func (o RunOption) Customize(_ *testcontainers.GenericContainerRequest) error {
 // You would typically use this option when the image you are using is different from
 // the standard ones and the default starter script does not work as expected.
 // This option conflicts with WithApacheFlavor and WithConfluentFlavor options,
-// and the last one provided takes precedence.
+// and the error is returned if several are provided.
 func WithStarterScript(content string) RunOption {
 	return func(o *runOptions) error {
+		if o.flavorWasSet {
+			return errFlavorAlreadySet
+		}
+		o.flavorWasSet = true
 		o.starterScript = content
 		return nil
 	}
@@ -53,13 +57,12 @@ func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
 	})
 }
 
-var errFlavorAlreadySet = errors.New("flavor was already set, provide only one of WithApacheFlavor or WithConfluentFlavor")
+var errFlavorAlreadySet = errors.New("flavor was already set, provide only one of WithApacheFlavor, WithConfluentFlavor or WithStarterScript")
 
 // WithApacheFlavor sets the starter script to the one compatible with Apache Kafka images.
 //
-// Note: this option conflicts with WithConfluentFlavor option, and the error is returned
-// if both are provided. The option also conflicts with WithStarterScript option,
-// but in that case the last one provided takes precedence.
+// Note: this option conflicts with WithConfluentFlavor and WithStarterScript options,
+// and the error is returned if several are provided.
 func WithApacheFlavor() RunOption {
 	return func(o *runOptions) error {
 		if o.flavorWasSet {
@@ -73,9 +76,8 @@ func WithApacheFlavor() RunOption {
 
 // WithConfluentFlavor sets the starter script to the one compatible with Confluent Kafka images.
 //
-// Note: this option conflicts with WithApacheFlavor option, and the error is returned
-// if both are provided. The option also conflicts with WithStarterScript option,
-// but in that case the last one provided takes precedence.
+// Note: this option conflicts with WithApacheFlavor and WithStarterScript options,
+// and the error is returned if several are provided.
 func WithConfluentFlavor() RunOption {
 	return func(o *runOptions) error {
 		if o.flavorWasSet {
