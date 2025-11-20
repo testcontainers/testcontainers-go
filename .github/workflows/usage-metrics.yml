@@ -1,0 +1,72 @@
+name: Update Usage Metrics
+
+on:
+  schedule:
+    # Run weekly on Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    inputs:
+      versions:
+        description: 'Comma-separated versions to query (leave empty for all versions)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  collect-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Query versions
+        id: query
+        run: |
+          cd usage-metrics/scripts
+          
+          # Get versions to query
+          VERSIONS="${{ github.event.inputs.versions }}"
+          if [ -z "$VERSIONS" ]; then
+            # Get all versions from v0.13.0 to latest
+            VERSIONS=$(git ls-remote --tags origin | \
+              grep -E 'refs/tags/v0\.[0-9]+\.0$' | \
+              sed 's|.*refs/tags/||' | \
+              sort -V | \
+              awk '/v0.13.0/,0' | \
+              tr '\n' ',' | \
+              sed 's/,$//')
+          fi
+          
+          echo "Querying versions: $VERSIONS"
+          
+          # Query each version
+          IFS=',' read -ra VERSION_ARRAY <<< "$VERSIONS"
+          for version in "${VERSION_ARRAY[@]}"; do
+            version=$(echo "$version" | xargs) # trim whitespace
+            if [ -z "$version" ]; then
+              continue
+            fi
+            echo "Querying version: $version"
+            go run collect-metrics.go -version "$version" -csv "../../docs/usage-metrics.csv" -token "${{ secrets.GITHUB_TOKEN }}" || true
+            sleep 3 # Rate limiting - be conservative
+          done
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/usage-metrics.csv
+          
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: update usage metrics [skip ci]"
+            git push
+          fi
