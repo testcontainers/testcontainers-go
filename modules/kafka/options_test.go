@@ -28,6 +28,21 @@ func Test_runOptions_getStarterScriptContent(t *testing.T) {
 			want:  apacheStarterScript,
 		},
 		{
+			name:  "apache non-native image - latest",
+			image: "apache/kafka:latest",
+			want:  apacheStarterScript,
+		},
+		{
+			name:  "apache non-native image - specific version",
+			image: "apache/kafka:4.0.0",
+			want:  apacheStarterScript,
+		},
+		{
+			name:  "apache non-native image - with docker.io prefix",
+			image: "docker.io/apache/kafka:4.0.0",
+			want:  apacheStarterScript,
+		},
+		{
 			name:  "confluentinc image - latest",
 			image: "confluentinc/cp-kafka:latest",
 			want:  confluentStarterScript,
