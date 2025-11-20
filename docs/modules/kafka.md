@@ -130,11 +130,15 @@ You can manually specify which flavor of starter script to use with the followin
 [With Confluent Flavor](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerWithConfluentFlavor
 <!--/codeinclude-->
 
+Note that both `WithApacheFlavor` and `WithConfluentFlavor` conflict with each other and with `WithStarterScript` option. An error will be returned if several of those options are provided.
+
 #### WithStarterScript
 
 - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 This allows to provide a completely custom starter script for the Kafka container. Be careful when using this option, as compatibility with any image and module version cannot be guaranteed.
+
+Note that `WithStarterScript` conflicts with `WithApacheFlavor` and `WithConfluentFlavor` options. An error will be returned if several of those options are provided.
 
 {% include "../features/common_functional_options_list.md" %}
 
