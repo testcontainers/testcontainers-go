@@ -101,7 +101,7 @@ func (t ProviderType) UnderlyingProviderType() ProviderType {
 
 	// Configuration of an explicit provider has the next priority
 	conf := config.Read()
-	switch conf.Provider {
+	switch strings.ToLower(conf.Provider) {
 	case "docker":
 		return ProviderDocker
 	case "podman":
