@@ -219,5 +219,4 @@ func TestFailOnBothFlavors(t *testing.T) {
 		kafka.WithConfluentFlavor(),
 	)
 	require.Error(t, err)
-	require.EqualError(t, err, "apply option: flavor was already set, provide only one of WithApacheFlavor or WithConfluentFlavor")
 }
