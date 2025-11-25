@@ -55,10 +55,10 @@ func main() {
 
 func collectMetrics(versions []string, csvPath string) error {
 	date := time.Now().Format("2006-01-02")
-	metrics := make([]usageMetric, len(versions))
+	metrics := make([]usageMetric, 0, len(versions))
 
 	// Query all versions sequentially
-	for i, version := range versions {
+	for _, version := range versions {
 		version = strings.TrimSpace(version)
 		if version == "" {
 			continue
@@ -76,7 +76,7 @@ func collectMetrics(versions []string, csvPath string) error {
 			Count:   count,
 		}
 
-		metrics[i] = metric
+		metrics = append(metrics, metric)
 		fmt.Printf("Successfully queried: %s has %d usages on %s\n", version, count, metric.Date)
 	}
 
