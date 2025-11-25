@@ -78,6 +78,12 @@ func collectMetrics(versions []string, csvPath string) error {
 
 		metrics = append(metrics, metric)
 		fmt.Printf("Successfully queried: %s has %d usages on %s\n", version, count, metric.Date)
+
+		// Add delay to avoid rate limiting (30 requests/minute = 2 seconds between requests)
+		if len(metrics) < len(versions) {
+			log.Printf("Waiting 2 seconds before next query to avoid rate limiting...")
+			time.Sleep(2 * time.Second)
+		}
 	}
 
 	// Sort metrics by version
@@ -127,7 +133,9 @@ func queryGitHubUsageWithRetry(version string) (int, error) {
 		lastErr = err
 
 		// Check if it's a rate limit error
-		if strings.Contains(err.Error(), "rate limit") || strings.Contains(err.Error(), "403") {
+		if strings.Contains(err.Error(), "rate limit") ||
+			strings.Contains(err.Error(), "403") ||
+			strings.Contains(err.Error(), "429") {
 			log.Printf("Rate limit hit for version %s, will retry with backoff", version)
 			continue
 		}
