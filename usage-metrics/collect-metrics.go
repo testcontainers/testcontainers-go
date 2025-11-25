@@ -40,7 +40,7 @@ func (a *arrayFlags) Set(value string) error {
 
 func main() {
 	var versions arrayFlags
-	csvPath := flag.String("csv", "../../docs/usage-metrics.csv", "Path to CSV file")
+	csvPath := flag.String("csv", filepath.Join("..", "docs", "usage-metrics.csv"), "Path to CSV file")
 	flag.Var(&versions, "version", "Version to query (can be specified multiple times)")
 	flag.Parse()
 
