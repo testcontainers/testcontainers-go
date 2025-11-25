@@ -64,6 +64,12 @@ func collectMetrics(versions []string, csvPath string) error {
 			continue
 		}
 
+		// Add delay BEFORE querying to avoid rate limiting
+		if len(metrics) > 0 {
+			log.Printf("Waiting 7 seconds before querying next version...")
+			time.Sleep(7 * time.Second) // 10 requests per 60 seconds = 6 seconds minimum
+		}
+
 		count, err := queryGitHubUsageWithRetry(version)
 		if err != nil {
 			log.Printf("Warning: Failed to query version %s after retries: %v", version, err)
@@ -78,12 +84,6 @@ func collectMetrics(versions []string, csvPath string) error {
 
 		metrics = append(metrics, metric)
 		fmt.Printf("Successfully queried: %s has %d usages on %s\n", version, count, metric.Date)
-
-		// Add delay to avoid rate limiting (30 requests/minute = 2 seconds between requests)
-		if len(metrics) < len(versions) {
-			log.Printf("Waiting 2 seconds before next query to avoid rate limiting...")
-			time.Sleep(2 * time.Second)
-		}
 	}
 
 	// Sort metrics by version
@@ -105,12 +105,10 @@ func collectMetrics(versions []string, csvPath string) error {
 
 func queryGitHubUsageWithRetry(version string) (int, error) {
 	var lastErr error
-	// Backoff intervals: 5s, 10s, 20s, 40s, 60s
+	// Backoff intervals: wait longer for rate limit to reset (rolling window)
 	backoffIntervals := []time.Duration{
-		5 * time.Second,
-		10 * time.Second,
-		20 * time.Second,
-		40 * time.Second,
+		60 * time.Second, // Wait for rolling window
+		60 * time.Second,
 		60 * time.Second,
 	}
 
