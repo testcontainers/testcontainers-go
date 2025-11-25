@@ -180,7 +180,6 @@ func appendToCSV(csvPath string, metric usageMetric) error {
 	defer file.Close()
 
 	writer := csv.NewWriter(file)
-	defer writer.Flush()
 
 	if !fileExists {
 		if err := writer.Write([]string{"date", "version", "count"}); err != nil {
@@ -191,6 +190,11 @@ func appendToCSV(csvPath string, metric usageMetric) error {
 	record := []string{metric.Date, metric.Version, strconv.Itoa(metric.Count)}
 	if err := writer.Write(record); err != nil {
 		return fmt.Errorf("write record: %w", err)
+	}
+
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		return fmt.Errorf("flush csv: %w", err)
 	}
 
 	return nil
