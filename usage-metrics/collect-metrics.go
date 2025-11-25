@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -148,7 +149,8 @@ func queryGitHubUsage(version string) (int, error) {
 	cmd := fmt.Sprintf("gh api -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' '%s'", endpoint)
 	output, err := exec.Command("sh", "-c", cmd).Output()
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
+		exitErr := &exec.ExitError{}
+		if errors.As(err, &exitErr) {
 			return 0, fmt.Errorf("gh api failed: %s", string(exitErr.Stderr))
 		}
 		return 0, fmt.Errorf("gh api: %w", err)
