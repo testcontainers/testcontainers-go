@@ -78,6 +78,12 @@ func collectMetrics(versions []string, csvPath string) error {
 
 		metrics = append(metrics, metric)
 		fmt.Printf("Successfully queried: %s has %d usages on %s\n", version, count, metric.Date)
+
+		// Add delay to avoid rate limiting (30 requests/minute = 2 seconds between requests)
+		if len(metrics) < len(versions) {
+			log.Printf("Waiting 2 seconds before next query to avoid rate limiting...")
+			time.Sleep(2 * time.Second)
+		}
 	}
 
 	// Sort metrics by version
