@@ -127,7 +127,9 @@ func queryGitHubUsageWithRetry(version string) (int, error) {
 		lastErr = err
 
 		// Check if it's a rate limit error
-		if strings.Contains(err.Error(), "rate limit") || strings.Contains(err.Error(), "403") {
+		if strings.Contains(err.Error(), "rate limit") ||
+			strings.Contains(err.Error(), "403") ||
+			strings.Contains(err.Error(), "429") {
 			log.Printf("Rate limit hit for version %s, will retry with backoff", version)
 			continue
 		}
