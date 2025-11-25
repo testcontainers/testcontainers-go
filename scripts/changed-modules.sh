@@ -126,8 +126,11 @@ readonly rootModule="\"\""
 # capture the modulegen module
 readonly modulegenModule="\"modulegen\""
 
+# capture the usage-metrics module
+readonly usageMetricsModule="\"usage-metrics\""
+
 # merge all modules and examples into a single array
-allModules=(${rootModule} ${modulegenModule} "${modules[@]}")
+allModules=(${rootModule} ${modulegenModule} ${usageMetricsModule} "${modules[@]}")
 
 # sort allModules array
 IFS=$'\n' allModules=($(sort <<<"${allModules[*]}"))
