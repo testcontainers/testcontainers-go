@@ -146,8 +146,11 @@ func queryGitHubUsage(version string) (int, error) {
 	params.Add("q", query)
 	endpoint := "/search/code?" + params.Encode()
 
-	cmd := fmt.Sprintf("gh api -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28' '%s'", endpoint)
-	output, err := exec.Command("sh", "-c", cmd).Output()
+	output, err := exec.Command("gh", "api",
+		"-H", "Accept: application/vnd.github+json",
+		"-H", "X-GitHub-Api-Version: 2022-11-28",
+		endpoint,
+	).Output()
 	if err != nil {
 		exitErr := &exec.ExitError{}
 		if errors.As(err, &exitErr) {
