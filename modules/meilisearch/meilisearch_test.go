@@ -23,7 +23,7 @@ func TestMeilisearch(t *testing.T) {
 	address, err := ctr.Address(ctx)
 	require.NoError(t, err)
 
-	req, err := http.NewRequest(http.MethodGet, address, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, address, http.NoBody)
 	require.NoError(t, err)
 
 	resp, err := http.DefaultClient.Do(req)
@@ -46,7 +46,7 @@ func TestMeilisearch_WithDataDump(t *testing.T) {
 
 	client := http.DefaultClient
 
-	req, err := http.NewRequest(http.MethodGet, address, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, address, http.NoBody)
 	require.NoError(t, err)
 
 	resp, err := client.Do(req)
@@ -58,7 +58,7 @@ func TestMeilisearch_WithDataDump(t *testing.T) {
 	path, err := url.JoinPath(address, "/indexes/movies/documents/1212")
 	require.NoError(t, err)
 
-	req, err = http.NewRequest(http.MethodGet, path, nil)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, path, http.NoBody)
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer my-master-key")

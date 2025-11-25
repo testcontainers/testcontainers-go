@@ -1,7 +1,6 @@
 package vearch_test
 
 import (
-	"context"
 	"net/http"
 	"testing"
 
@@ -12,7 +11,7 @@ import (
 )
 
 func TestVearch(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := vearch.Run(ctx, "vearch/vearch:3.5.1")
 	testcontainers.CleanupContainer(t, ctr)
@@ -24,11 +23,13 @@ func TestVearch(t *testing.T) {
 		// }
 		require.NoError(t, err)
 
-		cli := &http.Client{}
-		resp, err := cli.Get(restEndpoint)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, restEndpoint, http.NoBody)
 		require.NoError(t, err)
-		defer resp.Body.Close()
 
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+
+		defer resp.Body.Close()
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 }

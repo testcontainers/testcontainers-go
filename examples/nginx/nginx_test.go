@@ -21,7 +21,12 @@ func TestIntegrationNginxLatestReturn(t *testing.T) {
 	testcontainers.CleanupContainer(t, nginxC)
 	require.NoError(t, err)
 
-	resp, err := http.Get(nginxC.URI)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, nginxC.URI, http.NoBody)
 	require.NoError(t, err)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
 	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.NoError(t, resp.Body.Close())
 }

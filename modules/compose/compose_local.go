@@ -294,12 +294,10 @@ type ExecError struct {
 }
 
 // execute executes a program with arguments and environment variables inside a specific directory
-func execute(
-	dirContext string, environment map[string]string, binary string, args []string,
-) ExecError {
+func execute(ctx context.Context, dirContext string, environment map[string]string, binary string, args []string) ExecError {
 	var errStdout, errStderr error
 
-	cmd := exec.Command(binary, args...)
+	cmd := exec.CommandContext(ctx, binary, args...)
 	cmd.Dir = dirContext
 	cmd.Env = os.Environ()
 
@@ -395,7 +393,7 @@ func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
 	}
 	cmds = append(cmds, args...)
 
-	execErr := execute(pwd, environment, dc.Executable, cmds)
+	execErr := execute(context.Background(), pwd, environment, dc.Executable, cmds)
 	err := execErr.Error
 	if err != nil {
 		args := strings.Join(dc.Cmd, " ")

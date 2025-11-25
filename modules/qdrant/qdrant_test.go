@@ -26,8 +26,10 @@ func TestQdrant(t *testing.T) {
 		// }
 		require.NoError(t, err)
 
-		cli := &http.Client{}
-		resp, err := cli.Get(restEndpoint)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, restEndpoint, http.NoBody)
+		require.NoError(t, err)
+
+		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
@@ -51,9 +53,12 @@ func TestQdrant(t *testing.T) {
 		// }
 		require.NoError(t, err)
 
-		cli := &http.Client{}
-		resp, err := cli.Get(webUI)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, webUI, http.NoBody)
 		require.NoError(t, err)
+
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+
 		defer resp.Body.Close()
 
 		require.Equal(t, http.StatusOK, resp.StatusCode)

@@ -46,7 +46,8 @@ func ExampleRun() {
 }
 
 func ExampleRun_connectToPlayground() {
-	openfgaContainer, err := openfga.Run(context.Background(), "openfga/openfga:v1.5.0")
+	ctx := context.Background()
+	openfgaContainer, err := openfga.Run(ctx, "openfga/openfga:v1.5.0")
 	defer func() {
 		if err := testcontainers.TerminateContainer(openfgaContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -58,7 +59,7 @@ func ExampleRun_connectToPlayground() {
 	}
 
 	// playgroundEndpoint {
-	playgroundEndpoint, err := openfgaContainer.PlaygroundEndpoint(context.Background())
+	playgroundEndpoint, err := openfgaContainer.PlaygroundEndpoint(ctx)
 	if err != nil {
 		log.Printf("failed to get playground endpoint: %s", err)
 		return
@@ -67,11 +68,18 @@ func ExampleRun_connectToPlayground() {
 
 	httpClient := http.Client{}
 
-	resp, err := httpClient.Get(playgroundEndpoint)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, playgroundEndpoint, http.NoBody)
+	if err != nil {
+		log.Printf("failed to create request: %v", err)
+		return
+	}
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		log.Printf("failed to get playground endpoint: %s", err)
 		return
 	}
+	defer resp.Body.Close()
 
 	fmt.Println(resp.StatusCode)
 
