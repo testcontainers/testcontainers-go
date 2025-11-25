@@ -11,6 +11,7 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
+	"github.com/docker/go-units"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -26,6 +27,15 @@ type Container struct {
 }
 
 // Run starts a Solace container with the provided image and options
+//
+// The container requires specific ulimits to start successfully:
+//   - nofile: 1048576 (number of open files)
+//   - core: -1 (for core dumps)
+//   - memlock: -1 (for memory locking)
+//
+// See https://docs.solace.com for more information.
+// - https://docs.solace.com/Software-Broker/Managing-Core-Files.htm
+// - https://docs.solace.com/Software-Broker/Container-Tasks/Config-Container-Storage.htm?Highlight=ulimit
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	// Override default options with provided ones
 	settings := defaultOptions()
@@ -57,6 +67,24 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithExposedPorts(exposedPorts...),
 		testcontainers.WithHostConfigModifier(func(hc *container.HostConfig) {
 			hc.ShmSize = settings.shmSize
+			// Where disk space permits, Solace docs recommends the core file size "rlimit" for event brokers to be "unlimited".
+			hc.Ulimits = []*units.Ulimit{
+				{
+					Name: "nofile",
+					Soft: 1048576,
+					Hard: 1048576,
+				},
+				{
+					Name: "core",
+					Soft: -1,
+					Hard: -1,
+				},
+				{
+					Name: "memlock",
+					Soft: -1,
+					Hard: -1,
+				},
+			}
 		}),
 		testcontainers.WithWaitStrategy(waitStrategies...),
 	}
