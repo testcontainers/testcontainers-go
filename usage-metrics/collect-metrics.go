@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -185,7 +186,7 @@ func appendToCSV(csvPath string, metric usageMetric) error {
 		}
 	}
 
-	record := []string{metric.Date, metric.Version, fmt.Sprintf("%d", metric.Count)}
+	record := []string{metric.Date, metric.Version, strconv.Itoa(metric.Count)}
 	if err := writer.Write(record); err != nil {
 		return fmt.Errorf("write record: %w", err)
 	}
