@@ -170,6 +170,8 @@ for file in $modified_files; do
         fi
     elif [[ $file == modulegen/* ]]; then
         modified_modules+=("\"modulegen\"")
+    elif [[ $file == usage-metrics/* ]]; then
+        modified_modules+=("\"usage-metrics\"")
     else
         # a file from the core module is modified, so include all modules in the list and stop the loop
         # check if the file is in one of the excluded modules
