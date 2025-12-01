@@ -7,9 +7,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/containerd/platforms"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/go-connections/nat"
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"gopkg.in/yaml.v3"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -179,10 +181,12 @@ func unmarshal(bytes []byte) (*KubeConfigValue, error) {
 	return &kubeConfig, nil
 }
 
+// LoadImages imports local images into the cluster using containerd
 func (c *K3sContainer) LoadImages(ctx context.Context, images ...string) error {
-	return c.LoadImagesWithOpts(ctx, images)
+	return c.LoadImagesWithPlatform(ctx, images, nil)
 }
 
+// Deprecated: use LoadImagesWithPlatform instead
 func (c *K3sContainer) LoadImagesWithOpts(ctx context.Context, images []string, opts ...testcontainers.SaveImageOption) error {
 	provider, err := testcontainers.ProviderDocker.GetProvider()
 	if err != nil {
@@ -209,9 +213,65 @@ func (c *K3sContainer) LoadImagesWithOpts(ctx context.Context, images []string, 
 		return fmt.Errorf("copying image to container %w", err)
 	}
 
-	_, _, err = c.Exec(ctx, []string{"ctr", "-n=k8s.io", "images", "import", "--all-platforms", containerPath})
+	exit, reader, err := c.Exec(ctx, []string{"ctr", "-n=k8s.io", "images", "import", "--all-platforms", containerPath})
 	if err != nil {
 		return fmt.Errorf("importing image %w", err)
+	}
+	if exit != 0 {
+		b, _ := io.ReadAll(reader)
+		return fmt.Errorf("importing image %s", string(b))
+	}
+
+	return nil
+}
+
+// LoadImagesWithPlatform imports local images into the cluster using containerd for a specific platform
+func (c *K3sContainer) LoadImagesWithPlatform(ctx context.Context, images []string, platform *v1.Platform) error {
+	provider, err := testcontainers.ProviderDocker.GetProvider()
+	if err != nil {
+		return fmt.Errorf("getting docker provider %w", err)
+	}
+
+	opts := []testcontainers.SaveImageOption{}
+	if platform != nil {
+		opts = append(opts, testcontainers.SaveDockerImageWithPlatforms(*platform))
+	}
+
+	// save image
+	imagesTar, err := os.CreateTemp(os.TempDir(), "images*.tar")
+	if err != nil {
+		return fmt.Errorf("creating temporary images file %w", err)
+	}
+	defer func() {
+		_ = os.Remove(imagesTar.Name())
+	}()
+
+	err = provider.SaveImagesWithOpts(context.Background(), imagesTar.Name(), images, opts...)
+	if err != nil {
+		return fmt.Errorf("saving images %w", err)
+	}
+
+	containerPath := "/tmp/" + filepath.Base(imagesTar.Name())
+	err = c.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0x644)
+	if err != nil {
+		return fmt.Errorf("copying image to container %w", err)
+	}
+
+	cmd := []string{"ctr", "-n=k8s.io", "images", "import"}
+
+	if platform != nil {
+		cmd = append(cmd, "--platform", platforms.Format(*platform))
+	}
+
+	cmd = append(cmd, containerPath)
+
+	exit, reader, err := c.Exec(ctx, cmd)
+	if err != nil {
+		return fmt.Errorf("importing image %w", err)
+	}
+	if exit != 0 {
+		b, _ := io.ReadAll(reader)
+		return fmt.Errorf("importing image %s", string(b))
 	}
 
 	return nil
