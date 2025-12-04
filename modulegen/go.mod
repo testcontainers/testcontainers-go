@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modulegen
 
-go 1.24
+go 1.24.0
 
 toolchain go1.24.7
 
