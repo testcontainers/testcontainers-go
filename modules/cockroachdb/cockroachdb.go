@@ -191,7 +191,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			ContainerFilePath: clusterDefaultsContainerFile,
 			FileMode:          0o644,
 		}),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForFile(cockroachDir+"/init_success"),
 			wait.ForHTTP("/health").WithPort(defaultAdminPort),
 			wait.ForTLSCert(
@@ -205,7 +205,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				}
 				return connStr
 			}),
-		)),
+		),
 	}
 
 	moduleOpts = append(moduleOpts, opts...)

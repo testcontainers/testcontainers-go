@@ -33,74 +33,85 @@ type Container struct {
 	opts options
 }
 
-// Deprecated: Use [azure.BlobServiceURL], [azure.QueueServiceURL], or [azure.TableServiceURL] methods instead.
 // ServiceURL returns the URL of the given service
 func (c *Container) ServiceURL(ctx context.Context, srv Service) (string, error) {
-	return c.serviceURL(ctx, srv)
-}
-
-// BlobServiceURL returns the URL of the Blob service
-func (c *Container) BlobServiceURL(ctx context.Context) (string, error) {
-	return c.serviceURL(ctx, blobService)
-}
-
-// QueueServiceURL returns the URL of the Queue service
-func (c *Container) QueueServiceURL(ctx context.Context) (string, error) {
-	return c.serviceURL(ctx, queueService)
-}
-
-// TableServiceURL returns the URL of the Table service
-func (c *Container) TableServiceURL(ctx context.Context) (string, error) {
-	return c.serviceURL(ctx, tableService)
-}
-
-func (c *Container) serviceURL(ctx context.Context, srv service) (string, error) {
-	var port nat.Port
-	switch srv {
-	case blobService:
-		port = BlobPort
-	case queueService:
-		port = QueuePort
-	case tableService:
-		port = TablePort
-	default:
-		return "", fmt.Errorf("unknown service: %s", srv)
+	port, err := servicePort(srv)
+	if err != nil {
+		return "", err
 	}
 
 	return c.PortEndpoint(ctx, port, "http")
 }
 
+// BlobServiceURL returns the URL of the Blob service
+func (c *Container) BlobServiceURL(ctx context.Context) (string, error) {
+	return c.ServiceURL(ctx, BlobService)
+}
+
+// QueueServiceURL returns the URL of the Queue service
+func (c *Container) QueueServiceURL(ctx context.Context) (string, error) {
+	return c.ServiceURL(ctx, QueueService)
+}
+
+// TableServiceURL returns the URL of the Table service
+func (c *Container) TableServiceURL(ctx context.Context) (string, error) {
+	return c.ServiceURL(ctx, TableService)
+}
+
+func servicePort(srv Service) (nat.Port, error) {
+	switch srv {
+	case BlobService:
+		return BlobPort, nil
+	case QueueService:
+		return QueuePort, nil
+	case TableService:
+		return TablePort, nil
+	default:
+		return "", fmt.Errorf("unknown service: %s", srv)
+	}
+}
+
 // Run creates an instance of the Azurite container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	moduleCmd := []string{}
-
-	moduleOpts := []testcontainers.ContainerCustomizer{
-		testcontainers.WithEntrypoint("azurite"),
-		testcontainers.WithExposedPorts(BlobPort, QueuePort, TablePort),
-	}
-
 	// 1. Gather all config options (defaults and then apply provided options)
 	settings := defaultOptions()
+	for _, opt := range opts {
+		if o, ok := opt.(Option); ok {
+			if err := o(&settings); err != nil {
+				return nil, fmt.Errorf("azurite option: %w", err)
+			}
+		}
+	}
+
+	entrypoint := "azurite"
+	if len(settings.EnabledServices) == 1 && settings.EnabledServices[0] != TableService {
+		// Use azurite-table in future once it matures. Graceful shutdown is currently very slow.
+		entrypoint = fmt.Sprintf("%s-%s", entrypoint, settings.EnabledServices[0])
+	}
+	moduleOpts := []testcontainers.ContainerCustomizer{testcontainers.WithEntrypoint(entrypoint)}
 
 	// 2. evaluate the enabled services to apply the right wait strategy and Cmd options
 	if len(settings.EnabledServices) > 0 {
+		cmd := make([]string, 0, len(settings.EnabledServices))
+		exposedPorts := make([]string, 0, len(settings.EnabledServices))
 		waitingFor := make([]wait.Strategy, 0, len(settings.EnabledServices))
+
 		for _, srv := range settings.EnabledServices {
-			switch srv {
-			case BlobService:
-				moduleCmd = append(moduleCmd, "--blobHost", "0.0.0.0")
-				waitingFor = append(waitingFor, wait.ForListeningPort(BlobPort))
-			case QueueService:
-				moduleCmd = append(moduleCmd, "--queueHost", "0.0.0.0")
-				waitingFor = append(waitingFor, wait.ForListeningPort(QueuePort))
-			case TableService:
-				moduleCmd = append(moduleCmd, "--tableHost", "0.0.0.0")
-				waitingFor = append(waitingFor, wait.ForListeningPort(TablePort))
+			port, err := servicePort(srv)
+			if err != nil {
+				return nil, err
 			}
+
+			cmd = append(cmd, fmt.Sprintf("--%sHost", srv), "0.0.0.0", fmt.Sprintf("--%sPort", srv), port.Port())
+			exposedPorts = append(exposedPorts, string(port))
+			waitingFor = append(waitingFor, wait.ForListeningPort(port))
 		}
 
-		moduleOpts = append(moduleOpts, testcontainers.WithCmd(moduleCmd...))
-		moduleOpts = append(moduleOpts, testcontainers.WithWaitStrategy(wait.ForAll(waitingFor...)))
+		moduleOpts = append(moduleOpts,
+			testcontainers.WithCmd(cmd...),
+			testcontainers.WithExposedPorts(exposedPorts...),
+			testcontainers.WithWaitStrategy(waitingFor...),
+		)
 	}
 
 	moduleOpts = append(moduleOpts, opts...)

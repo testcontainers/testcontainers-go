@@ -52,7 +52,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithCmd("run"),
 		testcontainers.WithExposedPorts("3000/tcp", "8080/tcp", "8081/tcp"),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForHTTP("/healthz").WithPort("8080/tcp").WithResponseMatcher(func(r io.Reader) bool {
 				bs, err := io.ReadAll(r)
 				if err != nil {
@@ -64,7 +64,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			wait.ForHTTP("/playground").WithPort("3000/tcp").WithStatusCodeMatcher(func(status int) bool {
 				return status == http.StatusOK
 			}),
-		)),
+		),
 	}
 
 	moduleOpts = append(moduleOpts, opts...)

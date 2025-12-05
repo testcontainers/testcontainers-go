@@ -53,10 +53,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				dockerHostMount + ":/var/run/docker.sock",
 			}
 		}),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort(defaultPort),
 			wait.ForLog(".*Start sse server on port.*").AsRegexp(),
-		)),
+		),
 	}
 
 	if len(settings.secrets) > 0 {

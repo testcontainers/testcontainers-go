@@ -452,6 +452,7 @@ func (c *localProcess) Inspect(ctx context.Context) (*container.InspectResponse,
 		},
 		NetworkSettings: &container.NetworkSettings{
 			Networks: map[string]*network.EndpointSettings{},
+			//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 			NetworkSettingsBase: container.NetworkSettingsBase{
 				Bridge: "bridge",
 				Ports: nat.PortMap{
@@ -460,6 +461,7 @@ func (c *localProcess) Inspect(ctx context.Context) (*container.InspectResponse,
 					},
 				},
 			},
+			//nolint:staticcheck // SA1019: DefaultNetworkSettings is deprecated, but we need it for compatibility until v29
 			DefaultNetworkSettings: container.DefaultNetworkSettings{
 				IPAddress: c.host,
 			},

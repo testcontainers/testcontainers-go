@@ -73,11 +73,11 @@ func defaultOptions() options {
 		KafkaAuthenticationMethod:          "none",
 		SchemaRegistryAuthenticationMethod: "none",
 		HTTPProxyAuthenticationMethod:      HTTPProxyAuthMethodNone,
-		ServiceAccounts:                    make(map[string]string, 0),
+		ServiceAccounts:                    make(map[string]string),
 		AutoCreateTopics:                   false,
 		EnableTLS:                          false,
-		Listeners:                          make([]listener, 0),
-		ExtraBootstrapConfig:               make(map[string]any, 0),
+		Listeners:                          []listener{},
+		ExtraBootstrapConfig:               make(map[string]any),
 	}
 }
 

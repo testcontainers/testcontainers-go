@@ -103,12 +103,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"ARTEMIS_USER":     defaultUser,
 			"ARTEMIS_PASSWORD": defaultPassword,
 		}),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort(defaultBrokerPort),
 			wait.ForListeningPort(defaultHTTPPort),
 			wait.ForLog("Server is now live"),
 			wait.ForLog("REST API available"),
-		)),
+		),
 	}
 
 	moduleOpts = append(moduleOpts, opts...)

@@ -393,6 +393,7 @@ func TestHttpStrategyFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) 
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/tcp": []nat.PortBinding{
@@ -439,6 +440,7 @@ func TestHttpStrategyFailsWhileGettingPortDueToExitedContainer(t *testing.T) {
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/tcp": []nat.PortBinding{
@@ -484,6 +486,7 @@ func TestHttpStrategyFailsWhileGettingPortDueToUnexpectedContainerStatus(t *test
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/tcp": []nat.PortBinding{
@@ -524,6 +527,7 @@ func TestHTTPStrategyFailsWhileRequestSendingDueToOOMKilledContainer(t *testing.
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/tcp": []nat.PortBinding{
@@ -565,6 +569,7 @@ func TestHttpStrategyFailsWhileRequestSendingDueToExitedContainer(t *testing.T) 
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/tcp": []nat.PortBinding{
@@ -605,6 +610,7 @@ func TestHttpStrategyFailsWhileRequestSendingDueToUnexpectedContainerStatus(t *t
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/tcp": []nat.PortBinding{
@@ -651,6 +657,7 @@ func TestHttpStrategyFailsWhileGettingPortDueToNoExposedPorts(t *testing.T) {
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{},
 					},
@@ -690,6 +697,7 @@ func TestHttpStrategyFailsWhileGettingPortDueToOnlyUDPPorts(t *testing.T) {
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/udp": []nat.PortBinding{
@@ -736,6 +744,7 @@ func TestHttpStrategyFailsWhileGettingPortDueToExposedPortNoBindings(t *testing.
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"8080/tcp": []nat.PortBinding{},

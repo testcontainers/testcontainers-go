@@ -18,10 +18,10 @@ func RunPubsubContainer(ctx context.Context, opts ...testcontainers.ContainerCus
 func RunPubsub(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts("8085/tcp"),
-		testcontainers.WithWaitStrategy(wait.ForAll(
+		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort("8085/tcp"),
 			wait.ForLog("started"),
-		)),
+		),
 	}
 
 	moduleOpts = append(moduleOpts, opts...)

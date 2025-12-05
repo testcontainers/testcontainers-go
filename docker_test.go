@@ -604,10 +604,10 @@ func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 			"MYSQL_ROOT_PASSWORD": "password",
 			"MYSQL_DATABASE":      "database",
 		}),
-		WithWaitStrategy(wait.ForAll(
+		WithWaitStrategy(
 			wait.ForLog("I love testcontainers-go"),
 			wait.ForListeningPort("3306/tcp"),
-		)),
+		),
 	)
 	CleanupContainer(t, c)
 	require.Errorf(t, err, "Expected timeout")
@@ -646,9 +646,9 @@ func TestCMD(t *testing.T) {
 
 	c, err := Run(ctx, alpineImage,
 		WithCmd("echo", "command override!"),
-		WithWaitStrategy(wait.ForAll(
+		WithWaitStrategy(
 			wait.ForLog("command override!"),
-		)),
+		),
 	)
 	CleanupContainer(t, c)
 	require.NoError(t, err)
@@ -665,9 +665,9 @@ func TestEntrypoint(t *testing.T) {
 
 	c, err := Run(ctx, alpineImage,
 		WithEntrypoint("echo", "entrypoint override!"),
-		WithWaitStrategy(wait.ForAll(
+		WithWaitStrategy(
 			wait.ForLog("entrypoint override!"),
-		)),
+		),
 	)
 	CleanupContainer(t, c)
 	require.NoError(t, err)
@@ -684,9 +684,9 @@ func TestWorkingDir(t *testing.T) {
 
 	c, err := Run(ctx, alpineImage,
 		WithEntrypoint("pwd"),
-		WithWaitStrategy(wait.ForAll(
+		WithWaitStrategy(
 			wait.ForLog("/var/tmp/test"),
-		)),
+		),
 		WithConfigModifier(func(c *container.Config) {
 			c.WorkingDir = "/var/tmp/test"
 		}),
@@ -1431,13 +1431,13 @@ func TestContainerRunningCheckingStatusCode(t *testing.T) {
 	influx, err := Run(ctx, "influxdb:1.8.10-alpine",
 		WithExposedPorts("8086/tcp"),
 		WithImagePlatform("linux/amd64"), // influxdb doesn't provide an alpine+arm build (https://github.com/influxdata/influxdata-docker/issues/335)
-		WithWaitStrategy(wait.ForAll(
+		WithWaitStrategy(
 			wait.ForHTTP("/ping").WithPort("8086/tcp").WithStatusCodeMatcher(
 				func(status int) bool {
 					return status == http.StatusNoContent
 				},
 			),
-		)),
+		),
 	)
 	CleanupContainer(t, influx)
 	require.NoError(t, err)

@@ -54,8 +54,8 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 // WithInitScripts sets the init cassandra queries to be run when the container starts
 func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		var initScripts []testcontainers.ContainerFile
-		var execs []testcontainers.Executable
+		initScripts := make([]testcontainers.ContainerFile, 0, len(scripts))
+		execs := make([]testcontainers.Executable, 0, len(scripts))
 		for _, script := range scripts {
 			cf := testcontainers.ContainerFile{
 				HostFilePath:      script,
@@ -87,42 +87,19 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"MAX_HEAP_SIZE":             "1024M",
 			"CASSANDRA_ENDPOINT_SNITCH": "GossipingPropertyFileSnitch",
 			"CASSANDRA_DC":              "datacenter1",
-		},
-		ExposedPorts: []string{string(port)},
+		}),
+		testcontainers.WithWaitStrategy(
+			wait.ForListeningPort(port),
+			wait.ForExec([]string{"cqlsh", "-e", "SELECT bootstrapped FROM system.local"}).WithResponseMatcher(func(body io.Reader) bool {
+				data, _ := io.ReadAll(body)
+				return strings.Contains(string(data), "COMPLETED")
+			}),
+		),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	var settings Options
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	// Set up wait strategies
-	waitStrategies := []wait.Strategy{
-		wait.ForListeningPort(port),
-		wait.ForExec([]string{"cqlsh", "-e", "SELECT bootstrapped FROM system.local"}).WithResponseMatcher(func(body io.Reader) bool {
-			data, _ := io.ReadAll(body)
-			return strings.Contains(string(data), "COMPLETED")
-		}).WithStartupTimeout(1 * time.Minute),
-	}
-
-	// Add TLS wait strategy if TLS config exists
-	if settings.tlsConfig != nil {
-		waitStrategies = append(waitStrategies, wait.ForListeningPort(securePort).WithStartupTimeout(1*time.Minute))
-	}
-
-	// Apply wait strategy using the correct method
-	if err := testcontainers.WithWaitStrategy(wait.ForAll(waitStrategies...)).Customize(&genericContainerReq); err != nil {
-		return nil, err
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *CassandraContainer
 	if container != nil {
 		c = &CassandraContainer{Container: container, settings: settings}
