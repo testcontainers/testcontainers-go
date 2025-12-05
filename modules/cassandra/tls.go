@@ -82,10 +82,9 @@ func createTLSCerts() (*tlsCerts, error) {
 	certPool.AddCert(caCert.Cert)
 
 	tlsConfig := &tls.Config{
-		RootCAs:            certPool,
-		ServerName:         "localhost",
-		MinVersion:         tls.VersionTLS12,
-		InsecureSkipVerify: true, // Skip hostname verification for container testing
+		RootCAs:    certPool,
+		ServerName: "localhost",
+		MinVersion: tls.VersionTLS12,
 	}
 
 	return &tlsCerts{
