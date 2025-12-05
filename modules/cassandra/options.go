@@ -2,126 +2,46 @@ package cassandra
 
 import (
 	"crypto/tls"
-	"crypto/x509"
-	"errors"
-	"fmt"
-	"os"
-	"os/exec"
-	"path/filepath"
 
 	"github.com/testcontainers/testcontainers-go"
 )
 
-// TLSConfig represents the TLS configuration for Cassandra
-type TLSConfig struct {
-	KeystorePath    string
-	CertificatePath string
-	Config          *tls.Config
+// options holds the configuration settings for the Cassandra container.
+type options struct {
+	tlsEnabled bool
+	tlsConfig  *tls.Config
 }
 
-// Options represents the configuration options for the Cassandra container
-type Options struct {
-	tlsConfig *TLSConfig
-}
+// Compiler check to ensure that Option implements the testcontainers.ContainerCustomizer interface.
+var _ testcontainers.ContainerCustomizer = (Option)(nil)
 
 // Option is an option for the Cassandra container.
-type Option func(*testcontainers.GenericContainerRequest, *Options) error
+type Option func(*options) error
 
-// Customize implements the testcontainers.ContainerCustomizer interface
-func (o Option) Customize(req *testcontainers.GenericContainerRequest) error {
-	return o(req, &Options{})
+// Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
+func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
+	// NOOP to satisfy interface.
+	return nil
 }
 
-// WithSSL enables SSL/TLS support on the Cassandra container
-func WithSSL() Option {
-	return func(req *testcontainers.GenericContainerRequest, settings *Options) error {
-		req.ExposedPorts = append(req.ExposedPorts, string(securePort))
+// defaultOptions returns the default options for the Cassandra container.
+func defaultOptions() options {
+	return options{
+		tlsEnabled: false,
+		tlsConfig:  nil,
+	}
+}
 
-		keystorePath, certPath, err := GenerateJKSKeystore()
-		if err != nil {
-			return fmt.Errorf("create SSL certs: %w", err)
-		}
-
-		req.Files = append(req.Files,
-			testcontainers.ContainerFile{
-				HostFilePath:      keystorePath,
-				ContainerFilePath: "/etc/cassandra/conf/keystore.jks",
-				FileMode:          0o644,
-			},
-			testcontainers.ContainerFile{
-				HostFilePath:      certPath,
-				ContainerFilePath: "/etc/cassandra/conf/cassandra.crt",
-				FileMode:          0o644,
-			})
-
-		certPEM, err := os.ReadFile(certPath)
-		if err != nil {
-			return fmt.Errorf("error while read certificate: %w", err)
-		}
-
-		certPool := x509.NewCertPool()
-		if !certPool.AppendCertsFromPEM(certPEM) {
-			return errors.New("failed to append certificate to pool")
-		}
-
-		settings.tlsConfig = &TLSConfig{
-			KeystorePath:    keystorePath,
-			CertificatePath: certPath,
-			Config: &tls.Config{
-				RootCAs:    certPool,
-				ServerName: "localhost",
-				MinVersion: tls.VersionTLS12,
-			},
-		}
-
+// WithTLS enables TLS/SSL on the Cassandra container.
+// When enabled, the container will:
+//   - Generate self-signed certificates
+//   - Configure Cassandra to use client encryption
+//   - Expose the SSL port (9142)
+//
+// Use TLSConfig() on the returned container to get the *tls.Config for client connections.
+func WithTLS() Option {
+	return func(o *options) error {
+		o.tlsEnabled = true
 		return nil
 	}
-}
-
-// GenerateJKSKeystore generates a JKS keystore with a self-signed cert using keytool, and extracts the public cert for Go client trust.
-func GenerateJKSKeystore() (keystorePath, certPath string, err error) {
-	tmpDir := os.TempDir()
-	keystorePath = filepath.Join(tmpDir, "keystore.jks")
-	keystorePassword := "changeit"
-	certPath = filepath.Join(tmpDir, "cert.pem")
-
-	// Remove existing keystore if it exists
-	os.Remove(keystorePath)
-
-	// Generate keystore with self-signed certificate
-	cmd := exec.Command(
-		"keytool", "-genkeypair",
-		"-alias", "cassandra",
-		"-keyalg", "RSA",
-		"-keysize", "2048",
-		"-storetype", "JKS",
-		"-keystore", keystorePath,
-		"-storepass", keystorePassword,
-		"-keypass", keystorePassword,
-		"-dname", "CN=localhost, OU=Test, O=Test, C=US",
-		"-validity", "365",
-	)
-	if err := cmd.Run(); err != nil {
-		return "", "", fmt.Errorf("failed to generate keystore: %w", err)
-	}
-
-	// Export the public certificate for Go client trust
-	cmd = exec.Command(
-		"keytool", "-exportcert",
-		"-alias", "cassandra",
-		"-keystore", keystorePath,
-		"-storepass", keystorePassword,
-		"-rfc",
-		"-file", certPath,
-	)
-	if err := cmd.Run(); err != nil {
-		return "", "", fmt.Errorf("failed to export certificate: %w", err)
-	}
-
-	return keystorePath, certPath, nil
-}
-
-// TLSConfig returns the TLS configuration
-func (o *Options) TLSConfig() *TLSConfig {
-	return o.tlsConfig
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
-	"time"
 
 	"github.com/gocql/gocql"
 
@@ -69,13 +68,13 @@ func ExampleRun() {
 	// 4.1.3
 }
 
-func ExampleRun_withSSL() {
+func ExampleRun_withTLS() {
+	// runCassandraContainerWithTLS {
 	ctx := context.Background()
 
 	cassandraContainer, err := cassandra.Run(ctx,
 		"cassandra:4.1.3",
-		cassandra.WithConfigFile(filepath.Join("testdata", "cassandra-ssl.yaml")),
-		cassandra.WithSSL(),
+		cassandra.WithTLS(),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(cassandraContainer); err != nil {
@@ -86,31 +85,32 @@ func ExampleRun_withSSL() {
 		log.Printf("failed to start container: %s", err)
 		return
 	}
+	// }
 
-	host, err := cassandraContainer.Host(ctx)
+	state, err := cassandraContainer.State(ctx)
 	if err != nil {
-		log.Printf("failed to get host: %s", err)
+		log.Printf("failed to get container state: %s", err)
 		return
 	}
 
-	sslPort, err := cassandraContainer.MappedPort(ctx, "9142/tcp")
+	fmt.Println(state.Running)
+
+	// getTLSConnectionHost {
+	connectionHost, err := cassandraContainer.ConnectionHost(ctx)
 	if err != nil {
-		log.Printf("failed to get SSL port: %s", err)
+		log.Printf("failed to get SSL connection host: %s", err)
 		return
 	}
 
-	// Get TLS config
+	// Get TLS config for secure connection
 	tlsConfig := cassandraContainer.TLSConfig()
+	// }
 
-	cluster := gocql.NewCluster(fmt.Sprintf("%s:%s", host, sslPort.Port()))
-	cluster.Consistency = gocql.Quorum
-	cluster.Timeout = 30 * time.Second
-	cluster.ConnectTimeout = 30 * time.Second
-	cluster.DisableInitialHostLookup = true
+	cluster := gocql.NewCluster(connectionHost)
 	cluster.SslOpts = &gocql.SslOptions{
-		Config:                 tlsConfig,
-		EnableHostVerification: false,
+		Config: tlsConfig,
 	}
+
 	session, err := cluster.CreateSession()
 	if err != nil {
 		log.Printf("failed to create session: %s", err)
@@ -126,6 +126,8 @@ func ExampleRun_withSSL() {
 	}
 
 	fmt.Println(version)
+
 	// Output:
+	// true
 	// 4.1.3
 }

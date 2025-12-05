@@ -2,10 +2,8 @@ package cassandra_test
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/gocql/gocql"
 	"github.com/stretchr/testify/require"
@@ -13,8 +11,6 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/cassandra"
 )
-
-const cassandraImage = "cassandra:4.1.3"
 
 type Test struct {
 	ID   uint64
@@ -24,7 +20,7 @@ type Test struct {
 func TestCassandra(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := cassandra.Run(ctx, cassandraImage)
+	ctr, err := cassandra.Run(ctx, "cassandra:4.1.3")
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -56,7 +52,7 @@ func TestCassandra(t *testing.T) {
 func TestCassandraWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := cassandra.Run(ctx, cassandraImage, cassandra.WithConfigFile(filepath.Join("testdata", "config.yaml")))
+	ctr, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithConfigFile(filepath.Join("testdata", "config.yaml")))
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -79,7 +75,7 @@ func TestCassandraWithInitScripts(t *testing.T) {
 		ctx := context.Background()
 
 		// withInitScripts {
-		ctr, err := cassandra.Run(ctx, cassandraImage, cassandra.WithInitScripts(filepath.Join("testdata", "init.cql")))
+		ctr, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts(filepath.Join("testdata", "init.cql")))
 		// }
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
@@ -103,7 +99,7 @@ func TestCassandraWithInitScripts(t *testing.T) {
 	t.Run("with init bash script", func(t *testing.T) {
 		ctx := context.Background()
 
-		ctr, err := cassandra.Run(ctx, cassandraImage, cassandra.WithInitScripts(filepath.Join("testdata", "init.sh")))
+		ctr, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts(filepath.Join("testdata", "init.sh")))
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 
@@ -122,41 +118,53 @@ func TestCassandraWithInitScripts(t *testing.T) {
 	})
 }
 
-func TestCassandraSSL(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	defer cancel()
+func TestCassandraWithTLS(t *testing.T) {
+	ctx := context.Background()
 
-	container, err := cassandra.Run(ctx, cassandraImage,
-		cassandra.WithConfigFile(filepath.Join("testdata", "cassandra-ssl.yaml")),
-		cassandra.WithSSL(),
-	)
-	testcontainers.CleanupContainer(t, container)
+	// withTLS {
+	ctr, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithTLS())
+	// }
+	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	// Get TLS configurations
-	tlsConfig := container.TLSConfig()
+	// Verify TLS config is available
+	tlsConfig := ctr.TLSConfig()
+	require.NotNil(t, tlsConfig, "TLSConfig should not be nil when TLS is enabled")
 
-	host, err := container.Host(ctx)
+	// Get SSL connection host
+	// connectionHostSSL {
+	connectionHost, err := ctr.ConnectionHost(ctx)
+	// }
 	require.NoError(t, err)
 
-	sslPort, err := container.MappedPort(ctx, "9142/tcp")
-	require.NoError(t, err)
-
-	cluster := gocql.NewCluster(fmt.Sprintf("%s:%s", host, sslPort.Port()))
-	cluster.Consistency = gocql.Quorum
-	cluster.Timeout = 30 * time.Second
-	cluster.ConnectTimeout = 30 * time.Second
-	cluster.DisableInitialHostLookup = true
+	// Create cluster with TLS
+	cluster := gocql.NewCluster(connectionHost)
 	cluster.SslOpts = &gocql.SslOptions{
-		Config:                 tlsConfig,
-		EnableHostVerification: false,
+		Config: tlsConfig,
 	}
-	var session *gocql.Session
-	session, err = cluster.CreateSession()
+
+	session, err := cluster.CreateSession()
 	require.NoError(t, err)
 	defer session.Close()
-	var version string
-	err = session.Query("SELECT release_version FROM system.local").Scan(&version)
+
+	// Verify connection works by querying system table
+	var clusterName string
+	err = session.Query("SELECT cluster_name FROM system.local").Scan(&clusterName)
 	require.NoError(t, err)
-	require.NotEmpty(t, version)
+	require.Equal(t, "Test Cluster", clusterName)
+
+	// Test data operations over TLS
+	err = session.Query("CREATE KEYSPACE tls_test_keyspace WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor' : 1}").Exec()
+	require.NoError(t, err)
+
+	err = session.Query("CREATE TABLE tls_test_keyspace.test_table (id int PRIMARY KEY, name text)").Exec()
+	require.NoError(t, err)
+
+	err = session.Query("INSERT INTO tls_test_keyspace.test_table (id, name) VALUES (1, 'TLS_TEST')").Exec()
+	require.NoError(t, err)
+
+	var test Test
+	err = session.Query("SELECT id, name FROM tls_test_keyspace.test_table WHERE id=1").Scan(&test.ID, &test.Name)
+	require.NoError(t, err)
+	require.Equal(t, Test{ID: 1, Name: "TLS_TEST"}, test)
 }
