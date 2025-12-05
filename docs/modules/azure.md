@@ -23,7 +23,7 @@ The Azure module exposes the following Go packages:
 - [ServiceBus](#servicebus): `github.com/testcontainers/testcontainers-go/modules/azure/servicebus`.
 !!! warning "EULA Acceptance"
     Due to licensing restrictions you are required to explicitly accept an End User License Agreement (EULA) for the EventHubs container image. This is facilitated through the `WithAcceptEULA` function.
-
+- [CosmosDB](#cosmosdb): `github.com/testcontainers/testcontainers-go/modules/azure/cosmosdb`.
 <!--codeinclude-->
 [Creating a Azurite container](../../modules/azure/azurite/examples_test.go) inside_block:runAzuriteContainer
 <!--/codeinclude-->
@@ -63,7 +63,7 @@ When starting the Azurite container, you can pass options in a variadic way to c
 
 #### WithEnabledServices
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.40.0"><span class="tc-version">:material-tag: v0.40.0</span></a>
 
 The default Azurite container entrypoint runs all three storage services: blob, queue, and table. Use this option to specify the required services for fewer exposed ports and slightly reduced container resources. E.g. `azurite.WithEnabledServices(azurite.BlobService)`.
 
@@ -307,4 +307,49 @@ In the following example, inspired by the [Azure Event Hubs Go SDK](https://lear
 [Create Client](../../modules/azure/servicebus/examples_test.go) inside_block:createClient
 [Send messages to a Queue](../../modules/azure/servicebus/examples_test.go) inside_block:sendMessages
 [Receive messages from a Queue](../../modules/azure/servicebus/examples_test.go) inside_block:receiveMessages
+<!--/codeinclude-->
+
+## CosmosDB
+
+### Run function
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.40.0"><span class="tc-version">:material-tag: v0.40.0</span></a>
+
+The CosmosDB module exposes one entrypoint function to create the CosmosDB container, and this function receives three parameters:
+
+```golang
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)
+```
+
+- `context.Context`, the Go context.
+- `string`, the Docker image to use.
+- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+
+#### Image
+
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview")`.
+
+### Container Options
+
+When starting the CosmosDB container, you can pass options in a variadic way to configure it.
+
+{% include "../features/common_functional_options_list.md" %}
+
+### Container Methods
+
+The CosmosDB container exposes the following methods:
+
+#### ConnectionString
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.40.0"><span class="tc-version">:material-tag: v0.40.0</span></a>
+
+Returns the connection string to connect to the CosmosDB container and an error, passing the Go context as parameter.
+
+### Examples
+
+#### Connect and Create database
+
+<!--codeinclude-->
+[Connect_CreateDatabase](../../modules/azure/cosmosdb/examples_test.go) inside_block:ExampleRun_connect
 <!--/codeinclude-->
