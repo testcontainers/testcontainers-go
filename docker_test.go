@@ -81,8 +81,12 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 	endpoint, err := nginxC.PortEndpoint(ctx, nginxHighPort, "http")
 	require.NoErrorf(t, err, "Expected server endpoint")
 
-	_, err = http.Get(endpoint)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, http.NoBody)
+	require.NoError(t, err)
+
+	resp, err := http.DefaultClient.Do(req)
 	require.NoErrorf(t, err, "Expected OK response")
+	require.NoError(t, resp.Body.Close())
 }
 
 func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testing.T) {
@@ -103,11 +107,14 @@ func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testi
 	endpoint, err := nginxC.Endpoint(ctx, "http")
 	require.NoErrorf(t, err, "Expected server endpoint")
 
-	resp, err := http.Get(endpoint)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, http.NoBody)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
 
 	require.Equalf(t, http.StatusOK, resp.StatusCode, "Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
+	require.NoError(t, resp.Body.Close())
 }
 
 func TestContainerWithHostNetwork(t *testing.T) {
@@ -140,14 +147,22 @@ func TestContainerWithHostNetwork(t *testing.T) {
 	require.NoErrorf(t, err, "Expected port endpoint %s", portEndpoint)
 	t.Log(portEndpoint)
 
-	_, err = http.Get(portEndpoint)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, portEndpoint, http.NoBody)
+	require.NoError(t, err)
+
+	resp, err := http.DefaultClient.Do(req)
 	require.NoErrorf(t, err, "Expected OK response")
+	require.NoError(t, resp.Body.Close())
 
 	host, err := nginxC.Host(ctx)
 	require.NoErrorf(t, err, "Expected host %s", host)
 
-	_, err = http.Get("http://" + host + ":8080")
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, "http://"+host+":8080", http.NoBody)
+	require.NoError(t, err)
+
+	resp, err = http.DefaultClient.Do(req)
 	require.NoErrorf(t, err, "Expected OK response")
+	require.NoError(t, resp.Body.Close())
 }
 
 func TestContainerReturnItsContainerID(t *testing.T) {
@@ -318,20 +333,26 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 	endpointA, err := nginxA.PortEndpoint(ctx, nginxDefaultPort, "http")
 	require.NoError(t, err)
 
-	resp, err := http.Get(endpointA)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpointA, http.NoBody)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
 
 	require.Equalf(t, http.StatusOK, resp.StatusCode, "Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
+	require.NoError(t, resp.Body.Close())
 
 	endpointB, err := nginxB.PortEndpoint(ctx, nginxDefaultPort, "http")
 	require.NoError(t, err)
 
-	resp, err = http.Get(endpointB)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, endpointB, http.NoBody)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+
+	resp, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
 
 	require.Equalf(t, http.StatusOK, resp.StatusCode, "Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
+	require.NoError(t, resp.Body.Close())
 }
 
 func TestContainerCreation(t *testing.T) {
@@ -347,11 +368,14 @@ func TestContainerCreation(t *testing.T) {
 	endpoint, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
 	require.NoError(t, err)
 
-	resp, err := http.Get(endpoint)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, http.NoBody)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
 
 	require.Equalf(t, http.StatusOK, resp.StatusCode, "Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
+	require.NoError(t, resp.Body.Close())
 
 	networkIP, err := nginxC.ContainerIP(ctx)
 	require.NoError(t, err)
@@ -408,11 +432,14 @@ func TestContainerCreationWithName(t *testing.T) {
 	endpoint, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
 	require.NoError(t, err)
 
-	resp, err := http.Get(endpoint)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, http.NoBody)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
 
 	require.Equalf(t, http.StatusOK, resp.StatusCode, "Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
+	require.NoError(t, resp.Body.Close())
 }
 
 func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
@@ -428,11 +455,15 @@ func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 
 	origin, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
 	require.NoError(t, err)
-	resp, err := http.Get(origin)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, origin, http.NoBody)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
 
 	require.Equalf(t, http.StatusOK, resp.StatusCode, "Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
+	require.NoError(t, resp.Body.Close())
 }
 
 func TestContainerCreationTimesOut(t *testing.T) {
@@ -459,11 +490,15 @@ func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
 
 	origin, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
 	require.NoError(t, err)
-	resp, err := http.Get(origin)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, origin, http.NoBody)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
 
 	require.Equalf(t, http.StatusOK, resp.StatusCode, "Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
+	require.NoError(t, resp.Body.Close())
 }
 
 func TestContainerCreationTimesOutWithHttp(t *testing.T) {
@@ -529,14 +564,17 @@ func Test_BuildContainerFromDockerfileWithBuildArgs(t *testing.T) {
 	ep, err := c.Endpoint(ctx, "http")
 	require.NoError(t, err)
 
-	resp, err := http.Get(ep + "/env")
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ep+"/env", http.NoBody)
 	require.NoError(t, err)
-	defer resp.Body.Close()
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusAccepted, resp.StatusCode)
 	require.Equal(t, ba, string(body))
+	require.NoError(t, resp.Body.Close())
 }
 
 func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
@@ -842,9 +880,31 @@ func ExampleContainer_MappedPort() {
 	}
 
 	// buildingAddresses {
-	ip, _ := nginxC.Host(ctx)
-	port, _ := nginxC.MappedPort(ctx, "80")
-	_, _ = http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()))
+	ip, err := nginxC.Host(ctx)
+	if err != nil {
+		log.Printf("failed to get container host: %s", err)
+		return
+	}
+	port, err := nginxC.MappedPort(ctx, "80")
+	if err != nil {
+		log.Printf("failed to get container mapped port: %s", err)
+		return
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s:%s", ip, port.Port()), http.NoBody)
+	if err != nil {
+		log.Printf("failed to create request: %s", err)
+		return
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Printf("failed to do request: %s", err)
+		return
+	}
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("expected status code %d, got %d", http.StatusOK, resp.StatusCode)
+		return
+	}
+	defer resp.Body.Close()
 	// }
 
 	state, err := nginxC.State(ctx)

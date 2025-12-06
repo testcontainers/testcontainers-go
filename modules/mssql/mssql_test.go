@@ -33,13 +33,13 @@ func TestMSSQLServer(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	err = db.Ping()
+	err = db.PingContext(ctx)
 	require.NoError(t, err)
 
-	_, err = db.Exec("CREATE TABLE a_table ( " +
-		" [col_1] NVARCHAR(128) NOT NULL, " +
-		" [col_2] NVARCHAR(128) NOT NULL, " +
-		" PRIMARY KEY ([col_1], [col_2]) " +
+	_, err = db.ExecContext(ctx, "CREATE TABLE a_table ( "+
+		" [col_1] NVARCHAR(128) NOT NULL, "+
+		" [col_2] NVARCHAR(128) NOT NULL, "+
+		" PRIMARY KEY ([col_1], [col_2]) "+
 		")")
 	require.NoError(t, err)
 }
@@ -88,13 +88,13 @@ func TestMSSQLServerWithConnectionStringParameters(t *testing.T) {
 
 	defer db.Close()
 
-	err = db.Ping()
+	err = db.PingContext(ctx)
 	require.NoError(t, err)
 
-	_, err = db.Exec("CREATE TABLE a_table ( " +
-		" [col_1] NVARCHAR(128) NOT NULL, " +
-		" [col_2] NVARCHAR(128) NOT NULL, " +
-		" PRIMARY KEY ([col_1], [col_2]) " +
+	_, err = db.ExecContext(ctx, "CREATE TABLE a_table ( "+
+		" [col_1] NVARCHAR(128) NOT NULL, "+
+		" [col_2] NVARCHAR(128) NOT NULL, "+
+		" PRIMARY KEY ([col_1], [col_2]) "+
 		")")
 	require.NoError(t, err)
 }
@@ -118,7 +118,7 @@ func TestMSSQLServerWithCustomStrongPassword(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	err = db.Ping()
+	err = db.PingContext(ctx)
 	require.NoError(t, err)
 }
 

@@ -32,12 +32,12 @@ func TestDatabend(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	err = db.Ping()
+	err = db.PingContext(ctx)
 	require.NoError(t, err)
 
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS a_table ( \n" +
-		" `col_1` VARCHAR(128) NOT NULL, \n" +
-		" `col_2` VARCHAR(128) NOT NULL \n" +
+	_, err = db.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS a_table ( \n"+
+		" `col_1` VARCHAR(128) NOT NULL, \n"+
+		" `col_2` VARCHAR(128) NOT NULL \n"+
 		")")
 	require.NoError(t, err)
 }
@@ -58,17 +58,17 @@ func TestDatabendWithDefaultUserAndPassword(t *testing.T) {
 	db, err := sql.Open("databend", connectionString)
 	require.NoError(t, err)
 	defer db.Close()
-	err = db.Ping()
+	err = db.PingContext(ctx)
 	require.NoError(t, err)
 
 	var i int
-	row := db.QueryRow("select 1")
+	row := db.QueryRowContext(ctx, "select 1")
 	err = row.Scan(&i)
 	require.NoError(t, err)
 
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS a_table ( \n" +
-		" `col_1` VARCHAR(128) NOT NULL, \n" +
-		" `col_2` VARCHAR(128) NOT NULL \n" +
+	_, err = db.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS a_table ( \n"+
+		" `col_1` VARCHAR(128) NOT NULL, \n"+
+		" `col_2` VARCHAR(128) NOT NULL \n"+
 		")")
 	require.NoError(t, err)
 }
