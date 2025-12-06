@@ -6,8 +6,10 @@ toolchain go1.24.7
 
 require (
 	github.com/gocql/gocql v1.6.0
+	github.com/mdelapenya/tlscert v0.2.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
+	software.sslmate.com/src/go-pkcs12 v0.6.0
 )
 
 require (
