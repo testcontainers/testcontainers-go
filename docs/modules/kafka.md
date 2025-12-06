@@ -1,10 +1,12 @@
-# Kafka (KRaft)
+# Kafka
 
 Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.24.0"><span class="tc-version">:material-tag: v0.24.0</span></a>
 
 ## Introduction
 
-The Testcontainers module for KRaft: [Apache Kafka Without ZooKeeper](https://developer.confluent.io/learn/kraft).
+The Testcontainers module for Kafka.
+
+This module runs Kafka in Kraft mode: [Apache Kafka Without ZooKeeper](https://developer.confluent.io/learn/kraft/).
 
 ## Adding this module to your project dependencies
 
@@ -14,10 +16,39 @@ Please run the following command to add the Kafka module to your Go dependencies
 go get github.com/testcontainers/testcontainers-go/modules/kafka
 ```
 
+## Apache Kafka images
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+Images `apache/kafka`, `apache/kafka-native` ([Apache Kafka](https://kafka.apache.org/)) are supported by this module in addition to `confluentinc/confluent-local` ([Confluent](https://docs.confluent.io/kafka/overview.html)).
+
+The native container ([apache/kafka-native](https://hub.docker.com/r/apache/kafka-native/)) is based on GraalVM and typically starts several seconds faster than alternatives.
+
+It is recommended to prefer Apache Kafka images over Confluent images, as Confluent has [unresolved issue with graceful shutdown](https://github.com/testcontainers/testcontainers-go/issues/2206).
+
+Apache Kafka Native images are also smallest, however they do not include CLI tools such as `kafka-topics.sh`.
+
+| Docker Image        | Size                     | Start/stop time | CLI Tools | Graceful Shutdown |
+|---------------------|--------------------------|-----------------|-----------|-------------------|
+| Apache Kafka Native | 137MB (4.0.1 linux amd)  | <1 second       | No        | OK                |
+| Apache Kafka        | 393MB (4.0.1 linux amd)  | ~3-4 seconds    | Yes       | OK                |
+| Confluent Kafka     | 649MB (7.5.0 linux amd)  | ~13-14 seconds  | Yes       | [issue](https://github.com/testcontainers/testcontainers-go/issues/2206) |
+
+!!!info
+    If you use image from custom registry, you might need to override starter script, see [Starter script](#starter-script) section below.
+
 ## Usage example
 
 <!--codeinclude-->
-[Creating a Kafka container](../../modules/kafka/examples_test.go) inside_block:runKafkaContainer
+[Apache Kafka Native](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerApacheNative
+<!--/codeinclude-->
+
+<!--codeinclude-->
+[Apache Kafka](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerApacheNotNative
+<!--/codeinclude-->
+
+<!--codeinclude-->
+[Confluent Kafka](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerConfluentinc
 <!--/codeinclude-->
 
 ## Module Reference
@@ -42,12 +73,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "confluentinc/confluent-local:7.5.0")`.
+In example: `Run(context.Background(), "apache/kafka-native:4.0.1")`.
 
 !!! warning
-    The minimal required version of Kafka for KRaft mode is `confluentinc/confluent-local:7.4.0`. If you are using an image that
-    is different from the official one, please make sure that it's compatible with KRaft mode, as the module won't check
-    the version for you.
+    Module expects that the image in use supports Kraft mode (Kafka without ZooKeeper).
+    The minimal required version of Confluent images for KRaft mode is `confluentinc/confluent-local:7.4.0`.
+    All Apache images support Kraft mode.
 
 #### Environment variables
 
@@ -57,17 +88,57 @@ The environment variables that are already set by default are:
 [Environment variables](../../modules/kafka/kafka.go) inside_block:envVars
 <!--/codeinclude-->
 
-#### Init script
+#### Starter script
 
-The Kafka container will be started using a custom shell script:
+The Kafka container will be started using a custom shell script.
+
+Module would vary the starter script depending on the image in use, using following logic:
+
+- image starts with `apache/kafka` or `docker.io/apache/kafka`: use Apache Kafka starter script.
+- image starts with `confluentinc/` or `docker.io/confluentinc/`: use Confluent starter script.
+- otherwise: use Confluent starter script (for backward compatibility).
+
+See also [WithApacheFlavor/WithConfluentFlavor](#withapacheflavorwithconfluentflavor) and [WithStarterScript](#withstarterscript) options to override this behavior.
 
 <!--codeinclude-->
-[Init script](../../modules/kafka/kafka.go) inside_block:starterScript
+[Apache Kafka starter script](../../modules/kafka/kafka.go) inside_block:starterScriptApache
+<!--/codeinclude-->
+
+<!--codeinclude-->
+[Confluent starter script](../../modules/kafka/kafka.go) inside_block:starterScriptConfluentinc
+<!--/codeinclude-->
+
+<!--codeinclude-->
+[Overriding starter script](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerWithApacheFlavor
 <!--/codeinclude-->
 
 ### Container Options
 
 When starting the Kafka container, you can pass options in a variadic way to configure it.
+
+#### WithApacheFlavor/WithConfluentFlavor
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+You can manually specify which flavor of starter script to use with the following options:
+
+<!--codeinclude-->
+[With Apache Flavor](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerWithApacheFlavor
+<!--/codeinclude-->
+
+<!--codeinclude-->
+[With Confluent Flavor](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerWithConfluentFlavor
+<!--/codeinclude-->
+
+Note that both `WithApacheFlavor` and `WithConfluentFlavor` conflict with each other and with `WithStarterScript` option. An error will be returned if several of those options are provided.
+
+#### WithStarterScript
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This allows to provide a completely custom starter script for the Kafka container. Be careful when using this option, as compatibility with any image and module version cannot be guaranteed.
+
+Note that `WithStarterScript` conflicts with `WithApacheFlavor` and `WithConfluentFlavor` options. An error will be returned if several of those options are provided.
 
 {% include "../features/common_functional_options_list.md" %}
 
@@ -84,3 +155,17 @@ The `Brokers(ctx)` method returns the Kafka brokers as a string slice, containin
 <!--codeinclude-->
 [Get Kafka brokers](../../modules/kafka/kafka_test.go) inside_block:getBrokers
 <!--/codeinclude-->
+
+#### Localhost listener
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+Kafka container would by default be configured with `localhost:9095` as one of advertised listeners. This can be used when you need to run CLI commands inside the container, for example with custom wait strategies or to prepare test data.
+
+Here is an example that uses custom wait strategy that checks if listing topics works:
+
+<!--codeinclude-->
+[Custom wait strategy](../../modules/kafka/examples_test.go) inside_block:runKafkaContainerAndUseLocalhostListener
+<!--/codeinclude-->
+
+Note: this will not work with `apache/kafka-native` images, as they do not include CLI tools.
