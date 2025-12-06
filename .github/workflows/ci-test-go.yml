@@ -11,7 +11,7 @@ on:
       platforms:
         required: true
         type: string
-        default: "ubuntu-latest"
+        default: "shipfox-2vcpu-ubuntu-2404"
         description: "The platforms in which the project will be run"
       project-directory:
         required: true
@@ -116,7 +116,7 @@ jobs:
         if: always()
 
       - name: Decide if Sonar must be run
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        if: ${{ matrix.platform == 'shipfox-2vcpu-ubuntu-2404' }}
         run: |
           if [[ "1.24.x" == "${{ inputs.go-version }}" ]] && \
              [[ "true" != "${{ inputs.rootless-docker }}" ]] && \
