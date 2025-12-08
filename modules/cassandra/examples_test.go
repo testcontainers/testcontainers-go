@@ -103,7 +103,11 @@ func ExampleRun_withTLS() {
 	}
 
 	// Get TLS config for secure connection
-	tlsConfig := cassandraContainer.TLSConfig()
+	tlsConfig, err := cassandraContainer.TLSConfig()
+	if err != nil {
+		log.Printf("failed to get TLS config: %s", err)
+		return
+	}
 	// }
 
 	cluster := gocql.NewCluster(connectionHost)

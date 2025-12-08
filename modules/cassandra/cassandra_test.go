@@ -128,7 +128,8 @@ func TestCassandraWithTLS(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify TLS config is available
-	tlsConfig := ctr.TLSConfig()
+	tlsConfig, err := ctr.TLSConfig()
+	require.NoError(t, err)
 	require.NotNil(t, tlsConfig, "TLSConfig should not be nil when TLS is enabled")
 
 	// Get SSL connection host

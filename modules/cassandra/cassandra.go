@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	_ "embed"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -38,9 +39,12 @@ func (c *CassandraContainer) ConnectionHost(ctx context.Context) (string, error)
 }
 
 // TLSConfig returns the TLS configuration for secure client connections.
-// Returns nil if TLS is not enabled on the container.
-func (c *CassandraContainer) TLSConfig() *tls.Config {
-	return c.settings.tlsConfig
+// Returns an error if TLS is not enabled on the container.
+func (c *CassandraContainer) TLSConfig() (*tls.Config, error) {
+	if !c.settings.tlsEnabled {
+		return nil, errors.New("TLS is not enabled on this container")
+	}
+	return c.settings.tlsConfig, nil
 }
 
 // WithConfigFile sets the YAML config file to be used for the cassandra container
