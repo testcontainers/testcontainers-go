@@ -117,3 +117,57 @@ func TestCassandraWithInitScripts(t *testing.T) {
 		require.Equal(t, Test{ID: 1, Name: "NAME"}, test)
 	})
 }
+
+func TestCassandraWithTLS(t *testing.T) {
+	ctx := context.Background()
+
+	// withTLS {
+	ctr, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithTLS())
+	// }
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	// tlsConfig {
+	// Verify TLS config is available
+	tlsConfig, err := ctr.TLSConfig()
+	require.NoError(t, err)
+	// }
+	require.NotNil(t, tlsConfig, "TLSConfig should not be nil when TLS is enabled")
+
+	// Get SSL connection host
+	// connectionHostSSL {
+	connectionHost, err := ctr.ConnectionHost(ctx)
+	// }
+	require.NoError(t, err)
+
+	// Create cluster with TLS
+	cluster := gocql.NewCluster(connectionHost)
+	cluster.SslOpts = &gocql.SslOptions{
+		Config: tlsConfig,
+	}
+
+	session, err := cluster.CreateSession()
+	require.NoError(t, err)
+	defer session.Close()
+
+	// Verify connection works by querying system table
+	var clusterName string
+	err = session.Query("SELECT cluster_name FROM system.local").Scan(&clusterName)
+	require.NoError(t, err)
+	require.Equal(t, "Test Cluster", clusterName)
+
+	// Test data operations over TLS
+	err = session.Query("CREATE KEYSPACE tls_test_keyspace WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor' : 1}").Exec()
+	require.NoError(t, err)
+
+	err = session.Query("CREATE TABLE tls_test_keyspace.test_table (id int PRIMARY KEY, name text)").Exec()
+	require.NoError(t, err)
+
+	err = session.Query("INSERT INTO tls_test_keyspace.test_table (id, name) VALUES (1, 'TLS_TEST')").Exec()
+	require.NoError(t, err)
+
+	var test Test
+	err = session.Query("SELECT id, name FROM tls_test_keyspace.test_table WHERE id=1").Scan(&test.ID, &test.Name)
+	require.NoError(t, err)
+	require.Equal(t, Test{ID: 1, Name: "TLS_TEST"}, test)
+}
