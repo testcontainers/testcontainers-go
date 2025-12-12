@@ -174,7 +174,10 @@ func TestPulsar(t *testing.T) {
 				Timeout: 30 * time.Second,
 			}
 
-			resp, err := httpClient.Get(serviceURL + "/admin/v2/persistent/public/default/test-topic/stats")
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, serviceURL+"/admin/v2/persistent/public/default/test-topic/stats", http.NoBody)
+			require.NoError(t, err)
+
+			resp, err := httpClient.Do(req)
 			require.NoError(t, err)
 			defer resp.Body.Close()
 

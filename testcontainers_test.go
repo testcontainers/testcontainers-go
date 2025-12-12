@@ -47,14 +47,15 @@ func TestSessionID(t *testing.T) {
 		env := append(os.Environ(), "TESTCONTAINERS_SESSION_ID_HELPER=1")
 
 		re := regexp.MustCompile(">>>(.*)<<<")
+		ctx := t.Context()
 
-		cmd1 := exec.Command("go", args...)
+		cmd1 := exec.CommandContext(ctx, "go", args...)
 		cmd1.Env = env
 		stdoutStderr1, err := cmd1.CombinedOutput()
 		require.NoErrorf(t, err, "cmd1.Run() failed with %s", err)
 		sessionID1 := re.FindString(string(stdoutStderr1))
 
-		cmd2 := exec.Command("go", args...)
+		cmd2 := exec.CommandContext(ctx, "go", args...)
 		cmd2.Env = env
 		stdoutStderr2, err := cmd2.CombinedOutput()
 		require.NoErrorf(t, err, "cmd2.Run() failed with %s", err)

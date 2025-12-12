@@ -226,15 +226,16 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 			WithMethod(http.MethodPost).WithBody(bytes.NewReader([]byte("ping"))),
 		),
 	}
+	ctx := t.Context()
 
-	ctr, err := testcontainers.Run(context.Background(), "", opts...)
+	ctr, err := testcontainers.Run(ctx, "", opts...)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	host, err := ctr.Host(context.Background())
+	host, err := ctr.Host(ctx)
 	require.NoError(t, err)
 
-	port, err := ctr.MappedPort(context.Background(), "6443/tcp")
+	port, err := ctr.MappedPort(ctx, "6443/tcp")
 	require.NoError(t, err)
 
 	client := http.Client{
@@ -253,7 +254,11 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 			ExpectContinueTimeout: 1 * time.Second,
 		},
 	}
-	resp, err := client.Get(fmt.Sprintf("https://%s:%s", host, port.Port()))
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("https://%s:%s", host, port.Port()), http.NoBody)
+	require.NoError(t, err)
+
+	resp, err := client.Do(req)
 	require.NoError(t, err)
 
 	defer resp.Body.Close()
@@ -277,15 +282,16 @@ func TestHTTPStrategyWaitUntilReadyWithQueryString(t *testing.T) {
 				return bytes.Equal(data, []byte("pong"))
 			})),
 	}
+	ctx := t.Context()
 
-	ctr, err := testcontainers.Run(context.Background(), "", opts...)
+	ctr, err := testcontainers.Run(ctx, "", opts...)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	host, err := ctr.Host(context.Background())
+	host, err := ctr.Host(ctx)
 	require.NoError(t, err)
 
-	port, err := ctr.MappedPort(context.Background(), "6443/tcp")
+	port, err := ctr.MappedPort(ctx, "6443/tcp")
 	require.NoError(t, err)
 
 	client := http.Client{
@@ -304,7 +310,10 @@ func TestHTTPStrategyWaitUntilReadyWithQueryString(t *testing.T) {
 			ExpectContinueTimeout: 1 * time.Second,
 		},
 	}
-	resp, err := client.Get(fmt.Sprintf("https://%s:%s", host, port.Port()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("https://%s:%s", host, port.Port()), http.NoBody)
+	require.NoError(t, err)
+
+	resp, err := client.Do(req)
 	require.NoError(t, err)
 
 	defer resp.Body.Close()
@@ -338,7 +347,7 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 	}
 	// }
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctr, err := testcontainers.Run(ctx, "", opts...)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
@@ -365,7 +374,10 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 			ExpectContinueTimeout: 1 * time.Second,
 		},
 	}
-	resp, err := client.Get(fmt.Sprintf("https://%s:%s", host, port.Port()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("https://%s:%s", host, port.Port()), http.NoBody)
+	require.NoError(t, err)
+
+	resp, err := client.Do(req)
 	require.NoError(t, err)
 
 	defer resp.Body.Close()
