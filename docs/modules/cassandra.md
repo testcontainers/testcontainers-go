@@ -70,6 +70,24 @@ In the case you have a custom config file for Cassandra, it's possible to copy t
 !!!warning
     You should provide a valid Cassandra configuration file, otherwise the container will fail to start.
 
+#### WithTLS
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to enable TLS/SSL encryption for client connections, you can use the `cassandra.WithTLS()` option. 
+
+When enabled, the container will:
+- Generate self-signed certificates automatically
+- Configure Cassandra to use client encryption
+- Expose the SSL port (9142)
+
+Use the `TLSConfig()` method on the returned container to get the `*tls.Config` for client connections. The method returns an error if TLS was not enabled via `WithTLS()`.
+
+<!--codeinclude-->
+[Creating a Cassandra container with TLS](../../modules/cassandra/examples_test.go) inside_block:runCassandraContainerWithTLS
+[Getting TLS connection configuration](../../modules/cassandra/examples_test.go) inside_block:getTLSConnectionHost
+<!--/codeinclude-->
+
 {% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
@@ -84,4 +102,14 @@ This method returns the host and port of the Cassandra container, using the defa
 
 <!--codeinclude-->
 [Get connection host](../../modules/cassandra/cassandra_test.go) inside_block:connectionHost
+<!--/codeinclude-->
+
+#### TLSConfig
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This method returns the TLS configuration for secure connections to the Cassandra container. It can only be used when the container was created with the `WithTLS()` option. Returns an error if TLS was not enabled.
+
+<!--codeinclude-->
+[Get TLS config](../../modules/cassandra/cassandra_test.go) inside_block:tlsConfig
 <!--/codeinclude-->

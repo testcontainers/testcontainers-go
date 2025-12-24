@@ -1,7 +1,11 @@
 package cassandra
 
 import (
+	"bytes"
 	"context"
+	"crypto/tls"
+	_ "embed"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -12,18 +16,35 @@ import (
 )
 
 const (
-	port = "9042/tcp"
+	port    = "9042/tcp"
+	sslPort = "9142/tcp"
 )
+
+//go:embed testdata/cassandra-ssl.yaml
+var sslConfigYAML []byte
 
 // CassandraContainer represents the Cassandra container type used in the module
 type CassandraContainer struct {
 	testcontainers.Container
+	settings options
 }
 
 // ConnectionHost returns the host and port of the cassandra container, using the default, native 9042 port, and
 // obtaining the host and exposed port from the container
 func (c *CassandraContainer) ConnectionHost(ctx context.Context) (string, error) {
+	if c.settings.tlsEnabled {
+		return c.PortEndpoint(ctx, sslPort, "")
+	}
 	return c.PortEndpoint(ctx, port, "")
+}
+
+// TLSConfig returns the TLS configuration for secure client connections.
+// Returns an error if TLS is not enabled on the container.
+func (c *CassandraContainer) TLSConfig() (*tls.Config, error) {
+	if !c.settings.tlsEnabled {
+		return nil, errors.New("TLS is not enabled on this container")
+	}
+	return c.settings.tlsConfig, nil
 }
 
 // WithConfigFile sets the YAML config file to be used for the cassandra container
@@ -71,6 +92,16 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Cassandra container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*CassandraContainer, error) {
+	// Process custom options to extract settings
+	settings := defaultOptions()
+	for _, opt := range opts {
+		if opt, ok := opt.(Option); ok {
+			if err := opt(&settings); err != nil {
+				return nil, fmt.Errorf("apply option: %w", err)
+			}
+		}
+	}
+
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts(port),
 		testcontainers.WithEnv(map[string]string{
@@ -90,12 +121,55 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		),
 	}
 
+	// Configure TLS if enabled
+	if settings.tlsEnabled {
+		tlsCerts, err := createTLSCerts()
+		if err != nil {
+			return nil, fmt.Errorf("create TLS certs: %w", err)
+		}
+
+		// Store the TLS config for client connections
+		settings.tlsConfig = tlsCerts.TLSConfig
+
+		// Add SSL port and configure networking for SSL
+		// We need CASSANDRA_BROADCAST_RPC_ADDRESS when CASSANDRA_RPC_ADDRESS is 0.0.0.0
+		moduleOpts = append(moduleOpts,
+			testcontainers.WithExposedPorts(sslPort),
+			testcontainers.WithEnv(map[string]string{
+				"CASSANDRA_BROADCAST_RPC_ADDRESS": "127.0.0.1",
+			}),
+		)
+
+		// Mount the SSL config and keystore
+		moduleOpts = append(moduleOpts,
+			testcontainers.WithFiles(
+				testcontainers.ContainerFile{
+					Reader:            bytes.NewReader(sslConfigYAML),
+					ContainerFilePath: "/etc/cassandra/cassandra.yaml",
+					FileMode:          0o644,
+				},
+				testcontainers.ContainerFile{
+					Reader:            bytes.NewReader(tlsCerts.KeystoreBytes),
+					ContainerFilePath: "/etc/cassandra/certs/keystore.p12",
+					FileMode:          0o644,
+				},
+			),
+		)
+
+		// Update wait strategy to also wait for SSL port
+		moduleOpts = append(moduleOpts,
+			testcontainers.WithAdditionalWaitStrategy(
+				wait.ForListeningPort(sslPort),
+			),
+		)
+	}
+
 	moduleOpts = append(moduleOpts, opts...)
 
 	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *CassandraContainer
 	if ctr != nil {
-		c = &CassandraContainer{Container: ctr}
+		c = &CassandraContainer{Container: ctr, settings: settings}
 	}
 
 	if err != nil {
