@@ -1497,15 +1497,8 @@ func (p *DockerProvider) RunContainer(ctx context.Context, req ContainerRequest)
 
 // Config provides the TestcontainersConfig read from $HOME/.testcontainers.properties or
 // the environment variables
-func (p *DockerProvider) Config() TestcontainersConfig {
-	return TestcontainersConfig{
-		Host:           p.config.Host,
-		TLSVerify:      p.config.TLSVerify,
-		CertPath:       p.config.CertPath,
-		RyukDisabled:   p.config.RyukDisabled,
-		RyukPrivileged: p.config.RyukPrivileged,
-		Config:         p.config,
-	}
+func (p *DockerProvider) Config() config.Config {
+	return p.config
 }
 
 // DaemonHost gets the host or ip of the Docker daemon where ports are exposed on
