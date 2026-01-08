@@ -18,27 +18,30 @@ import (
 )
 
 func TestWeaviate(t *testing.T) {
-	ctx := context.Background()
-
-	ctr, err := weaviate.Run(ctx, "semitechnologies/weaviate:1.29.0")
+	ctr, err := weaviate.Run(t.Context(), "semitechnologies/weaviate:1.29.0")
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
 	t.Run("HttpHostAddress", func(t *testing.T) {
+		ctx := t.Context()
 		// httpHostAddress {
 		schema, host, err := ctr.HttpHostAddress(ctx)
 		// }
 		require.NoError(t, err)
 
-		cli := &http.Client{}
-		resp, err := cli.Get(fmt.Sprintf("%s://%s", schema, host))
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s://%s", schema, host), http.NoBody)
 		require.NoError(t, err)
+
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+
 		defer resp.Body.Close()
 
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 
 	t.Run("GrpcHostAddress", func(t *testing.T) {
+		ctx := t.Context()
 		// gRPCHostAddress {
 		host, err := ctr.GrpcHostAddress(ctx)
 		// }
@@ -56,6 +59,7 @@ func TestWeaviate(t *testing.T) {
 	})
 
 	t.Run("Weaviate client", func(tt *testing.T) {
+		ctx := t.Context()
 		httpScheme, httpHost, err := ctr.HttpHostAddress(ctx)
 		require.NoError(tt, err)
 		grpcHost, err := ctr.GrpcHostAddress(ctx)

@@ -76,19 +76,30 @@ func ExampleRun_connect() {
 		return
 	}
 
-	httpClient := &http.Client{}
-	resp, err := httpClient.Post(url+"/api/categories", "application/json", strings.NewReader(`{"name": "Tools"}`))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url+"/api/categories", strings.NewReader(`{"name": "Tools"}`))
+	if err != nil {
+		log.Printf("failed to create request: %s", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Printf("failed to send request: %s", err)
 		return
 	}
+
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("failed to close response body: %s", err)
+		}
+	}()
 
 	buf, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("failed to read response: %s", err)
 		return
 	}
-	resp.Body.Close()
 
 	fmt.Println(resp.StatusCode)
 	fmt.Println(string(buf))

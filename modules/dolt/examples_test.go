@@ -76,17 +76,17 @@ func ExampleRun_connect() {
 	}
 	defer db.Close()
 
-	if err = db.Ping(); err != nil {
+	if err = db.PingContext(ctx); err != nil {
 		log.Printf("failed to ping database: %s", err)
 		return
 	}
-	stmt, err := db.Prepare("SELECT dolt_version();")
+	stmt, err := db.PrepareContext(ctx, "SELECT dolt_version();")
 	if err != nil {
 		log.Printf("failed to prepare sql statement: %s", err)
 		return
 	}
 	defer stmt.Close()
-	row := stmt.QueryRow()
+	row := stmt.QueryRowContext(ctx)
 	version := ""
 	err = row.Scan(&version)
 	if err != nil {

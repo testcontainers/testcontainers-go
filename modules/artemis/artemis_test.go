@@ -73,10 +73,14 @@ func TestArtemis(t *testing.T) {
 			// }
 			require.NoError(t, err)
 
-			res, err := http.Get(u)
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
+			require.NoError(t, err)
+
+			res, err := http.DefaultClient.Do(req)
 			require.NoError(t, err, "failed to access console")
-			res.Body.Close()
+
 			require.Equal(t, http.StatusOK, res.StatusCode, "failed to access console")
+			require.NoError(t, res.Body.Close())
 
 			if test.user != "" {
 				require.Equal(t, test.user, ctr.User(), "unexpected user")
@@ -125,17 +129,21 @@ func TestArtemis(t *testing.T) {
 
 func expectQueue(t *testing.T, container *artemis.Container, queueName string) {
 	t.Helper()
+	ctx := t.Context()
 
-	u, err := container.ConsoleURL(context.Background())
+	u, err := container.ConsoleURL(ctx)
 	require.NoError(t, err)
 
-	r, err := http.Get(u + `/jolokia/read/org.apache.activemq.artemis:broker="0.0.0.0"/QueueNames`)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u+`/jolokia/read/org.apache.activemq.artemis:broker="0.0.0.0"/QueueNames`, http.NoBody)
+	require.NoError(t, err)
+
+	r, err := http.DefaultClient.Do(req)
 	require.NoError(t, err, "failed to request QueueNames")
-	defer r.Body.Close()
 
 	var res struct{ Value []string }
 	err = json.NewDecoder(r.Body).Decode(&res)
 	require.NoError(t, err, "failed to decode QueueNames response")
 
 	require.Containsf(t, res.Value, queueName, "should contain queue")
+	require.NoError(t, r.Body.Close())
 }

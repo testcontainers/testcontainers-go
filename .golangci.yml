@@ -15,6 +15,7 @@ linters:
     - govet
     - misspell
     - nakedret
+    - noctx
     - nolintlint
     - perfsprint
     - prealloc

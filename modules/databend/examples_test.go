@@ -74,7 +74,7 @@ func ExampleRun_connect() {
 	defer db.Close()
 
 	var i int
-	row := db.QueryRow("select 1")
+	row := db.QueryRowContext(ctx, "select 1")
 	err = row.Scan(&i)
 	if err != nil {
 		log.Printf("failed to scan result: %s", err)
