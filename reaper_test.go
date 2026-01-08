@@ -27,14 +27,12 @@ type mockReaperProvider struct {
 	req              ContainerRequest
 	hostConfig       *container.HostConfig
 	endpointSettings map[string]*network.EndpointSettings
-	config           TestcontainersConfig
+	config           config.Config
 }
 
 func newMockReaperProvider(cfg config.Config) *mockReaperProvider {
 	m := &mockReaperProvider{
-		config: TestcontainersConfig{
-			Config: cfg,
-		},
+		config: cfg,
 	}
 
 	return m
@@ -62,7 +60,7 @@ func (m *mockReaperProvider) RunContainer(_ context.Context, req ContainerReques
 	return nil, errExpected
 }
 
-func (m *mockReaperProvider) Config() TestcontainersConfig {
+func (m *mockReaperProvider) Config() config.Config {
 	return m.config
 }
 
