@@ -536,3 +536,24 @@ func WithProvider(provider ProviderType) CustomizeRequestOption {
 		return nil
 	}
 }
+
+// WithReadOnlyRootFilesystem sets the container's root filesystem as read-only.
+// This is equivalent to using the --read-only flag with docker run.
+func WithReadOnlyRootFilesystem() CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		if req.HostConfigModifier == nil {
+			req.HostConfigModifier = func(hostConfig *container.HostConfig) {
+				hostConfig.ReadonlyRootfs = true
+			}
+		} else {
+			// Wrap the existing modifier to also set ReadonlyRootfs
+			existingModifier := req.HostConfigModifier
+			req.HostConfigModifier = func(hostConfig *container.HostConfig) {
+				existingModifier(hostConfig)
+				hostConfig.ReadonlyRootfs = true
+			}
+		}
+
+		return nil
+	}
+}
