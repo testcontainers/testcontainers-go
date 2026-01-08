@@ -146,9 +146,13 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		return nil, err
 	}
 
+	host, err := core.ExtractDockerHost(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract docker host: %w", err)
+	}
 	return &DockerProvider{
 		DockerProviderOptions: o,
-		host:                  core.MustExtractDockerHost(ctx),
+		host:                  host,
 		client:                c,
 		config:                config.Read(),
 	}, nil

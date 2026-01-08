@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 
 	"github.com/docker/docker/client"
@@ -14,7 +15,10 @@ import (
 func NewClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {
 	tcConfig := config.Read()
 
-	dockerHost := MustExtractDockerHost(ctx)
+	dockerHost, err := extractDockerHost(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("extract docker host: %w", err)
+	}
 
 	opts := []client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}
 	if dockerHost != "" {
