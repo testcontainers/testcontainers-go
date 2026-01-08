@@ -11,7 +11,7 @@ permissions: read-all
 jobs:
   analysis:
     name: Scorecard analysis
-    runs-on: ubuntu-latest
+    runs-on: shipfox-2vcpu-ubuntu-2404
     permissions:
       # Needed if using Code scanning alerts
       security-events: write
