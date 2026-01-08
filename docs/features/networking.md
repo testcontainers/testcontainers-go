@@ -17,6 +17,7 @@ Then, you can create a network using the `network.New` function. This function r
 - `WithAttachable()`
 - `WithCheckDuplicate()`
 - `WithDriver(driver string)`
+- `WithDriverOptions(options map[string]string)`
 - `WithEnableIPv6()`
 - `WithInternal()`
 - `WithLabels(labels map[string]string)`
