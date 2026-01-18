@@ -481,7 +481,7 @@ API, and fetch the content of the certificate as a PKCS12 store using the Key Va
 
 #### Use the Secrets API in Network mode
 
-In the following example, we are starting the Lowkey Vault container in Network mode and set the parameters of a Go client
+In the following example, we are starting the Lowkey Vault container in Network mode and setting the parameters of a Go client
 container which will be used to connect to the Key Vault API of the Lowkey Vault container in Network mode.
 
 <!--codeinclude-->
