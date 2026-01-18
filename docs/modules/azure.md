@@ -395,8 +395,8 @@ and is made available using the host address.
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
 
-To use prepare the container for running in a network, and making it accessible from other containers in the network, you can use the 
-`WithNetworkAlias` option. In example:
+To prepare the container for running in a network, and making it accessible from other containers in the network, you can use the 
+`WithNetworkAlias` option. For example:
 ```golang
 Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal",
     lowkeyvault.WithNetworkAlias("lowkey-vault", aNetwork),
