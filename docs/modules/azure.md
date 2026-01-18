@@ -395,7 +395,7 @@ and is made available using the host address.
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
 
-To prepare the container for running in a network, and making it accessible from other containers in the network, you can use the 
+To prepare the container for running in a network and making it accessible from other containers in the network, you can use the 
 `WithNetworkAlias` option. For example:
 ```golang
 Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal",
@@ -429,9 +429,9 @@ to use to access the token endpoint.
 
 Can return an error, passing the Go context as the only parameter. This method conveniently sets the environment variables required 
 to use managed identities with the Lowkey Vault container. When using the Azure Key Vault SDK for Go, you can authenticate with 
-managed identities by using the `azidentity.NewDefaultAzureCredential(nil)` as credential. In order for this authentication to work,
+managed identities by using the `azidentity.NewDefaultAzureCredential(nil)` as a credential. In order for this authentication to work,
 we need to set two environment variables, `IDENTITY_ENDPOINT` and `IDENTITY_HEADER` on the machine where the client code is running.
-In case the client is running on the host, i.e. we are running the Lowkey Vault container in Local mode, this method can set both 
+In case the client is running on the host, i.e., we are running the Lowkey Vault container in Local mode, this method can set both 
 environment variables automatically.
 
 #### PrepareClientForSelfSignedCert
