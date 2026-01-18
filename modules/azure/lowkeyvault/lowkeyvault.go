@@ -1,4 +1,4 @@
-package lowkeyvalt
+package lowkeyvault
 
 import (
 	"context"
@@ -38,6 +38,7 @@ func WithNetworkAlias(alias string, forNetwork *testcontainers.DockerNetwork) te
 		if err != nil {
 			return err
 		}
+		// The <port> placeholder will be replaced by the container automatically just in time
 		envs := map[string]string{"LOWKEY_VAULT_ALIASES": "localhost=" + alias + ":<port>"}
 		err = testcontainers.WithEnv(envs).Customize(req)
 		if err != nil {
@@ -121,7 +122,8 @@ func (c *LowkeyVaultContainer) SetManagedIdentityEnvVariables(ctx context.Contex
 }
 
 func (c *LowkeyVaultContainer) _MappedHostAuthority(ctx context.Context, exposedPort nat.Port, accessMode int) (string, error) {
-	if accessMode == Local {
+	switch accessMode {
+	case Local:
 		host, err := c.Host(ctx)
 		if err != nil {
 			return "", fmt.Errorf("host: %w", err)
@@ -131,15 +133,29 @@ func (c *LowkeyVaultContainer) _MappedHostAuthority(ctx context.Context, exposed
 			return "", fmt.Errorf("api port: %w", err)
 		}
 		return fmt.Sprintf("%s:%d", host, port.Int()), nil
+	case Network:
+		networks, err := c.Networks(ctx)
+		if err != nil {
+			return "", fmt.Errorf("networks: %w", err)
+		}
+		if len(networks) != 1 {
+			return "", fmt.Errorf("the container must have exactly one network, but it has %d", len(networks))
+		}
+		hosts, err := c.NetworkAliases(ctx)
+		if err != nil {
+			return "", fmt.Errorf("network aliases: %w", err)
+		}
+		if len(hosts) == 0 {
+			return "", fmt.Errorf("no network aliases found in the Lowkey Vault container")
+		}
+		aliases := hosts[networks[0]]
+		if len(aliases) != 1 {
+			return "", fmt.Errorf("the container must have exactly one network alias, but it has %d", len(aliases))
+		}
+		host := aliases[0]
+		return fmt.Sprintf("%s:%d", host, exposedPort.Int()), nil
+	default:
+		return "", fmt.Errorf("unsupported access mode: %d", accessMode)
 	}
-	networks, err := c.Networks(ctx)
-	if err != nil {
-		return "", fmt.Errorf("networks: %w", err)
-	}
-	hosts, err := c.NetworkAliases(ctx)
-	if err != nil {
-		return "", fmt.Errorf("network aliases: %w", err)
-	}
-	host := hosts[networks[0]][0]
-	return fmt.Sprintf("%s:%d", host, exposedPort.Int()), nil
+
 }

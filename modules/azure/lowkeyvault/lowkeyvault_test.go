@@ -1,4 +1,4 @@
-package lowkeyvalt_test
+package lowkeyvault_test
 
 import (
 	"context"
@@ -26,7 +26,7 @@ import (
 func TestRun(t *testing.T) {
 	ctx := context.Background()
 
-	lowkeyVaultContainer, err := lowkeyvalt.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal")
+	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal")
 	testcontainers.CleanupContainer(t, lowkeyVaultContainer)
 	require.NoError(t, err)
 
@@ -43,17 +43,17 @@ func TestRun_secretOperationsNetwork(t *testing.T) {
 	require.NoError(t, err)
 	testcontainers.CleanupNetwork(t, aNetwork)
 
-	lowkeyVaultContainer, err := lowkeyvalt.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal",
-		lowkeyvalt.WithNetworkAlias("lowkey-vault", aNetwork),
+	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal",
+		lowkeyvault.WithNetworkAlias("lowkey-vault", aNetwork),
 	)
 	testcontainers.CleanupContainer(t, lowkeyVaultContainer)
 	require.NoError(t, err)
 
-	connUrl, err := lowkeyVaultContainer.ConnectionUrl(ctx, lowkeyvalt.Network)
+	connUrl, err := lowkeyVaultContainer.ConnectionUrl(ctx, lowkeyvault.Network)
 	require.NoError(t, err)
 	require.NotNil(t, connUrl)
 
-	tokenUrl, err := lowkeyVaultContainer.TokenUrl(ctx, lowkeyvalt.Network)
+	tokenUrl, err := lowkeyVaultContainer.TokenUrl(ctx, lowkeyvault.Network)
 	require.NoError(t, err)
 	require.NotNil(t, tokenUrl)
 
@@ -86,11 +86,11 @@ func TestRun_secretOperationsNetwork(t *testing.T) {
 func TestRun_secretOperations(t *testing.T) {
 	ctx := context.Background()
 
-	lowkeyVaultContainer, err := lowkeyvalt.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal")
+	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal")
 	testcontainers.CleanupContainer(t, lowkeyVaultContainer)
 	require.NoError(t, err)
 
-	connUrl, err := lowkeyVaultContainer.ConnectionUrl(ctx, lowkeyvalt.Local)
+	connUrl, err := lowkeyVaultContainer.ConnectionUrl(ctx, lowkeyvault.Local)
 	require.NoError(t, err)
 	require.NotNil(t, connUrl)
 
@@ -99,8 +99,9 @@ func TestRun_secretOperations(t *testing.T) {
 
 	httpClient := lowkeyVaultContainer.PrepareClientForSelfSignedCert()
 
-	cred, _ := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
-	secretClient, _ := azsecrets.NewClient(connUrl,
+	cred, err := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
+	require.NoError(t, err)
+	secretClient, err := azsecrets.NewClient(connUrl,
 		cred,
 		&azsecrets.ClientOptions{ClientOptions: struct {
 			APIVersion                      string
@@ -114,6 +115,7 @@ func TestRun_secretOperations(t *testing.T) {
 			PerCallPolicies                 []policy.Policy
 			PerRetryPolicies                []policy.Policy
 		}{Transport: &httpClient}, DisableChallengeResourceVerification: true})
+	require.NoError(t, err)
 
 	secretName := "secret-name"
 	secretValue := "a secret value"
@@ -132,11 +134,11 @@ func TestRun_secretOperations(t *testing.T) {
 func TestRun_keyOperations(t *testing.T) {
 	ctx := context.Background()
 
-	lowkeyVaultContainer, err := lowkeyvalt.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal")
+	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal")
 	testcontainers.CleanupContainer(t, lowkeyVaultContainer)
 	require.NoError(t, err)
 
-	connUrl, err := lowkeyVaultContainer.ConnectionUrl(ctx, lowkeyvalt.Local)
+	connUrl, err := lowkeyVaultContainer.ConnectionUrl(ctx, lowkeyvault.Local)
 	require.NoError(t, err)
 	require.NotNil(t, connUrl)
 
@@ -145,8 +147,9 @@ func TestRun_keyOperations(t *testing.T) {
 
 	httpClient := lowkeyVaultContainer.PrepareClientForSelfSignedCert()
 
-	cred, _ := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
-	keyClient, _ := azkeys.NewClient(connUrl,
+	cred, err := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
+	require.NoError(t, err)
+	keyClient, err := azkeys.NewClient(connUrl,
 		cred,
 		&azkeys.ClientOptions{ClientOptions: struct {
 			APIVersion                      string
@@ -160,6 +163,7 @@ func TestRun_keyOperations(t *testing.T) {
 			PerCallPolicies                 []policy.Policy
 			PerRetryPolicies                []policy.Policy
 		}{Transport: &httpClient}, DisableChallengeResourceVerification: true})
+	require.NoError(t, err)
 
 	keyName := "rsa-key"
 	rsaKeyParams := azkeys.CreateKeyParameters{
@@ -199,11 +203,11 @@ func TestRun_keyOperations(t *testing.T) {
 func TestRun_certificateOperations(t *testing.T) {
 	ctx := context.Background()
 
-	lowkeyVaultContainer, err := lowkeyvalt.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal")
+	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal")
 	testcontainers.CleanupContainer(t, lowkeyVaultContainer)
 	require.NoError(t, err)
 
-	connUrl, err := lowkeyVaultContainer.ConnectionUrl(ctx, lowkeyvalt.Local)
+	connUrl, err := lowkeyVaultContainer.ConnectionUrl(ctx, lowkeyvault.Local)
 	require.NoError(t, err)
 	require.NotNil(t, connUrl)
 
@@ -212,8 +216,9 @@ func TestRun_certificateOperations(t *testing.T) {
 
 	httpClient := lowkeyVaultContainer.PrepareClientForSelfSignedCert()
 
-	cred, _ := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
-	certClient, _ := azcertificates.NewClient(connUrl,
+	cred, err := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
+	require.NoError(t, err)
+	certClient, err := azcertificates.NewClient(connUrl,
 		cred,
 		&azcertificates.ClientOptions{ClientOptions: struct {
 			APIVersion                      string
@@ -227,6 +232,7 @@ func TestRun_certificateOperations(t *testing.T) {
 			PerCallPolicies                 []policy.Policy
 			PerRetryPolicies                []policy.Policy
 		}{Transport: &httpClient}, DisableChallengeResourceVerification: true})
+	require.NoError(t, err)
 
 	certName := "ec-cert"
 	subject := "CN=example.com"
@@ -255,7 +261,7 @@ func TestRun_certificateOperations(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, created)
 
-	secretClient, _ := azsecrets.NewClient(connUrl,
+	secretClient, err := azsecrets.NewClient(connUrl,
 		cred,
 		&azsecrets.ClientOptions{ClientOptions: struct {
 			APIVersion                      string
@@ -269,6 +275,7 @@ func TestRun_certificateOperations(t *testing.T) {
 			PerCallPolicies                 []policy.Policy
 			PerRetryPolicies                []policy.Policy
 		}{Transport: &httpClient}, DisableChallengeResourceVerification: true})
+	require.NoError(t, err)
 
 	base64Secret, err := secretClient.GetSecret(ctx, certName, "", nil)
 	require.NoError(t, err)

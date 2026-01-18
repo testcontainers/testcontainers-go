@@ -38,8 +38,12 @@ func run() error {
 		return err
 	}
 
-	cred, _ := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
-	secretClient, _ := azsecrets.NewClient(connUrl,
+	cred, err := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
+	if err != nil {
+		log.Fatalf("failed to create credential: %v", err)
+		return err
+	}
+	secretClient, err := azsecrets.NewClient(connUrl,
 		cred,
 		&azsecrets.ClientOptions{ClientOptions: struct {
 			APIVersion                      string
@@ -53,6 +57,10 @@ func run() error {
 			PerCallPolicies                 []policy.Policy
 			PerRetryPolicies                []policy.Policy
 		}{Transport: &httpClient}, DisableChallengeResourceVerification: true})
+	if err != nil {
+		log.Fatalf("failed to create secret client: %v", err)
+		return err
+	}
 
 	secretName := "secret-name"
 	secretValue := "a secret value"

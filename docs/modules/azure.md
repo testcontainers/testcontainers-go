@@ -397,9 +397,9 @@ and is made available using the host address.
 
 To use prepare the container for running in a network, and making it accessible from other containers in the network, you can use the 
 `WithNetworkAlias` option. In example:
-```go
+```golang
 Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal",
-    lowkeyvalt.WithNetworkAlias("lowkey-vault", aNetwork),
+    lowkeyvault.WithNetworkAlias("lowkey-vault", aNetwork),
 )
 ```
 
@@ -481,7 +481,7 @@ API, and fetch the content of the certificate as a PKCS12 store using the Key Va
 
 #### Use the Secrets API in Network mode
 
-In the following example, we are starting the Lowkey Vault container in Local mode and set the parameters of a go client
+In the following example, we are starting the Lowkey Vault container in Network mode and set the parameters of a Go client
 container which will be used to connect to the Key Vault API of the Lowkey Vault container in Network mode.
 
 <!--codeinclude-->
