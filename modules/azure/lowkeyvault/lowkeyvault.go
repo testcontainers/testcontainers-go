@@ -3,11 +3,13 @@ package lowkeyvault
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
 
 	"github.com/docker/go-connections/nat"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -20,14 +22,14 @@ const (
 )
 
 const (
-	// defaultApiPort is the default port used by for the Lowkey Vault Key Vault API endpoints
-	defaultApiPort nat.Port = "8443/tcp"
+	// defaultAPIPort is the default port used by for the Lowkey Vault Key Vault API endpoints
+	defaultAPIPort nat.Port = "8443/tcp"
 	// defaultMetadataPort is the default port used for the Lowkey Vault Metadata endpoints
 	defaultMetadataPort nat.Port = "8080/tcp"
 )
 
-// LowkeyVaultContainer represents the Lowkey Vault container type used in the module
-type LowkeyVaultContainer struct {
+// Container represents the Lowkey Vault container type used in the module
+type Container struct {
 	testcontainers.Container
 }
 
@@ -49,10 +51,10 @@ func WithNetworkAlias(alias string, forNetwork *testcontainers.DockerNetwork) te
 }
 
 // Run creates an instance of the Lowkey Vault container type
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*LowkeyVaultContainer, error) {
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	// Initialize with module defaults
 	moduleOpts := []testcontainers.ContainerCustomizer{
-		testcontainers.WithExposedPorts(defaultApiPort.Port(), defaultMetadataPort.Port()),
+		testcontainers.WithExposedPorts(defaultAPIPort.Port(), defaultMetadataPort.Port()),
 		testcontainers.WithEnv(map[string]string{
 			"LOWKEY_VAULT_RELAXED_PORTS": "true",
 		}),
@@ -65,9 +67,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts = append(moduleOpts, opts...)
 
 	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
-	var c *LowkeyVaultContainer
+	var c *Container
 	if ctr != nil {
-		c = &LowkeyVaultContainer{Container: ctr}
+		c = &Container{Container: ctr}
 	}
 
 	if err != nil {
@@ -77,26 +79,26 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
-// PrepareClientForSelfSignedCert prepares a client which will accept insecure (self-signed) certificates.
-func (c *LowkeyVaultContainer) PrepareClientForSelfSignedCert() http.Client {
+// Client prepares a client which will accept insecure (self-signed) certificates.
+func (c *Container) Client() http.Client {
 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
 	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	return http.Client{Transport: customTransport}
 }
 
-// ConnectionUrl returns the connection URL for the Lowkey Vault API based on the provided access mode.
-func (c *LowkeyVaultContainer) ConnectionUrl(ctx context.Context, accessMode int) (string, error) {
-	hostAuthority, err := c._MappedHostAuthority(ctx, defaultApiPort, accessMode)
+// ConnectionURL returns the connection URL for the Lowkey Vault API based on the provided access mode.
+func (c *Container) ConnectionURL(ctx context.Context, accessMode int) (string, error) {
+	hostAuthority, err := c.mappedHostAuthority(ctx, defaultAPIPort, accessMode)
 	if err != nil {
 		return "", fmt.Errorf("host authority: %w", err)
 	}
 
-	return fmt.Sprintf("https://%s", hostAuthority), nil
+	return "https://" + hostAuthority, nil
 }
 
-// TokenUrl returns the connection URL for the Lowkey Vault token endpoint based on the provided access mode.
-func (c *LowkeyVaultContainer) TokenUrl(ctx context.Context, accessMode int) (string, error) {
-	hostAuthority, err := c._MappedHostAuthority(ctx, defaultMetadataPort, accessMode)
+// TokenURL returns the connection URL for the Lowkey Vault token endpoint based on the provided access mode.
+func (c *Container) TokenURL(ctx context.Context, accessMode int) (string, error) {
+	hostAuthority, err := c.mappedHostAuthority(ctx, defaultMetadataPort, accessMode)
 	if err != nil {
 		return "", fmt.Errorf("host authority: %w", err)
 	}
@@ -105,12 +107,12 @@ func (c *LowkeyVaultContainer) TokenUrl(ctx context.Context, accessMode int) (st
 
 // SetManagedIdentityEnvVariables sets the environment variables required for managed identity authentication.
 // This works only with local access mode
-func (c *LowkeyVaultContainer) SetManagedIdentityEnvVariables(ctx context.Context) error {
-	tokenUrl, err := c.TokenUrl(ctx, Local)
+func (c *Container) SetManagedIdentityEnvVariables(ctx context.Context) error {
+	tokenURL, err := c.TokenURL(ctx, Local)
 	if err != nil {
 		return fmt.Errorf("token url: %w", err)
 	}
-	err = os.Setenv("IDENTITY_ENDPOINT", tokenUrl)
+	err = os.Setenv("IDENTITY_ENDPOINT", tokenURL)
 	if err != nil {
 		return fmt.Errorf("set env IDENTITY_ENDPOINT: %w", err)
 	}
@@ -121,7 +123,7 @@ func (c *LowkeyVaultContainer) SetManagedIdentityEnvVariables(ctx context.Contex
 	return nil
 }
 
-func (c *LowkeyVaultContainer) _MappedHostAuthority(ctx context.Context, exposedPort nat.Port, accessMode int) (string, error) {
+func (c *Container) mappedHostAuthority(ctx context.Context, exposedPort nat.Port, accessMode int) (string, error) {
 	switch accessMode {
 	case Local:
 		host, err := c.Host(ctx)
@@ -146,7 +148,7 @@ func (c *LowkeyVaultContainer) _MappedHostAuthority(ctx context.Context, exposed
 			return "", fmt.Errorf("network aliases: %w", err)
 		}
 		if len(hosts) == 0 {
-			return "", fmt.Errorf("no network aliases found in the Lowkey Vault container")
+			return "", errors.New("no network aliases found in the Lowkey Vault container")
 		}
 		aliases := hosts[networks[0]]
 		if len(aliases) != 1 {
@@ -157,5 +159,4 @@ func (c *LowkeyVaultContainer) _MappedHostAuthority(ctx context.Context, exposed
 	default:
 		return "", fmt.Errorf("unsupported access mode: %d", accessMode)
 	}
-
 }

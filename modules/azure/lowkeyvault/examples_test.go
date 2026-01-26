@@ -16,11 +16,12 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azcertificates"
 	"github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azkeys"
 	"github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets"
+	"software.sslmate.com/src/go-pkcs12"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/azure/lowkeyvault"
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"software.sslmate.com/src/go-pkcs12"
 )
 
 func ExampleRun() {
@@ -29,17 +30,17 @@ func ExampleRun() {
 	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal")
 	defer func() {
 		if err := testcontainers.TerminateContainer(lowkeyVaultContainer); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
 	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
+		log.Printf("failed to start container: %s", err)
 		return
 	}
 
 	state, err := lowkeyVaultContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err)
+		log.Printf("failed to get container state: %s", err)
 		return
 	}
 
@@ -56,12 +57,12 @@ func ExampleRun_secretOperationsNetwork() {
 	defer func() {
 		err := aNetwork.Remove(ctx)
 		if err != nil {
-			log.Fatalf("failed to remove network: %s", err)
+			log.Printf("failed to remove network: %s", err)
 			return
 		}
 	}()
 	if err != nil {
-		log.Fatalf("failed to setup network: %s", err)
+		log.Printf("failed to setup network: %s", err)
 		return
 	}
 
@@ -71,25 +72,25 @@ func ExampleRun_secretOperationsNetwork() {
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(lowkeyVaultContainer); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
 	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
+		log.Printf("failed to start container: %s", err)
 		return
 	}
 	// }
 
 	// obtainEndpointUrls {
-	connUrl, err := lowkeyVaultContainer.ConnectionUrl(ctx, lowkeyvault.Network)
+	connURL, err := lowkeyVaultContainer.ConnectionURL(ctx, lowkeyvault.Network)
 	if err != nil {
-		log.Fatalf("failed to get connection url: %s", err)
+		log.Printf("failed to get connection url: %s", err)
 		return
 	}
 
-	tokenUrl, err := lowkeyVaultContainer.TokenUrl(ctx, lowkeyvault.Network)
+	tokenURL, err := lowkeyVaultContainer.TokenURL(ctx, lowkeyvault.Network)
 	if err != nil {
-		log.Fatalf("failed to get token url: %s", err)
+		log.Printf("failed to get token url: %s", err)
 		return
 	}
 	// }
@@ -103,9 +104,9 @@ func ExampleRun_secretOperationsNetwork() {
 			}),
 		// configureClient {
 		testcontainers.WithEnv(map[string]string{
-			"IDENTITY_ENDPOINT": tokenUrl,
+			"IDENTITY_ENDPOINT": tokenURL,
 			"IDENTITY_HEADER":   "header",
-			"CONNECTION_URL":    connUrl,
+			"CONNECTION_URL":    connURL,
 		}),
 		// }
 		network.WithNetwork(nil, aNetwork),
@@ -115,16 +116,16 @@ func ExampleRun_secretOperationsNetwork() {
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(networkContainer); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
 	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
+		log.Printf("failed to start container: %s", err)
 		return
 	}
 	state, err := networkContainer.State(ctx)
 	if err != nil {
-		log.Fatalf("failed to get container state: %s", err)
+		log.Printf("failed to get container state: %s", err)
 		return
 	}
 
@@ -137,40 +138,40 @@ func ExampleRun_secretOperationsNetwork() {
 func ExampleRun_secretOperations() {
 	ctx := context.Background()
 
-	// createContainer {
+	// createContainerWithLocalMode {
 	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal")
 	defer func() {
 		if err := testcontainers.TerminateContainer(lowkeyVaultContainer); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
 	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
+		log.Printf("failed to start container: %s", err)
 		return
 	}
 	// }
 
 	// prepareTheSecretClient {
-	connUrl, err := lowkeyVaultContainer.ConnectionUrl(ctx, lowkeyvault.Local)
+	connURL, err := lowkeyVaultContainer.ConnectionURL(ctx, lowkeyvault.Local)
 	if err != nil {
-		log.Fatalf("failed to get connection url: %s", err)
+		log.Printf("failed to get connection url: %s", err)
 		return
 	}
 
 	err = lowkeyVaultContainer.SetManagedIdentityEnvVariables(ctx)
 	if err != nil {
-		log.Fatalf("failed to set managed identity variables: %s", err)
+		log.Printf("failed to set managed identity variables: %s", err)
 		return
 	}
 
-	httpClient := lowkeyVaultContainer.PrepareClientForSelfSignedCert()
+	httpClient := lowkeyVaultContainer.Client()
 
 	cred, err := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
 	if err != nil {
-		log.Fatalf("failed to create credential: %v", err)
+		log.Printf("failed to create credential: %v", err)
 		return
 	}
-	secretClient, err := azsecrets.NewClient(connUrl,
+	secretClient, err := azsecrets.NewClient(connURL,
 		cred,
 		&azsecrets.ClientOptions{ClientOptions: struct {
 			APIVersion                      string
@@ -185,7 +186,7 @@ func ExampleRun_secretOperations() {
 			PerRetryPolicies                []policy.Policy
 		}{Transport: &httpClient}, DisableChallengeResourceVerification: true})
 	if err != nil {
-		log.Fatalf("failed to create secret client: %v", err)
+		log.Printf("failed to create secret client: %v", err)
 		return
 	}
 	// }
@@ -195,14 +196,14 @@ func ExampleRun_secretOperations() {
 	secretValue := "a secret value"
 	created, err := secretClient.SetSecret(ctx, secretName, azsecrets.SetSecretParameters{Value: &secretValue}, nil)
 	if err != nil {
-		log.Fatalf("failed to set the secret %s", err.Error())
+		log.Printf("failed to set the secret %s", err.Error())
 	}
 
 	fetched, err := secretClient.GetSecret(ctx, secretName, created.ID.Version(), nil)
 	if err != nil {
-		log.Fatalf("failed to get the secret %s", err.Error())
+		log.Printf("failed to get the secret %s", err.Error())
 	}
-	fetchedValue := *fetched.Secret.Value
+	fetchedValue := *fetched.Value
 	// }
 
 	fmt.Println(fetchedValue == secretValue)
@@ -217,35 +218,35 @@ func ExampleRun_keyOperations() {
 	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal")
 	defer func() {
 		if err := testcontainers.TerminateContainer(lowkeyVaultContainer); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
 	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
+		log.Printf("failed to start container: %s", err)
 		return
 	}
 
 	// prepareTheKeyClient {
-	connUrl, err := lowkeyVaultContainer.ConnectionUrl(ctx, lowkeyvault.Local)
+	connURL, err := lowkeyVaultContainer.ConnectionURL(ctx, lowkeyvault.Local)
 	if err != nil {
-		log.Fatalf("failed to get connection url: %s", err)
+		log.Printf("failed to get connection url: %s", err)
 		return
 	}
 
 	err = lowkeyVaultContainer.SetManagedIdentityEnvVariables(ctx)
 	if err != nil {
-		log.Fatalf("failed to set managed identity variables: %s", err)
+		log.Printf("failed to set managed identity variables: %s", err)
 		return
 	}
 
-	httpClient := lowkeyVaultContainer.PrepareClientForSelfSignedCert()
+	httpClient := lowkeyVaultContainer.Client()
 
 	cred, err := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
 	if err != nil {
-		log.Fatalf("failed to create credential: %v", err)
+		log.Printf("failed to create credential: %v", err)
 		return
 	}
-	keyClient, err := azkeys.NewClient(connUrl,
+	keyClient, err := azkeys.NewClient(connURL,
 		cred,
 		&azkeys.ClientOptions{ClientOptions: struct {
 			APIVersion                      string
@@ -260,7 +261,7 @@ func ExampleRun_keyOperations() {
 			PerRetryPolicies                []policy.Policy
 		}{Transport: &httpClient}, DisableChallengeResourceVerification: true})
 	if err != nil {
-		log.Fatalf("failed to create key client: %v", err)
+		log.Printf("failed to create key client: %v", err)
 		return
 	}
 	// }
@@ -279,7 +280,7 @@ func ExampleRun_keyOperations() {
 	}
 	createdKey, err := keyClient.CreateKey(ctx, keyName, rsaKeyParams, nil)
 	if err != nil {
-		log.Fatalf("failed to create a key: %v", err)
+		log.Printf("failed to create a key: %v", err)
 	}
 	// }
 
@@ -287,10 +288,11 @@ func ExampleRun_keyOperations() {
 	secretMessage := "a secret message"
 	encryptionParameters := azkeys.KeyOperationParameters{
 		Value:     []byte(secretMessage),
-		Algorithm: to.Ptr(azkeys.EncryptionAlgorithmRSAOAEP256)}
+		Algorithm: to.Ptr(azkeys.EncryptionAlgorithmRSAOAEP256),
+	}
 	encrResp, err := keyClient.Encrypt(ctx, keyName, createdKey.Key.KID.Version(), encryptionParameters, nil)
 	if err != nil {
-		log.Fatalf("failed to encrypt a message: %v", err)
+		log.Printf("failed to encrypt a message: %v", err)
 	}
 	cipherText := encrResp.Result
 	// }
@@ -298,10 +300,11 @@ func ExampleRun_keyOperations() {
 	// decryptCipherText {
 	decryptionParameters := azkeys.KeyOperationParameters{
 		Value:     cipherText,
-		Algorithm: to.Ptr(azkeys.EncryptionAlgorithmRSAOAEP256)}
+		Algorithm: to.Ptr(azkeys.EncryptionAlgorithmRSAOAEP256),
+	}
 	decrResp, err := keyClient.Decrypt(ctx, keyName, createdKey.Key.KID.Version(), decryptionParameters, nil)
 	if err != nil {
-		log.Fatalf("failed to encrypt a message: %v", err)
+		log.Printf("failed to encrypt a message: %v", err)
 	}
 	decryptedMessage := string(decrResp.Result)
 	// }
@@ -318,35 +321,35 @@ func ExampleRun_certificateOperations() {
 	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal")
 	defer func() {
 		if err := testcontainers.TerminateContainer(lowkeyVaultContainer); err != nil {
-			log.Fatalf("failed to terminate container: %s", err)
+			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
 	if err != nil {
-		log.Fatalf("failed to start container: %s", err)
+		log.Printf("failed to start container: %s", err)
 		return
 	}
 
 	// prepareTheCertClient {
-	connUrl, err := lowkeyVaultContainer.ConnectionUrl(ctx, lowkeyvault.Local)
+	connURL, err := lowkeyVaultContainer.ConnectionURL(ctx, lowkeyvault.Local)
 	if err != nil {
-		log.Fatalf("failed to get connection url: %s", err)
+		log.Printf("failed to get connection url: %s", err)
 		return
 	}
 
 	err = lowkeyVaultContainer.SetManagedIdentityEnvVariables(ctx)
 	if err != nil {
-		log.Fatalf("failed to set managed identity variables: %s", err)
+		log.Printf("failed to set managed identity variables: %s", err)
 		return
 	}
 
-	httpClient := lowkeyVaultContainer.PrepareClientForSelfSignedCert()
+	httpClient := lowkeyVaultContainer.Client()
 
 	cred, err := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
 	if err != nil {
-		log.Fatalf("failed to create credential: %v", err)
+		log.Printf("failed to create credential: %v", err)
 		return
 	}
-	certClient, err := azcertificates.NewClient(connUrl,
+	certClient, err := azcertificates.NewClient(connURL,
 		cred,
 		&azcertificates.ClientOptions{ClientOptions: struct {
 			APIVersion                      string
@@ -361,7 +364,7 @@ func ExampleRun_certificateOperations() {
 			PerRetryPolicies                []policy.Policy
 		}{Transport: &httpClient}, DisableChallengeResourceVerification: true})
 	if err != nil {
-		log.Fatalf("failed to create certificate client: %v", err)
+		log.Printf("failed to create certificate client: %v", err)
 		return
 	}
 	// }
@@ -392,11 +395,11 @@ func ExampleRun_certificateOperations() {
 		},
 	}, nil)
 	if err != nil {
-		log.Fatalf("failed to create a certificate: %v", err)
+		log.Printf("failed to create a certificate: %v", err)
 	}
 	// }
 
-	secretClient, err := azsecrets.NewClient(connUrl,
+	secretClient, err := azsecrets.NewClient(connURL,
 		cred,
 		&azsecrets.ClientOptions{ClientOptions: struct {
 			APIVersion                      string
@@ -411,27 +414,27 @@ func ExampleRun_certificateOperations() {
 			PerRetryPolicies                []policy.Policy
 		}{Transport: &httpClient}, DisableChallengeResourceVerification: true})
 	if err != nil {
-		log.Fatalf("failed to create secret client: %v", err)
+		log.Printf("failed to create secret client: %v", err)
 		return
 	}
 
 	// fetchCertDetails {
 	base64Secret, err := secretClient.GetSecret(ctx, certName, "", nil)
 	if err != nil {
-		log.Fatalf("failed to get the secret with certificate store: %v", err)
+		log.Printf("failed to get the secret with certificate store: %v", err)
 		return
 	}
-	base64Value := *base64Secret.Secret.Value
+	base64Value := *base64Secret.Value
 	bytes, err := base64.StdEncoding.DecodeString(base64Value)
 	if err != nil {
-		log.Fatalf("failed to decode the certificate store: %v", err)
+		log.Printf("failed to decode the certificate store: %v", err)
 		return
 	}
 	// use SSLMate library to decode the certificate store as the x/crypto
 	// library is not fully compatible with the Java PKCS12 format
 	key, cert, err := pkcs12.Decode(bytes, "")
 	if err != nil {
-		log.Fatalf("failed to open certificate store: %v", err)
+		log.Printf("failed to open certificate store: %v", err)
 		return
 	}
 	ecKey := key.(*ecdsa.PrivateKey)

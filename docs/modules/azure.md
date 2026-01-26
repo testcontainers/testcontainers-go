@@ -359,7 +359,7 @@ Returns the connection string to connect to the CosmosDB container and an error,
 
 ### Run function
 
-- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 The Lowkey Vault module exposes one entrypoint function to create the Lowkey Vault container, and this function receives three parameters:
 
@@ -385,7 +385,7 @@ container can be configured in two ways:
 
 #### Local mode
 
-- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 The default mode is to run the Key Vault container on localhost, meaning that both the Key Vault API and the metadata endpoints are 
 exposed using random host ports, and the container is accessible only from the host machine. The default vault is automatically created 
@@ -393,7 +393,7 @@ and is made available using the host address.
 
 #### Network mode
 
-- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 To prepare the container for running in a network and making it accessible from other containers in the network, you can use the 
 `WithNetworkAlias` option. For example:
@@ -407,17 +407,17 @@ Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal",
 
 The Lowkey Vault container exposes the following methods:
 
-#### ConnectionUrl
+#### ConnectionURL
 
-- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 Returns the connection URL to connect to the Key Vault API of the Lowkey Vault container and an error, passing the Go context and an 
 `accessMode` as parameters. The access mode can be either `lowkeyvault.Local` or `lowkeyvault.Network` depending on the mode you wish
 to use to connect to the Key Vault API.
 
-#### TokenUrl
+#### TokenURL
 
-- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 Returns the URL pointing to the token endpoint of the Lowkey Vault container and an error, passing the Go context and an `accessMode` 
 as parameters. The access mode can be either `lowkeyvault.Local` or `lowkeyvault.Network` depending on the mode you wish
@@ -425,7 +425,7 @@ to use to access the token endpoint.
 
 #### SetManagedIdentityEnvVariables
 
-- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 Can return an error, passing the Go context as the only parameter. This method conveniently sets the environment variables required 
 to use managed identities with the Lowkey Vault container. When using the Azure Key Vault SDK for Go, you can authenticate with 
@@ -434,9 +434,9 @@ we need to set two environment variables, `IDENTITY_ENDPOINT` and `IDENTITY_HEAD
 In case the client is running on the host, i.e., we are running the Lowkey Vault container in Local mode, this method can set both 
 environment variables automatically.
 
-#### PrepareClientForSelfSignedCert
+#### Client
 
-- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 Returns a `http.Client` and requires no parameters. This method can be used to prepare a `http.Client` for connecting to the Key Vault API 
 of the Lowkey Vault container using a self-signed certificate. This is necessary since the Lowkey Vault container uses a self-signed 
@@ -449,7 +449,7 @@ certificate by default.
 In the following example, we are starting the Lowkey Vault container in Local mode, set a secret and retrieve it using the Key Vault Secrets API.
 
 <!--codeinclude-->
-[Run Lowkey Vault Container in Local mode](../../modules/azure/lowkeyvault/examples_test.go) inside_block:createContainer
+[Run Lowkey Vault Container in Local mode](../../modules/azure/lowkeyvault/examples_test.go) inside_block:createContainerWithLocalMode
 [Create Client](../../modules/azure/lowkeyvault/examples_test.go) inside_block:prepareTheSecretClient
 [Set and get a secret](../../modules/azure/lowkeyvault/examples_test.go) inside_block:setAndFetchTheSecret
 <!--/codeinclude-->
@@ -459,7 +459,7 @@ In the following example, we are starting the Lowkey Vault container in Local mo
 In the following example, we are starting the Lowkey Vault container in Local mode, create a key and encrypt and decrypt a message with it.
 
 <!--codeinclude-->
-[Run Lowkey Vault Container in Local mode](../../modules/azure/lowkeyvault/examples_test.go) inside_block:createContainer
+[Run Lowkey Vault Container in Local mode](../../modules/azure/lowkeyvault/examples_test.go) inside_block:createContainerWithLocalMode
 [Create Client](../../modules/azure/lowkeyvault/examples_test.go) inside_block:prepareTheKeyClient
 [Create a key](../../modules/azure/lowkeyvault/examples_test.go) inside_block:createKey
 [Encrypt a message with the key](../../modules/azure/lowkeyvault/examples_test.go) inside_block:encryptMessage
@@ -472,7 +472,7 @@ In the following example, we are starting the Lowkey Vault container in Local mo
 API, and fetch the content of the certificate as a PKCS12 store using the Key Vault Secrets API.
 
 <!--codeinclude-->
-[Run Lowkey Vault Container in Local mode](../../modules/azure/lowkeyvault/examples_test.go) inside_block:createContainer
+[Run Lowkey Vault Container in Local mode](../../modules/azure/lowkeyvault/examples_test.go) inside_block:createContainerWithLocalMode
 [Create Certificate Client](../../modules/azure/lowkeyvault/examples_test.go) inside_block:prepareTheCertClient
 [Create a certificate](../../modules/azure/lowkeyvault/examples_test.go) inside_block:createCertificate
 [Create Secret Client](../../modules/azure/lowkeyvault/examples_test.go) inside_block:prepareTheSecretClient

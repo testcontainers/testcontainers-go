@@ -16,11 +16,12 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azkeys"
 	"github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets"
 	"github.com/stretchr/testify/require"
+	"software.sslmate.com/src/go-pkcs12"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/azure/lowkeyvault"
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"software.sslmate.com/src/go-pkcs12"
 )
 
 func TestRun(t *testing.T) {
@@ -49,13 +50,13 @@ func TestRun_secretOperationsNetwork(t *testing.T) {
 	testcontainers.CleanupContainer(t, lowkeyVaultContainer)
 	require.NoError(t, err)
 
-	connUrl, err := lowkeyVaultContainer.ConnectionUrl(ctx, lowkeyvault.Network)
+	connURL, err := lowkeyVaultContainer.ConnectionURL(ctx, lowkeyvault.Network)
 	require.NoError(t, err)
-	require.NotNil(t, connUrl)
+	require.NotNil(t, connURL)
 
-	tokenUrl, err := lowkeyVaultContainer.TokenUrl(ctx, lowkeyvault.Network)
+	tokenURL, err := lowkeyVaultContainer.TokenURL(ctx, lowkeyvault.Network)
 	require.NoError(t, err)
-	require.NotNil(t, tokenUrl)
+	require.NotNil(t, tokenURL)
 
 	networkContainer, err := testcontainers.Run(ctx, "",
 		testcontainers.WithDockerfile(
@@ -65,9 +66,9 @@ func TestRun_secretOperationsNetwork(t *testing.T) {
 				KeepImage:  false,
 			}),
 		testcontainers.WithEnv(map[string]string{
-			"IDENTITY_ENDPOINT": tokenUrl,
+			"IDENTITY_ENDPOINT": tokenURL,
 			"IDENTITY_HEADER":   "header",
-			"CONNECTION_URL":    connUrl,
+			"CONNECTION_URL":    connURL,
 		}),
 		network.WithNetwork(nil, aNetwork),
 		testcontainers.WithWaitStrategy(
@@ -90,18 +91,18 @@ func TestRun_secretOperations(t *testing.T) {
 	testcontainers.CleanupContainer(t, lowkeyVaultContainer)
 	require.NoError(t, err)
 
-	connUrl, err := lowkeyVaultContainer.ConnectionUrl(ctx, lowkeyvault.Local)
+	connURL, err := lowkeyVaultContainer.ConnectionURL(ctx, lowkeyvault.Local)
 	require.NoError(t, err)
-	require.NotNil(t, connUrl)
+	require.NotNil(t, connURL)
 
 	err = lowkeyVaultContainer.SetManagedIdentityEnvVariables(ctx)
 	require.NoError(t, err)
 
-	httpClient := lowkeyVaultContainer.PrepareClientForSelfSignedCert()
+	httpClient := lowkeyVaultContainer.Client()
 
 	cred, err := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
 	require.NoError(t, err)
-	secretClient, err := azsecrets.NewClient(connUrl,
+	secretClient, err := azsecrets.NewClient(connURL,
 		cred,
 		&azsecrets.ClientOptions{ClientOptions: struct {
 			APIVersion                      string
@@ -126,7 +127,7 @@ func TestRun_secretOperations(t *testing.T) {
 	fetched, err := secretClient.GetSecret(ctx, secretName, created.ID.Version(), nil)
 	require.NoError(t, err)
 	require.NotNil(t, fetched)
-	fetchedValue := *fetched.Secret.Value
+	fetchedValue := *fetched.Value
 
 	require.Equal(t, secretValue, fetchedValue)
 }
@@ -138,18 +139,18 @@ func TestRun_keyOperations(t *testing.T) {
 	testcontainers.CleanupContainer(t, lowkeyVaultContainer)
 	require.NoError(t, err)
 
-	connUrl, err := lowkeyVaultContainer.ConnectionUrl(ctx, lowkeyvault.Local)
+	connURL, err := lowkeyVaultContainer.ConnectionURL(ctx, lowkeyvault.Local)
 	require.NoError(t, err)
-	require.NotNil(t, connUrl)
+	require.NotNil(t, connURL)
 
 	err = lowkeyVaultContainer.SetManagedIdentityEnvVariables(ctx)
 	require.NoError(t, err)
 
-	httpClient := lowkeyVaultContainer.PrepareClientForSelfSignedCert()
+	httpClient := lowkeyVaultContainer.Client()
 
 	cred, err := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
 	require.NoError(t, err)
-	keyClient, err := azkeys.NewClient(connUrl,
+	keyClient, err := azkeys.NewClient(connURL,
 		cred,
 		&azkeys.ClientOptions{ClientOptions: struct {
 			APIVersion                      string
@@ -183,7 +184,8 @@ func TestRun_keyOperations(t *testing.T) {
 	secretMessage := "a secret message"
 	encryptionParameters := azkeys.KeyOperationParameters{
 		Value:     []byte(secretMessage),
-		Algorithm: to.Ptr(azkeys.EncryptionAlgorithmRSAOAEP256)}
+		Algorithm: to.Ptr(azkeys.EncryptionAlgorithmRSAOAEP256),
+	}
 	encrResp, err := keyClient.Encrypt(ctx, keyName, createdKey.Key.KID.Version(), encryptionParameters, nil)
 	require.NoError(t, err)
 	require.NotNil(t, encrResp)
@@ -191,7 +193,8 @@ func TestRun_keyOperations(t *testing.T) {
 
 	decryptionParameters := azkeys.KeyOperationParameters{
 		Value:     cipherText,
-		Algorithm: to.Ptr(azkeys.EncryptionAlgorithmRSAOAEP256)}
+		Algorithm: to.Ptr(azkeys.EncryptionAlgorithmRSAOAEP256),
+	}
 	decrResp, err := keyClient.Decrypt(ctx, keyName, createdKey.Key.KID.Version(), decryptionParameters, nil)
 	require.NoError(t, err)
 	require.NotNil(t, decrResp)
@@ -207,18 +210,18 @@ func TestRun_certificateOperations(t *testing.T) {
 	testcontainers.CleanupContainer(t, lowkeyVaultContainer)
 	require.NoError(t, err)
 
-	connUrl, err := lowkeyVaultContainer.ConnectionUrl(ctx, lowkeyvault.Local)
+	connURL, err := lowkeyVaultContainer.ConnectionURL(ctx, lowkeyvault.Local)
 	require.NoError(t, err)
-	require.NotNil(t, connUrl)
+	require.NotNil(t, connURL)
 
 	err = lowkeyVaultContainer.SetManagedIdentityEnvVariables(ctx)
 	require.NoError(t, err)
 
-	httpClient := lowkeyVaultContainer.PrepareClientForSelfSignedCert()
+	httpClient := lowkeyVaultContainer.Client()
 
 	cred, err := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
 	require.NoError(t, err)
-	certClient, err := azcertificates.NewClient(connUrl,
+	certClient, err := azcertificates.NewClient(connURL,
 		cred,
 		&azcertificates.ClientOptions{ClientOptions: struct {
 			APIVersion                      string
@@ -261,7 +264,7 @@ func TestRun_certificateOperations(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, created)
 
-	secretClient, err := azsecrets.NewClient(connUrl,
+	secretClient, err := azsecrets.NewClient(connURL,
 		cred,
 		&azsecrets.ClientOptions{ClientOptions: struct {
 			APIVersion                      string
@@ -280,7 +283,7 @@ func TestRun_certificateOperations(t *testing.T) {
 	base64Secret, err := secretClient.GetSecret(ctx, certName, "", nil)
 	require.NoError(t, err)
 	require.NotNil(t, base64Secret)
-	base64Value := *base64Secret.Secret.Value
+	base64Value := *base64Secret.Value
 	bytes, err := base64.StdEncoding.DecodeString(base64Value)
 	require.NoError(t, err)
 	// use SSLMate library to decode the certificate store as the x/crypto
