@@ -308,7 +308,8 @@ func ExampleRun_keyOperations() {
 	}
 	decrResp, err := keyClient.Decrypt(ctx, keyName, createdKey.Key.KID.Version(), decryptionParameters, nil)
 	if err != nil {
-		log.Printf("failed to encrypt a message: %v", err)
+		log.Printf("failed to decrypt a message: %v", err)
+		return
 	}
 	decryptedMessage := string(decrResp.Result)
 	// }
