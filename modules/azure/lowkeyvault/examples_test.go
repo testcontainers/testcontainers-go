@@ -197,11 +197,13 @@ func ExampleRun_secretOperations() {
 	created, err := secretClient.SetSecret(ctx, secretName, azsecrets.SetSecretParameters{Value: &secretValue}, nil)
 	if err != nil {
 		log.Printf("failed to set the secret %s", err.Error())
+		return
 	}
 
 	fetched, err := secretClient.GetSecret(ctx, secretName, created.ID.Version(), nil)
 	if err != nil {
 		log.Printf("failed to get the secret %s", err.Error())
+		return
 	}
 	fetchedValue := *fetched.Value
 	// }
@@ -281,6 +283,7 @@ func ExampleRun_keyOperations() {
 	createdKey, err := keyClient.CreateKey(ctx, keyName, rsaKeyParams, nil)
 	if err != nil {
 		log.Printf("failed to create a key: %v", err)
+		return
 	}
 	// }
 
@@ -293,6 +296,7 @@ func ExampleRun_keyOperations() {
 	encrResp, err := keyClient.Encrypt(ctx, keyName, createdKey.Key.KID.Version(), encryptionParameters, nil)
 	if err != nil {
 		log.Printf("failed to encrypt a message: %v", err)
+		return
 	}
 	cipherText := encrResp.Result
 	// }
@@ -396,6 +400,7 @@ func ExampleRun_certificateOperations() {
 	}, nil)
 	if err != nil {
 		log.Printf("failed to create a certificate: %v", err)
+		return
 	}
 	// }
 
@@ -437,7 +442,11 @@ func ExampleRun_certificateOperations() {
 		log.Printf("failed to open certificate store: %v", err)
 		return
 	}
-	ecKey := key.(*ecdsa.PrivateKey)
+	ecKey, ok := key.(*ecdsa.PrivateKey)
+	if !ok {
+		log.Printf("unexpected key type: %T", key)
+		return
+	}
 	// }
 
 	fmt.Println(cert.Subject.String() == subject && ecKey.Curve == elliptic.P256())
