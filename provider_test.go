@@ -107,7 +107,7 @@ func TestProviderTypeGetUnderlyingProviderType(t *testing.T) {
 				err := os.WriteFile(
 					filepath.Join(tmpDir, ".testcontainers.properties"),
 					[]byte(tt.propertiesFile),
-					0600,
+					0o600,
 				)
 				require.NoError(t, err, "Failed to create properties file")
 			}
