@@ -16,7 +16,7 @@ type ChromaContainer struct {
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Chroma container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ChromaContainer, error) {
-	return Run(ctx, "chromadb/chroma:0.4.24", opts...)
+	return Run(ctx, "chromadb/chroma:1.4.0", opts...)
 }
 
 // Run creates an instance of the Chroma container type
@@ -25,8 +25,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithExposedPorts("8000/tcp"),
 		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort("8000/tcp"),
-			wait.ForLog("Application startup complete"),
-			wait.ForHTTP("/api/v1/heartbeat").WithStatusCodeMatcher(func(status int) bool {
+			wait.ForHTTP("/api/v2/heartbeat").WithStatusCodeMatcher(func(status int) bool {
 				return status == 200
 			}),
 		),
