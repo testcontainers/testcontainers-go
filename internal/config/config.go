@@ -133,7 +133,7 @@ func read() Config {
 		sessionID := os.Getenv("TESTCONTAINERS_SESSION_ID")
 		if sessionID != "" {
 			config.SessionID = sessionID
-		} else if config.SessionID == "" {
+		} else {
 			config.SessionID = bootstrap.SessionID()
 		}
 
