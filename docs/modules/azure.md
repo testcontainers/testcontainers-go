@@ -364,7 +364,7 @@ Returns the connection string to connect to the CosmosDB container and an error,
 The Lowkey Vault module exposes one entrypoint function to create the Lowkey Vault container, and this function receives three parameters:
 
 ```golang
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*LowkeyVaultContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)
 ```
 
 - `context.Context`, the Go context.
