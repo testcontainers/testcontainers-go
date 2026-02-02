@@ -415,24 +415,23 @@ Returns the connection URL to connect to the Key Vault API of the Lowkey Vault c
 `accessMode` as parameters. The access mode can be either `lowkeyvault.Local` or `lowkeyvault.Network` depending on the mode you wish
 to use to connect to the Key Vault API.
 
-#### TokenURL
+#### IdentityEndpoint
 
 - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 Returns the URL pointing to the token endpoint of the Lowkey Vault container and an error, passing the Go context and an `accessMode` 
-as parameters. The access mode can be either `lowkeyvault.Local` or `lowkeyvault.Network` depending on the mode you wish
-to use to access the token endpoint.
+as parameters. The access mode can be either `lowkeyvault.Local` or `lowkeyvault.Network` depending on the mode you wish to use to 
+access the token endpoint. This can be set as the value of the `IDENTITY_ENDPOINT` environment variable without modification on the  
+machine which will connect to the Lowkey Vault container. When using the Azure Key Vault SDK for Go, this will let you authenticate 
+with managed identities by using the `azidentity.NewDefaultAzureCredential(nil)` as a credential.
 
-#### SetManagedIdentityEnvVariables
+#### IdentityHeader
 
 - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-Can return an error, passing the Go context as the only parameter. This method conveniently sets the environment variables required 
-to use managed identities with the Lowkey Vault container. When using the Azure Key Vault SDK for Go, you can authenticate with 
-managed identities by using the `azidentity.NewDefaultAzureCredential(nil)` as a credential. In order for this authentication to work,
-we need to set two environment variables, `IDENTITY_ENDPOINT` and `IDENTITY_HEADER` on the machine where the client code is running.
-In case the client is running on the host, i.e., we are running the Lowkey Vault container in Local mode, this method can set both 
-environment variables automatically.
+Can return the string which must be set as the value of the `IDENTITY_HEADER` environment variable without modification on the  
+machine which will connect to the Lowkey Vault container. When using the Azure Key Vault SDK for Go, this will let you authenticate
+with managed identities by using the `azidentity.NewDefaultAzureCredential(nil)` as a credential.
 
 #### Client
 

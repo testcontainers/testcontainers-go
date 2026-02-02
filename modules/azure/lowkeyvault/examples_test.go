@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
@@ -88,7 +89,7 @@ func ExampleRun_secretOperationsNetwork() {
 		return
 	}
 
-	tokenURL, err := lowkeyVaultContainer.TokenURL(ctx, lowkeyvault.Network)
+	identityEndpoint, err := lowkeyVaultContainer.IdentityEndpoint(ctx, lowkeyvault.Network)
 	if err != nil {
 		log.Printf("failed to get token url: %s", err)
 		return
@@ -104,8 +105,8 @@ func ExampleRun_secretOperationsNetwork() {
 			}),
 		// configureClient {
 		testcontainers.WithEnv(map[string]string{
-			"IDENTITY_ENDPOINT": tokenURL,
-			"IDENTITY_HEADER":   "header",
+			"IDENTITY_ENDPOINT": identityEndpoint,
+			"IDENTITY_HEADER":   lowkeyVaultContainer.IdentityHeader(ctx),
 			"CONNECTION_URL":    connURL,
 		}),
 		// }
@@ -158,9 +159,19 @@ func ExampleRun_secretOperations() {
 		return
 	}
 
-	err = lowkeyVaultContainer.SetManagedIdentityEnvVariables(ctx)
+	identityEndpoint, err := lowkeyVaultContainer.IdentityEndpoint(ctx, lowkeyvault.Local)
 	if err != nil {
-		log.Printf("failed to set managed identity variables: %s", err)
+		log.Printf("failed to get identity endpoint: %s", err)
+		return
+	}
+	err = os.Setenv("IDENTITY_ENDPOINT", identityEndpoint)
+	if err != nil {
+		log.Printf("failed to set managed identity endpoint variable: %s", err)
+		return
+	}
+	err = os.Setenv("IDENTITY_HEADER", lowkeyVaultContainer.IdentityHeader(ctx))
+	if err != nil {
+		log.Printf("failed to set managed identity header variable: %s", err)
 		return
 	}
 
@@ -235,9 +246,19 @@ func ExampleRun_keyOperations() {
 		return
 	}
 
-	err = lowkeyVaultContainer.SetManagedIdentityEnvVariables(ctx)
+	identityEndpoint, err := lowkeyVaultContainer.IdentityEndpoint(ctx, lowkeyvault.Local)
 	if err != nil {
-		log.Printf("failed to set managed identity variables: %s", err)
+		log.Printf("failed to get identity endpoint: %s", err)
+		return
+	}
+	err = os.Setenv("IDENTITY_ENDPOINT", identityEndpoint)
+	if err != nil {
+		log.Printf("failed to set managed identity endpoint variable: %s", err)
+		return
+	}
+	err = os.Setenv("IDENTITY_HEADER", lowkeyVaultContainer.IdentityHeader(ctx))
+	if err != nil {
+		log.Printf("failed to set managed identity header variable: %s", err)
 		return
 	}
 
@@ -341,9 +362,19 @@ func ExampleRun_certificateOperations() {
 		return
 	}
 
-	err = lowkeyVaultContainer.SetManagedIdentityEnvVariables(ctx)
+	identityEndpoint, err := lowkeyVaultContainer.IdentityEndpoint(ctx, lowkeyvault.Local)
 	if err != nil {
-		log.Printf("failed to set managed identity variables: %s", err)
+		log.Printf("failed to get identity endpoint: %s", err)
+		return
+	}
+	err = os.Setenv("IDENTITY_ENDPOINT", identityEndpoint)
+	if err != nil {
+		log.Printf("failed to set managed identity endpoint variable: %s", err)
+		return
+	}
+	err = os.Setenv("IDENTITY_HEADER", lowkeyVaultContainer.IdentityHeader(ctx))
+	if err != nil {
+		log.Printf("failed to set managed identity header variable: %s", err)
 		return
 	}
 

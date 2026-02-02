@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/docker/go-connections/nat"
 
@@ -96,8 +95,8 @@ func (c *Container) ConnectionURL(ctx context.Context, accessMode int) (string, 
 	return "https://" + hostAuthority, nil
 }
 
-// TokenURL returns the connection URL for the Lowkey Vault token endpoint based on the provided access mode.
-func (c *Container) TokenURL(ctx context.Context, accessMode int) (string, error) {
+// IdentityEndpoint returns the URL value of the IDENTITY_ENDPOINT environment variable for the managed identity simulation. This will be used to obtain an access token for the Lowkey Vault API.
+func (c *Container) IdentityEndpoint(ctx context.Context, accessMode int) (string, error) {
 	hostAuthority, err := c.mappedHostAuthority(ctx, defaultMetadataPort, accessMode)
 	if err != nil {
 		return "", fmt.Errorf("host authority: %w", err)
@@ -105,22 +104,9 @@ func (c *Container) TokenURL(ctx context.Context, accessMode int) (string, error
 	return fmt.Sprintf("http://%s/metadata/identity/oauth2/token", hostAuthority), nil
 }
 
-// SetManagedIdentityEnvVariables sets the environment variables required for managed identity authentication.
-// This works only with local access mode
-func (c *Container) SetManagedIdentityEnvVariables(ctx context.Context) error {
-	tokenURL, err := c.TokenURL(ctx, Local)
-	if err != nil {
-		return fmt.Errorf("token url: %w", err)
-	}
-	err = os.Setenv("IDENTITY_ENDPOINT", tokenURL)
-	if err != nil {
-		return fmt.Errorf("set env IDENTITY_ENDPOINT: %w", err)
-	}
-	err = os.Setenv("IDENTITY_HEADER", "header")
-	if err != nil {
-		return fmt.Errorf("set env IDENTITY_HEADER: %w", err)
-	}
-	return nil
+// IdentityHeader returns the value of the IDENTITY_HEADER environment variable for the managed identity simulation.
+func (c *Container) IdentityHeader(ctx context.Context) string {
+	return "header"
 }
 
 func (c *Container) mappedHostAuthority(ctx context.Context, exposedPort nat.Port, accessMode int) (string, error) {
