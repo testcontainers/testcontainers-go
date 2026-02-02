@@ -17,7 +17,7 @@ import (
 )
 
 func TestOllama(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := ollama.Run(ctx, "ollama/ollama:0.5.7")
 	testcontainers.CleanupContainer(t, ctr)
@@ -29,21 +29,24 @@ func TestOllama(t *testing.T) {
 		// }
 		require.NoError(t, err)
 
-		httpClient := &http.Client{}
-		resp, err := httpClient.Get(connectionStr)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, connectionStr, http.NoBody)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
 
 		require.Equal(t, http.StatusOK, resp.StatusCode)
+		require.NoError(t, resp.Body.Close())
 	})
 
 	t.Run("Pull and Run Model", func(t *testing.T) {
 		model := "all-minilm"
+		ctx := t.Context()
 
-		_, _, err = ctr.Exec(context.Background(), []string{"ollama", "pull", model})
+		_, _, err = ctr.Exec(ctx, []string{"ollama", "pull", model})
 		require.NoError(t, err)
 
-		_, _, err = ctr.Exec(context.Background(), []string{"ollama", "run", model})
+		_, _, err = ctr.Exec(ctx, []string{"ollama", "run", model})
 		require.NoError(t, err)
 
 		assertLoadedModel(t, ctr)
@@ -55,13 +58,14 @@ func TestOllama(t *testing.T) {
 		// Defining the target image name based on the default image and a random string.
 		// Users can change the way this is generated, but it should be unique.
 		targetImage := fmt.Sprintf("%s-%s", ollama.DefaultOllamaImage, strings.ToLower(uuid.New().String()[:4]))
+		ctx := t.Context()
 
-		err := ctr.Commit(context.Background(), targetImage)
+		err := ctr.Commit(ctx, targetImage)
 		// }
 		require.NoError(t, err)
 
 		newOllamaContainer, err := ollama.Run(
-			context.Background(),
+			ctx,
 			targetImage,
 		)
 		testcontainers.CleanupContainer(t, newOllamaContainer)
@@ -80,10 +84,10 @@ func TestOllama_withReuse(t *testing.T) {
 
 	model := "all-minilm"
 
-	_, _, err = ctr.Exec(context.Background(), []string{"ollama", "pull", model})
+	_, _, err = ctr.Exec(ctx, []string{"ollama", "pull", model})
 	require.NoError(t, err)
 
-	_, _, err = ctr.Exec(context.Background(), []string{"ollama", "run", model})
+	_, _, err = ctr.Exec(ctx, []string{"ollama", "run", model})
 	require.NoError(t, err)
 
 	assertLoadedModel(t, ctr)
@@ -92,11 +96,12 @@ func TestOllama_withReuse(t *testing.T) {
 		ctr2, err := ollama.Run(ctx, "ollama/ollama:0.5.7", testcontainers.WithReuseByName("ollama-container"))
 		testcontainers.CleanupContainer(t, ctr2)
 		require.NoError(t, err)
+		ctx := t.Context()
 
-		_, _, err = ctr2.Exec(context.Background(), []string{"ollama", "pull", model})
+		_, _, err = ctr2.Exec(ctx, []string{"ollama", "pull", model})
 		require.NoError(t, err)
 
-		_, _, err = ctr2.Exec(context.Background(), []string{"ollama", "run", model})
+		_, _, err = ctr2.Exec(ctx, []string{"ollama", "run", model})
 		require.NoError(t, err)
 
 		assertLoadedModel(t, ctr2)
@@ -108,12 +113,14 @@ func TestOllama_withReuse(t *testing.T) {
 // contains the model name.
 func assertLoadedModel(t *testing.T, c *ollama.OllamaContainer) {
 	t.Helper()
-	url, err := c.ConnectionString(context.Background())
+	ctx := t.Context()
+	url, err := c.ConnectionString(ctx)
 	require.NoError(t, err)
 
-	httpCli := &http.Client{}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url+"/api/tags", nil)
+	require.NoError(t, err)
 
-	resp, err := httpCli.Get(url + "/api/tags")
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
