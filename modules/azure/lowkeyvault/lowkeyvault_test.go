@@ -41,8 +41,8 @@ func TestRun_secretOperationsNetwork(t *testing.T) {
 	ctx := context.Background()
 
 	aNetwork, err := network.New(ctx)
-	require.NoError(t, err)
 	testcontainers.CleanupNetwork(t, aNetwork)
+	require.NoError(t, err)
 
 	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal",
 		lowkeyvault.WithNetworkAlias("lowkey-vault", aNetwork),
@@ -67,7 +67,7 @@ func TestRun_secretOperationsNetwork(t *testing.T) {
 			}),
 		testcontainers.WithEnv(map[string]string{
 			"IDENTITY_ENDPOINT": tokenURL,
-			"IDENTITY_HEADER":   "header",
+			"IDENTITY_HEADER":   lowkeyVaultContainer.IdentityHeader(),
 			"CONNECTION_URL":    connURL,
 		}),
 		network.WithNetwork(nil, aNetwork),
