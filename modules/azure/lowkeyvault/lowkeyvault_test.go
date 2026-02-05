@@ -98,7 +98,7 @@ func TestRun_secretOperations(t *testing.T) {
 	identityEndpoint, err := lowkeyVaultContainer.IdentityEndpoint(ctx, lowkeyvault.Local)
 	require.NoError(t, err)
 	t.Setenv("IDENTITY_ENDPOINT", identityEndpoint)
-	t.Setenv("IDENTITY_HEADER", lowkeyVaultContainer.IdentityHeader(ctx))
+	t.Setenv("IDENTITY_HEADER", lowkeyVaultContainer.IdentityHeader())
 
 	httpClient := lowkeyVaultContainer.Client()
 
@@ -148,7 +148,7 @@ func TestRun_keyOperations(t *testing.T) {
 	identityEndpoint, err := lowkeyVaultContainer.IdentityEndpoint(ctx, lowkeyvault.Local)
 	require.NoError(t, err)
 	t.Setenv("IDENTITY_ENDPOINT", identityEndpoint)
-	t.Setenv("IDENTITY_HEADER", lowkeyVaultContainer.IdentityHeader(ctx))
+	t.Setenv("IDENTITY_HEADER", lowkeyVaultContainer.IdentityHeader())
 
 	httpClient := lowkeyVaultContainer.Client()
 
@@ -221,7 +221,7 @@ func TestRun_certificateOperations(t *testing.T) {
 	identityEndpoint, err := lowkeyVaultContainer.IdentityEndpoint(ctx, lowkeyvault.Local)
 	require.NoError(t, err)
 	t.Setenv("IDENTITY_ENDPOINT", identityEndpoint)
-	t.Setenv("IDENTITY_HEADER", lowkeyVaultContainer.IdentityHeader(ctx))
+	t.Setenv("IDENTITY_HEADER", lowkeyVaultContainer.IdentityHeader())
 
 	httpClient := lowkeyVaultContainer.Client()
 

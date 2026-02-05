@@ -105,7 +105,7 @@ func (c *Container) IdentityEndpoint(ctx context.Context, accessMode int) (strin
 }
 
 // IdentityHeader returns the value of the IDENTITY_HEADER environment variable for the managed identity simulation.
-func (c *Container) IdentityHeader(ctx context.Context) string {
+func (c *Container) IdentityHeader() string {
 	return "header"
 }
 
