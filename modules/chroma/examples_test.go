@@ -5,12 +5,9 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"os"
 	"path/filepath"
 
 	chromago "github.com/amikos-tech/chroma-go/pkg/api/v2"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/mount"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/chroma"
@@ -88,20 +85,11 @@ func ExampleChromaContainer_connectWithClient() {
 
 func ExampleChromaContainer_collections() {
 	ctx := context.Background()
-	cwd, err := os.Getwd()
-	if err != nil {
-		log.Printf("failed to get current working directory: %s", err)
-		return
-	}
+
 	chromaContainer, err := chroma.Run(ctx, "chromadb/chroma:1.4.0",
-		testcontainers.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
-			dockerMounts := make([]mount.Mount, 0)
-			dockerMounts = append(dockerMounts, mount.Mount{
-				Type:   mount.TypeBind,
-				Source: filepath.Join(cwd, "v1-config.yaml"),
-				Target: "/config.yaml",
-			})
-			hostConfig.Mounts = dockerMounts
+		testcontainers.WithFiles(testcontainers.ContainerFile{
+			HostFilePath:      filepath.Join("testdata", "v1-config.yaml"),
+			ContainerFilePath: "/config.yaml",
 		}),
 	)
 	defer func() {

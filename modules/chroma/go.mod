@@ -4,7 +4,6 @@ go 1.24.11
 
 require (
 	github.com/amikos-tech/chroma-go v0.3.2
-	github.com/docker/docker v28.5.2+incompatible
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
 )
@@ -24,6 +23,7 @@ require (
 	github.com/creasty/defaults v1.8.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
+	github.com/docker/docker v28.5.2+incompatible // indirect
 	github.com/docker/go-connections v0.6.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.9.1 // indirect
