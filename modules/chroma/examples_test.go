@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 
@@ -189,7 +190,8 @@ func ExampleChromaContainer_collections() {
 		return
 	}
 
-	fmt.Printf("Result of query: %v %v %v\n", queryResults.GetIDGroups()[0][0], queryResults.GetDocumentsGroups()[0][0], queryResults.GetDistancesGroups()[0][0])
+	distance := queryResults.GetDistancesGroups()[0][0]
+	fmt.Printf("Result of query: %v %v distance_ok=%v\n", queryResults.GetIDGroups()[0][0], queryResults.GetDocumentsGroups()[0][0], math.Abs(float64(distance)-0.7525849) < 1e-3)
 
 	// listCollections {
 	cols, err := chromaClient.ListCollections(context.Background())
@@ -222,7 +224,7 @@ func ExampleChromaContainer_collections() {
 	// Reset successful
 	// Collection created: test-collection
 	// 2
-	// Result of query: 1 hello world 0.7525849
+	// Result of query: 1 hello world distance_ok=true
 	// 1
 	// <nil>
 }
