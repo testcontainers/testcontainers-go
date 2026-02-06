@@ -93,7 +93,7 @@ func ExampleChromaContainer_collections() {
 		log.Printf("failed to get current working directory: %s", err)
 		return
 	}
-	chromaContainer, err := chroma.Run(ctx, "chromadb/chroma:1.4.0", testcontainers.WithEnv(map[string]string{"ALLOW_RESET": "true"}),
+	chromaContainer, err := chroma.Run(ctx, "chromadb/chroma:1.4.0",
 		testcontainers.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
 			dockerMounts := make([]mount.Mount, 0)
 			dockerMounts = append(dockerMounts, mount.Mount{
