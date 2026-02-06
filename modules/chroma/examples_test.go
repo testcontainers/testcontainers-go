@@ -131,7 +131,6 @@ func ExampleChromaContainer_collections() {
 	fmt.Printf("Reset successful\n")
 
 	// createCollection {
-	// for testing we use a dummy hashing function NewConsistentHashEmbeddingFunction
 	col, err := chromaClient.GetOrCreateCollection(context.Background(), "test-collection",
 		chromago.WithCollectionMetadataCreate(
 			chromago.NewMetadata(
@@ -151,7 +150,6 @@ func ExampleChromaContainer_collections() {
 	// addData {
 	// verify it's possible to add data to the collection
 	err = col.Add(context.Background(),
-		// chroma.WithIDGenerator(chroma.NewULIDGenerator()),
 		chromago.WithIDs("1", "2"),
 		chromago.WithTexts("hello world", "goodbye world"),
 		chromago.WithMetadatas(
@@ -175,7 +173,6 @@ func ExampleChromaContainer_collections() {
 	queryResults, err := col.Query(
 		context.Background(),
 		chromago.WithQueryTexts("say hello"),
-		// chromago.WithInclude(types.IDocuments, types.IEmbeddings, types.IMetadatas),
 		chromago.WithNResults(1),
 	)
 	// }
