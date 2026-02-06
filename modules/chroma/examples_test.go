@@ -90,6 +90,7 @@ func ExampleChromaContainer_collections() {
 		testcontainers.WithFiles(testcontainers.ContainerFile{
 			HostFilePath:      filepath.Join("testdata", "v1-config.yaml"),
 			ContainerFilePath: "/config.yaml",
+			FileMode:          0o644,
 		}),
 	)
 	defer func() {
@@ -115,6 +116,11 @@ func ExampleChromaContainer_collections() {
 		log.Printf("failed to get client: %s", err)
 		return
 	}
+	defer func() {
+		if err := chromaClient.Close(); err != nil {
+			log.Printf("failed to close client: %s", err)
+		}
+	}()
 	// reset {
 	err = chromaClient.Reset(context.Background())
 	// }
@@ -200,13 +206,6 @@ func ExampleChromaContainer_collections() {
 	}
 
 	fmt.Println(err)
-
-	defer func() {
-		err = chromaClient.Close()
-		if err != nil {
-			log.Printf("failed to close client: %s", err)
-		}
-	}()
 
 	// Output:
 	// Reset successful
