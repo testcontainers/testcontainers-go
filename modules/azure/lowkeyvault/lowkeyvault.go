@@ -30,6 +30,8 @@ const (
 // Container represents the Lowkey Vault container type used in the module
 type Container struct {
 	testcontainers.Container
+	localHostName  string
+	remoteHostName string
 }
 
 // WithNetworkAlias sets the alias of the container for the provided network and adds the specified name as a key vault alias for the default, "localhost", vault.
@@ -68,7 +70,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
 	if ctr != nil {
-		c = &Container{Container: ctr}
+		c = &Container{Container: ctr, localHostName: "", remoteHostName: ""}
 	}
 
 	if err != nil {
@@ -112,37 +114,61 @@ func (c *Container) IdentityHeader() string {
 func (c *Container) mappedHostAuthority(ctx context.Context, exposedPort nat.Port, accessMode int) (string, error) {
 	switch accessMode {
 	case Local:
-		host, err := c.Host(ctx)
+		host, err := c.resolveLocalHostName(ctx)
 		if err != nil {
 			return "", fmt.Errorf("host: %w", err)
 		}
 		port, err := c.MappedPort(ctx, exposedPort)
 		if err != nil {
-			return "", fmt.Errorf("api port: %w", err)
+			return "", fmt.Errorf("port: %w", err)
 		}
 		return fmt.Sprintf("%s:%d", host, port.Int()), nil
 	case Network:
-		networks, err := c.Networks(ctx)
+		host, err := c.resolveNetworkHostName(ctx)
 		if err != nil {
-			return "", fmt.Errorf("networks: %w", err)
+			return "", fmt.Errorf("host: %w", err)
 		}
-		if len(networks) != 1 {
-			return "", fmt.Errorf("the container must have exactly one network, but it has %d", len(networks))
-		}
-		hosts, err := c.NetworkAliases(ctx)
-		if err != nil {
-			return "", fmt.Errorf("network aliases: %w", err)
-		}
-		if len(hosts) == 0 {
-			return "", errors.New("no network aliases found in the Lowkey Vault container")
-		}
-		aliases := hosts[networks[0]]
-		if len(aliases) != 1 {
-			return "", fmt.Errorf("the container must have exactly one network alias, but it has %d", len(aliases))
-		}
-		host := aliases[0]
 		return fmt.Sprintf("%s:%d", host, exposedPort.Int()), nil
 	default:
 		return "", fmt.Errorf("unsupported access mode: %d", accessMode)
 	}
+}
+
+func (c *Container) resolveLocalHostName(ctx context.Context) (string, error) {
+	if c.localHostName != "" {
+		return c.localHostName, nil
+	}
+	host, err := c.Host(ctx)
+	if err != nil {
+		return "", fmt.Errorf("host: %w", err)
+	}
+	c.localHostName = host
+	return host, nil
+}
+
+func (c *Container) resolveNetworkHostName(ctx context.Context) (string, error) {
+	if c.remoteHostName != "" {
+		return c.remoteHostName, nil
+	}
+	networks, err := c.Networks(ctx)
+	if err != nil {
+		return "", fmt.Errorf("networks: %w", err)
+	}
+	if len(networks) != 1 {
+		return "", fmt.Errorf("the container must have exactly one network, but it has %d", len(networks))
+	}
+	hosts, err := c.NetworkAliases(ctx)
+	if err != nil {
+		return "", fmt.Errorf("network aliases: %w", err)
+	}
+	if len(hosts) == 0 {
+		return "", errors.New("no network aliases found in the Lowkey Vault container")
+	}
+	aliases := hosts[networks[0]]
+	if len(aliases) != 1 {
+		return "", fmt.Errorf("the container must have exactly one network alias, but it has %d", len(aliases))
+	}
+	host := aliases[0]
+	c.remoteHostName = host
+	return host, nil
 }
