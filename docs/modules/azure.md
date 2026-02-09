@@ -437,9 +437,9 @@ with managed identities by using the `azidentity.NewDefaultAzureCredential(nil)`
 
 - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-Returns a `http.Client` and requires no parameters. This method can be used to prepare a `http.Client` for connecting to the Key Vault API 
-of the Lowkey Vault container using a self-signed certificate. This is necessary since the Lowkey Vault container uses a self-signed 
-certificate by default.
+Returns a `http.Client` and requires the Go context as parameter. This method can be used to prepare a `http.Client` for connecting 
+to the Key Vault API of the Lowkey Vault container using a self-signed certificate. This is necessary since the Lowkey Vault container
+uses a self-signed certificate by default.
 
 ### Examples
 

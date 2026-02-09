@@ -3,11 +3,14 @@ package lowkeyvault
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/docker/go-connections/nat"
+	"golang.org/x/crypto/pkcs12"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/network"
@@ -81,10 +84,63 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 }
 
 // Client prepares a client which will accept insecure (self-signed) certificates.
-func (c *Container) Client() http.Client {
+func (c *Container) Client(ctx context.Context) (http.Client, error) {
 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
-	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	return http.Client{Transport: customTransport}
+	authority, err := c.mappedHostAuthority(ctx, defaultMetadataPort, Local)
+	if err != nil {
+		return http.Client{}, fmt.Errorf("host authority: %w", err)
+	}
+	pass, err := c.fetchDefaultCertPassword(authority)
+	if err != nil {
+		return http.Client{}, fmt.Errorf("default cert password: %w", err)
+	}
+	p12Data, err := c.fetchDefaultCertContent(authority)
+	if err != nil {
+		return http.Client{}, fmt.Errorf("default cert content: %w", err)
+	}
+
+	_, cert, err := pkcs12.Decode(p12Data, pass)
+	if err != nil {
+		return http.Client{}, fmt.Errorf("decode cert content: %w", err)
+	}
+
+	certPool := x509.NewCertPool()
+	certPool.AddCert(cert)
+
+	customTransport.TLSClientConfig = &tls.Config{RootCAs: certPool}
+	return http.Client{Transport: customTransport}, nil
+}
+
+func (c *Container) fetchDefaultCertPassword(authority string) (string, error) {
+	bytes, err := c.fetchContent("http://" + authority + "/metadata/default-cert/password")
+	if err != nil {
+		return "", fmt.Errorf("default cert password: %w", err)
+	}
+	return string(bytes), nil
+}
+
+func (c *Container) fetchDefaultCertContent(authority string) ([]byte, error) {
+	return c.fetchContent("http://" + authority + "/metadata/default-cert/lowkey-vault.p12")
+}
+
+func (c *Container) fetchContent(url string) ([]byte, error) {
+	resp, err := http.Get(url)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get content: %w", err)
+	}
+
+	if resp != nil && resp.StatusCode == http.StatusOK {
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("read response: %w", err)
+		}
+		return bodyBytes, nil
+	}
+
+	return nil, errors.New("content not found")
 }
 
 // ConnectionURL returns the connection URL for the Lowkey Vault API based on the provided access mode.

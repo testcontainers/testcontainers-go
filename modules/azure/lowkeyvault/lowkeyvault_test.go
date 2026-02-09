@@ -100,7 +100,8 @@ func TestRun_secretOperations(t *testing.T) {
 	t.Setenv("IDENTITY_ENDPOINT", identityEndpoint)
 	t.Setenv("IDENTITY_HEADER", lowkeyVaultContainer.IdentityHeader())
 
-	httpClient := lowkeyVaultContainer.Client()
+	httpClient, err := lowkeyVaultContainer.Client(ctx)
+	require.NoError(t, err)
 
 	cred, err := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
 	require.NoError(t, err)
@@ -150,7 +151,8 @@ func TestRun_keyOperations(t *testing.T) {
 	t.Setenv("IDENTITY_ENDPOINT", identityEndpoint)
 	t.Setenv("IDENTITY_HEADER", lowkeyVaultContainer.IdentityHeader())
 
-	httpClient := lowkeyVaultContainer.Client()
+	httpClient, err := lowkeyVaultContainer.Client(ctx)
+	require.NoError(t, err)
 
 	cred, err := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
 	require.NoError(t, err)
@@ -223,7 +225,8 @@ func TestRun_certificateOperations(t *testing.T) {
 	t.Setenv("IDENTITY_ENDPOINT", identityEndpoint)
 	t.Setenv("IDENTITY_HEADER", lowkeyVaultContainer.IdentityHeader())
 
-	httpClient := lowkeyVaultContainer.Client()
+	httpClient, err := lowkeyVaultContainer.Client(ctx)
+	require.NoError(t, err)
 
 	cred, err := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
 	require.NoError(t, err)

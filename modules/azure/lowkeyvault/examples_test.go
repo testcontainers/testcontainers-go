@@ -175,7 +175,11 @@ func ExampleRun_secretOperations() {
 		return
 	}
 
-	httpClient := lowkeyVaultContainer.Client()
+	httpClient, err := lowkeyVaultContainer.Client(ctx)
+	if err != nil {
+		log.Printf("failed to get client: %s", err)
+		return
+	}
 
 	cred, err := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
 	if err != nil {
@@ -262,7 +266,11 @@ func ExampleRun_keyOperations() {
 		return
 	}
 
-	httpClient := lowkeyVaultContainer.Client()
+	httpClient, err := lowkeyVaultContainer.Client(ctx)
+	if err != nil {
+		log.Printf("failed to get client: %s", err)
+		return
+	}
 
 	cred, err := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
 	if err != nil {
@@ -378,7 +386,11 @@ func ExampleRun_certificateOperations() {
 		return
 	}
 
-	httpClient := lowkeyVaultContainer.Client()
+	httpClient, err := lowkeyVaultContainer.Client(ctx)
+	if err != nil {
+		log.Printf("failed to get client: %s", err)
+		return
+	}
 
 	cred, err := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
 	if err != nil {
