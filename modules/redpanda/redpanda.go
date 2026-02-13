@@ -15,8 +15,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
 	"golang.org/x/mod/semver"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -197,13 +196,13 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return c, fmt.Errorf("host: %w", err)
 	}
 
-	kafkaPort, err := ctr.MappedPort(ctx, nat.Port(defaultKafkaAPIPort))
+	kafkaPort, err := ctr.MappedPort(ctx, defaultKafkaAPIPort)
 	if err != nil {
 		return c, fmt.Errorf("mapped kafka port: %w", err)
 	}
 
 	// 6. Render redpanda.yaml config and mount it.
-	nodeConfig, err := renderNodeConfig(settings, hostIP, kafkaPort.Int())
+	nodeConfig, err := renderNodeConfig(settings, hostIP, kafkaPort.Num())
 	if err != nil {
 		return c, err
 	}
@@ -288,25 +287,25 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // to the Kafka API with your Kafka client. It'll be returned in the format:
 // "host:port" - for example: "localhost:55687".
 func (c *Container) KafkaSeedBroker(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, nat.Port(defaultKafkaAPIPort), "")
+	return c.PortEndpoint(ctx, defaultKafkaAPIPort, "")
 }
 
 // AdminAPIAddress returns the address to the Redpanda Admin API. This
 // is an HTTP-based API and thus the returned format will be: http://host:port.
 func (c *Container) AdminAPIAddress(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, nat.Port(defaultAdminAPIPort), c.urlScheme)
+	return c.PortEndpoint(ctx, defaultAdminAPIPort, c.urlScheme)
 }
 
 // SchemaRegistryAddress returns the address to the schema registry API. This
 // is an HTTP-based API and thus the returned format will be: http://host:port.
 func (c *Container) SchemaRegistryAddress(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, nat.Port(defaultSchemaRegistryPort), c.urlScheme)
+	return c.PortEndpoint(ctx, defaultSchemaRegistryPort, c.urlScheme)
 }
 
 // HTTPProxyAddress returns the address to the HTTP Proxy API (pandaproxy). This
 // is an HTTP-based API and thus the returned format will be: http://host:port.
 func (c *Container) HTTPProxyAddress(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, nat.Port(defaultHTTPProxyPort), c.urlScheme)
+	return c.PortEndpoint(ctx, defaultHTTPProxyPort, c.urlScheme)
 }
 
 // renderBootstrapConfig renders the config template for the .bootstrap.yaml config,
@@ -350,13 +349,13 @@ func withListeners(listeners []listener) testcontainers.CustomizeRequestOption {
 			req.NetworkAliases = map[string][]string{}
 		}
 
-		for _, listener := range listeners {
-			if listener.Port < 0 || listener.Port > math.MaxUint16 {
-				return fmt.Errorf("invalid port on listener %s:%d (must be between 0 and 65535)", listener.Address, listener.Port)
+		for _, l := range listeners {
+			if l.Port < 0 || l.Port > math.MaxUint16 {
+				return fmt.Errorf("invalid port on listener %s:%d (must be between 0 and 65535)", l.Address, l.Port)
 			}
 
 			for _, network := range req.Networks {
-				req.NetworkAliases[network] = append(req.NetworkAliases[network], listener.Address)
+				req.NetworkAliases[network] = append(req.NetworkAliases[network], l.Address)
 			}
 		}
 		return nil
@@ -365,12 +364,12 @@ func withListeners(listeners []listener) testcontainers.CustomizeRequestOption {
 
 // renderNodeConfig renders the redpanda.yaml node config and returns it as
 // byte array.
-func renderNodeConfig(settings options, hostIP string, advertisedKafkaPort int) ([]byte, error) {
+func renderNodeConfig(settings options, hostIP string, advertisedKafkaPort uint16) ([]byte, error) {
 	tplParams := redpandaConfigTplParams{
 		AutoCreateTopics: settings.AutoCreateTopics,
 		KafkaAPI: redpandaConfigTplParamsKafkaAPI{
 			AdvertisedHost:       hostIP,
-			AdvertisedPort:       advertisedKafkaPort,
+			AdvertisedPort:       int(advertisedKafkaPort),
 			AuthenticationMethod: settings.KafkaAuthenticationMethod,
 			EnableAuthorization:  settings.KafkaEnableAuthorization,
 			Listeners:            settings.Listeners,

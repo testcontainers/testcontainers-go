@@ -3,7 +3,8 @@ package ollama
 import (
 	"context"
 
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -13,18 +14,19 @@ var noopCustomizeRequestOption = func(_ *testcontainers.GenericContainerRequest)
 // withGpu requests a GPU for the container, which could improve performance for some models.
 // This option will be automatically added to the Ollama container to check if the host supports nvidia.
 func withGpu() testcontainers.CustomizeRequestOption {
-	cli, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	apiClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	if err != nil {
 		return noopCustomizeRequestOption
 	}
+	defer func() { _ = apiClient.Close() }()
 
-	info, err := cli.Info(context.Background())
+	res, err := apiClient.Info(context.Background(), client.InfoOptions{})
 	if err != nil {
 		return noopCustomizeRequestOption
 	}
 
 	// if the Runtime does not support nvidia, we don't need to request a GPU
-	if _, ok := info.Runtimes["nvidia"]; !ok {
+	if _, ok := res.Info.Runtimes["nvidia"]; !ok {
 		return noopCustomizeRequestOption
 	}
 

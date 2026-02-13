@@ -4,7 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/docker/docker/api/types/mount"
+	"github.com/moby/moby/api/types/mount"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -239,26 +240,28 @@ func TestCreateContainerWithVolume(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check if volume is created
-	client, err := testcontainers.NewDockerClientWithOpts(ctx)
+	apiClient, err := testcontainers.NewDockerClientWithOpts(ctx)
 	require.NoError(t, err)
-	defer client.Close()
+	defer apiClient.Close()
 
-	volume, err := client.VolumeInspect(ctx, "test-volume")
+	res, err := apiClient.VolumeInspect(ctx, "test-volume", client.VolumeInspectOptions{})
 	require.NoError(t, err)
-	assert.Equal(t, "test-volume", volume.Name)
+	assert.Equal(t, "test-volume", res.Volume.Name)
 }
 
 func TestMountsReceiveRyukLabels(t *testing.T) {
 	volumeName := "app-data"
 	ctx := context.Background()
 
-	client, err := testcontainers.NewDockerClientWithOpts(ctx)
+	apiClient, err := testcontainers.NewDockerClientWithOpts(ctx)
 	require.NoError(t, err)
-	defer client.Close()
+	defer apiClient.Close()
 
 	// Ensure the volume is removed before creating the container
 	// otherwise the volume will be reused and the labels won't be set.
-	err = client.VolumeRemove(ctx, volumeName, true)
+	_, err = apiClient.VolumeRemove(ctx, volumeName, client.VolumeRemoveOptions{
+		Force: true,
+	})
 	require.NoError(t, err)
 
 	c, err := testcontainers.Run(ctx, "alpine",
@@ -273,7 +276,7 @@ func TestMountsReceiveRyukLabels(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check if volume is created with the expected labels.
-	volume, err := client.VolumeInspect(ctx, volumeName)
+	res, err := apiClient.VolumeInspect(ctx, volumeName, client.VolumeInspectOptions{})
 	require.NoError(t, err)
-	require.Equal(t, testcontainers.GenericLabels(), volume.Labels)
+	require.Equal(t, testcontainers.GenericLabels(), res.Volume.Labels)
 }
