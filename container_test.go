@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/build"
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -342,7 +342,7 @@ func TestCustomLabelsBuildOptionsModifier(t *testing.T) {
 		testcontainers.WithDockerfile(testcontainers.FromDockerfile{
 			Context:    "./testdata",
 			Dockerfile: "Dockerfile",
-			BuildOptionsModifier: func(opts *build.ImageBuildOptions) {
+			BuildOptionsModifier: func(opts *client.ImageBuildOptions) {
 				opts.Labels = map[string]string{
 					myBuildOptionLabel: myBuildOptionValue,
 				}
@@ -377,8 +377,8 @@ func Test_GetLogsFromFailedContainer(t *testing.T) {
 	b, err := io.ReadAll(logs)
 	require.NoError(t, err)
 
-	log := string(b)
-	require.Contains(t, log, "I was not expecting this")
+	out := string(b)
+	require.Contains(t, out, "I was not expecting this")
 }
 
 // dockerImageSubstitutor {
@@ -497,7 +497,7 @@ func TestShouldStartContainersInParallel(t *testing.T) {
 			// }
 			require.NoError(t, err)
 
-			t.Logf("Parallel container [iteration_%d] listening on %d\n", i, port.Int())
+			t.Logf("Parallel container [iteration_%d] listening on %d\n", i, port.Num())
 		})
 	}
 }

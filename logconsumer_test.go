@@ -6,16 +6,18 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -266,7 +268,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	}
 	require.NoErrorf(t, err, "get endpoint")
 
-	opts := []client.Opt{client.WithHost(remoteDocker), client.WithAPIVersionNegotiation()}
+	opts := []client.Opt{client.WithHost(remoteDocker)}
 
 	dockerClient, err := NewDockerClientWithOpts(ctx, opts...)
 	require.NoError(t, err)
@@ -308,7 +310,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	existingLogs := len(consumer.Msgs())
 
 	hitNginx := func() {
-		i, _, err := dind.Exec(ctx, []string{"wget", "--spider", "localhost:" + port.Port()})
+		i, _, err := dind.Exec(ctx, []string{"wget", "--spider", net.JoinHostPort("localhost", strconv.Itoa(int(port.Num())))})
 		require.NoError(t, err, "Can't make request to nginx container from dind container")
 		require.Zerof(t, i, "Can't make request to nginx container from dind container")
 	}
