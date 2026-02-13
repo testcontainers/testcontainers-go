@@ -9,8 +9,6 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/docker/go-connections/nat"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -119,7 +117,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			return c, fmt.Errorf("sanitize proxy: %w", err)
 		}
 
-		endpoint, err := c.PortEndpoint(ctx, nat.Port(fmt.Sprintf("%d/tcp", proxy.listenPort)), "")
+		endpoint, err := c.PortEndpoint(ctx, fmt.Sprintf("%d/tcp", proxy.listenPort), "")
 		if err != nil {
 			return c, fmt.Errorf("port endpoint: %w", err)
 		}

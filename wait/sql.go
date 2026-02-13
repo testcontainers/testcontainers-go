@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"time"
 
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/network"
 )
 
 var (
@@ -17,7 +18,7 @@ var (
 const defaultForSQLQuery = "SELECT 1"
 
 // ForSQL constructs a new waitForSql strategy for the given driver
-func ForSQL(port nat.Port, driver string, url func(host string, port nat.Port) string) *waitForSQL {
+func ForSQL(port string, driver string, url func(host string, port string) string) *waitForSQL {
 	return &waitForSQL{
 		Port:           port,
 		URL:            url,
@@ -31,9 +32,9 @@ func ForSQL(port nat.Port, driver string, url func(host string, port nat.Port) s
 type waitForSQL struct {
 	timeout *time.Duration
 
-	URL            func(host string, port nat.Port) string
+	URL            func(host string, port string) string
 	Driver         string
-	Port           nat.Port
+	Port           string
 	startupTimeout time.Duration
 	PollInterval   time.Duration
 	query          string
@@ -65,7 +66,10 @@ func (w *waitForSQL) Timeout() *time.Duration {
 func (w *waitForSQL) String() string {
 	port := "default"
 	if w.Port != "" {
-		port = w.Port.Port()
+		p, err := network.ParsePort(w.Port)
+		if err == nil {
+			port = strconv.Itoa(int(p.Num()))
+		}
 	}
 
 	query := ""
@@ -96,10 +100,10 @@ func (w *waitForSQL) WaitUntilReady(ctx context.Context, target StrategyTarget) 
 	ticker := time.NewTicker(w.PollInterval)
 	defer ticker.Stop()
 
-	var port nat.Port
+	var port network.Port
 	port, err = target.MappedPort(ctx, w.Port)
 
-	for port == "" {
+	for port.IsZero() {
 		select {
 		case <-ctx.Done():
 			return fmt.Errorf("%w: %w", ctx.Err(), err)
@@ -111,7 +115,7 @@ func (w *waitForSQL) WaitUntilReady(ctx context.Context, target StrategyTarget) 
 		}
 	}
 
-	db, err := sql.Open(w.Driver, w.URL(host, port))
+	db, err := sql.Open(w.Driver, w.URL(host, port.String()))
 	if err != nil {
 		return fmt.Errorf("sql.Open: %w", err)
 	}

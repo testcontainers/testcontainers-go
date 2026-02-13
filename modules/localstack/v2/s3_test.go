@@ -3,6 +3,8 @@ package v2_test
 import (
 	"bytes"
 	"context"
+	"net"
+	"strconv"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -10,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	smithyendpoints "github.com/aws/smithy-go/endpoints"
-	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -41,7 +42,7 @@ func (*resolverV2) ResolveEndpoint(ctx context.Context, params s3.EndpointParame
 
 // awsSDKClientV2 {
 func s3Client(ctx context.Context, l *localstack.LocalStackContainer) (*s3.Client, error) {
-	mappedPort, err := l.MappedPort(ctx, nat.Port("4566/tcp"))
+	mappedPort, err := l.MappedPort(ctx, "4566/tcp")
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +68,7 @@ func s3Client(ctx context.Context, l *localstack.LocalStackContainer) (*s3.Clien
 
 	// reference: https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/endpoints/#with-both
 	client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
-		o.BaseEndpoint = aws.String("http://" + host + ":" + mappedPort.Port())
+		o.BaseEndpoint = aws.String("http://" + net.JoinHostPort(host, strconv.Itoa(int(mappedPort.Num()))))
 		o.EndpointResolverV2 = &resolverV2{}
 		o.UsePathStyle = true
 	})

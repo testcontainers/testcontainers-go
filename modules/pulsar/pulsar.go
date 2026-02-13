@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strconv"
 	"strings"
-
-	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -43,7 +42,7 @@ func (c *Container) HTTPServiceURL(ctx context.Context) (string, error) {
 	return c.resolveURL(ctx, defaultPulsarAdminPort)
 }
 
-func (c *Container) resolveURL(ctx context.Context, port nat.Port) (string, error) {
+func (c *Container) resolveURL(ctx context.Context, port string) (string, error) {
 	provider, err := testcontainers.NewDockerProvider()
 	if err != nil {
 		return "", err
@@ -65,7 +64,7 @@ func (c *Container) resolveURL(ctx context.Context, port nat.Port) (string, erro
 		proto = "http"
 	}
 
-	return fmt.Sprintf("%s://%s", proto, net.JoinHostPort(host, pulsarPort.Port())), nil
+	return fmt.Sprintf("%s://%s", proto, net.JoinHostPort(host, strconv.Itoa(int(pulsarPort.Num())))), nil
 }
 
 // WithFunctionsWorker enables the functions worker, which will override the default pulsar command
