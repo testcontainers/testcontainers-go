@@ -95,7 +95,8 @@ func TestProviderTypeGetUnderlyingProviderType(t *testing.T) {
 			// Create temp directory for HOME
 			tmpDir := t.TempDir()
 			t.Setenv("HOME", tmpDir)
-			t.Setenv("USERPROFILE", tmpDir) // Windows support
+			t.Setenv("USERPROFILE", tmpDir)         // Windows support
+			t.Setenv("TESTCONTAINERS_PROVIDER", "") // Ensure env var is not set before test
 
 			// Set any additional environment variables
 			for k, v := range tt.env {
