@@ -1,0 +1,160 @@
+package forgejo
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"strings"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/wait"
+)
+
+const (
+	defaultHTTPPort = "3000/tcp"
+	defaultSSHPort  = "22/tcp"
+	defaultUser     = "forgejo-admin"
+	defaultPassword = "forgejo-admin"
+	defaultEmail    = "admin@forgejo.local"
+)
+
+// Container represents the Forgejo container type used in the module
+type Container struct {
+	testcontainers.Container
+	AdminUsername string
+	AdminPassword string
+}
+
+// Run creates an instance of the Forgejo container type
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultHTTPPort, defaultSSHPort),
+		testcontainers.WithWaitStrategy(
+			wait.ForHTTP("/api/healthz").WithPort("3000"),
+		),
+		// Use SQLite for simplicity in tests (no external DB needed).
+		// INSTALL_LOCK skips the install wizard so the instance is ready to use.
+		testcontainers.WithEnv(map[string]string{
+			"FORGEJO__database__DB_TYPE":      "sqlite3",
+			"FORGEJO__security__INSTALL_LOCK": "true",
+			"FORGEJO_ADMIN_USERNAME":          defaultUser,
+			"FORGEJO_ADMIN_PASSWORD":          defaultPassword,
+			"FORGEJO_ADMIN_EMAIL":             defaultEmail,
+		}),
+	}
+
+	moduleOpts = append(moduleOpts, opts...)
+
+	// Add lifecycle hook to create admin user after container is ready.
+	// The hook reads credentials from container env vars so that user-provided
+	// options (which override the defaults above) are respected.
+	// The command runs as the "git" user because Forgejo refuses to run CLI
+	// commands as root.
+	adminHook := testcontainers.ContainerLifecycleHooks{
+		PostReadies: []testcontainers.ContainerHook{
+			func(ctx context.Context, container testcontainers.Container) error {
+				inspect, err := container.Inspect(ctx)
+				if err != nil {
+					return fmt.Errorf("inspect forgejo: %w", err)
+				}
+
+				username, password, email := defaultUser, defaultPassword, defaultEmail
+				for _, env := range inspect.Config.Env {
+					if v, ok := strings.CutPrefix(env, "FORGEJO_ADMIN_USERNAME="); ok {
+						username = v
+					}
+					if v, ok := strings.CutPrefix(env, "FORGEJO_ADMIN_PASSWORD="); ok {
+						password = v
+					}
+					if v, ok := strings.CutPrefix(env, "FORGEJO_ADMIN_EMAIL="); ok {
+						email = v
+					}
+				}
+
+				code, output, err := container.Exec(ctx, []string{
+					"forgejo", "admin", "user", "create",
+					"--username", username,
+					"--password", password,
+					"--email", email,
+					"--admin",
+					"--must-change-password=false",
+				}, exec.WithUser("git"))
+				if err != nil {
+					return fmt.Errorf("create admin user: %w", err)
+				}
+				if code != 0 {
+					data, _ := io.ReadAll(output)
+					return fmt.Errorf("create admin user: exit code %d: %s", code, string(data))
+				}
+				return nil
+			},
+		},
+	}
+
+	moduleOpts = append(moduleOpts, testcontainers.WithAdditionalLifecycleHooks(adminHook))
+
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
+	var c *Container
+	if ctr != nil {
+		c = &Container{Container: ctr}
+	}
+
+	if err != nil {
+		return c, fmt.Errorf("run forgejo: %w", err)
+	}
+
+	// Retrieve credentials from container environment
+	inspect, err := ctr.Inspect(ctx)
+	if err != nil {
+		return c, fmt.Errorf("inspect forgejo: %w", err)
+	}
+
+	var foundUser, foundPass bool
+	for _, env := range inspect.Config.Env {
+		if v, ok := strings.CutPrefix(env, "FORGEJO_ADMIN_USERNAME="); ok {
+			c.AdminUsername, foundUser = v, true
+		}
+		if v, ok := strings.CutPrefix(env, "FORGEJO_ADMIN_PASSWORD="); ok {
+			c.AdminPassword, foundPass = v, true
+		}
+
+		if foundUser && foundPass {
+			break
+		}
+	}
+
+	return c, nil
+}
+
+// ConnectionString returns the HTTP URL for the Forgejo instance
+func (c *Container) ConnectionString(ctx context.Context) (string, error) {
+	return c.PortEndpoint(ctx, defaultHTTPPort, "http")
+}
+
+// SSHConnectionString returns the SSH endpoint for Git operations
+func (c *Container) SSHConnectionString(ctx context.Context) (string, error) {
+	return c.PortEndpoint(ctx, defaultSSHPort, "")
+}
+
+// WithAdminCredentials sets the admin username, password, and email for the Forgejo instance.
+// These credentials are used to create an admin user after the container is ready.
+func WithAdminCredentials(username, password, email string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		req.Env["FORGEJO_ADMIN_USERNAME"] = username
+		req.Env["FORGEJO_ADMIN_PASSWORD"] = password
+		req.Env["FORGEJO_ADMIN_EMAIL"] = email
+		return nil
+	}
+}
+
+// WithConfig sets a Forgejo configuration value using the FORGEJO__section__key
+// environment variable format.
+// See https://forgejo.org/docs/latest/admin/config-cheat-sheet/ for available options.
+func WithConfig(section, key, value string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		envKey := fmt.Sprintf("FORGEJO__%s__%s", section, key)
+		req.Env[envKey] = value
+		return nil
+	}
+}
