@@ -10,7 +10,7 @@ The Testcontainers module for [Forgejo](https://forgejo.org/), a self-hosted Git
 
 Please run the following command to add the Forgejo module to your Go dependencies:
 
-```
+```sh
 go get github.com/testcontainers/testcontainers-go/modules/forgejo
 ```
 

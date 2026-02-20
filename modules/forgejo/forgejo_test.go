@@ -3,6 +3,7 @@ package forgejo_test
 import (
 	"context"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -24,7 +25,9 @@ func TestForgejo(t *testing.T) {
 	require.NotEmpty(t, connStr)
 
 	// verify the health endpoint is reachable via the connection string
-	resp, err := http.Get(connStr + "/api/healthz")
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, connStr+"/api/healthz", nil)
+	require.NoError(t, err)
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 	require.Equal(t, http.StatusOK, resp.StatusCode)
@@ -72,4 +75,7 @@ func TestForgejoSSHEndpoint(t *testing.T) {
 	sshStr, err := ctr.SSHConnectionString(ctx)
 	require.NoError(t, err)
 	require.NotEmpty(t, sshStr)
+
+	// verify the SSH connection string contains a host and port
+	require.True(t, strings.Contains(sshStr, ":"), "SSH connection string should contain host:port")
 }

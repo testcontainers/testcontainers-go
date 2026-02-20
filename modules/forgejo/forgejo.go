@@ -26,8 +26,30 @@ type Container struct {
 	AdminPassword string
 }
 
+// extractAdminCredentials parses FORGEJO_ADMIN_* env vars from the container
+// environment, falling back to the default values for any that are not set.
+func extractAdminCredentials(env []string) (username, password, email string) {
+	username, password, email = defaultUser, defaultPassword, defaultEmail
+	for _, e := range env {
+		if v, ok := strings.CutPrefix(e, "FORGEJO_ADMIN_USERNAME="); ok {
+			username = v
+		}
+		if v, ok := strings.CutPrefix(e, "FORGEJO_ADMIN_PASSWORD="); ok {
+			password = v
+		}
+		if v, ok := strings.CutPrefix(e, "FORGEJO_ADMIN_EMAIL="); ok {
+			email = v
+		}
+	}
+	return
+}
+
 // Run creates an instance of the Forgejo container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+	// Closure variables populated by the PostReadies hook so we can avoid
+	// a second container.Inspect call after Run returns.
+	var adminUser, adminPass string
+
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts(defaultHTTPPort, defaultSSHPort),
 		testcontainers.WithWaitStrategy(
@@ -59,18 +81,11 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 					return fmt.Errorf("inspect forgejo: %w", err)
 				}
 
-				username, password, email := defaultUser, defaultPassword, defaultEmail
-				for _, env := range inspect.Config.Env {
-					if v, ok := strings.CutPrefix(env, "FORGEJO_ADMIN_USERNAME="); ok {
-						username = v
-					}
-					if v, ok := strings.CutPrefix(env, "FORGEJO_ADMIN_PASSWORD="); ok {
-						password = v
-					}
-					if v, ok := strings.CutPrefix(env, "FORGEJO_ADMIN_EMAIL="); ok {
-						email = v
-					}
-				}
+				username, password, email := extractAdminCredentials(inspect.Config.Env)
+
+				// Store credentials in closure for Run to use later.
+				adminUser = username
+				adminPass = password
 
 				code, output, err := container.Exec(ctx, []string{
 					"forgejo", "admin", "user", "create",
@@ -104,25 +119,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return c, fmt.Errorf("run forgejo: %w", err)
 	}
 
-	// Retrieve credentials from container environment
-	inspect, err := ctr.Inspect(ctx)
-	if err != nil {
-		return c, fmt.Errorf("inspect forgejo: %w", err)
-	}
-
-	var foundUser, foundPass bool
-	for _, env := range inspect.Config.Env {
-		if v, ok := strings.CutPrefix(env, "FORGEJO_ADMIN_USERNAME="); ok {
-			c.AdminUsername, foundUser = v, true
-		}
-		if v, ok := strings.CutPrefix(env, "FORGEJO_ADMIN_PASSWORD="); ok {
-			c.AdminPassword, foundPass = v, true
-		}
-
-		if foundUser && foundPass {
-			break
-		}
-	}
+	// Credentials were populated by the PostReadies hook above.
+	c.AdminUsername = adminUser
+	c.AdminPassword = adminPass
 
 	return c, nil
 }
@@ -141,6 +140,9 @@ func (c *Container) SSHConnectionString(ctx context.Context) (string, error) {
 // These credentials are used to create an admin user after the container is ready.
 func WithAdminCredentials(username, password, email string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
+		if req.Env == nil {
+			req.Env = make(map[string]string)
+		}
 		req.Env["FORGEJO_ADMIN_USERNAME"] = username
 		req.Env["FORGEJO_ADMIN_PASSWORD"] = password
 		req.Env["FORGEJO_ADMIN_EMAIL"] = email
@@ -153,6 +155,9 @@ func WithAdminCredentials(username, password, email string) testcontainers.Custo
 // See https://forgejo.org/docs/latest/admin/config-cheat-sheet/ for available options.
 func WithConfig(section, key, value string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
+		if req.Env == nil {
+			req.Env = make(map[string]string)
+		}
 		envKey := fmt.Sprintf("FORGEJO__%s__%s", section, key)
 		req.Env[envKey] = value
 		return nil
