@@ -33,8 +33,8 @@ func TestForgejo(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
 	// verify default admin credentials are set
-	require.Equal(t, "forgejo-admin", ctr.AdminUsername)
-	require.Equal(t, "forgejo-admin", ctr.AdminPassword)
+	require.Equal(t, "forgejo-admin", ctr.AdminUsername())
+	require.Equal(t, "forgejo-admin", ctr.AdminPassword())
 }
 
 func TestForgejoWithAdminCredentials(t *testing.T) {
@@ -48,8 +48,8 @@ func TestForgejoWithAdminCredentials(t *testing.T) {
 	require.NoError(t, err)
 
 	// verify custom admin credentials are set on the container struct
-	require.Equal(t, "testuser", ctr.AdminUsername)
-	require.Equal(t, "testpassword", ctr.AdminPassword)
+	require.Equal(t, "testuser", ctr.AdminUsername())
+	require.Equal(t, "testpassword", ctr.AdminPassword())
 
 	// verify the API is reachable and admin user can authenticate
 	connStr, err := ctr.ConnectionString(ctx)

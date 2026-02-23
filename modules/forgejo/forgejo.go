@@ -22,8 +22,18 @@ const (
 // Container represents the Forgejo container type used in the module
 type Container struct {
 	testcontainers.Container
-	AdminUsername string
-	AdminPassword string
+	adminUsername string
+	adminPassword string
+}
+
+// AdminUsername returns the admin username for the Forgejo instance.
+func (c *Container) AdminUsername() string {
+	return c.adminUsername
+}
+
+// AdminPassword returns the admin password for the Forgejo instance.
+func (c *Container) AdminPassword() string {
+	return c.adminPassword
 }
 
 // extractAdminCredentials parses FORGEJO_ADMIN_* env vars from the container
@@ -120,8 +130,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	// Credentials were populated by the PostReadies hook above.
-	c.AdminUsername = adminUser
-	c.AdminPassword = adminPass
+	c.adminUsername = adminUser
+	c.adminPassword = adminPass
 
 	return c, nil
 }
