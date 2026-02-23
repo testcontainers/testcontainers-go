@@ -140,6 +140,9 @@ func (c *Container) SSHConnectionString(ctx context.Context) (string, error) {
 // These credentials are used to create an admin user after the container is ready.
 func WithAdminCredentials(username, password, email string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
+		if username == "" || password == "" || email == "" {
+			return fmt.Errorf("WithAdminCredentials: username, password, and email must not be empty")
+		}
 		if req.Env == nil {
 			req.Env = make(map[string]string)
 		}
@@ -155,6 +158,9 @@ func WithAdminCredentials(username, password, email string) testcontainers.Custo
 // See https://forgejo.org/docs/latest/admin/config-cheat-sheet/ for available options.
 func WithConfig(section, key, value string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
+		if strings.Contains(section, "__") || strings.Contains(key, "__") {
+			return fmt.Errorf("WithConfig: section and key must not contain \"__\" (got section=%q, key=%q)", section, key)
+		}
 		if req.Env == nil {
 			req.Env = make(map[string]string)
 		}
