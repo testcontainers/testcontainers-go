@@ -63,7 +63,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts(defaultHTTPPort, defaultSSHPort),
 		testcontainers.WithWaitStrategy(
-			wait.ForHTTP("/api/healthz").WithPort("3000"),
+			wait.ForHTTP("/api/healthz").WithPort(defaultHTTPPort),
 		),
 		// Use SQLite for simplicity in tests (no external DB needed).
 		// INSTALL_LOCK skips the install wizard so the instance is ready to use.
