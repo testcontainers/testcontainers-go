@@ -168,6 +168,9 @@ func WithAdminCredentials(username, password, email string) testcontainers.Custo
 // See https://forgejo.org/docs/latest/admin/config-cheat-sheet/ for available options.
 func WithConfig(section, key, value string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
+		if section == "" || key == "" {
+			return fmt.Errorf("WithConfig: section and key must not be empty (got section=%q, key=%q)", section, key)
+		}
 		if strings.Contains(section, "__") || strings.Contains(key, "__") {
 			return fmt.Errorf("WithConfig: section and key must not contain \"__\" (got section=%q, key=%q)", section, key)
 		}
