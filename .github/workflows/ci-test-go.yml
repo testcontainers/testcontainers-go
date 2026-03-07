@@ -72,11 +72,34 @@ jobs:
             cache-dependency-path: '${{ inputs.project-directory }}/go.sum'
         id: go
 
+      - name: Check Go version compatibility
+        id: go-compat
+        working-directory: ./${{ inputs.project-directory == '' && '.' || inputs.project-directory }}
+        shell: bash
+        run: |
+          # Read the minimum Go version required by the module
+          MODULE_GO_VERSION=$(grep '^go ' go.mod | awk '{print $2}')
+          RUNNER_GO_VERSION=$(go env GOVERSION | sed 's/^go//')
+          echo "Module requires Go ${MODULE_GO_VERSION}, runner has Go ${RUNNER_GO_VERSION}"
+
+          # Extract major.minor for comparison
+          MODULE_MAJOR_MINOR=$(echo "${MODULE_GO_VERSION}" | grep -oE '^[0-9]+\.[0-9]+')
+          RUNNER_MAJOR_MINOR=$(echo "${RUNNER_GO_VERSION}" | grep -oE '^[0-9]+\.[0-9]+')
+
+          if [ "$(printf '%s\n' "${MODULE_MAJOR_MINOR}" "${RUNNER_MAJOR_MINOR}" | sort -V | head -n1)" = "${MODULE_MAJOR_MINOR}" ]; then
+            echo "compatible=true" >> $GITHUB_OUTPUT
+          else
+            echo "compatible=false" >> $GITHUB_OUTPUT
+            echo "::warning::Skipping tests: module requires Go ${MODULE_GO_VERSION} but runner has Go ${RUNNER_GO_VERSION}"
+          fi
+
       - name: ensure compilation
+        if: steps.go-compat.outputs.compatible == 'true'
         working-directory: ./${{ inputs.project-directory }}
         run: go build ./...
 
       - name: Install dependencies
+        if: steps.go-compat.outputs.compatible == 'true'
         shell: bash
         run: |
           SCRIPT_PATH="./.github/scripts/${{ inputs.project-directory }}/install-dependencies.sh"
@@ -88,23 +111,25 @@ jobs:
 
       # Setup Testcontainers Cloud Client right before your Testcontainers tests
       - name: Setup Testcontainers Cloud Client
-        if: ${{ inputs.testcontainers-cloud }}
+        if: ${{ steps.go-compat.outputs.compatible == 'true' && inputs.testcontainers-cloud }}
         uses: atomicjar/testcontainers-cloud-setup-action@c335bdbb570ec7c48f72c7d450c077f0a002293e # v1.3
         with:
           token: ${{ secrets.TCC_TOKEN }}
 
       - name: go test
+        if: steps.go-compat.outputs.compatible == 'true'
         working-directory: ./${{ inputs.project-directory }}
         timeout-minutes: 30
         run: make test-unit
 
       - name: Run checker
+        if: steps.go-compat.outputs.compatible == 'true'
         run: |
             ./scripts/check_environment.sh
 
       # (Optionally) When you don't need Testcontainers Cloud anymore, you could terminate sessions eagerly
       - name: Terminate Testcontainers Cloud Client active sessions
-        if: ${{ inputs.testcontainers-cloud }}
+        if: ${{ steps.go-compat.outputs.compatible == 'true' && inputs.testcontainers-cloud }}
         uses: atomicjar/testcontainers-cloud-setup-action@c335bdbb570ec7c48f72c7d450c077f0a002293e # v1.3
         with:
           action: terminate
@@ -113,10 +138,10 @@ jobs:
         uses: test-summary/action@31493c76ec9e7aa675f1585d3ed6f1da69269a86 # v2.4
         with:
             paths: "**/${{ inputs.project-directory }}/TEST-unit*.xml"
-        if: always()
+        if: ${{ always() && steps.go-compat.outputs.compatible == 'true' }}
 
       - name: Decide if Sonar must be run
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        if: ${{ steps.go-compat.outputs.compatible == 'true' && matrix.platform == 'ubuntu-latest' }}
         run: |
           if [[ "1.24.x" == "${{ inputs.go-version }}" ]] && \
              [[ "true" != "${{ inputs.rootless-docker }}" ]] && \
@@ -128,7 +153,7 @@ jobs:
           fi
 
       - name: Set Sonar Cloud environment variables
-        if: ${{ env.SHOULD_RUN_SONAR == 'true' }}
+        if: ${{ steps.go-compat.outputs.compatible == 'true' && env.SHOULD_RUN_SONAR == 'true' }}
         run: |
           echo "PROJECT_VERSION=$(grep 'latest_version' mkdocs.yml | cut -d':' -f2 | tr -d ' ')" >> $GITHUB_ENV
           if [ "${{ inputs.project-directory }}" == "" ]; then
@@ -144,7 +169,7 @@ jobs:
           fi
 
       - name: SonarQube Scan
-        if: ${{ env.SHOULD_RUN_SONAR == 'true' }}
+        if: ${{ steps.go-compat.outputs.compatible == 'true' && env.SHOULD_RUN_SONAR == 'true' }}
         uses: SonarSource/sonarqube-scan-action@aa494459d7c39c106cc77b166de8b4250a32bb97 # v5.1.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

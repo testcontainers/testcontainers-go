@@ -30,11 +30,35 @@ jobs:
             cache-dependency-path: "${{ inputs.project-directory == '' && '.' || inputs.project-directory }}/go.sum"
         id: go
 
+      - name: Determine golangci-lint version
+        id: linter-version
+        working-directory: ./${{ inputs.project-directory == '' && '.' || inputs.project-directory }}
+        shell: bash
+        run: |
+          # golangci-lint must be built with a Go version >= the module's go directive.
+          MODULE_GO_VERSION=$(grep '^go ' go.mod | awk '{print $2}')
+          MODULE_MAJOR_MINOR=$(echo "${MODULE_GO_VERSION}" | grep -oE '^[0-9]+\.[0-9]+')
+
+          case "${MODULE_MAJOR_MINOR}" in
+            1.24)
+              LINTER_VERSION=v2.0.2
+              ;;
+            1.25)
+              LINTER_VERSION=v2.9.0
+              ;;
+            *)
+              echo "::error::No golangci-lint version mapped for Go ${MODULE_GO_VERSION}. Please update ci-lint-go.yml."
+              exit 1
+              ;;
+          esac
+
+          echo "version=${LINTER_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Module requires Go ${MODULE_GO_VERSION}, using golangci-lint ${LINTER_VERSION}"
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # v7.0.0
         with:
-          # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
-          version: v2.0.2
+          version: ${{ steps.linter-version.outputs.version }}
           # Optional: working directory, useful for monorepos
           working-directory: ${{ inputs.project-directory }}
 
