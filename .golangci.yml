@@ -23,6 +23,15 @@ linters:
     - thelper
     - usestdlibvars
   exclusions:
+    rules:
+      - linters:
+          - revive
+        path: "^exec/"
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
+      - linters:
+          - revive
+        path: "^log/"
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
     presets:
       - comments
       - common-false-positives
