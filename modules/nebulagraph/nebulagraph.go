@@ -66,23 +66,26 @@ func RunCluster(ctx context.Context,
 	// 5. Run storage registration command with retry logic
 	activator, err := testcontainers.Run(ctx, defaultNebulaConsoleImage, defaultActivatorContainerCustomizers(netRes)...)
 	if err != nil {
-		errs := []error{fmt.Errorf("run activator container: %w", err)}
 		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes, storaged, graphd, metad)
+		errs := make([]error, 0, 1+len(errs2))
+		errs = append(errs, fmt.Errorf("run activator container: %w", err))
 		errs = append(errs, errs2...)
 		return nil, errors.Join(errs...)
 	}
 
 	activatorState, err := activator.State(ctx)
 	if err != nil {
-		errs := []error{fmt.Errorf("get activator container state: %w", err)}
 		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes, storaged, graphd, metad, activator)
+		errs := make([]error, 0, 1+len(errs2))
+		errs = append(errs, fmt.Errorf("get activator container state: %w", err))
 		errs = append(errs, errs2...)
 		return nil, errors.Join(errs...)
 	}
 
 	if !activatorState.Running && activatorState.ExitCode != 0 {
-		errs := []error{fmt.Errorf("activator container not running or exited with code %d", activatorState.ExitCode)}
 		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes, storaged, graphd, metad)
+		errs := make([]error, 0, 1+len(errs2))
+		errs = append(errs, fmt.Errorf("activator container not running or exited with code %d", activatorState.ExitCode))
 		errs = append(errs, errs2...)
 		return nil, errors.Join(errs...)
 	}
