@@ -18,7 +18,7 @@ permissions:
 jobs:
   lint-go-project:
     name: "lint: ${{ inputs.project-directory }}"
-    runs-on: 'ubuntu-latest'
+    runs-on: 'shipfox-2vcpu-ubuntu-2404'
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1

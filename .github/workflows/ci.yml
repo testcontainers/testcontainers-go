@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   detect-modules:
-    runs-on: ubuntu-latest
+    runs-on: shipfox-2vcpu-ubuntu-2404
     outputs:
       modules: ${{ steps.set-modified-modules.outputs.modules }}
       modules_count: ${{ steps.set-modified-modules-count.outputs.modules_count }}
@@ -69,7 +69,7 @@ jobs:
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
-      platforms: ${{ matrix.module == 'modulegen' && '["ubuntu-latest", "macos-latest", "windows-latest"]' || '["ubuntu-latest"]' }}
+      platforms: ${{ matrix.module == 'modulegen' && '["shipfox-2vcpu-ubuntu-2404", "macos-latest", "windows-latest"]' || '["shipfox-2vcpu-ubuntu-2404"]' }}
       project-directory: "${{ matrix.module }}"
       testcontainers-cloud: false
       rootless-docker: false
@@ -92,7 +92,7 @@ jobs:
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
-      platforms: '["ubuntu-latest"]'
+      platforms: '["shipfox-2vcpu-ubuntu-2404"]'
       project-directory: "."
       testcontainers-cloud: true
       rootless-docker: false
@@ -113,7 +113,7 @@ jobs:
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
-      platforms: '["ubuntu-latest"]'
+      platforms: '["shipfox-2vcpu-ubuntu-2404"]'
       project-directory: "."
       testcontainers-cloud: false
       rootless-docker: false
@@ -134,7 +134,7 @@ jobs:
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
-      platforms: '["ubuntu-latest"]'
+      platforms: '["shipfox-2vcpu-ubuntu-2404"]'
       project-directory: "."
       testcontainers-cloud: false
       rootless-docker: true
@@ -146,7 +146,7 @@ jobs:
     needs:
       - detect-modules
       - test
-    runs-on: ubuntu-latest
+    runs-on: shipfox-2vcpu-ubuntu-2404
     steps:
       - name: Check if any jobs failed
         if: ${{ failure() || cancelled() }}
