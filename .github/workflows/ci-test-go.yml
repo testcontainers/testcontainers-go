@@ -89,7 +89,7 @@ jobs:
       # Setup Testcontainers Cloud Client right before your Testcontainers tests
       - name: Setup Testcontainers Cloud Client
         if: ${{ inputs.testcontainers-cloud }}
-        uses: atomicjar/testcontainers-cloud-setup-action@c335bdbb570ec7c48f72c7d450c077f0a002293e # v1.3
+        uses: atomicjar/testcontainers-cloud-setup-action@7d1bab3fdfe0027c91936deca6b924d8a8a7a04d # v1.3
         with:
           token: ${{ secrets.TCC_TOKEN }}
 
@@ -105,7 +105,7 @@ jobs:
       # (Optionally) When you don't need Testcontainers Cloud anymore, you could terminate sessions eagerly
       - name: Terminate Testcontainers Cloud Client active sessions
         if: ${{ inputs.testcontainers-cloud }}
-        uses: atomicjar/testcontainers-cloud-setup-action@c335bdbb570ec7c48f72c7d450c077f0a002293e # v1.3
+        uses: atomicjar/testcontainers-cloud-setup-action@7d1bab3fdfe0027c91936deca6b924d8a8a7a04d # v1.3
         with:
           action: terminate
 
