@@ -36,16 +36,24 @@ jobs:
         shell: bash
         run: |
           # golangci-lint must be built with a Go version >= the module's go directive.
-          # v2.0.2 is built with Go 1.24, v2.9.0 is the first built with Go 1.25.
           MODULE_GO_VERSION=$(grep '^go ' go.mod | awk '{print $2}')
           MODULE_MAJOR_MINOR=$(echo "${MODULE_GO_VERSION}" | grep -oE '^[0-9]+\.[0-9]+')
 
-          if [ "$(printf '%s\n' "${MODULE_MAJOR_MINOR}" "1.25" | sort -V | head -n1)" = "1.25" ]; then
-            echo "version=v2.9.0" >> $GITHUB_OUTPUT
-          else
-            echo "version=v2.0.2" >> $GITHUB_OUTPUT
-          fi
-          echo "Module requires Go ${MODULE_GO_VERSION}, using golangci-lint $(grep 'version=' $GITHUB_OUTPUT | cut -d= -f2)"
+          case "${MODULE_MAJOR_MINOR}" in
+            1.24)
+              LINTER_VERSION=v2.0.2
+              ;;
+            1.25)
+              LINTER_VERSION=v2.9.0
+              ;;
+            *)
+              echo "::error::No golangci-lint version mapped for Go ${MODULE_GO_VERSION}. Please update ci-lint-go.yml."
+              exit 1
+              ;;
+          esac
+
+          echo "version=${LINTER_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Module requires Go ${MODULE_GO_VERSION}, using golangci-lint ${LINTER_VERSION}"
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # v7.0.0
