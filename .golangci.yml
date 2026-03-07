@@ -40,6 +40,10 @@ linters:
           - revive
         path: "internal/sdk/types/"
         text: "var-naming: avoid meaningless package names"
+      - linters:
+          - revive
+        path: "gcloud/internal/shared/"
+        text: "var-naming: avoid meaningless package names"
     presets:
       - comments
       - common-false-positives
