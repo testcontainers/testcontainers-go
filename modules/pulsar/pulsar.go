@@ -27,7 +27,7 @@ var defaultWaitStrategies = []wait.Strategy{
 		resp := string(respBytes)
 		return resp == `["standalone"]`
 	}),
-	wait.ForLog("Successfully updated the policies on namespace public/default"),
+	wait.ForListeningPort(defaultPulsarPort),
 }
 
 type Container struct {
@@ -138,7 +138,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 // - exposed ports: 6650/tcp, 8080/tcp
 // - waiting strategy: wait for all the following strategies:
 //   - the Pulsar admin API ("/admin/v2/clusters") to be ready on port 8080/tcp and return the response `["standalone"]`
-//   - the log message "Successfully updated the policies on namespace public/default"
+//   - the Pulsar port (6650/tcp) to be listening
 //
 // - command: "/bin/bash -c /pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone --no-functions-worker -nss"
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
