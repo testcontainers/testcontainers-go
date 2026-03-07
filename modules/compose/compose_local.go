@@ -329,7 +329,8 @@ func execute(
 	stderr := newCapturingPassThroughWriter(os.Stderr)
 
 	if err = cmd.Start(); err != nil {
-		execCmd := []string{"Starting command", dirContext, binary}
+		execCmd := make([]string, 0, 3+len(args))
+		execCmd = append(execCmd, "Starting command", dirContext, binary)
 		execCmd = append(execCmd, args...)
 
 		return ExecError{
@@ -356,7 +357,8 @@ func execute(
 
 	err = cmd.Wait()
 
-	execCmd := []string{"Reading std", dirContext, binary}
+	execCmd := make([]string, 0, 3+len(args))
+	execCmd = append(execCmd, "Reading std", dirContext, binary)
 	execCmd = append(execCmd, args...)
 
 	return ExecError{
