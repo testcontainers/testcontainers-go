@@ -333,7 +333,7 @@ func (d *DockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err erro
 	if !d.provider.Config().Config.RyukDisabled {
 		// NewReaper is deprecated: we need to find a way to create the reaper for compose
 		// bypassing the deprecation.
-		reaper, err = testcontainers.NewReaper(ctx, testcontainers.SessionID(), d.provider, "")
+		reaper, err = testcontainers.NewReaper(ctx, testcontainers.SessionID(), d.provider, "") //nolint:staticcheck // intentional use of deprecated API for compose
 		if err != nil {
 			return fmt.Errorf("create reaper: %w", err)
 		}

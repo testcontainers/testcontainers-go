@@ -49,8 +49,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	// Adapted from https://github.com/milvus-io/milvus/blob/v2.6.3/scripts/standalone_embed.sh
-	moduleOpts := []testcontainers.ContainerCustomizer{
-		testcontainers.WithExposedPorts(grpcPort, httpPort, etcdPort),
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 5+len(opts))
+	moduleOpts = append(moduleOpts, testcontainers.WithExposedPorts(grpcPort, httpPort, etcdPort),
 		testcontainers.WithEnv(map[string]string{
 			"ETCD_USE_EMBED":     "true",
 			"ETCD_DATA_DIR":      "/var/lib/milvus/etcd",
@@ -73,7 +73,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			ContainerFilePath: embedEtcdContainerPath,
 			Reader:            config,
 		}),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 

@@ -3,6 +3,7 @@ package couchbase
 import "github.com/testcontainers/testcontainers-go"
 
 // Option is a function that configures the Couchbase container.
+//
 // Deprecated: Use the With* functions instead.
 type Option func(*Config)
 
@@ -19,6 +20,7 @@ type Config struct {
 
 // WithEnterpriseService enables the eventing service in the container.
 // Only available in the Enterprise Edition of Couchbase Server.
+//
 // Deprecated: Use WithServiceEventing instead.
 func WithEventingService() Option {
 	return func(c *Config) {

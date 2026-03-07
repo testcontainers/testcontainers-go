@@ -40,14 +40,15 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the MongoDB container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MongoDBContainer, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts)+1)
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultPort),
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("Waiting for connections"),
 			wait.ForListeningPort(defaultPort),
 		),
 		testcontainers.WithEnv(map[string]string{}),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 
