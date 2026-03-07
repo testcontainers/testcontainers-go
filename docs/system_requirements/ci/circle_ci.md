@@ -57,7 +57,7 @@ workflows:
       - tests:
           matrix:
             parameters:
-              go-version: ["1.24.7", "1.25.1"]
+              go-version: ["1.25.7", "1.26.1"]
 
 ```
 

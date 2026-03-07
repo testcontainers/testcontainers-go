@@ -1,8 +1,8 @@
 module github.com/testcontainers/testcontainers-go/modules/neo4j
 
-go 1.24.0
+go 1.25.0
 
-toolchain go1.24.7
+toolchain go1.25.7
 
 require (
 	github.com/neo4j/neo4j-go-driver/v5 v5.18.0

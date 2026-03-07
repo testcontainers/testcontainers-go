@@ -1,8 +1,8 @@
 module github.com/testcontainers/testcontainers-go/modules/etcd
 
-go 1.24.0
+go 1.25.0
 
-toolchain go1.24.7
+toolchain go1.25.7
 
 require (
 	github.com/containerd/errdefs v1.0.0

@@ -57,7 +57,8 @@ func WithNetworkAlias(alias string, forNetwork *testcontainers.DockerNetwork) te
 // Run creates an instance of the Lowkey Vault container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	// Initialize with module defaults
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultAPIPort.Port(), defaultMetadataPort.Port()),
 		testcontainers.WithEnv(map[string]string{
 			"LOWKEY_VAULT_RELAXED_PORTS": "true",
@@ -65,7 +66,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("Started LowkeyVaultApp in "),
 		),
-	}
+	)
 
 	// Add user-provided options
 	moduleOpts = append(moduleOpts, opts...)

@@ -76,10 +76,8 @@ func WithFunctionsWorker() testcontainers.CustomizeRequestOption {
 			return err
 		}
 
-		ss := []wait.Strategy{
-			wait.ForLog("Function worker service started"),
-		}
-
+		ss := make([]wait.Strategy, 0, 1+len(defaultWaitStrategies))
+		ss = append(ss, wait.ForLog("Function worker service started"))
 		ss = append(ss, defaultWaitStrategies...)
 
 		return testcontainers.WithWaitStrategy(ss...)(req)
@@ -114,12 +112,10 @@ func WithTransactions() testcontainers.CustomizeRequestOption {
 		}
 
 		// clone defaultWaitStrategies
-		ss := []wait.Strategy{
-			wait.ForHTTP(transactionTopicEndpoint).WithPort(defaultPulsarAdminPort).WithStatusCodeMatcher(func(statusCode int) bool {
-				return statusCode == 200
-			}),
-		}
-
+		ss := make([]wait.Strategy, 0, 1+len(defaultWaitStrategies))
+		ss = append(ss, wait.ForHTTP(transactionTopicEndpoint).WithPort(defaultPulsarAdminPort).WithStatusCodeMatcher(func(statusCode int) bool {
+			return statusCode == 200
+		}))
 		ss = append(ss, defaultWaitStrategies...)
 
 		return testcontainers.WithWaitStrategy(ss...)(req)
@@ -142,11 +138,12 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 //
 // - command: "/bin/bash -c /pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone --no-functions-worker -nss"
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultPulsarPort, defaultPulsarAdminPort),
 		testcontainers.WithWaitStrategy(defaultWaitStrategies...),
 		testcontainers.WithCmd("/bin/bash", "-c", strings.Join([]string{defaultPulsarCmd, defaultPulsarCmdWithoutFunctionsWorker}, " ")),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 
