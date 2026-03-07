@@ -32,6 +32,10 @@ linters:
           - revive
         path: "^log/"
         text: "var-naming: avoid package names that conflict with Go standard library package names"
+      - linters:
+          - revive
+        path: "modulegen/internal/(context|template)/"
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
     presets:
       - comments
       - common-false-positives
