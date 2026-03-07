@@ -49,7 +49,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	password := settings.Password
 
 	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 4+len(opts))
-	moduleOpts = append(moduleOpts, testcontainers.WithEnv(map[string]string{
+	moduleOpts = append(moduleOpts,
+		testcontainers.WithEnv(map[string]string{
 			"discovery.type":              "single-node",
 			"DISABLE_INSTALL_DEMO_CONFIG": "true",
 			"DISABLE_SECURITY_PLUGIN":     "true",
