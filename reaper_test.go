@@ -3,12 +3,15 @@ package testcontainers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"strconv"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/containerd/errdefs"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
@@ -529,6 +532,110 @@ func TestSpawnerBackoff(t *testing.T) {
 	b := spawner.backoff()
 	for range 100 {
 		require.LessOrEqual(t, b.NextBackOff(), time.Millisecond*250, "backoff should not exceed max interval")
+	}
+}
+
+type timeoutErr struct{}
+
+func (timeoutErr) Error() string {
+	return "timeout"
+}
+
+func (timeoutErr) Timeout() bool {
+	return true
+}
+
+func TestSpawnerRetryError(t *testing.T) {
+	t.Run("nil error", func(t *testing.T) {
+		err := spawner.retryError(nil)
+		require.NoError(t, err, "should return nil")
+	})
+
+	tests := []struct {
+		name      string
+		err       error
+		permanent bool
+	}{
+		{
+			name:      "docker conflict error",
+			err:       errors.New("Conflict. The container name \"foo\" is already in use by container \"01234\"."),
+			permanent: false,
+		},
+		{
+			name:      "podman conflict error",
+			err:       errors.New("creating container storage: the container name \"foo\" is already in use by 01234."),
+			permanent: false,
+		},
+		{
+			name:      "errdefs.ErrNotFound",
+			err:       fmt.Errorf("foo: %w", errdefs.ErrNotFound),
+			permanent: false,
+		},
+		{
+			name:      "errdefs.Conflict",
+			err:       fmt.Errorf("foo: %w", errdefs.ErrConflict),
+			permanent: true,
+		},
+		{
+			name:      "syscall.ECONNREFUSED",
+			err:       fmt.Errorf("foo: %w", syscall.ECONNREFUSED),
+			permanent: false,
+		},
+		{
+			name:      "syscall.ECONNRESET",
+			err:       fmt.Errorf("foo: %w", syscall.ECONNRESET),
+			permanent: false,
+		},
+		{
+			name:      "syscall.ECONNABORTED",
+			err:       fmt.Errorf("foo: %w", syscall.ECONNABORTED),
+			permanent: false,
+		},
+		{
+			name:      "syscall.ETIMEDOUT",
+			err:       fmt.Errorf("foo: %w", syscall.ETIMEDOUT),
+			permanent: false,
+		},
+		{
+			name:      "os.ErrDeadlineExceeded",
+			err:       fmt.Errorf("foo: %w", os.ErrDeadlineExceeded),
+			permanent: false,
+		},
+		{
+			name:      "context.DeadlineExceeded",
+			err:       fmt.Errorf("foo: %w", context.DeadlineExceeded),
+			permanent: false,
+		},
+		{
+			name:      "timeout error",
+			err:       fmt.Errorf("foo: %w", timeoutErr{}),
+			permanent: false,
+		},
+		{
+			name:      "context.Canceled",
+			err:       fmt.Errorf("foo: %w", context.Canceled),
+			permanent: false,
+		},
+		{
+			name:      "random error",
+			err:       errors.New("some random error"),
+			permanent: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotErr := spawner.retryError(tt.err)
+			require.Error(t, gotErr, "should not return nil")
+
+			permanentError := &backoff.PermanentError{}
+			isPermanent := errors.As(gotErr, &permanentError)
+			if tt.permanent {
+				require.True(t, isPermanent, "the error should be a PermanentError")
+			} else {
+				require.False(t, isPermanent, "the error should not be a PermanentError")
+			}
+		})
 	}
 }
 
