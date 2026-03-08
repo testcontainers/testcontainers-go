@@ -12,8 +12,8 @@ import (
 	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/flags"
-	"github.com/docker/compose/v2/pkg/api"
-	"github.com/docker/compose/v2/pkg/compose"
+	"github.com/docker/compose/v5/pkg/api"
+	"github.com/docker/compose/v5/pkg/compose"
 	"github.com/google/uuid"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -145,21 +145,34 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*DockerCompose, error) {
 		return nil, ErrNoStackConfigured
 	}
 
+	// Create Docker CLI for compose service (uses moby/moby client internally)
 	dockerCli, err := command.NewDockerCli()
 	if err != nil {
-		return nil, fmt.Errorf("new docker client: %w", err)
+		return nil, fmt.Errorf("new docker cli: %w", err)
 	}
 
-	if err = dockerCli.Initialize(flags.NewClientOptions(), command.WithInitializeClient(makeClient)); err != nil {
-		return nil, fmt.Errorf("initialize docker client: %w", err)
+	if err = dockerCli.Initialize(flags.NewClientOptions()); err != nil {
+		return nil, fmt.Errorf("initialize docker cli: %w", err)
 	}
 
+	composeService, err := compose.NewComposeService(dockerCli)
+	if err != nil {
+		return nil, fmt.Errorf("new compose service: %w", err)
+	}
+
+	// Create a separate testcontainers Docker client for provider and direct API calls.
+	// Compose v5 uses moby/moby/client internally, which is not type-compatible with
+	// docker/docker/client used by testcontainers, so we cannot share the CLI client.
 	provider, err := testcontainers.NewDockerProvider(testcontainers.WithLogger(composeOptions.Logger))
 	if err != nil {
 		return nil, fmt.Errorf("new docker provider: %w", err)
 	}
 
-	dockerClient := dockerCli.Client()
+	dockerClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("new docker client: %w", err)
+	}
+
 	provider.SetClient(dockerClient)
 
 	composeAPI := &DockerCompose{
@@ -168,7 +181,7 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*DockerCompose, error) {
 		temporaryConfigs: composeOptions.temporaryPaths,
 		logger:           composeOptions.Logger,
 		projectProfiles:  composeOptions.Profiles,
-		composeService:   compose.NewComposeService(dockerCli),
+		composeService:   composeService,
 		dockerClient:     dockerClient,
 		waitStrategies:   make(map[string]wait.Strategy),
 		containers:       make(map[string]*testcontainers.DockerContainer),

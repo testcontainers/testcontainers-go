@@ -27,7 +27,8 @@ type Container struct {
 // Run creates an instance of the CosmosDB container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	// Initialize with module defaults
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultPort),
 		testcontainers.WithCmdArgs("--enable-explorer", "false"),
 		testcontainers.WithWaitStrategy(
@@ -36,7 +37,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				wait.ForListeningPort(nat.Port(defaultPort)),
 			),
 		),
-	}
+	)
 
 	// Add user-provided options
 	moduleOpts = append(moduleOpts, opts...)

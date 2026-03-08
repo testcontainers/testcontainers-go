@@ -688,10 +688,8 @@ func newMongoClient(
 	connString, err := ctr.(*atlaslocal.Container).ConnectionString(ctx)
 	require.NoError(t, err)
 
-	copts := []*options.ClientOptions{
-		options.Client().ApplyURI(connString),
-	}
-
+	copts := make([]*options.ClientOptions, 0, 1+len(opts))
+	copts = append(copts, options.Client().ApplyURI(connString))
 	copts = append(copts, opts...)
 
 	client, err := mongo.Connect(copts...)

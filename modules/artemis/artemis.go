@@ -97,7 +97,8 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Artemis container type with a given image
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultBrokerPort, defaultHTTPPort),
 		testcontainers.WithEnv(map[string]string{
 			"ARTEMIS_USER":     defaultUser,
@@ -109,7 +110,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			wait.ForLog("Server is now live"),
 			wait.ForLog("REST API available"),
 		),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 

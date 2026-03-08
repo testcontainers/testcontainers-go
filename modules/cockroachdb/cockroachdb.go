@@ -175,7 +175,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		},
 	}
 
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 5+len(opts)+1)
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithCmd(
 			"start-single-node",
 			memStorageFlag+defaultStoreSize,
@@ -206,7 +207,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				return connStr
 			}),
 		),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 

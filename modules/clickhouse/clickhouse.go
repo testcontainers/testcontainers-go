@@ -67,7 +67,8 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the ClickHouse container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ClickHouseContainer, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(httpPort.Port(), nativePort.Port()),
 		testcontainers.WithEnv(map[string]string{
 			"CLICKHOUSE_USER":     defaultUser,
@@ -78,7 +79,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			return status == 200
 		},
 		)),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 
