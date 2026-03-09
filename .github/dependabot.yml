@@ -72,6 +72,7 @@ updates:
         - /modules/socat
         - /modules/solace
         - /modules/surrealdb
+        - /modules/tidb
         - /modules/toxiproxy
         - /modules/valkey
         - /modules/vault
