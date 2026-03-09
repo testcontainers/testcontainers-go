@@ -3,7 +3,6 @@ package forgejo_test
 import (
 	"context"
 	"net/http"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -77,5 +76,5 @@ func TestForgejoSSHEndpoint(t *testing.T) {
 	require.NotEmpty(t, sshStr)
 
 	// verify the SSH connection string contains a host and port
-	require.True(t, strings.Contains(sshStr, ":"), "SSH connection string should contain host:port")
+	require.Contains(t, sshStr, ":", "SSH connection string should contain host:port")
 }

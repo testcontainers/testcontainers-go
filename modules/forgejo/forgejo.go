@@ -2,6 +2,7 @@ package forgejo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -60,7 +61,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	// a second container.Inspect call after Run returns.
 	var adminUser, adminPass string
 
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 4+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultHTTPPort, defaultSSHPort),
 		testcontainers.WithWaitStrategy(
 			wait.ForHTTP("/api/healthz").WithPort(defaultHTTPPort),
@@ -74,7 +76,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"FORGEJO_ADMIN_PASSWORD":          defaultPassword,
 			"FORGEJO_ADMIN_EMAIL":             defaultEmail,
 		}),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 
@@ -151,7 +153,7 @@ func (c *Container) SSHConnectionString(ctx context.Context) (string, error) {
 func WithAdminCredentials(username, password, email string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		if username == "" || password == "" || email == "" {
-			return fmt.Errorf("WithAdminCredentials: username, password, and email must not be empty")
+			return errors.New("WithAdminCredentials: username, password, and email must not be empty")
 		}
 		if req.Env == nil {
 			req.Env = make(map[string]string)
