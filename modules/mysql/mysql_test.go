@@ -54,7 +54,7 @@ func TestMySQLWithNonRootUserAndEmptyPassword(t *testing.T) {
 		mysql.WithUsername("test"),
 		mysql.WithPassword(""))
 	testcontainers.CleanupContainer(t, ctr)
-	require.EqualError(t, err, "empty password can be used only with the root user")
+	require.ErrorContains(t, err, "empty password can be used only with the root user")
 }
 
 func TestMySQLWithRootUserAndEmptyPassword(t *testing.T) {

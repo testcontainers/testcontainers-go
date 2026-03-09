@@ -2,12 +2,14 @@ package mongodb_test
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/mongodb"
@@ -125,18 +127,53 @@ func TestMongoDB(t *testing.T) {
 			endpoint, err := mongodbContainer.ConnectionString(ctx)
 			require.NoError(tt, err)
 
-			// Force direct connection to the container to avoid the replica set
-			// connection string that is returned by the container itself when
-			// using the replica set option.
-			mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(endpoint).SetDirect(true))
+			// Force direct connection to the container.
+			mongoClient, err := mongo.Connect(options.Client().ApplyURI(endpoint).SetDirect(true))
 			require.NoError(tt, err)
 
 			err = mongoClient.Ping(ctx, nil)
 			require.NoError(tt, err)
-			require.Equal(t, "test", mongoClient.Database("test").Name())
+			require.Equal(tt, "test", mongoClient.Database("test").Name())
 
-			_, err = mongoClient.Database("testcontainer").Collection("test").InsertOne(context.Background(), bson.M{})
+			// Basic insert test.
+			_, err = mongoClient.Database("testcontainer").Collection("test").InsertOne(ctx, bson.M{})
 			require.NoError(tt, err)
+
+			// If the container is configured with a replica set, run the change stream test.
+			if hasReplica, _ := hasReplicaSet(endpoint); hasReplica {
+				coll := mongoClient.Database("test").Collection("changes")
+				stream, err := coll.Watch(
+					ctx,
+					mongo.Pipeline{},
+					options.ChangeStream().SetFullDocument(options.UpdateLookup))
+				require.NoError(tt, err)
+				defer stream.Close(ctx)
+
+				doc := bson.M{"message": "hello change streams"}
+				_, err = coll.InsertOne(ctx, doc)
+				require.NoError(tt, err)
+
+				require.True(tt, stream.Next(ctx))
+				var changeEvent struct {
+					OperationType string `bson:"operationType"`
+					FullDocument  bson.M `bson:"fullDocument"`
+				}
+				err = stream.Decode(&changeEvent)
+				require.NoError(tt, err)
+
+				require.Equal(tt, "insert", changeEvent.OperationType, "Expected operationType to be 'insert")
+				require.Equal(tt, "hello change streams", changeEvent.FullDocument["message"])
+			}
 		})
 	}
+}
+
+// hasReplicaSet checks if the connection string includes a replicaSet query parameter.
+func hasReplicaSet(connStr string) (bool, error) {
+	u, err := url.Parse(connStr)
+	if err != nil {
+		return false, fmt.Errorf("parse connection string: %w", err)
+	}
+	q := u.Query()
+	return q.Get("replicaSet") != "", nil
 }

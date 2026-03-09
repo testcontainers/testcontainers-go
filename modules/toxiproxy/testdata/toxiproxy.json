@@ -1,0 +1,8 @@
+[
+    {
+        "name": "redis",
+        "listen": "0.0.0.0:8666",
+        "upstream": "redis:6379",
+        "enabled": true
+    }
+]

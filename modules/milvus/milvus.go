@@ -19,6 +19,8 @@ var embedEtcdConfigTpl string
 const (
 	embedEtcdContainerPath = "/milvus/configs/embedEtcd.yaml"
 	defaultClientPort      = 2379
+	etcdPort               = "2379/tcp"
+	httpPort               = "9091/tcp"
 	grpcPort               = "19530/tcp"
 )
 
@@ -30,15 +32,7 @@ type MilvusContainer struct {
 // ConnectionString returns the connection string for the milvus container, using the default 19530 port, and
 // obtaining the host and exposed port from the container.
 func (c *MilvusContainer) ConnectionString(ctx context.Context) (string, error) {
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-	port, err := c.MappedPort(ctx, grpcPort)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%s:%s", host, port.Port()), nil
+	return c.PortEndpoint(ctx, grpcPort, "")
 }
 
 // Deprecated: use Run instead
@@ -54,44 +48,44 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return nil, fmt.Errorf("render config: %w", err)
 	}
 
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{"19530/tcp", "9091/tcp", "2379/tcp"},
-		Env: map[string]string{
+	// Adapted from https://github.com/milvus-io/milvus/blob/v2.6.3/scripts/standalone_embed.sh
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 5+len(opts))
+	moduleOpts = append(moduleOpts,
+		testcontainers.WithExposedPorts(grpcPort, httpPort, etcdPort),
+		testcontainers.WithEnv(map[string]string{
 			"ETCD_USE_EMBED":     "true",
 			"ETCD_DATA_DIR":      "/var/lib/milvus/etcd",
 			"ETCD_CONFIG_PATH":   embedEtcdContainerPath,
 			"COMMON_STORAGETYPE": "local",
-		},
-		Cmd: []string{"milvus", "run", "standalone"},
-		WaitingFor: wait.ForHTTP("/healthz").
-			WithPort("9091").
-			WithStartupTimeout(time.Minute).
-			WithPollInterval(time.Second),
-		Files: []testcontainers.ContainerFile{
-			{ContainerFilePath: embedEtcdContainerPath, Reader: config},
-		},
-	}
+			"DEPLOY_MODE":        "STANDALONE",
+		}),
+		testcontainers.WithCmd("milvus", "run", "standalone"),
+		testcontainers.WithWaitStrategy(
+			wait.ForHTTP("/healthz").
+				WithPort(httpPort).
+				WithStartupTimeout(time.Minute).
+				WithPollInterval(time.Second),
+			wait.ForListeningPort(httpPort).
+				WithStartupTimeout(time.Minute),
+			wait.ForListeningPort(grpcPort).
+				WithStartupTimeout(time.Minute),
+		),
+		testcontainers.WithFiles(testcontainers.ContainerFile{
+			ContainerFilePath: embedEtcdContainerPath,
+			Reader:            config,
+		}),
+	)
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *MilvusContainer
-	if container != nil {
-		c = &MilvusContainer{Container: container}
+	if ctr != nil {
+		c = &MilvusContainer{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run milvus: %w", err)
 	}
 
 	return c, nil

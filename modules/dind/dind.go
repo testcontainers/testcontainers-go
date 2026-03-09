@@ -14,7 +14,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var defaultDockerDaemonPort = "2375/tcp"
+const (
+	defaultDockerDaemonPortNumber = "2375"
+	defaultDockerDaemonPort       = defaultDockerDaemonPortNumber + "/tcp"
+)
 
 // Container represents the Docker in Docker container type used in the module
 type Container struct {
@@ -23,48 +26,37 @@ type Container struct {
 
 // Run creates an instance of the Docker in Docker container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.ContainerRequest{
-		Image: img,
-		ExposedPorts: []string{
-			defaultDockerDaemonPort,
-		},
-		Privileged: true,
-		HostConfigModifier: func(hc *container.HostConfig) {
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 5+len(opts))
+	moduleOpts = append(moduleOpts,
+		testcontainers.WithCmd(
+			"dockerd", "-H", "tcp://0.0.0.0:"+defaultDockerDaemonPortNumber, "--tls=false",
+		),
+		testcontainers.WithEnv(map[string]string{
+			"DOCKER_HOST": "tcp://localhost:" + defaultDockerDaemonPortNumber,
+		}),
+		testcontainers.WithExposedPorts(defaultDockerDaemonPort),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort(defaultDockerDaemonPort)),
+		testcontainers.WithHostConfigModifier(func(hc *container.HostConfig) {
+			hc.Privileged = true
 			hc.CgroupnsMode = "host"
 			hc.Tmpfs = map[string]string{
 				"/run":     "",
 				"/var/run": "",
 			}
 			hc.Mounts = []mount.Mount{}
-		},
-		Cmd: []string{
-			"dockerd", "-H", "tcp://0.0.0.0:2375", "--tls=false",
-		},
-		Env: map[string]string{
-			"DOCKER_HOST": "tcp://localhost:2375",
-		},
-		WaitingFor: wait.ForListeningPort("2375/tcp"),
-	}
+		}),
+	)
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
-	if container != nil {
-		c = &Container{Container: container}
+	if ctr != nil {
+		c = &Container{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run dind: %w", err)
 	}
 
 	return c, nil
@@ -72,10 +64,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // Host returns the endpoint to connect to the Docker daemon running inside the DinD container.
 func (c *Container) Host(ctx context.Context) (string, error) {
-	return c.Container.PortEndpoint(ctx, "2375/tcp", "http")
+	return c.PortEndpoint(ctx, defaultDockerDaemonPort, "http")
 }
 
 // LoadImage loads an image into the DinD container.
+// It creates a temporary file to save the image and then copies it to the container.
+// This temporary file is deleted after the function returns.
 func (c *Container) LoadImage(ctx context.Context, image string) (err error) {
 	var provider testcontainers.GenericProvider
 	if provider, err = testcontainers.ProviderDocker.GetProvider(); err != nil {
@@ -96,11 +90,11 @@ func (c *Container) LoadImage(ctx context.Context, image string) (err error) {
 	}
 
 	containerPath := "/image/" + filepath.Base(imagesTar.Name())
-	if err = c.Container.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0o644); err != nil {
+	if err = c.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0o644); err != nil {
 		return fmt.Errorf("copy image to container: %w", err)
 	}
 
-	if _, _, err = c.Container.Exec(ctx, []string{"docker", "image", "load", "-i", containerPath}); err != nil {
+	if _, _, err = c.Exec(ctx, []string{"docker", "image", "load", "-i", containerPath}); err != nil {
 		return fmt.Errorf("import image: %w", err)
 	}
 

@@ -17,17 +17,12 @@ func TestWithConfigFile(t *testing.T) {
 		{
 			name:         "no existing command",
 			cmds:         []string{},
-			expectedCmds: []string{valkeyServerProcess, "/usr/local/valkey.conf"},
+			expectedCmds: []string{"/usr/local/valkey.conf"},
 		},
 		{
-			name:         "existing redis-server command as first argument",
-			cmds:         []string{valkeyServerProcess, "a", "b", "c"},
-			expectedCmds: []string{valkeyServerProcess, "/usr/local/valkey.conf", "a", "b", "c"},
-		},
-		{
-			name:         "non existing redis-server command",
+			name:         "existing commands",
 			cmds:         []string{"a", "b", "c"},
-			expectedCmds: []string{valkeyServerProcess, "/usr/local/valkey.conf", "a", "b", "c"},
+			expectedCmds: []string{"/usr/local/valkey.conf", "a", "b", "c"},
 		},
 	}
 
@@ -39,7 +34,7 @@ func TestWithConfigFile(t *testing.T) {
 				},
 			}
 
-			err := WithConfigFile("redis.conf")(req)
+			err := WithConfigFile("valkey.conf")(req)
 			require.NoError(t, err)
 
 			require.Equal(t, tt.expectedCmds, req.Cmd)
@@ -56,17 +51,12 @@ func TestWithLogLevel(t *testing.T) {
 		{
 			name:         "no existing command",
 			cmds:         []string{},
-			expectedCmds: []string{valkeyServerProcess, "--loglevel", "debug"},
+			expectedCmds: []string{"--loglevel", "debug"},
 		},
 		{
-			name:         "existing redis-server command as first argument",
-			cmds:         []string{valkeyServerProcess, "a", "b", "c"},
-			expectedCmds: []string{valkeyServerProcess, "a", "b", "c", "--loglevel", "debug"},
-		},
-		{
-			name:         "non existing redis-server command",
+			name:         "existing commands",
 			cmds:         []string{"a", "b", "c"},
-			expectedCmds: []string{valkeyServerProcess, "a", "b", "c", "--loglevel", "debug"},
+			expectedCmds: []string{"a", "b", "c", "--loglevel", "debug"},
 		},
 	}
 
@@ -99,28 +89,21 @@ func TestWithSnapshotting(t *testing.T) {
 			cmds:         []string{},
 			seconds:      60,
 			changedKeys:  100,
-			expectedCmds: []string{valkeyServerProcess, "--save", "60", "100"},
+			expectedCmds: []string{"--save", "60", "100"},
 		},
 		{
-			name:         "existing redis-server command as first argument",
-			cmds:         []string{valkeyServerProcess, "a", "b", "c"},
-			seconds:      60,
-			changedKeys:  100,
-			expectedCmds: []string{valkeyServerProcess, "a", "b", "c", "--save", "60", "100"},
-		},
-		{
-			name:         "non existing redis-server command",
+			name:         "existing commands",
 			cmds:         []string{"a", "b", "c"},
 			seconds:      60,
 			changedKeys:  100,
-			expectedCmds: []string{valkeyServerProcess, "a", "b", "c", "--save", "60", "100"},
+			expectedCmds: []string{"a", "b", "c", "--save", "60", "100"},
 		},
 		{
-			name:         "existing redis-server command as first argument",
-			cmds:         []string{valkeyServerProcess, "a", "b", "c"},
+			name:         "zero values get normalized",
+			cmds:         []string{"a", "b", "c"},
 			seconds:      0,
 			changedKeys:  0,
-			expectedCmds: []string{valkeyServerProcess, "a", "b", "c", "--save", "1", "1"},
+			expectedCmds: []string{"a", "b", "c", "--save", "1", "1"},
 		},
 	}
 

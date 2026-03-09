@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
+	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	tcnetwork "github.com/testcontainers/testcontainers-go/network"
 )
 
@@ -59,23 +60,13 @@ func (c *EtcdContainer) Terminate(ctx context.Context, opts ...testcontainers.Te
 
 // Run creates an instance of the etcd container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*EtcdContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image: img,
-		Cmd:   []string{},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	settings := defaultOptions(&req)
+	// Process custom options first to extract settings
+	settings := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
-			apply(&settings)
-		}
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
+			if err := apply(&settings); err != nil {
+				return nil, fmt.Errorf("apply option: %w", err)
+			}
 		}
 	}
 
@@ -84,8 +75,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return nil, fmt.Errorf("configure cluster: %w", err)
 	}
 
+	// Build moduleOpts with defaults
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(clientPort, peerPort),
+	}
+
+	// Append user options
+	moduleOpts = append(moduleOpts, opts...)
+
 	// configure CMD with the nodes
-	genericContainerReq.Cmd = configureCMD(settings)
+	moduleOpts = append(moduleOpts, testcontainers.WithCmd(configureCMD(settings)...))
 
 	// Initialise the etcd container with the current settings.
 	// The cluster network, if needed, is already part of the settings,
@@ -95,21 +94,33 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	if settings.clusterNetwork != nil {
 		// apply the network to the current node
-		err := tcnetwork.WithNetwork([]string{settings.nodeNames[settings.currentNode]}, settings.clusterNetwork)(&genericContainerReq)
-		if err != nil {
-			return c, fmt.Errorf("with network: %w", err)
-		}
+		moduleOpts = append(moduleOpts, tcnetwork.WithNetwork([]string{settings.nodeNames[settings.currentNode]}, settings.clusterNetwork))
 	}
 
-	if c.Container, err = testcontainers.GenericContainer(ctx, genericContainerReq); err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+	if settings.mountDataDir {
+		moduleOpts = append(moduleOpts, testcontainers.WithAdditionalLifecycleHooks(testcontainers.ContainerLifecycleHooks{
+			PostStarts: []testcontainers.ContainerHook{
+				func(ctx context.Context, c testcontainers.Container) error {
+					_, _, err := c.Exec(ctx, []string{"chmod", "o+rwx", "-R", dataDir}, tcexec.Multiplexed())
+					if err != nil {
+						return fmt.Errorf("chmod etcd data dir: %w", err)
+					}
+
+					return nil
+				},
+			},
+		}))
+	}
+
+	if c.Container, err = testcontainers.Run(ctx, img, moduleOpts...); err != nil {
+		return c, fmt.Errorf("run etcd: %w", err)
 	}
 
 	// only the first node creates the cluster
 	if settings.currentNode == 0 {
 		for i := 1; i < len(settings.nodeNames); i++ {
 			// move to the next node
-			childNode, err := Run(ctx, req.Image, append(clusterOpts, withCurrentNode(i))...)
+			childNode, err := Run(ctx, img, append(clusterOpts, withCurrentNode(i))...)
 			if err != nil {
 				// return the parent cluster node and the error, so the caller can clean up.
 				return c, fmt.Errorf("run cluster node: %w", err)
@@ -166,7 +177,10 @@ func configureCMD(settings options) []string {
 	cmds := []string{"etcd"}
 
 	if len(settings.nodeNames) == 0 {
-		cmds = append(cmds, "--name=default")
+		cmds = append(cmds, "--name=default",
+			"--listen-client-urls="+scheme+"://0.0.0.0:"+clientPort,
+			"--advertise-client-urls="+scheme+"://0.0.0.0:"+clientPort,
+		)
 	} else {
 		clusterCmds := []string{
 			"--name=" + settings.nodeNames[settings.currentNode],
@@ -202,17 +216,7 @@ func configureCMD(settings options) []string {
 // ClientEndpoint returns the client endpoint for the etcd container, and an error if any.
 // For a cluster, it returns the client endpoint of the first node.
 func (c *EtcdContainer) ClientEndpoint(ctx context.Context) (string, error) {
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	port, err := c.MappedPort(ctx, clientPort)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("http://%s:%s", host, port.Port()), nil
+	return c.PortEndpoint(ctx, clientPort, "http")
 }
 
 // ClientEndpoints returns the client endpoints for the etcd cluster.
@@ -238,17 +242,7 @@ func (c *EtcdContainer) ClientEndpoints(ctx context.Context) ([]string, error) {
 // PeerEndpoint returns the peer endpoint for the etcd container, and an error if any.
 // For a cluster, it returns the peer endpoint of the first node.
 func (c *EtcdContainer) PeerEndpoint(ctx context.Context) (string, error) {
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	port, err := c.MappedPort(ctx, peerPort)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("http://%s:%s", host, port.Port()), nil
+	return c.PortEndpoint(ctx, peerPort, "http")
 }
 
 // PeerEndpoints returns the peer endpoints for the etcd cluster.

@@ -15,7 +15,7 @@ func ExampleRun() {
 	// runOpenLDAPContainer {
 	ctx := context.Background()
 
-	openldapContainer, err := openldap.Run(ctx, "bitnami/openldap:2.6.6")
+	openldapContainer, err := openldap.Run(ctx, "bitnamilegacy/openldap:2.6.6")
 	defer func() {
 		if err := testcontainers.TerminateContainer(openldapContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -43,7 +43,7 @@ func ExampleRun_connect() {
 	// connectToOpenLdap {
 	ctx := context.Background()
 
-	openldapContainer, err := openldap.Run(ctx, "bitnami/openldap:2.6.6")
+	openldapContainer, err := openldap.Run(ctx, "bitnamilegacy/openldap:2.6.6")
 	defer func() {
 		if err := testcontainers.TerminateContainer(openldapContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)

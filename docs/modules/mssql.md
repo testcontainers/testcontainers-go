@@ -1,6 +1,6 @@
 # MS SQL Server
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
 
 ## Introduction
 
@@ -13,6 +13,23 @@ Please run the following command to add the MS SQL Server module to your Go depe
 ```
 go get github.com/testcontainers/testcontainers-go/modules/mssql
 ```
+
+!!!info
+    To use this module with Go 1.23+, set `GODEBUG=x509negativeserial=1`. See the related issue in the [mssql-docker repository](https://github.com/microsoft/mssql-docker/issues/895) for details.
+    
+    ```shell
+    # append to any existing GODEBUG flags instead of overwriting
+    export GODEBUG="${GODEBUG:+$GODEBUG,}x509negativeserial=1"
+    ```
+This occurs because:
+- Go 1.23+ has stricter certificate validation that rejects certificates with negative serial numbers by default
+- The `x509negativeserial=1` flag temporarily re‑enables acceptance of such certificates
+Note: This stricter check in Go 1.23+ is a security hardening. Prefer using images with fixed certificates (see below). Use the GODEBUG workaround only with affected images and in test environments.
+
+!!!info
+    This is fixed in SQL2019 CU32 and SQL2022 CU18 (see [SQL Server 2022 CU18 — KB 3867855](https://learn.microsoft.com/en-us/troubleshoot/sql/releases/sqlserver-2022/cumulativeupdate18#3867855)).
+    
+    Prefer using container images based on these (or newer) CUs to avoid setting `GODEBUG`.
 
 ## Usage example
 
@@ -29,7 +46,7 @@ go get github.com/testcontainers/testcontainers-go/modules/mssql
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
@@ -44,18 +61,18 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the MS SQL Server container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "mcr.microsoft.com/mssql/server:2022-RTM-GDR1-ubuntu-20.04")`.
 
-#### Init Scripts
+### Container Options
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
+When starting the MS SQL Server container, you can pass options in a variadic way to configure it.
+
+#### WithInitSQL
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 If you need to execute SQL files when the container starts, you can use `mssql.WithInitSQL(files
 ...io.Reader)` with one or more `*.sql` files. The files will be executed in order after the
@@ -70,24 +87,30 @@ This will:
 1. Copy each file into the container.
 2. Execute them using `sqlcmd` after the container is ready.
 
-#### End User License Agreement
+#### WithAcceptEula
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
 
 Due to licensing restrictions you are required to explicitly accept an EULA for this container image. To do so, you must use the function `mssql.WithAcceptEula()`. Failure to include this will result in the container failing to start.
 
-#### Password
+#### WithPassword
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
 
 If you need to set a different MS SQL Server password, you can use `mssql.WithPassword` with a valid password for MS SQL Server. E.g. `mssql.WithPassword("SuperStrong@Passw0rd")`.
 
 !!!info
     If you set a custom password string, it must adhere to the MS SQL Server [Password Policy](https://learn.microsoft.com/en-us/sql/relational-databases/security/password-policy?view=sql-server-ver16).
 
-{% include "../features/common_functional_options.md" %}
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 
 The MS SQL Server container exposes the following methods:
 
 #### ConnectionString
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.27.0"><span class="tc-version">:material-tag: v0.27.0</span></a>
 
 This method returns the connection string to connect to the Microsoft SQL Server container, using the default `1433` port.
 It's possible to pass extra parameters to the connection string, e.g. `encrypt=false` or `TrustServerCertificate=true`, in a variadic way.

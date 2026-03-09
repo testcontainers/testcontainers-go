@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/build"
 	"github.com/docker/docker/api/types/image"
 	"github.com/stretchr/testify/require"
 
@@ -83,24 +83,15 @@ func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
 
 func TestBuildImageFromDockerfile_BuildError(t *testing.T) {
 	ctx := context.Background()
-	dockerClient, err := NewDockerClientWithOpts(ctx)
-	require.NoError(t, err)
 
-	defer dockerClient.Close()
-
-	req := ContainerRequest{
-		FromDockerfile: FromDockerfile{
+	ctr, err := Run(ctx, "",
+		WithDockerfile(FromDockerfile{
 			Dockerfile: "error.Dockerfile",
 			Context:    filepath.Join(".", "testdata"),
-		},
-	}
-	ctr, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Started:          true,
-	})
+		}),
+	)
 	CleanupContainer(t, ctr)
-	require.EqualError(t, err, `create container: build image: The command '/bin/sh -c exit 1' returned a non-zero code: 1`)
+	require.EqualError(t, err, `generic container: create container: build image: The command '/bin/sh -c exit 1' returned a non-zero code: 1`)
 }
 
 func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
@@ -136,21 +127,18 @@ func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
 
 func TestBuildImageFromDockerfile_Target(t *testing.T) {
 	// there are three targets: target0, target1 and target2.
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		ctx := context.Background()
-		c, err := GenericContainer(ctx, GenericContainerRequest{
-			ContainerRequest: ContainerRequest{
-				FromDockerfile: FromDockerfile{
-					Context:    "testdata",
-					Dockerfile: "target.Dockerfile",
-					KeepImage:  false,
-					BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
-						buildOptions.Target = fmt.Sprintf("target%d", i)
-					},
+		c, err := Run(ctx, "",
+			WithDockerfile(FromDockerfile{
+				Context:    "testdata",
+				Dockerfile: "target.Dockerfile",
+				KeepImage:  false,
+				BuildOptionsModifier: func(buildOptions *build.ImageBuildOptions) {
+					buildOptions.Target = fmt.Sprintf("target%d", i)
 				},
-			},
-			Started: true,
-		})
+			}),
+		)
 		CleanupContainer(t, c)
 		require.NoError(t, err)
 
@@ -159,7 +147,7 @@ func TestBuildImageFromDockerfile_Target(t *testing.T) {
 
 		logs, err := io.ReadAll(r)
 		require.NoError(t, err)
-		require.Equal(t, fmt.Sprintf("target%d\n\n", i), string(logs))
+		require.Equal(t, fmt.Sprintf("target%d\n", i), string(logs))
 	}
 }
 
@@ -167,19 +155,16 @@ func ExampleGenericContainer_buildFromDockerfile() {
 	ctx := context.Background()
 
 	// buildFromDockerfileWithModifier {
-	c, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
-			FromDockerfile: FromDockerfile{
-				Context:    "testdata",
-				Dockerfile: "target.Dockerfile",
-				KeepImage:  false,
-				BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
-					buildOptions.Target = "target2"
-				},
+	c, err := Run(ctx, "",
+		WithDockerfile(FromDockerfile{
+			Context:    "testdata",
+			Dockerfile: "target.Dockerfile",
+			KeepImage:  false,
+			BuildOptionsModifier: func(buildOptions *build.ImageBuildOptions) {
+				buildOptions.Target = "target2"
 			},
-		},
-		Started: true,
-	})
+		}),
+	)
 	// }
 	defer func() {
 		if err := TerminateContainer(c); err != nil {
@@ -213,19 +198,16 @@ func TestBuildImageFromDockerfile_TargetDoesNotExist(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	ctr, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
-			FromDockerfile: FromDockerfile{
-				Context:    "testdata",
-				Dockerfile: "target.Dockerfile",
-				KeepImage:  false,
-				BuildOptionsModifier: func(buildOptions *types.ImageBuildOptions) {
-					buildOptions.Target = "target-foo"
-				},
+	ctr, err := Run(ctx, "",
+		WithDockerfile(FromDockerfile{
+			Context:    "testdata",
+			Dockerfile: "target.Dockerfile",
+			KeepImage:  false,
+			BuildOptionsModifier: func(buildOptions *build.ImageBuildOptions) {
+				buildOptions.Target = "target-foo"
 			},
-		},
-		Started: true,
-	})
+		}),
+	)
 	CleanupContainer(t, ctr)
 	require.Error(t, err)
 }

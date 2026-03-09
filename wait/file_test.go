@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/containerd/errdefs"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/errdefs"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -39,7 +39,7 @@ func testForFile() *wait.FileStrategy {
 }
 
 func TestForFile(t *testing.T) {
-	errNotFound := errdefs.NotFound(errors.New("file not found"))
+	errNotFound := errdefs.ErrNotFound.WithMessage("file not found")
 	ctx := context.Background()
 
 	t.Run("not-found", func(t *testing.T) {
@@ -78,10 +78,11 @@ func TestForFile(t *testing.T) {
 func TestFileStrategyWaitUntilReady_WithMatcher(t *testing.T) {
 	// waitForFileWithMatcher {
 	var out bytes.Buffer
-	dockerReq := testcontainers.ContainerRequest{
-		Image: "nginx:latest",
-		WaitingFor: wait.ForFile("/etc/nginx/nginx.conf").
-			WithStartupTimeout(time.Second * 10).
+	ctx := context.Background()
+	ctr, err := testcontainers.Run(
+		ctx, "nginx:latest",
+		testcontainers.WithWaitStrategy(wait.ForFile("/etc/nginx/nginx.conf").
+			WithStartupTimeout(time.Second*10).
 			WithPollInterval(time.Second).
 			WithMatcher(func(r io.Reader) error {
 				if _, err := io.Copy(&out, r); err != nil {
@@ -89,16 +90,10 @@ func TestFileStrategyWaitUntilReady_WithMatcher(t *testing.T) {
 				}
 				return nil
 			}),
-	}
+		),
+	)
 	// }
-
-	ctx := context.Background()
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
-	if container != nil {
-		t.Cleanup(func() {
-			require.NoError(t, container.Terminate(context.Background()))
-		})
-	}
+	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 	require.Contains(t, out.String(), "worker_processes")
 }

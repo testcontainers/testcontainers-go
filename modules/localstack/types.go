@@ -9,6 +9,7 @@ type LocalStackContainer struct {
 	testcontainers.Container
 }
 
+// Deprecated: use testcontainers.GenericContainerRequest instead
 // LocalStackContainerRequest represents the LocalStack container request type used in the module
 // to configure the container
 type LocalStackContainerRequest struct {

@@ -3,15 +3,18 @@ package testcontainers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"strconv"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
+	"github.com/containerd/errdefs"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/errdefs"
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/require"
 
@@ -74,6 +77,7 @@ func expectedReaperRequest(customize ...func(*ContainerRequest)) ContainerReques
 		Labels:       core.DefaultLabels(testSessionID),
 		HostConfigModifier: func(hostConfig *container.HostConfig) {
 			hostConfig.Binds = []string{core.MustExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
+			hostConfig.Privileged = true
 		},
 		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),
 		Env: map[string]string{
@@ -106,16 +110,7 @@ func testContainerStart(t *testing.T) {
 	t.Helper()
 	ctx := context.Background()
 
-	ctr, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image: nginxAlpineImage,
-			ExposedPorts: []string{
-				nginxDefaultPort,
-			},
-		},
-		Started: true,
-	})
+	ctr, err := Run(ctx, nginxAlpineImage, WithExposedPorts(nginxDefaultPort))
 	CleanupContainer(t, ctr)
 	require.NoError(t, err)
 }
@@ -170,16 +165,7 @@ func testContainerStop(t *testing.T) {
 
 	ctx := context.Background()
 
-	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image: nginxAlpineImage,
-			ExposedPorts: []string{
-				nginxDefaultPort,
-			},
-		},
-		Started: true,
-	})
+	nginxA, err := Run(ctx, nginxAlpineImage, WithExposedPorts(nginxDefaultPort))
 	CleanupContainer(t, nginxA)
 	require.NoError(t, err)
 
@@ -202,16 +188,7 @@ func testContainerTerminate(t *testing.T) {
 	t.Helper()
 	ctx := context.Background()
 
-	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType: providerType,
-		ContainerRequest: ContainerRequest{
-			Image: nginxAlpineImage,
-			ExposedPorts: []string{
-				nginxDefaultPort,
-			},
-		},
-		Started: true,
-	})
+	nginxA, err := Run(ctx, nginxAlpineImage, WithExposedPorts(nginxDefaultPort))
 	CleanupContainer(t, nginxA)
 	require.NoError(t, err)
 
@@ -238,6 +215,7 @@ func Test_NewReaper(t *testing.T) {
 				RyukReconnectionTimeout: 10 * time.Second,
 			},
 			expectedReaperRequest(),
+			false,
 		)
 	})
 
@@ -249,6 +227,7 @@ func Test_NewReaper(t *testing.T) {
 				RyukReconnectionTimeout: 10 * time.Second,
 			},
 			expectedReaperRequest(),
+			true,
 		)
 	})
 
@@ -265,6 +244,7 @@ func Test_NewReaper(t *testing.T) {
 					"RYUK_RECONNECTION_TIMEOUT": "20s",
 				}
 			}),
+			true,
 		)
 	})
 
@@ -279,6 +259,7 @@ func Test_NewReaper(t *testing.T) {
 					"RYUK_VERBOSE": "true",
 				}
 			}),
+			true,
 		)
 	})
 
@@ -293,6 +274,7 @@ func Test_NewReaper(t *testing.T) {
 					hostConfig.Binds = []string{core.MustExtractDockerSocket(ctx) + ":/var/run/docker.sock"}
 				}
 			}),
+			false,
 		)
 	})
 
@@ -306,8 +288,11 @@ func Test_NewReaper(t *testing.T) {
 			},
 			expectedReaperRequest(func(req *ContainerRequest) {
 				req.Image = config.ReaperDefaultImage
-				req.Privileged = true
+				req.HostConfigModifier = func(hc *container.HostConfig) {
+					hc.Privileged = true
+				}
 			}),
+			true,
 		)
 	})
 
@@ -324,13 +309,16 @@ func Test_NewReaper(t *testing.T) {
 			},
 			expectedReaperRequest(func(req *ContainerRequest) {
 				req.Image = config.ReaperDefaultImage
-				req.Privileged = true
+				req.HostConfigModifier = func(hc *container.HostConfig) {
+					hc.Privileged = true
+				}
 			}),
+			true,
 		)
 	})
 }
 
-func testNewReaper(ctx context.Context, t *testing.T, cfg config.Config, expected ContainerRequest) {
+func testNewReaper(ctx context.Context, t *testing.T, cfg config.Config, expected ContainerRequest, privileged bool) {
 	t.Helper()
 
 	if prefix := os.Getenv("TESTCONTAINERS_HUB_IMAGE_NAME_PREFIX"); prefix != "" {
@@ -357,6 +345,7 @@ func testNewReaper(ctx context.Context, t *testing.T, cfg config.Config, expecte
 	// checks for reaper's preCreationCallback fields
 	require.Equal(t, container.NetworkMode(Bridge), provider.hostConfig.NetworkMode, "expected networkMode doesn't match the submitted request")
 	require.True(t, provider.hostConfig.AutoRemove, "expected networkMode doesn't match the submitted request")
+	require.Equal(t, privileged, provider.hostConfig.Privileged, "expected privileged doesn't match the submitted request")
 }
 
 func Test_ReaperReusedIfHealthy(t *testing.T) {
@@ -518,7 +507,7 @@ func TestReaper_ReuseRunning(t *testing.T) {
 
 	obtainedReaperContainerIDs := make([]string, concurrency)
 	var wg sync.WaitGroup
-	for i := 0; i < concurrency; i++ {
+	for i := range concurrency {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
@@ -541,8 +530,112 @@ func TestReaper_ReuseRunning(t *testing.T) {
 
 func TestSpawnerBackoff(t *testing.T) {
 	b := spawner.backoff()
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		require.LessOrEqual(t, b.NextBackOff(), time.Millisecond*250, "backoff should not exceed max interval")
+	}
+}
+
+type timeoutErr struct{}
+
+func (timeoutErr) Error() string {
+	return "timeout"
+}
+
+func (timeoutErr) Timeout() bool {
+	return true
+}
+
+func TestSpawnerRetryError(t *testing.T) {
+	t.Run("nil error", func(t *testing.T) {
+		err := spawner.retryError(nil)
+		require.NoError(t, err, "should return nil")
+	})
+
+	tests := []struct {
+		name      string
+		err       error
+		permanent bool
+	}{
+		{
+			name:      "docker conflict error",
+			err:       errors.New("Conflict. The container name \"foo\" is already in use by container \"01234\"."),
+			permanent: false,
+		},
+		{
+			name:      "podman conflict error",
+			err:       errors.New("creating container storage: the container name \"foo\" is already in use by 01234."),
+			permanent: false,
+		},
+		{
+			name:      "errdefs.ErrNotFound",
+			err:       fmt.Errorf("foo: %w", errdefs.ErrNotFound),
+			permanent: false,
+		},
+		{
+			name:      "errdefs.Conflict",
+			err:       fmt.Errorf("foo: %w", errdefs.ErrConflict),
+			permanent: true,
+		},
+		{
+			name:      "syscall.ECONNREFUSED",
+			err:       fmt.Errorf("foo: %w", syscall.ECONNREFUSED),
+			permanent: false,
+		},
+		{
+			name:      "syscall.ECONNRESET",
+			err:       fmt.Errorf("foo: %w", syscall.ECONNRESET),
+			permanent: false,
+		},
+		{
+			name:      "syscall.ECONNABORTED",
+			err:       fmt.Errorf("foo: %w", syscall.ECONNABORTED),
+			permanent: false,
+		},
+		{
+			name:      "syscall.ETIMEDOUT",
+			err:       fmt.Errorf("foo: %w", syscall.ETIMEDOUT),
+			permanent: false,
+		},
+		{
+			name:      "os.ErrDeadlineExceeded",
+			err:       fmt.Errorf("foo: %w", os.ErrDeadlineExceeded),
+			permanent: false,
+		},
+		{
+			name:      "context.DeadlineExceeded",
+			err:       fmt.Errorf("foo: %w", context.DeadlineExceeded),
+			permanent: false,
+		},
+		{
+			name:      "timeout error",
+			err:       fmt.Errorf("foo: %w", timeoutErr{}),
+			permanent: false,
+		},
+		{
+			name:      "context.Canceled",
+			err:       fmt.Errorf("foo: %w", context.Canceled),
+			permanent: false,
+		},
+		{
+			name:      "random error",
+			err:       errors.New("some random error"),
+			permanent: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotErr := spawner.retryError(tt.err)
+			require.Error(t, gotErr, "should not return nil")
+
+			permanentError := &backoff.PermanentError{}
+			isPermanent := errors.As(gotErr, &permanentError)
+			if tt.permanent {
+				require.True(t, isPermanent, "the error should be a PermanentError")
+			} else {
+				require.False(t, isPermanent, "the error should not be a PermanentError")
+			}
+		})
 	}
 }
 

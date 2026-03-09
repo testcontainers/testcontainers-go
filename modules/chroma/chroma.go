@@ -2,7 +2,6 @@ package chroma
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -17,42 +16,32 @@ type ChromaContainer struct {
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Chroma container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*ChromaContainer, error) {
-	return Run(ctx, "chromadb/chroma:0.4.24", opts...)
+	return Run(ctx, "chromadb/chroma:1.4.0", opts...)
 }
 
 // Run creates an instance of the Chroma container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ChromaContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{"8000/tcp"},
-		WaitingFor: wait.ForAll(
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 2+len(opts))
+	moduleOpts = append(moduleOpts,
+		testcontainers.WithExposedPorts("8000/tcp"),
+		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort("8000/tcp"),
-			wait.ForLog("Application startup complete"),
-			wait.ForHTTP("/api/v1/heartbeat").WithStatusCodeMatcher(func(status int) bool {
+			wait.ForHTTP("/api/v2/heartbeat").WithStatusCodeMatcher(func(status int) bool {
 				return status == 200
 			}),
-		), // 5 seconds it's not enough for the container to start
-	}
+		),
+	)
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *ChromaContainer
-	if container != nil {
-		c = &ChromaContainer{Container: container}
+	if ctr != nil {
+		c = &ChromaContainer{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run chroma: %w", err)
 	}
 
 	return c, nil
@@ -60,15 +49,5 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // RESTEndpoint returns the REST endpoint of the Chroma container
 func (c *ChromaContainer) RESTEndpoint(ctx context.Context) (string, error) {
-	containerPort, err := c.MappedPort(ctx, "8000/tcp")
-	if err != nil {
-		return "", fmt.Errorf("failed to get container port: %w", err)
-	}
-
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", errors.New("failed to get container host")
-	}
-
-	return fmt.Sprintf("http://%s:%s", host, containerPort.Port()), nil
+	return c.PortEndpoint(ctx, "8000/tcp", "http")
 }

@@ -10,14 +10,14 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/go-connections/nat"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var (
+const (
 	// containerPorts {
 	defaultKubeSecurePort     = "6443/tcp"
 	defaultRancherWebhookPort = "8443/tcp"
@@ -39,12 +39,10 @@ func WithManifest(manifestPath string) testcontainers.CustomizeRequestOption {
 		manifest := filepath.Base(manifestPath)
 		target := k3sManifests + manifest
 
-		req.Files = append(req.Files, testcontainers.ContainerFile{
+		return testcontainers.WithFiles(testcontainers.ContainerFile{
 			HostFilePath:      manifestPath,
 			ContainerFilePath: target,
-		})
-
-		return nil
+		})(req)
 	}
 }
 
@@ -61,51 +59,39 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return nil, err
 	}
 
-	req := testcontainers.ContainerRequest{
-		Image: img,
-		ExposedPorts: []string{
-			defaultKubeSecurePort,
-			defaultRancherWebhookPort,
-		},
-		Privileged: true,
-		HostConfigModifier: func(hc *container.HostConfig) {
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 5+len(opts))
+	moduleOpts = append(moduleOpts,
+		testcontainers.WithExposedPorts(defaultKubeSecurePort, defaultRancherWebhookPort),
+		testcontainers.WithHostConfigModifier(func(hc *container.HostConfig) {
+			hc.Privileged = true
 			hc.CgroupnsMode = "host"
 			hc.Tmpfs = map[string]string{
 				"/run":     "",
 				"/var/run": "",
 			}
 			hc.Mounts = []mount.Mount{}
-		},
-		Cmd: []string{
+		}),
+		testcontainers.WithCmd(
 			"server",
 			"--disable=traefik",
-			"--tls-san=" + host, // Host which will be used to access the Kubernetes server from tests.
-		},
-		Env: map[string]string{
+			"--tls-san="+host, // Host which will be used to access the Kubernetes server from tests.
+		),
+		testcontainers.WithEnv(map[string]string{
 			"K3S_KUBECONFIG_MODE": "644",
-		},
-		WaitingFor: wait.ForLog(".*Node controller sync successful.*").AsRegexp(),
-	}
+		}),
+		testcontainers.WithWaitStrategy(wait.ForLog(".*Node controller sync successful.*").AsRegexp()),
+	)
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *K3sContainer
-	if container != nil {
-		c = &K3sContainer{Container: container}
+	if ctr != nil {
+		c = &K3sContainer{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run k3s: %w", err)
 	}
 
 	return c, nil
@@ -139,16 +125,6 @@ func getContainerHost(ctx context.Context, opts ...testcontainers.ContainerCusto
 
 // GetKubeConfig returns the modified kubeconfig with server url
 func (c *K3sContainer) GetKubeConfig(ctx context.Context) ([]byte, error) {
-	hostIP, err := c.Host(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get hostIP: %w", err)
-	}
-
-	mappedPort, err := c.MappedPort(ctx, nat.Port(defaultKubeSecurePort))
-	if err != nil {
-		return nil, fmt.Errorf("failed to get mapped port: %w", err)
-	}
-
 	reader, err := c.CopyFileFromContainer(ctx, defaultKubeConfigK3sPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to copy file from container: %w", err)
@@ -159,7 +135,11 @@ func (c *K3sContainer) GetKubeConfig(ctx context.Context) ([]byte, error) {
 		return nil, fmt.Errorf("failed to read file from container: %w", err)
 	}
 
-	server := "https://" + fmt.Sprintf("%v:%d", hostIP, mappedPort.Int())
+	server, err := c.PortEndpoint(ctx, nat.Port(defaultKubeSecurePort), "https")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get port endpoint: %w", err)
+	}
+
 	newKubeConfig, err := kubeConfigWithServerURL(string(kubeConfigYaml), server)
 	if err != nil {
 		return nil, fmt.Errorf("failed to modify kubeconfig with server url: %w", err)
@@ -200,8 +180,11 @@ func unmarshal(bytes []byte) (*KubeConfigValue, error) {
 	return &kubeConfig, nil
 }
 
-// LoadImages loads images into the k3s container.
 func (c *K3sContainer) LoadImages(ctx context.Context, images ...string) error {
+	return c.LoadImagesWithOpts(ctx, images)
+}
+
+func (c *K3sContainer) LoadImagesWithOpts(ctx context.Context, images []string, opts ...testcontainers.SaveImageOption) error {
 	provider, err := testcontainers.ProviderDocker.GetProvider()
 	if err != nil {
 		return fmt.Errorf("getting docker provider %w", err)
@@ -216,18 +199,18 @@ func (c *K3sContainer) LoadImages(ctx context.Context, images ...string) error {
 		_ = os.Remove(imagesTar.Name())
 	}()
 
-	err = provider.SaveImages(context.Background(), imagesTar.Name(), images...)
+	err = provider.SaveImagesWithOpts(context.Background(), imagesTar.Name(), images, opts...)
 	if err != nil {
 		return fmt.Errorf("saving images %w", err)
 	}
 
 	containerPath := "/tmp/" + filepath.Base(imagesTar.Name())
-	err = c.Container.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0x644)
+	err = c.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0x644)
 	if err != nil {
 		return fmt.Errorf("copying image to container %w", err)
 	}
 
-	_, _, err = c.Container.Exec(ctx, []string{"ctr", "-n=k8s.io", "images", "import", containerPath})
+	_, _, err = c.Exec(ctx, []string{"ctr", "-n=k8s.io", "images", "import", "--all-platforms", containerPath})
 	if err != nil {
 		return fmt.Errorf("importing image %w", err)
 	}

@@ -2,7 +2,6 @@ package weaviate
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -28,40 +27,28 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Weaviate container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*WeaviateContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		Cmd:          []string{"--host", "0.0.0.0", "--scheme", "http", "--port", "8080"},
-		ExposedPorts: []string{httpPort, grpcPort},
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithCmd("--host", "0.0.0.0", "--scheme", "http", "--port", "8080"),
+		testcontainers.WithExposedPorts(httpPort, grpcPort),
+		testcontainers.WithEnv(map[string]string{
 			"AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED": "true",
 			"PERSISTENCE_DATA_PATH":                   "/var/lib/weaviate",
-		},
-		WaitingFor: wait.ForAll(
+		}),
+		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort(httpPort).WithStartupTimeout(5*time.Second),
 			wait.ForListeningPort(grpcPort).WithStartupTimeout(5*time.Second),
 			wait.ForHTTP("/v1/.well-known/ready").WithPort(httpPort),
 		),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, append(moduleOpts, opts...)...)
 	var c *WeaviateContainer
-	if container != nil {
-		c = &WeaviateContainer{Container: container}
+	if ctr != nil {
+		c = &WeaviateContainer{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run weaviate: %w", err)
 	}
 
 	return c, nil
@@ -70,33 +57,18 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // HttpHostAddress returns the schema and host of the Weaviate container.
 // At the moment, it only supports the http scheme.
 //
-//nolint:revive //FIXME
+//nolint:revive,staticcheck //FIXME
 func (c *WeaviateContainer) HttpHostAddress(ctx context.Context) (string, string, error) {
-	port, err := c.MappedPort(ctx, httpPort)
+	endpoint, err := c.PortEndpoint(ctx, httpPort, "")
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get container port: %w", err)
+		return "", "", fmt.Errorf("port endpoint: %w", err)
 	}
 
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", "", errors.New("failed to get container host")
-	}
-
-	return "http", fmt.Sprintf("%s:%s", host, port.Port()), nil
+	return "http", endpoint, nil
 }
 
 // GrpcHostAddress returns the gRPC host of the Weaviate container.
 // At the moment, it only supports unsecured gRPC connection.
 func (c *WeaviateContainer) GrpcHostAddress(ctx context.Context) (string, error) {
-	port, err := c.MappedPort(ctx, grpcPort)
-	if err != nil {
-		return "", fmt.Errorf("failed to get container port: %w", err)
-	}
-
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", errors.New("failed to get container host")
-	}
-
-	return fmt.Sprintf("%s:%s", host, port.Port()), nil
+	return c.PortEndpoint(ctx, grpcPort, "")
 }

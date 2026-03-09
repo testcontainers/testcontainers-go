@@ -8,11 +8,13 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -74,24 +76,19 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 		Accepted: devNullAcceptorChan(),
 	}
 
-	req := ContainerRequest{
-		FromDockerfile: FromDockerfile{
-			Context:    "./testdata/",
+	opts := []ContainerCustomizer{
+		WithDockerfile(FromDockerfile{
+			Context:    filepath.Join(".", "testdata"),
 			Dockerfile: "echoserver.Dockerfile",
-		},
-		ExposedPorts: []string{"8080/tcp"},
-		WaitingFor:   wait.ForLog("ready"),
-		LogConsumerCfg: &LogConsumerConfig{
+		}),
+		WithExposedPorts("8080/tcp"),
+		WithWaitStrategy(wait.ForLog("ready")),
+		WithLogConsumerConfig(&LogConsumerConfig{
 			Consumers: []LogConsumer{&g},
-		},
+		}),
 	}
 
-	gReq := GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	c, err := GenericContainer(ctx, gReq)
+	c, err := Run(ctx, "", opts...)
 	CleanupContainer(t, c)
 	require.NoError(t, err)
 
@@ -138,24 +135,19 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 		Ack:      make(chan bool),
 	}
 
-	req := ContainerRequest{
-		FromDockerfile: FromDockerfile{
-			Context:    "./testdata/",
+	opts := []ContainerCustomizer{
+		WithDockerfile(FromDockerfile{
+			Context:    filepath.Join(".", "testdata"),
 			Dockerfile: "echoserver.Dockerfile",
-		},
-		ExposedPorts: []string{"8080/tcp"},
-		WaitingFor:   wait.ForLog("ready"),
-		LogConsumerCfg: &LogConsumerConfig{
+		}),
+		WithExposedPorts("8080/tcp"),
+		WithWaitStrategy(wait.ForLog("ready")),
+		WithLogConsumerConfig(&LogConsumerConfig{
 			Consumers: []LogConsumer{&g},
-		},
+		}),
 	}
 
-	gReq := GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	c, err := GenericContainer(ctx, gReq)
+	c, err := Run(ctx, "", opts...)
 	CleanupContainer(t, c)
 	require.NoError(t, err)
 
@@ -193,24 +185,19 @@ func Test_MultipleLogConsumers(t *testing.T) {
 		Accepted: devNullAcceptorChan(),
 	}
 
-	req := ContainerRequest{
-		FromDockerfile: FromDockerfile{
-			Context:    "./testdata/",
+	opts := []ContainerCustomizer{
+		WithDockerfile(FromDockerfile{
+			Context:    filepath.Join(".", "testdata"),
 			Dockerfile: "echoserver.Dockerfile",
-		},
-		ExposedPorts: []string{"8080/tcp"},
-		WaitingFor:   wait.ForLog("ready"),
-		LogConsumerCfg: &LogConsumerConfig{
+		}),
+		WithExposedPorts("8080/tcp"),
+		WithWaitStrategy(wait.ForLog("ready")),
+		WithLogConsumerConfig(&LogConsumerConfig{
 			Consumers: []LogConsumer{&first, &second},
-		},
+		}),
 	}
 
-	gReq := GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	c, err := GenericContainer(ctx, gReq)
+	c, err := Run(ctx, "", opts...)
 	CleanupContainer(t, c)
 	require.NoError(t, err)
 
@@ -248,16 +235,15 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	// closed to test behaviour in connection-closed situations.
 	ctx := context.Background()
 
-	dind, err := GenericContainer(ctx, GenericContainerRequest{
-		Started: true,
-		ContainerRequest: ContainerRequest{
-			Image:        "docker:dind",
-			ExposedPorts: []string{"2375/tcp"},
-			Env:          map[string]string{"DOCKER_TLS_CERTDIR": ""},
-			WaitingFor:   wait.ForListeningPort("2375/tcp"),
-			Privileged:   true,
-		},
-	})
+	dind, err := Run(
+		ctx, "docker:dind",
+		WithExposedPorts("2375/tcp"),
+		WithEnv(map[string]string{"DOCKER_TLS_CERTDIR": ""}),
+		WithWaitStrategy(wait.ForListeningPort("2375/tcp")),
+		WithHostConfigModifier(func(hc *container.HostConfig) {
+			hc.Privileged = true
+		}),
+	)
 	CleanupContainer(t, dind)
 	require.NoError(t, err)
 
@@ -358,15 +344,11 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 
 func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 	ctx := context.Background()
-	req := ContainerRequest{
-		Image:      "alpine:latest",
-		Cmd:        []string{"sh", "-c", "id -u"},
-		WaitingFor: wait.ForExit(),
-	}
-	ctr, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+
+	ctr, err := Run(ctx, "alpine:latest",
+		WithCmd("sh", "-c", "echo 'abcdefghi' && echo 'foo'"),
+		WithWaitStrategy(wait.ForExit()),
+	)
 	CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -375,7 +357,30 @@ func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
 	defer r.Close()
 	b, err := io.ReadAll(r)
 	require.NoError(t, err)
-	assert.Equal(t, "0", strings.TrimSpace(string(b)))
+	require.Equal(t, "abcdefghi\nfoo", strings.TrimSpace(string(b)))
+}
+
+func TestContainerLogsTty(t *testing.T) {
+	ctx := context.Background()
+
+	opts := []ContainerCustomizer{
+		WithCmd("sh", "-c", "echo 'abcdefghi' && echo 'foo'"),
+		WithConfigModifier(func(ctr *container.Config) {
+			ctr.Tty = true
+		}),
+		WithWaitStrategy(wait.ForExit()),
+	}
+
+	ctr, err := Run(ctx, "alpine:latest", opts...)
+	CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	r, err := ctr.Logs(ctx)
+	require.NoError(t, err)
+	defer r.Close()
+	b, err := io.ReadAll(r)
+	require.NoError(t, err)
+	require.Equal(t, "abcdefghi\r\nfoo", strings.TrimSpace(string(b)))
 }
 
 func TestContainerLogsEnableAtStart(t *testing.T) {
@@ -387,28 +392,22 @@ func TestContainerLogsEnableAtStart(t *testing.T) {
 	}
 
 	// logConsumersAtRequest {
-	req := ContainerRequest{
-		FromDockerfile: FromDockerfile{
-			Context:    "./testdata/",
+	c, err := Run(
+		ctx, "",
+		WithDockerfile(FromDockerfile{
+			Context:    filepath.Join(".", "testdata"),
 			Dockerfile: "echoserver.Dockerfile",
-		},
-		ExposedPorts: []string{"8080/tcp"},
-		WaitingFor:   wait.ForLog("ready"),
-		LogConsumerCfg: &LogConsumerConfig{
+		}),
+		WithExposedPorts("8080/tcp"),
+		WithWaitStrategy(wait.ForLog("ready")),
+		WithLogConsumerConfig(&LogConsumerConfig{
 			Opts:      []LogProductionOption{WithLogProductionTimeout(10 * time.Second)},
 			Consumers: []LogConsumer{&g},
-		},
-	}
-	// }
-
-	gReq := GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	c, err := GenericContainer(ctx, gReq)
+		}),
+	)
 	CleanupContainer(t, c)
 	require.NoError(t, err)
+	// }
 
 	ep, err := c.Endpoint(ctx, "http")
 	require.NoError(t, err)
@@ -439,25 +438,20 @@ func Test_StartLogProductionStillStartsWithTooLowTimeout(t *testing.T) {
 		Accepted: devNullAcceptorChan(),
 	}
 
-	req := ContainerRequest{
-		FromDockerfile: FromDockerfile{
-			Context:    "./testdata/",
+	opts := []ContainerCustomizer{
+		WithDockerfile(FromDockerfile{
+			Context:    filepath.Join(".", "testdata"),
 			Dockerfile: "echoserver.Dockerfile",
-		},
-		ExposedPorts: []string{"8080/tcp"},
-		WaitingFor:   wait.ForLog("ready"),
-		LogConsumerCfg: &LogConsumerConfig{
+		}),
+		WithExposedPorts("8080/tcp"),
+		WithWaitStrategy(wait.ForLog("ready")),
+		WithLogConsumerConfig(&LogConsumerConfig{
 			Opts:      []LogProductionOption{WithLogProductionTimeout(4 * time.Second)},
 			Consumers: []LogConsumer{&g},
-		},
+		}),
 	}
 
-	gReq := GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	c, err := GenericContainer(ctx, gReq)
+	c, err := Run(ctx, "", opts...)
 	CleanupContainer(t, c)
 	require.NoError(t, err)
 }
@@ -471,31 +465,25 @@ func Test_StartLogProductionStillStartsWithTooHighTimeout(t *testing.T) {
 		Accepted: devNullAcceptorChan(),
 	}
 
-	req := ContainerRequest{
-		FromDockerfile: FromDockerfile{
-			Context:    "./testdata/",
+	opts := []ContainerCustomizer{
+		WithDockerfile(FromDockerfile{
+			Context:    filepath.Join(".", "testdata"),
 			Dockerfile: "echoserver.Dockerfile",
-		},
-		ExposedPorts: []string{"8080/tcp"},
-		WaitingFor:   wait.ForLog("ready"),
-		LogConsumerCfg: &LogConsumerConfig{
+		}),
+		WithExposedPorts("8080/tcp"),
+		WithWaitStrategy(wait.ForLog("ready")),
+		WithLogConsumerConfig(&LogConsumerConfig{
 			Opts:      []LogProductionOption{WithLogProductionTimeout(61 * time.Second)},
 			Consumers: []LogConsumer{&g},
-		},
+		}),
 	}
 
-	gReq := GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	c, err := GenericContainer(ctx, gReq)
+	c, err := Run(ctx, "", opts...)
 	CleanupContainer(t, c)
 	require.NoError(t, err)
 	require.NotNil(t, c)
 
-	dc := c.(*DockerContainer)
-	require.NoError(t, dc.stopLogProduction())
+	require.NoError(t, c.stopLogProduction())
 }
 
 // bufLogger is a Logging implementation that writes to a bytes.Buffer.
@@ -547,24 +535,19 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 		Accepted: devNullAcceptorChan(),
 	}
 
-	containerReq1 := ContainerRequest{
-		FromDockerfile: FromDockerfile{
-			Context:    "./testdata/",
+	opts1 := []ContainerCustomizer{
+		WithDockerfile(FromDockerfile{
+			Context:    filepath.Join(".", "testdata"),
 			Dockerfile: "echoserver.Dockerfile",
-		},
-		ExposedPorts: []string{"8080/tcp"},
-		WaitingFor:   wait.ForLog("ready"),
-		LogConsumerCfg: &LogConsumerConfig{
+		}),
+		WithExposedPorts("8080/tcp"),
+		WithWaitStrategy(wait.ForLog("ready")),
+		WithLogConsumerConfig(&LogConsumerConfig{
 			Consumers: []LogConsumer{&first},
-		},
+		}),
 	}
 
-	genericReq1 := GenericContainerRequest{
-		ContainerRequest: containerReq1,
-		Started:          true,
-	}
-
-	c, err := GenericContainer(ctx, genericReq1)
+	c, err := Run(ctx, "", opts1...)
 	CleanupContainer(t, c)
 	require.NoError(t, err)
 
@@ -583,24 +566,19 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 		Accepted: devNullAcceptorChan(),
 	}
 
-	containerReq2 := ContainerRequest{
-		FromDockerfile: FromDockerfile{
-			Context:    "./testdata/",
+	opts2 := []ContainerCustomizer{
+		WithDockerfile(FromDockerfile{
+			Context:    filepath.Join(".", "testdata"),
 			Dockerfile: "echoserver.Dockerfile",
-		},
-		ExposedPorts: []string{"8080/tcp"},
-		WaitingFor:   wait.ForLog("ready"),
-		LogConsumerCfg: &LogConsumerConfig{
+		}),
+		WithExposedPorts("8080/tcp"),
+		WithWaitStrategy(wait.ForLog("ready")),
+		WithLogConsumerConfig(&LogConsumerConfig{
 			Consumers: []LogConsumer{&second},
-		},
+		}),
 	}
 
-	genericReq2 := GenericContainerRequest{
-		ContainerRequest: containerReq2,
-		Started:          true,
-	}
-
-	c2, err := GenericContainer(ctx, genericReq2)
+	c2, err := Run(ctx, "", opts2...)
 	CleanupContainer(t, c2)
 	require.NoError(t, err)
 
@@ -674,16 +652,14 @@ func TestRestartContainerWithLogConsumer(t *testing.T) {
 	logConsumer := NewFooLogConsumer(t)
 
 	ctx := context.Background()
-	ctr, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
-			Image:           "hello-world",
-			AlwaysPullImage: true,
-			LogConsumerCfg: &LogConsumerConfig{
-				Consumers: []LogConsumer{logConsumer},
-			},
-		},
-		Started: false,
-	})
+	ctr, err := Run(
+		ctx, "hello-world",
+		WithAlwaysPull(),
+		WithLogConsumerConfig(&LogConsumerConfig{
+			Consumers: []LogConsumer{logConsumer},
+		}),
+		WithNoStart(),
+	)
 	CleanupContainer(t, ctr)
 	require.NoError(t, err)
 

@@ -1,7 +1,9 @@
 package servicebus
 
 import (
+	"errors"
 	"io"
+	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/mssql"
@@ -21,10 +23,10 @@ func defaultOptions() options {
 	}
 }
 
-// Satisfy the testcontainers.CustomizeRequestOption interface
+// Satisfy the testcontainers.ContainerCustomizer interface
 var _ testcontainers.ContainerCustomizer = (Option)(nil)
 
-// Option is an option for the Redpanda container.
+// Option is an option for the ServiceBus container.
 type Option func(*options) error
 
 // Customize is a NOOP. It's defined to satisfy the testcontainers.ContainerCustomizer interface.
@@ -62,6 +64,17 @@ func WithConfig(r io.Reader) testcontainers.CustomizeRequestOption {
 			ContainerFilePath: containerConfigFile,
 			FileMode:          0o644,
 		})
+
+		return nil
+	}
+}
+
+// validateEula validates that the EULA is accepted for the servicebus container.
+func validateEula() testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		if strings.ToUpper(req.Env["ACCEPT_EULA"]) != "Y" {
+			return errors.New("EULA not accepted. Please use the WithAcceptEULA option to accept the EULA")
+		}
 
 		return nil
 	}

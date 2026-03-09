@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"strings"
 
 	"github.com/docker/go-connections/nat"
@@ -20,14 +21,14 @@ const (
 	transactionTopicEndpoint               = "/admin/v2/persistent/pulsar/system/transaction_coordinator_assign/partitions"
 )
 
-var defaultWaitStrategies = wait.ForAll(
+var defaultWaitStrategies = []wait.Strategy{
 	wait.ForHTTP("/admin/v2/clusters").WithPort(defaultPulsarAdminPort).WithResponseMatcher(func(r io.Reader) bool {
 		respBytes, _ := io.ReadAll(r)
 		resp := string(respBytes)
 		return resp == `["standalone"]`
 	}),
-	wait.ForLog("Successfully updated the policies on namespace public/default"),
-)
+	wait.ForListeningPort(defaultPulsarPort),
+}
 
 type Container struct {
 	testcontainers.Container
@@ -64,24 +65,22 @@ func (c *Container) resolveURL(ctx context.Context, port nat.Port) (string, erro
 		proto = "http"
 	}
 
-	return fmt.Sprintf("%s://%s:%v", proto, host, pulsarPort.Int()), nil
+	return fmt.Sprintf("%s://%s", proto, net.JoinHostPort(host, pulsarPort.Port())), nil
 }
 
 // WithFunctionsWorker enables the functions worker, which will override the default pulsar command
 // and add a waiting strategy for the functions worker
 func WithFunctionsWorker() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Cmd = []string{"/bin/bash", "-c", defaultPulsarCmd}
-
-		ss := []wait.Strategy{
-			wait.ForLog("Function worker service started"),
+		if err := testcontainers.WithCmd("/bin/bash", "-c", defaultPulsarCmd)(req); err != nil {
+			return err
 		}
 
-		ss = append(ss, defaultWaitStrategies.Strategies...)
+		ss := make([]wait.Strategy, 0, 1+len(defaultWaitStrategies))
+		ss = append(ss, wait.ForLog("Function worker service started"))
+		ss = append(ss, defaultWaitStrategies...)
 
-		req.WaitingFor = wait.ForAll(ss...)
-
-		return nil
+		return testcontainers.WithWaitStrategy(ss...)(req)
 	}
 }
 
@@ -102,9 +101,7 @@ func (c *Container) WithLogConsumers(ctx context.Context, _ ...testcontainers.Lo
 // WithPulsarEnv allows to use the native APIs and set each variable with PULSAR_PREFIX_ as prefix.
 func WithPulsarEnv(configVar string, configValue string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["PULSAR_PREFIX_"+configVar] = configValue
-
-		return nil
+		return testcontainers.WithEnv(map[string]string{"PULSAR_PREFIX_" + configVar: configValue})(req)
 	}
 }
 
@@ -115,63 +112,49 @@ func WithTransactions() testcontainers.CustomizeRequestOption {
 		}
 
 		// clone defaultWaitStrategies
-		ss := []wait.Strategy{
-			wait.ForHTTP(transactionTopicEndpoint).WithPort(defaultPulsarAdminPort).WithStatusCodeMatcher(func(statusCode int) bool {
-				return statusCode == 200
-			}),
-		}
+		ss := make([]wait.Strategy, 0, 1+len(defaultWaitStrategies))
+		ss = append(ss, wait.ForHTTP(transactionTopicEndpoint).WithPort(defaultPulsarAdminPort).WithStatusCodeMatcher(func(statusCode int) bool {
+			return statusCode == 200
+		}))
+		ss = append(ss, defaultWaitStrategies...)
 
-		ss = append(ss, defaultWaitStrategies.Strategies...)
-
-		req.WaitingFor = wait.ForAll(ss...)
-
-		return nil
+		return testcontainers.WithWaitStrategy(ss...)(req)
 	}
 }
 
 // Deprecated: use Run instead
 // RunContainer creates an instance of the Pulsar container type
 func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	return Run(ctx, "apachepulsar/pulsar:2.10.2", opts...)
+	return Run(ctx, "apachepulsar/pulsar:4.0.9", opts...)
 }
 
 // Run creates an instance of the Pulsar container type, being possible to pass a custom request and options
 // The created container will use the following defaults:
-// - image: apachepulsar/pulsar:2.10.2
+// - image: apachepulsar/pulsar:4.0.9
 // - exposed ports: 6650/tcp, 8080/tcp
 // - waiting strategy: wait for all the following strategies:
 //   - the Pulsar admin API ("/admin/v2/clusters") to be ready on port 8080/tcp and return the response `["standalone"]`
-//   - the log message "Successfully updated the policies on namespace public/default"
+//   - the Pulsar port (6650/tcp) to be listening
 //
 // - command: "/bin/bash -c /pulsar/bin/apply-config-from-env.py /pulsar/conf/standalone.conf && bin/pulsar standalone --no-functions-worker -nss"
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		Env:          map[string]string{},
-		ExposedPorts: []string{defaultPulsarPort, defaultPulsarAdminPort},
-		WaitingFor:   defaultWaitStrategies,
-		Cmd:          []string{"/bin/bash", "-c", strings.Join([]string{defaultPulsarCmd, defaultPulsarCmdWithoutFunctionsWorker}, " ")},
-	}
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
+		testcontainers.WithExposedPorts(defaultPulsarPort, defaultPulsarAdminPort),
+		testcontainers.WithWaitStrategy(defaultWaitStrategies...),
+		testcontainers.WithCmd("/bin/bash", "-c", strings.Join([]string{defaultPulsarCmd, defaultPulsarCmdWithoutFunctionsWorker}, " ")),
+	)
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
-	if container != nil {
-		c = &Container{Container: container}
+	if ctr != nil {
+		c = &Container{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run pulsar: %w", err)
 	}
 
 	return c, nil

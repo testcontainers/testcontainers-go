@@ -55,12 +55,39 @@ Please just be sure to:
 
 * when updating the `go.mod` file, please run `make tidy-all` to ensure all modules are updated.
 
+### Module contribution 
+
+For detailed policies on module development and contributions, please refer to the [Module Index page](./modules/index.md).
+
 ## Documentation contributions
 
 The _Testcontainers for Go_ documentation is a static site built with [MkDocs](https://www.mkdocs.org/).
 We use the [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) theme, which offers a number of useful extensions to MkDocs.
 
 We publish our documentation using Netlify.
+
+### Adding functional options
+
+When adding a new functional option, besides adding the Go code for the new option, you have to update the [common_functional_options.md](./features/common_functional_options.md) file to include the new option, with the following syntax:
+
+```md
+#### WithNewFeature
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to set the new feature, you can use the `testcontainers.WithNewFeature` option.
+```
+
+Also update the [common_functional_options_list.md](./features/common_functional_options_list.md) file to include the new option, with the following syntax:
+
+```md
+- [`WithNewFeature`](/features/common_functional_options/#withnewfeature) Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+```
+
+This file is imported by all the modules, so they will all have the new option in the documentation.
+
+!!!important
+    The release process automatically updates the version of the module across the documentation site, so use the _`main`_ placeholder as shown above,as you don't need to use a fixed version manually.
 
 ### Adding code snippets
 

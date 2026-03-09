@@ -61,7 +61,89 @@ func TestWaitForListeningPortSucceeds(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestWaitForExposedPortSucceeds(t *testing.T) {
+func TestWaitForListeningPortInternallySucceeds(t *testing.T) {
+	localPort, err := nat.NewPort("tcp", "80")
+	require.NoError(t, err)
+
+	mappedPort, err := nat.NewPort("tcp", "8080")
+	require.NoError(t, err)
+
+	var mappedPortCount, execCount int
+	target := &MockStrategyTarget{
+		HostImpl: func(_ context.Context) (string, error) {
+			return "localhost", nil
+		},
+		MappedPortImpl: func(_ context.Context, p nat.Port) (nat.Port, error) {
+			if p.Int() != localPort.Int() {
+				return "", ErrPortNotFound
+			}
+			defer func() { mappedPortCount++ }()
+			if mappedPortCount <= 2 {
+				return "", ErrPortNotFound
+			}
+			return mappedPort, nil
+		},
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
+				Running: true,
+			}, nil
+		},
+		ExecImpl: func(_ context.Context, _ []string, _ ...exec.ProcessOption) (int, io.Reader, error) {
+			defer func() { execCount++ }()
+			if execCount <= 2 {
+				return 1, nil, nil
+			}
+			return 0, nil, nil
+		},
+	}
+
+	wg := ForListeningPort(localPort).
+		SkipExternalCheck().
+		WithStartupTimeout(5 * time.Second).
+		WithPollInterval(100 * time.Millisecond)
+
+	err = wg.WaitUntilReady(context.Background(), target)
+	require.NoError(t, err)
+}
+
+func TestWaitForMappedPortSucceeds(t *testing.T) {
+	localPort, err := nat.NewPort("tcp", "80")
+	require.NoError(t, err)
+
+	mappedPort, err := nat.NewPort("tcp", "8080")
+	require.NoError(t, err)
+
+	var mappedPortCount int
+	target := &MockStrategyTarget{
+		HostImpl: func(_ context.Context) (string, error) {
+			return "localhost", nil
+		},
+		MappedPortImpl: func(_ context.Context, p nat.Port) (nat.Port, error) {
+			if p.Int() != localPort.Int() {
+				return "", ErrPortNotFound
+			}
+			defer func() { mappedPortCount++ }()
+			if mappedPortCount <= 2 {
+				return "", ErrPortNotFound
+			}
+			return mappedPort, nil
+		},
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
+				Running: true,
+			}, nil
+		},
+	}
+
+	wg := ForMappedPort(localPort).
+		WithStartupTimeout(5 * time.Second).
+		WithPollInterval(100 * time.Millisecond)
+
+	err = wg.WaitUntilReady(context.Background(), target)
+	require.NoError(t, err)
+}
+
+func TestWaitForExposedPortSkipChecksSucceeds(t *testing.T) {
 	listener, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err)
 	defer listener.Close()
@@ -70,14 +152,28 @@ func TestWaitForExposedPortSucceeds(t *testing.T) {
 	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
 	require.NoError(t, err)
 
-	var mappedPortCount, execCount int
+	var inspectCount, mappedPortCount, execCount int
 	target := &MockStrategyTarget{
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
+			defer func() { inspectCount++ }()
+			if inspectCount == 0 {
+				// Simulate a container that hasn't bound any ports yet.
+				return &container.InspectResponse{
+					NetworkSettings: &container.NetworkSettings{
+						//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
+						NetworkSettingsBase: container.NetworkSettingsBase{
+							Ports: nat.PortMap{},
+						},
+					},
+				}, nil
+			}
+
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"80": []nat.PortBinding{
@@ -424,6 +520,7 @@ func TestHostPortStrategySucceedsGivenShellIsNotInstalled(t *testing.T) {
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"80": []nat.PortBinding{
@@ -487,6 +584,7 @@ func TestHostPortStrategySucceedsGivenShellIsNotFound(t *testing.T) {
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
+					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: nat.PortMap{
 							"80": []nat.PortBinding{

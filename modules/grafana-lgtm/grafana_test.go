@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"testing"
@@ -23,7 +24,7 @@ func TestGrafanaLGTM(t *testing.T) {
 
 	// perform assertions
 
-	t.Run("container is running with right version", func(t *testing.T) {
+	t.Run("right-version", func(t *testing.T) {
 		healthURL, err := url.Parse(fmt.Sprintf("http://%s/api/health", grafanaLgtmContainer.MustHttpEndpoint(ctx)))
 		require.NoError(t, err)
 
@@ -45,5 +46,54 @@ func TestGrafanaLGTM(t *testing.T) {
 		err = json.NewDecoder(httpResp.Body).Decode(&body)
 		require.NoError(t, err)
 		require.Equal(t, "11.0.0", body["version"])
+	})
+
+	availableURL := func(t *testing.T, url string) {
+		t.Helper()
+
+		conn, err := net.Dial("tcp", url)
+		defer func() {
+			if conn != nil {
+				err := conn.Close()
+				require.NoError(t, err)
+			}
+		}()
+		require.NoError(t, err)
+	}
+
+	t.Run("loki-endpoint", func(t *testing.T) {
+		lokiEndpoint := grafanaLgtmContainer.MustLokiEndpoint(ctx)
+		require.NotEmpty(t, lokiEndpoint)
+		availableURL(t, lokiEndpoint)
+	})
+
+	t.Run("tempo-endpoint", func(t *testing.T) {
+		tempoEndpoint := grafanaLgtmContainer.MustTempoEndpoint(ctx)
+		require.NotEmpty(t, tempoEndpoint)
+		availableURL(t, tempoEndpoint)
+	})
+
+	t.Run("otlp-http-endpoint", func(t *testing.T) {
+		otlpHTTPEndpoint := grafanaLgtmContainer.MustOtlpHttpEndpoint(ctx)
+		require.NotEmpty(t, otlpHTTPEndpoint)
+		availableURL(t, otlpHTTPEndpoint)
+	})
+
+	t.Run("otlp-grpc-endpoint", func(t *testing.T) {
+		otlpGrpcEndpoint := grafanaLgtmContainer.MustOtlpGrpcEndpoint(ctx)
+		require.NotEmpty(t, otlpGrpcEndpoint)
+		availableURL(t, otlpGrpcEndpoint)
+	})
+
+	t.Run("prometheus-http-endpoint", func(t *testing.T) {
+		prometheusHTTPEndpoint := grafanaLgtmContainer.MustPrometheusHttpEndpoint(ctx)
+		require.NotEmpty(t, prometheusHTTPEndpoint)
+		availableURL(t, prometheusHTTPEndpoint)
+	})
+
+	t.Run("grafana-endpoint", func(t *testing.T) {
+		grafanaEndpoint := grafanaLgtmContainer.MustHttpEndpoint(ctx)
+		require.NotEmpty(t, grafanaEndpoint)
+		availableURL(t, grafanaEndpoint)
 	})
 }

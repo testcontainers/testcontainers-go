@@ -119,7 +119,7 @@ func TestParallelContainersWithReuse(t *testing.T) {
 		postgresPort     = 5432
 		postgresPassword = "test"
 		postgresUser     = "test"
-		postgresDb       = "test"
+		postgresDB       = "test"
 	)
 
 	natPort := fmt.Sprintf("%d/tcp", postgresPort)
@@ -132,7 +132,7 @@ func TestParallelContainersWithReuse(t *testing.T) {
 			Env: map[string]string{
 				"POSTGRES_PASSWORD": postgresPassword,
 				"POSTGRES_USER":     postgresUser,
-				"POSTGRES_DATABASE": postgresDb,
+				"POSTGRES_DATABASE": postgresDB,
 			},
 			WaitingFor: wait.ForLog("database system is ready to accept connections").
 				WithPollInterval(100 * time.Millisecond).

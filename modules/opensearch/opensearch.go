@@ -35,17 +35,30 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the OpenSearch container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*OpenSearchContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{defaultHTTPPort, "9600/tcp"},
-		Env: map[string]string{
+	// Gather all config options (defaults and then apply provided options)
+	settings := defaultOptions()
+	for _, opt := range opts {
+		if apply, ok := opt.(Option); ok {
+			if err := apply(settings); err != nil {
+				return nil, fmt.Errorf("apply option: %w", err)
+			}
+		}
+	}
+
+	username := settings.Username
+	password := settings.Password
+
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 4+len(opts))
+	moduleOpts = append(moduleOpts,
+		testcontainers.WithEnv(map[string]string{
 			"discovery.type":              "single-node",
 			"DISABLE_INSTALL_DEMO_CONFIG": "true",
 			"DISABLE_SECURITY_PLUGIN":     "true",
-			"OPENSEARCH_USERNAME":         defaultUsername,
-			"OPENSEARCH_PASSWORD":         defaultPassword,
-		},
-		HostConfigModifier: func(hc *container.HostConfig) {
+			"OPENSEARCH_USERNAME":         username,
+			"OPENSEARCH_PASSWORD":         password,
+		}),
+		testcontainers.WithExposedPorts(defaultHTTPPort, "9600/tcp"),
+		testcontainers.WithHostConfigModifier(func(hc *container.HostConfig) {
 			hc.Ulimits = []*units.Ulimit{
 				{
 					Name: "memlock",
@@ -58,73 +71,47 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 					Hard: 65536,
 				},
 			}
-		},
-	}
+		}),
+		// the wait strategy does not support TLS at the moment,
+		// so we need to disable it in the strategy for now.
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/").
+			WithPort("9200").
+			WithTLS(false).
+			WithStartupTimeout(120*time.Second).
+			WithStatusCodeMatcher(func(status int) bool {
+				return status == 200
+			}).
+			WithBasicAuth(username, password).
+			WithResponseMatcher(func(body io.Reader) bool {
+				bs, err := io.ReadAll(body)
+				if err != nil {
+					return false
+				}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+				type response struct {
+					Tagline string `json:"tagline"`
+				}
 
-	// Gather all config options (defaults and then apply provided options)
-	settings := defaultOptions()
-	for _, opt := range opts {
-		if apply, ok := opt.(Option); ok {
-			apply(settings)
-		}
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
+				var r response
+				err = json.Unmarshal(bs, &r)
+				if err != nil {
+					return false
+				}
 
-	// set credentials if they are provided, otherwise use the defaults
-	if settings.Username != "" {
-		genericContainerReq.Env["OPENSEARCH_USERNAME"] = settings.Username
-	}
-	if settings.Password != "" {
-		genericContainerReq.Env["OPENSEARCH_PASSWORD"] = settings.Password
-	}
+				return r.Tagline == "The OpenSearch Project: https://opensearch.org/"
+			})),
+	)
 
-	username := genericContainerReq.Env["OPENSEARCH_USERNAME"]
-	password := genericContainerReq.Env["OPENSEARCH_PASSWORD"]
+	moduleOpts = append(moduleOpts, opts...)
 
-	// the wat strategy does not support TLS at the moment,
-	// so we need to disable it in the strategy for now.
-	genericContainerReq.WaitingFor = wait.ForHTTP("/").
-		WithPort("9200").
-		WithTLS(false).
-		WithStartupTimeout(120*time.Second).
-		WithStatusCodeMatcher(func(status int) bool {
-			return status == 200
-		}).
-		WithBasicAuth(username, password).
-		WithResponseMatcher(func(body io.Reader) bool {
-			bs, err := io.ReadAll(body)
-			if err != nil {
-				return false
-			}
-
-			type response struct {
-				Tagline string `json:"tagline"`
-			}
-
-			var r response
-			err = json.Unmarshal(bs, &r)
-			if err != nil {
-				return false
-			}
-
-			return r.Tagline == "The OpenSearch Project: https://opensearch.org/"
-		})
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *OpenSearchContainer
-	if container != nil {
-		c = &OpenSearchContainer{Container: container, User: username, Password: password}
+	if ctr != nil {
+		c = &OpenSearchContainer{Container: ctr, User: username, Password: password}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run opensearch: %w", err)
 	}
 
 	return c, nil
@@ -133,15 +120,5 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // Address retrieves the address of the OpenSearch container.
 // It will use http as protocol, as TLS is not supported at the moment.
 func (c *OpenSearchContainer) Address(ctx context.Context) (string, error) {
-	containerPort, err := c.MappedPort(ctx, defaultHTTPPort)
-	if err != nil {
-		return "", err
-	}
-
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("http://%s:%s", host, containerPort.Port()), nil
+	return c.PortEndpoint(ctx, defaultHTTPPort, "http")
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"slices"
 	"sync"
 	"time"
 
@@ -19,7 +20,7 @@ import (
 
 const (
 	// hubSshdImage {
-	sshdImage string = "testcontainers/sshd:1.2.0"
+	sshdImage string = "testcontainers/sshd:1.3.0"
 	// }
 
 	// HostInternal is the internal hostname used to reach the host from the container,
@@ -107,6 +108,7 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, ports ...int) (
 	}
 
 	// TODO: remove once we have docker context support via #2810
+	//nolint:staticcheck // SA1019: IPAddress is deprecated, but we need it for compatibility until v29
 	sshdIP := inspect.NetworkSettings.IPAddress
 	if sshdIP == "" {
 		single := len(inspect.NetworkSettings.Networks) == 1
@@ -135,13 +137,7 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, ports ...int) (
 
 		modes := []container.NetworkMode{container.NetworkMode(sshdFirstNetwork), "none", "host"}
 		// if the container is not in one of the modes, attach it to the first network of the SSHD container
-		found := false
-		for _, mode := range modes {
-			if hostConfig.NetworkMode == mode {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(modes, hostConfig.NetworkMode)
 		if !found {
 			req.Networks = append(req.Networks, sshdFirstNetwork)
 		}
@@ -181,30 +177,22 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, ports ...int) (
 
 // newSshdContainer creates a new SSHD container with the provided options.
 func newSshdContainer(ctx context.Context, opts ...ContainerCustomizer) (*sshdContainer, error) {
-	req := GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
-			Image:        sshdImage,
-			ExposedPorts: []string{sshPort},
-			Env:          map[string]string{"PASSWORD": sshPassword},
-			WaitingFor:   wait.ForListeningPort(sshPort),
-		},
-		Started: true,
-	}
+	moduleOpts := make([]ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
+		WithExposedPorts(sshPort),
+		WithEnv(map[string]string{"PASSWORD": sshPassword}),
+		WithWaitStrategy(wait.ForListeningPort(sshPort)),
+	)
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&req); err != nil {
-			return nil, err
-		}
-	}
-
-	c, err := GenericContainer(ctx, req)
+	c, err := Run(ctx, sshdImage, moduleOpts...)
 	var sshd *sshdContainer
 	if c != nil {
 		sshd = &sshdContainer{Container: c}
 	}
 
 	if err != nil {
-		return sshd, fmt.Errorf("generic container: %w", err)
+		return sshd, fmt.Errorf("run sshd container: %w", err)
 	}
 
 	if err = sshd.clientConfig(ctx); err != nil {

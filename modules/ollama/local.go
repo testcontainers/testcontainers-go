@@ -16,9 +16,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/containerd/errdefs"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/errdefs"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/go-connections/nat"
 
@@ -90,8 +90,21 @@ type localProcess struct {
 	binary string
 }
 
-// runLocal returns an OllamaContainer that uses the local Ollama binary instead of using a Docker container.
-func (c *localProcess) run(ctx context.Context, req testcontainers.GenericContainerRequest) (*OllamaContainer, error) {
+// run returns an OllamaContainer that uses the local Ollama binary instead of using a Docker container.
+func (c *localProcess) run(ctx context.Context, img string, opts []testcontainers.ContainerCustomizer) (*OllamaContainer, error) {
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: img,
+		},
+		Started: true,
+	}
+
+	for _, opt := range opts {
+		if err := opt.Customize(&req); err != nil {
+			return nil, fmt.Errorf("customize: %w", err)
+		}
+	}
+
 	if err := c.validateRequest(req); err != nil {
 		return nil, fmt.Errorf("validate request: %w", err)
 	}
@@ -127,7 +140,7 @@ func (c *localProcess) validateRequest(req testcontainers.GenericContainerReques
 	}
 
 	if !req.Started {
-		errs = append(errs, errors.New("Started must be true"))
+		errs = append(errs, errors.New("started must be true"))
 	}
 
 	if !reflect.DeepEqual(req.ExposedPorts, []string{localPort + "/tcp"}) {
@@ -408,9 +421,6 @@ func (c *localProcess) validateExecOptions(options container.ExecOptions) error 
 	if options.Tty {
 		errs = append(errs, fmt.Errorf("tty: %w", errors.ErrUnsupported))
 	}
-	if options.Detach {
-		errs = append(errs, fmt.Errorf("detach: %w", errors.ErrUnsupported))
-	}
 	if options.DetachKeys != "" {
 		errs = append(errs, fmt.Errorf("detach keys: %w", errors.ErrUnsupported))
 	}
@@ -442,6 +452,7 @@ func (c *localProcess) Inspect(ctx context.Context) (*container.InspectResponse,
 		},
 		NetworkSettings: &container.NetworkSettings{
 			Networks: map[string]*network.EndpointSettings{},
+			//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
 			NetworkSettingsBase: container.NetworkSettingsBase{
 				Bridge: "bridge",
 				Ports: nat.PortMap{
@@ -450,6 +461,7 @@ func (c *localProcess) Inspect(ctx context.Context) (*container.InspectResponse,
 					},
 				},
 			},
+			//nolint:staticcheck // SA1019: DefaultNetworkSettings is deprecated, but we need it for compatibility until v29
 			DefaultNetworkSettings: container.DefaultNetworkSettings{
 				IPAddress: c.host,
 			},
@@ -615,7 +627,7 @@ func (c *localProcess) Host(_ context.Context) (string, error) {
 // MappedPort implements testcontainers.Container interface for the local Ollama binary.
 func (c *localProcess) MappedPort(_ context.Context, port nat.Port) (nat.Port, error) {
 	if port.Port() != localPort || port.Proto() != "tcp" {
-		return "", errdefs.NotFound(fmt.Errorf("port %q not found", port))
+		return "", errdefs.ErrNotFound.WithMessage(fmt.Sprintf("port %q not found", port))
 	}
 
 	return nat.Port(c.port + "/tcp"), nil
@@ -634,8 +646,8 @@ func (c *localProcess) NetworkAliases(_ context.Context) (map[string][]string, e
 }
 
 // PortEndpoint implements testcontainers.Container interface for the local Ollama binary.
-// It returns proto://host:port string for the given exposed port.
-// It returns just host:port if proto is blank.
+// It returns proto://host:port or proto://[IPv6host]:port string for the given exposed port.
+// It returns just host:port or [IPv6host]:port if proto is blank.
 func (c *localProcess) PortEndpoint(ctx context.Context, port nat.Port, proto string) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
@@ -647,11 +659,11 @@ func (c *localProcess) PortEndpoint(ctx context.Context, port nat.Port, proto st
 		return "", fmt.Errorf("mapped port: %w", err)
 	}
 
-	if proto != "" {
-		proto += "://"
+	hostPost := net.JoinHostPort(host, outerPort.Port())
+	if proto == "" {
+		return hostPost, nil
 	}
-
-	return fmt.Sprintf("%s%s:%s", proto, host, outerPort.Port()), nil
+	return proto + "://" + hostPost, nil
 }
 
 // SessionID implements testcontainers.Container interface for the local Ollama binary.
@@ -705,7 +717,7 @@ func (c *localProcess) Customize(req *testcontainers.GenericContainerRequest) er
 	// and extracts the host, port and version from it.
 	if err := wait.Walk(&req.WaitingFor, func(w wait.Strategy) error {
 		if _, ok := w.(*wait.HostPortStrategy); ok {
-			return wait.VisitRemove
+			return wait.ErrVisitRemove
 		}
 
 		return nil
@@ -717,7 +729,11 @@ func (c *localProcess) Customize(req *testcontainers.GenericContainerRequest) er
 	if req.WaitingFor == nil {
 		req.WaitingFor = logStrategy
 	} else {
-		req.WaitingFor = wait.ForAll(req.WaitingFor, logStrategy)
+		if w, ok := req.WaitingFor.(*wait.MultiStrategy); ok && len(w.Strategies) == 0 {
+			w.Strategies = append(w.Strategies, logStrategy)
+		} else {
+			req.WaitingFor = logStrategy
+		}
 	}
 
 	// Setup the environment variables using a random port by default

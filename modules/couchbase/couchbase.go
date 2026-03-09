@@ -18,6 +18,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+//nolint:staticcheck //FIXME
 const (
 	// containerPorts {
 
@@ -65,33 +66,22 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 // Run creates an instance of the Couchbase container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*CouchbaseContainer, error) {
 	config := &Config{
-		enabledServices:  make([]Service, 0),
+		enabledServices:  []Service{},
 		username:         "Administrator",
 		password:         "password",
 		indexStorageMode: MemoryOptimized,
 	}
 
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{MGMT_PORT + "/tcp", MGMT_SSL_PORT + "/tcp"},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
+	// Process custom options first to extract config
+	// Start with initial services
+	allCustomizers := make([]testcontainers.ContainerCustomizer, 0, len(initialServices)+len(opts))
 	for _, srv := range initialServices {
-		opts = append(opts, withService(srv))
+		allCustomizers = append(allCustomizers, withService(srv))
 	}
+	allCustomizers = append(allCustomizers, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-
-		// transfer options to the config
-
+	// Transfer custom options to the config
+	for _, opt := range allCustomizers {
 		if bucketCustomizer, ok := opt.(bucketCustomizer); ok {
 			// If the option is a bucketCustomizer, we need to add the buckets to the request
 			config.buckets = append(config.buckets, bucketCustomizer.buckets...)
@@ -107,18 +97,28 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			config.password = credentialsCustomizer.password
 
 			if len(credentialsCustomizer.password) < 6 {
-				return nil, errors.New("admin password must be at most 6 characters long")
+				return nil, errors.New("admin password must be at least 6 characters long")
 			}
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	// Build moduleOpts with defaults
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 1+len(allCustomizers))
+	moduleOpts = append(moduleOpts,
+		testcontainers.WithExposedPorts(MGMT_PORT+"/tcp", MGMT_SSL_PORT+"/tcp"),
+	)
+
+	// Append all customizers (initial services + user opts)
+	moduleOpts = append(moduleOpts, allCustomizers...)
+
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var couchbaseContainer *CouchbaseContainer
-	if container != nil {
-		couchbaseContainer = &CouchbaseContainer{container, config}
+	if ctr != nil {
+		couchbaseContainer = &CouchbaseContainer{Container: ctr, config: config}
 	}
+
 	if err != nil {
-		return couchbaseContainer, err
+		return couchbaseContainer, fmt.Errorf("run couchbase: %w", err)
 	}
 
 	if err = couchbaseContainer.initCluster(ctx); err != nil {
@@ -133,6 +133,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 }
 
 // StartContainer creates an instance of the Couchbase container type
+//
 // Deprecated: use RunContainer instead
 func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, error) {
 	config := &Config{
@@ -147,11 +148,12 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 		opt(config)
 	}
 
-	customizers := []testcontainers.ContainerCustomizer{
+	customizers := make([]testcontainers.ContainerCustomizer, 0, 3+len(config.enabledServices))
+	customizers = append(customizers,
 		WithAdminCredentials(config.username, config.password),
 		WithIndexStorage(config.indexStorageMode),
 		WithBuckets(config.buckets...),
-	}
+	)
 
 	for _, srv := range config.enabledServices {
 		customizers = append(customizers, withService(srv))
@@ -163,17 +165,7 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 // ConnectionString returns the connection string to connect to the Couchbase container instance.
 // It returns a string with the format couchbase://<host>:<port>
 func (c *CouchbaseContainer) ConnectionString(ctx context.Context) (string, error) {
-	host, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	port, err := c.MappedPort(ctx, KV_PORT)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("couchbase://%s:%d", host, port.Int()), nil
+	return c.PortEndpoint(ctx, KV_PORT, "couchbase")
 }
 
 // Username returns the username of the Couchbase administrator.
@@ -218,11 +210,12 @@ func (c *CouchbaseContainer) waitUntilNodeIsOnline(ctx context.Context) error {
 		WithStatusCodeMatcher(func(status int) bool {
 			return status == http.StatusOK
 		}).
+		WithBasicAuth(c.config.username, c.config.password).
 		WaitUntilReady(ctx, c)
 }
 
 func (c *CouchbaseContainer) initializeIsEnterprise(ctx context.Context) error {
-	response, err := c.doHTTPRequest(ctx, MGMT_PORT, "/pools", http.MethodGet, nil, false)
+	response, err := c.doHTTPRequest(ctx, MGMT_PORT, "/pools", http.MethodGet, nil)
 	if err != nil {
 		return err
 	}
@@ -251,7 +244,7 @@ func (c *CouchbaseContainer) renameNode(ctx context.Context) error {
 		"hostname": hostname,
 	}
 
-	_, err = c.doHTTPRequest(ctx, MGMT_PORT, "/node/controller/rename", http.MethodPost, body, false)
+	_, err = c.doHTTPRequest(ctx, MGMT_PORT, "/node/controller/rename", http.MethodPost, body)
 
 	return err
 }
@@ -260,7 +253,7 @@ func (c *CouchbaseContainer) initializeServices(ctx context.Context) error {
 	body := map[string]string{
 		"services": c.getEnabledServices(),
 	}
-	_, err := c.doHTTPRequest(ctx, MGMT_PORT, "/node/controller/setupServices", http.MethodPost, body, false)
+	_, err := c.doHTTPRequest(ctx, MGMT_PORT, "/node/controller/setupServices", http.MethodPost, body)
 
 	return err
 }
@@ -281,7 +274,7 @@ func (c *CouchbaseContainer) setMemoryQuotas(ctx context.Context) error {
 		}
 	}
 
-	_, err := c.doHTTPRequest(ctx, MGMT_PORT, "/pools/default", http.MethodPost, body, false)
+	_, err := c.doHTTPRequest(ctx, MGMT_PORT, "/pools/default", http.MethodPost, body)
 
 	return err
 }
@@ -293,7 +286,7 @@ func (c *CouchbaseContainer) configureAdminUser(ctx context.Context) error {
 		"port":     "SAME",
 	}
 
-	_, err := c.doHTTPRequest(ctx, MGMT_PORT, "/settings/web", http.MethodPost, body, false)
+	_, err := c.doHTTPRequest(ctx, MGMT_PORT, "/settings/web", http.MethodPost, body)
 
 	return err
 }
@@ -352,7 +345,7 @@ func (c *CouchbaseContainer) configureExternalPorts(ctx context.Context) error {
 		body["eventingSSL"] = eventingSSL.Port()
 	}
 
-	_, err := c.doHTTPRequest(ctx, MGMT_PORT, "/node/controller/setupAlternateAddresses/external", http.MethodPut, body, true)
+	_, err := c.doHTTPRequest(ctx, MGMT_PORT, "/node/controller/setupAlternateAddresses/external", http.MethodPut, body)
 
 	return err
 }
@@ -370,7 +363,7 @@ func (c *CouchbaseContainer) configureIndexer(ctx context.Context) error {
 		"storageMode": string(c.config.indexStorageMode),
 	}
 
-	_, err := c.doHTTPRequest(ctx, MGMT_PORT, "/settings/indexes", http.MethodPost, body, true)
+	_, err := c.doHTTPRequest(ctx, MGMT_PORT, "/settings/indexes", http.MethodPost, body)
 
 	return err
 }
@@ -473,7 +466,7 @@ func (c *CouchbaseContainer) isPrimaryIndexOnline(ctx context.Context, bucket bu
 	}
 
 	err := backoff.Retry(func() error {
-		response, err := c.doHTTPRequest(ctx, QUERY_PORT, "/query/service", http.MethodPost, body, true)
+		response, err := c.doHTTPRequest(ctx, QUERY_PORT, "/query/service", http.MethodPost, body)
 		if err != nil {
 			return err
 		}
@@ -494,7 +487,7 @@ func (c *CouchbaseContainer) createPrimaryIndex(ctx context.Context, bucket buck
 		"statement": "CREATE PRIMARY INDEX on `" + bucket.name + "`",
 	}
 	err := backoff.Retry(func() error {
-		response, err := c.doHTTPRequest(ctx, QUERY_PORT, "/query/service", http.MethodPost, body, true)
+		response, err := c.doHTTPRequest(ctx, QUERY_PORT, "/query/service", http.MethodPost, body)
 		firstError := gjson.Get(string(response), "errors.0.code").Int()
 		if firstError != 0 {
 			return errors.New("index creation failed")
@@ -510,7 +503,7 @@ func (c *CouchbaseContainer) isQueryKeyspacePresent(ctx context.Context, bucket 
 	}
 
 	err := backoff.Retry(func() error {
-		response, err := c.doHTTPRequest(ctx, QUERY_PORT, "/query/service", http.MethodPost, body, true)
+		response, err := c.doHTTPRequest(ctx, QUERY_PORT, "/query/service", http.MethodPost, body)
 		if err != nil {
 			return err
 		}
@@ -556,12 +549,12 @@ func (c *CouchbaseContainer) createBucket(ctx context.Context, bucket bucket) er
 		"replicaNumber": strconv.Itoa(bucket.numReplicas),
 	}
 
-	_, err := c.doHTTPRequest(ctx, MGMT_PORT, "/pools/default/buckets", http.MethodPost, body, true)
+	_, err := c.doHTTPRequest(ctx, MGMT_PORT, "/pools/default/buckets", http.MethodPost, body)
 
 	return err
 }
 
-func (c *CouchbaseContainer) doHTTPRequest(ctx context.Context, port, path, method string, body map[string]string, auth bool) ([]byte, error) {
+func (c *CouchbaseContainer) doHTTPRequest(ctx context.Context, port, path, method string, body map[string]string) ([]byte, error) {
 	form := url.Values{}
 	for k, v := range body {
 		form.Set(k, v)
@@ -581,10 +574,7 @@ func (c *CouchbaseContainer) doHTTPRequest(ctx context.Context, port, path, meth
 		}
 
 		request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-		if auth {
-			request.SetBasicAuth(c.config.username, c.config.password)
-		}
+		request.SetBasicAuth(c.config.username, c.config.password)
 
 		response, err := http.DefaultClient.Do(request)
 		if err != nil {
@@ -608,17 +598,11 @@ func (c *CouchbaseContainer) doHTTPRequest(ctx context.Context, port, path, meth
 }
 
 func (c *CouchbaseContainer) getURL(ctx context.Context, port, path string) (string, error) {
-	host, err := c.Host(ctx)
+	endpoint, err := c.PortEndpoint(ctx, nat.Port(port), "http")
 	if err != nil {
 		return "", err
 	}
-
-	mappedPort, err := c.MappedPort(ctx, nat.Port(port))
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("http://%s:%d%s", host, mappedPort.Int(), path), nil
+	return endpoint + path, nil
 }
 
 func (c *CouchbaseContainer) getInternalIPAddress(ctx context.Context) (string, error) {

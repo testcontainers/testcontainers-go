@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"strings"
 	"sync"
 
@@ -113,7 +114,36 @@ func GenericLabels() map[string]string {
 
 // AddGenericLabels adds the generic labels to target.
 func AddGenericLabels(target map[string]string) {
-	for k, v := range GenericLabels() {
-		target[k] = v
+	maps.Copy(target, GenericLabels())
+}
+
+// Run is a convenience function that creates a new container and starts it.
+// It calls the GenericContainer function and returns a concrete DockerContainer type.
+func Run(ctx context.Context, img string, opts ...ContainerCustomizer) (*DockerContainer, error) {
+	req := ContainerRequest{
+		Image: img,
 	}
+
+	genericContainerReq := GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	}
+
+	for _, opt := range opts {
+		if err := opt.Customize(&genericContainerReq); err != nil {
+			return nil, fmt.Errorf("customize: %w", err)
+		}
+	}
+
+	ctr, err := GenericContainer(ctx, genericContainerReq)
+	var c *DockerContainer
+	if ctr != nil {
+		c = ctr.(*DockerContainer)
+	}
+
+	if err != nil {
+		return c, fmt.Errorf("generic container: %w", err)
+	}
+
+	return c, nil
 }

@@ -3,6 +3,7 @@ package testcontainers
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/docker/docker/api/types"
@@ -69,14 +70,16 @@ func (c *DockerClient) Info(ctx context.Context) (system.Info, error) {
 	if len(dockerInfo.Labels) > 0 {
 		infoLabels = `
   Labels:`
+		var infoLabelsSb72 strings.Builder
 		for _, lb := range dockerInfo.Labels {
-			infoLabels += "\n    " + lb
+			infoLabelsSb72.WriteString("\n    " + lb)
 		}
+		infoLabels += infoLabelsSb72.String()
 	}
 
 	log.Printf(infoMessage, packagePath,
 		dockerInfo.ServerVersion,
-		c.Client.ClientVersion(),
+		c.ClientVersion(),
 		dockerInfo.OperatingSystem, dockerInfo.MemTotal/1024/1024,
 		infoLabels,
 		internal.Version,

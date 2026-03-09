@@ -25,7 +25,6 @@ func NewProcessOptions(cmd []string) *ProcessOptions {
 	return &ProcessOptions{
 		ExecConfig: container.ExecOptions{
 			Cmd:          cmd,
-			Detach:       false,
 			AttachStdout: true,
 			AttachStderr: true,
 		},

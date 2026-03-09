@@ -78,6 +78,6 @@ func TestEventHubs_noEULA(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := eventhubs.Run(ctx, "mcr.microsoft.com/azure-messaging/eventhubs-emulator:2.1.0")
+	testcontainers.CleanupContainer(t, ctr)
 	require.Error(t, err)
-	require.Nil(t, ctr)
 }

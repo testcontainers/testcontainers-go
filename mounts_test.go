@@ -42,6 +42,38 @@ func TestVolumeMount(t *testing.T) {
 	}
 }
 
+func TestImageMount(t *testing.T) {
+	t.Parallel()
+
+	t.Run("valid-image-mount", func(t *testing.T) {
+		t.Parallel()
+		m := testcontainers.ImageMount("nginx:latest", "var/www/html", "/var/www/html")
+		// the source is a GenericImageMountSource, which does implement the Validator interface
+		if v, ok := m.Source.(testcontainers.Validator); ok {
+			require.NoError(t, v.Validate())
+		}
+
+		require.Equal(t, testcontainers.ContainerMount{
+			Source: testcontainers.NewGenericImageMountSource("nginx:latest", "var/www/html"),
+			Target: "/var/www/html",
+		}, m)
+	})
+
+	t.Run("invalid-image-mount", func(t *testing.T) {
+		t.Parallel()
+		m := testcontainers.ImageMount("nginx:latest", "../var/www/html", "/var/www/invalid")
+		// the source is a GenericImageMountSource, which does implement the Validator interface
+		if v, ok := m.Source.(testcontainers.Validator); ok {
+			require.Error(t, v.Validate())
+		}
+
+		require.Equal(t, testcontainers.ContainerMount{
+			Source: testcontainers.NewGenericImageMountSource("nginx:latest", "../var/www/html"),
+			Target: "/var/www/invalid",
+		}, m)
+	})
+}
+
 func TestContainerMounts_PrepareMounts(t *testing.T) {
 	volumeOptions := &mount.VolumeOptions{
 		Labels: testcontainers.GenericLabels(),
@@ -59,7 +91,7 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 		{
 			name:   "Empty",
 			mounts: nil,
-			want:   make([]mount.Mount, 0),
+			want:   []mount.Mount{},
 		},
 		{
 			name:   "Single volume mount",
@@ -160,6 +192,25 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Image mount",
+			mounts: testcontainers.ContainerMounts{
+				{
+					Source: testcontainers.NewDockerImageMountSource("my-custom-image:latest", "data"),
+					Target: "/data",
+				},
+			},
+			want: []mount.Mount{
+				{
+					Source: "my-custom-image:latest",
+					Type:   mount.TypeImage,
+					Target: "/data",
+					ImageOptions: &mount.ImageOptions{
+						Subpath: "data",
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -171,26 +222,19 @@ func TestContainerMounts_PrepareMounts(t *testing.T) {
 }
 
 func TestCreateContainerWithVolume(t *testing.T) {
-	volumeName := "test-volume"
 	// volumeMounts {
-	req := testcontainers.ContainerRequest{
-		Image: "alpine",
-		Mounts: testcontainers.ContainerMounts{
-			{
-				Source: testcontainers.GenericVolumeMountSource{
-					Name: volumeName,
-				},
-				Target: "/data",
-			},
-		},
-	}
-	// }
-
+	volumeName := "test-volume"
 	ctx := context.Background()
-	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+
+	c, err := testcontainers.Run(ctx, "alpine",
+		testcontainers.WithMounts(testcontainers.ContainerMount{
+			Source: testcontainers.GenericVolumeMountSource{
+				Name: volumeName,
+			},
+			Target: "/data",
+		}),
+	)
+	// }
 	testcontainers.CleanupContainer(t, c, testcontainers.RemoveVolumes(volumeName))
 	require.NoError(t, err)
 
@@ -206,19 +250,8 @@ func TestCreateContainerWithVolume(t *testing.T) {
 
 func TestMountsReceiveRyukLabels(t *testing.T) {
 	volumeName := "app-data"
-	req := testcontainers.ContainerRequest{
-		Image: "alpine",
-		Mounts: testcontainers.ContainerMounts{
-			{
-				Source: testcontainers.GenericVolumeMountSource{
-					Name: volumeName,
-				},
-				Target: "/data",
-			},
-		},
-	}
-
 	ctx := context.Background()
+
 	client, err := testcontainers.NewDockerClientWithOpts(ctx)
 	require.NoError(t, err)
 	defer client.Close()
@@ -228,10 +261,14 @@ func TestMountsReceiveRyukLabels(t *testing.T) {
 	err = client.VolumeRemove(ctx, volumeName, true)
 	require.NoError(t, err)
 
-	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	c, err := testcontainers.Run(ctx, "alpine",
+		testcontainers.WithMounts(testcontainers.ContainerMount{
+			Source: testcontainers.GenericVolumeMountSource{
+				Name: volumeName,
+			},
+			Target: "/data",
+		}),
+	)
 	testcontainers.CleanupContainer(t, c, testcontainers.RemoveVolumes(volumeName))
 	require.NoError(t, err)
 

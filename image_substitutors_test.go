@@ -66,6 +66,14 @@ func TestPrependHubRegistrySubstitutor(t *testing.T) {
 
 			require.Equalf(t, "my-registry/org/user/foo:latest", img, "expected my-registry/org/foo:latest, got %s", img)
 		})
+
+		t.Run("registry-with-port", func(t *testing.T) {
+			s := newPrependHubRegistry("my-registry:5000")
+
+			img, err := s.Substitute("foo:latest")
+			require.NoError(t, err)
+			require.Equalf(t, "my-registry:5000/foo:latest", img, "expected my-registry:5000/foo:latest, got %s", img)
+		})
 	})
 
 	t.Run("should not prepend the hub registry to the image name", func(t *testing.T) {
@@ -99,22 +107,14 @@ func TestPrependHubRegistrySubstitutor(t *testing.T) {
 }
 
 func TestSubstituteBuiltImage(t *testing.T) {
-	req := GenericContainerRequest{
-		ContainerRequest: ContainerRequest{
-			FromDockerfile: FromDockerfile{
-				Context:    "testdata",
-				Dockerfile: "echo.Dockerfile",
-				Tag:        "my-image",
-				Repo:       "my-repo",
-			},
-			ImageSubstitutors: []ImageSubstitutor{newPrependHubRegistry("my-registry")},
-		},
-		Started: false,
-	}
-
 	t.Run("should not use the properties prefix on built images", func(t *testing.T) {
 		config.Reset()
-		c, err := GenericContainer(context.Background(), req)
+		c, err := Run(context.Background(), "", WithDockerfile(FromDockerfile{
+			Context:    "testdata",
+			Dockerfile: "echo.Dockerfile",
+			Tag:        "my-image",
+			Repo:       "my-repo",
+		}), WithImageSubstitutors(newPrependHubRegistry("my-registry")))
 		CleanupContainer(t, c)
 		require.NoError(t, err)
 

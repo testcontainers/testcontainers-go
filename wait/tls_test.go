@@ -6,13 +6,13 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	_ "embed"
-	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/docker/docker/errdefs"
+	"github.com/containerd/errdefs"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -45,7 +45,7 @@ func testForTLSCert() *wait.TLSStrategy {
 }
 
 func TestForCert(t *testing.T) {
-	errNotFound := errdefs.NotFound(errors.New("file not found"))
+	errNotFound := errdefs.ErrNotFound.WithMessage("file not found")
 	ctx := context.Background()
 
 	t.Run("ca-not-found", func(t *testing.T) {
@@ -107,18 +107,14 @@ func ExampleForTLSCert() {
 	// be copied to in the container as detailed by the Dockerfile.
 	forCert := wait.ForTLSCert("/app/tls.pem", "/app/tls-key.pem").
 		WithServerName("testcontainer.go.test")
-	req := testcontainers.ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context: "testdata/http",
-		},
-		WaitingFor: forCert,
-	}
-	// }
 
-	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	c, err := testcontainers.Run(ctx, "",
+		testcontainers.WithDockerfile(testcontainers.FromDockerfile{
+			Context: filepath.Join("testdata", "http"),
+		}),
+		testcontainers.WithWaitStrategy(forCert),
+	)
+	// }
 	defer func() {
 		if err := testcontainers.TerminateContainer(c); err != nil {
 			log.Printf("failed to terminate container: %s", err)

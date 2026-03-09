@@ -8,8 +8,8 @@ removing specific strategies based on requirements of functional options.
 For example removing a TLS strategy if a functional option enabled insecure mode
 or changing the location of the certificate based on the configured user.
 
-If visit function returns `wait.VisitStop`, the walk stops.
-If visit function returns `wait.VisitRemove`, the current node is removed.
+If visit function returns `wait.ErrVisitStop`, the walk stops.
+If visit function returns `wait.ErrVisitRemove`, the current node is removed.
 
 ## Walk removing entries
 

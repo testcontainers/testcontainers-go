@@ -14,10 +14,10 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/containerd/errdefs"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/errdefs"
 	"github.com/docker/go-connections/nat"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
@@ -64,9 +64,10 @@ type ReaperProvider interface {
 	Config() TestcontainersConfig
 }
 
-// NewReaper creates a Reaper with a sessionID to identify containers and a provider to use
 // Deprecated: it's not possible to create a reaper any more. Compose module uses this method
 // to create a reaper for the compose stack.
+//
+// # NewReaper creates a Reaper with a sessionID to identify containers and a provider to use
 //
 // The caller must call Connect at least once on the returned Reaper and use the returned
 // result otherwise the reaper will be kept open until the process exits.
@@ -224,7 +225,7 @@ func (r *reaperSpawner) isRunning(ctx context.Context, ctr Container) error {
 	if !state.Running {
 		// Use NotFound error to indicate the container is not running
 		// and should be recreated.
-		return errdefs.NotFound(fmt.Errorf("container state: %s", state.Status))
+		return errdefs.ErrNotFound.WithMessage("container state: " + state.Status)
 	}
 
 	return nil
@@ -382,13 +383,13 @@ func (r *reaperSpawner) newReaper(ctx context.Context, sessionID string, provide
 		Image:        config.ReaperDefaultImage,
 		ExposedPorts: []string{string(port)},
 		Labels:       core.DefaultLabels(sessionID),
-		Privileged:   tcConfig.RyukPrivileged,
 		WaitingFor:   wait.ForListeningPort(port),
 		Name:         reaperContainerNameFromSessionID(sessionID),
 		HostConfigModifier: func(hc *container.HostConfig) {
 			hc.AutoRemove = true
 			hc.Binds = []string{dockerHostMount + ":/var/run/docker.sock"}
 			hc.NetworkMode = Bridge
+			hc.Privileged = tcConfig.RyukPrivileged
 		},
 		Env: map[string]string{},
 	}
@@ -568,8 +569,9 @@ func (r *Reaper) handshake(conn net.Conn) error {
 	return nil
 }
 
-// Labels returns the container labels to use so that this Reaper cleans them up
 // Deprecated: internally replaced by core.DefaultLabels(sessionID)
+//
+// Labels returns the container labels to use so that this Reaper cleans them up
 func (r *Reaper) Labels() map[string]string {
 	return GenericLabels()
 }

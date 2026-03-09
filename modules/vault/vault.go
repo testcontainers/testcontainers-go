@@ -28,37 +28,25 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Vault container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*VaultContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{defaultPort + "/tcp"},
-		HostConfigModifier: func(hc *container.HostConfig) {
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultPort + "/tcp"),
+		testcontainers.WithHostConfigModifier(func(hc *container.HostConfig) {
 			hc.CapAdd = []string{"CAP_IPC_LOCK"}
-		},
-		WaitingFor: wait.ForHTTP("/v1/sys/health").WithPort(defaultPort),
-		Env: map[string]string{
+		}),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/v1/sys/health").WithPort(defaultPort)),
+		testcontainers.WithEnv(map[string]string{
 			"VAULT_ADDR": "http://0.0.0.0:" + defaultPort,
-		},
+		}),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, append(moduleOpts, opts...)...)
 	var c *VaultContainer
-	if container != nil {
-		c = &VaultContainer{Container: container}
+	if ctr != nil {
+		c = &VaultContainer{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run vault: %w", err)
 	}
 
 	return c, nil
@@ -67,10 +55,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // WithToken is a container option function that sets the root token for the Vault
 func WithToken(token string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["VAULT_DEV_ROOT_TOKEN_ID"] = token
-		req.Env["VAULT_TOKEN"] = token
-
-		return nil
+		return testcontainers.WithEnv(map[string]string{
+			"VAULT_DEV_ROOT_TOKEN_ID": token,
+			"VAULT_TOKEN":             token,
+		})(req)
 	}
 }
 
@@ -83,26 +71,14 @@ func WithInitCommand(commands ...string) testcontainers.CustomizeRequestOption {
 		}
 		cmd := []string{"/bin/sh", "-c", strings.Join(commandsList, " && ")}
 
-		req.WaitingFor = wait.ForAll(req.WaitingFor, wait.ForExec(cmd))
-
-		return nil
+		return testcontainers.WithAdditionalWaitStrategy(wait.ForExec(cmd))(req)
 	}
 }
 
 // HttpHostAddress returns the http host address of Vault.
 // It returns a string with the format http://<host>:<port>
 //
-//nolint:revive //FIXME
+//nolint:revive,staticcheck //FIXME
 func (v *VaultContainer) HttpHostAddress(ctx context.Context) (string, error) {
-	host, err := v.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	port, err := v.MappedPort(ctx, defaultPort)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("http://%s:%d", host, port.Int()), nil
+	return v.PortEndpoint(ctx, defaultPort, "http")
 }

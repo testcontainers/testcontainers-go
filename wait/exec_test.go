@@ -21,16 +21,11 @@ import (
 
 func ExampleExecStrategy() {
 	ctx := context.Background()
-	req := testcontainers.ContainerRequest{
-		Image:      "alpine:latest",
-		Entrypoint: []string{"tail", "-f", "/dev/null"}, // needed for the container to stay alive
-		WaitingFor: wait.ForExec([]string{"ls", "/"}).WithStartupTimeout(1 * time.Second),
-	}
-
-	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	ctr, err := testcontainers.Run(
+		ctx, "alpine:latest",
+		testcontainers.WithEntrypoint("tail", "-f", "/dev/null"),
+		testcontainers.WithWaitStrategy(wait.ForExec([]string{"ls", "/"}).WithStartupTimeout(1*time.Second)),
+	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(ctr); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -177,10 +172,11 @@ func TestExecStrategyWaitUntilReady_withExitCode(t *testing.T) {
 
 func TestExecStrategyWaitUntilReady_CustomResponseMatcher(t *testing.T) {
 	// waitForExecExitCodeResponse {
-	dockerReq := testcontainers.ContainerRequest{
-		Image: "nginx:latest",
-		WaitingFor: wait.ForExec([]string{"echo", "hello world!"}).
-			WithStartupTimeout(time.Second * 10).
+	ctx := context.Background()
+	ctr, err := testcontainers.Run(
+		ctx, "nginx:latest",
+		testcontainers.WithWaitStrategy(wait.ForExec([]string{"echo", "hello world!"}).
+			WithStartupTimeout(time.Second*10).
 			WithExitCodeMatcher(func(exitCode int) bool {
 				return exitCode == 0
 			}).
@@ -188,12 +184,9 @@ func TestExecStrategyWaitUntilReady_CustomResponseMatcher(t *testing.T) {
 				data, _ := io.ReadAll(body)
 				return bytes.Equal(data, []byte("hello world!\n"))
 			}),
-	}
+		),
+	)
 	// }
-
-	ctx := context.Background()
-	ctr, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{ContainerRequest: dockerReq, Started: true})
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
-	// }
 }

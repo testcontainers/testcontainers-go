@@ -297,10 +297,12 @@ func TestRefresh(t *testing.T) {
 	err := internal.Refresh(testProject.ctx)
 	require.NoError(t, err)
 
-	var modulesAndExamples []context.TestcontainersModule
-
 	examples, err := testProject.ctx.GetExamples()
 	require.NoError(t, err)
+	modules, err := testProject.ctx.GetModules()
+	require.NoError(t, err)
+
+	modulesAndExamples := make([]context.TestcontainersModule, 0, len(examples)+len(modules))
 
 	for _, example := range examples {
 		modulesAndExamples = append(modulesAndExamples, context.TestcontainersModule{
@@ -308,9 +310,6 @@ func TestRefresh(t *testing.T) {
 			IsModule: false,
 		})
 	}
-
-	modules, err := testProject.ctx.GetModules()
-	require.NoError(t, err)
 
 	for _, module := range modules {
 		modulesAndExamples = append(modulesAndExamples, context.TestcontainersModule{
@@ -362,7 +361,7 @@ func assertModuleDocContent(t *testing.T, module context.TestcontainersModule, m
 
 	data := sanitiseContent(content)
 	require.Equal(t, "# "+title, data[0])
-	require.Equal(t, `Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>`, data[2])
+	require.Equal(t, `Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>`, data[2])
 	require.Equal(t, "## Introduction", data[4])
 	require.Equal(t, "The Testcontainers module for "+title+".", data[6])
 	require.Equal(t, "## Adding this module to your project dependencies", data[8])
@@ -372,9 +371,9 @@ func assertModuleDocContent(t *testing.T, module context.TestcontainersModule, m
 	require.Equal(t, "[Creating a "+title+" container](../../"+module.ParentDir()+"/"+lower+"/examples_test.go) inside_block:Example"+entrypoint, data[19])
 	require.Equal(t, "<!--/codeinclude-->", data[20])
 	require.Equal(t, "The "+title+" module exposes one entrypoint function to create the "+title+" container, and this function receives three parameters:", data[28])
-	require.True(t, strings.HasSuffix(data[31], "(*"+title+"Container, error)"))
-	require.Equal(t, "Use the second argument in the `Run` function to set a valid Docker image.", data[44])
-	require.Equal(t, "In example: `Run(context.Background(), \""+module.Image+"\")`.", data[45])
+	require.True(t, strings.HasSuffix(data[31], "(*Container, error)"))
+	require.Equal(t, "Use the second argument in the `Run` function to set a valid Docker image.", data[40])
+	require.Equal(t, "In example: `Run(context.Background(), \""+module.Image+"\")`.", data[41])
 }
 
 // assert content module test
@@ -426,12 +425,15 @@ func assertModuleContent(t *testing.T, module context.TestcontainersModule, exam
 	require.Equal(t, "type "+containerName+" struct {", data[10])
 	require.Equal(t, "// "+entrypoint+" creates an instance of the "+exampleName+" container type", data[14])
 	require.Equal(t, "func "+entrypoint+"(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*"+containerName+", error) {", data[15])
-	require.Equal(t, "\t\tImage: img,", data[17])
-	require.Equal(t, "\t\tif err := opt.Customize(&genericContainerReq); err != nil {", data[26])
-	require.Equal(t, "\t\t\treturn nil, fmt.Errorf(\"customize: %w\", err)", data[27])
-	require.Equal(t, "\tvar c *"+containerName, data[32])
-	require.Equal(t, "\t\tc = &"+containerName+"{Container: container}", data[34])
-	require.Equal(t, "\treturn c, nil", data[41])
+	require.Equal(t, "\t// Initialize with module defaults", data[16])
+	require.Equal(t, "\tmoduleOpts := []testcontainers.ContainerCustomizer{}", data[17])
+	require.Equal(t, "\t// Add user-provided options", data[19])
+	require.Equal(t, "\tmoduleOpts = append(moduleOpts, opts...)", data[20])
+	require.Equal(t, "\tctr, err := testcontainers.Run(ctx, img, moduleOpts...)", data[22])
+	require.Equal(t, "\tvar c *"+containerName, data[23])
+	require.Equal(t, "\t\tc = &"+containerName+"{Container: ctr}", data[25])
+	require.Equal(t, "\t\treturn c, fmt.Errorf(\"run "+lower+": %w\", err)", data[29])
+	require.Equal(t, "\treturn c, nil", data[32])
 }
 
 // assert content go.mod

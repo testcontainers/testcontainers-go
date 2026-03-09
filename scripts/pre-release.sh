@@ -52,8 +52,16 @@ function bumpVersion() {
       if [[ "${DRY_RUN}" == "true" ]]; then
         echo "sed \"s/testcontainers-go v.*/testcontainers-go v${versionToBumpWithoutV}/g\" ${module_mod_file} > ${module_mod_file}.tmp"
         echo "mv ${module_mod_file}.tmp ${module_mod_file}"
+
+        # Log inter-module dependencies
+        echo "sed \"s/github\.com\/testcontainers\/testcontainers-go\/modules\/\([a-zA-Z0-9_-]*\) v.*/github.com\/testcontainers\/testcontainers-go\/modules\/\1 v${versionToBumpWithoutV}/g\" ${module_mod_file} > ${module_mod_file}.tmp"
+        echo "mv ${module_mod_file}.tmp ${module_mod_file}"
       else
         sed "s/testcontainers-go v.*/testcontainers-go v${versionToBumpWithoutV}/g" ${module_mod_file} > ${module_mod_file}.tmp
+        mv ${module_mod_file}.tmp ${module_mod_file}
+
+        # Update inter-module dependencies
+        sed "s/github\.com\/testcontainers\/testcontainers-go\/modules\/\([a-zA-Z0-9_-]*\) v.*/github.com\/testcontainers\/testcontainers-go\/modules\/\1 v${versionToBumpWithoutV}/g" ${module_mod_file} > ${module_mod_file}.tmp
         mv ${module_mod_file}.tmp ${module_mod_file}
       fi
     done
@@ -64,11 +72,11 @@ function bumpVersion() {
   cd "${ROOT_DIR}/docs"
 
   versionEscapingDots="${versionToBumpWithoutV/./\.}"
-  NON_RELEASED_STRING='Not available until the next release of testcontainers-go <a href=\"https:\/\/github.com\/testcontainers\/testcontainers-go\"><span class=\"tc-version\">:material-tag: main<\/span><\/a>'
-  RELEASED_STRING="Since testcontainers-go <a href=\\\"https:\/\/github.com\/testcontainers\/testcontainers-go\/releases\/tag\/v${versionEscapingDots}\\\"><span class=\\\"tc-version\\\">:material-tag: v${versionEscapingDots}<\/span><\/a>"
+  NON_RELEASED_STRING='Not available until the next release <a href=\"https:\/\/github.com\/testcontainers\/testcontainers-go\"><span class=\"tc-version\">:material-tag: main<\/span><\/a>'
+  RELEASED_STRING="Since <a href=\\\"https:\/\/github.com\/testcontainers\/testcontainers-go\/releases\/tag\/v${versionEscapingDots}\\\"><span class=\\\"tc-version\\\">:material-tag: v${versionEscapingDots}<\/span><\/a>"
 
   # find all markdown files, and for each of them, replace the release string
-  find . -name "*.md" | while read -r module_file; do
+  find . -name "*.md" -not -name "contributing.md" | while read -r module_file; do
     if [[ "${DRY_RUN}" == "true" ]]; then
       echo "sed \"s/${NON_RELEASED_STRING}/${RELEASED_STRING}/g\" ${module_file} > ${module_file}.tmp"
       echo "mv ${module_file}.tmp ${module_file}"

@@ -10,8 +10,12 @@
             "path": "../examples/nginx"
         },
         {
-            "name": "example / toxiproxy",
-            "path": "../examples/toxiproxy"
+            "name": "module / aerospike",
+            "path": "../modules/aerospike"
+        },
+        {
+            "name": "module / arangodb",
+            "path": "../modules/arangodb"
         },
         {
             "name": "module / artemis",
@@ -62,6 +66,14 @@
             "path": "../modules/dind"
         },
         {
+            "name": "module / dockermcpgateway",
+            "path": "../modules/dockermcpgateway"
+        },
+        {
+            "name": "module / dockermodelrunner",
+            "path": "../modules/dockermodelrunner"
+        },
+        {
             "name": "module / dolt",
             "path": "../modules/dolt"
         },
@@ -76,6 +88,10 @@
         {
             "name": "module / etcd",
             "path": "../modules/etcd"
+        },
+        {
+            "name": "module / forgejo",
+            "path": "../modules/forgejo"
         },
         {
             "name": "module / gcloud",
@@ -118,6 +134,10 @@
             "path": "../modules/meilisearch"
         },
         {
+            "name": "module / memcached",
+            "path": "../modules/memcached"
+        },
+        {
             "name": "module / milvus",
             "path": "../modules/milvus"
         },
@@ -144,6 +164,10 @@
         {
             "name": "module / nats",
             "path": "../modules/nats"
+        },
+        {
+            "name": "module / nebulagraph",
+            "path": "../modules/nebulagraph"
         },
         {
             "name": "module / neo4j",
@@ -202,8 +226,24 @@
             "path": "../modules/scylladb"
         },
         {
+            "name": "module / socat",
+            "path": "../modules/socat"
+        },
+        {
+            "name": "module / solace",
+            "path": "../modules/solace"
+        },
+        {
             "name": "module / surrealdb",
             "path": "../modules/surrealdb"
+        },
+        {
+            "name": "module / tidb",
+            "path": "../modules/tidb"
+        },
+        {
+            "name": "module / toxiproxy",
+            "path": "../modules/toxiproxy"
         },
         {
             "name": "module / valkey",

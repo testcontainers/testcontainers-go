@@ -69,7 +69,7 @@ func (ctx Context) getModulesByBaseDir(baseDir string) ([]string, error) {
 		return nil, err
 	}
 
-	dirs := make([]string, 0)
+	var dirs []string
 
 	for _, f := range allFiles {
 		if f.IsDir() {
@@ -90,7 +90,7 @@ func (ctx Context) getMarkdownsFromDir(baseDir string) ([]string, error) {
 		return nil, err
 	}
 
-	dirs := make([]string, 0)
+	var dirs []string
 
 	for _, f := range allFiles {
 		if !f.IsDir() && filepath.Ext(f.Name()) == ".md" {

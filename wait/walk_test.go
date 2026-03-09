@@ -35,7 +35,7 @@ func TestWalk(t *testing.T) {
 		var count int
 		err := wait.Walk(&req.WaitingFor, func(_ wait.Strategy) error {
 			count++
-			return wait.VisitStop
+			return wait.ErrVisitStop
 		})
 		require.NoError(t, err)
 		require.Equal(t, 1, count)
@@ -48,7 +48,7 @@ func TestWalk(t *testing.T) {
 			count++
 			if _, ok := s.(*wait.FileStrategy); ok {
 				matched++
-				return wait.VisitRemove
+				return wait.ErrVisitRemove
 			}
 
 			return nil
@@ -82,7 +82,7 @@ func TestWalk(t *testing.T) {
 		var count int
 		err := wait.Walk(&req.WaitingFor, func(_ wait.Strategy) error {
 			count++
-			return errors.Join(wait.VisitRemove, wait.VisitStop)
+			return errors.Join(wait.ErrVisitRemove, wait.ErrVisitStop)
 		})
 		require.NoError(t, err)
 		require.Equal(t, 1, count)

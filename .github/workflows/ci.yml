@@ -18,11 +18,11 @@ jobs:
       modules_count: ${{ steps.set-modified-modules-count.outputs.modules_count }}
     steps:
       - name: Check out code into the Go module directory
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - id: changed-files
         name: Get changed files
-        uses: tj-actions/changed-files@4edd678ac3f81e2dc578756871e4d00c19191daf # v45.0.4
+        uses: tj-actions/changed-files@e0021407031f5be11a464abee9a0776171c79891 # v47.0.1
 
       - id: set-modified-modules
         name: Set all modified modules
@@ -61,7 +61,7 @@ jobs:
       # We don't want to fail the build the soonest but identify which modules passed and failed.
       fail-fast: false
       matrix:
-        go-version: [1.23.x, 1.24.x]
+        go-version: [1.25.x, 1.26.x]
         module: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
     permissions:
       contents: read  # for actions/checkout to fetch code
@@ -71,9 +71,32 @@ jobs:
       go-version: ${{ matrix.go-version }}
       platforms: ${{ matrix.module == 'modulegen' && '["ubuntu-latest", "macos-latest", "windows-latest"]' || '["ubuntu-latest"]' }}
       project-directory: "${{ matrix.module }}"
+      testcontainers-cloud: false
       rootless-docker: false
       ryuk-disabled: false
     secrets: inherit
+
+  # The job below is a copy of the job above, but using Docker Cloud.
+  test-testcontainers-cloud:
+    # the core module is identified by the empty string (the root path)
+    if: ${{ contains(fromJSON(needs.detect-modules.outputs.modules), '') }}
+    needs:
+      - detect-modules
+      - lint
+    name: "Test using Testcontainers Cloud"
+    strategy:
+      # We don't want to fail the build the soonest but identify which modules passed and failed.
+      fail-fast: false
+      matrix:
+        go-version: [1.25.x, 1.26.x]
+    uses: ./.github/workflows/ci-test-go.yml
+    with:
+      go-version: ${{ matrix.go-version }}
+      platforms: '["ubuntu-latest"]'
+      project-directory: "."
+      testcontainers-cloud: true
+      rootless-docker: false
+      ryuk-disabled: false
 
   # The job below is a copy of the job above, but with ryuk disabled.
   # It's executed in the first stage to avoid concurrency issues.
@@ -86,12 +109,13 @@ jobs:
     name: "Test with reaper off"
     strategy:
       matrix:
-        go-version: [1.23.x, 1.24.x]
+        go-version: [1.25.x, 1.26.x]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
       platforms: '["ubuntu-latest"]'
       project-directory: "."
+      testcontainers-cloud: false
       rootless-docker: false
       ryuk-disabled: true
 
@@ -106,12 +130,13 @@ jobs:
     name: "Test with Rootless Docker"
     strategy:
       matrix:
-        go-version: [1.23.x, 1.24.x]
+        go-version: [1.25.x, 1.26.x]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
       platforms: '["ubuntu-latest"]'
       project-directory: "."
+      testcontainers-cloud: false
       rootless-docker: true
       ryuk-disabled: false
 

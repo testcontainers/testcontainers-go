@@ -3,7 +3,6 @@ package registry
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -21,13 +20,16 @@ const (
 // The dataPath must have the same structure as the registry data directory.
 func WithData(dataPath string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Files = append(req.Files, testcontainers.ContainerFile{
+		if err := testcontainers.WithFiles(testcontainers.ContainerFile{
 			HostFilePath:      dataPath,
 			ContainerFilePath: containerDataPath,
-		})
+		})(req); err != nil {
+			return err
+		}
 
-		req.Env["REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY"] = containerDataPath
-		return nil
+		return testcontainers.WithEnv(map[string]string{
+			"REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY": containerDataPath,
+		})(req)
 	}
 }
 
@@ -37,7 +39,7 @@ func WithData(dataPath string) testcontainers.CustomizeRequestOption {
 // the htpasswd file, thanks to the REGISTRY_AUTH_HTPASSWD_PATH environment variable.
 func WithHtpasswd(credentials string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		tmpFile, err := os.Create(filepath.Join(os.TempDir(), "htpasswd"))
+		tmpFile, err := os.CreateTemp("", "htpasswd")
 		if err != nil {
 			tmpFile, err = os.Create(".")
 			if err != nil {
@@ -61,16 +63,18 @@ func WithHtpasswd(credentials string) testcontainers.CustomizeRequestOption {
 // thanks to the REGISTRY_AUTH_HTPASSWD_PATH environment variable.
 func WithHtpasswdFile(htpasswdPath string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Files = append(req.Files, testcontainers.ContainerFile{
+		if err := testcontainers.WithFiles(testcontainers.ContainerFile{
 			HostFilePath:      htpasswdPath,
 			ContainerFilePath: containerHtpasswdPath,
 			FileMode:          0o644,
-		})
+		})(req); err != nil {
+			return err
+		}
 
-		req.Env["REGISTRY_AUTH"] = "htpasswd"
-		req.Env["REGISTRY_AUTH_HTPASSWD_REALM"] = "Registry"
-		req.Env["REGISTRY_AUTH_HTPASSWD_PATH"] = containerHtpasswdPath
-		req.Env["REGISTRY_AUTH_HTPASSWD_PATH"] = containerHtpasswdPath
-		return nil
+		return testcontainers.WithEnv(map[string]string{
+			"REGISTRY_AUTH":                "htpasswd",
+			"REGISTRY_AUTH_HTPASSWD_REALM": "Registry",
+			"REGISTRY_AUTH_HTPASSWD_PATH":  containerHtpasswdPath,
+		})(req)
 	}
 }

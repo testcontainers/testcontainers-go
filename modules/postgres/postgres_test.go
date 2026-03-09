@@ -5,8 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,10 +17,10 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/lib/pq"
 	"github.com/mdelapenya/tlscert"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
+	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -152,7 +154,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
-			testcontainers.WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL)),
+			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL)),
 		)
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
@@ -165,7 +167,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
-			testcontainers.WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 10")),
+			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 10")),
 		)
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
@@ -178,7 +180,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
-			testcontainers.WithWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 'a' from b")),
+			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 'a' from b")),
 		)
 		testcontainers.CleanupContainer(t, ctr)
 		require.Error(t, err)
@@ -222,7 +224,7 @@ func TestWithSSL(t *testing.T) {
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
-		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+		testcontainers.WithAdditionalWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
 		postgres.WithSSLCert(caCert.CertPath, serverCerts.CertPath, serverCerts.KeyPath),
 	)
 
@@ -234,12 +236,12 @@ func TestWithSSL(t *testing.T) {
 
 	db, err := sql.Open("postgres", connStr)
 	require.NoError(t, err)
-	assert.NotNil(t, db)
+	require.NotNil(t, db)
 	defer db.Close()
 
 	result, err := db.Exec("SELECT * FROM testdb;")
 	require.NoError(t, err)
-	assert.NotNil(t, result)
+	require.NotNil(t, result)
 }
 
 func TestSSLValidatesKeyMaterialPath(t *testing.T) {
@@ -252,7 +254,7 @@ func TestSSLValidatesKeyMaterialPath(t *testing.T) {
 		postgres.WithDatabase(dbname),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
-		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+		testcontainers.WithAdditionalWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5*time.Second)),
 		postgres.WithSSLCert("", "", ""),
 	)
 
@@ -286,6 +288,62 @@ func TestWithInitScript(t *testing.T) {
 	result, err := db.Exec("SELECT * FROM testdb;")
 	require.NoError(t, err)
 	require.NotNil(t, result)
+}
+
+func TestWithOrderedInitScript(t *testing.T) {
+	ctx := context.Background()
+
+	ctr, err := postgres.Run(ctx,
+		"postgres:15.2-alpine",
+		// orderedInitScripts {
+		// Executes first the init-user-db shell-script, then the do-insert-user SQL script
+		// Using WithInitScripts, this would not work.
+		// This is because aaaa-insert-user would get executed first, but requires init-user-db to be executed before.
+		postgres.WithOrderedInitScripts(
+			filepath.Join("testdata", "init-user-db.sh"),
+			filepath.Join("testdata", "aaaa-insert-user.sql"),
+		),
+		// }
+		postgres.WithDatabase(dbname),
+		postgres.WithUsername(user),
+		postgres.WithPassword(password),
+		postgres.BasicWaitStrategies(),
+	)
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	// Test that init scripts have been correctly renamed
+	c, reader, err := ctr.Exec(ctx, []string{"ls", "-l", "/docker-entrypoint-initdb.d"}, tcexec.Multiplexed())
+	require.NoError(t, err)
+	require.Equal(t, 0, c, "Expected to read init scripts from the container")
+
+	buf := new(strings.Builder)
+	_, err = io.Copy(buf, reader)
+	require.NoError(t, err)
+
+	initScripts := buf.String()
+	strings.Contains(initScripts, "000-init-user-db.sh")
+	strings.Contains(initScripts, "001-aaaa-insert-user.sql")
+
+	// explicitly set sslmode=disable because the container is not configured to use TLS
+	connStr, err := ctr.ConnectionString(ctx, "sslmode=disable")
+	require.NoError(t, err)
+
+	db, err := sql.Open("postgres", connStr)
+	require.NoError(t, err)
+	require.NotNil(t, db)
+	defer db.Close()
+
+	// database created in init script. See testdata/init-user-db.sh
+	rows, err := db.Query("SELECT COUNT(*) FROM testdb;")
+	require.NoError(t, err)
+	require.NotNil(t, rows)
+	for rows.Next() {
+		var count int
+		err := rows.Scan(&count)
+		require.NoError(t, err)
+		require.Equal(t, 2, count)
+	}
 }
 
 func TestSnapshot(t *testing.T) {
