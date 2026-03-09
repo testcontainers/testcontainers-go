@@ -26,7 +26,8 @@ type GrafanaLGTMContainer struct {
 
 // Run creates an instance of the Grafana LGTM container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GrafanaLGTMContainer, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 2+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(GrafanaPort, LokiPort, TempoPort, OtlpGrpcPort, OtlpHttpPort, PrometheusPort),
 		testcontainers.WithWaitStrategyAndDeadline(2*time.Minute,
 			wait.ForLog(".*The OpenTelemetry collector and the Grafana LGTM stack are up and running.*\\s").AsRegexp().WithOccurrence(1),
@@ -37,7 +38,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			wait.ForListeningPort(OtlpHttpPort),
 			wait.ForListeningPort(PrometheusPort),
 		),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 

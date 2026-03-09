@@ -63,7 +63,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		exposedPorts[i] = fmt.Sprintf("%d/tcp", service.Port)
 	}
 
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(exposedPorts...),
 		testcontainers.WithHostConfigModifier(func(hc *container.HostConfig) {
 			hc.ShmSize = settings.shmSize
@@ -87,7 +88,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			}
 		}),
 		testcontainers.WithWaitStrategy(waitStrategies...),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 	container, err := testcontainers.Run(ctx, img, moduleOpts...)

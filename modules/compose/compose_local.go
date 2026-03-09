@@ -118,9 +118,11 @@ func (dc *LocalDockerCompose) getDockerComposeEnvironment() map[string]string {
 	environment := map[string]string{}
 
 	composeFileEnvVariableValue := ""
+	var composeFileEnvVariableValueSb121 strings.Builder
 	for _, abs := range dc.absComposeFilePaths {
-		composeFileEnvVariableValue += abs + string(os.PathListSeparator)
+		composeFileEnvVariableValueSb121.WriteString(abs + string(os.PathListSeparator))
 	}
+	composeFileEnvVariableValue += composeFileEnvVariableValueSb121.String()
 
 	environment[envProjectName] = dc.Identifier
 	environment[envComposeFile] = composeFileEnvVariableValue
@@ -238,10 +240,10 @@ func (dc *LocalDockerCompose) determineVersion() error {
 		return fmt.Errorf("parsing major version: %w", err)
 	}
 
-	switch majorVersion {
-	case 1:
+	switch {
+	case majorVersion == 1:
 		dc.ComposeVersion = composeVersion1{}
-	case 2:
+	case majorVersion >= 2:
 		dc.ComposeVersion = composeVersion2{}
 	default:
 		return fmt.Errorf("unexpected compose version %d", majorVersion)
@@ -327,7 +329,8 @@ func execute(
 	stderr := newCapturingPassThroughWriter(os.Stderr)
 
 	if err = cmd.Start(); err != nil {
-		execCmd := []string{"Starting command", dirContext, binary}
+		execCmd := make([]string, 0, 3+len(args))
+		execCmd = append(execCmd, "Starting command", dirContext, binary)
 		execCmd = append(execCmd, args...)
 
 		return ExecError{
@@ -354,7 +357,8 @@ func execute(
 
 	err = cmd.Wait()
 
-	execCmd := []string{"Reading std", dirContext, binary}
+	execCmd := make([]string, 0, 3+len(args))
+	execCmd = append(execCmd, "Reading std", dirContext, binary)
 	execCmd = append(execCmd, args...)
 
 	return ExecError{

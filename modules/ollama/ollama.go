@@ -74,10 +74,11 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Ollama container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*OllamaContainer, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 2+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts("11434/tcp"),
-		testcontainers.WithWaitStrategy(wait.ForListeningPort("11434/tcp").WithStartupTimeout(60 * time.Second)),
-	}
+		testcontainers.WithWaitStrategy(wait.ForListeningPort("11434/tcp").WithStartupTimeout(60*time.Second)),
+	)
 
 	// Check if we need to use the local process
 	var local *localProcess

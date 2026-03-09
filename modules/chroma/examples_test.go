@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
+	"path/filepath"
 
-	chromago "github.com/amikos-tech/chroma-go"
-	"github.com/amikos-tech/chroma-go/types"
+	chromago "github.com/amikos-tech/chroma-go/pkg/api/v2"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/chroma"
@@ -16,7 +17,7 @@ func ExampleRun() {
 	// runChromaContainer {
 	ctx := context.Background()
 
-	chromaContainer, err := chroma.Run(ctx, "chromadb/chroma:0.4.24")
+	chromaContainer, err := chroma.Run(ctx, "chromadb/chroma:1.4.0")
 	defer func() {
 		if err := testcontainers.TerminateContainer(chromaContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -44,7 +45,7 @@ func ExampleChromaContainer_connectWithClient() {
 	// createClient {
 	ctx := context.Background()
 
-	chromaContainer, err := chroma.Run(ctx, "chromadb/chroma:0.4.24")
+	chromaContainer, err := chroma.Run(ctx, "chromadb/chroma:1.4.0")
 	defer func() {
 		if err := testcontainers.TerminateContainer(chromaContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -60,29 +61,38 @@ func ExampleChromaContainer_connectWithClient() {
 		log.Printf("failed to get REST endpoint: %s", err)
 		return
 	}
-	chromaClient, err := chromago.NewClient(endpoint)
+	chromaClient, err := chromago.NewHTTPClient(chromago.WithBaseURL(endpoint))
 	if err != nil {
 		log.Printf("failed to get client: %s", err)
 		return
 	}
 
-	hbs, errHb := chromaClient.Heartbeat(context.Background())
+	errHb := chromaClient.Heartbeat(context.Background())
 	// }
-	if _, ok := hbs["nanosecond heartbeat"]; ok {
-		fmt.Println(ok)
-	}
-
-	fmt.Println(errHb)
-
+	fmt.Println(errHb) // error is only returned if the heartbeat fails
+	// closeClient {
+	// ensure all resources are freed, e.g. TCP connections or the default embedding function which runs locally
+	defer func() {
+		err = chromaClient.Close()
+		if err != nil {
+			log.Printf("failed to close client: %s", err)
+		}
+	}()
+	// }
 	// Output:
-	// true
 	// <nil>
 }
 
 func ExampleChromaContainer_collections() {
 	ctx := context.Background()
 
-	chromaContainer, err := chroma.Run(ctx, "chromadb/chroma:0.4.24", testcontainers.WithEnv(map[string]string{"ALLOW_RESET": "true"}))
+	chromaContainer, err := chroma.Run(ctx, "chromadb/chroma:1.4.0",
+		testcontainers.WithFiles(testcontainers.ContainerFile{
+			HostFilePath:      filepath.Join("testdata", "v1-config.yaml"),
+			ContainerFilePath: "/config.yaml",
+			FileMode:          0o644,
+		}),
+	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(chromaContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -100,56 +110,70 @@ func ExampleChromaContainer_collections() {
 		log.Printf("failed to get REST endpoint: %s", err)
 		return
 	}
-	chromaClient, err := chromago.NewClient(endpoint)
+	chromaClient, err := chromago.NewHTTPClient(chromago.WithBaseURL(endpoint))
 	// }
 	if err != nil {
 		log.Printf("failed to get client: %s", err)
 		return
 	}
+	defer func() {
+		if err := chromaClient.Close(); err != nil {
+			log.Printf("failed to close client: %s", err)
+		}
+	}()
 	// reset {
-	reset, err := chromaClient.Reset(context.Background())
+	err = chromaClient.Reset(context.Background())
 	// }
 	if err != nil {
 		log.Printf("failed to reset: %s", err)
 		return
 	}
-	fmt.Printf("Reset successful: %v\n", reset)
+	fmt.Printf("Reset successful\n")
 
 	// createCollection {
-	// for testing we use a dummy hashing function NewConsistentHashEmbeddingFunction
-	col, err := chromaClient.CreateCollection(context.Background(), "test-collection", map[string]any{}, true, types.NewConsistentHashEmbeddingFunction(), types.L2)
-	// }
+	col, err := chromaClient.GetOrCreateCollection(context.Background(), "test-collection",
+		chromago.WithCollectionMetadataCreate(
+			chromago.NewMetadata(
+				chromago.NewStringAttribute("str", "hello2"),
+				chromago.NewIntAttribute("int", 1),
+				chromago.NewFloatAttribute("float", 1.1),
+			),
+		),
+	)
 	if err != nil {
 		log.Printf("failed to create collection: %s", err)
 		return
 	}
 
-	fmt.Println("Collection created:", col.Name)
+	fmt.Println("Collection created:", col.Name())
 
 	// addData {
 	// verify it's possible to add data to the collection
-	col1, err := col.Add(
-		context.Background(),
-		nil,                                      // embeddings
-		[]map[string]any{},                       // metadata
-		[]string{"test-doc-1", "test-doc-2"},     // documents
-		[]string{"test-label-1", "test-label-2"}, // ids
-	)
+	err = col.Add(context.Background(),
+		chromago.WithIDs("1", "2"),
+		chromago.WithTexts("hello world", "goodbye world"),
+		chromago.WithMetadatas(
+			chromago.NewDocumentMetadata(chromago.NewIntAttribute("int", 1)),
+			chromago.NewDocumentMetadata(chromago.NewStringAttribute("str1", "hello2")),
+		))
 	// }
 	if err != nil {
 		log.Printf("failed to add data to collection: %s", err)
 		return
 	}
-
-	fmt.Println(col1.Count(context.Background()))
+	count, err := col.Count(context.Background())
+	if err != nil {
+		log.Printf("failed to count collection: %s", err)
+		return
+	}
+	fmt.Println(count)
 
 	// queryCollection {
 	// verify it's possible to query the collection
-	queryResults, err := col1.QueryWithOptions(
+	queryResults, err := col.Query(
 		context.Background(),
-		types.WithQueryTexts([]string{"test-doc-1"}),
-		types.WithInclude(types.IDocuments, types.IEmbeddings, types.IMetadatas),
-		types.WithNResults(1),
+		chromago.WithQueryTexts("say hello"),
+		chromago.WithNResults(1),
 	)
 	// }
 	if err != nil {
@@ -157,7 +181,8 @@ func ExampleChromaContainer_collections() {
 		return
 	}
 
-	fmt.Printf("Result of query: %v\n", queryResults)
+	distance := queryResults.GetDistancesGroups()[0][0]
+	fmt.Printf("Result of query: %v %v distance_ok=%v\n", queryResults.GetIDGroups()[0][0], queryResults.GetDocumentsGroups()[0][0], math.Abs(float64(distance)-0.7525849) < 1e-3)
 
 	// listCollections {
 	cols, err := chromaClient.ListCollections(context.Background())
@@ -170,7 +195,7 @@ func ExampleChromaContainer_collections() {
 	fmt.Println(len(cols))
 
 	// deleteCollection {
-	_, err = chromaClient.DeleteCollection(context.Background(), "test-collection")
+	err = chromaClient.DeleteCollection(context.Background(), "test-collection")
 	// }
 	if err != nil {
 		log.Printf("failed to delete collection: %s", err)
@@ -180,10 +205,10 @@ func ExampleChromaContainer_collections() {
 	fmt.Println(err)
 
 	// Output:
-	// Reset successful: true
+	// Reset successful
 	// Collection created: test-collection
-	// 2 <nil>
-	// Result of query: &{[[test-doc-1]] [[test-label-1]] [[map[]]] []}
+	// 2
+	// Result of query: 1 hello world distance_ok=true
 	// 1
 	// <nil>
 }

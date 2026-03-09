@@ -26,7 +26,8 @@ type Container struct {
 
 // Run creates an instance of the Docker in Docker container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 5+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithCmd(
 			"dockerd", "-H", "tcp://0.0.0.0:"+defaultDockerDaemonPortNumber, "--tls=false",
 		),
@@ -44,7 +45,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			}
 			hc.Mounts = []mount.Mount{}
 		}),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 

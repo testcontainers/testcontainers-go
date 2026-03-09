@@ -111,7 +111,8 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the OpenLDAP container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*OpenLDAPContainer, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithEnv(map[string]string{
 			"LDAP_ADMIN_USERNAME": defaultUser,
 			"LDAP_ADMIN_PASSWORD": defaultPassword,
@@ -122,7 +123,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			wait.ForLog("** Starting slapd **"),
 			wait.ForListeningPort("1389/tcp"),
 		),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 
