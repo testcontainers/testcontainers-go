@@ -129,6 +129,7 @@ nav:
         - modules/socat.md
         - modules/solace.md
         - modules/surrealdb.md
+        - modules/tidb.md
         - modules/toxiproxy.md
         - modules/valkey.md
         - modules/vault.md
