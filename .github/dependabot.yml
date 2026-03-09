@@ -35,6 +35,7 @@ updates:
         - /modules/dynamodb
         - /modules/elasticsearch
         - /modules/etcd
+        - /modules/forgejo
         - /modules/gcloud
         - /modules/grafana-lgtm
         - /modules/inbucket
@@ -71,6 +72,7 @@ updates:
         - /modules/socat
         - /modules/solace
         - /modules/surrealdb
+        - /modules/tidb
         - /modules/toxiproxy
         - /modules/valkey
         - /modules/vault

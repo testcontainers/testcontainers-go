@@ -33,8 +33,9 @@ func RunCluster(ctx context.Context,
 	aggMetadCustomizers := append(defaultMetadContainerCustomizers(netRes), metadCustomizers...)
 	metad, err := testcontainers.Run(ctx, metadImg, aggMetadCustomizers...)
 	if err != nil {
-		errs := []error{fmt.Errorf("run metad container: %w", err)}
 		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes)
+		errs := make([]error, 0, 1+len(errs2))
+		errs = append(errs, fmt.Errorf("run metad container: %w", err))
 		errs = append(errs, errs2...)
 		return nil, errors.Join(errs...)
 	}
@@ -43,8 +44,9 @@ func RunCluster(ctx context.Context,
 	aggGraphdCustomizers := append(defaultGraphdContainerCustomizers(netRes), graphdCustomizers...)
 	graphd, err := testcontainers.Run(ctx, graphdImg, aggGraphdCustomizers...)
 	if err != nil {
-		errs := []error{fmt.Errorf("run graphd container: %w", err)}
 		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes, metad)
+		errs := make([]error, 0, 1+len(errs2))
+		errs = append(errs, fmt.Errorf("run graphd container: %w", err))
 		errs = append(errs, errs2...)
 		return nil, errors.Join(errs...)
 	}
@@ -53,9 +55,10 @@ func RunCluster(ctx context.Context,
 	aggStoragedCustomizers := append(defaultStoragedContainerCustomizers(netRes), storagedCustomizers...)
 	storaged, err := testcontainers.Run(ctx, storagedImg, aggStoragedCustomizers...)
 	if err != nil {
-		errs := []error{fmt.Errorf("run storaged container: %w", err)}
 		fmt.Println("error starting storaged: ", err)
 		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes, graphd, metad)
+		errs := make([]error, 0, 1+len(errs2))
+		errs = append(errs, fmt.Errorf("run storaged container: %w", err))
 		errs = append(errs, errs2...)
 		return nil, errors.Join(errs...)
 	}
@@ -63,23 +66,26 @@ func RunCluster(ctx context.Context,
 	// 5. Run storage registration command with retry logic
 	activator, err := testcontainers.Run(ctx, defaultNebulaConsoleImage, defaultActivatorContainerCustomizers(netRes)...)
 	if err != nil {
-		errs := []error{fmt.Errorf("run activator container: %w", err)}
 		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes, storaged, graphd, metad)
+		errs := make([]error, 0, 1+len(errs2))
+		errs = append(errs, fmt.Errorf("run activator container: %w", err))
 		errs = append(errs, errs2...)
 		return nil, errors.Join(errs...)
 	}
 
 	activatorState, err := activator.State(ctx)
 	if err != nil {
-		errs := []error{fmt.Errorf("get activator container state: %w", err)}
 		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes, storaged, graphd, metad, activator)
+		errs := make([]error, 0, 1+len(errs2))
+		errs = append(errs, fmt.Errorf("get activator container state: %w", err))
 		errs = append(errs, errs2...)
 		return nil, errors.Join(errs...)
 	}
 
 	if !activatorState.Running && activatorState.ExitCode != 0 {
-		errs := []error{fmt.Errorf("activator container not running or exited with code %d", activatorState.ExitCode)}
 		errs2 := terminateContainersAndRemoveNetwork(ctx, netRes, storaged, graphd, metad)
+		errs := make([]error, 0, 1+len(errs2))
+		errs = append(errs, fmt.Errorf("activator container not running or exited with code %d", activatorState.ExitCode))
 		errs = append(errs, errs2...)
 		return nil, errors.Join(errs...)
 	}

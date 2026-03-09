@@ -41,7 +41,8 @@ func (c *Container) URI() string {
 // Run creates an instance of the BigQuery GCloud container type.
 // The URI uses http:// as the protocol.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultPort9050, defaultPort9060),
 		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort(defaultPort9050),
@@ -49,7 +50,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				return status == 200
 			}).WithStartupTimeout(time.Second*5),
 		),
-	}
+	)
 
 	settings := defaultOptions()
 	for _, opt := range opts {

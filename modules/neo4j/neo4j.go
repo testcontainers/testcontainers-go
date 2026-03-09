@@ -37,7 +37,8 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Neo4j container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Neo4jContainer, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithEnv(map[string]string{
 			"NEO4J_AUTH": "none",
 		}),
@@ -53,7 +54,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				StatusCodeMatcher: isHTTPOk(),
 			},
 		),
-	}
+	)
 
 	if len(opts) == 0 {
 		opts = append(opts, WithoutAuthentication())

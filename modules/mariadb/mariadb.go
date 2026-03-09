@@ -120,7 +120,8 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the MariaDB container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MariaDBContainer, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts)+3)
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts("3306/tcp", "33060/tcp"),
 		testcontainers.WithEnv(map[string]string{
 			"MARIADB_USER":     defaultUser,
@@ -128,7 +129,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"MARIADB_DATABASE": defaultDatabaseName,
 		}),
 		testcontainers.WithWaitStrategy(wait.ForLog("port: 3306  mariadb.org binary distribution")),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 	moduleOpts = append(moduleOpts, WithDefaultCredentials())

@@ -103,9 +103,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	// Build moduleOpts with defaults
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 1+len(allCustomizers))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(MGMT_PORT+"/tcp", MGMT_SSL_PORT+"/tcp"),
-	}
+	)
 
 	// Append all customizers (initial services + user opts)
 	moduleOpts = append(moduleOpts, allCustomizers...)
@@ -132,6 +133,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 }
 
 // StartContainer creates an instance of the Couchbase container type
+//
 // Deprecated: use RunContainer instead
 func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, error) {
 	config := &Config{
@@ -146,11 +148,12 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 		opt(config)
 	}
 
-	customizers := []testcontainers.ContainerCustomizer{
+	customizers := make([]testcontainers.ContainerCustomizer, 0, 3+len(config.enabledServices))
+	customizers = append(customizers,
 		WithAdminCredentials(config.username, config.password),
 		WithIndexStorage(config.indexStorageMode),
 		WithBuckets(config.buckets...),
-	}
+	)
 
 	for _, srv := range config.enabledServices {
 		customizers = append(customizers, withService(srv))
