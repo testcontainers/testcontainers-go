@@ -50,6 +50,7 @@ func isMinimumVersion(image string, minVersion string) bool {
 
 // WithNetwork creates a network with the given name and attaches the container to it, setting the network alias
 // on that network to the given alias.
+//
 // Deprecated: use network.WithNetwork or network.WithNewNetwork instead
 func WithNetwork(_ string, alias string) testcontainers.CustomizeRequestOption {
 	return network.WithNewNetwork(context.Background(), []string{alias})
@@ -75,15 +76,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		envVar = localstackHostEnvVar
 	}
 
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 5+len(opts)+1)
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(fmt.Sprintf("%d/tcp", defaultPort)),
-		testcontainers.WithWaitStrategy(wait.ForHTTP("/_localstack/health").WithPort("4566/tcp").WithStartupTimeout(120 * time.Second)),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/_localstack/health").WithPort("4566/tcp").WithStartupTimeout(120*time.Second)),
 		testcontainers.WithEnv(map[string]string{}),
 		testcontainers.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
 			hostConfig.Binds = []string{dockerHost + ":/var/run/docker.sock"}
 		}),
 		testcontainers.WithLogger(log.Default()),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 

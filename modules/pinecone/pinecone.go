@@ -14,9 +14,10 @@ type Container struct {
 
 // Run creates an instance of the Pinecone container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 1+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts("5080/tcp"),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 

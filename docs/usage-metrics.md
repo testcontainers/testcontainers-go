@@ -1,5 +1,9 @@
 # Usage Metrics
 
+Since `v0.30`, I noticed all versions decreased a lot, which could be a reality: projects upgrading to the latest releases; but `v0.39.0` passed from ~500 to ~100. And v0.40.0 passed from ~700 to ~1300, so in total, we lost ~1500 imports.
+
+In any case, I also noticed that GH search produces non-deterministic results, so executing the same query returns different numbers. I expect the overall trend gets fixed in the upcoming months.
+
 <div id="loading" class="loading">Loading metrics data...</div>
 <div id="error" class="error" style="display: none;"></div>
 
