@@ -238,6 +238,10 @@
             "path": "../modules/surrealdb"
         },
         {
+            "name": "module / tidb",
+            "path": "../modules/tidb"
+        },
+        {
             "name": "module / toxiproxy",
             "path": "../modules/toxiproxy"
         },
