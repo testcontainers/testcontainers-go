@@ -1,0 +1,49 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'export PATH=\"/home/agent/bin:$PATH\"' >> \"$CLAUDE_ENV_FILE\""
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(cd modules:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr list:*)",
+      "Bash(go test:*)",
+      "Bash(make test:*)",
+      "Bash(make pre-commit:*)",
+      "Bash(make pre-commit test:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(go:*)",
+      "Bash(make test-unit:*)",
+      "Bash(gotestsum:*)",
+      "Bash(awk:*)",
+      "Bash(eval:*)",
+      "Bash(gvm:*)",
+      "Bash(git log:*)",
+      "Bash(gh pr view:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebSearch",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(xargs ls:*)",
+      "Bash(wc:*)",
+      "WebFetch(domain:api.github.com)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
