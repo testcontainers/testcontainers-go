@@ -92,6 +92,7 @@ nav:
         - modules/dynamodb.md
         - modules/elasticsearch.md
         - modules/etcd.md
+        - modules/forgejo.md
         - modules/gcloud.md
         - modules/grafana-lgtm.md
         - modules/inbucket.md
