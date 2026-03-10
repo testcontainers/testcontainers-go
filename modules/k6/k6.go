@@ -157,10 +157,11 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the K6 container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*K6Container, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 2+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithCmdArgs("run"),
 		testcontainers.WithWaitStrategy(wait.ForExit()),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 

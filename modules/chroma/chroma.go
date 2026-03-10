@@ -21,7 +21,8 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Chroma container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ChromaContainer, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 2+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts("8000/tcp"),
 		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort("8000/tcp"),
@@ -29,7 +30,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				return status == 200
 			}),
 		),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 

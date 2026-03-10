@@ -15,8 +15,7 @@ import (
 
 	"github.com/compose-spec/compose-go/v2/cli"
 	"github.com/compose-spec/compose-go/v2/types"
-	"github.com/docker/cli/cli/command"
-	"github.com/docker/compose/v2/pkg/api"
+	"github.com/docker/compose/v5/pkg/api"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	dockernetwork "github.com/docker/docker/api/types/network"
@@ -334,7 +333,7 @@ func (d *DockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err erro
 	if !d.provider.Config().Config.RyukDisabled {
 		// NewReaper is deprecated: we need to find a way to create the reaper for compose
 		// bypassing the deprecation.
-		reaper, err = testcontainers.NewReaper(ctx, testcontainers.SessionID(), d.provider, "")
+		reaper, err = testcontainers.NewReaper(ctx, testcontainers.SessionID(), d.provider, "") //nolint:staticcheck // intentional use of deprecated API for compose
 		if err != nil {
 			return fmt.Errorf("create reaper: %w", err)
 		}
@@ -530,27 +529,14 @@ func (d *DockerCompose) lookupNetworks(ctx context.Context) error {
 }
 
 func (d *DockerCompose) compileProject(ctx context.Context) (*types.Project, error) {
-	const nameAndDefaultConfigPath = 2
-	projectOptions := make([]cli.ProjectOptionsFn, len(d.projectOptions), len(d.projectOptions)+nameAndDefaultConfigPath)
-
-	copy(projectOptions, d.projectOptions)
-	projectOptions = append(projectOptions, cli.WithName(d.name), cli.WithDefaultConfigPath)
-
-	compiledOptions, err := cli.NewProjectOptions(d.configs, projectOptions...)
-	if err != nil {
-		return nil, fmt.Errorf("new project options: %w", err)
-	}
-
-	proj, err := compiledOptions.LoadProject(ctx)
+	proj, err := d.composeService.LoadProject(ctx, api.ProjectLoadOptions{
+		ProjectName:       d.name,
+		ConfigPaths:       d.configs,
+		Profiles:          d.projectProfiles,
+		ProjectOptionsFns: d.projectOptions,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("load project: %w", err)
-	}
-
-	if len(d.projectProfiles) > 0 {
-		proj, err = proj.WithProfiles(d.projectProfiles)
-		if err != nil {
-			return nil, fmt.Errorf("with profiles: %w", err)
-		}
 	}
 
 	for i, s := range proj.Services {
@@ -565,9 +551,9 @@ func (d *DockerCompose) compileProject(ctx context.Context) (*types.Project, err
 
 		testcontainers.AddGenericLabels(s.CustomLabels)
 
-		for i, envFile := range compiledOptions.EnvFiles {
+		for j, envFile := range s.EnvFiles {
 			// add a label for each env file, indexed by its position
-			s.CustomLabels[fmt.Sprintf("%s.%d", api.EnvironmentFileLabel, i)] = envFile
+			s.CustomLabels[fmt.Sprintf("%s.%d", api.EnvironmentFileLabel, j)] = envFile.Path
 		}
 
 		proj.Services[i] = s
@@ -599,12 +585,4 @@ func withEnv(env map[string]string) func(*cli.ProjectOptions) error {
 
 		return nil
 	}
-}
-
-func makeClient(*command.DockerCli) (client.APIClient, error) {
-	dockerClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
-	if err != nil {
-		return nil, fmt.Errorf("new docker client: %w", err)
-	}
-	return dockerClient, nil
 }

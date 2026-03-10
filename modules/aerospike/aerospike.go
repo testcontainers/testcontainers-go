@@ -29,7 +29,8 @@ type Container struct {
 
 // Run creates an instance of the Aerospike container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(port, fabricPort, heartbeatPort, infoPort),
 		testcontainers.WithEnv(map[string]string{
 			"AEROSPIKE_CONFIG_FILE": "/etc/aerospike/aerospike.conf",
@@ -40,7 +41,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			wait.ForListeningPort(fabricPort).WithStartupTimeout(10*time.Second),
 			wait.ForListeningPort(heartbeatPort).WithStartupTimeout(10*time.Second),
 		),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 
