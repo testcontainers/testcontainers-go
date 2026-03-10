@@ -9,7 +9,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.yaml.in/yaml/v3 v3.0.4
 	golang.org/x/mod v0.33.0
-	golang.org/x/text v0.14.0
+	golang.org/x/text v0.34.0
 )
 
 require (
