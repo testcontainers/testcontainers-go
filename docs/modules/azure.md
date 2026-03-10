@@ -359,7 +359,7 @@ Returns the connection string to connect to the CosmosDB container and an error,
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
 
 The Lowkey Vault module exposes one entrypoint function to create the Lowkey Vault container, and this function receives three parameters:
 
@@ -385,7 +385,7 @@ container can be configured in two ways:
 
 #### Local mode
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
 
 The default mode is to run the Key Vault container on localhost, meaning that both the Key Vault API and the metadata endpoints are 
 exposed using random host ports, and the container is accessible only from the host machine. The default vault is automatically created 
@@ -393,7 +393,7 @@ and is made available using the host address.
 
 #### Network mode
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
 
 To prepare the container for running in a network and making it accessible from other containers in the network, you can use the 
 `WithNetworkAlias` option. For example:
@@ -409,7 +409,7 @@ The Lowkey Vault container exposes the following methods:
 
 #### ConnectionURL
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
 
 Returns the connection URL to connect to the Key Vault API of the Lowkey Vault container and an error, passing the Go context and an 
 `accessMode` as parameters. The access mode can be either `lowkeyvault.Local` or `lowkeyvault.Network` depending on the mode you wish
@@ -417,7 +417,7 @@ to use to connect to the Key Vault API.
 
 #### IdentityEndpoint
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
 
 Returns the URL pointing to the token endpoint of the Lowkey Vault container and an error, passing the Go context and an `accessMode` 
 as parameters. The access mode can be either `lowkeyvault.Local` or `lowkeyvault.Network` depending on the mode you wish to use to 
@@ -427,7 +427,7 @@ with managed identities by using the `azidentity.NewDefaultAzureCredential(nil)`
 
 #### IdentityHeader
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
 
 Can return the string which must be set as the value of the `IDENTITY_HEADER` environment variable without modification on the  
 machine which will connect to the Lowkey Vault container. When using the Azure Key Vault SDK for Go, this will let you authenticate
@@ -435,7 +435,7 @@ with managed identities by using the `azidentity.NewDefaultAzureCredential(nil)`
 
 #### Client
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
 
 Returns a `http.Client` and requires the Go context as parameter. This method can be used to prepare a `http.Client` for connecting 
 to the Key Vault API of the Lowkey Vault container using a self-signed certificate. This is necessary since the Lowkey Vault container

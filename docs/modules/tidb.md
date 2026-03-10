@@ -1,6 +1,6 @@
 # TiDB
 
-Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
 
 ## Introduction
 
@@ -23,6 +23,8 @@ go get github.com/testcontainers/testcontainers-go/modules/tidb
 ## Module Reference
 
 ### Run function
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
 
 The TiDB module exposes one entrypoint function to create the container, and this function receives three parameters:
 
@@ -55,6 +57,8 @@ When starting the TiDB container, you can pass options in a variadic way to conf
 
 #### ConnectionString
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
+
 This method returns the connection string to connect to the TiDB container, using the default `4000` port.
 It's possible to pass extra parameters to the connection string, e.g. `charset=utf8mb4`, in a variadic way.
 
@@ -63,5 +67,7 @@ It's possible to pass extra parameters to the connection string, e.g. `charset=u
 <!--/codeinclude-->
 
 #### MustConnectionString
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
 
 Same as `ConnectionString`, but panics if an error occurs while getting the connection string.

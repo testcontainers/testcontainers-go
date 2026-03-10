@@ -72,7 +72,7 @@ In the case you have a custom config file for Cassandra, it's possible to copy t
 
 #### WithTLS
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
 
 If you need to enable TLS/SSL encryption for client connections, you can use the `cassandra.WithTLS()` option. 
 
@@ -106,7 +106,7 @@ This method returns the host and port of the Cassandra container, using the defa
 
 #### TLSConfig
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
 
 This method returns the TLS configuration for secure connections to the Cassandra container. It can only be used when the container was created with the `WithTLS()` option. Returns an error if TLS was not enabled.
 

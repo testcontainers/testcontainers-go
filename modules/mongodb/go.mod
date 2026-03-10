@@ -6,7 +6,7 @@ toolchain go1.25.7
 
 require (
 	github.com/stretchr/testify v1.11.1
-	github.com/testcontainers/testcontainers-go v0.40.0
+	github.com/testcontainers/testcontainers-go v0.41.0
 	go.mongodb.org/mongo-driver/v2 v2.3.0
 )
 

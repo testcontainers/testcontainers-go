@@ -8,7 +8,7 @@ require (
 	github.com/cpuguy83/dockercfg v0.3.2
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/stretchr/testify v1.11.1
-	github.com/testcontainers/testcontainers-go v0.40.0
+	github.com/testcontainers/testcontainers-go v0.41.0
 	golang.org/x/crypto v0.48.0
 )
 
