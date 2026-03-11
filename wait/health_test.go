@@ -34,7 +34,10 @@ func (st *healthStrategyTarget) Ports(_ context.Context) (network.PortMap, error
 }
 
 func (st *healthStrategyTarget) MappedPort(_ context.Context, n string) (network.Port, error) {
-	return network.MustParsePort(n), nil
+	if n == "" {
+		return network.Port{}, nil
+	}
+	return network.ParsePort(n)
 }
 
 func (st *healthStrategyTarget) Logs(_ context.Context) (io.ReadCloser, error) {

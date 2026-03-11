@@ -66,7 +66,10 @@ func (st NopStrategyTarget) Ports(_ context.Context) (network.PortMap, error) {
 }
 
 func (st NopStrategyTarget) MappedPort(_ context.Context, n string) (network.Port, error) {
-	return network.MustParsePort(n), nil
+	if n == "" {
+		return network.Port{}, nil
+	}
+	return network.ParsePort(n)
 }
 
 func (st NopStrategyTarget) Logs(_ context.Context) (io.ReadCloser, error) {

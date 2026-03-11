@@ -185,9 +185,13 @@ func (c *DockerContainer) MappedPort(ctx context.Context, port string) (network.
 	if err != nil {
 		return network.Port{}, fmt.Errorf("inspect: %w", err)
 	}
-	nwPort, err := network.ParsePort(port)
-	if err != nil {
-		return network.Port{}, err
+	// FIXME(thaJeztah): did this previously accept empty strings?
+	var nwPort network.Port
+	if port != "" {
+		nwPort, err = network.ParsePort(port)
+		if err != nil {
+			return network.Port{}, err
+		}
 	}
 
 	if inspect.HostConfig.NetworkMode == "host" {
