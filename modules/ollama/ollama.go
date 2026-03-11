@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/image"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/internal/core"
@@ -42,16 +41,18 @@ func (c *OllamaContainer) Commit(ctx context.Context, targetImage string) error 
 		return err
 	}
 
-	list, err := cli.ImageList(ctx, image.ListOptions{Filters: filters.NewArgs(filters.Arg("reference", targetImage))})
+	list, err := cli.ImageList(ctx, client.ImageListOptions{
+		Filters: make(client.Filters).Add("reference", targetImage),
+	})
 	if err != nil {
 		return fmt.Errorf("listing images %w", err)
 	}
 
-	if len(list) > 0 {
+	if len(list.Items) > 0 {
 		return fmt.Errorf("image %s already exists", targetImage)
 	}
 
-	_, err = cli.ContainerCommit(ctx, c.GetContainerID(), container.CommitOptions{
+	_, err = cli.ContainerCommit(ctx, c.GetContainerID(), client.ContainerCommitOptions{
 		Reference: targetImage,
 		Config: &container.Config{
 			Labels: map[string]string{
