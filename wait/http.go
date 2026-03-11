@@ -231,8 +231,12 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 		hPort, _ := strconv.ParseUint(hostPort, 10, 16)
 		mappedPort, _ = network.PortFrom(uint16(hPort), lowestPort.Proto())
 	} else {
-		mappedPort, err = target.MappedPort(ctx, ws.Port.String())
-
+		// FIXME(thaJeztah); ws.Port is always zero in this branch?
+		var p string
+		if ws.Port.IsValid() {
+			p = ws.Port.String()
+		}
+		mappedPort, err = target.MappedPort(ctx, p)
 		for mappedPort.IsZero() {
 			select {
 			case <-ctx.Done():
