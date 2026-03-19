@@ -29,6 +29,9 @@ func ExampleRun() {
 
 	testFileContent := "Hello from file!"
 
+	ctx, cancelfn := context.WithTimeout(ctx, time.Second*5)
+	defer cancelfn()
+
 	ctr, err := testcontainers.Run(
 		ctx,
 		"nginx:alpine",
@@ -49,7 +52,7 @@ func ExampleRun() {
 		}),
 		testcontainers.WithExposedPorts("80/tcp"),
 		testcontainers.WithAfterReadyCommand(testcontainers.NewRawCommand([]string{"echo", "hello", "world"})),
-		testcontainers.WithWaitStrategy(wait.ForListeningPort("80/tcp").WithStartupTimeout(time.Second*5)),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort("80/tcp")),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(ctr); err != nil {

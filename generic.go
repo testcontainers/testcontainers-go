@@ -89,12 +89,18 @@ func GenericContainer(ctx context.Context, req GenericContainerRequest) (Contain
 		return c, fmt.Errorf("create container: %w", err)
 	}
 
-	if req.Started && !c.IsRunning() {
-		if err := c.Start(ctx); err != nil {
-			return c, fmt.Errorf("start container: %w", err)
+	// Context with Done for controlling timeouts and cancellations
+	select {
+	case <-ctx.Done():
+		return c, ctx.Err()
+	default:
+		if req.Started && !c.IsRunning() {
+			if err := c.Start(ctx); err != nil {
+				return c, fmt.Errorf("start container: %w", err)
+			}
 		}
+		return c, nil
 	}
-	return c, nil
 }
 
 // GenericProvider represents an abstraction for container and network providers
