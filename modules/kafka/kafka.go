@@ -50,7 +50,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return nil, err
 	}
 
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 5+len(opts)+1)
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(string(publicPort)),
 		testcontainers.WithEnv(map[string]string{
 			// envVars {
@@ -89,7 +90,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				},
 			},
 		}),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 

@@ -98,7 +98,7 @@ func TestPulsar(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c, err := testcontainerspulsar.Run(
 				ctx,
-				"apachepulsar/pulsar:2.10.2",
+				"apachepulsar/pulsar:4.0.9",
 				tt.opts...,
 			)
 			testcontainers.CleanupContainer(t, c)

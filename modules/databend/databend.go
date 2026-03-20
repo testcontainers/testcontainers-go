@@ -41,14 +41,15 @@ func (o DatabendOption) Customize(*testcontainers.GenericContainerRequest) error
 
 // Run creates an instance of the Databend container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*DatabendContainer, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultPort),
 		testcontainers.WithEnv(map[string]string{
 			"QUERY_DEFAULT_USER":     defaultUser,
 			"QUERY_DEFAULT_PASSWORD": defaultPassword,
 		}),
 		testcontainers.WithWaitStrategy(wait.ForListeningPort(defaultPort)),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 

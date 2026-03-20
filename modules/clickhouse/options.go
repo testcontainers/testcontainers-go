@@ -69,7 +69,7 @@ func WithZookeeper(host, port string) testcontainers.CustomizeRequestOption {
 // WithInitScripts sets the init scripts to be run when the container starts
 func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		initScripts := []testcontainers.ContainerFile{}
+		initScripts := make([]testcontainers.ContainerFile, 0, len(scripts))
 		for _, script := range scripts {
 			cf := testcontainers.ContainerFile{
 				HostFilePath:      script,
