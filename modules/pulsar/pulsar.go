@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/docker/go-connections/nat"
 
@@ -22,7 +23,7 @@ const (
 )
 
 var defaultWaitStrategies = []wait.Strategy{
-	wait.ForHTTP("/admin/v2/clusters").WithPort(defaultPulsarAdminPort).WithResponseMatcher(func(r io.Reader) bool {
+	wait.ForHTTP("/admin/v2/clusters").WithPort(defaultPulsarAdminPort).WithStartupTimeout(2 * time.Minute).WithResponseMatcher(func(r io.Reader) bool {
 		respBytes, _ := io.ReadAll(r)
 		resp := string(respBytes)
 		return resp == `["standalone"]`
@@ -80,7 +81,7 @@ func WithFunctionsWorker() testcontainers.CustomizeRequestOption {
 		ss = append(ss, wait.ForLog("Function worker service started"))
 		ss = append(ss, defaultWaitStrategies...)
 
-		return testcontainers.WithWaitStrategy(ss...)(req)
+		return testcontainers.WithWaitStrategyAndDeadline(3*time.Minute, ss...)(req)
 	}
 }
 
@@ -113,12 +114,12 @@ func WithTransactions() testcontainers.CustomizeRequestOption {
 
 		// clone defaultWaitStrategies
 		ss := make([]wait.Strategy, 0, 1+len(defaultWaitStrategies))
-		ss = append(ss, wait.ForHTTP(transactionTopicEndpoint).WithPort(defaultPulsarAdminPort).WithStatusCodeMatcher(func(statusCode int) bool {
+		ss = append(ss, wait.ForHTTP(transactionTopicEndpoint).WithPort(defaultPulsarAdminPort).WithStartupTimeout(2*time.Minute).WithStatusCodeMatcher(func(statusCode int) bool {
 			return statusCode == 200
 		}))
 		ss = append(ss, defaultWaitStrategies...)
 
-		return testcontainers.WithWaitStrategy(ss...)(req)
+		return testcontainers.WithWaitStrategyAndDeadline(2*time.Minute, ss...)(req)
 	}
 }
 
@@ -141,7 +142,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
 	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultPulsarPort, defaultPulsarAdminPort),
-		testcontainers.WithWaitStrategy(defaultWaitStrategies...),
+		testcontainers.WithWaitStrategyAndDeadline(2*time.Minute, defaultWaitStrategies...),
 		testcontainers.WithCmd("/bin/bash", "-c", strings.Join([]string{defaultPulsarCmd, defaultPulsarCmdWithoutFunctionsWorker}, " ")),
 	)
 
