@@ -1,81 +1,28 @@
-package wait
+package wait_test
 
 import (
 	"context"
-	"errors"
-	"io"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	tcexec "github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
-
-type healthStrategyTarget struct {
-	state *container.State
-	mtx   sync.Mutex
-}
-
-func (st *healthStrategyTarget) Host(_ context.Context) (string, error) {
-	return "", nil
-}
-
-func (st *healthStrategyTarget) Inspect(_ context.Context) (*container.InspectResponse, error) {
-	return nil, nil
-}
-
-// Deprecated: use Inspect instead
-func (st *healthStrategyTarget) Ports(_ context.Context) (nat.PortMap, error) {
-	return nil, nil
-}
-
-func (st *healthStrategyTarget) MappedPort(_ context.Context, n nat.Port) (nat.Port, error) {
-	return n, nil
-}
-
-func (st *healthStrategyTarget) Logs(_ context.Context) (io.ReadCloser, error) {
-	return nil, nil
-}
-
-func (st *healthStrategyTarget) Exec(_ context.Context, _ []string, _ ...tcexec.ProcessOption) (int, io.Reader, error) {
-	return 0, nil, nil
-}
-
-func (st *healthStrategyTarget) State(_ context.Context) (*container.State, error) {
-	st.mtx.Lock()
-	defer st.mtx.Unlock()
-
-	// Return a copy to prevent data race.
-	state := *st.state
-
-	return &state, nil
-}
-
-func (st *healthStrategyTarget) setState(health *container.Health) {
-	st.mtx.Lock()
-	defer st.mtx.Unlock()
-	st.state.Health = health
-}
-
-func (st *healthStrategyTarget) CopyFileFromContainer(_ context.Context, _ string) (io.ReadCloser, error) {
-	return nil, errors.New("not implemented")
-}
 
 // TestWaitForHealthTimesOutForUnhealthy confirms that an unhealthy container will eventually
 // time out.
 func TestWaitForHealthTimesOutForUnhealthy(t *testing.T) {
-	target := &healthStrategyTarget{
-		state: &container.State{
-			Running: true,
-			Health:  &container.Health{Status: types.Unhealthy},
-		},
-	}
-	wg := NewHealthStrategy().WithStartupTimeout(100 * time.Millisecond)
+	target := newMockStrategyTarget(t)
+	target.On("State", mock.Anything).Return(&container.State{
+		Running: true,
+		Health:  &container.Health{Status: types.Unhealthy},
+	}, nil)
+	wg := wait.NewHealthStrategy().WithStartupTimeout(100 * time.Millisecond)
 	err := wg.WaitUntilReady(context.Background(), target)
 
 	require.Error(t, err)
@@ -84,13 +31,12 @@ func TestWaitForHealthTimesOutForUnhealthy(t *testing.T) {
 
 // TestWaitForHealthSucceeds ensures that a healthy container always succeeds.
 func TestWaitForHealthSucceeds(t *testing.T) {
-	target := &healthStrategyTarget{
-		state: &container.State{
-			Running: true,
-			Health:  &container.Health{Status: types.Healthy},
-		},
-	}
-	wg := NewHealthStrategy().WithStartupTimeout(100 * time.Millisecond)
+	target := newMockStrategyTarget(t)
+	target.On("State", mock.Anything).Return(&container.State{
+		Running: true,
+		Health:  &container.Health{Status: types.Healthy},
+	}, nil)
+	wg := wait.NewHealthStrategy().WithStartupTimeout(100 * time.Millisecond)
 	err := wg.WaitUntilReady(context.Background(), target)
 
 	require.NoError(t, err)
@@ -99,22 +45,32 @@ func TestWaitForHealthSucceeds(t *testing.T) {
 // TestWaitForHealthWithNil checks that an initial `nil` Health will not cause a panic,
 // and if the container eventually becomes healthy, the HealthStrategy will succeed.
 func TestWaitForHealthWithNil(t *testing.T) {
-	target := &healthStrategyTarget{
-		state: &container.State{
-			Running: true,
-			Health:  nil,
+	var mtx sync.Mutex
+	state := &container.State{Running: true, Health: nil}
+
+	target := newMockStrategyTarget(t)
+	target.On("State", mock.Anything).Return(
+		func(_ context.Context) (*container.State, error) {
+			mtx.Lock()
+			defer mtx.Unlock()
+			// Return a copy to prevent data race.
+			s := *state
+			return &s, nil
 		},
-	}
-	wg := NewHealthStrategy().
+	)
+
+	wg := wait.NewHealthStrategy().
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
-	go func(target *healthStrategyTarget) {
+	go func() {
 		// wait a bit to simulate startup time and give check time to at least
 		// try a few times with a nil Health
 		time.Sleep(200 * time.Millisecond)
-		target.setState(&container.Health{Status: types.Healthy})
-	}(target)
+		mtx.Lock()
+		state.Health = &container.Health{Status: types.Healthy}
+		mtx.Unlock()
+	}()
 
 	err := wg.WaitUntilReady(context.Background(), target)
 	require.NoError(t, err)
@@ -122,13 +78,12 @@ func TestWaitForHealthWithNil(t *testing.T) {
 
 // TestWaitFailsForNilHealth checks that Health always nil fails (but will NOT cause a panic)
 func TestWaitFailsForNilHealth(t *testing.T) {
-	target := &healthStrategyTarget{
-		state: &container.State{
-			Running: true,
-			Health:  nil,
-		},
-	}
-	wg := NewHealthStrategy().
+	target := newMockStrategyTarget(t)
+	target.On("State", mock.Anything).Return(&container.State{
+		Running: true,
+		Health:  nil,
+	}, nil)
+	wg := wait.NewHealthStrategy().
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
@@ -138,12 +93,11 @@ func TestWaitFailsForNilHealth(t *testing.T) {
 }
 
 func TestWaitForHealthFailsDueToOOMKilledContainer(t *testing.T) {
-	target := &healthStrategyTarget{
-		state: &container.State{
-			OOMKilled: true,
-		},
-	}
-	wg := NewHealthStrategy().
+	target := newMockStrategyTarget(t)
+	target.On("State", mock.Anything).Return(&container.State{
+		OOMKilled: true,
+	}, nil)
+	wg := wait.NewHealthStrategy().
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
@@ -153,13 +107,12 @@ func TestWaitForHealthFailsDueToOOMKilledContainer(t *testing.T) {
 }
 
 func TestWaitForHealthFailsDueToExitedContainer(t *testing.T) {
-	target := &healthStrategyTarget{
-		state: &container.State{
-			Status:   "exited",
-			ExitCode: 1,
-		},
-	}
-	wg := NewHealthStrategy().
+	target := newMockStrategyTarget(t)
+	target.On("State", mock.Anything).Return(&container.State{
+		Status:   "exited",
+		ExitCode: 1,
+	}, nil)
+	wg := wait.NewHealthStrategy().
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
@@ -169,12 +122,11 @@ func TestWaitForHealthFailsDueToExitedContainer(t *testing.T) {
 }
 
 func TestWaitForHealthFailsDueToUnexpectedContainerStatus(t *testing.T) {
-	target := &healthStrategyTarget{
-		state: &container.State{
-			Status: "dead",
-		},
-	}
-	wg := NewHealthStrategy().
+	target := newMockStrategyTarget(t)
+	target.On("State", mock.Anything).Return(&container.State{
+		Status: "dead",
+	}, nil)
+	wg := wait.NewHealthStrategy().
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 

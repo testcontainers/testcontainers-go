@@ -3,14 +3,12 @@ package wait_test
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -48,64 +46,9 @@ func ExampleExecStrategy() {
 	// true
 }
 
-type mockExecTarget struct {
-	waitDuration time.Duration
-	successAfter time.Time
-	exitCode     int
-	response     string
-	failure      error
-}
-
-func (st mockExecTarget) Host(_ context.Context) (string, error) {
-	return "", errors.New("not implemented")
-}
-
-func (st mockExecTarget) Inspect(_ context.Context) (*container.InspectResponse, error) {
-	return nil, errors.New("not implemented")
-}
-
-// Deprecated: use Inspect instead
-func (st mockExecTarget) Ports(_ context.Context) (nat.PortMap, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (st mockExecTarget) MappedPort(_ context.Context, n nat.Port) (nat.Port, error) {
-	return n, errors.New("not implemented")
-}
-
-func (st mockExecTarget) Logs(_ context.Context) (io.ReadCloser, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (st mockExecTarget) Exec(ctx context.Context, _ []string, _ ...tcexec.ProcessOption) (int, io.Reader, error) {
-	time.Sleep(st.waitDuration)
-
-	var reader io.Reader
-	if st.response != "" {
-		reader = bytes.NewReader([]byte(st.response))
-	}
-
-	if err := ctx.Err(); err != nil {
-		return st.exitCode, reader, err
-	}
-
-	if !st.successAfter.IsZero() && time.Now().After(st.successAfter) {
-		return 0, reader, st.failure
-	}
-
-	return st.exitCode, reader, st.failure
-}
-
-func (st mockExecTarget) State(_ context.Context) (*container.State, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (st mockExecTarget) CopyFileFromContainer(_ context.Context, _ string) (io.ReadCloser, error) {
-	return nil, errors.New("not implemented")
-}
-
 func TestExecStrategyWaitUntilReady(t *testing.T) {
-	target := mockExecTarget{}
+	target := newMockStrategyTarget(t)
+	target.On("Exec", mock.Anything, mock.Anything, mock.Anything).Return(0, nil, nil)
 	wg := wait.NewExecStrategy([]string{"true"}).
 		WithStartupTimeout(30 * time.Second)
 	err := wg.WaitUntilReady(context.Background(), target)
@@ -113,17 +56,24 @@ func TestExecStrategyWaitUntilReady(t *testing.T) {
 }
 
 func TestExecStrategyWaitUntilReadyForExec(t *testing.T) {
-	target := mockExecTarget{}
+	target := newMockStrategyTarget(t)
+	target.On("Exec", mock.Anything, mock.Anything, mock.Anything).Return(0, nil, nil)
 	wg := wait.ForExec([]string{"true"})
 	err := wg.WaitUntilReady(context.Background(), target)
 	require.NoError(t, err)
 }
 
 func TestExecStrategyWaitUntilReady_MultipleChecks(t *testing.T) {
-	target := mockExecTarget{
-		exitCode:     10,
-		successAfter: time.Now().Add(2 * time.Second),
-	}
+	successAfter := time.Now().Add(2 * time.Second)
+	target := newMockStrategyTarget(t)
+	target.On("Exec", mock.Anything, mock.Anything, mock.Anything).Return(
+		func(ctx context.Context, cmd []string, opts ...tcexec.ProcessOption) (int, io.Reader, error) {
+			if time.Now().After(successAfter) {
+				return 0, nil, nil
+			}
+			return 10, nil, nil
+		},
+	)
 	wg := wait.NewExecStrategy([]string{"true"}).
 		WithPollInterval(500 * time.Millisecond)
 	err := wg.WaitUntilReady(context.Background(), target)
@@ -134,18 +84,24 @@ func TestExecStrategyWaitUntilReady_DeadlineExceeded(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
 
-	target := mockExecTarget{
-		waitDuration: 1 * time.Second,
-	}
+	target := newMockStrategyTarget(t)
+	target.On("Exec", mock.Anything, mock.Anything, mock.Anything).Return(
+		func(ctx context.Context, cmd []string, opts ...tcexec.ProcessOption) (int, io.Reader, error) {
+			time.Sleep(1 * time.Second)
+			if err := ctx.Err(); err != nil {
+				return 0, nil, err
+			}
+			return 0, nil, nil
+		},
+	)
 	wg := wait.NewExecStrategy([]string{"true"})
 	err := wg.WaitUntilReady(ctx, target)
 	require.ErrorIs(t, err, context.DeadlineExceeded)
 }
 
 func TestExecStrategyWaitUntilReady_CustomExitCode(t *testing.T) {
-	target := mockExecTarget{
-		exitCode: 10,
-	}
+	target := newMockStrategyTarget(t)
+	target.On("Exec", mock.Anything, mock.Anything, mock.Anything).Return(10, nil, nil)
 	wg := wait.NewExecStrategy([]string{"true"}).WithExitCodeMatcher(func(exitCode int) bool {
 		return exitCode == 10
 	})
@@ -154,9 +110,9 @@ func TestExecStrategyWaitUntilReady_CustomExitCode(t *testing.T) {
 }
 
 func TestExecStrategyWaitUntilReady_withExitCode(t *testing.T) {
-	target := mockExecTarget{
-		exitCode: 10,
-	}
+	target := newMockStrategyTarget(t)
+	target.On("Exec", mock.Anything, mock.Anything, mock.Anything).Return(10, nil, nil)
+
 	wg := wait.NewExecStrategy([]string{"true"}).WithExitCode(10)
 	// Default is 60. Let's shorten that
 	wg.WithStartupTimeout(time.Second * 2)
