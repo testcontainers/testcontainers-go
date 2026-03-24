@@ -49,7 +49,7 @@ func TestWaitForHealthWithNil(t *testing.T) {
 	state := &container.State{Running: true, Health: nil}
 
 	target := newMockStrategyTarget(t)
-	target.On("State", mock.Anything).Return(
+	target.On("State", mock.Anything).RunAndReturn(
 		func(_ context.Context) (*container.State, error) {
 			mtx.Lock()
 			defer mtx.Unlock()

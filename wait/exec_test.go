@@ -85,7 +85,7 @@ func TestExecStrategyWaitUntilReady_DeadlineExceeded(t *testing.T) {
 	defer cancel()
 
 	target := newMockStrategyTarget(t)
-	target.On("Exec", mock.Anything, mock.Anything, mock.Anything).Return(
+	target.On("Exec", mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
 		func(ctx context.Context, cmd []string, opts ...tcexec.ProcessOption) (int, io.Reader, error) {
 			time.Sleep(1 * time.Second)
 			if err := ctx.Err(); err != nil {
