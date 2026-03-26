@@ -85,6 +85,11 @@ type Config struct {
 	//
 	// Environment variable: TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE
 	TestcontainersHost string `properties:"tc.host,default="`
+
+	// Provider is the container provider to use (e.g., "docker", "podman").
+	//
+	// Environment variable: TESTCONTAINERS_PROVIDER
+	Provider string `properties:"provider,default="`
 }
 
 // }
@@ -139,6 +144,11 @@ func read() Config {
 		ryukConnectionTimeoutEnv := readTestcontainersEnv("RYUK_CONNECTION_TIMEOUT")
 		if timeout, err := time.ParseDuration(ryukConnectionTimeoutEnv); err == nil {
 			config.RyukConnectionTimeout = timeout
+		}
+
+		providerEnv := os.Getenv("TESTCONTAINERS_PROVIDER")
+		if providerEnv != "" {
+			config.Provider = providerEnv
 		}
 
 		return config
