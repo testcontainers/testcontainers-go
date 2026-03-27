@@ -12,10 +12,12 @@ import (
 
 // NewClient returns a new docker client extracting the docker host from the different alternatives
 func NewClient(ctx context.Context, ops ...client.Opt) (*client.Client, error) {
+	dockerHost, err := ExtractDockerHost(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	tcConfig := config.Read()
-
-	dockerHost := MustExtractDockerHost(ctx)
-
 	opts := []client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}
 	if dockerHost != "" {
 		opts = append(opts, client.WithHost(dockerHost))

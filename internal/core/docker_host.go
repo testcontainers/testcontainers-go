@@ -31,8 +31,9 @@ var (
 )
 
 var (
-	dockerHostCache string
-	dockerHostOnce  sync.Once
+	dockerHostCache    string
+	dockerHostErrCache error
+	dockerHostOnce     sync.Once
 )
 
 var (
@@ -85,16 +86,18 @@ var dockerHostCheck = func(ctx context.Context, host string) error {
 //  6. Rootless docker socket path.
 //  7. Else, because the Docker host is not set, it panics.
 func MustExtractDockerHost(ctx context.Context) string {
+	host, err := ExtractDockerHost(ctx)
+	if err != nil {
+		panic(err)
+	}
+	return host
+}
+
+func ExtractDockerHost(ctx context.Context) (string, error) {
 	dockerHostOnce.Do(func() {
-		cache, err := extractDockerHost(ctx)
-		if err != nil {
-			panic(err)
-		}
-
-		dockerHostCache = cache
+		dockerHostCache, dockerHostErrCache = extractDockerHost(ctx)
 	})
-
-	return dockerHostCache
+	return dockerHostCache, dockerHostErrCache
 }
 
 // MustExtractDockerSocket Extracts the docker socket from the different alternatives, removing the socket schema and
