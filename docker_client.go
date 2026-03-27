@@ -77,13 +77,17 @@ func (c *DockerClient) Info(ctx context.Context) (system.Info, error) {
 		infoLabels += infoLabelsSb72.String()
 	}
 
+	host, err := core.ExtractDockerHost(ctx)
+	if err != nil {
+		return dockerInfo, err
+	}
 	log.Printf(infoMessage, packagePath,
 		dockerInfo.ServerVersion,
 		c.ClientVersion(),
 		dockerInfo.OperatingSystem, dockerInfo.MemTotal/1024/1024,
 		infoLabels,
 		internal.Version,
-		core.MustExtractDockerHost(ctx),
+		host,
 		core.MustExtractDockerSocket(ctx),
 		core.SessionID(),
 		core.ProcessID(),
