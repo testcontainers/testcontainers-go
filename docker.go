@@ -4,9 +4,7 @@ import (
 	"archive/tar"
 	"bufio"
 	"context"
-	"encoding/base64"
 	"encoding/binary"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -24,6 +22,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/containerd/errdefs"
 	"github.com/containerd/platforms"
+	"github.com/moby/moby/api/pkg/authconfig"
 	"github.com/moby/moby/api/pkg/stdcopy"
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/network"
@@ -1465,11 +1464,10 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 		p.Logger.Printf("No image auth found for %s. Setting empty credentials for the image: %s. This is expected for public images. Details: %s", registry, tag, err)
 	} else {
 		// see https://github.com/docker/docs/blob/e8e1204f914767128814dca0ea008644709c117f/engine/api/sdk/examples.md?plain=1#L649-L657
-		encodedJSON, err := json.Marshal(imageAuth)
-		if err != nil {
+		if encodedAuth, err := authconfig.Encode(imageAuth); err != nil {
 			p.Logger.Printf("Failed to marshal image auth. Setting empty credentials for the image: %s. Error is: %s", tag, err)
 		} else {
-			pullOpt.RegistryAuth = base64.URLEncoding.EncodeToString(encodedJSON)
+			pullOpt.RegistryAuth = encodedAuth
 		}
 	}
 
