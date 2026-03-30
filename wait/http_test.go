@@ -472,7 +472,7 @@ func TestHttpStrategyFailsWhileGettingPortDueToUnexpectedContainerStatus(t *test
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
-				Status: container.StateRunning,
+				Status: container.StateDead,
 			}, nil
 		},
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
