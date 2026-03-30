@@ -72,7 +72,7 @@ func TestRun_withConfigFile(t *testing.T) {
 	// Create a redis client that connects to the toxiproxy container.
 	// We are defining a read timeout of 2 seconds, because we are adding
 	// a latency toxic of 1 second to the request, +/- 100ms jitter.
-	redisURI := fmt.Sprintf("redis://%s:%s?read_timeout=2s", toxiproxyProxyHostIP, toxiproxyProxyPort.Port())
+	redisURI := fmt.Sprintf("redis://%s:%d?read_timeout=2s", toxiproxyProxyHostIP, toxiproxyProxyPort.Num())
 
 	options, err := redis.ParseURL(redisURI)
 	require.NoError(t, err)

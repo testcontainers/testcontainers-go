@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/require"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
@@ -27,12 +27,15 @@ func (st exitStrategyTarget) Inspect(_ context.Context) (*container.InspectRespo
 }
 
 // Deprecated: use Inspect instead
-func (st exitStrategyTarget) Ports(_ context.Context) (nat.PortMap, error) {
+func (st exitStrategyTarget) Ports(_ context.Context) (network.PortMap, error) {
 	return nil, nil
 }
 
-func (st exitStrategyTarget) MappedPort(_ context.Context, n nat.Port) (nat.Port, error) {
-	return n, nil
+func (st exitStrategyTarget) MappedPort(_ context.Context, n string) (network.Port, error) {
+	if n == "" {
+		return network.Port{}, nil
+	}
+	return network.ParsePort(n)
 }
 
 func (st exitStrategyTarget) Logs(_ context.Context) (io.ReadCloser, error) {

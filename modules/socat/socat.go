@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/docker/go-connections/nat"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -79,7 +77,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	targetURLs := map[int]*url.URL{}
 	for k := range settings.targets {
-		hostPort, err := c.PortEndpoint(ctx, nat.Port(fmt.Sprintf("%d/tcp", k)), "http")
+		hostPort, err := c.PortEndpoint(ctx, fmt.Sprintf("%d/tcp", k), "http")
 		if err != nil {
 			return c, fmt.Errorf("mapped port: %w", err)
 		}

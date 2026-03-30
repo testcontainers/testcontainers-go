@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/dind"
@@ -37,14 +37,14 @@ func ExampleRun() {
 	// }
 
 	// getDockerClient {
-	cli, err := client.NewClientWithOpts(client.WithHost(host), client.WithAPIVersionNegotiation())
+	cli, err := client.New(client.WithHost(host))
 	if err != nil {
 		log.Printf("failed to create docker client: %s", err)
 		return
 	}
 	// }
 
-	version, err := cli.ServerVersion(ctx)
+	version, err := cli.ServerVersion(ctx, client.ServerVersionOptions{})
 	if err != nil {
 		log.Printf("failed to get server version: %s", err)
 		return

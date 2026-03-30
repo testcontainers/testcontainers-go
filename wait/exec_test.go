@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -65,12 +65,12 @@ func (st mockExecTarget) Inspect(_ context.Context) (*container.InspectResponse,
 }
 
 // Deprecated: use Inspect instead
-func (st mockExecTarget) Ports(_ context.Context) (nat.PortMap, error) {
+func (st mockExecTarget) Ports(_ context.Context) (network.PortMap, error) {
 	return nil, errors.New("not implemented")
 }
 
-func (st mockExecTarget) MappedPort(_ context.Context, n nat.Port) (nat.Port, error) {
-	return n, errors.New("not implemented")
+func (st mockExecTarget) MappedPort(_ context.Context, _ string) (network.Port, error) {
+	return network.Port{}, errors.New("not implemented")
 }
 
 func (st mockExecTarget) Logs(_ context.Context) (io.ReadCloser, error) {

@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/strslice"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -22,16 +22,16 @@ import (
 )
 
 const (
-	testImage   = "ollama/ollama:latest"
-	testNatPort = "11434/tcp"
-	testHost    = "127.0.0.1"
-	testBinary  = "ollama"
+	testImage  = "ollama/ollama:latest"
+	testHost   = "127.0.0.1"
+	testBinary = "ollama"
 )
 
 var (
 	// reLogDetails matches the log details of the local ollama binary and should match localLogRegex.
 	reLogDetails = regexp.MustCompile(`Listening on (.*:\d+) \(version\s(.*)\)`)
 	zeroTime     = time.Time{}.Format(time.RFC3339Nano)
+	testNatPort  = network.MustParsePort("11434/tcp")
 )
 
 func TestRun_local(t *testing.T) {
@@ -56,7 +56,7 @@ func TestRun_local(t *testing.T) {
 		require.NotEqual(t, zeroTime, state.StartedAt)
 		require.NotZero(t, state.Pid)
 		require.Equal(t, &container.State{
-			Status:     "running",
+			Status:     container.StateRunning,
 			Running:    true,
 			Pid:        state.Pid,
 			StartedAt:  state.StartedAt,
@@ -146,10 +146,9 @@ func TestRun_local(t *testing.T) {
 		_, exists := inspect.Config.ExposedPorts[testNatPort]
 		require.True(t, exists)
 		require.Equal(t, testHost, inspect.Config.Hostname)
-		require.Equal(t, strslice.StrSlice(strslice.StrSlice{testBinary, "serve"}), inspect.Config.Entrypoint)
+		require.Equal(t, []string{testBinary, "serve"}, inspect.Config.Entrypoint)
 
 		require.Empty(t, inspect.NetworkSettings.Networks)
-		require.Equal(t, "bridge", inspect.NetworkSettings.Bridge)
 
 		ports := inspect.NetworkSettings.Ports
 		port, exists := ports[testNatPort]
@@ -178,9 +177,9 @@ func TestRun_local(t *testing.T) {
 	})
 
 	t.Run("mapped-port", func(t *testing.T) {
-		port, err := ollamaContainer.MappedPort(ctx, testNatPort)
+		port, err := ollamaContainer.MappedPort(ctx, testNatPort.String())
 		require.NoError(t, err)
-		require.NotEmpty(t, port.Port())
+		require.NotZero(t, port.Num())
 		require.Equal(t, "tcp", port.Proto())
 	})
 
@@ -197,11 +196,11 @@ func TestRun_local(t *testing.T) {
 	})
 
 	t.Run("port-endpoint", func(t *testing.T) {
-		endpoint, err := ollamaContainer.PortEndpoint(ctx, testNatPort, "")
+		endpoint, err := ollamaContainer.PortEndpoint(ctx, testNatPort.String(), "")
 		require.NoError(t, err)
 		require.Regexp(t, `^127.0.0.1:\d+$`, endpoint)
 
-		endpoint, err = ollamaContainer.PortEndpoint(ctx, testNatPort, "http")
+		endpoint, err = ollamaContainer.PortEndpoint(ctx, testNatPort.String(), "http")
 		require.NoError(t, err)
 		require.Regexp(t, `^http://127.0.0.1:\d+$`, endpoint)
 	})
@@ -217,7 +216,7 @@ func TestRun_local(t *testing.T) {
 
 		state, err := ollamaContainer.State(ctx)
 		require.NoError(t, err)
-		require.Equal(t, "exited", state.Status)
+		require.Equal(t, container.StateExited, state.Status)
 		require.NotEmpty(t, state.StartedAt)
 		require.NotEqual(t, zeroTime, state.StartedAt)
 		require.NotEmpty(t, state.FinishedAt)
@@ -229,7 +228,7 @@ func TestRun_local(t *testing.T) {
 
 		state, err = ollamaContainer.State(ctx)
 		require.NoError(t, err)
-		require.Equal(t, "running", state.Status)
+		require.Equal(t, container.StateRunning, state.Status)
 
 		logs, err := ollamaContainer.Logs(ctx)
 		require.NoError(t, err)
@@ -245,7 +244,7 @@ func TestRun_local(t *testing.T) {
 	t.Run("start-start", func(t *testing.T) {
 		state, err := ollamaContainer.State(ctx)
 		require.NoError(t, err)
-		require.Equal(t, "running", state.Status)
+		require.Equal(t, container.StateRunning, state.Status)
 
 		err = ollamaContainer.Start(ctx)
 		require.Error(t, err)
@@ -266,7 +265,7 @@ func TestRun_local(t *testing.T) {
 		require.NotEqual(t, zeroTime, state.FinishedAt)
 		require.Equal(t, &container.State{
 			// zero values are not needed to be set
-			Status:     "exited",
+			Status:     container.StateExited,
 			StartedAt:  state.StartedAt,
 			FinishedAt: state.FinishedAt,
 		}, state)
@@ -398,10 +397,9 @@ func testRunLocalWithCustomHost(ctx context.Context, t *testing.T, ollamaContain
 		_, exists := inspect.Config.ExposedPorts[testNatPort]
 		require.True(t, exists)
 		require.Equal(t, testHost, inspect.Config.Hostname)
-		require.Equal(t, strslice.StrSlice(strslice.StrSlice{testBinary, "serve"}), inspect.Config.Entrypoint)
+		require.Equal(t, []string{testBinary, "serve"}, inspect.Config.Entrypoint)
 
 		require.Empty(t, inspect.NetworkSettings.Networks)
-		require.Equal(t, "bridge", inspect.NetworkSettings.Bridge)
 
 		ports := inspect.NetworkSettings.Ports
 		port, exists := ports[testNatPort]
@@ -425,9 +423,9 @@ func testRunLocalWithCustomHost(ctx context.Context, t *testing.T, ollamaContain
 	})
 
 	t.Run("mapped-port", func(t *testing.T) {
-		port, err := ollamaContainer.MappedPort(ctx, testNatPort)
+		port, err := ollamaContainer.MappedPort(ctx, testNatPort.String())
 		require.NoError(t, err)
-		require.Equal(t, "1234", port.Port())
+		require.Equal(t, uint16(1234), port.Num())
 		require.Equal(t, "tcp", port.Proto())
 	})
 }
@@ -476,7 +474,7 @@ func TestRun_localExec(t *testing.T) {
 
 	t.Run("unsupported-option-tty", func(t *testing.T) {
 		code, r, err := ollamaContainer.Exec(ctx, []string{testBinary, "-v"}, tcexec.ProcessOptionFunc(func(opts *tcexec.ProcessOptions) {
-			opts.ExecConfig.Tty = true
+			opts.ExecConfig.TTY = true
 		}))
 		require.ErrorIs(t, err, errors.ErrUnsupported)
 		require.Equal(t, 1, code)

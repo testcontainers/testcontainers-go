@@ -8,8 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -130,11 +129,9 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 	cli, err := NewDockerClientWithOpts(context.Background())
 	require.NoError(t, err)
 
-	f := filters.NewArgs(filters.KeyValuePair{Key: "name", Value: reusableContainerName})
-
-	ctrs, err := cli.ContainerList(context.Background(), container.ListOptions{
+	ctrs, err := cli.ContainerList(context.Background(), client.ContainerListOptions{
 		All:     true,
-		Filters: f,
+		Filters: make(client.Filters).Add("name", reusableContainerName),
 	})
 	require.NoError(t, err)
 	require.Len(t, ctrs, 1)
@@ -144,7 +141,7 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 
 	provider.SetClient(cli)
 
-	nginxC, err := provider.ContainerFromType(context.Background(), ctrs[0])
+	nginxC, err := provider.ContainerFromType(context.Background(), ctrs.Items[0])
 	CleanupContainer(t, nginxC)
 	require.NoError(t, err)
 }
