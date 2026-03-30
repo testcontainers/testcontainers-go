@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/containerd/errdefs"
@@ -40,9 +42,18 @@ func SkipIfProviderIsNotHealthy(t *testing.T) {
 }
 
 // SkipIfDockerDesktop is a utility function capable of skipping tests
-// if tests are run using Docker Desktop.
+// if tests are run using Docker Desktop or another VM-based Docker
+// environment (e.g. colima) where host network access is not available.
 func SkipIfDockerDesktop(t *testing.T, ctx context.Context) {
 	t.Helper()
+
+	// Colima runs Docker inside a Linux VM, so host networking doesn't work
+	// the same way as native Docker on Linux. Detect it via DOCKER_HOST which
+	// typically contains the colima socket path.
+	if strings.Contains(os.Getenv("DOCKER_HOST"), "colima") {
+		t.Skip("Skipping test that requires host network access when running in colima")
+	}
+
 	cli, err := NewDockerClientWithOpts(ctx)
 	require.NoErrorf(t, err, "failed to create docker client: %s", err)
 
