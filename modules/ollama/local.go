@@ -3,6 +3,7 @@ package ollama
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -47,6 +48,27 @@ var (
 	// zeroTime is the zero time value.
 	zeroTime time.Time
 )
+
+// stdWriter wraps an io.Writer to produce Docker-multiplexed output frames.
+// This replaces stdcopy.NewStdWriter which is no longer exported from moby.
+// The frame format is: 1 byte stream type + 3 bytes padding + 4 bytes big-endian length + payload.
+type stdWriter struct {
+	w      io.Writer
+	prefix byte // 1 = stdout, 2 = stderr
+}
+
+func (s *stdWriter) Write(p []byte) (int, error) {
+	if len(p) == 0 {
+		return 0, nil
+	}
+	var hdr [8]byte
+	hdr[0] = s.prefix
+	binary.BigEndian.PutUint32(hdr[4:], uint32(len(p)))
+	if _, err := s.w.Write(hdr[:]); err != nil {
+		return 0, err
+	}
+	return s.w.Write(p)
+}
 
 // localProcess emulates the Ollama container using a local process to improve performance.
 type localProcess struct {
@@ -219,10 +241,8 @@ func (c *localProcess) Start(ctx context.Context) error {
 	}
 
 	// Multiplex stdout and stderr to the log file matching the Docker API.
-	//
-	// FIXME(thaJeztah); the "writing" part of multiplexing is now internal
-	// cmd.Stdout = stdcopy.NewStdWriter(c.logFile, stdcopy.Stdout)
-	// cmd.Stderr = stdcopy.NewStdWriter(c.logFile, stdcopy.Stderr)
+	cmd.Stdout = &stdWriter{w: c.logFile, prefix: 1}
+	cmd.Stderr = &stdWriter{w: c.logFile, prefix: 2}
 
 	// Run the ollama serve command in background.
 	if err = cmd.Start(); err != nil {
@@ -383,11 +403,9 @@ func (c *localProcess) Exec(ctx context.Context, cmd []string, options ...tcexec
 	command.Env = c.env
 
 	// Multiplex stdout and stderr to the buffer so they can be read separately later.
-	//
-	// FIXME(thaJeztah); the "writing" part of multiplexing is now internal
 	var buf bytes.Buffer
-	// command.Stdout = stdcopy.NewStdWriter(&buf, stdcopy.Stdout)
-	// command.Stderr = stdcopy.NewStdWriter(&buf, stdcopy.Stderr)
+	command.Stdout = &stdWriter{w: &buf, prefix: 1}
+	command.Stderr = &stdWriter{w: &buf, prefix: 2}
 
 	// Use process options to customize the command execution
 	// emulating the Docker API behaviour.
