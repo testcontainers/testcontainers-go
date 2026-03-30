@@ -490,11 +490,7 @@ func (c *localProcess) Inspect(ctx context.Context) (*container.InspectResponse,
 			Entrypoint: []string{c.binary, localServeArg},
 		},
 		NetworkSettings: &container.NetworkSettings{
-			Networks: map[string]*network.EndpointSettings{
-				"bridge": {
-					IPAddress: cIP,
-				},
-			},
+			Networks: map[string]*network.EndpointSettings{},
 			Ports: network.PortMap{
 				port: []network.PortBinding{{
 					HostIP:   cIP,

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"io/fs"
+	"net/netip"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -154,7 +155,7 @@ func TestRun_local(t *testing.T) {
 		port, exists := ports[testNatPort]
 		require.True(t, exists)
 		require.Len(t, port, 1)
-		require.Equal(t, testHost, port[0].HostIP)
+		require.Equal(t, netip.MustParseAddr(testHost), port[0].HostIP)
 		require.NotEmpty(t, port[0].HostPort)
 	})
 
@@ -180,7 +181,7 @@ func TestRun_local(t *testing.T) {
 		port, err := ollamaContainer.MappedPort(ctx, testNatPort.String())
 		require.NoError(t, err)
 		require.NotEmpty(t, port.Port())
-		require.Equal(t, "tcp", port.Proto())
+		require.Equal(t, network.TCP, port.Proto())
 	})
 
 	t.Run("networks", func(t *testing.T) {
@@ -405,7 +406,7 @@ func testRunLocalWithCustomHost(ctx context.Context, t *testing.T, ollamaContain
 		port, exists := ports[testNatPort]
 		require.True(t, exists)
 		require.Len(t, port, 1)
-		require.Equal(t, testHost, port[0].HostIP)
+		require.Equal(t, netip.MustParseAddr(testHost), port[0].HostIP)
 		require.Equal(t, "1234", port[0].HostPort)
 	})
 
@@ -426,7 +427,7 @@ func testRunLocalWithCustomHost(ctx context.Context, t *testing.T, ollamaContain
 		port, err := ollamaContainer.MappedPort(ctx, testNatPort.String())
 		require.NoError(t, err)
 		require.Equal(t, "1234", port.Port())
-		require.Equal(t, "tcp", port.Proto())
+		require.Equal(t, network.TCP, port.Proto())
 	})
 }
 
