@@ -1917,3 +1917,21 @@ func Test_Provider_DaemonHost_Issue2897(t *testing.T) {
 		require.NoError(t, err)
 	}
 }
+
+// TestMappedPortEmptyString verifies that MappedPort with an empty string
+// returns a not-found error instead of panicking. The old nat.Port type
+// accepted empty strings (SplitProtoPort returns ("","") for ""), causing
+// the port loop to match nothing. The new code must preserve this behavior.
+// See https://github.com/docker/go-connections/blob/v0.6.0/nat/nat.go#L101-L110
+func TestMappedPortEmptyString(t *testing.T) {
+	ctx := context.Background()
+	ctr, err := Run(ctx, nginxAlpineImage, WithExposedPorts("80/tcp"))
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, ctr.Terminate(ctx))
+	})
+
+	port, err := ctr.MappedPort(ctx, "")
+	require.True(t, port.IsZero(), "expected zero port for empty string input")
+	require.ErrorIs(t, err, errdefs.ErrNotFound)
+}

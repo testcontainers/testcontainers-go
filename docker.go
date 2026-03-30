@@ -186,7 +186,12 @@ func (c *DockerContainer) MappedPort(ctx context.Context, port string) (network.
 	if err != nil {
 		return network.Port{}, fmt.Errorf("inspect: %w", err)
 	}
-	// FIXME(thaJeztah): did this previously accept empty strings?
+	// The old nat.Port type (a plain string) accepted empty strings:
+	// nat.SplitProtoPort("") returns ("", ""), so Port() == "" and
+	// no container port matches, yielding "not found".
+	// See https://github.com/docker/go-connections/blob/v0.6.0/nat/nat.go#L101-L110
+	// Skip parsing here to preserve that behavior and avoid a
+	// ParsePort error on empty input.
 	var nwPort network.Port
 	if port != "" {
 		nwPort, err = network.ParsePort(port)
