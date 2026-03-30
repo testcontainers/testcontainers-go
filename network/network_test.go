@@ -285,7 +285,7 @@ func TestWithNetwork(t *testing.T) {
 		Filters: make(client.Filters).Add("name", networkName),
 	})
 	require.NoError(t, err)
-	require.Len(t, resources, 1)
+	require.Len(t, resources.Items, 1)
 
 	newNetwork := resources.Items[0]
 
