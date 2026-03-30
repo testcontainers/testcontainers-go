@@ -191,7 +191,8 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 	}
 
 	var mappedPort network.Port
-	if !ws.Port.IsZero() {
+	if ws.Port.IsZero() {
+		// No specific port requested; inspect container to find lowest exposed TCP port.
 		// We wait one polling interval before we grab the ports
 		// otherwise they might not be bound yet on startup.
 		select {
@@ -231,12 +232,8 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 		hPort, _ := strconv.ParseUint(hostPort, 10, 16)
 		mappedPort, _ = network.PortFrom(uint16(hPort), lowestPort.Proto())
 	} else {
-		// FIXME(thaJeztah); ws.Port is always zero in this branch?
-		var p string
-		if ws.Port.IsValid() {
-			p = ws.Port.String()
-		}
-		mappedPort, err = target.MappedPort(ctx, p)
+		// Specific port requested; use MappedPort to resolve it.
+		mappedPort, err = target.MappedPort(ctx, ws.Port.String())
 		for mappedPort.IsZero() {
 			select {
 			case <-ctx.Done():
