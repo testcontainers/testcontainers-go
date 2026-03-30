@@ -66,7 +66,7 @@ func TestExecStrategyWaitUntilReadyForExec(t *testing.T) {
 func TestExecStrategyWaitUntilReady_MultipleChecks(t *testing.T) {
 	successAfter := time.Now().Add(2 * time.Second)
 	target := newMockStrategyTarget(t)
-	target.On("Exec", mock.Anything, mock.Anything, mock.Anything).Return(
+	target.On("Exec", mock.Anything, mock.Anything, mock.Anything).RunAndReturn(
 		func(ctx context.Context, cmd []string, opts ...tcexec.ProcessOption) (int, io.Reader, error) {
 			if time.Now().After(successAfter) {
 				return 0, nil, nil
