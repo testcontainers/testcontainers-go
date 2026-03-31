@@ -13,8 +13,8 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/magiconair/properties v1.8.10
 	github.com/moby/go-archive v0.2.0
-	github.com/moby/moby/api v1.54.0
-	github.com/moby/moby/client v0.3.0
+	github.com/moby/moby/api v1.54.1-0.20260331085437-76f6a0c21d54 // master
+	github.com/moby/moby/client v0.3.1-0.20260331085437-76f6a0c21d54 // master
 	github.com/moby/patternmatcher v0.6.1
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/shirou/gopsutil/v4 v4.26.2

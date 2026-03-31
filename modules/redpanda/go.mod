@@ -5,7 +5,7 @@ go 1.25.0
 toolchain go1.25.7
 
 require (
-	github.com/moby/moby/api v1.54.0
+	github.com/moby/moby/api v1.54.1-0.20260331085437-76f6a0c21d54
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.41.0
 	github.com/twmb/franz-go v1.16.1
@@ -22,7 +22,7 @@ require (
 	github.com/ebitengine/purego v0.10.0 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/go-archive v0.2.0 // indirect
-	github.com/moby/moby/client v0.3.0 // indirect
+	github.com/moby/moby/client v0.3.1-0.20260331085437-76f6a0c21d54 // indirect
 	github.com/moby/sys/userns v0.1.0 // indirect
 	github.com/shirou/gopsutil/v4 v4.26.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect

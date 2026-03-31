@@ -7,8 +7,8 @@ toolchain go1.25.7
 require (
 	github.com/containerd/errdefs v1.0.0
 	github.com/google/uuid v1.6.0
-	github.com/moby/moby/api v1.54.0
-	github.com/moby/moby/client v0.3.0
+	github.com/moby/moby/api v1.54.1-0.20260331085437-76f6a0c21d54
+	github.com/moby/moby/client v0.3.1-0.20260331085437-76f6a0c21d54
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.41.0
 	github.com/tmc/langchaingo v0.1.5
