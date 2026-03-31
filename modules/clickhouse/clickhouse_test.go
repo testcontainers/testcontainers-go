@@ -3,6 +3,7 @@ package clickhouse_test
 import (
 	"context"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -207,7 +208,7 @@ func TestClickHouseWithZookeeper(t *testing.T) {
 	// withZookeeper {
 	zkPort := network.MustParsePort("2181/tcp")
 
-	zkcontainer, err := testcontainers.Run(ctx, "zookeeper:3.7", testcontainers.WithExposedPorts(zkPort.Port()), testcontainers.WithWaitStrategy(wait.ForListeningPort(network.MustParsePort(zkPort))))
+	zkcontainer, err := testcontainers.Run(ctx, "zookeeper:3.7", testcontainers.WithExposedPorts(strconv.FormatUint(uint64(zkPort.Num()), 10)+"/"+string(zkPort.Proto())), testcontainers.WithWaitStrategy(wait.ForListeningPort(zkPort)))
 	testcontainers.CleanupContainer(t, zkcontainer)
 	require.NoError(t, err)
 

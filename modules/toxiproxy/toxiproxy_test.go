@@ -5,12 +5,14 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
 	toxiproxy "github.com/Shopify/toxiproxy/v2/client"
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
+	dockernetwork "github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -63,7 +65,7 @@ func TestRun_withConfigFile(t *testing.T) {
 
 	toxiproxyClient := toxiproxy.NewClient(toxiURI)
 
-	toxiproxyProxyPort, err := toxiproxyContainer.MappedPort(ctx, network.MustParsePort("8666/tcp"))
+	toxiproxyProxyPort, err := toxiproxyContainer.MappedPort(ctx, dockernetwork.MustParsePort("8666/tcp"))
 	require.NoError(t, err)
 
 	toxiproxyProxyHostIP, err := toxiproxyContainer.Host(ctx)

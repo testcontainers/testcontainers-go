@@ -268,7 +268,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	}
 	require.NoErrorf(t, err, "get endpoint")
 
-	opts := []client.Opt{client.WithHost(remoteDocker), client.WithAPIVersionNegotiation()}
+	opts := []client.Opt{client.WithHost(remoteDocker)}
 
 	dockerClient, err := NewDockerClientWithOpts(ctx, opts...)
 	require.NoError(t, err)

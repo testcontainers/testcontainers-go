@@ -3,6 +3,7 @@ package v2_test
 import (
 	"bytes"
 	"context"
+	"strconv"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"

@@ -22,7 +22,6 @@ import (
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/jsonstream"
 	"github.com/moby/moby/api/types/network"
-	"github.com/moby/moby/api/types/strslice"
 	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 
@@ -1424,7 +1423,7 @@ func TestContainerCapAdd(t *testing.T) {
 	resp, err := dockerClient.ContainerInspect(ctx, containerID, client.ContainerInspectOptions{})
 	require.NoError(t, err)
 
-	require.Equal(t, strslice.StrSlice{expected}, resp.Container.HostConfig.CapAdd)
+	require.Equal(t, []string{expected}, resp.Container.HostConfig.CapAdd)
 }
 
 func TestContainerRunningCheckingStatusCode(t *testing.T) {
@@ -1675,7 +1674,7 @@ type mockImagePullResponse struct {
 }
 
 func (m mockImagePullResponse) JSONMessages(_ context.Context) iter.Seq2[jsonstream.Message, error] {
-	return func(yield func(jsonstream.Message, error) bool) {}
+	return func(_ func(jsonstream.Message, error) bool) {}
 }
 
 func (m mockImagePullResponse) Wait(_ context.Context) error {

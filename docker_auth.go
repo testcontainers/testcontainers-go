@@ -14,8 +14,8 @@ import (
 	"sync"
 
 	"github.com/cpuguy83/dockercfg"
-	dockerClient "github.com/moby/moby/client"
 	"github.com/moby/moby/api/types/registry"
+	dockerClient "github.com/moby/moby/client"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
 )

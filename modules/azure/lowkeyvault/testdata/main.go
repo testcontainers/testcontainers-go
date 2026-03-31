@@ -8,9 +8,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/tracing"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets"
 )
@@ -18,16 +16,16 @@ import (
 func run() error {
 	ctx := context.Background()
 
-	connUrl := os.Getenv("CONNECTION_URL")
-	log.Printf("Using Lowkey Vault endpoint: %s", connUrl)
-	tokenUrl := os.Getenv("IDENTITY_ENDPOINT")
-	log.Printf("Using token URL: %s", tokenUrl)
+	connURL := os.Getenv("CONNECTION_URL")
+	log.Printf("Using Lowkey Vault endpoint: %s", connURL)
+	tokenURL := os.Getenv("IDENTITY_ENDPOINT")
+	log.Printf("Using token URL: %s", tokenURL)
 
 	customTransport := http.DefaultTransport.(*http.Transport).Clone()
 	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	httpClient := http.Client{Transport: customTransport}
 
-	resp, err := httpClient.Get(tokenUrl + "?resource=" + connUrl)
+	resp, err := httpClient.Get(tokenURL + "?resource=" + connURL)
 	if err != nil {
 		log.Fatalf("failed to get token from token URL %v", err)
 		return err
@@ -43,20 +41,9 @@ func run() error {
 		log.Fatalf("failed to create credential: %v", err)
 		return err
 	}
-	secretClient, err := azsecrets.NewClient(connUrl,
+	secretClient, err := azsecrets.NewClient(connURL,
 		cred,
-		&azsecrets.ClientOptions{ClientOptions: struct {
-			APIVersion                      string
-			Cloud                           cloud.Configuration
-			InsecureAllowCredentialWithHTTP bool
-			Logging                         policy.LogOptions
-			Retry                           policy.RetryOptions
-			Telemetry                       policy.TelemetryOptions
-			TracingProvider                 tracing.Provider
-			Transport                       policy.Transporter
-			PerCallPolicies                 []policy.Policy
-			PerRetryPolicies                []policy.Policy
-		}{Transport: &httpClient}, DisableChallengeResourceVerification: true})
+		&azsecrets.ClientOptions{ClientOptions: policy.ClientOptions{Transport: &httpClient}, DisableChallengeResourceVerification: true})
 	if err != nil {
 		log.Fatalf("failed to create secret client: %v", err)
 		return err
@@ -75,7 +62,7 @@ func run() error {
 		log.Fatalf("failed to get the secret %v", err)
 		return err
 	}
-	fetchedValue := *fetched.Secret.Value
+	fetchedValue := *fetched.Value
 
 	fmt.Println(fetchedValue == secretValue)
 

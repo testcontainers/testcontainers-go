@@ -6,8 +6,8 @@ import (
 	"io"
 	"sync"
 
-	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/pkg/stdcopy"
+	"github.com/moby/moby/api/types/container"
 )
 
 // ProcessOptions defines options applicable to the reader processor

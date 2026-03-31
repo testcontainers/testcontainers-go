@@ -13,12 +13,12 @@ import (
 	"time"
 
 	"github.com/cpuguy83/dockercfg"
+	"github.com/google/uuid"
+	"github.com/moby/go-archive"
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/network"
 	"github.com/moby/moby/api/types/registry"
 	"github.com/moby/moby/client"
-	"github.com/google/uuid"
-	"github.com/moby/go-archive"
 	"github.com/moby/patternmatcher/ignorefile"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
@@ -39,17 +39,17 @@ type DeprecatedContainer interface {
 
 // Container allows getting info about and controlling a single container instance
 type Container interface {
-	GetContainerID() string                                                        // get the container id from the provider
-	Endpoint(context.Context, string) (string, error)                              // get proto://ip:port string for the lowest exposed port
+	GetContainerID() string                                                            // get the container id from the provider
+	Endpoint(context.Context, string) (string, error)                                  // get proto://ip:port string for the lowest exposed port
 	PortEndpoint(ctx context.Context, port network.Port, proto string) (string, error) // get proto://ip:port string for the given exposed port
-	Host(context.Context) (string, error)                                          // get host where the container port is exposed
-	Inspect(context.Context) (*container.InspectResponse, error)                   // get container info
-	MappedPort(context.Context, network.Port) (network.Port, error)                        // get externally mapped port for a container port
+	Host(context.Context) (string, error)                                              // get host where the container port is exposed
+	Inspect(context.Context) (*container.InspectResponse, error)                       // get container info
+	MappedPort(context.Context, network.Port) (network.Port, error)                    // get externally mapped port for a container port
 	Ports(context.Context) (network.PortMap, error)                                    // Deprecated: Use c.Inspect(ctx).NetworkSettings.Ports instead
-	SessionID() string                                                             // get session id
-	IsRunning() bool                                                               // IsRunning returns true if the container is running, false otherwise.
-	Start(context.Context) error                                                   // start the container
-	Stop(context.Context, *time.Duration) error                                    // stop the container
+	SessionID() string                                                                 // get session id
+	IsRunning() bool                                                                   // IsRunning returns true if the container is running, false otherwise.
+	Start(context.Context) error                                                       // start the container
+	Stop(context.Context, *time.Duration) error                                        // stop the container
 
 	// Terminate stops and removes the container and its image if it was built and not flagged as kept.
 	Terminate(ctx context.Context, opts ...TerminateOption) error
@@ -75,14 +75,14 @@ type Container interface {
 // ImageBuildInfo defines what is needed to build an image
 type ImageBuildInfo interface {
 	BuildOptions() (client.ImageBuildOptions, error) // converts the ImageBuildInfo to a client.ImageBuildOptions
-	GetContext() (io.Reader, error)                 // the path to the build context
-	GetDockerfile() string                          // the relative path to the Dockerfile, including the file itself
-	GetRepo() string                                // get repo label for image
-	GetTag() string                                 // get tag label for image
-	BuildLogWriter() io.Writer                      // for output of build log, use io.Discard to disable the output
-	ShouldBuildImage() bool                         // return true if the image needs to be built
-	GetBuildArgs() map[string]*string               // return the environment args used to build the Dockerfile
-	GetAuthConfigs() map[string]registry.AuthConfig // Deprecated. Testcontainers will detect registry credentials automatically. Return the auth configs to be able to pull from an authenticated docker registry
+	GetContext() (io.Reader, error)                  // the path to the build context
+	GetDockerfile() string                           // the relative path to the Dockerfile, including the file itself
+	GetRepo() string                                 // get repo label for image
+	GetTag() string                                  // get tag label for image
+	BuildLogWriter() io.Writer                       // for output of build log, use io.Discard to disable the output
+	ShouldBuildImage() bool                          // return true if the image needs to be built
+	GetBuildArgs() map[string]*string                // return the environment args used to build the Dockerfile
+	GetAuthConfigs() map[string]registry.AuthConfig  // Deprecated. Testcontainers will detect registry credentials automatically. Return the auth configs to be able to pull from an authenticated docker registry
 }
 
 // FromDockerfile represents the parameters needed to build an image from a Dockerfile

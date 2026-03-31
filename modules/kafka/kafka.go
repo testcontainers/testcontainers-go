@@ -16,6 +16,7 @@ import (
 )
 
 var publicPort = network.MustParsePort("9093/tcp")
+
 const (
 	starterScript = "/usr/sbin/testcontainers_start.sh"
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -30,12 +31,12 @@ func isDockerDesktopRunning(l log.Logger) (bool, error) {
 		return false, fmt.Errorf("failed to create docker client: %w", err)
 	}
 
-	info, err := cli.Info(context.Background())
+	info, err := cli.Info(context.Background(), client.InfoOptions{})
 	if err != nil {
 		return false, fmt.Errorf("failed to get docker info: %w", err)
 	}
 
-	if info.OperatingSystem == "Docker Desktop" {
+	if info.Info.OperatingSystem == "Docker Desktop" {
 		return true, nil
 	}
 

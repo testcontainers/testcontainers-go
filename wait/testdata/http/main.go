@@ -18,7 +18,7 @@ import (
 
 func run() error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
@@ -39,10 +39,9 @@ func run() error {
 				w.WriteHeader(http.StatusOK)
 				_, _ = w.Write([]byte("pong"))
 				return
-			} else {
-				w.WriteHeader(http.StatusBadRequest)
-				return
 			}
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
 		w.WriteHeader(http.StatusUnauthorized)
 	})

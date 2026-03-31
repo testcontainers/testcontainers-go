@@ -7,14 +7,13 @@ import (
 	"io"
 	"net"
 	"slices"
+	"strconv"
 	"sync"
 	"time"
 
-	"strconv"
-
+	"github.com/google/uuid"
 	"github.com/moby/moby/api/types/container"
 	tcnetwork "github.com/moby/moby/api/types/network"
-	"github.com/google/uuid"
 	"golang.org/x/crypto/ssh"
 
 	"github.com/testcontainers/testcontainers-go/internal/core/network"

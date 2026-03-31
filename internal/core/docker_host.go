@@ -59,7 +59,7 @@ func DefaultGatewayIP() (string, error) {
 // dockerHostCheck Use a vanilla Docker client to check if the Docker host is reachable.
 // It will avoid recursive calls to this function.
 var dockerHostCheck = func(ctx context.Context, host string) error {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithHost(host), client.WithAPIVersionNegotiation())
+	cli, err := client.New(client.FromEnv, client.WithHost(host))
 	if err != nil {
 		return fmt.Errorf("new client: %w", err)
 	}

@@ -9,8 +9,11 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
+
+	dockernetwork "github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
@@ -228,7 +231,7 @@ func ExampleRun_usingLambdas() {
 	functionURL := v.FunctionURLConfigs[0].FunctionURL
 	// replace the port with the one exposed by the container
 
-	mappedPort, err := ctr.MappedPort(ctx, network.MustParsePort("4566/tcp"))
+	mappedPort, err := ctr.MappedPort(ctx, dockernetwork.MustParsePort("4566/tcp"))
 	if err != nil {
 		log.Printf("failed to get mapped port: %s", err)
 		return

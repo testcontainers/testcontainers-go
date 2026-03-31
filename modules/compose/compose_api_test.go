@@ -186,12 +186,12 @@ func TestDockerComposeAPI_TestcontainersLabelsArePresent(t *testing.T) {
 		c, err := compose.ServiceContainer(context.Background(), serviceName)
 		require.NoError(t, err, "compose.ServiceContainer()")
 
-		inspect, err := compose.dockerClient.ContainerInspect(ctx, c.GetContainerID())
+		inspect, err := compose.dockerClient.ContainerInspect(ctx, c.GetContainerID(), client.ContainerInspectOptions{})
 		require.NoError(t, err, "dockerClient.ContainerInspect()")
 
 		for key, label := range testcontainers.GenericLabels() {
-			assert.Contains(t, inspect.Config.Labels, key, "Label %s is not present in container %s", key, c.GetContainerID())
-			assert.Equal(t, label, inspect.Config.Labels[key], "Label %s value is not correct in container %s", key, c.GetContainerID())
+			assert.Contains(t, inspect.Container.Config.Labels, key, "Label %s is not present in container %s", key, c.GetContainerID())
+			assert.Equal(t, label, inspect.Container.Config.Labels[key], "Label %s value is not correct in container %s", key, c.GetContainerID())
 		}
 	}
 }
@@ -647,7 +647,7 @@ func TestDockerComposeAPIVolumesDeletedOnDown(t *testing.T) {
 	volumeList, err := compose.dockerClient.VolumeList(ctx, client.VolumeListOptions{Filters: volumeListFilters})
 	require.NoError(t, err, "compose.dockerClient.VolumeList()")
 
-	require.Empty(t, volumeList.Volumes, "Volumes are not cleaned up")
+	require.Empty(t, volumeList.Items, "Volumes are not cleaned up")
 }
 
 func TestDockerComposeAPIWithBuild(t *testing.T) {

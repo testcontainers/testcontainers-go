@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strconv"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/containerd/errdefs"
@@ -192,7 +192,7 @@ func removeImageFromLocalCache(t *testing.T, img string) {
 	t.Helper()
 	ctx := context.Background()
 
-	testcontainersClient, err := NewDockerClientWithOpts(ctx, client.WithVersion(daemonMaxVersion))
+	testcontainersClient, err := NewDockerClientWithOpts(ctx, client.WithAPIVersion(daemonMaxVersion))
 	if err != nil {
 		t.Log("could not create client to cleanup registry: ", err)
 	}

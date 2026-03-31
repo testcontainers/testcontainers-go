@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/cpuguy83/dockercfg"
-	"github.com/moby/moby/api/types/image"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
 
@@ -286,7 +286,7 @@ func TestPullImage_samePlatform(t *testing.T) {
 	err = registryContainer.PullImage(ctx, img)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		_, err := dockerCli.ImageRemove(ctx, img, image.RemoveOptions{Force: true})
+		_, err := dockerCli.ImageRemove(ctx, img, client.ImageRemoveOptions{Force: true})
 		require.NoError(t, err)
 	})
 

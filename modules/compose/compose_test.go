@@ -380,7 +380,7 @@ func assertVolumeDoesNotExist(tb testing.TB, volumeName string) {
 		tb.Logf("Volume list warnings: %v", volumeList.Warnings)
 	}
 
-	require.Emptyf(tb, volumeList.Volumes, "Volume list is not empty")
+	require.Emptyf(tb, volumeList.Items, "Volume list is not empty")
 }
 
 func assertContainerEnvironmentVariables(
@@ -395,13 +395,13 @@ func assertContainerEnvironmentVariables(
 
 	containers, err := containerClient.ContainerList(context.Background(), client.ContainerListOptions{})
 	require.NoErrorf(tb, err, "Failed to list containers")
-	require.NotEmptyf(tb, containers, "container list empty")
+	require.NotEmptyf(tb, containers.Items, "container list empty")
 
 	containerNameRegexp := regexp.MustCompile(fmt.Sprintf(`^\/?%s(_|-)%s(_|-)\d$`, composeIdentifier, serviceName))
 	var containerID string
 containerLoop:
-	for i := range containers {
-		c := containers[i]
+	for i := range containers.Items {
+		c := containers.Items[i]
 		for j := range c.Names {
 			if containerNameRegexp.MatchString(c.Names[j]) {
 				containerID = c.ID
@@ -410,17 +410,17 @@ containerLoop:
 		}
 	}
 
-	details, err := containerClient.ContainerInspect(context.Background(), containerID)
+	details, err := containerClient.ContainerInspect(context.Background(), containerID, client.ContainerInspectOptions{})
 	require.NoErrorf(tb, err, "Failed to inspect container")
 
 	for k, v := range present {
 		keyVal := k + "=" + v
-		assert.Contains(tb, details.Config.Env, keyVal)
+		assert.Contains(tb, details.Container.Config.Env, keyVal)
 	}
 
 	for k, v := range absent {
 		keyVal := k + "=" + v
-		assert.NotContains(tb, details.Config.Env, keyVal)
+		assert.NotContains(tb, details.Container.Config.Env, keyVal)
 	}
 }
 

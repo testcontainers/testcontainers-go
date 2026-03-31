@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/moby/moby/api/types/image"
 	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 
@@ -25,7 +24,7 @@ func Test_LoadImages(t *testing.T) {
 	host, err := dindContainer.Host(ctx)
 	require.NoError(t, err)
 
-	cli, err := client.NewClientWithOpts(client.WithHost(host), client.WithAPIVersionNegotiation())
+	cli, err := client.New(client.WithHost(host))
 	require.NoError(t, err)
 
 	provider, err := testcontainers.ProviderDocker.GetProvider()
@@ -44,14 +43,14 @@ func Test_LoadImages(t *testing.T) {
 		err := dindContainer.LoadImage(ctx, "nginx:1.27")
 		require.NoError(t, err)
 
-		images, err := cli.ImageList(ctx, image.ListOptions{})
+		images, err := cli.ImageList(ctx, client.ImageListOptions{})
 		require.NoError(t, err)
 
-		if len(images) == 0 || len(images) > 1 {
-			t.Fatalf("got %d images, expected 1", len(images))
+		if len(images.Items) == 0 || len(images.Items) > 1 {
+			t.Fatalf("got %d images, expected 1", len(images.Items))
 		}
 
-		img, err := cli.ImageInspect(ctx, images[0].ID)
+		img, err := cli.ImageInspect(ctx, images.Items[0].ID)
 		require.NoError(t, err)
 
 		require.Equal(t, "nginx:1.27", img.RepoTags[0])

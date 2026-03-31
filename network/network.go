@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"maps"
 
+	"github.com/google/uuid"
 	"github.com/moby/moby/api/types/network"
 	"github.com/moby/moby/client"
-	"github.com/google/uuid"
 
 	"github.com/testcontainers/testcontainers-go"
 )

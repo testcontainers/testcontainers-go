@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	toxiproxy "github.com/Shopify/toxiproxy/v2/client"
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
+	dockernetwork "github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go"
 	tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
@@ -120,7 +122,7 @@ func ExampleRun_addLatency() {
 	}
 	// }
 
-	toxiproxyProxyPort, err := toxiproxyContainer.MappedPort(ctx, proxyPort+"/tcp")
+	toxiproxyProxyPort, err := toxiproxyContainer.MappedPort(ctx, dockernetwork.MustParsePort(proxyPort+"/tcp"))
 	if err != nil {
 		log.Printf("failed to get toxiproxy container port: %s", err)
 		return

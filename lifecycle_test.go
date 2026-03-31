@@ -15,7 +15,6 @@ import (
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/mount"
 	"github.com/moby/moby/api/types/network"
-	"github.com/moby/moby/api/types/strslice"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -226,8 +225,8 @@ func TestPreCreateModifierHook(t *testing.T) {
 		// assertions
 
 		assert.Equal(t, req.AutoRemove, inputHostConfig.AutoRemove, "Deprecated AutoRemove should come from the container request")
-		assert.Equal(t, strslice.StrSlice(req.CapAdd), inputHostConfig.CapAdd, "Deprecated CapAdd should come from the container request")
-		assert.Equal(t, strslice.StrSlice(req.CapDrop), inputHostConfig.CapDrop, "Deprecated CapDrop should come from the container request")
+		assert.Equal(t, []string(req.CapAdd), inputHostConfig.CapAdd, "Deprecated CapAdd should come from the container request")
+		assert.Equal(t, []string(req.CapDrop), inputHostConfig.CapDrop, "Deprecated CapDrop should come from the container request")
 		assert.Equal(t, req.Binds, inputHostConfig.Binds, "Deprecated Binds should come from the container request")
 		assert.Equal(t, req.ExtraHosts, inputHostConfig.ExtraHosts, "Deprecated ExtraHosts should come from the container request")
 		assert.Equal(t, req.Resources, inputHostConfig.Resources, "Deprecated Resources should come from the container request")
@@ -392,8 +391,8 @@ func TestMergePortBindings(t *testing.T) {
 		parsedPortMap network.PortMap
 		exposedPorts  []string
 	}
-	p := func(s string) network.Port { return network.MustParsePort(s) }
-	ip := func(s string) netip.Addr { return netip.MustParseAddr(s) }
+	p := network.MustParsePort
+	ip := netip.MustParseAddr
 	noIP := netip.Addr{}
 
 	cases := []struct {
