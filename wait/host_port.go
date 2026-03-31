@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/moby/moby/api/types/network"
@@ -258,7 +257,7 @@ func externalCheck(ctx context.Context, ipAddress string, port network.Port, tar
 	proto := port.Proto()
 
 	dialer := net.Dialer{}
-	address := net.JoinHostPort(ipAddress, strconv.Itoa(int(port.Num())))
+	address := net.JoinHostPort(ipAddress, port.Port())
 	for i := 0; ; i++ {
 		if err := checkTarget(ctx, target); err != nil {
 			return fmt.Errorf("check target: retries: %d address: %s: %w", i, address, err)

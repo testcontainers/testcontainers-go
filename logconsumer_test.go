@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -310,7 +309,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	existingLogs := len(consumer.Msgs())
 
 	hitNginx := func() {
-		i, _, err := dind.Exec(ctx, []string{"wget", "--spider", net.JoinHostPort("localhost", strconv.Itoa(int(port.Num())))})
+		i, _, err := dind.Exec(ctx, []string{"wget", "--spider", net.JoinHostPort("localhost", port.Port())})
 		require.NoError(t, err, "Can't make request to nginx container from dind container")
 		require.Zerof(t, i, "Can't make request to nginx container from dind container")
 	}

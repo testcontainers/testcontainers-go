@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
@@ -68,7 +67,7 @@ func (c *RegistryContainer) HostAddress(ctx context.Context) (string, error) {
 		}
 	}
 
-	return net.JoinHostPort(host, strconv.Itoa(int(port.Num()))), nil
+	return net.JoinHostPort(host, port.Port()), nil
 }
 
 // localAddress returns the local address of the machine

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 
 	dockernetwork "github.com/moby/moby/api/types/network"
@@ -179,7 +180,7 @@ func (c *Container) mappedHostAuthority(ctx context.Context, exposedPort string,
 		if err != nil {
 			return "", fmt.Errorf("port: %w", err)
 		}
-		return fmt.Sprintf("%s:%d", host, port.Num()), nil
+		return net.JoinHostPort(host, port.Port()), nil
 	case Network:
 		host, err := c.resolveNetworkHostName(ctx)
 		if err != nil {
@@ -189,7 +190,7 @@ func (c *Container) mappedHostAuthority(ctx context.Context, exposedPort string,
 		if err != nil {
 			return "", fmt.Errorf("port: %w", err)
 		}
-		return fmt.Sprintf("%s:%d", host, port.Num()), nil
+		return net.JoinHostPort(host, port.Port()), nil
 	default:
 		return "", fmt.Errorf("unsupported access mode: %d", accessMode)
 	}

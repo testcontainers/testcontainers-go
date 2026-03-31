@@ -179,7 +179,7 @@ func TestRun_local(t *testing.T) {
 	t.Run("mapped-port", func(t *testing.T) {
 		port, err := ollamaContainer.MappedPort(ctx, testNatPort.String())
 		require.NoError(t, err)
-		require.NotZero(t, port.Num())
+		require.NotEmpty(t, port.Port())
 		require.Equal(t, "tcp", port.Proto())
 	})
 
@@ -425,7 +425,7 @@ func testRunLocalWithCustomHost(ctx context.Context, t *testing.T, ollamaContain
 	t.Run("mapped-port", func(t *testing.T) {
 		port, err := ollamaContainer.MappedPort(ctx, testNatPort.String())
 		require.NoError(t, err)
-		require.Equal(t, uint16(1234), port.Num())
+		require.Equal(t, "1234", port.Port())
 		require.Equal(t, "tcp", port.Proto())
 	})
 }

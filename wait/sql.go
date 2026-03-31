@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/moby/moby/api/types/network"
@@ -68,7 +67,7 @@ func (w *waitForSQL) String() string {
 	if w.Port != "" {
 		p, err := network.ParsePort(w.Port)
 		if err == nil {
-			port = strconv.Itoa(int(p.Num()))
+			port = p.Port()
 		}
 	}
 

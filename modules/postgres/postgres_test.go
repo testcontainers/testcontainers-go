@@ -120,7 +120,7 @@ func TestPostgres(t *testing.T) {
 			// Ensure connection string is using generic format
 			id, err := ctr.MappedPort(ctx, "5432/tcp")
 			require.NoError(t, err)
-			require.Equal(t, fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable&application_name=test", user, password, "localhost", id.Num(), dbname), connStr)
+			require.Equal(t, fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&application_name=test", user, password, "localhost", id.Port(), dbname), connStr)
 
 			// perform assertions
 			db, err := sql.Open("postgres", connStr)
@@ -145,7 +145,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 	port := "5432/tcp"
 	dbURL := func(host string, port string) string {
 		p := network.MustParsePort(port)
-		return fmt.Sprintf("postgres://postgres:password@%s:%d/%s?sslmode=disable", host, p.Num(), dbname)
+		return fmt.Sprintf("postgres://postgres:password@%s:%s/%s?sslmode=disable", host, p.Port(), dbname)
 	}
 
 	t.Run("default query", func(t *testing.T) {

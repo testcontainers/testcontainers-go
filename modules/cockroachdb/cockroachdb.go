@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"strconv"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -265,7 +264,7 @@ func (c *CockroachDBContainer) connConfig(host string, port string) (*pgx.ConnCo
 	u := url.URL{
 		Scheme:   "postgres",
 		User:     user,
-		Host:     net.JoinHostPort(host, strconv.Itoa(int(p.Num()))),
+		Host:     net.JoinHostPort(host, p.Port()),
 		Path:     c.database,
 		RawQuery: params.Encode(),
 	}

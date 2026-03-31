@@ -7,7 +7,6 @@ import (
 	"io"
 	"net"
 	"slices"
-	"strconv"
 	"sync"
 	"time"
 
@@ -246,7 +245,7 @@ func (sshdC *sshdContainer) clientConfig(ctx context.Context) error {
 		return fmt.Errorf("mapped port: %w", err)
 	}
 
-	sshdC.port = strconv.Itoa(int(mappedPort.Num()))
+	sshdC.port = mappedPort.Port()
 	sshdC.sshConfig = &ssh.ClientConfig{
 		User:            user,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),

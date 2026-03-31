@@ -3,7 +3,6 @@ package azurite
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/moby/moby/api/types/network"
 
@@ -106,9 +105,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			if err != nil {
 				return nil, err
 			}
-			portNum := strconv.Itoa(int(p.Num()))
-
-			cmd = append(cmd, fmt.Sprintf("--%sHost", srv), "0.0.0.0", fmt.Sprintf("--%sPort", srv), portNum)
+			cmd = append(cmd, fmt.Sprintf("--%sHost", srv), "0.0.0.0", fmt.Sprintf("--%sPort", srv), p.Port())
 			exposedPorts = append(exposedPorts, string(port))
 			waitingFor = append(waitingFor, wait.ForListeningPort(port))
 		}

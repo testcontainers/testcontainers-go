@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net"
-	"strconv"
 	"testing"
 
 	_ "github.com/lib/pq"
@@ -33,7 +32,7 @@ func TestYugabyteDB_YSQL(t *testing.T) {
 
 		ysqlConnStr, err := ctr.YSQLConnectionString(ctx, "sslmode=disable")
 		require.NoError(t, err)
-		assert.Equal(t, fmt.Sprintf("postgres://yugabyte:yugabyte@%s:%d/yugabyte?sslmode=disable", ctrHost, ctrPort.Num()), ysqlConnStr)
+		assert.Equal(t, fmt.Sprintf("postgres://yugabyte:yugabyte@%s:%s/yugabyte?sslmode=disable", ctrHost, ctrPort.Port()), ysqlConnStr)
 
 		db, err := sql.Open("postgres", ysqlConnStr)
 		require.NoError(t, err)
@@ -61,7 +60,7 @@ func TestYugabyteDB_YSQL(t *testing.T) {
 
 		ysqlConnStr, err := ctr.YSQLConnectionString(ctx, "sslmode=disable")
 		require.NoError(t, err)
-		assert.Equal(t, fmt.Sprintf("postgres://custom-user:custom-password@%s:%d/custom-db?sslmode=disable", ctrHost, ctrPort.Num()), ysqlConnStr)
+		assert.Equal(t, fmt.Sprintf("postgres://custom-user:custom-password@%s:%s/custom-db?sslmode=disable", ctrHost, ctrPort.Port()), ysqlConnStr)
 
 		db, err := sql.Open("postgres", ysqlConnStr)
 		require.NoError(t, err)
@@ -86,7 +85,7 @@ func TestYugabyteDB_YCQL(t *testing.T) {
 		ctrPort, err := ctr.MappedPort(ctx, "9042/tcp")
 		require.NoError(t, err)
 
-		cluster := gocql.NewCluster(net.JoinHostPort(ctrHost, strconv.Itoa(int(ctrPort.Num()))))
+		cluster := gocql.NewCluster(net.JoinHostPort(ctrHost, ctrPort.Port()))
 		cluster.Keyspace = "yugabyte"
 		cluster.Authenticator = gocql.PasswordAuthenticator{
 			Username: "yugabyte",
@@ -116,7 +115,7 @@ func TestYugabyteDB_YCQL(t *testing.T) {
 		ctrPort, err := ctr.MappedPort(ctx, "9042/tcp")
 		require.NoError(t, err)
 
-		cluster := gocql.NewCluster(net.JoinHostPort(ctrHost, strconv.Itoa(int(ctrPort.Num()))))
+		cluster := gocql.NewCluster(net.JoinHostPort(ctrHost, ctrPort.Port()))
 		cluster.Keyspace = "custom-keyspace"
 		cluster.Authenticator = gocql.PasswordAuthenticator{
 			Username: "custom-user",

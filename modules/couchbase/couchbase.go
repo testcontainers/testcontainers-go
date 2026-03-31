@@ -296,8 +296,8 @@ func (c *CouchbaseContainer) configureExternalPorts(ctx context.Context) error {
 	mgmtSSL, _ := c.MappedPort(ctx, MGMT_SSL_PORT)
 	body := map[string]string{
 		"hostname": host,
-		"mgmt":     strconv.Itoa(int(mgmt.Num())),
-		"mgmtSSL":  strconv.Itoa(int(mgmtSSL.Num())),
+		"mgmt":     mgmt.Port(),
+		"mgmtSSL":  mgmtSSL.Port(),
 	}
 
 	if contains(c.config.enabledServices, kv) {
@@ -306,42 +306,42 @@ func (c *CouchbaseContainer) configureExternalPorts(ctx context.Context) error {
 		capi, _ := c.MappedPort(ctx, VIEW_PORT)
 		capiSSL, _ := c.MappedPort(ctx, VIEW_SSL_PORT)
 
-		body["kv"] = strconv.Itoa(int(kv.Num()))
-		body["kvSSL"] = strconv.Itoa(int(kvSSL.Num()))
-		body["capi"] = strconv.Itoa(int(capi.Num()))
-		body["capiSSL"] = strconv.Itoa(int(capiSSL.Num()))
+		body["kv"] = kv.Port()
+		body["kvSSL"] = kvSSL.Port()
+		body["capi"] = capi.Port()
+		body["capiSSL"] = capiSSL.Port()
 	}
 
 	if contains(c.config.enabledServices, query) {
 		n1ql, _ := c.MappedPort(ctx, QUERY_PORT)
 		n1qlSSL, _ := c.MappedPort(ctx, QUERY_SSL_PORT)
 
-		body["n1ql"] = strconv.Itoa(int(n1ql.Num()))
-		body["n1qlSSL"] = strconv.Itoa(int(n1qlSSL.Num()))
+		body["n1ql"] = n1ql.Port()
+		body["n1qlSSL"] = n1qlSSL.Port()
 	}
 
 	if contains(c.config.enabledServices, search) {
 		fts, _ := c.MappedPort(ctx, SEARCH_PORT)
 		ftsSSL, _ := c.MappedPort(ctx, SEARCH_SSL_PORT)
 
-		body["fts"] = strconv.Itoa(int(fts.Num()))
-		body["ftsSSL"] = strconv.Itoa(int(ftsSSL.Num()))
+		body["fts"] = fts.Port()
+		body["ftsSSL"] = ftsSSL.Port()
 	}
 
 	if contains(c.config.enabledServices, analytics) {
 		cbas, _ := c.MappedPort(ctx, ANALYTICS_PORT)
 		cbasSSL, _ := c.MappedPort(ctx, ANALYTICS_SSL_PORT)
 
-		body["cbas"] = strconv.Itoa(int(cbas.Num()))
-		body["cbasSSL"] = strconv.Itoa(int(cbasSSL.Num()))
+		body["cbas"] = cbas.Port()
+		body["cbasSSL"] = cbasSSL.Port()
 	}
 
 	if contains(c.config.enabledServices, eventing) {
 		eventingAdminPort, _ := c.MappedPort(ctx, EVENTING_PORT)
 		eventingSSL, _ := c.MappedPort(ctx, EVENTING_SSL_PORT)
 
-		body["eventingAdminPort"] = strconv.Itoa(int(eventingAdminPort.Num()))
-		body["eventingSSL"] = strconv.Itoa(int(eventingSSL.Num()))
+		body["eventingAdminPort"] = eventingAdminPort.Port()
+		body["eventingSSL"] = eventingSSL.Port()
 	}
 
 	_, err := c.doHTTPRequest(ctx, MGMT_PORT, "/node/controller/setupAlternateAddresses/external", http.MethodPut, body)

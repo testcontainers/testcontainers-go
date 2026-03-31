@@ -165,7 +165,7 @@ func (ws *HTTPStrategy) String() string {
 
 	port := "default"
 	if !ws.Port.IsZero() {
-		port = strconv.Itoa(int(ws.Port.Num()))
+		port = ws.Port.Port()
 	}
 
 	return fmt.Sprintf("%s %s request on port %s path %q", proto, ws.Method, port, ws.Path)
@@ -296,7 +296,7 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 	}
 
 	client := http.Client{Transport: tripper, Timeout: time.Second}
-	address := net.JoinHostPort(ipAddress, strconv.Itoa(int(mappedPort.Num())))
+	address := net.JoinHostPort(ipAddress, mappedPort.Port())
 
 	endpoint, err := url.Parse(ws.Path)
 	if err != nil {

@@ -8,7 +8,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"strconv"
 	"testing"
 
 	"github.com/containerd/errdefs"
@@ -303,8 +302,8 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 	require.NoError(t, err)
 
 	ip := localAddress(t)
-	mp := mappedPort.Num()
-	addr := net.JoinHostPort(ip, strconv.Itoa(int(mp)))
+	mp := mappedPort.Port()
+	addr := net.JoinHostPort(ip, mp)
 
 	t.Cleanup(func() {
 		removeImageFromLocalCache(t, addr+"/redis:5.0-alpine")

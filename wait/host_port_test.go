@@ -8,7 +8,6 @@ import (
 	"log"
 	"net"
 	"net/netip"
-	"strconv"
 	"testing"
 	"time"
 
@@ -184,7 +183,7 @@ func TestWaitForExposedPortSkipChecksSucceeds(t *testing.T) {
 						network.MustParsePort("80"): []network.PortBinding{
 							{
 								HostIP:   netip.MustParseAddr("0.0.0.0"),
-								HostPort: strconv.Itoa(int(port.Num())),
+								HostPort: port.Port(),
 							},
 						},
 					},
@@ -528,7 +527,7 @@ func TestHostPortStrategySucceedsGivenShellIsNotInstalled(t *testing.T) {
 						network.MustParsePort("80"): []network.PortBinding{
 							{
 								HostIP:   netip.MustParseAddr("0.0.0.0"),
-								HostPort: strconv.Itoa(int(port.Num())),
+								HostPort: port.Port(),
 							},
 						},
 					},
@@ -589,7 +588,7 @@ func TestHostPortStrategySucceedsGivenShellIsNotFound(t *testing.T) {
 						network.MustParsePort("80"): []network.PortBinding{
 							{
 								HostIP:   netip.MustParseAddr("0.0.0.0"),
-								HostPort: strconv.Itoa(int(port.Num())),
+								HostPort: port.Port(),
 							},
 						},
 					},

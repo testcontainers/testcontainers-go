@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"strconv"
 
 	_ "github.com/lib/pq"
 	"github.com/yugabyte/gocql"
@@ -125,7 +124,7 @@ func ExampleContainer_newCluster() {
 		return
 	}
 
-	cluster := gocql.NewCluster(net.JoinHostPort(yugabytedbContainerHost, strconv.Itoa(int(yugabyteContainerPort.Num()))))
+	cluster := gocql.NewCluster(net.JoinHostPort(yugabytedbContainerHost, yugabyteContainerPort.Port()))
 	cluster.Keyspace = "yugabyte"
 	cluster.Authenticator = gocql.PasswordAuthenticator{
 		Username: "yugabyte",

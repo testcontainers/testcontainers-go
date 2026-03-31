@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"strconv"
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -64,7 +63,7 @@ func (c *Container) resolveURL(ctx context.Context, port string) (string, error)
 		proto = "http"
 	}
 
-	return fmt.Sprintf("%s://%s", proto, net.JoinHostPort(host, strconv.Itoa(int(pulsarPort.Num())))), nil
+	return fmt.Sprintf("%s://%s", proto, net.JoinHostPort(host, pulsarPort.Port())), nil
 }
 
 // WithFunctionsWorker enables the functions worker, which will override the default pulsar command

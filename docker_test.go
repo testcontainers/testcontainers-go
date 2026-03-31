@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -840,7 +841,7 @@ func ExampleContainer_MappedPort() {
 	// buildingAddresses {
 	ip, _ := nginxC.Host(ctx)
 	port, _ := nginxC.MappedPort(ctx, "80")
-	_, _ = http.Get(fmt.Sprintf("http://%s:%d", ip, port.Num()))
+	_, _ = http.Get("http://" + net.JoinHostPort(ip, port.Port()))
 	// }
 
 	state, err := nginxC.State(ctx)

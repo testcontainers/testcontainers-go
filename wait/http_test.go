@@ -253,7 +253,7 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 			ExpectContinueTimeout: 1 * time.Second,
 		},
 	}
-	resp, err := client.Get(fmt.Sprintf("https://%s:%d", host, port.Num()))
+	resp, err := client.Get(fmt.Sprintf("https://%s:%s", host, port.Port()))
 	require.NoError(t, err)
 
 	defer resp.Body.Close()
@@ -303,7 +303,7 @@ func TestHTTPStrategyWaitUntilReadyWithQueryString(t *testing.T) {
 			ExpectContinueTimeout: 1 * time.Second,
 		},
 	}
-	resp, err := client.Get(fmt.Sprintf("https://%s:%d", host, port.Num()))
+	resp, err := client.Get(fmt.Sprintf("https://%s:%s", host, port.Port()))
 	require.NoError(t, err)
 
 	defer resp.Body.Close()
@@ -363,7 +363,7 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 			ExpectContinueTimeout: 1 * time.Second,
 		},
 	}
-	resp, err := client.Get(fmt.Sprintf("https://%s:%d", host, port.Num()))
+	resp, err := client.Get(fmt.Sprintf("https://%s:%s", host, port.Port()))
 	require.NoError(t, err)
 
 	defer resp.Body.Close()

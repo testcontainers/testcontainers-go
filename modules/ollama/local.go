@@ -684,7 +684,7 @@ func (c *localProcess) PortEndpoint(ctx context.Context, port string, proto stri
 		return "", fmt.Errorf("mapped port: %w", err)
 	}
 
-	hostPost := net.JoinHostPort(host, strconv.Itoa(int(outerPort.Num())))
+	hostPost := net.JoinHostPort(host, outerPort.Port())
 	if proto == "" {
 		return hostPost, nil
 	}

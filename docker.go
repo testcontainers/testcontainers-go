@@ -149,7 +149,7 @@ func (c *DockerContainer) PortEndpoint(ctx context.Context, port string, proto s
 		return "", err
 	}
 
-	hostPort := net.JoinHostPort(host, strconv.Itoa(int(outerPort.Num())))
+	hostPort := net.JoinHostPort(host, outerPort.Port())
 	if proto == "" {
 		return hostPort, nil
 	}

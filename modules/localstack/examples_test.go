@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -235,7 +234,7 @@ func ExampleRun_usingLambdas() {
 		return
 	}
 
-	functionURL = strings.ReplaceAll(functionURL, "4566", strconv.Itoa(int(mappedPort.Num())))
+	functionURL = strings.ReplaceAll(functionURL, "4566", mappedPort.Port())
 
 	resp, err := httpClient.Post(functionURL, "application/json", bytes.NewBufferString(`{"num1": "10", "num2": "10"}`))
 	if err != nil {
