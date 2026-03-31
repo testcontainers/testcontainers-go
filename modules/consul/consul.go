@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -27,7 +28,7 @@ type ConsulContainer struct {
 //
 //nolint:revive,staticcheck //FIXME
 func (c *ConsulContainer) ApiEndpoint(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, defaultHTTPAPIPort, "")
+	return c.PortEndpoint(ctx, network.MustParsePort(defaultHTTPAPIPort), "")
 }
 
 // WithConfigString takes in a JSON string of keys and values to define a configuration to be used by the instance.
@@ -64,7 +65,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithExposedPorts(defaultHTTPAPIPort+"/tcp", defaultBrokerPort+"/tcp", defaultBrokerPort+"/udp"),
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("Consul agent running!"),
-			wait.ForListeningPort(defaultHTTPAPIPort+"/tcp"),
+			wait.ForListeningPort(network.MustParsePort(defaultHTTPAPIPort+"/tcp")),
 		),
 	)
 

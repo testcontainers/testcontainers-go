@@ -3,6 +3,8 @@ package arangodb
 import (
 	"net/http"
 
+	"github.com/moby/moby/api/types/network"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -22,7 +24,7 @@ func withWaitStrategy() testcontainers.CustomizeRequestOption {
 		req.WaitingFor = wait.ForAll(
 			req.WaitingFor,
 			wait.ForHTTP("/_admin/status").
-				WithPort(defaultPort).
+				WithPort(network.MustParsePort(defaultPort)).
 				WithBasicAuth(DefaultUser, req.Env["ARANGO_ROOT_PASSWORD"]).
 				WithHeaders(map[string]string{
 					"Accept": "application/json",

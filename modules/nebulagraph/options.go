@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	dockernetwork "github.com/moby/moby/api/types/network"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -51,7 +53,7 @@ func defaultGraphdContainerCustomizers(nw *testcontainers.DockerNetwork) []testc
 			"--minloglevel=0",
 		}...),
 		testcontainers.WithEnv(map[string]string{"USER": user}),
-		testcontainers.WithWaitStrategy(wait.ForHTTP("/status").WithPort(graphdPortHTTP + "/tcp").
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/status").WithPort(dockernetwork.MustParsePort(graphdPortHTTP + "/tcp")).
 			WithStatusCodeMatcher(
 				func(status int) bool {
 					return status == http.StatusOK
@@ -78,7 +80,7 @@ func defaultMetadContainerCustomizers(nw *testcontainers.DockerNetwork) []testco
 			"--minloglevel=0",
 		}...),
 		testcontainers.WithEnv(map[string]string{"USER": user}),
-		testcontainers.WithWaitStrategy(wait.ForHTTP("/status").WithPort(metadPortHTTP + "/tcp").
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/status").WithPort(dockernetwork.MustParsePort(metadPortHTTP + "/tcp")).
 			WithStatusCodeMatcher(
 				func(status int) bool {
 					return status == http.StatusOK

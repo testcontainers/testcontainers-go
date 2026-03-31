@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	dockernetwork "github.com/moby/moby/api/types/network"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/network"
 )
@@ -100,7 +102,7 @@ func RunCluster(ctx context.Context,
 
 // ConnectionString returns the host:port for connecting to NebulaGraph graphd
 func (c *Cluster) ConnectionString(ctx context.Context) (string, error) {
-	return c.graphd.PortEndpoint(ctx, graphdPort, "")
+	return c.graphd.PortEndpoint(ctx, dockernetwork.MustParsePort(graphdPort+"/tcp"), "")
 }
 
 // Terminate stops all NebulaGraph containers

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/moby/moby/client"
 	"github.com/tmc/langchaingo/llms"
 	langchainollama "github.com/tmc/langchaingo/llms/ollama"
 
@@ -252,14 +253,14 @@ func ExampleRun_withImageMount() {
 		return
 	}
 
-	info, err := cli.Info(context.Background())
+	info, err := cli.Info(context.Background(), client.InfoOptions{})
 	if err != nil {
 		log.Printf("failed to get docker info: %s", err)
 		return
 	}
 
 	// skip if the major version of the server is not v28 or greater
-	if info.ServerVersion < "28.0.0" {
+	if info.Info.ServerVersion < "28.0.0" {
 		log.Printf("skipping test because the server version is not v28 or greater")
 		return
 	}

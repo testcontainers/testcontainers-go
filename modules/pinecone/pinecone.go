@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/moby/moby/api/types/network"
+
 	"github.com/testcontainers/testcontainers-go"
 )
 
@@ -38,5 +40,5 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 //
 //nolint:revive,staticcheck //FIXME
 func (c *Container) HttpEndpoint() (string, error) {
-	return c.PortEndpoint(context.Background(), "5080/tcp", "http")
+	return c.PortEndpoint(context.Background(), network.MustParsePort("5080/tcp"), "http")
 }

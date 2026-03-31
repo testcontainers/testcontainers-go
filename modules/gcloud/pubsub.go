@@ -3,6 +3,7 @@ package gcloud
 import (
 	"context"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -19,7 +20,7 @@ func RunPubsub(ctx context.Context, img string, opts ...testcontainers.Container
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts("8085/tcp"),
 		testcontainers.WithWaitStrategy(
-			wait.ForListeningPort("8085/tcp"),
+			wait.ForListeningPort(network.MustParsePort("8085/tcp")),
 			wait.ForLog("started"),
 		),
 	}

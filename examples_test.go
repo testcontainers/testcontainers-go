@@ -7,6 +7,9 @@ import (
 	"strings"
 	"time"
 
+	dockernetwork "github.com/moby/moby/api/types/network"
+	dockerclient "github.com/moby/moby/client"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/network"
@@ -49,7 +52,7 @@ func ExampleRun() {
 		}),
 		testcontainers.WithExposedPorts("80/tcp"),
 		testcontainers.WithAfterReadyCommand(testcontainers.NewRawCommand([]string{"echo", "hello", "world"})),
-		testcontainers.WithWaitStrategy(wait.ForListeningPort("80/tcp").WithStartupTimeout(time.Second*5)),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort(dockernetwork.MustParsePort("80/tcp")).WithStartupTimeout(time.Second*5)),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(ctr); err != nil {
@@ -74,14 +77,14 @@ func ExampleRun() {
 		return
 	}
 
-	ctrResp, err := cli.ContainerInspect(ctx, ctr.GetContainerID())
+	ctrResp, err := cli.ContainerInspect(ctx, ctr.GetContainerID(), dockerclient.ContainerInspectOptions{})
 	if err != nil {
 		log.Printf("failed to inspect container: %s", err)
 		return
 	}
 
 	// networks
-	respNw, ok := ctrResp.NetworkSettings.Networks[nw.Name]
+	respNw, ok := ctrResp.Container.NetworkSettings.Networks[nw.Name]
 	if !ok {
 		log.Printf("network not found")
 		return
@@ -89,10 +92,10 @@ func ExampleRun() {
 	fmt.Println(respNw.Aliases)
 
 	// env
-	fmt.Println(ctrResp.Config.Env[0])
+	fmt.Println(ctrResp.Container.Config.Env[0])
 
 	// tmpfs
-	tmpfs, ok := ctrResp.HostConfig.Tmpfs["/tmp"]
+	tmpfs, ok := ctrResp.Container.HostConfig.Tmpfs["/tmp"]
 	if !ok {
 		log.Printf("tmpfs not found")
 		return
@@ -100,7 +103,7 @@ func ExampleRun() {
 	fmt.Println(tmpfs)
 
 	// labels
-	fmt.Println(ctrResp.Config.Labels["testcontainers.label"])
+	fmt.Println(ctrResp.Container.Config.Labels["testcontainers.label"])
 
 	// files
 	// copyFileFromContainer {

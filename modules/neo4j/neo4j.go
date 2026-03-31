@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -26,7 +27,7 @@ type Neo4jContainer struct {
 //
 //nolint:revive,staticcheck //FIXME
 func (c Neo4jContainer) BoltUrl(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, defaultBoltPort, "neo4j")
+	return c.PortEndpoint(ctx, network.MustParsePort(defaultBoltPort), "neo4j")
 }
 
 // Deprecated: use Run instead
@@ -50,7 +51,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithWaitStrategy(
 			wait.NewLogStrategy("Bolt enabled on"),
 			&wait.HTTPStrategy{
-				Port:              defaultHTTPPort,
+				Port:              network.MustParsePort(defaultHTTPPort),
 				StatusCodeMatcher: isHTTPOk(),
 			},
 		),

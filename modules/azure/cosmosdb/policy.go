@@ -8,6 +8,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
+	"github.com/moby/moby/api/types/network"
 )
 
 // ContainerPolicy ensures that requests always target the CosmosDB emulator container endpoint.
@@ -18,7 +19,7 @@ type ContainerPolicy struct {
 }
 
 func NewContainerPolicy(ctx context.Context, c *Container) (*ContainerPolicy, error) {
-	endpoint, err := c.PortEndpoint(ctx, defaultPort, "")
+	endpoint, err := c.PortEndpoint(ctx, network.MustParsePort(defaultPort), "")
 	if err != nil {
 		return nil, fmt.Errorf("port endpoint: %w", err)
 	}

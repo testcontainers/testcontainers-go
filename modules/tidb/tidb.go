@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -29,7 +30,7 @@ type Container struct {
 // using the MySQL driver format. It is possible to pass extra parameters
 // to the connection string, e.g. "tls=skip-verify".
 func (c *Container) ConnectionString(ctx context.Context, args ...string) (string, error) {
-	endpoint, err := c.PortEndpoint(ctx, defaultPort, "")
+	endpoint, err := c.PortEndpoint(ctx, network.MustParsePort(defaultPort), "")
 	if err != nil {
 		return "", err
 	}
@@ -59,8 +60,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithExposedPorts(defaultPort, restAPIPort),
 		testcontainers.WithWaitStrategy(
 			wait.ForAll(
-				wait.ForListeningPort(defaultPort),
-				wait.ForHTTP("/status").WithPort(restAPIPort),
+				wait.ForListeningPort(network.MustParsePort(defaultPort)),
+				wait.ForHTTP("/status").WithPort(network.MustParsePort(restAPIPort)),
 			),
 		),
 	)

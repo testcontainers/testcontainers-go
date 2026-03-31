@@ -9,7 +9,7 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -44,7 +44,7 @@ func (c *Container) ProxiedEndpoint(p int) (string, string, error) {
 
 // URI returns the URI of the Toxiproxy container
 func (c *Container) URI(ctx context.Context) (string, error) {
-	portEndpoint, err := c.PortEndpoint(ctx, ControlPort, "http")
+	portEndpoint, err := c.PortEndpoint(ctx, network.MustParsePort(ControlPort), "http")
 	if err != nil {
 		return "", fmt.Errorf("port endpoint: %w", err)
 	}
@@ -66,7 +66,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts(ControlPort),
-		testcontainers.WithWaitStrategy(wait.ForHTTP("/version").WithPort(ControlPort).WithStatusCodeMatcher(func(status int) bool {
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/version").WithPort(network.MustParsePort(ControlPort)).WithStatusCodeMatcher(func(status int) bool {
 			return status == http.StatusOK
 		})),
 	}
@@ -119,7 +119,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			return c, fmt.Errorf("sanitize proxy: %w", err)
 		}
 
-		endpoint, err := c.PortEndpoint(ctx, nat.Port(fmt.Sprintf("%d/tcp", proxy.listenPort)), "")
+		endpoint, err := c.PortEndpoint(ctx, network.MustParsePort(fmt.Sprintf("%d/tcp", proxy.listenPort)), "")
 		if err != nil {
 			return c, fmt.Errorf("port endpoint: %w", err)
 		}

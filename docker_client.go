@@ -6,11 +6,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/events"
-	"github.com/docker/docker/api/types/registry"
-	"github.com/docker/docker/api/types/system"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/api/types/system"
+	"github.com/moby/moby/client"
 
 	"github.com/testcontainers/testcontainers-go/internal"
 	"github.com/testcontainers/testcontainers-go/internal/core"
@@ -34,28 +31,28 @@ var (
 var _ client.SystemAPIClient = &DockerClient{}
 
 // Events returns a channel to listen to events that happen to the docker daemon.
-func (c *DockerClient) Events(ctx context.Context, options events.ListOptions) (<-chan events.Message, <-chan error) {
+func (c *DockerClient) Events(ctx context.Context, options client.EventsListOptions) client.EventsResult {
 	return c.Client.Events(ctx, options)
 }
 
 // Info returns information about the docker server. The result of Info is cached
 // and reused every time Info is called.
 // It will also print out the docker server info, and the resolved Docker paths, to the default logger.
-func (c *DockerClient) Info(ctx context.Context) (system.Info, error) {
+func (c *DockerClient) Info(ctx context.Context, options client.InfoOptions) (client.SystemInfoResult, error) {
 	dockerInfoLock.Lock()
 	defer dockerInfoLock.Unlock()
 	if dockerInfoSet {
-		return dockerInfo, nil
+		return client.SystemInfoResult{Info: dockerInfo}, nil
 	}
 
-	info, err := c.Client.Info(ctx)
+	result, err := c.Client.Info(ctx, options)
 	if err != nil {
-		return info, fmt.Errorf("failed to retrieve docker info: %w", err)
+		return result, fmt.Errorf("failed to retrieve docker info: %w", err)
 	}
-	dockerInfo = info
+	dockerInfo = result.Info
 	dockerInfoSet = true
 
-	infoMessage := `%v - Connected to docker: 
+	infoMessage := `%v - Connected to docker:
   Server Version: %v
   API Version: %v
   Operating System: %v
@@ -89,22 +86,22 @@ func (c *DockerClient) Info(ctx context.Context) (system.Info, error) {
 		core.ProcessID(),
 	)
 
-	return dockerInfo, nil
+	return result, nil
 }
 
 // RegistryLogin logs into a Docker registry.
-func (c *DockerClient) RegistryLogin(ctx context.Context, auth registry.AuthConfig) (registry.AuthenticateOKBody, error) {
+func (c *DockerClient) RegistryLogin(ctx context.Context, auth client.RegistryLoginOptions) (client.RegistryLoginResult, error) {
 	return c.Client.RegistryLogin(ctx, auth)
 }
 
 // DiskUsage returns the disk usage of all images.
-func (c *DockerClient) DiskUsage(ctx context.Context, options types.DiskUsageOptions) (types.DiskUsage, error) {
+func (c *DockerClient) DiskUsage(ctx context.Context, options client.DiskUsageOptions) (client.DiskUsageResult, error) {
 	return c.Client.DiskUsage(ctx, options)
 }
 
 // Ping pings the docker server.
-func (c *DockerClient) Ping(ctx context.Context) (types.Ping, error) {
-	return c.Client.Ping(ctx)
+func (c *DockerClient) Ping(ctx context.Context, options client.PingOptions) (client.PingResult, error) {
+	return c.Client.Ping(ctx, options)
 }
 
 // Deprecated: Use NewDockerClientWithOpts instead.
@@ -127,7 +124,7 @@ func NewDockerClientWithOpts(ctx context.Context, opt ...client.Opt) (*DockerCli
 		Client: dockerClient,
 	}
 
-	if _, err = tcClient.Info(ctx); err != nil {
+	if _, err = tcClient.Info(ctx, client.InfoOptions{}); err != nil {
 		// Fallback to environment, including the original options
 		if len(opt) == 0 {
 			opt = []client.Opt{client.FromEnv, client.WithAPIVersionNegotiation()}

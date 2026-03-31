@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -45,8 +46,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultPort9050, defaultPort9060),
 		testcontainers.WithWaitStrategy(
-			wait.ForListeningPort(defaultPort9050),
-			wait.ForHTTP("/discovery/v1/apis/bigquery/v2/rest").WithPort(defaultPort9050).WithStatusCodeMatcher(func(status int) bool {
+			wait.ForListeningPort(network.MustParsePort(defaultPort9050)),
+			wait.ForHTTP("/discovery/v1/apis/bigquery/v2/rest").WithPort(network.MustParsePort(defaultPort9050)).WithStatusCodeMatcher(func(status int) bool {
 				return status == 200
 			}).WithStartupTimeout(time.Second*5),
 		),
@@ -74,7 +75,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return c, fmt.Errorf("run bigquery: %w", err)
 	}
 
-	portEndpoint, err := c.PortEndpoint(ctx, defaultPort9050, "http")
+	portEndpoint, err := c.PortEndpoint(ctx, network.MustParsePort(defaultPort9050), "http")
 	if err != nil {
 		return c, fmt.Errorf("port endpoint: %w", err)
 	}

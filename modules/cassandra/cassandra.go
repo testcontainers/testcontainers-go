@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -33,9 +34,9 @@ type CassandraContainer struct {
 // obtaining the host and exposed port from the container
 func (c *CassandraContainer) ConnectionHost(ctx context.Context) (string, error) {
 	if c.settings.tlsEnabled {
-		return c.PortEndpoint(ctx, sslPort, "")
+		return c.PortEndpoint(ctx, network.MustParsePort(sslPort), "")
 	}
-	return c.PortEndpoint(ctx, port, "")
+	return c.PortEndpoint(ctx, network.MustParsePort(port), "")
 }
 
 // TLSConfig returns the TLS configuration for secure client connections.
@@ -113,7 +114,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"CASSANDRA_DC":              "datacenter1",
 		}),
 		testcontainers.WithWaitStrategy(
-			wait.ForListeningPort(port),
+			wait.ForListeningPort(network.MustParsePort(port)),
 			wait.ForExec([]string{"cqlsh", "-e", "SELECT bootstrapped FROM system.local"}).WithResponseMatcher(func(body io.Reader) bool {
 				data, _ := io.ReadAll(body)
 				return strings.Contains(string(data), "COMPLETED")
@@ -159,7 +160,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		// Update wait strategy to also wait for SSL port
 		moduleOpts = append(moduleOpts,
 			testcontainers.WithAdditionalWaitStrategy(
-				wait.ForListeningPort(sslPort),
+				wait.ForListeningPort(network.MustParsePort(sslPort)),
 			),
 		)
 	}

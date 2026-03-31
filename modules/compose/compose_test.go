@@ -9,10 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/volume"
 	"github.com/google/uuid"
+	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -103,7 +102,7 @@ func TestLocalDockerComposeWithWaitForService(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WaitForService(compose.Format("local-nginx", "1"), wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WaitForService(compose.Format("local-nginx", "1"), wait.NewHTTPStrategy("/").WithPort(network.MustParsePort("80/tcp")).WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 
@@ -153,7 +152,7 @@ func TestLocalDockerComposeWithWaitHTTPStrategy(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WithExposedService(compose.Format("local-nginx", "1"), ports[0], wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WithExposedService(compose.Format("local-nginx", "1"), ports[0], wait.NewHTTPStrategy("/").WithPort(network.MustParsePort("80/tcp")).WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 
@@ -178,7 +177,7 @@ func TestLocalDockerComposeWithContainerName(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WithExposedService("local-nginxy", 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WithExposedService("local-nginxy", 9080, wait.NewHTTPStrategy("/").WithPort(network.MustParsePort("80/tcp")).WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 
@@ -223,7 +222,7 @@ func TestLocalDockerComposeWithMultipleWaitStrategies(t *testing.T) {
 	err := compose.
 		WithCommand([]string{"up", "-d"}).
 		WithExposedService(compose.Format("local-mysql", "1"), 13306, wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second)).
-		WithExposedService(compose.Format("local-nginx", "1"), 9080, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WithExposedService(compose.Format("local-nginx", "1"), 9080, wait.NewHTTPStrategy("/").WithPort(network.MustParsePort("80/tcp")).WithStartupTimeout(10*time.Second)).
 		Invoke()
 	checkIfError(t, err)
 
@@ -249,7 +248,7 @@ func TestLocalDockerComposeWithFailedStrategy(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WithExposedService("local-nginx_1", ports[0], wait.NewHTTPStrategy("/").WithPort("8080/tcp").WithStartupTimeout(5*time.Second)).
+		WithExposedService("local-nginx_1", ports[0], wait.NewHTTPStrategy("/").WithPort(network.MustParsePort("8080/tcp")).WithStartupTimeout(5*time.Second)).
 		Invoke()
 	// Verify that an error is thrown and not nil
 	// A specific error message matcher is not asserted since the docker library can change the return message, breaking this test
@@ -374,7 +373,7 @@ func assertVolumeDoesNotExist(tb testing.TB, volumeName string) {
 	containerClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	require.NoErrorf(tb, err, "Failed to get provider")
 
-	volumeList, err := containerClient.VolumeList(context.Background(), volume.ListOptions{Filters: filters.NewArgs(filters.Arg("name", volumeName))})
+	volumeList, err := containerClient.VolumeList(context.Background(), client.VolumeListOptions{Filters: make(client.Filters).Add("name", volumeName)})
 	require.NoErrorf(tb, err, "Failed to list volumes")
 
 	if len(volumeList.Warnings) > 0 {
@@ -394,7 +393,7 @@ func assertContainerEnvironmentVariables(
 	containerClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	require.NoErrorf(tb, err, "Failed to get provider")
 
-	containers, err := containerClient.ContainerList(context.Background(), container.ListOptions{})
+	containers, err := containerClient.ContainerList(context.Background(), client.ContainerListOptions{})
 	require.NoErrorf(tb, err, "Failed to list containers")
 	require.NotEmptyf(tb, containers, "container list empty")
 

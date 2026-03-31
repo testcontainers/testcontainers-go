@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -45,7 +46,7 @@ func (c *ValkeyContainer) ConnectionString(ctx context.Context) (string, error) 
 		schema = "rediss"
 	}
 
-	return c.PortEndpoint(ctx, valkeyPort, schema)
+	return c.PortEndpoint(ctx, network.MustParsePort(valkeyPort), schema)
 }
 
 // TLSConfig returns the TLS configuration for the Valkey container, nil if TLS is not enabled.
@@ -77,13 +78,13 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	waitStrategies := []wait.Strategy{
-		wait.ForListeningPort(valkeyPort).WithStartupTimeout(time.Second * 10),
+		wait.ForListeningPort(network.MustParsePort(valkeyPort)).WithStartupTimeout(time.Second * 10),
 		wait.ForLog("* Ready to accept connections"),
 	}
 
 	if settings.tlsEnabled {
 		// wait for the TLS port to be available
-		waitStrategies = append(waitStrategies, wait.ForListeningPort(valkeyPort).WithStartupTimeout(time.Second*10))
+		waitStrategies = append(waitStrategies, wait.ForListeningPort(network.MustParsePort(valkeyPort)).WithStartupTimeout(time.Second*10))
 
 		// Generate TLS certificates in the fly and add them to the container before it starts.
 		// Update the CMD to use the TLS certificates.

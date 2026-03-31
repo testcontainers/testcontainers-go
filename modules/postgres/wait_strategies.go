@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -21,7 +22,7 @@ func BasicWaitStrategies() testcontainers.CustomizeRequestOption {
 		// Then, we wait for docker to actually serve the port on localhost.
 		// For non-linux OSes like Mac and Windows, Docker or Rancher Desktop will have to start a separate proxy.
 		// Without this, the tests will be flaky on those OSes!
-		wait.ForListeningPort("5432/tcp"),
+		wait.ForListeningPort(network.MustParsePort("5432/tcp")),
 	)
 	// }
 }

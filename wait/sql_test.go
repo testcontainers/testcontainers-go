@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_waitForSql_WithQuery(t *testing.T) {
 	t.Run("default query", func(t *testing.T) {
-		w := ForSQL("5432/tcp", "postgres", func(_ string, _ nat.Port) string {
+		w := ForSQL(network.MustParsePort("5432/tcp"), "postgres", func(_ string, _ network.Port) string {
 			return "fake-url"
 		})
 
@@ -23,7 +23,7 @@ func Test_waitForSql_WithQuery(t *testing.T) {
 	t.Run("custom query", func(t *testing.T) {
 		const q = "SELECT 100;"
 
-		w := ForSQL("5432/tcp", "postgres", func(_ string, _ nat.Port) string {
+		w := ForSQL(network.MustParsePort("5432/tcp"), "postgres", func(_ string, _ network.Port) string {
 			return "fake-url"
 		}).WithQuery(q)
 
@@ -81,12 +81,12 @@ func TestWaitForSQLSucceeds(t *testing.T) {
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+		MappedPortImpl: func(_ context.Context, _ network.Port) (network.Port, error) {
 			defer func() { mappedPortCount++ }()
 			if mappedPortCount == 0 {
-				return "", ErrPortNotFound
+				return network.Port{}, ErrPortNotFound
 			}
-			return "49152", nil
+			return network.MustParsePort("49152/tcp"), nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
@@ -95,7 +95,7 @@ func TestWaitForSQLSucceeds(t *testing.T) {
 		},
 	}
 
-	wg := ForSQL("3306", "mock", func(_ string, _ nat.Port) string { return "" }).
+	wg := ForSQL(network.MustParsePort("3306/tcp"), "mock", func(_ string, _ network.Port) string { return "" }).
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
@@ -109,12 +109,12 @@ func TestWaitForSQLFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) {
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+		MappedPortImpl: func(_ context.Context, _ network.Port) (network.Port, error) {
 			defer func() { mappedPortCount++ }()
 			if mappedPortCount == 0 {
-				return "", ErrPortNotFound
+				return network.Port{}, ErrPortNotFound
 			}
-			return "49152", nil
+			return network.MustParsePort("49152/tcp"), nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
@@ -123,7 +123,7 @@ func TestWaitForSQLFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) {
 		},
 	}
 
-	wg := ForSQL("3306", "mock", func(_ string, _ nat.Port) string { return "" }).
+	wg := ForSQL(network.MustParsePort("3306/tcp"), "mock", func(_ string, _ network.Port) string { return "" }).
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
@@ -139,12 +139,12 @@ func TestWaitForSQLFailsWhileGettingPortDueToExitedContainer(t *testing.T) {
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+		MappedPortImpl: func(_ context.Context, _ network.Port) (network.Port, error) {
 			defer func() { mappedPortCount++ }()
 			if mappedPortCount == 0 {
-				return "", ErrPortNotFound
+				return network.Port{}, ErrPortNotFound
 			}
-			return "49152", nil
+			return network.MustParsePort("49152/tcp"), nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
@@ -154,7 +154,7 @@ func TestWaitForSQLFailsWhileGettingPortDueToExitedContainer(t *testing.T) {
 		},
 	}
 
-	wg := ForSQL("3306", "mock", func(_ string, _ nat.Port) string { return "" }).
+	wg := ForSQL(network.MustParsePort("3306/tcp"), "mock", func(_ string, _ network.Port) string { return "" }).
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
@@ -170,12 +170,12 @@ func TestWaitForSQLFailsWhileGettingPortDueToUnexpectedContainerStatus(t *testin
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+		MappedPortImpl: func(_ context.Context, _ network.Port) (network.Port, error) {
 			defer func() { mappedPortCount++ }()
 			if mappedPortCount == 0 {
-				return "", ErrPortNotFound
+				return network.Port{}, ErrPortNotFound
 			}
-			return "49152", nil
+			return network.MustParsePort("49152/tcp"), nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
@@ -184,7 +184,7 @@ func TestWaitForSQLFailsWhileGettingPortDueToUnexpectedContainerStatus(t *testin
 		},
 	}
 
-	wg := ForSQL("3306", "mock", func(_ string, _ nat.Port) string { return "" }).
+	wg := ForSQL(network.MustParsePort("3306/tcp"), "mock", func(_ string, _ network.Port) string { return "" }).
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
@@ -199,8 +199,8 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToOOMKilledContainer(t *testing.T)
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			return "49152", nil
+		MappedPortImpl: func(_ context.Context, _ network.Port) (network.Port, error) {
+			return network.MustParsePort("49152/tcp"), nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
@@ -209,7 +209,7 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToOOMKilledContainer(t *testing.T)
 		},
 	}
 
-	wg := ForSQL("3306", "mock", func(_ string, _ nat.Port) string { return "" }).
+	wg := ForSQL(network.MustParsePort("3306/tcp"), "mock", func(_ string, _ network.Port) string { return "" }).
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
@@ -224,8 +224,8 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToExitedContainer(t *testing.T) {
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			return "49152", nil
+		MappedPortImpl: func(_ context.Context, _ network.Port) (network.Port, error) {
+			return network.MustParsePort("49152/tcp"), nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
@@ -235,7 +235,7 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToExitedContainer(t *testing.T) {
 		},
 	}
 
-	wg := ForSQL("3306", "mock", func(_ string, _ nat.Port) string { return "" }).
+	wg := ForSQL(network.MustParsePort("3306/tcp"), "mock", func(_ string, _ network.Port) string { return "" }).
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
@@ -250,8 +250,8 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToUnexpectedContainerStatus(t *tes
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			return "49152", nil
+		MappedPortImpl: func(_ context.Context, _ network.Port) (network.Port, error) {
+			return network.MustParsePort("49152/tcp"), nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
@@ -260,7 +260,7 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToUnexpectedContainerStatus(t *tes
 		},
 	}
 
-	wg := ForSQL("3306", "mock", func(_ string, _ nat.Port) string { return "" }).
+	wg := ForSQL(network.MustParsePort("3306/tcp"), "mock", func(_ string, _ network.Port) string { return "" }).
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 

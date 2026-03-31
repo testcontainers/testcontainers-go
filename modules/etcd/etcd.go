@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	tcnetwork "github.com/testcontainers/testcontainers-go/network"
@@ -216,7 +217,7 @@ func configureCMD(settings options) []string {
 // ClientEndpoint returns the client endpoint for the etcd container, and an error if any.
 // For a cluster, it returns the client endpoint of the first node.
 func (c *EtcdContainer) ClientEndpoint(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, clientPort, "http")
+	return c.PortEndpoint(ctx, network.MustParsePort(clientPort), "http")
 }
 
 // ClientEndpoints returns the client endpoints for the etcd cluster.
@@ -242,7 +243,7 @@ func (c *EtcdContainer) ClientEndpoints(ctx context.Context) ([]string, error) {
 // PeerEndpoint returns the peer endpoint for the etcd container, and an error if any.
 // For a cluster, it returns the peer endpoint of the first node.
 func (c *EtcdContainer) PeerEndpoint(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, peerPort, "http")
+	return c.PortEndpoint(ctx, network.MustParsePort(peerPort), "http")
 }
 
 // PeerEndpoints returns the peer endpoints for the etcd cluster.

@@ -7,14 +7,15 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"path/filepath"
 	"testing"
 
 	"github.com/containerd/errdefs"
 	"github.com/cpuguy83/dockercfg"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/registry"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/api/types/registry"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
@@ -197,7 +198,7 @@ func removeImageFromLocalCache(t *testing.T, img string) {
 	}
 	defer testcontainersClient.Close()
 
-	_, err = testcontainersClient.ImageRemove(ctx, img, image.RemoveOptions{
+	_, err = testcontainersClient.ImageRemove(ctx, img, client.ImageRemoveOptions{
 		Force:         true,
 		PruneChildren: true,
 	})
@@ -293,17 +294,17 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 			},
 		),
 		WithExposedPorts("5000/tcp"),
-		WithWaitStrategy(wait.ForHTTP("/").WithPort("5000/tcp")),
+		WithWaitStrategy(wait.ForHTTP("/").WithPort(network.MustParsePort("5000/tcp"))),
 	)
 	// }
 	CleanupContainer(t, registryC)
 	require.NoError(t, err)
 
-	mappedPort, err := registryC.MappedPort(ctx, "5000/tcp")
+	mappedPort, err := registryC.MappedPort(ctx, network.MustParsePort("5000/tcp"))
 	require.NoError(t, err)
 
 	ip := localAddress(t)
-	mp := mappedPort.Port()
+	mp := strconv.FormatUint(uint64(mappedPort.Num()), 10)
 	addr := ip + ":" + mp
 
 	t.Cleanup(func() {

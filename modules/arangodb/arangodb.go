@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -33,7 +34,7 @@ func (c *Container) Credentials() (string, string) {
 
 // HTTPEndpoint returns the HTTP endpoint of the ArangoDB container, using the following format: `http://$host:$port`.
 func (c *Container) HTTPEndpoint(ctx context.Context) (string, error) {
-	hostPort, err := c.PortEndpoint(ctx, defaultPort, "http")
+	hostPort, err := c.PortEndpoint(ctx, network.MustParsePort(defaultPort), "http")
 	if err != nil {
 		return "", fmt.Errorf("port endpoint: %w", err)
 	}
@@ -49,7 +50,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithEnv(map[string]string{
 			"ARANGO_ROOT_PASSWORD": defaultPassword,
 		}),
-		testcontainers.WithWaitStrategy(wait.ForListeningPort(defaultPort)),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort(network.MustParsePort(defaultPort))),
 	)
 
 	moduleOpts = append(moduleOpts, opts...)

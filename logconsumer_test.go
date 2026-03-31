@@ -9,13 +9,15 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -239,7 +241,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 		ctx, "docker:dind",
 		WithExposedPorts("2375/tcp"),
 		WithEnv(map[string]string{"DOCKER_TLS_CERTDIR": ""}),
-		WithWaitStrategy(wait.ForListeningPort("2375/tcp")),
+		WithWaitStrategy(wait.ForListeningPort(network.MustParsePort("2375/tcp"))),
 		WithHostConfigModifier(func(hc *container.HostConfig) {
 			hc.Privileged = true
 		}),
@@ -300,7 +302,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	require.NoError(t, err)
 	CleanupContainer(t, nginx)
 
-	port, err := nginx.MappedPort(ctx, "80/tcp")
+	port, err := nginx.MappedPort(ctx, network.MustParsePort("80/tcp"))
 	require.NoError(t, err)
 
 	// Gather the initial container logs
@@ -308,7 +310,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	existingLogs := len(consumer.Msgs())
 
 	hitNginx := func() {
-		i, _, err := dind.Exec(ctx, []string{"wget", "--spider", "localhost:" + port.Port()})
+		i, _, err := dind.Exec(ctx, []string{"wget", "--spider", "localhost:" + strconv.FormatUint(uint64(port.Num()), 10)})
 		require.NoError(t, err, "Can't make request to nginx container from dind container")
 		require.Zerof(t, i, "Can't make request to nginx container from dind container")
 	}

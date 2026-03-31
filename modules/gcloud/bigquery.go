@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -20,7 +21,7 @@ func RunBigQueryContainer(ctx context.Context, opts ...testcontainers.ContainerC
 func RunBigQuery(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts("9050/tcp", "9060/tcp"),
-		testcontainers.WithWaitStrategy(wait.ForHTTP("/discovery/v1/apis/bigquery/v2/rest").WithPort("9050/tcp").WithStartupTimeout(time.Second * 5)),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/discovery/v1/apis/bigquery/v2/rest").WithPort(network.MustParsePort("9050/tcp")).WithStartupTimeout(time.Second * 5)),
 	}
 
 	moduleOpts = append(moduleOpts, opts...)

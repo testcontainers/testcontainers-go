@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -45,7 +46,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithExposedPorts(defaultPort),
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("Waiting for connections"),
-			wait.ForListeningPort(defaultPort),
+			wait.ForListeningPort(network.MustParsePort(defaultPort)),
 		),
 		testcontainers.WithEnv(map[string]string{}),
 	)
@@ -120,7 +121,7 @@ func WithReplicaSet(replSetName string) testcontainers.CustomizeRequestOption {
 // ConnectionString returns the connection string for the MongoDB container.
 // If you provide a username and a password, the connection string will also include them.
 func (c *MongoDBContainer) ConnectionString(ctx context.Context) (string, error) {
-	endpoint, err := c.PortEndpoint(ctx, defaultPort, "")
+	endpoint, err := c.PortEndpoint(ctx, network.MustParsePort(defaultPort), "")
 	if err != nil {
 		return "", err
 	}

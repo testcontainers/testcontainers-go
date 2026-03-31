@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/network"
 	"github.com/tidwall/gjson"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -165,7 +165,7 @@ func StartContainer(ctx context.Context, opts ...Option) (*CouchbaseContainer, e
 // ConnectionString returns the connection string to connect to the Couchbase container instance.
 // It returns a string with the format couchbase://<host>:<port>
 func (c *CouchbaseContainer) ConnectionString(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, KV_PORT, "couchbase")
+	return c.PortEndpoint(ctx, network.MustParsePort(KV_PORT), "couchbase")
 }
 
 // Username returns the username of the Couchbase administrator.
@@ -206,7 +206,7 @@ func (c *CouchbaseContainer) initCluster(ctx context.Context) error {
 
 func (c *CouchbaseContainer) waitUntilNodeIsOnline(ctx context.Context) error {
 	return wait.ForHTTP("/pools").
-		WithPort(MGMT_PORT).
+		WithPort(network.MustParsePort(MGMT_PORT+"/tcp")).
 		WithStatusCodeMatcher(func(status int) bool {
 			return status == http.StatusOK
 		}).
@@ -293,56 +293,56 @@ func (c *CouchbaseContainer) configureAdminUser(ctx context.Context) error {
 
 func (c *CouchbaseContainer) configureExternalPorts(ctx context.Context) error {
 	host, _ := c.Host(ctx)
-	mgmt, _ := c.MappedPort(ctx, MGMT_PORT)
-	mgmtSSL, _ := c.MappedPort(ctx, MGMT_SSL_PORT)
+	mgmt, _ := c.MappedPort(ctx, network.MustParsePort(MGMT_PORT))
+	mgmtSSL, _ := c.MappedPort(ctx, network.MustParsePort(MGMT_SSL_PORT))
 	body := map[string]string{
 		"hostname": host,
-		"mgmt":     mgmt.Port(),
-		"mgmtSSL":  mgmtSSL.Port(),
+		"mgmt":     strconv.FormatUint(uint64(mgmt.Num()), 10),
+		"mgmtSSL":  strconv.FormatUint(uint64(mgmtSSL.Num()), 10),
 	}
 
 	if contains(c.config.enabledServices, kv) {
-		kv, _ := c.MappedPort(ctx, KV_PORT)
-		kvSSL, _ := c.MappedPort(ctx, KV_SSL_PORT)
-		capi, _ := c.MappedPort(ctx, VIEW_PORT)
-		capiSSL, _ := c.MappedPort(ctx, VIEW_SSL_PORT)
+		kv, _ := c.MappedPort(ctx, network.MustParsePort(KV_PORT))
+		kvSSL, _ := c.MappedPort(ctx, network.MustParsePort(KV_SSL_PORT))
+		capi, _ := c.MappedPort(ctx, network.MustParsePort(VIEW_PORT))
+		capiSSL, _ := c.MappedPort(ctx, network.MustParsePort(VIEW_SSL_PORT))
 
-		body["kv"] = kv.Port()
-		body["kvSSL"] = kvSSL.Port()
-		body["capi"] = capi.Port()
-		body["capiSSL"] = capiSSL.Port()
+		body["kv"] = strconv.FormatUint(uint64(kv.Num()), 10)
+		body["kvSSL"] = strconv.FormatUint(uint64(kvSSL.Num()), 10)
+		body["capi"] = strconv.FormatUint(uint64(capi.Num()), 10)
+		body["capiSSL"] = strconv.FormatUint(uint64(capiSSL.Num()), 10)
 	}
 
 	if contains(c.config.enabledServices, query) {
-		n1ql, _ := c.MappedPort(ctx, QUERY_PORT)
-		n1qlSSL, _ := c.MappedPort(ctx, QUERY_SSL_PORT)
+		n1ql, _ := c.MappedPort(ctx, network.MustParsePort(QUERY_PORT))
+		n1qlSSL, _ := c.MappedPort(ctx, network.MustParsePort(QUERY_SSL_PORT))
 
-		body["n1ql"] = n1ql.Port()
-		body["n1qlSSL"] = n1qlSSL.Port()
+		body["n1ql"] = strconv.FormatUint(uint64(n1ql.Num()), 10)
+		body["n1qlSSL"] = strconv.FormatUint(uint64(n1qlSSL.Num()), 10)
 	}
 
 	if contains(c.config.enabledServices, search) {
-		fts, _ := c.MappedPort(ctx, SEARCH_PORT)
-		ftsSSL, _ := c.MappedPort(ctx, SEARCH_SSL_PORT)
+		fts, _ := c.MappedPort(ctx, network.MustParsePort(SEARCH_PORT))
+		ftsSSL, _ := c.MappedPort(ctx, network.MustParsePort(SEARCH_SSL_PORT))
 
-		body["fts"] = fts.Port()
-		body["ftsSSL"] = ftsSSL.Port()
+		body["fts"] = strconv.FormatUint(uint64(fts.Num()), 10)
+		body["ftsSSL"] = strconv.FormatUint(uint64(ftsSSL.Num()), 10)
 	}
 
 	if contains(c.config.enabledServices, analytics) {
-		cbas, _ := c.MappedPort(ctx, ANALYTICS_PORT)
-		cbasSSL, _ := c.MappedPort(ctx, ANALYTICS_SSL_PORT)
+		cbas, _ := c.MappedPort(ctx, network.MustParsePort(ANALYTICS_PORT))
+		cbasSSL, _ := c.MappedPort(ctx, network.MustParsePort(ANALYTICS_SSL_PORT))
 
-		body["cbas"] = cbas.Port()
-		body["cbasSSL"] = cbasSSL.Port()
+		body["cbas"] = strconv.FormatUint(uint64(cbas.Num()), 10)
+		body["cbasSSL"] = strconv.FormatUint(uint64(cbasSSL.Num()), 10)
 	}
 
 	if contains(c.config.enabledServices, eventing) {
-		eventingAdminPort, _ := c.MappedPort(ctx, EVENTING_PORT)
-		eventingSSL, _ := c.MappedPort(ctx, EVENTING_SSL_PORT)
+		eventingAdminPort, _ := c.MappedPort(ctx, network.MustParsePort(EVENTING_PORT))
+		eventingSSL, _ := c.MappedPort(ctx, network.MustParsePort(EVENTING_SSL_PORT))
 
-		body["eventingAdminPort"] = eventingAdminPort.Port()
-		body["eventingSSL"] = eventingSSL.Port()
+		body["eventingAdminPort"] = strconv.FormatUint(uint64(eventingAdminPort.Num()), 10)
+		body["eventingSSL"] = strconv.FormatUint(uint64(eventingSSL.Num()), 10)
 	}
 
 	_, err := c.doHTTPRequest(ctx, MGMT_PORT, "/node/controller/setupAlternateAddresses/external", http.MethodPut, body)
@@ -372,7 +372,7 @@ func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context) er
 	var waitStrategy []wait.Strategy
 
 	waitStrategy = append(waitStrategy, wait.ForHTTP("/pools/default").
-		WithPort(MGMT_PORT).
+		WithPort(network.MustParsePort(MGMT_PORT+"/tcp")).
 		WithBasicAuth(c.config.username, c.config.password).
 		WithStatusCodeMatcher(func(status int) bool {
 			return status == http.StatusOK
@@ -389,7 +389,7 @@ func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context) er
 
 	if contains(c.config.enabledServices, query) {
 		waitStrategy = append(waitStrategy, wait.ForHTTP("/admin/ping").
-			WithPort(QUERY_PORT).
+			WithPort(network.MustParsePort(QUERY_PORT+"/tcp")).
 			WithBasicAuth(c.config.username, c.config.password).
 			WithStatusCodeMatcher(func(status int) bool {
 				return status == http.StatusOK
@@ -399,7 +399,7 @@ func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context) er
 
 	if contains(c.config.enabledServices, analytics) {
 		waitStrategy = append(waitStrategy, wait.ForHTTP("/admin/ping").
-			WithPort(ANALYTICS_PORT).
+			WithPort(network.MustParsePort(ANALYTICS_PORT+"/tcp")).
 			WithBasicAuth(c.config.username, c.config.password).
 			WithStatusCodeMatcher(func(status int) bool {
 				return status == http.StatusOK
@@ -408,7 +408,7 @@ func (c *CouchbaseContainer) waitUntilAllNodesAreHealthy(ctx context.Context) er
 
 	if contains(c.config.enabledServices, eventing) {
 		waitStrategy = append(waitStrategy, wait.ForHTTP("/api/v1/config").
-			WithPort(EVENTING_PORT).
+			WithPort(network.MustParsePort(EVENTING_PORT+"/tcp")).
 			WithBasicAuth(c.config.username, c.config.password).
 			WithStatusCodeMatcher(func(status int) bool {
 				return status == http.StatusOK
@@ -520,7 +520,7 @@ func (c *CouchbaseContainer) isQueryKeyspacePresent(ctx context.Context, bucket 
 
 func (c *CouchbaseContainer) waitForAllServicesEnabled(ctx context.Context, bucket bucket) error {
 	err := wait.ForHTTP("/pools/default/b/"+bucket.name).
-		WithPort(MGMT_PORT).
+		WithPort(network.MustParsePort(MGMT_PORT+"/tcp")).
 		WithBasicAuth(c.config.username, c.config.password).
 		WithStatusCodeMatcher(func(status int) bool {
 			return status == http.StatusOK
@@ -598,7 +598,7 @@ func (c *CouchbaseContainer) doHTTPRequest(ctx context.Context, port, path, meth
 }
 
 func (c *CouchbaseContainer) getURL(ctx context.Context, port, path string) (string, error) {
-	endpoint, err := c.PortEndpoint(ctx, nat.Port(port), "http")
+	endpoint, err := c.PortEndpoint(ctx, network.MustParsePort(port), "http")
 	if err != nil {
 		return "", err
 	}

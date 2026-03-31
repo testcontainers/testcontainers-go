@@ -7,7 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/container"
+	dockernetwork "github.com/moby/moby/api/types/network"
 	"golang.org/x/mod/semver"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -79,7 +80,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 5+len(opts)+1)
 	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(fmt.Sprintf("%d/tcp", defaultPort)),
-		testcontainers.WithWaitStrategy(wait.ForHTTP("/_localstack/health").WithPort("4566/tcp").WithStartupTimeout(120*time.Second)),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/_localstack/health").WithPort(dockernetwork.MustParsePort("4566/tcp")).WithStartupTimeout(120*time.Second)),
 		testcontainers.WithEnv(map[string]string{}),
 		testcontainers.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
 			hostConfig.Binds = []string{dockerHost + ":/var/run/docker.sock"}

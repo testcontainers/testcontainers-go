@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -40,7 +41,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts(defaultClientPort, defaultRoutingPort, defaultMonitoringPort),
 		testcontainers.WithCmd("-DV", "-js"),
-		testcontainers.WithWaitStrategy(wait.ForListeningPort(defaultClientPort)),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort(network.MustParsePort(defaultClientPort))),
 	}
 
 	moduleOpts = append(moduleOpts, opts...)
@@ -82,5 +83,5 @@ func (c *NATSContainer) MustConnectionString(ctx context.Context) string {
 
 // ConnectionString returns a connection string for the NATS container
 func (c *NATSContainer) ConnectionString(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, defaultClientPort, "nats")
+	return c.PortEndpoint(ctx, network.MustParsePort(defaultClientPort), "nats")
 }

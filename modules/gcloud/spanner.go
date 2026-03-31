@@ -3,6 +3,7 @@ package gcloud
 import (
 	"context"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -20,7 +21,7 @@ func RunSpanner(ctx context.Context, img string, opts ...testcontainers.Containe
 	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts("9010/tcp"),
 		testcontainers.WithWaitStrategy(
-			wait.ForListeningPort("9010/tcp"),
+			wait.ForListeningPort(network.MustParsePort("9010/tcp")),
 			wait.ForLog("Cloud Spanner emulator running"),
 		),
 	)

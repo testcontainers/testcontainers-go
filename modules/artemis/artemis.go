@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -39,12 +39,12 @@ func (c *Container) Password() string {
 // BrokerEndpoint returns the host:port for the combined protocols endpoint.
 // The endpoint accepts CORE, MQTT, AMQP, STOMP, HORNETQ and OPENWIRE protocols.
 func (c *Container) BrokerEndpoint(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, nat.Port(defaultBrokerPort), "")
+	return c.PortEndpoint(ctx, network.MustParsePort(defaultBrokerPort), "")
 }
 
 // ConsoleURL returns the URL for the management console.
 func (c *Container) ConsoleURL(ctx context.Context) (string, error) {
-	hostPort, err := c.PortEndpoint(ctx, nat.Port(defaultHTTPPort), "")
+	hostPort, err := c.PortEndpoint(ctx, network.MustParsePort(defaultHTTPPort), "")
 	if err != nil {
 		return "", err
 	}
@@ -105,8 +105,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"ARTEMIS_PASSWORD": defaultPassword,
 		}),
 		testcontainers.WithWaitStrategy(
-			wait.ForListeningPort(defaultBrokerPort),
-			wait.ForListeningPort(defaultHTTPPort),
+			wait.ForListeningPort(network.MustParsePort(defaultBrokerPort)),
+			wait.ForListeningPort(network.MustParsePort(defaultHTTPPort)),
 			wait.ForLog("Server is now live"),
 			wait.ForLog("REST API available"),
 		),

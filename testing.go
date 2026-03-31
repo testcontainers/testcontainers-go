@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/containerd/errdefs"
+	dockerClient "github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 )
 
@@ -45,10 +46,10 @@ func SkipIfDockerDesktop(t *testing.T, ctx context.Context) {
 	cli, err := NewDockerClientWithOpts(ctx)
 	require.NoErrorf(t, err, "failed to create docker client: %s", err)
 
-	info, err := cli.Info(ctx)
+	infoResult, err := cli.Info(ctx, dockerClient.InfoOptions{})
 	require.NoErrorf(t, err, "failed to get docker info: %s", err)
 
-	if info.OperatingSystem == "Docker Desktop" {
+	if infoResult.Info.OperatingSystem == "Docker Desktop" {
 		t.Skip("Skipping test that requires host network access when running in Docker Desktop")
 	}
 }
@@ -60,10 +61,10 @@ func SkipIfNotDockerDesktop(t *testing.T, ctx context.Context) {
 	cli, err := NewDockerClientWithOpts(ctx)
 	require.NoErrorf(t, err, "failed to create docker client: %s", err)
 
-	info, err := cli.Info(ctx)
+	infoResult, err := cli.Info(ctx, dockerClient.InfoOptions{})
 	require.NoErrorf(t, err, "failed to get docker info: %s", err)
 
-	if info.OperatingSystem != "Docker Desktop" {
+	if infoResult.Info.OperatingSystem != "Docker Desktop" {
 		t.Skip("Skipping test that needs Docker Desktop")
 	}
 }

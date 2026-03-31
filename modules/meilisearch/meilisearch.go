@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -48,7 +49,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		// the wait strategy does not support TLS at the moment,
 		// so we need to disable it in the strategy for now.
 		testcontainers.WithWaitStrategy(wait.ForHTTP("/health").
-			WithPort(defaultHTTPPort).
+			WithPort(network.MustParsePort(defaultHTTPPort)).
 			WithTLS(false).
 			WithStartupTimeout(120 * time.Second).
 			WithStatusCodeMatcher(func(status int) bool {
@@ -107,5 +108,5 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // Address retrieves the address of the Meilisearch container.
 // It will use http as protocol, as TLS is not supported at the moment.
 func (c *MeilisearchContainer) Address(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, defaultHTTPPort, "http")
+	return c.PortEndpoint(ctx, network.MustParsePort(defaultHTTPPort), "http")
 }

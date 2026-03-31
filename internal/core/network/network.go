@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/network"
+	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
 )
@@ -37,16 +37,22 @@ func get(ctx context.Context, filter string, value string) (network.Inspect, err
 	}
 	defer cli.Close()
 
-	list, err := cli.NetworkList(ctx, network.ListOptions{
-		Filters: filters.NewArgs(filters.Arg(filter, value)),
+	result, err := cli.NetworkList(ctx, client.NetworkListOptions{
+		Filters: make(client.Filters).Add(filter, value),
 	})
 	if err != nil {
 		return nw, fmt.Errorf("failed to list networks: %w", err)
 	}
 
-	if len(list) == 0 {
+	if len(result.Items) == 0 {
 		return nw, fmt.Errorf("network %s not found (filtering by %s)", value, filter)
 	}
 
-	return list[0], nil
+	// Get the full inspect result for the found network
+	inspectResult, err := cli.NetworkInspect(ctx, result.Items[0].ID, client.NetworkInspectOptions{})
+	if err != nil {
+		return nw, fmt.Errorf("failed to inspect network: %w", err)
+	}
+
+	return inspectResult.Network, nil
 }

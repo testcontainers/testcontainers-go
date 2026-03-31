@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -28,7 +29,7 @@ type OpenLDAPContainer struct {
 
 // ConnectionString returns the connection string for the OpenLDAP container
 func (c *OpenLDAPContainer) ConnectionString(ctx context.Context, _ ...string) (string, error) {
-	return c.PortEndpoint(ctx, "1389/tcp", "ldap")
+	return c.PortEndpoint(ctx, network.MustParsePort("1389/tcp"), "ldap")
 }
 
 // LoadLdif loads an ldif file into the OpenLDAP container
@@ -121,7 +122,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithExposedPorts("1389/tcp"),
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("** Starting slapd **"),
-			wait.ForListeningPort("1389/tcp"),
+			wait.ForListeningPort(network.MustParsePort("1389/tcp")),
 		),
 	)
 

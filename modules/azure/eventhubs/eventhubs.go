@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
+	dockernetwork "github.com/moby/moby/api/types/network"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/azure/azurite"
 	"github.com/testcontainers/testcontainers-go/network"
@@ -84,9 +86,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts(defaultAMPQPort, defaultHTTPPort),
 		testcontainers.WithWaitStrategy(
-			wait.ForListeningPort(defaultAMPQPort),
-			wait.ForListeningPort(defaultHTTPPort),
-			wait.ForHTTP("/health").WithPort(defaultHTTPPort).WithStatusCodeMatcher(func(status int) bool {
+			wait.ForListeningPort(dockernetwork.MustParsePort(defaultAMPQPort)),
+			wait.ForListeningPort(dockernetwork.MustParsePort(defaultHTTPPort)),
+			wait.ForHTTP("/health").WithPort(dockernetwork.MustParsePort(defaultHTTPPort)).WithStatusCodeMatcher(func(status int) bool {
 				return status == http.StatusOK
 			}),
 		),
@@ -140,7 +142,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // Endpoint=sb://<hostname>:<port>;SharedAccessKeyName=<key-name>;SharedAccessKey=<key>;UseDevelopmentEmulator=true;
 func (c *Container) ConnectionString(ctx context.Context) (string, error) {
 	// we are passing an empty proto to get the host:port string
-	hostPort, err := c.PortEndpoint(ctx, defaultAMPQPort, "")
+	hostPort, err := c.PortEndpoint(ctx, dockernetwork.MustParsePort(defaultAMPQPort), "")
 	if err != nil {
 		return "", fmt.Errorf("port endpoint: %w", err)
 	}

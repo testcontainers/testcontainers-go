@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -25,7 +26,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithEntrypoint("java", "-Djava.library.path=./DynamoDBLocal_lib"),
 		testcontainers.WithCmd("-jar", "DynamoDBLocal.jar"),
 		testcontainers.WithExposedPorts(port),
-		testcontainers.WithWaitStrategy(wait.ForListeningPort(port)),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort(network.MustParsePort(port))),
 	)
 
 	moduleOpts = append(moduleOpts, opts...)
@@ -45,7 +46,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // ConnectionString returns DynamoDB local endpoint host and port in <host>:<port> format
 func (c *DynamoDBContainer) ConnectionString(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, port, "")
+	return c.PortEndpoint(ctx, network.MustParsePort(port), "")
 }
 
 // WithSharedDB allows container reuse between successive runs. Data will be persisted

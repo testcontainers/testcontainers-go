@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -36,8 +37,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			FileMode:          0o666,
 		}),
 		testcontainers.WithWaitStrategy(
-			wait.ForListeningPort("8817/tcp").WithStartupTimeout(5*time.Second),
-			wait.ForListeningPort("9001/tcp").WithStartupTimeout(5*time.Second),
+			wait.ForListeningPort(network.MustParsePort("8817/tcp")).WithStartupTimeout(5*time.Second),
+			wait.ForListeningPort(network.MustParsePort("9001/tcp")).WithStartupTimeout(5*time.Second),
 		),
 	}
 
@@ -56,5 +57,5 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // RESTEndpoint returns the REST endpoint of the Vearch container
 func (c *VearchContainer) RESTEndpoint(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, "8817/tcp", "http")
+	return c.PortEndpoint(ctx, network.MustParsePort("8817/tcp"), "http")
 }

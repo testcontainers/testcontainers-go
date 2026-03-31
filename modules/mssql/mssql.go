@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -115,7 +116,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"MSSQL_SA_PASSWORD": defaultPassword,
 		}),
 		testcontainers.WithWaitStrategy(
-			wait.ForListeningPort(defaultPort).WithStartupTimeout(time.Minute),
+			wait.ForListeningPort(network.MustParsePort(defaultPort)).WithStartupTimeout(time.Minute),
 			wait.ForLog("Recovery is complete."),
 		),
 	}
@@ -160,7 +161,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // ConnectionString returns the connection string for the MSSQLServer container
 func (c *MSSQLServerContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
-	endpoint, err := c.PortEndpoint(ctx, defaultPort, "")
+	endpoint, err := c.PortEndpoint(ctx, network.MustParsePort(defaultPort), "")
 	if err != nil {
 		return "", fmt.Errorf("port endpoint: %w", err)
 	}

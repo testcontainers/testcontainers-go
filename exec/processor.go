@@ -6,13 +6,13 @@ import (
 	"io"
 	"sync"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/pkg/stdcopy"
 )
 
 // ProcessOptions defines options applicable to the reader processor
 type ProcessOptions struct {
-	ExecConfig container.ExecOptions
+	ExecConfig container.ExecCreateRequest
 	Reader     io.Reader
 }
 
@@ -23,7 +23,7 @@ type ProcessOptions struct {
 // - attach stderr: true
 func NewProcessOptions(cmd []string) *ProcessOptions {
 	return &ProcessOptions{
-		ExecConfig: container.ExecOptions{
+		ExecConfig: container.ExecCreateRequest{
 			Cmd:          cmd,
 			AttachStdout: true,
 			AttachStderr: true,

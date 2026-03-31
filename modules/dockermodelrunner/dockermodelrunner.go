@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner/internal/sdk/client"
 	"github.com/testcontainers/testcontainers-go/modules/socat"
@@ -39,8 +40,8 @@ func Run(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*Cont
 
 	// Add socat options, which are applied to the socat container.
 	opts = append(opts, testcontainers.WithWaitStrategy(
-		wait.ForListeningPort("80/tcp"),
-		wait.ForHTTP("/").WithPort("80/tcp").WithStatusCodeMatcher(func(status int) bool {
+		wait.ForListeningPort(network.MustParsePort("80/tcp")),
+		wait.ForHTTP("/").WithPort(network.MustParsePort("80/tcp")).WithStatusCodeMatcher(func(status int) bool {
 			return status == http.StatusOK
 		}),
 	))

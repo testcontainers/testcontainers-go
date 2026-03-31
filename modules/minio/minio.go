@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -47,7 +48,7 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 // ConnectionString returns the connection string for the minio container, using the default 9000 port, and
 // obtaining the host and exposed port from the container.
 func (c *MinioContainer) ConnectionString(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, "9000/tcp", "")
+	return c.PortEndpoint(ctx, network.MustParsePort("9000/tcp"), "")
 }
 
 // Deprecated: use Run instead
@@ -60,7 +61,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MinioContainer, error) {
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts("9000/tcp"),
-		testcontainers.WithWaitStrategy(wait.ForHTTP("/minio/health/live").WithPort("9000")),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/minio/health/live").WithPort(network.MustParsePort("9000"))),
 		testcontainers.WithEnv(map[string]string{
 			"MINIO_ROOT_USER":     defaultUser,
 			"MINIO_ROOT_PASSWORD": defaultPassword,

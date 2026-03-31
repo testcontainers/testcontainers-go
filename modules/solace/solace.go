@@ -9,8 +9,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"github.com/docker/go-units"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -59,7 +59,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	// Add port-based wait strategies for each service
 	for i, service := range settings.services {
 		port := fmt.Sprintf("%d/tcp", service.Port)
-		waitStrategies[i+1] = wait.ForListeningPort(nat.Port(port))
+		waitStrategies[i+1] = wait.ForListeningPort(network.MustParsePort(port))
 		exposedPorts[i] = fmt.Sprintf("%d/tcp", service.Port)
 	}
 
@@ -140,7 +140,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // BrokerURLFor returns the origin URL for a given service
 func (c *Container) BrokerURLFor(ctx context.Context, service Service) (string, error) {
-	p := nat.Port(fmt.Sprintf("%d/tcp", service.Port))
+	p := network.MustParsePort(fmt.Sprintf("%d/tcp", service.Port))
 	return c.PortEndpoint(ctx, p, service.Protocol)
 }
 

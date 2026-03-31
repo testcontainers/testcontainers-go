@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -54,8 +55,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("YugabyteDB Started").WithOccurrence(1),
 			wait.ForLog("Data placement constraint successfully verified").WithOccurrence(1),
-			wait.ForListeningPort(ysqlPort),
-			wait.ForListeningPort(ycqlPort),
+			wait.ForListeningPort(network.MustParsePort(ysqlPort)),
+			wait.ForListeningPort(network.MustParsePort(ycqlPort)),
 		),
 		testcontainers.WithExposedPorts(ycqlPort, ysqlPort),
 		testcontainers.WithEnv(map[string]string{
@@ -115,7 +116,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // Additional arguments are appended to the connection string as query parameters
 // in the form of key=value pairs separated by "&".
 func (y *Container) YSQLConnectionString(ctx context.Context, args ...string) (string, error) {
-	endpoint, err := y.PortEndpoint(ctx, ysqlPort, "")
+	endpoint, err := y.PortEndpoint(ctx, network.MustParsePort(ysqlPort), "")
 	if err != nil {
 		return "", fmt.Errorf("port endpoint: %w", err)
 	}

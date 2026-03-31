@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -130,7 +131,7 @@ func (c *MySQLContainer) MustConnectionString(ctx context.Context, args ...strin
 }
 
 func (c *MySQLContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
-	endpoint, err := c.PortEndpoint(ctx, "3306/tcp", "")
+	endpoint, err := c.PortEndpoint(ctx, network.MustParsePort("3306/tcp"), "")
 	if err != nil {
 		return "", err
 	}

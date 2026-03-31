@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/network"
 )
 
 // Implement interface
@@ -28,7 +28,7 @@ type HTTPStrategy struct {
 	timeout *time.Duration
 
 	// additional properties
-	Port                   nat.Port
+	Port                   network.Port
 	Path                   string
 	StatusCodeMatcher      func(status int) bool
 	ResponseMatcher        func(body io.Reader) bool
@@ -47,7 +47,7 @@ type HTTPStrategy struct {
 // NewHTTPStrategy constructs a HTTP strategy waiting on port 80 and status code 200
 func NewHTTPStrategy(path string) *HTTPStrategy {
 	return &HTTPStrategy{
-		Port:                   "",
+		Port:                   network.Port{},
 		Path:                   path,
 		StatusCodeMatcher:      defaultStatusCodeMatcher,
 		ResponseMatcher:        func(_ io.Reader) bool { return true },
@@ -78,7 +78,7 @@ func (ws *HTTPStrategy) WithStartupTimeout(timeout time.Duration) *HTTPStrategy 
 
 // WithPort set the port to wait for.
 // Default is the lowest numbered port.
-func (ws *HTTPStrategy) WithPort(port nat.Port) *HTTPStrategy {
+func (ws *HTTPStrategy) WithPort(port network.Port) *HTTPStrategy {
 	ws.Port = port
 	return ws
 }
@@ -162,8 +162,8 @@ func (ws *HTTPStrategy) String() string {
 	}
 
 	port := "default"
-	if ws.Port != "" {
-		port = ws.Port.Port()
+	if ws.Port.IsValid() {
+		port = strconv.FormatUint(uint64(ws.Port.Num()), 10)
 	}
 
 	return fmt.Sprintf("%s %s request on port %s path %q", proto, ws.Method, port, ws.Path)
@@ -188,8 +188,8 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 		ipAddress = strings.Replace(ipAddress, "localhost", "127.0.0.1", 1)
 	}
 
-	var mappedPort nat.Port
-	if ws.Port == "" {
+	var mappedPort network.Port
+	if !ws.Port.IsValid() {
 		// We wait one polling interval before we grab the ports
 		// otherwise they might not be bound yet on startup.
 		select {
@@ -209,28 +209,28 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 		}
 
 		// Find the lowest numbered exposed tcp port.
-		var lowestPort nat.Port
+		var lowestPort network.Port
 		var hostPort string
 		for port, bindings := range inspect.NetworkSettings.Ports {
-			if len(bindings) == 0 || port.Proto() != "tcp" {
+			if len(bindings) == 0 || string(port.Proto()) != "tcp" {
 				continue
 			}
 
-			if lowestPort == "" || port.Int() < lowestPort.Int() {
+			if !lowestPort.IsValid() || int(port.Num()) < int(lowestPort.Num()) {
 				lowestPort = port
 				hostPort = bindings[0].HostPort
 			}
 		}
 
-		if lowestPort == "" {
+		if !lowestPort.IsValid() {
 			return errors.New("no exposed tcp ports or mapped ports - cannot wait for status")
 		}
 
-		mappedPort, _ = nat.NewPort(lowestPort.Proto(), hostPort)
+		mappedPort, _ = network.ParsePort(hostPort + "/" + string(lowestPort.Proto()))
 	} else {
 		mappedPort, err = target.MappedPort(ctx, ws.Port)
 
-		for mappedPort == "" {
+		for !mappedPort.IsValid() {
 			select {
 			case <-ctx.Done():
 				return fmt.Errorf("%w: %w", ctx.Err(), err)
@@ -243,7 +243,7 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 			}
 		}
 
-		if mappedPort.Proto() != "tcp" {
+		if string(mappedPort.Proto()) != "tcp" {
 			return errors.New("cannot use HTTP client on non-TCP ports")
 		}
 	}
@@ -289,7 +289,7 @@ func (ws *HTTPStrategy) WaitUntilReady(ctx context.Context, target StrategyTarge
 	}
 
 	client := http.Client{Transport: tripper, Timeout: time.Second}
-	address := net.JoinHostPort(ipAddress, strconv.Itoa(mappedPort.Int()))
+	address := net.JoinHostPort(ipAddress, strconv.Itoa(int(mappedPort.Num())))
 
 	endpoint, err := url.Parse(ws.Path)
 	if err != nil {

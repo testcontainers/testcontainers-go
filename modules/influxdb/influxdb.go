@@ -9,6 +9,7 @@ import (
 	"path"
 	"time"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -67,7 +68,7 @@ func (c *InfluxDbContainer) MustConnectionUrl(ctx context.Context) string {
 
 //nolint:revive,staticcheck //FIXME
 func (c *InfluxDbContainer) ConnectionUrl(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, "8086/tcp", "http")
+	return c.PortEndpoint(ctx, network.MustParsePort("8086/tcp"), "http")
 }
 
 func WithUsername(username string) testcontainers.CustomizeRequestOption {

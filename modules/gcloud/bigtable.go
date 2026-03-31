@@ -3,6 +3,7 @@ package gcloud
 import (
 	"context"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -19,7 +20,7 @@ func RunBigTable(ctx context.Context, img string, opts ...testcontainers.Contain
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts("9000/tcp"),
 		testcontainers.WithWaitStrategy(
-			wait.ForListeningPort("9000/tcp"),
+			wait.ForListeningPort(network.MustParsePort("9000/tcp")),
 			wait.ForLog("running"),
 		),
 	}

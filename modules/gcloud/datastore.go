@@ -3,6 +3,7 @@ package gcloud
 import (
 	"context"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -18,7 +19,7 @@ func RunDatastoreContainer(ctx context.Context, opts ...testcontainers.Container
 func RunDatastore(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts("8081/tcp"),
-		testcontainers.WithWaitStrategy(wait.ForHTTP("/").WithPort("8081/tcp")),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/").WithPort(network.MustParsePort("8081/tcp"))),
 	}
 
 	moduleOpts = append(moduleOpts, opts...)

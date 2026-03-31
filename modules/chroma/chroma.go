@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -25,7 +26,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts("8000/tcp"),
 		testcontainers.WithWaitStrategy(
-			wait.ForListeningPort("8000/tcp"),
+			wait.ForListeningPort(network.MustParsePort("8000/tcp")),
 			wait.ForHTTP("/api/v2/heartbeat").WithStatusCodeMatcher(func(status int) bool {
 				return status == 200
 			}),
@@ -49,5 +50,5 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // RESTEndpoint returns the REST endpoint of the Chroma container
 func (c *ChromaContainer) RESTEndpoint(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, "8000/tcp", "http")
+	return c.PortEndpoint(ctx, network.MustParsePort("8000/tcp"), "http")
 }

@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -111,7 +112,7 @@ func configureWaitFor(options *Options) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		var strategies []wait.Strategy
 
-		waitHTTP := wait.ForHTTP("/").WithPort(defaultHTTPPort)
+		waitHTTP := wait.ForHTTP("/").WithPort(network.MustParsePort(defaultHTTPPort))
 		if sslRequired(req) {
 			cw := &certWriter{
 				options:  options,
@@ -142,7 +143,7 @@ func (c *ElasticsearchContainer) configureAddress(ctx context.Context) error {
 		proto = "https"
 	}
 
-	endpoint, err := c.PortEndpoint(ctx, defaultHTTPPort+"/tcp", proto)
+	endpoint, err := c.PortEndpoint(ctx, network.MustParsePort(defaultHTTPPort+"/tcp"), proto)
 	if err != nil {
 		return fmt.Errorf("port endpoint: %w", err)
 	}

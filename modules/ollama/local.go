@@ -3,29 +3,56 @@ package ollama
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"net"
+	"net/netip"
 	"os"
 	"os/exec"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
 
 	"github.com/containerd/errdefs"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/pkg/stdcopy"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/pkg/stdcopy"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
+
+// stdWriter wraps an io.Writer and prepends Docker's multiplexed stream headers.
+// This is compatible with stdcopy.StdCopy for reading.
+type stdWriter struct {
+	io.Writer
+	prefix byte
+}
+
+func newStdWriter(w io.Writer, streamType stdcopy.StdType) io.Writer {
+	return &stdWriter{Writer: w, prefix: byte(streamType)}
+}
+
+func (w *stdWriter) Write(p []byte) (int, error) {
+	if len(p) == 0 {
+		return 0, nil
+	}
+	header := [8]byte{}
+	header[0] = w.prefix
+	binary.BigEndian.PutUint32(header[4:], uint32(len(p)))
+	_, err := w.Writer.Write(header[:])
+	if err != nil {
+		return 0, err
+	}
+	return w.Writer.Write(p)
+}
 
 const (
 	localPort       = "11434"
@@ -217,8 +244,8 @@ func (c *localProcess) Start(ctx context.Context) error {
 	}
 
 	// Multiplex stdout and stderr to the log file matching the Docker API.
-	cmd.Stdout = stdcopy.NewStdWriter(c.logFile, stdcopy.Stdout)
-	cmd.Stderr = stdcopy.NewStdWriter(c.logFile, stdcopy.Stderr)
+	cmd.Stdout = newStdWriter(c.logFile, stdcopy.Stdout)
+	cmd.Stderr = newStdWriter(c.logFile, stdcopy.Stderr)
 
 	// Run the ollama serve command in background.
 	if err = cmd.Start(); err != nil {
@@ -374,8 +401,8 @@ func (c *localProcess) Exec(ctx context.Context, cmd []string, options ...tcexec
 
 	// Multiplex stdout and stderr to the buffer so they can be read separately later.
 	var buf bytes.Buffer
-	command.Stdout = stdcopy.NewStdWriter(&buf, stdcopy.Stdout)
-	command.Stderr = stdcopy.NewStdWriter(&buf, stdcopy.Stderr)
+	command.Stdout = newStdWriter(&buf, stdcopy.Stdout)
+	command.Stderr = newStdWriter(&buf, stdcopy.Stderr)
 
 	// Use process options to customize the command execution
 	// emulating the Docker API behaviour.
@@ -410,7 +437,7 @@ func (c *localProcess) Exec(ctx context.Context, cmd []string, options ...tcexec
 }
 
 // validateExecOptions checks if the given exec options are supported by the local Ollama binary.
-func (c *localProcess) validateExecOptions(options container.ExecOptions) error {
+func (c *localProcess) validateExecOptions(options container.ExecCreateRequest) error {
 	var errs []error
 	if options.User != "" {
 		errs = append(errs, fmt.Errorf("user: %w", errors.ErrUnsupported))
@@ -436,34 +463,30 @@ func (c *localProcess) Inspect(ctx context.Context) (*container.InspectResponse,
 		return nil, fmt.Errorf("state: %w", err)
 	}
 
+	hostAddr := netip.MustParseAddr(c.host)
 	return &container.InspectResponse{
-		ContainerJSONBase: &container.ContainerJSONBase{
-			ID:    c.GetContainerID(),
-			Name:  localNamePrefix + "-" + c.sessionID,
-			State: state,
-		},
+		ID:    c.GetContainerID(),
+		Name:  localNamePrefix + "-" + c.sessionID,
+		State: state,
 		Config: &container.Config{
 			Image: localNamePrefix + ":" + c.version,
-			ExposedPorts: nat.PortSet{
-				nat.Port(localPort + "/tcp"): struct{}{},
+			ExposedPorts: network.PortSet{
+				network.MustParsePort(localPort + "/tcp"): struct{}{},
 			},
 			Hostname:   c.host,
 			Entrypoint: []string{c.binary, localServeArg},
 		},
 		NetworkSettings: &container.NetworkSettings{
-			Networks: map[string]*network.EndpointSettings{},
-			//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
-			NetworkSettingsBase: container.NetworkSettingsBase{
-				Bridge: "bridge",
-				Ports: nat.PortMap{
-					nat.Port(localPort + "/tcp"): {
-						{HostIP: c.host, HostPort: c.port},
-					},
+			SandboxKey: "bridge",
+			Ports: network.PortMap{
+				network.MustParsePort(localPort + "/tcp"): {
+					{HostIP: hostAddr, HostPort: c.port},
 				},
 			},
-			//nolint:staticcheck // SA1019: DefaultNetworkSettings is deprecated, but we need it for compatibility until v29
-			DefaultNetworkSettings: container.DefaultNetworkSettings{
-				IPAddress: c.host,
+			Networks: map[string]*network.EndpointSettings{
+				"bridge": {
+					IPAddress: hostAddr,
+				},
 			},
 		},
 	}, nil
@@ -611,7 +634,7 @@ func (c *localProcess) cleanup() error {
 // It returns proto://host:port string for the Ollama port.
 // It returns just host:port if proto is blank.
 func (c *localProcess) Endpoint(ctx context.Context, proto string) (string, error) {
-	return c.PortEndpoint(ctx, localPort, proto)
+	return c.PortEndpoint(ctx, network.MustParsePort(localPort+"/tcp"), proto)
 }
 
 // GetContainerID implements testcontainers.Container interface for the local Ollama binary.
@@ -625,12 +648,12 @@ func (c *localProcess) Host(_ context.Context) (string, error) {
 }
 
 // MappedPort implements testcontainers.Container interface for the local Ollama binary.
-func (c *localProcess) MappedPort(_ context.Context, port nat.Port) (nat.Port, error) {
-	if port.Port() != localPort || port.Proto() != "tcp" {
-		return "", errdefs.ErrNotFound.WithMessage(fmt.Sprintf("port %q not found", port))
+func (c *localProcess) MappedPort(_ context.Context, port network.Port) (network.Port, error) {
+	if strconv.FormatUint(uint64(port.Num()), 10) != localPort || port.Proto() != network.TCP {
+		return network.Port{}, errdefs.ErrNotFound.WithMessage(fmt.Sprintf("port %q not found", port))
 	}
 
-	return nat.Port(c.port + "/tcp"), nil
+	return network.MustParsePort(c.port + "/tcp"), nil
 }
 
 // Networks implements testcontainers.Container interface for the local Ollama binary.
@@ -648,7 +671,7 @@ func (c *localProcess) NetworkAliases(_ context.Context) (map[string][]string, e
 // PortEndpoint implements testcontainers.Container interface for the local Ollama binary.
 // It returns proto://host:port or proto://[IPv6host]:port string for the given exposed port.
 // It returns just host:port or [IPv6host]:port if proto is blank.
-func (c *localProcess) PortEndpoint(ctx context.Context, port nat.Port, proto string) (string, error) {
+func (c *localProcess) PortEndpoint(ctx context.Context, port network.Port, proto string) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
 		return "", fmt.Errorf("host: %w", err)
@@ -659,7 +682,7 @@ func (c *localProcess) PortEndpoint(ctx context.Context, port nat.Port, proto st
 		return "", fmt.Errorf("mapped port: %w", err)
 	}
 
-	hostPost := net.JoinHostPort(host, outerPort.Port())
+	hostPost := net.JoinHostPort(host, strconv.FormatUint(uint64(outerPort.Num()), 10))
 	if proto == "" {
 		return hostPost, nil
 	}
@@ -680,7 +703,7 @@ func (c *localProcess) FollowOutput(_ testcontainers.LogConsumer) {
 
 // Deprecated: use c.Inspect(ctx).NetworkSettings.Ports instead.
 // Ports gets the exposed ports for the container.
-func (c *localProcess) Ports(ctx context.Context) (nat.PortMap, error) {
+func (c *localProcess) Ports(ctx context.Context) (network.PortMap, error) {
 	inspect, err := c.Inspect(ctx)
 	if err != nil {
 		return nil, err

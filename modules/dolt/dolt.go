@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -163,7 +164,7 @@ func (c *DoltContainer) initialize(ctx context.Context, createUser bool) error {
 }
 
 func (c *DoltContainer) initialConnectionString(ctx context.Context) (string, error) {
-	endpoint, err := c.PortEndpoint(ctx, "3306/tcp", "")
+	endpoint, err := c.PortEndpoint(ctx, network.MustParsePort("3306/tcp"), "")
 	if err != nil {
 		return "", err
 	}
@@ -181,7 +182,7 @@ func (c *DoltContainer) MustConnectionString(ctx context.Context, args ...string
 }
 
 func (c *DoltContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
-	endpoint, err := c.PortEndpoint(ctx, "3306/tcp", "")
+	endpoint, err := c.PortEndpoint(ctx, network.MustParsePort("3306/tcp"), "")
 	if err != nil {
 		return "", err
 	}

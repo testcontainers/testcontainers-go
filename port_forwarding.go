@@ -10,7 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
+	"strconv"
+
+	"github.com/moby/moby/api/types/container"
+	tcnetwork "github.com/moby/moby/api/types/network"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/ssh"
 
@@ -27,8 +30,9 @@ const (
 	// using the SSHD container as a bridge.
 	HostInternal string = "host.testcontainers.internal"
 	user         string = "root"
-	sshPort             = "22/tcp"
 )
+
+var sshPort = tcnetwork.MustParsePort("22/tcp")
 
 // sshPassword is a random password generated for the SSHD container.
 var sshPassword = uuid.NewString()
@@ -108,15 +112,12 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, ports ...int) (
 	}
 
 	// TODO: remove once we have docker context support via #2810
-	//nolint:staticcheck // SA1019: IPAddress is deprecated, but we need it for compatibility until v29
-	sshdIP := inspect.NetworkSettings.IPAddress
-	if sshdIP == "" {
-		single := len(inspect.NetworkSettings.Networks) == 1
-		for name, network := range inspect.NetworkSettings.Networks {
-			if name == sshdFirstNetwork || single {
-				sshdIP = network.IPAddress
-				break
-			}
+	var sshdIP string
+	single := len(inspect.NetworkSettings.Networks) == 1
+	for name, nw := range inspect.NetworkSettings.Networks {
+		if (name == sshdFirstNetwork || single) && nw.IPAddress.IsValid() {
+			sshdIP = nw.IPAddress.String()
+			break
 		}
 	}
 
@@ -179,7 +180,7 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, ports ...int) (
 func newSshdContainer(ctx context.Context, opts ...ContainerCustomizer) (*sshdContainer, error) {
 	moduleOpts := make([]ContainerCustomizer, 0, 3+len(opts))
 	moduleOpts = append(moduleOpts,
-		WithExposedPorts(sshPort),
+		WithExposedPorts(sshPort.String()),
 		WithEnv(map[string]string{"PASSWORD": sshPassword}),
 		WithWaitStrategy(wait.ForListeningPort(sshPort)),
 	)
@@ -247,7 +248,7 @@ func (sshdC *sshdContainer) clientConfig(ctx context.Context) error {
 		return fmt.Errorf("mapped port: %w", err)
 	}
 
-	sshdC.port = mappedPort.Port()
+	sshdC.port = strconv.Itoa(int(mappedPort.Num()))
 	sshdC.sshConfig = &ssh.ClientConfig{
 		User:            user,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),

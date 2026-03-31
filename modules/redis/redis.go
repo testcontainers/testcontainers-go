@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -40,7 +41,7 @@ func (c *RedisContainer) ConnectionString(ctx context.Context) (string, error) {
 	if c.settings.tlsEnabled {
 		schema = "rediss"
 	}
-	return c.PortEndpoint(ctx, redisPort, schema)
+	return c.PortEndpoint(ctx, network.MustParsePort(redisPort), schema)
 }
 
 // TLSConfig returns the TLS configuration for the Redis container, nil if TLS is not enabled.
@@ -69,7 +70,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts(redisPort),
 		testcontainers.WithWaitStrategy(
-			wait.ForListeningPort(redisPort).WithStartupTimeout(time.Second*10),
+			wait.ForListeningPort(network.MustParsePort(redisPort)).WithStartupTimeout(time.Second*10),
 			wait.ForLog("* Ready to accept connections"),
 		),
 	}

@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -65,7 +66,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultHTTPPort, defaultSSHPort),
 		testcontainers.WithWaitStrategy(
-			wait.ForHTTP("/api/healthz").WithPort(defaultHTTPPort),
+			wait.ForHTTP("/api/healthz").WithPort(network.MustParsePort(defaultHTTPPort)),
 		),
 		// Use SQLite for simplicity in tests (no external DB needed).
 		// INSTALL_LOCK skips the install wizard so the instance is ready to use.
@@ -140,12 +141,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // ConnectionString returns the HTTP URL for the Forgejo instance
 func (c *Container) ConnectionString(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, defaultHTTPPort, "http")
+	return c.PortEndpoint(ctx, network.MustParsePort(defaultHTTPPort), "http")
 }
 
 // SSHConnectionString returns the SSH endpoint for Git operations
 func (c *Container) SSHConnectionString(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, defaultSSHPort, "")
+	return c.PortEndpoint(ctx, network.MustParsePort(defaultSSHPort), "")
 }
 
 // WithAdminCredentials sets the admin username, password, and email for the Forgejo instance.

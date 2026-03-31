@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/docker/compose/v5/pkg/api"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/volume"
 	"github.com/google/uuid"
+	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -93,7 +93,7 @@ func TestDockerComposeAPIWithRunServices(t *testing.T) {
 	t.Cleanup(cancel)
 
 	err = compose.
-		WaitForService("api-nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WaitForService("api-nginx", wait.NewHTTPStrategy("/").WithPort(network.MustParsePort("80/tcp")).WithStartupTimeout(10*time.Second)).
 		Up(ctx, Wait(true), RunServices("api-nginx"))
 	cleanup(t, compose)
 	require.NoError(t, err, "compose.Up()")
@@ -150,7 +150,7 @@ func TestDockerComposeAPIWithProfiles(t *testing.T) {
 			t.Cleanup(cancel)
 
 			for _, service := range test.wantServices {
-				compose = compose.WaitForService(service, wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second))
+				compose = compose.WaitForService(service, wait.NewHTTPStrategy("/").WithPort(network.MustParsePort("80/tcp")).WithStartupTimeout(10*time.Second))
 			}
 			err = compose.Up(ctx, Wait(true))
 			cleanup(t, compose)
@@ -299,7 +299,7 @@ func TestDockerComposeAPIWithWaitForService(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WaitForService("api-nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WaitForService("api-nginx", wait.NewHTTPStrategy("/").WithPort(network.MustParsePort("80/tcp")).WithStartupTimeout(10*time.Second)).
 		Up(ctx, Wait(true))
 	cleanup(t, compose)
 	require.NoError(t, err, "compose.Up()")
@@ -322,7 +322,7 @@ func TestDockerComposeAPIWithWaitHTTPStrategy(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WaitForService("api-nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WaitForService("api-nginx", wait.NewHTTPStrategy("/").WithPort(network.MustParsePort("80/tcp")).WithStartupTimeout(10*time.Second)).
 		Up(ctx, Wait(true))
 	cleanup(t, compose)
 	require.NoError(t, err, "compose.Up()")
@@ -345,7 +345,7 @@ func TestDockerComposeAPIWithContainerName(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WaitForService("api-nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WaitForService("api-nginx", wait.NewHTTPStrategy("/").WithPort(network.MustParsePort("80/tcp")).WithStartupTimeout(10*time.Second)).
 		Up(ctx, Wait(true))
 	cleanup(t, compose)
 	require.NoError(t, err, "compose.Up()")
@@ -386,7 +386,7 @@ func TestDockerComposeAPIWithMultipleWaitStrategies(t *testing.T) {
 
 	err = compose.
 		WaitForService("api-mysql", wait.NewLogStrategy("started").WithStartupTimeout(10*time.Second)).
-		WaitForService("api-nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WaitForService("api-nginx", wait.NewHTTPStrategy("/").WithPort(network.MustParsePort("80/tcp")).WithStartupTimeout(10*time.Second)).
 		Up(ctx, Wait(true))
 	cleanup(t, compose)
 	require.NoError(t, err, "compose.Up()")
@@ -410,7 +410,7 @@ func TestDockerComposeAPIWithFailedStrategy(t *testing.T) {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WaitForService("api-nginx_1", wait.NewHTTPStrategy("/").WithPort("8080/tcp").WithStartupTimeout(5*time.Second)).
+		WaitForService("api-nginx_1", wait.NewHTTPStrategy("/").WithPort(network.MustParsePort("8080/tcp")).WithStartupTimeout(5*time.Second)).
 		Up(ctx, Wait(true))
 	cleanup(t, compose)
 	// Verify that an error is thrown and not nil
@@ -642,10 +642,9 @@ func TestDockerComposeAPIVolumesDeletedOnDown(t *testing.T) {
 	err = compose.Down(context.Background(), RemoveOrphans(true), RemoveVolumes(true), RemoveImagesLocal)
 	require.NoError(t, err, "compose.Down()")
 
-	volumeListFilters := filters.NewArgs()
+	volumeListFilters := make(client.Filters).Add("name", identifier+"_mydata")
 	// the "mydata" identifier comes from the "testdata/docker-compose-volume.yml" file
-	volumeListFilters.Add("name", identifier+"_mydata")
-	volumeList, err := compose.dockerClient.VolumeList(ctx, volume.ListOptions{Filters: volumeListFilters})
+	volumeList, err := compose.dockerClient.VolumeList(ctx, client.VolumeListOptions{Filters: volumeListFilters})
 	require.NoError(t, err, "compose.dockerClient.VolumeList()")
 
 	require.Empty(t, volumeList.Volumes, "Volumes are not cleaned up")
@@ -662,7 +661,7 @@ func TestDockerComposeAPIWithBuild(t *testing.T) {
 	t.Cleanup(cancel)
 
 	err = compose.
-		WaitForService("api-echo", wait.ForHTTP("/env").WithPort("8080/tcp")).
+		WaitForService("api-echo", wait.ForHTTP("/env").WithPort(network.MustParsePort("8080/tcp"))).
 		Up(ctx, Wait(true))
 	cleanup(t, compose)
 	require.NoError(t, err, "compose.Up()")

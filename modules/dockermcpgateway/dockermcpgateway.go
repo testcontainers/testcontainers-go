@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/internal/core"
@@ -54,7 +55,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			}
 		}),
 		testcontainers.WithWaitStrategy(
-			wait.ForListeningPort(defaultPort),
+			wait.ForListeningPort(network.MustParsePort(defaultPort)),
 			wait.ForLog(".*Start sse server on port.*").AsRegexp(),
 		),
 	}
@@ -97,7 +98,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // GatewayEndpoint returns the endpoint for the DockerMCPGateway container.
 // It uses the mapped port for the default port (8811/tcp) and the "http" protocol.
 func (c *Container) GatewayEndpoint(ctx context.Context) (string, error) {
-	endpoint, err := c.PortEndpoint(ctx, defaultPort, "http")
+	endpoint, err := c.PortEndpoint(ctx, network.MustParsePort(defaultPort), "http")
 	if err != nil {
 		return "", fmt.Errorf("port endpoint: %w", err)
 	}

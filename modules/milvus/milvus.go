@@ -9,6 +9,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -32,7 +33,7 @@ type MilvusContainer struct {
 // ConnectionString returns the connection string for the milvus container, using the default 19530 port, and
 // obtaining the host and exposed port from the container.
 func (c *MilvusContainer) ConnectionString(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, grpcPort, "")
+	return c.PortEndpoint(ctx, network.MustParsePort(grpcPort), "")
 }
 
 // Deprecated: use Run instead
@@ -62,12 +63,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithCmd("milvus", "run", "standalone"),
 		testcontainers.WithWaitStrategy(
 			wait.ForHTTP("/healthz").
-				WithPort(httpPort).
+				WithPort(network.MustParsePort(httpPort)).
 				WithStartupTimeout(time.Minute).
 				WithPollInterval(time.Second),
-			wait.ForListeningPort(httpPort).
+			wait.ForListeningPort(network.MustParsePort(httpPort)).
 				WithStartupTimeout(time.Minute),
-			wait.ForListeningPort(grpcPort).
+			wait.ForListeningPort(network.MustParsePort(grpcPort)).
 				WithStartupTimeout(time.Minute),
 		),
 		testcontainers.WithFiles(testcontainers.ContainerFile{

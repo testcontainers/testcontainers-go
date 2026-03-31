@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -33,7 +34,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithHostConfigModifier(func(hc *container.HostConfig) {
 			hc.CapAdd = []string{"CAP_IPC_LOCK"}
 		}),
-		testcontainers.WithWaitStrategy(wait.ForHTTP("/v1/sys/health").WithPort(defaultPort)),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/v1/sys/health").WithPort(network.MustParsePort(defaultPort))),
 		testcontainers.WithEnv(map[string]string{
 			"VAULT_ADDR": "http://0.0.0.0:" + defaultPort,
 		}),
@@ -80,5 +81,5 @@ func WithInitCommand(commands ...string) testcontainers.CustomizeRequestOption {
 //
 //nolint:revive,staticcheck //FIXME
 func (v *VaultContainer) HttpHostAddress(ctx context.Context) (string, error) {
-	return v.PortEndpoint(ctx, defaultPort, "http")
+	return v.PortEndpoint(ctx, network.MustParsePort(defaultPort), "http")
 }

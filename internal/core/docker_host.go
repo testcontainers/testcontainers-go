@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
 )
@@ -65,7 +65,7 @@ var dockerHostCheck = func(ctx context.Context, host string) error {
 	}
 	defer cli.Close()
 
-	_, err = cli.Info(ctx)
+	_, err = cli.Info(ctx, client.InfoOptions{})
 	if err != nil {
 		return fmt.Errorf("docker info: %w", err)
 	}
@@ -198,13 +198,13 @@ func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) st
 		return checkDockerSocketFn(testcontainersDockerSocket)
 	}
 
-	info, err := cli.Info(ctx)
+	infoResult, err := cli.Info(ctx, client.InfoOptions{})
 	if err != nil {
 		panic(err) // Docker Info is required to get the Operating System
 	}
 
 	// Because Docker Desktop runs in a VM, we need to use the default docker path for rootless docker
-	if info.OperatingSystem == "Docker Desktop" {
+	if infoResult.Info.OperatingSystem == "Docker Desktop" {
 		if IsWindows() {
 			return WindowsDockerSocketPath
 		}

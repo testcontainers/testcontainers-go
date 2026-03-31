@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -38,8 +39,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultPort),
 		testcontainers.WithWaitStrategy(
-			wait.ForListeningPort(defaultPort),
-			wait.ForHTTP("/").WithPort(defaultPort),
+			wait.ForListeningPort(network.MustParsePort(defaultPort)),
+			wait.ForHTTP("/").WithPort(network.MustParsePort(defaultPort)),
 		),
 	)
 
@@ -69,7 +70,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return c, fmt.Errorf("run datastore: %w", err)
 	}
 
-	portEndpoint, err := c.PortEndpoint(ctx, defaultPort, "")
+	portEndpoint, err := c.PortEndpoint(ctx, network.MustParsePort(defaultPort), "")
 	if err != nil {
 		return c, fmt.Errorf("port endpoint: %w", err)
 	}

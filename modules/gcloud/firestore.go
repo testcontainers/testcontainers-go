@@ -3,6 +3,7 @@ package gcloud
 import (
 	"context"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -19,7 +20,7 @@ func RunFirestore(ctx context.Context, img string, opts ...testcontainers.Contai
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithExposedPorts("8080/tcp"),
 		testcontainers.WithWaitStrategy(
-			wait.ForListeningPort("8080/tcp"),
+			wait.ForListeningPort(network.MustParsePort("8080/tcp")),
 			wait.ForLog("running"),
 		),
 	}

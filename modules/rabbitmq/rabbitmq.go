@@ -10,7 +10,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -40,7 +40,7 @@ type RabbitMQContainer struct {
 //
 //nolint:staticcheck //FIXME
 func (c *RabbitMQContainer) AmqpURL(ctx context.Context) (string, error) {
-	endpoint, err := c.PortEndpoint(ctx, nat.Port(DefaultAMQPPort), "")
+	endpoint, err := c.PortEndpoint(ctx, network.MustParsePort(DefaultAMQPPort), "")
 	if err != nil {
 		return "", err
 	}
@@ -50,7 +50,7 @@ func (c *RabbitMQContainer) AmqpURL(ctx context.Context) (string, error) {
 
 // AmqpURL returns the URL for AMQPS clients.
 func (c *RabbitMQContainer) AmqpsURL(ctx context.Context) (string, error) {
-	endpoint, err := c.PortEndpoint(ctx, nat.Port(DefaultAMQPSPort), "")
+	endpoint, err := c.PortEndpoint(ctx, network.MustParsePort(DefaultAMQPSPort), "")
 	if err != nil {
 		return "", err
 	}
@@ -62,14 +62,14 @@ func (c *RabbitMQContainer) AmqpsURL(ctx context.Context) (string, error) {
 //
 //nolint:revive,staticcheck //FIXME
 func (c *RabbitMQContainer) HttpURL(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, nat.Port(DefaultHTTPPort), "http")
+	return c.PortEndpoint(ctx, network.MustParsePort(DefaultHTTPPort), "http")
 }
 
 // HttpsURL returns the URL for HTTPS management.
 //
 //nolint:revive,staticcheck //FIXME
 func (c *RabbitMQContainer) HttpsURL(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, nat.Port(DefaultHTTPSPort), "https")
+	return c.PortEndpoint(ctx, network.MustParsePort(DefaultHTTPSPort), "https")
 }
 
 // Deprecated: use Run instead

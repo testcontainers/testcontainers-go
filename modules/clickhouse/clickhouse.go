@@ -3,23 +3,24 @@ package clickhouse
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const (
+var (
 	defaultUser         = "default"
 	defaultDatabaseName = "clickhouse"
 )
 
-const (
+var (
 	// containerPorts {
-	httpPort   = nat.Port("8123/tcp")
-	nativePort = nat.Port("9000/tcp")
+	httpPort   = network.MustParsePort("8123/tcp")
+	nativePort = network.MustParsePort("9000/tcp")
 	// }
 )
 
@@ -69,7 +70,7 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ClickHouseContainer, error) {
 	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
 	moduleOpts = append(moduleOpts,
-		testcontainers.WithExposedPorts(httpPort.Port(), nativePort.Port()),
+		testcontainers.WithExposedPorts(strconv.FormatUint(uint64(httpPort.Num()), 10), strconv.FormatUint(uint64(nativePort.Num()), 10)),
 		testcontainers.WithEnv(map[string]string{
 			"CLICKHOUSE_USER":     defaultUser,
 			"CLICKHOUSE_PASSWORD": defaultUser,

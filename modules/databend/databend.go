@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -48,7 +49,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"QUERY_DEFAULT_USER":     defaultUser,
 			"QUERY_DEFAULT_PASSWORD": defaultPassword,
 		}),
-		testcontainers.WithWaitStrategy(wait.ForListeningPort(defaultPort)),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort(network.MustParsePort(defaultPort))),
 	)
 
 	moduleOpts = append(moduleOpts, opts...)
@@ -106,7 +107,7 @@ func (c *DatabendContainer) MustConnectionString(ctx context.Context, args ...st
 }
 
 func (c *DatabendContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
-	endpoint, err := c.PortEndpoint(ctx, "8000/tcp", "")
+	endpoint, err := c.PortEndpoint(ctx, network.MustParsePort("8000/tcp"), "")
 	if err != nil {
 		return "", fmt.Errorf("port endpoint: %w", err)
 	}

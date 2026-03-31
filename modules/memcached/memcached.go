@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -22,7 +23,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 2+len(opts))
 	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultPort),
-		testcontainers.WithWaitStrategy(wait.ForListeningPort(defaultPort)),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort(network.MustParsePort(defaultPort))),
 	)
 
 	moduleOpts = append(moduleOpts, opts...)
@@ -42,5 +43,5 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // HostPort returns the host and port of the Memcached container
 func (c *Container) HostPort(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, defaultPort, "")
+	return c.PortEndpoint(ctx, network.MustParsePort(defaultPort), "")
 }

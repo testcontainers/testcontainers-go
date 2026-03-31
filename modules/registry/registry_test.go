@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/cpuguy83/dockercfg"
-	"github.com/docker/docker/api/types/image"
+	"github.com/moby/moby/api/types/image"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
 

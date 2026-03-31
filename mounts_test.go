@@ -4,7 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/docker/docker/api/types/mount"
+	"github.com/moby/moby/api/types/mount"
+	dockerclient "github.com/moby/moby/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -243,9 +244,9 @@ func TestCreateContainerWithVolume(t *testing.T) {
 	require.NoError(t, err)
 	defer client.Close()
 
-	volume, err := client.VolumeInspect(ctx, "test-volume")
+	volume, err := client.VolumeInspect(ctx, "test-volume", dockerclient.VolumeInspectOptions{})
 	require.NoError(t, err)
-	assert.Equal(t, "test-volume", volume.Name)
+	assert.Equal(t, "test-volume", volume.Volume.Name)
 }
 
 func TestMountsReceiveRyukLabels(t *testing.T) {
@@ -258,7 +259,7 @@ func TestMountsReceiveRyukLabels(t *testing.T) {
 
 	// Ensure the volume is removed before creating the container
 	// otherwise the volume will be reused and the labels won't be set.
-	err = client.VolumeRemove(ctx, volumeName, true)
+	_, err = client.VolumeRemove(ctx, volumeName, dockerclient.VolumeRemoveOptions{Force: true})
 	require.NoError(t, err)
 
 	c, err := testcontainers.Run(ctx, "alpine",
@@ -273,7 +274,7 @@ func TestMountsReceiveRyukLabels(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check if volume is created with the expected labels.
-	volume, err := client.VolumeInspect(ctx, volumeName)
+	volume, err := client.VolumeInspect(ctx, volumeName, dockerclient.VolumeInspectOptions{})
 	require.NoError(t, err)
-	require.Equal(t, testcontainers.GenericLabels(), volume.Labels)
+	require.Equal(t, testcontainers.GenericLabels(), volume.Volume.Labels)
 }

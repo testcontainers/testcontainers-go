@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/network"
 	"github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/lib/pq"
@@ -118,9 +118,9 @@ func TestPostgres(t *testing.T) {
 			require.Equalf(t, mustConnStr, connStr, "ConnectionString was not equal to MustConnectionString")
 
 			// Ensure connection string is using generic format
-			id, err := ctr.MappedPort(ctx, "5432/tcp")
+			id, err := ctr.MappedPort(ctx, network.MustParsePort("5432/tcp"))
 			require.NoError(t, err)
-			require.Equal(t, fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&application_name=test", user, password, "localhost", id.Port(), dbname), connStr)
+			require.Equal(t, fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&application_name=test", user, password, "localhost", strconv.FormatUint(uint64(id.Num()), 10), dbname), connStr)
 
 			// perform assertions
 			db, err := sql.Open("postgres", connStr)
@@ -143,8 +143,8 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 	ctx := context.Background()
 
 	port := "5432/tcp"
-	dbURL := func(host string, port nat.Port) string {
-		return fmt.Sprintf("postgres://postgres:password@%s:%s/%s?sslmode=disable", host, port.Port(), dbname)
+	dbURL := func(host string, port network.Port) string {
+		return fmt.Sprintf("postgres://postgres:password@%s:%s/%s?sslmode=disable", host, strconv.FormatUint(uint64(port.Num()), 10), dbname)
 	}
 
 	t.Run("default query", func(t *testing.T) {
@@ -154,7 +154,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
-			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL)),
+			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(network.MustParsePort(port), "postgres", dbURL)),
 		)
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
@@ -167,7 +167,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
-			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 10")),
+			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(network.MustParsePort(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 10")),
 		)
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
@@ -180,7 +180,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
-			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 'a' from b")),
+			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(network.MustParsePort(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 'a' from b")),
 		)
 		testcontainers.CleanupContainer(t, ctr)
 		require.Error(t, err)

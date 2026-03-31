@@ -7,8 +7,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/mount"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/mount"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -35,7 +36,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"DOCKER_HOST": "tcp://localhost:" + defaultDockerDaemonPortNumber,
 		}),
 		testcontainers.WithExposedPorts(defaultDockerDaemonPort),
-		testcontainers.WithWaitStrategy(wait.ForListeningPort(defaultDockerDaemonPort)),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort(network.MustParsePort(defaultDockerDaemonPort))),
 		testcontainers.WithHostConfigModifier(func(hc *container.HostConfig) {
 			hc.Privileged = true
 			hc.CgroupnsMode = "host"
@@ -64,7 +65,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // Host returns the endpoint to connect to the Docker daemon running inside the DinD container.
 func (c *Container) Host(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, defaultDockerDaemonPort, "http")
+	return c.PortEndpoint(ctx, network.MustParsePort(defaultDockerDaemonPort), "http")
 }
 
 // LoadImage loads an image into the DinD container.

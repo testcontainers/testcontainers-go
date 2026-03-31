@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -30,7 +30,7 @@ const (
 // awsSession returns a new AWS session for the given service. To retrieve the specific AWS service client, use the
 // session's client method, e.g. s3manager.NewUploader(session).
 func awsSession(ctx context.Context, l *localstack.LocalStackContainer) (*session.Session, error) {
-	mappedPort, err := l.MappedPort(ctx, nat.Port("4566/tcp"))
+	mappedPort, err := l.MappedPort(ctx, network.MustParsePort("4566/tcp"))
 	if err != nil {
 		return &session.Session{}, err
 	}
@@ -51,7 +51,7 @@ func awsSession(ctx context.Context, l *localstack.LocalStackContainer) (*sessio
 		CredentialsChainVerboseErrors: aws.Bool(true),
 		Credentials:                   credentials.NewStaticCredentials(accesskey, secretkey, token),
 		S3ForcePathStyle:              aws.Bool(true),
-		Endpoint:                      aws.String(fmt.Sprintf("http://%s:%d", host, mappedPort.Int())),
+		Endpoint:                      aws.String(fmt.Sprintf("http://%s:%d", host, int(mappedPort.Num()))),
 	}
 
 	return session.NewSession(awsConfig)

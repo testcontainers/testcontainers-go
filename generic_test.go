@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
+	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -26,7 +26,7 @@ func TestGenericReusableContainer(t *testing.T) {
 
 	n1, err := Run(ctx, nginxAlpineImage,
 		WithExposedPorts(nginxDefaultPort),
-		WithWaitStrategy(wait.ForListeningPort(nginxDefaultPort)),
+		WithWaitStrategy(wait.ForListeningPort(network.MustParsePort(nginxDefaultPort))),
 		WithName(reusableContainerName),
 	)
 	require.NoError(t, err)
@@ -75,7 +75,7 @@ func TestGenericReusableContainer(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			opts := []ContainerCustomizer{
 				WithExposedPorts(nginxDefaultPort),
-				WithWaitStrategy(wait.ForListeningPort(nginxDefaultPort)),
+				WithWaitStrategy(wait.ForListeningPort(network.MustParsePort(nginxDefaultPort))),
 				WithName(tc.containerName),
 			}
 			if tc.reuseOption {
@@ -130,21 +130,21 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 	cli, err := NewDockerClientWithOpts(context.Background())
 	require.NoError(t, err)
 
-	f := filters.NewArgs(filters.KeyValuePair{Key: "name", Value: reusableContainerName})
+	f := make(client.Filters).Add("name", reusableContainerName)
 
-	ctrs, err := cli.ContainerList(context.Background(), container.ListOptions{
+	ctrs, err := cli.ContainerList(context.Background(), client.ContainerListOptions{
 		All:     true,
 		Filters: f,
 	})
 	require.NoError(t, err)
-	require.Len(t, ctrs, 1)
+	require.Len(t, ctrs.Items, 1)
 
 	provider, err := NewDockerProvider()
 	require.NoError(t, err)
 
 	provider.SetClient(cli)
 
-	nginxC, err := provider.ContainerFromType(context.Background(), ctrs[0])
+	nginxC, err := provider.ContainerFromType(context.Background(), ctrs.Items[0])
 	CleanupContainer(t, nginxC)
 	require.NoError(t, err)
 }
@@ -172,7 +172,7 @@ func TestHelperContainerStarterProcess(t *testing.T) {
 
 	nginxC, err := Run(ctx, nginxDelayedImage,
 		WithExposedPorts(nginxDefaultPort),
-		WithWaitStrategy(wait.ForListeningPort(nginxDefaultPort)), // default startupTimeout is 60s
+		WithWaitStrategy(wait.ForListeningPort(network.MustParsePort(nginxDefaultPort))), // default startupTimeout is 60s
 		WithReuseByName(reusableContainerName),
 	)
 	require.NoError(t, err)

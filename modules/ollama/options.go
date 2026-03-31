@@ -3,7 +3,8 @@ package ollama
 import (
 	"context"
 
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -18,13 +19,13 @@ func withGpu() testcontainers.CustomizeRequestOption {
 		return noopCustomizeRequestOption
 	}
 
-	info, err := cli.Info(context.Background())
+	info, err := cli.Info(context.Background(), client.InfoOptions{})
 	if err != nil {
 		return noopCustomizeRequestOption
 	}
 
 	// if the Runtime does not support nvidia, we don't need to request a GPU
-	if _, ok := info.Runtimes["nvidia"]; !ok {
+	if _, ok := info.Info.Runtimes["nvidia"]; !ok {
 		return noopCustomizeRequestOption
 	}
 

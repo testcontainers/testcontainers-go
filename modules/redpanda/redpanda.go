@@ -15,8 +15,8 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"golang.org/x/mod/semver"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -102,10 +102,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			// Wait for the ports to be mapped without accessing them,
 			// because container needs Redpanda configuration before Redpanda is started
 			// and the mapped ports are part of that configuration.
-			wait.ForMappedPort(defaultKafkaAPIPort),
-			wait.ForMappedPort(defaultAdminAPIPort),
-			wait.ForMappedPort(defaultSchemaRegistryPort),
-			wait.ForMappedPort(defaultHTTPProxyPort),
+			wait.ForMappedPort(network.MustParsePort(defaultKafkaAPIPort)),
+			wait.ForMappedPort(network.MustParsePort(defaultAdminAPIPort)),
+			wait.ForMappedPort(network.MustParsePort(defaultSchemaRegistryPort)),
+			wait.ForMappedPort(network.MustParsePort(defaultHTTPProxyPort)),
 		),
 	}
 
@@ -197,13 +197,13 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return c, fmt.Errorf("host: %w", err)
 	}
 
-	kafkaPort, err := ctr.MappedPort(ctx, nat.Port(defaultKafkaAPIPort))
+	kafkaPort, err := ctr.MappedPort(ctx, network.MustParsePort(defaultKafkaAPIPort))
 	if err != nil {
 		return c, fmt.Errorf("mapped kafka port: %w", err)
 	}
 
 	// 6. Render redpanda.yaml config and mount it.
-	nodeConfig, err := renderNodeConfig(settings, hostIP, kafkaPort.Int())
+	nodeConfig, err := renderNodeConfig(settings, hostIP, int(kafkaPort.Num()))
 	if err != nil {
 		return c, err
 	}
@@ -215,7 +215,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	// 7. Wait until Redpanda is ready to serve requests.
 	waitHTTP := wait.ForHTTP("/").
-		WithPort(defaultAdminAPIPort).
+		WithPort(network.MustParsePort(defaultAdminAPIPort)).
 		WithStatusCodeMatcher(func(status int) bool {
 			// Redpanda's admin API returns 404 for requests to "/".
 			return status == http.StatusNotFound
@@ -236,10 +236,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		waitHTTP = waitHTTP.WithTLS(true, tlsConfig)
 	}
 	err = wait.ForAll(
-		wait.ForListeningPort(defaultKafkaAPIPort),
+		wait.ForListeningPort(network.MustParsePort(defaultKafkaAPIPort)),
 		waitHTTP,
-		wait.ForListeningPort(defaultSchemaRegistryPort),
-		wait.ForListeningPort(defaultHTTPProxyPort),
+		wait.ForListeningPort(network.MustParsePort(defaultSchemaRegistryPort)),
+		wait.ForListeningPort(network.MustParsePort(defaultHTTPProxyPort)),
 		wait.ForLog("Successfully started Redpanda!"),
 	).WaitUntilReady(ctx, ctr)
 	if err != nil {
@@ -253,7 +253,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	// 8. Create Redpanda Service Accounts if configured to do so.
 	if len(settings.ServiceAccounts) > 0 {
-		adminAPIUrl, err := c.PortEndpoint(ctx, defaultAdminAPIPort, c.urlScheme)
+		adminAPIUrl, err := c.PortEndpoint(ctx, network.MustParsePort(defaultAdminAPIPort), c.urlScheme)
 		if err != nil {
 			return c, fmt.Errorf("port endpoint: %w", err)
 		}
@@ -288,25 +288,25 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // to the Kafka API with your Kafka client. It'll be returned in the format:
 // "host:port" - for example: "localhost:55687".
 func (c *Container) KafkaSeedBroker(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, nat.Port(defaultKafkaAPIPort), "")
+	return c.PortEndpoint(ctx, network.MustParsePort(defaultKafkaAPIPort), "")
 }
 
 // AdminAPIAddress returns the address to the Redpanda Admin API. This
 // is an HTTP-based API and thus the returned format will be: http://host:port.
 func (c *Container) AdminAPIAddress(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, nat.Port(defaultAdminAPIPort), c.urlScheme)
+	return c.PortEndpoint(ctx, network.MustParsePort(defaultAdminAPIPort), c.urlScheme)
 }
 
 // SchemaRegistryAddress returns the address to the schema registry API. This
 // is an HTTP-based API and thus the returned format will be: http://host:port.
 func (c *Container) SchemaRegistryAddress(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, nat.Port(defaultSchemaRegistryPort), c.urlScheme)
+	return c.PortEndpoint(ctx, network.MustParsePort(defaultSchemaRegistryPort), c.urlScheme)
 }
 
 // HTTPProxyAddress returns the address to the HTTP Proxy API (pandaproxy). This
 // is an HTTP-based API and thus the returned format will be: http://host:port.
 func (c *Container) HTTPProxyAddress(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, nat.Port(defaultHTTPProxyPort), c.urlScheme)
+	return c.PortEndpoint(ctx, network.MustParsePort(defaultHTTPProxyPort), c.urlScheme)
 }
 
 // renderBootstrapConfig renders the config template for the .bootstrap.yaml config,

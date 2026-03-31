@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -15,7 +16,7 @@ type SurrealDBContainer struct {
 
 // URL returns the connection string for the OpenLDAP container
 func (c *SurrealDBContainer) URL(ctx context.Context) (string, error) {
-	endpoint, err := c.PortEndpoint(ctx, "8000/tcp", "ws")
+	endpoint, err := c.PortEndpoint(ctx, network.MustParsePort("8000/tcp"), "ws")
 	if err != nil {
 		return "", err
 	}

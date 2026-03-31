@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/image"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/internal/core"
@@ -25,7 +25,7 @@ type OllamaContainer struct {
 // ConnectionString returns the connection string for the Ollama container,
 // using the default port 11434.
 func (c *OllamaContainer) ConnectionString(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, "11434/tcp", "http")
+	return c.PortEndpoint(ctx, network.MustParsePort("11434/tcp"), "http")
 }
 
 // Commit it commits the current file system changes in the container into a new target image.
@@ -42,16 +42,16 @@ func (c *OllamaContainer) Commit(ctx context.Context, targetImage string) error 
 		return err
 	}
 
-	list, err := cli.ImageList(ctx, image.ListOptions{Filters: filters.NewArgs(filters.Arg("reference", targetImage))})
+	list, err := cli.ImageList(ctx, client.ImageListOptions{Filters: make(client.Filters).Add("reference", targetImage)})
 	if err != nil {
 		return fmt.Errorf("listing images %w", err)
 	}
 
-	if len(list) > 0 {
+	if len(list.Items) > 0 {
 		return fmt.Errorf("image %s already exists", targetImage)
 	}
 
-	_, err = cli.ContainerCommit(ctx, c.GetContainerID(), container.CommitOptions{
+	_, err = cli.ContainerCommit(ctx, c.GetContainerID(), client.ContainerCommitOptions{
 		Reference: targetImage,
 		Config: &container.Config{
 			Labels: map[string]string{
@@ -77,7 +77,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 2+len(opts))
 	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts("11434/tcp"),
-		testcontainers.WithWaitStrategy(wait.ForListeningPort("11434/tcp").WithStartupTimeout(60*time.Second)),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort(network.MustParsePort("11434/tcp")).WithStartupTimeout(60*time.Second)),
 	)
 
 	// Check if we need to use the local process

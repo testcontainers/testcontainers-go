@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -39,7 +40,7 @@ func WithShardAwareness() testcontainers.CustomizeRequestOption {
 		if err := testcontainers.WithExposedPorts(shardAwarePort)(req); err != nil {
 			return err
 		}
-		return testcontainers.WithWaitStrategy(wait.ForListeningPort(shardAwarePort))(req)
+		return testcontainers.WithWaitStrategy(wait.ForListeningPort(network.MustParsePort(shardAwarePort)))(req)
 	}
 }
 
@@ -54,7 +55,7 @@ func WithAlternator() testcontainers.CustomizeRequestOption {
 		if err := testcontainers.WithExposedPorts(alternatorPort)(req); err != nil {
 			return err
 		}
-		if err := testcontainers.WithWaitStrategy(wait.ForListeningPort(alternatorPort))(req); err != nil {
+		if err := testcontainers.WithWaitStrategy(wait.ForListeningPort(network.MustParsePort(alternatorPort)))(req); err != nil {
 			return err
 		}
 		return setCommandFlags(req, map[string]string{
@@ -93,17 +94,17 @@ func WithCustomCommands(flags ...string) testcontainers.CustomizeRequestOption {
 
 // ShardAwareConnectionHost returns the host and port of the ScyllaDB container with the shard-aware port
 func (c Container) ShardAwareConnectionHost(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, shardAwarePort, "")
+	return c.PortEndpoint(ctx, network.MustParsePort(shardAwarePort), "")
 }
 
 // NonShardAwareConnectionHost returns the host and port of the ScyllaDB container with the non-shard-aware port
 func (c Container) NonShardAwareConnectionHost(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, port, "")
+	return c.PortEndpoint(ctx, network.MustParsePort(port), "")
 }
 
 // AlternatorConnectionHost returns the host and port of the ScyllaDB container with the alternator port
 func (c Container) AlternatorConnectionHost(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, alternatorPort, "")
+	return c.PortEndpoint(ctx, network.MustParsePort(alternatorPort), "")
 }
 
 // Run starts a ScyllaDB container with the specified image and options
@@ -118,7 +119,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"--memory=512M",
 		),
 		testcontainers.WithWaitStrategy(
-			wait.ForListeningPort(port),
+			wait.ForListeningPort(network.MustParsePort(port)),
 			wait.ForExec([]string{"cqlsh", "-e", "SELECT bootstrapped FROM system.local"}).WithResponseMatcher(func(body io.Reader) bool {
 				data, _ := io.ReadAll(body)
 				return strings.Contains(string(data), "COMPLETED")

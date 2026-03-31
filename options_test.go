@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	dockerClient "github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -649,11 +650,11 @@ func TestWithImageMount(t *testing.T) {
 	cli, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	require.NoError(t, err)
 
-	info, err := cli.Info(context.Background())
+	infoResult, err := cli.Info(context.Background(), dockerClient.InfoOptions{})
 	require.NoError(t, err)
 
 	// skip if the major version of the server is not v28 or greater
-	if info.ServerVersion < "28.0.0" {
+	if infoResult.Info.ServerVersion < "28.0.0" {
 		t.Skipf("skipping test because the server version is not v28 or greater")
 	}
 

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go/modules/compose"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -52,7 +53,7 @@ func ExampleNewDockerComposeWith() {
 			"bar": "BAR",
 			"foo": "FOO",
 		}).
-		WaitForService("nginx", wait.ForListeningPort("80/tcp")).
+		WaitForService("nginx", wait.ForListeningPort(network.MustParsePort("80/tcp"))).
 		Up(ctx, compose.Wait(true))
 	if err != nil {
 		log.Printf("Failed to start stack: %v", err)
@@ -137,7 +138,7 @@ func ExampleNewDockerComposeWith_waitForService() {
 		WithEnv(map[string]string{
 			"bar": "BAR",
 		}).
-		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort("80/tcp").WithStartupTimeout(10*time.Second)).
+		WaitForService("nginx", wait.NewHTTPStrategy("/").WithPort(network.MustParsePort("80/tcp")).WithStartupTimeout(10*time.Second)).
 		Up(ctx, compose.Wait(true))
 	if err != nil {
 		log.Printf("Failed to start stack: %v", err)

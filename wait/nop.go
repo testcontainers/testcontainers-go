@@ -5,8 +5,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go/exec"
 )
@@ -61,11 +61,11 @@ func (st NopStrategyTarget) Inspect(_ context.Context) (*container.InspectRespon
 }
 
 // Deprecated: use Inspect instead
-func (st NopStrategyTarget) Ports(_ context.Context) (nat.PortMap, error) {
+func (st NopStrategyTarget) Ports(_ context.Context) (network.PortMap, error) {
 	return nil, nil
 }
 
-func (st NopStrategyTarget) MappedPort(_ context.Context, n nat.Port) (nat.Port, error) {
+func (st NopStrategyTarget) MappedPort(_ context.Context, n network.Port) (network.Port, error) {
 	return n, nil
 }
 

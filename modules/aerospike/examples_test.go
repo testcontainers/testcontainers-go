@@ -7,6 +7,7 @@ import (
 	"time"
 
 	aero "github.com/aerospike/aerospike-client-go/v8"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/aerospike"
@@ -63,13 +64,13 @@ func ExampleRun_usingClient() {
 	}
 
 	// Get the mapped port
-	port, err := aerospikeContainer.MappedPort(ctx, "3000/tcp")
+	port, err := aerospikeContainer.MappedPort(ctx, network.MustParsePort("3000/tcp"))
 	if err != nil {
 		log.Printf("failed to get container port: %s", err)
 		return
 	}
 
-	aeroHost := []*aero.Host{aero.NewHost(host, port.Int())}
+	aeroHost := []*aero.Host{aero.NewHost(host, int(port.Num()))}
 
 	// connect to the host
 	cp := aero.NewClientPolicy()

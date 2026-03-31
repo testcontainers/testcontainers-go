@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/log"
 )
@@ -49,7 +50,7 @@ func (c *PostgresContainer) MustConnectionString(ctx context.Context, args ...st
 // which will be appended to the connection string. The format of the extra arguments is the same as the
 // connection string format, e.g. "connect_timeout=10" or "application_name=myapp"
 func (c *PostgresContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
-	endpoint, err := c.PortEndpoint(ctx, "5432/tcp", "")
+	endpoint, err := c.PortEndpoint(ctx, network.MustParsePort("5432/tcp"), "")
 	if err != nil {
 		return "", err
 	}

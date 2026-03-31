@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strconv"
 	"strings"
 
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -22,12 +23,12 @@ const (
 )
 
 var defaultWaitStrategies = []wait.Strategy{
-	wait.ForHTTP("/admin/v2/clusters").WithPort(defaultPulsarAdminPort).WithResponseMatcher(func(r io.Reader) bool {
+	wait.ForHTTP("/admin/v2/clusters").WithPort(network.MustParsePort(defaultPulsarAdminPort)).WithResponseMatcher(func(r io.Reader) bool {
 		respBytes, _ := io.ReadAll(r)
 		resp := string(respBytes)
 		return resp == `["standalone"]`
 	}),
-	wait.ForListeningPort(defaultPulsarPort),
+	wait.ForListeningPort(network.MustParsePort(defaultPulsarPort)),
 }
 
 type Container struct {
@@ -36,14 +37,14 @@ type Container struct {
 }
 
 func (c *Container) BrokerURL(ctx context.Context) (string, error) {
-	return c.resolveURL(ctx, defaultPulsarPort)
+	return c.resolveURL(ctx, network.MustParsePort(defaultPulsarPort))
 }
 
 func (c *Container) HTTPServiceURL(ctx context.Context) (string, error) {
-	return c.resolveURL(ctx, defaultPulsarAdminPort)
+	return c.resolveURL(ctx, network.MustParsePort(defaultPulsarAdminPort))
 }
 
-func (c *Container) resolveURL(ctx context.Context, port nat.Port) (string, error) {
+func (c *Container) resolveURL(ctx context.Context, port network.Port) (string, error) {
 	provider, err := testcontainers.NewDockerProvider()
 	if err != nil {
 		return "", err
@@ -61,11 +62,11 @@ func (c *Container) resolveURL(ctx context.Context, port nat.Port) (string, erro
 	}
 
 	proto := "pulsar"
-	if port == defaultPulsarAdminPort {
+	if port == network.MustParsePort(defaultPulsarAdminPort) {
 		proto = "http"
 	}
 
-	return fmt.Sprintf("%s://%s", proto, net.JoinHostPort(host, pulsarPort.Port())), nil
+	return fmt.Sprintf("%s://%s", proto, net.JoinHostPort(host, strconv.FormatUint(uint64(pulsarPort.Num()), 10))), nil
 }
 
 // WithFunctionsWorker enables the functions worker, which will override the default pulsar command
@@ -113,7 +114,7 @@ func WithTransactions() testcontainers.CustomizeRequestOption {
 
 		// clone defaultWaitStrategies
 		ss := make([]wait.Strategy, 0, 1+len(defaultWaitStrategies))
-		ss = append(ss, wait.ForHTTP(transactionTopicEndpoint).WithPort(defaultPulsarAdminPort).WithStatusCodeMatcher(func(statusCode int) bool {
+		ss = append(ss, wait.ForHTTP(transactionTopicEndpoint).WithPort(network.MustParsePort(defaultPulsarAdminPort)).WithStatusCodeMatcher(func(statusCode int) bool {
 			return statusCode == 200
 		}))
 		ss = append(ss, defaultWaitStrategies...)

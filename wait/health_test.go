@@ -8,9 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/require"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
@@ -30,11 +29,11 @@ func (st *healthStrategyTarget) Inspect(_ context.Context) (*container.InspectRe
 }
 
 // Deprecated: use Inspect instead
-func (st *healthStrategyTarget) Ports(_ context.Context) (nat.PortMap, error) {
+func (st *healthStrategyTarget) Ports(_ context.Context) (network.PortMap, error) {
 	return nil, nil
 }
 
-func (st *healthStrategyTarget) MappedPort(_ context.Context, n nat.Port) (nat.Port, error) {
+func (st *healthStrategyTarget) MappedPort(_ context.Context, n network.Port) (network.Port, error) {
 	return n, nil
 }
 
@@ -72,7 +71,7 @@ func TestWaitForHealthTimesOutForUnhealthy(t *testing.T) {
 	target := &healthStrategyTarget{
 		state: &container.State{
 			Running: true,
-			Health:  &container.Health{Status: types.Unhealthy},
+			Health:  &container.Health{Status: container.Unhealthy},
 		},
 	}
 	wg := NewHealthStrategy().WithStartupTimeout(100 * time.Millisecond)
@@ -87,7 +86,7 @@ func TestWaitForHealthSucceeds(t *testing.T) {
 	target := &healthStrategyTarget{
 		state: &container.State{
 			Running: true,
-			Health:  &container.Health{Status: types.Healthy},
+			Health:  &container.Health{Status: container.Healthy},
 		},
 	}
 	wg := NewHealthStrategy().WithStartupTimeout(100 * time.Millisecond)
@@ -113,7 +112,7 @@ func TestWaitForHealthWithNil(t *testing.T) {
 		// wait a bit to simulate startup time and give check time to at least
 		// try a few times with a nil Health
 		time.Sleep(200 * time.Millisecond)
-		target.setState(&container.Health{Status: types.Healthy})
+		target.setState(&container.Health{Status: container.Healthy})
 	}(target)
 
 	err := wg.WaitUntilReady(context.Background(), target)

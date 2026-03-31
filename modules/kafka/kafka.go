@@ -8,14 +8,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/network"
 	"golang.org/x/mod/semver"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const publicPort = nat.Port("9093/tcp")
+var publicPort = network.MustParsePort("9093/tcp")
 const (
 	starterScript = "/usr/sbin/testcontainers_start.sh"
 
@@ -52,7 +52,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 5+len(opts)+1)
 	moduleOpts = append(moduleOpts,
-		testcontainers.WithExposedPorts(string(publicPort)),
+		testcontainers.WithExposedPorts(publicPort.String()),
 		testcontainers.WithEnv(map[string]string{
 			// envVars {
 			"KAFKA_LISTENERS":                                "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094",

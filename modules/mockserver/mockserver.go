@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -26,7 +27,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithExposedPorts("1080/tcp"),
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("started on port: 1080"),
-			wait.ForListeningPort("1080/tcp").SkipInternalCheck(),
+			wait.ForListeningPort(network.MustParsePort("1080/tcp")).SkipInternalCheck(),
 		),
 	)
 
@@ -47,5 +48,5 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // URL returns the URL of the MockServer container
 func (c *MockServerContainer) URL(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, "1080/tcp", "http")
+	return c.PortEndpoint(ctx, network.MustParsePort("1080/tcp"), "http")
 }

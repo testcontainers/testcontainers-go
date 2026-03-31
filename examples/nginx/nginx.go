@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -27,7 +28,7 @@ func startContainer(ctx context.Context) (*nginxContainer, error) {
 		return nginxC, err
 	}
 
-	endpoint, err := ctr.PortEndpoint(ctx, "80", "http")
+	endpoint, err := ctr.PortEndpoint(ctx, network.MustParsePort("80"), "http")
 	if err != nil {
 		return nginxC, err
 	}

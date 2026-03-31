@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -35,9 +36,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"PERSISTENCE_DATA_PATH":                   "/var/lib/weaviate",
 		}),
 		testcontainers.WithWaitStrategy(
-			wait.ForListeningPort(httpPort).WithStartupTimeout(5*time.Second),
-			wait.ForListeningPort(grpcPort).WithStartupTimeout(5*time.Second),
-			wait.ForHTTP("/v1/.well-known/ready").WithPort(httpPort),
+			wait.ForListeningPort(network.MustParsePort(httpPort)).WithStartupTimeout(5*time.Second),
+			wait.ForListeningPort(network.MustParsePort(grpcPort)).WithStartupTimeout(5*time.Second),
+			wait.ForHTTP("/v1/.well-known/ready").WithPort(network.MustParsePort(httpPort)),
 		),
 	}
 
@@ -59,7 +60,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 //
 //nolint:revive,staticcheck //FIXME
 func (c *WeaviateContainer) HttpHostAddress(ctx context.Context) (string, string, error) {
-	endpoint, err := c.PortEndpoint(ctx, httpPort, "")
+	endpoint, err := c.PortEndpoint(ctx, network.MustParsePort(httpPort), "")
 	if err != nil {
 		return "", "", fmt.Errorf("port endpoint: %w", err)
 	}
@@ -70,5 +71,5 @@ func (c *WeaviateContainer) HttpHostAddress(ctx context.Context) (string, string
 // GrpcHostAddress returns the gRPC host of the Weaviate container.
 // At the moment, it only supports unsecured gRPC connection.
 func (c *WeaviateContainer) GrpcHostAddress(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, grpcPort, "")
+	return c.PortEndpoint(ctx, network.MustParsePort(grpcPort), "")
 }

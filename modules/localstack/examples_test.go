@@ -228,13 +228,13 @@ func ExampleRun_usingLambdas() {
 	functionURL := v.FunctionURLConfigs[0].FunctionURL
 	// replace the port with the one exposed by the container
 
-	mappedPort, err := ctr.MappedPort(ctx, "4566/tcp")
+	mappedPort, err := ctr.MappedPort(ctx, network.MustParsePort("4566/tcp"))
 	if err != nil {
 		log.Printf("failed to get mapped port: %s", err)
 		return
 	}
 
-	functionURL = strings.ReplaceAll(functionURL, "4566", mappedPort.Port())
+	functionURL = strings.ReplaceAll(functionURL, "4566", strconv.FormatUint(uint64(mappedPort.Num()), 10))
 
 	resp, err := httpClient.Post(functionURL, "application/json", bytes.NewBufferString(`{"num1": "10", "num2": "10"}`))
 	if err != nil {

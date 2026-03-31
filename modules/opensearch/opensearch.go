@@ -7,8 +7,9 @@ import (
 	"io"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-units"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -75,7 +76,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		// the wait strategy does not support TLS at the moment,
 		// so we need to disable it in the strategy for now.
 		testcontainers.WithWaitStrategy(wait.ForHTTP("/").
-			WithPort("9200").
+			WithPort(network.MustParsePort("9200/tcp")).
 			WithTLS(false).
 			WithStartupTimeout(120*time.Second).
 			WithStatusCodeMatcher(func(status int) bool {
@@ -120,5 +121,5 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // Address retrieves the address of the OpenSearch container.
 // It will use http as protocol, as TLS is not supported at the moment.
 func (c *OpenSearchContainer) Address(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, defaultHTTPPort, "http")
+	return c.PortEndpoint(ctx, network.MustParsePort(defaultHTTPPort), "http")
 }

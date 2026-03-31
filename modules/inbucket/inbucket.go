@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -18,14 +19,14 @@ type InbucketContainer struct {
 //
 //nolint:revive,staticcheck //FIXME
 func (c *InbucketContainer) SmtpConnection(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, "2500/tcp", "")
+	return c.PortEndpoint(ctx, network.MustParsePort("2500/tcp"), "")
 }
 
 // WebInterface returns the connection string for the web interface server,
 // using the default 9000 port, and obtaining the host and exposed port from
 // the container.
 func (c *InbucketContainer) WebInterface(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, "9000/tcp", "http")
+	return c.PortEndpoint(ctx, network.MustParsePort("9000/tcp"), "http")
 }
 
 // Deprecated: use Run instead
@@ -40,9 +41,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts("2500/tcp", "9000/tcp", "1100/tcp"),
 		testcontainers.WithWaitStrategy(
-			wait.ForListeningPort("2500/tcp"),
-			wait.ForListeningPort("9000/tcp"),
-			wait.ForListeningPort("1100/tcp"),
+			wait.ForListeningPort(network.MustParsePort("2500/tcp")),
+			wait.ForListeningPort(network.MustParsePort("9000/tcp")),
+			wait.ForListeningPort(network.MustParsePort("1100/tcp")),
 		),
 	)
 	moduleOpts = append(moduleOpts, opts...)

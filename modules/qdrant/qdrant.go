@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -26,8 +27,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts("6333/tcp", "6334/tcp"),
 		testcontainers.WithWaitStrategy(
-			wait.ForListeningPort("6333/tcp").WithStartupTimeout(5*time.Second),
-			wait.ForListeningPort("6334/tcp").WithStartupTimeout(5*time.Second),
+			wait.ForListeningPort(network.MustParsePort("6333/tcp")).WithStartupTimeout(5*time.Second),
+			wait.ForListeningPort(network.MustParsePort("6334/tcp")).WithStartupTimeout(5*time.Second),
 		),
 	)
 
@@ -48,12 +49,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // RESTEndpoint returns the REST endpoint of the Qdrant container
 func (c *QdrantContainer) RESTEndpoint(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, "6333/tcp", "http")
+	return c.PortEndpoint(ctx, network.MustParsePort("6333/tcp"), "http")
 }
 
 // GRPCEndpoint returns the gRPC endpoint of the Qdrant container
 func (c *QdrantContainer) GRPCEndpoint(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, "6334/tcp", "")
+	return c.PortEndpoint(ctx, network.MustParsePort("6334/tcp"), "")
 }
 
 // WebUI returns the web UI endpoint of the Qdrant container

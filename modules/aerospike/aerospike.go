@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -37,9 +38,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}),
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("migrations: complete"),
-			wait.ForListeningPort(port).WithStartupTimeout(10*time.Second),
-			wait.ForListeningPort(fabricPort).WithStartupTimeout(10*time.Second),
-			wait.ForListeningPort(heartbeatPort).WithStartupTimeout(10*time.Second),
+			wait.ForListeningPort(network.MustParsePort(port)).WithStartupTimeout(10*time.Second),
+			wait.ForListeningPort(network.MustParsePort(fabricPort)).WithStartupTimeout(10*time.Second),
+			wait.ForListeningPort(network.MustParsePort(heartbeatPort)).WithStartupTimeout(10*time.Second),
 		),
 	)
 

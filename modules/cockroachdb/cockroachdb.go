@@ -9,10 +9,11 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"strconv"
 
-	"github.com/docker/go-connections/nat"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -110,7 +111,7 @@ func (c *CockroachDBContainer) ConnectionString(ctx context.Context) (string, er
 // ConnectionConfig returns a [pgx.ConnConfig] for the CockroachDB container.
 // This can be passed to [pgx.ConnectConfig] to open a new connection.
 func (c *CockroachDBContainer) ConnectionConfig(ctx context.Context) (*pgx.ConnConfig, error) {
-	port, err := c.MappedPort(ctx, defaultSQLPort)
+	port, err := c.MappedPort(ctx, network.MustParsePort(defaultSQLPort))
 	if err != nil {
 		return nil, fmt.Errorf("mapped port: %w", err)
 	}
@@ -194,12 +195,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}),
 		testcontainers.WithWaitStrategy(
 			wait.ForFile(cockroachDir+"/init_success"),
-			wait.ForHTTP("/health").WithPort(defaultAdminPort),
+			wait.ForHTTP("/health").WithPort(network.MustParsePort(defaultAdminPort)),
 			wait.ForTLSCert(
 				certsDir+"/client."+defaultUser+".crt",
 				certsDir+"/client."+defaultUser+".key",
 			).WithRootCAs(fileCACert).WithServerName("127.0.0.1"),
-			wait.ForSQL(defaultSQLPort, "pgx/v5", func(host string, port nat.Port) string {
+			wait.ForSQL(network.MustParsePort(defaultSQLPort), "pgx/v5", func(host string, port network.Port) string {
 				connStr, err := ctr.connString(host, port)
 				if err != nil {
 					panic(err)
@@ -225,7 +226,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 }
 
 // connString returns a connection string for the given host, port and options.
-func (c *CockroachDBContainer) connString(host string, port nat.Port) (string, error) {
+func (c *CockroachDBContainer) connString(host string, port network.Port) (string, error) {
 	cfg, err := c.connConfig(host, port)
 	if err != nil {
 		return "", fmt.Errorf("connection config: %w", err)
@@ -235,7 +236,7 @@ func (c *CockroachDBContainer) connString(host string, port nat.Port) (string, e
 }
 
 // connConfig returns a [pgx.ConnConfig] for the given host, port and options.
-func (c *CockroachDBContainer) connConfig(host string, port nat.Port) (*pgx.ConnConfig, error) {
+func (c *CockroachDBContainer) connConfig(host string, port network.Port) (*pgx.ConnConfig, error) {
 	var user *url.Userinfo
 	if c.password != "" {
 		user = url.UserPassword(c.user, c.password)
@@ -260,7 +261,7 @@ func (c *CockroachDBContainer) connConfig(host string, port nat.Port) (*pgx.Conn
 	u := url.URL{
 		Scheme:   "postgres",
 		User:     user,
-		Host:     net.JoinHostPort(host, port.Port()),
+		Host:     net.JoinHostPort(host, strconv.FormatUint(uint64(port.Num()), 10)),
 		Path:     c.database,
 		RawQuery: params.Encode(),
 	}

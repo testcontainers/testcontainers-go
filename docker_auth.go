@@ -14,7 +14,8 @@ import (
 	"sync"
 
 	"github.com/cpuguy83/dockercfg"
-	"github.com/docker/docker/api/types/registry"
+	dockerClient "github.com/moby/moby/client"
+	"github.com/moby/moby/api/types/registry"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
 )
@@ -93,12 +94,12 @@ func defaultRegistry(ctx context.Context) string {
 	}
 	defer client.Close()
 
-	info, err := client.Info(ctx)
+	info, err := client.Info(ctx, dockerClient.InfoOptions{})
 	if err != nil {
 		return core.IndexDockerIO
 	}
 
-	return info.IndexServerAddress
+	return info.Info.IndexServerAddress
 }
 
 // authConfigResult is a result looking up auth details for key.
@@ -205,7 +206,6 @@ func getDockerAuthConfigs() (map[string]registry.AuthConfig, error) {
 
 			ac := registry.AuthConfig{
 				Auth:          v.Auth,
-				Email:         v.Email,
 				IdentityToken: v.IdentityToken,
 				Password:      v.Password,
 				RegistryToken: v.RegistryToken,

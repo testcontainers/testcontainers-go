@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/moby/moby/api/types/network"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -37,7 +38,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 4+len(opts))
 	moduleOpts = append(moduleOpts, // Set the defaults
 		testcontainers.WithExposedPorts(defaultPort),
-		testcontainers.WithWaitStrategy(wait.ForListeningPort(defaultPort), wait.ForHealthCheck()),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort(network.MustParsePort(defaultPort)), wait.ForHealthCheck()),
 		testcontainers.WithEnv(userOpts.env()),
 		testcontainers.WithFiles(userOpts.files...),
 	)
@@ -61,7 +62,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // container. If you provide a username and a password, the connection string
 // will also include them.
 func (ctr *Container) ConnectionString(ctx context.Context) (string, error) {
-	endpoint, err := ctr.PortEndpoint(ctx, defaultPort, "")
+	endpoint, err := ctr.PortEndpoint(ctx, network.MustParsePort(defaultPort), "")
 	if err != nil {
 		return "", fmt.Errorf("port endpoint: %w", err)
 	}

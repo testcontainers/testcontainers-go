@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -34,7 +34,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithWaitStrategy(
 			wait.ForAll(
 				wait.ForLog("Started"),
-				wait.ForListeningPort(nat.Port(defaultPort)),
+				wait.ForListeningPort(network.MustParsePort(defaultPort)),
 			),
 		),
 	)
@@ -61,7 +61,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 //
 // Format: "AccountEndpoint=<host>:<port>;AccountKey=<accountKey>"
 func (c *Container) ConnectionString(ctx context.Context) (string, error) {
-	endpoint, err := c.PortEndpoint(ctx, defaultPort, defaultProtocol)
+	endpoint, err := c.PortEndpoint(ctx, network.MustParsePort(defaultPort), defaultProtocol)
 	if err != nil {
 		return "", fmt.Errorf("port endpoint: %w", err)
 	}

@@ -3,8 +3,9 @@ package azurite
 import (
 	"context"
 	"fmt"
+	"strconv"
 
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -58,16 +59,16 @@ func (c *Container) TableServiceURL(ctx context.Context) (string, error) {
 	return c.ServiceURL(ctx, TableService)
 }
 
-func servicePort(srv Service) (nat.Port, error) {
+func servicePort(srv Service) (network.Port, error) {
 	switch srv {
 	case BlobService:
-		return BlobPort, nil
+		return network.MustParsePort(BlobPort), nil
 	case QueueService:
-		return QueuePort, nil
+		return network.MustParsePort(QueuePort), nil
 	case TableService:
-		return TablePort, nil
+		return network.MustParsePort(TablePort), nil
 	default:
-		return "", fmt.Errorf("unknown service: %s", srv)
+		return network.Port{}, fmt.Errorf("unknown service: %s", srv)
 	}
 }
 
@@ -102,8 +103,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				return nil, err
 			}
 
-			cmd = append(cmd, fmt.Sprintf("--%sHost", srv), "0.0.0.0", fmt.Sprintf("--%sPort", srv), port.Port())
-			exposedPorts = append(exposedPorts, string(port))
+			cmd = append(cmd, fmt.Sprintf("--%sHost", srv), "0.0.0.0", fmt.Sprintf("--%sPort", srv), strconv.FormatUint(uint64(port.Num()), 10))
+			exposedPorts = append(exposedPorts, port.String())
 			waitingFor = append(waitingFor, wait.ForListeningPort(port))
 		}
 

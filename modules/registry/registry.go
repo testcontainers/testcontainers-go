@@ -10,13 +10,14 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/cpuguy83/dockercfg"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/registry"
+	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/api/types/registry"
+	"github.com/moby/moby/client"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -48,7 +49,7 @@ func (c *RegistryContainer) Address(ctx context.Context) (string, error) {
 
 // HostAddress returns the host address including port of the Registry container.
 func (c *RegistryContainer) HostAddress(ctx context.Context) (string, error) {
-	port, err := c.MappedPort(ctx, registryPort)
+	port, err := c.MappedPort(ctx, network.MustParsePort(registryPort))
 	if err != nil {
 		return "", fmt.Errorf("mapped port: %w", err)
 	}
@@ -66,7 +67,7 @@ func (c *RegistryContainer) HostAddress(ctx context.Context) (string, error) {
 		}
 	}
 
-	return net.JoinHostPort(host, port.Port()), nil
+	return net.JoinHostPort(host, strconv.FormatUint(uint64(port.Num()), 10)), nil
 }
 
 // localAddress returns the local address of the machine
@@ -186,7 +187,7 @@ func (c *RegistryContainer) PushImage(ctx context.Context, ref string) error {
 		return fmt.Errorf("failed to get image auth: %w", err)
 	}
 
-	pushOpts := image.PushOptions{
+	pushOpts := client.ImagePushOptions{
 		All: true,
 	}
 
@@ -217,20 +218,8 @@ func (c *RegistryContainer) PullImage(ctx context.Context, ref string) error {
 	}
 	defer dockerCli.Close()
 
-	inspect, err := c.Inspect(ctx)
-	if err != nil {
-		return fmt.Errorf("inspect registry container: %w", err)
-	}
-
-	platform := runtime.GOARCH
-	if inspect.ImageManifestDescriptor != nil && inspect.ImageManifestDescriptor.Platform != nil {
-		platform = inspect.ImageManifestDescriptor.Platform.Architecture
-	}
-
-	pullOpts := image.PullOptions{
+	pullOpts := client.ImagePullOptions{
 		All: false,
-		// Use the same platform as the registry container's image.
-		Platform: "linux/" + platform,
 	}
 
 	output, err := dockerCli.ImagePull(ctx, ref, pullOpts)
@@ -257,7 +246,7 @@ func (c *RegistryContainer) TagImage(ctx context.Context, image, ref string) err
 	}
 	defer dockerCli.Close()
 
-	err = dockerCli.ImageTag(ctx, image, ref)
+	_, err = dockerCli.ImageTag(ctx, client.ImageTagOptions{Source: image, Target: ref})
 	if err != nil {
 		return fmt.Errorf("tag image %q: %w", image, err)
 	}
@@ -281,7 +270,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}),
 		testcontainers.WithWaitStrategy(
 			wait.ForHTTP("/").
-				WithPort(registryPort).
+				WithPort(network.MustParsePort(registryPort)).
 				WithStartupTimeout(10 * time.Second),
 		),
 	}

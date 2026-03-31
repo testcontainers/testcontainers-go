@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go/log"
 )
@@ -525,16 +525,16 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 	exposedPorts := req.ExposedPorts
 	// this check must be done after the pre-creation Modifiers are called, so the network mode is already set
 	if len(exposedPorts) == 0 && !hostConfig.NetworkMode.IsContainer() {
-		image, err := p.client.ImageInspect(ctx, dockerInput.Image)
+		imgResult, err := p.client.ImageInspect(ctx, dockerInput.Image)
 		if err != nil {
 			return err
 		}
-		for p := range image.Config.ExposedPorts {
-			exposedPorts = append(exposedPorts, string(p))
+		for portKey := range imgResult.Config.ExposedPorts {
+			exposedPorts = append(exposedPorts, portKey)
 		}
 	}
 
-	exposedPortSet, exposedPortMap, err := nat.ParsePortSpecs(exposedPorts)
+	exposedPortSet, exposedPortMap, err := parsePortSpecs(exposedPorts)
 	if err != nil {
 		return err
 	}
@@ -597,9 +597,41 @@ func combineContainerHooks(defaultHooks, userDefinedHooks []ContainerLifecycleHo
 	return hooks
 }
 
-func mergePortBindings(configPortMap, exposedPortMap nat.PortMap, exposedPorts []string) nat.PortMap {
+// parsePortSpecs parses port specification strings (e.g. "80/tcp", "8080:80/tcp")
+// into a PortSet and PortMap. This replaces the removed network.ParsePortSpecs.
+func parsePortSpecs(ports []string) (network.PortSet, network.PortMap, error) {
+	portSet := make(network.PortSet)
+	portMap := make(network.PortMap)
+
+	for _, rawPort := range ports {
+		// Handle host:container format
+		var hostPort string
+		portSpec := rawPort
+		if parts := strings.SplitN(rawPort, ":", 2); len(parts) == 2 {
+			hostPort = parts[0]
+			portSpec = parts[1]
+		}
+
+		port, err := network.ParsePort(portSpec)
+		if err != nil {
+			return nil, nil, fmt.Errorf("invalid port spec %q: %w", rawPort, err)
+		}
+
+		portSet[port] = struct{}{}
+		if hostPort == "" {
+			hostPort = "0"
+		}
+		portMap[port] = append(portMap[port], network.PortBinding{
+			HostPort: hostPort,
+		})
+	}
+
+	return portSet, portMap, nil
+}
+
+func mergePortBindings(configPortMap, exposedPortMap network.PortMap, exposedPorts []string) network.PortMap {
 	if exposedPortMap == nil {
-		exposedPortMap = make(map[nat.Port][]nat.PortBinding)
+		exposedPortMap = make(map[network.Port][]network.PortBinding)
 	}
 
 	mappedPorts := make(map[string]struct{}, len(exposedPorts))
@@ -609,7 +641,7 @@ func mergePortBindings(configPortMap, exposedPortMap nat.PortMap, exposedPorts [
 	}
 
 	for k, v := range configPortMap {
-		if _, ok := mappedPorts[k.Port()]; ok {
+		if _, ok := mappedPorts[strconv.Itoa(int(k.Num()))]; ok {
 			exposedPortMap[k] = v
 		}
 	}
