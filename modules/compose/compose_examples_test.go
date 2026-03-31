@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/moby/moby/api/types/network"
+
 	"github.com/testcontainers/testcontainers-go/modules/compose"
 	"github.com/testcontainers/testcontainers-go/wait"
 )

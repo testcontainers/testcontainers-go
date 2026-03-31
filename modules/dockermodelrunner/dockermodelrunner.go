@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/moby/moby/api/types/network"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/dockermodelrunner/internal/sdk/client"
 	"github.com/testcontainers/testcontainers-go/modules/socat"

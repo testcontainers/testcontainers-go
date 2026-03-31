@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/moby/moby/api/types/network"
+
 	"github.com/testcontainers/testcontainers-go"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	tcnetwork "github.com/testcontainers/testcontainers-go/network"
