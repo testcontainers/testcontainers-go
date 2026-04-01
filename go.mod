@@ -18,7 +18,7 @@ require (
 	github.com/moby/patternmatcher v0.6.0
 	github.com/moby/term v0.5.2
 	github.com/opencontainers/image-spec v1.1.1
-	github.com/shirou/gopsutil/v4 v4.26.2
+	github.com/shirou/gopsutil/v4 v4.26.3
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/crypto v0.48.0
 	golang.org/x/sys v0.41.0
