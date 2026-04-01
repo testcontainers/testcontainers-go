@@ -57,13 +57,22 @@ func collectMetrics(versions []string, csvPath string) error {
 	date := time.Now().Format("2006-01-02")
 	metrics := make(map[string]usageMetric)
 
-	// Build the list of versions to query, filtering out empty strings
+	// Build a unique, non-empty list of versions to query
 	pending := make([]string, 0, len(versions))
+	seen := make(map[string]struct{}, len(versions))
 	for _, version := range versions {
 		version = strings.TrimSpace(version)
-		if version != "" {
-			pending = append(pending, version)
+		if version == "" {
+			continue
 		}
+		if _, ok := seen[version]; ok {
+			continue
+		}
+		seen[version] = struct{}{}
+		pending = append(pending, version)
+	}
+	if len(pending) == 0 {
+		return errors.New("at least one non-empty version is required")
 	}
 
 	const (
@@ -94,8 +103,11 @@ func collectMetrics(versions []string, csvPath string) error {
 			queriesMade++
 			if err != nil {
 				log.Printf("Pass %d: failed to query version %s: %v", pass+1, version, err)
-				failed = append(failed, version)
-				continue
+				if isRetryableError(err) {
+					failed = append(failed, version)
+					continue
+				}
+				return fmt.Errorf("query %s: %w", version, err)
 			}
 
 			metrics[version] = usageMetric{
@@ -132,6 +144,18 @@ func collectMetrics(versions []string, csvPath string) error {
 	}
 
 	return nil
+}
+
+// isRetryableError returns true for rate-limit and transient HTTP errors
+// that are worth retrying in a subsequent pass.
+func isRetryableError(err error) bool {
+	msg := err.Error()
+	return strings.Contains(msg, "rate limit") ||
+		strings.Contains(msg, "403") ||
+		strings.Contains(msg, "429") ||
+		strings.Contains(msg, "500") ||
+		strings.Contains(msg, "502") ||
+		strings.Contains(msg, "503")
 }
 
 func queryGitHubUsage(version string) (int, error) {
