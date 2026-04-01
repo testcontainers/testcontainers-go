@@ -312,7 +312,7 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 	CleanupContainer(t, nginxB)
 	require.NoError(t, err)
 
-	endpointA, err := nginxA.PortEndpoint(ctx, nginxHighPort, "http")
+	endpointA, err := nginxA.PortEndpoint(ctx, nginxDefaultPort, "http")
 	require.NoError(t, err)
 
 	resp, err := http.Get(endpointA)
@@ -321,7 +321,7 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 
 	require.Equalf(t, http.StatusOK, resp.StatusCode, "Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 
-	endpointB, err := nginxB.PortEndpoint(ctx, nginxHighPort, "http")
+	endpointB, err := nginxB.PortEndpoint(ctx, nginxDefaultPort, "http")
 	require.NoError(t, err)
 
 	resp, err = http.Get(endpointB)
@@ -341,7 +341,7 @@ func TestContainerCreation(t *testing.T) {
 	CleanupContainer(t, nginxC)
 	require.NoError(t, err)
 
-	endpoint, err := nginxC.PortEndpoint(ctx, nginxHighPort, "http")
+	endpoint, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
 	require.NoError(t, err)
 
 	resp, err := http.Get(endpoint)
@@ -402,7 +402,7 @@ func TestContainerCreationWithName(t *testing.T) {
 		require.Equalf(t, Podman, nw, "Expected network name '%s'. Got '%s'.", Podman, nw)
 	}
 
-	endpoint, err := nginxC.PortEndpoint(ctx, nginxHighPort, "http")
+	endpoint, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
 	require.NoError(t, err)
 
 	resp, err := http.Get(endpoint)
@@ -423,7 +423,7 @@ func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 	CleanupContainer(t, nginxC)
 	require.NoError(t, err)
 
-	origin, err := nginxC.PortEndpoint(ctx, nginxHighPort, "http")
+	origin, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
 	require.NoError(t, err)
 	resp, err := http.Get(origin)
 	require.NoError(t, err)
@@ -454,7 +454,7 @@ func TestContainerRespondsWithHttp200ForIndex(t *testing.T) {
 	CleanupContainer(t, nginxC)
 	require.NoError(t, err)
 
-	origin, err := nginxC.PortEndpoint(ctx, nginxHighPort, "http")
+	origin, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
 	require.NoError(t, err)
 	resp, err := http.Get(origin)
 	require.NoError(t, err)
