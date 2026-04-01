@@ -1671,7 +1671,7 @@ func (f *errMockCli) ImageBuild(_ context.Context, _ io.Reader, _ client.ImageBu
 
 func (f *errMockCli) ContainerList(_ context.Context, _ client.ContainerListOptions) (client.ContainerListResult, error) {
 	f.containerListCount++
-	return client.ContainerListResult{}, f.err
+	return client.ContainerListResult{Items: []container.Summary{{}}}, f.err
 }
 
 func (f *errMockCli) ImagePull(_ context.Context, _ string, _ client.ImagePullOptions) (client.ImagePullResponse, error) {
