@@ -54,7 +54,7 @@ func TestUDPPortBinding(t *testing.T) {
 
 		portNum := mappedPort.Num()
 		assert.Positive(t, portNum, "Port number should be greater than 0")
-		assert.LessOrEqual(t, portNum, 65535, "Port number should be valid UDP port range")
+		assert.LessOrEqual(t, portNum, uint16(65535), "Port number should be valid UDP port range")
 
 		// Verify the port is actually accessible (basic connectivity test)
 		hostIP, err := container.Host(ctx)
