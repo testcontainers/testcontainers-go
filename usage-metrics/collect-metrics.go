@@ -76,10 +76,10 @@ func collectMetrics(versions []string, csvPath string) error {
 	}
 
 	const (
-		maxPasses        = 5
-		interRequestWait = 7 * time.Second   // 10 requests per 60 seconds = 6 seconds minimum
-		rateLimitCooldown = 65 * time.Second // cool down after a rate-limit hit within a pass
-		passCooldown     = 120 * time.Second // wait for rate limit window to fully reset between passes
+		maxPasses         = 5
+		interRequestWait  = 7 * time.Second   // 10 requests per 60 seconds = 6 seconds minimum
+		rateLimitCooldown = 65 * time.Second  // cool down after a rate-limit hit within a pass
+		passCooldown      = 120 * time.Second // wait for rate limit window to fully reset between passes
 	)
 
 	for pass := 0; pass < maxPasses && len(pending) > 0; pass++ {
