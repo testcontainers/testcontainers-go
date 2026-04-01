@@ -133,11 +133,12 @@ func TestPreCreateModifierHook(t *testing.T) {
 		assert.Equal(t, network.PortMap{
 			network.MustParsePort("80/tcp"): []network.PortBinding{
 				{
-					HostPort: "0",
+					HostIP:   netip.MustParseAddr("127.0.0.1"),
+					HostPort: "2",
 				},
 			},
 		}, inputHostConfig.PortBindings,
-			"Host config's port bindings should be overwritten by the modifier",
+			"Host config's port bindings should be preserved from the modifier",
 		)
 
 		assert.Equal(
