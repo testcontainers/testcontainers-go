@@ -78,6 +78,7 @@ func collectMetrics(versions []string, csvPath string) error {
 	const (
 		maxPasses        = 5
 		interRequestWait = 7 * time.Second   // 10 requests per 60 seconds = 6 seconds minimum
+		rateLimitCooldown = 65 * time.Second // cool down after a rate-limit hit within a pass
 		passCooldown     = 120 * time.Second // wait for rate limit window to fully reset between passes
 	)
 
@@ -92,11 +93,18 @@ func collectMetrics(versions []string, csvPath string) error {
 
 		var failed []string
 		queriesMade := 0
+		rateLimitHit := false
 		for _, version := range pending {
-			// Add delay before querying to avoid rate limiting
+			// Add delay before querying to avoid rate limiting.
+			// Use a longer delay if we recently hit a rate limit within this pass.
 			if queriesMade > 0 {
-				log.Printf("Waiting %v before querying next version...", interRequestWait)
-				time.Sleep(interRequestWait)
+				wait := interRequestWait
+				if rateLimitHit {
+					wait = rateLimitCooldown
+					rateLimitHit = false
+				}
+				log.Printf("Waiting %v before querying next version...", wait)
+				time.Sleep(wait)
 			}
 
 			count, err := queryGitHubUsage(version)
@@ -104,6 +112,7 @@ func collectMetrics(versions []string, csvPath string) error {
 			if err != nil {
 				log.Printf("Pass %d: failed to query version %s: %v", pass+1, version, err)
 				if isRetryableError(err) {
+					rateLimitHit = isRateLimitError(err)
 					failed = append(failed, version)
 					continue
 				}
@@ -146,16 +155,21 @@ func collectMetrics(versions []string, csvPath string) error {
 	return nil
 }
 
-// isRetryableError returns true for rate-limit and transient HTTP errors
-// that are worth retrying in a subsequent pass.
-func isRetryableError(err error) bool {
+// isRateLimitError returns true for rate-limit specific errors (403/429).
+func isRateLimitError(err error) bool {
 	msg := err.Error()
 	return strings.Contains(msg, "rate limit") ||
 		strings.Contains(msg, "403") ||
-		strings.Contains(msg, "429") ||
-		strings.Contains(msg, "500") ||
-		strings.Contains(msg, "502") ||
-		strings.Contains(msg, "503")
+		strings.Contains(msg, "429")
+}
+
+// isRetryableError returns true for rate-limit and transient HTTP errors
+// that are worth retrying in a subsequent pass.
+func isRetryableError(err error) bool {
+	return isRateLimitError(err) ||
+		strings.Contains(err.Error(), "500") ||
+		strings.Contains(err.Error(), "502") ||
+		strings.Contains(err.Error(), "503")
 }
 
 func queryGitHubUsage(version string) (int, error) {
