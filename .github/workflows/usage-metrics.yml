@@ -82,8 +82,12 @@ jobs:
           # Check if the branch already exists on the remote
           if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
             echo "Branch $BRANCH_NAME already exists, pushing new commit to it"
+            # Preserve the newly collected metrics before switching branches
+            cp docs/usage-metrics.csv /tmp/usage-metrics.csv
             git fetch origin "$BRANCH_NAME"
             git checkout "$BRANCH_NAME"
+            # Restore the newly collected metrics on top of the existing branch
+            cp /tmp/usage-metrics.csv docs/usage-metrics.csv
             git add docs/usage-metrics.csv
             # Check again after checkout — the diff might be empty if the
             # branch already has identical data
