@@ -29,7 +29,6 @@ import (
 	"github.com/moby/moby/api/types/network"
 	"github.com/moby/moby/client"
 	"github.com/moby/moby/client/pkg/jsonmessage"
-	"github.com/moby/term"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
@@ -1058,13 +1057,10 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 	}
 	defer resp.Body.Close()
 
-	output := img.BuildLogWriter()
-
 	// Always process the output, even if it is not printed
 	// to ensure that errors during the build process are
 	// correctly handled.
-	termFd, isTerm := term.GetFdInfo(output)
-	if err = jsonmessage.DisplayJSONMessagesStream(resp.Body, output, termFd, isTerm, nil); err != nil {
+	if err = jsonmessage.DisplayStream(resp.Body, img.BuildLogWriter(), nil); err != nil {
 		return "", fmt.Errorf("build image: %w", err)
 	}
 
