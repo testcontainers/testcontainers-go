@@ -68,9 +68,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/usage-metrics.csv
 
-          if git diff --staged --quiet; then
+          # Check for changes without staging (avoids conflicts on branch checkout)
+          if git diff --quiet docs/usage-metrics.csv; then
             echo "No changes to commit"
             exit 0
           fi
@@ -79,25 +79,28 @@ jobs:
           MONTH=$(date +%Y-%m)
           BRANCH_NAME="chore/update-usage-metrics-$MONTH"
 
+          # Preserve the newly collected metrics before any branch switching
+          cp docs/usage-metrics.csv /tmp/usage-metrics.csv
+
           # Check if the branch already exists on the remote
           if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
             echo "Branch $BRANCH_NAME already exists, pushing new commit to it"
-            # Preserve the newly collected metrics before switching branches
-            cp docs/usage-metrics.csv /tmp/usage-metrics.csv
+            # Reset the working tree so checkout succeeds
+            git checkout -- docs/usage-metrics.csv
             git fetch origin "$BRANCH_NAME"
             git checkout "$BRANCH_NAME"
-            # Restore the newly collected metrics on top of the existing branch
-            cp /tmp/usage-metrics.csv docs/usage-metrics.csv
-            git add docs/usage-metrics.csv
-            # Check again after checkout — the diff might be empty if the
-            # branch already has identical data
-            if git diff --staged --quiet; then
-              echo "No changes to commit after checking out existing branch"
-              exit 0
-            fi
           else
             echo "Creating new branch $BRANCH_NAME"
             git checkout -b "$BRANCH_NAME"
+          fi
+
+          # Restore the newly collected metrics and stage them
+          cp /tmp/usage-metrics.csv docs/usage-metrics.csv
+          git add docs/usage-metrics.csv
+
+          if git diff --staged --quiet; then
+            echo "No changes to commit (branch already has identical data)"
+            exit 0
           fi
 
           git commit -m "chore(metrics): update usage metrics ($DATE)"
