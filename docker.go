@@ -17,6 +17,7 @@ import (
 	"slices"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -70,7 +71,7 @@ type DockerContainer struct {
 	Image        string
 	exposedPorts []string // a reference to the container's requested exposed ports. It allows checking they are ready before any wait strategy
 
-	isRunning     bool
+	isRunning     atomic.Bool
 	imageWasBuilt bool
 	// keepBuiltImage makes Terminate not remove the image if imageWasBuilt.
 	keepBuiltImage    bool
@@ -115,7 +116,7 @@ func (c *DockerContainer) GetContainerID() string {
 }
 
 func (c *DockerContainer) IsRunning() bool {
-	return c.isRunning
+	return c.isRunning.Load()
 }
 
 // Endpoint gets proto://host:port string for the lowest numbered exposed port
@@ -256,7 +257,7 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 		return fmt.Errorf("started hook: %w", err)
 	}
 
-	c.isRunning = true
+	c.isRunning.Store(true)
 
 	err = c.readiedHook(ctx)
 	if err != nil {
@@ -303,7 +304,7 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 
 	defer c.provider.Close()
 
-	c.isRunning = false
+	c.isRunning.Store(false)
 
 	err = c.stoppedHook(ctx)
 	if err != nil {
@@ -361,7 +362,7 @@ func (c *DockerContainer) Terminate(ctx context.Context, opts ...TerminateOption
 	}
 
 	c.sessionID = ""
-	c.isRunning = false
+	c.isRunning.Store(false)
 
 	if err = options.Cleanup(); err != nil {
 		errs = append(errs, err)
@@ -1451,7 +1452,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		return nil, err
 	}
 
-	dc.isRunning = true
+	dc.isRunning.Store(true)
 
 	err = dc.readiedHook(ctx)
 	if err != nil {
@@ -1769,7 +1770,6 @@ func (p *DockerProvider) ContainerFromType(ctx context.Context, response contain
 		Image:         response.Image,
 		imageWasBuilt: false,
 		sessionID:     response.Labels[core.LabelSessionID],
-		isRunning:     response.State == "running",
 		exposedPorts:  exposedPorts,
 		provider:      p,
 		logger:        p.Logger,
@@ -1777,6 +1777,7 @@ func (p *DockerProvider) ContainerFromType(ctx context.Context, response contain
 			DefaultLoggingHook(p.Logger),
 		},
 	}
+	ctr.isRunning.Store(response.State == "running")
 
 	if err = ctr.connectReaper(ctx); err != nil {
 		return nil, err

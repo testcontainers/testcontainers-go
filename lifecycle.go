@@ -232,7 +232,7 @@ var defaultReadinessHook = func() ContainerLifecycleHooks {
 					}
 				}
 
-				dockerContainer.isRunning = true
+				dockerContainer.isRunning.Store(true)
 
 				return nil
 			},
