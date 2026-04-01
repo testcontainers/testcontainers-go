@@ -116,21 +116,19 @@ func collectMetrics(versions []string, csvPath string) error {
 		log.Printf("Warning: %d version(s) still failed after %d passes: %s", len(pending), maxPasses, strings.Join(pending, ", "))
 	}
 
-	// Sort metrics by version for deterministic CSV output
-	sortedVersions := make([]string, 0, len(metrics))
-	for v := range metrics {
-		sortedVersions = append(sortedVersions, v)
-	}
-	sort.Strings(sortedVersions)
-
-	// Write all metrics to CSV
-	for _, v := range sortedVersions {
-		metric := metrics[v]
+	// Append new metrics to CSV
+	for _, metric := range metrics {
 		if err := appendToCSV(csvPath, metric); err != nil {
 			log.Printf("Warning: Failed to write metric for %s: %v", metric.Version, err)
 			continue
 		}
 		fmt.Printf("Successfully recorded: %s has %d usages on %s\n", metric.Version, metric.Count, metric.Date)
+	}
+
+	// Sort the entire CSV so rows are ordered by (date, version) regardless
+	// of the order they were appended across multiple runs.
+	if err := sortCSV(csvPath); err != nil {
+		return fmt.Errorf("sort csv: %w", err)
 	}
 
 	return nil
@@ -162,6 +160,55 @@ func queryGitHubUsage(version string) (int, error) {
 	}
 
 	return resp.TotalCount, nil
+}
+
+func sortCSV(csvPath string) error {
+	absPath, err := filepath.Abs(csvPath)
+	if err != nil {
+		return fmt.Errorf("resolve path: %w", err)
+	}
+
+	file, err := os.Open(absPath)
+	if err != nil {
+		return fmt.Errorf("open file: %w", err)
+	}
+
+	reader := csv.NewReader(file)
+	records, err := reader.ReadAll()
+	file.Close()
+	if err != nil {
+		return fmt.Errorf("read csv: %w", err)
+	}
+
+	if len(records) <= 1 {
+		return nil // nothing to sort (header only or empty)
+	}
+
+	header := records[0]
+	data := records[1:]
+
+	sort.SliceStable(data, func(i, j int) bool {
+		if data[i][0] != data[j][0] {
+			return data[i][0] < data[j][0] // date ascending
+		}
+		return data[i][1] < data[j][1] // version ascending
+	})
+
+	out, err := os.Create(absPath)
+	if err != nil {
+		return fmt.Errorf("create file: %w", err)
+	}
+	defer out.Close()
+
+	writer := csv.NewWriter(out)
+	if err := writer.Write(header); err != nil {
+		return fmt.Errorf("write header: %w", err)
+	}
+	if err := writer.WriteAll(data); err != nil {
+		return fmt.Errorf("write records: %w", err)
+	}
+
+	return nil
 }
 
 func appendToCSV(csvPath string, metric usageMetric) error {

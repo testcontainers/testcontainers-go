@@ -64,7 +64,7 @@ jobs:
           # Query all versions in a single command
           go run collect-metrics.go $VERSION_FLAGS -csv "../docs/usage-metrics.csv"
 
-      - name: Create Pull Request
+      - name: Create or update Pull Request
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -75,16 +75,37 @@ jobs:
             exit 0
           fi
 
-          # Create a new branch for the PR
           DATE=$(date +%Y-%m-%d)
-          BRANCH_NAME="chore/update-usage-metrics-$DATE"
-          git checkout -b "$BRANCH_NAME"
+          MONTH=$(date +%Y-%m)
+          BRANCH_NAME="chore/update-usage-metrics-$MONTH"
+
+          # Check if the branch already exists on the remote
+          if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
+            echo "Branch $BRANCH_NAME already exists, pushing new commit to it"
+            git fetch origin "$BRANCH_NAME"
+            git checkout "$BRANCH_NAME"
+            git add docs/usage-metrics.csv
+            # Check again after checkout — the diff might be empty if the
+            # branch already has identical data
+            if git diff --staged --quiet; then
+              echo "No changes to commit after checking out existing branch"
+              exit 0
+            fi
+          else
+            echo "Creating new branch $BRANCH_NAME"
+            git checkout -b "$BRANCH_NAME"
+          fi
 
           git commit -m "chore(metrics): update usage metrics ($DATE)"
           git push -u origin "$BRANCH_NAME"
 
-          # Create PR using gh CLI
-          gh pr create \
-            --title "chore: update usage metrics ($DATE)" \
-            --body "Automated update of usage metrics data. This PR updates the usage metrics CSV file with the latest GitHub usage data for testcontainers-go versions." \
-            --base main
+          # Create a PR only if one doesn't already exist for this branch
+          EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --state open --json number --jq '.[0].number')
+          if [ -n "$EXISTING_PR" ]; then
+            echo "PR #$EXISTING_PR already exists for branch $BRANCH_NAME, updated with new commit"
+          else
+            gh pr create \
+              --title "chore: update usage metrics ($MONTH)" \
+              --body "Automated update of usage metrics data. This PR updates the usage metrics CSV file with the latest GitHub usage data for testcontainers-go versions." \
+              --base main
+          fi
