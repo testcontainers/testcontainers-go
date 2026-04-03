@@ -54,6 +54,7 @@ The following options are exposed by the `testcontainers` package.
 ### Advanced Options
 
 - [`WithHostPortAccess`](/features/creating_container/#withhostportaccess) Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.31.0"><span class="tc-version">:material-tag: v0.31.0</span></a>
+- [`WithReadOnlyRootFilesystem`](/features/creating_container/#withreadonlyrootfilesystem) Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.40.0"><span class="tc-version">:material-tag: v0.40.0</span></a>
 - [`WithConfigModifier`](/features/creating_container/#withconfigmodifier) Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 - [`WithHostConfigModifier`](/features/creating_container/#withhostconfigmodifier) Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 - [`WithEndpointSettingsModifier`](/features/creating_container/#withendpointsettingsmodifier) Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
