@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/container"
 	"golang.org/x/mod/semver"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -23,6 +23,7 @@ const (
 )
 
 var recentVersionTags = []string{
+	"community-archive",
 	"latest",
 	"s3",
 	"s3-latest",
@@ -33,10 +34,15 @@ func isMinimumVersion(image string, minVersion string) bool {
 	parts := strings.Split(strings.Split(image, "@")[0], ":")
 	version := parts[len(parts)-1]
 
+	if slices.Contains(recentVersionTags, version) {
+		return true
+	}
+
 	if pos := strings.LastIndexByte(version, '-'); pos >= 0 {
 		version = version[0:pos]
 	}
 
+	// Re-check after stripping the arch suffix (e.g. "community-archive-amd64" -> "community-archive").
 	if slices.Contains(recentVersionTags, version) {
 		return true
 	}

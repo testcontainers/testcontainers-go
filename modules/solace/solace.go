@@ -9,9 +9,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
 	"github.com/docker/go-units"
+	"github.com/moby/moby/api/types/container"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -59,7 +58,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	// Add port-based wait strategies for each service
 	for i, service := range settings.services {
 		port := fmt.Sprintf("%d/tcp", service.Port)
-		waitStrategies[i+1] = wait.ForListeningPort(nat.Port(port))
+		waitStrategies[i+1] = wait.ForListeningPort(port)
 		exposedPorts[i] = fmt.Sprintf("%d/tcp", service.Port)
 	}
 
@@ -91,12 +90,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	)
 
 	moduleOpts = append(moduleOpts, opts...)
-	container, err := testcontainers.Run(ctx, img, moduleOpts...)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 
 	var c *Container
-	if container != nil {
+	if ctr != nil {
 		c = &Container{
-			Container: container,
+			Container: ctr,
 			settings:  settings,
 		}
 	}
@@ -121,9 +120,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	code, out, err := c.Exec(ctx, []string{"/usr/sw/loads/currentload/bin/cli", "-A", "-es", "script.cli"})
 	output := ""
 	if out != nil {
-		bytes, readErr := io.ReadAll(out)
+		b, readErr := io.ReadAll(out)
 		if readErr == nil {
-			output = string(bytes)
+			output = string(b)
 		} else {
 			output = fmt.Sprintf("[ERROR reading CLI output: %v]", readErr)
 		}
@@ -140,7 +139,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // BrokerURLFor returns the origin URL for a given service
 func (c *Container) BrokerURLFor(ctx context.Context, service Service) (string, error) {
-	p := nat.Port(fmt.Sprintf("%d/tcp", service.Port))
+	p := fmt.Sprintf("%d/tcp", service.Port)
 	return c.PortEndpoint(ctx, p, service.Protocol)
 }
 
@@ -154,7 +153,7 @@ func (c *Container) Password() string {
 	return c.settings.password
 }
 
-// Vpn returns the VPN name configured for the Solace container
+// VPN returns the VPN name configured for the Solace container
 func (c *Container) VPN() string {
 	return c.settings.vpn
 }

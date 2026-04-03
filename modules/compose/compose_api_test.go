@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/docker/compose/v5/pkg/api"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/volume"
 	"github.com/google/uuid"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -186,12 +186,12 @@ func TestDockerComposeAPI_TestcontainersLabelsArePresent(t *testing.T) {
 		c, err := compose.ServiceContainer(context.Background(), serviceName)
 		require.NoError(t, err, "compose.ServiceContainer()")
 
-		inspect, err := compose.dockerClient.ContainerInspect(ctx, c.GetContainerID())
+		inspect, err := compose.dockerClient.ContainerInspect(ctx, c.GetContainerID(), client.ContainerInspectOptions{})
 		require.NoError(t, err, "dockerClient.ContainerInspect()")
 
 		for key, label := range testcontainers.GenericLabels() {
-			assert.Contains(t, inspect.Config.Labels, key, "Label %s is not present in container %s", key, c.GetContainerID())
-			assert.Equal(t, label, inspect.Config.Labels[key], "Label %s value is not correct in container %s", key, c.GetContainerID())
+			assert.Contains(t, inspect.Container.Config.Labels, key, "Label %s is not present in container %s", key, c.GetContainerID())
+			assert.Equal(t, label, inspect.Container.Config.Labels[key], "Label %s value is not correct in container %s", key, c.GetContainerID())
 		}
 	}
 }
@@ -284,7 +284,7 @@ func TestDockerComposeAPIWithStopServices(t *testing.T) {
 	state, err := mysqlContainer.State(ctx)
 	require.NoError(t, err)
 	assert.False(t, state.Running)
-	assert.Contains(t, []string{"exited", "removing"}, state.Status)
+	assert.Contains(t, []container.ContainerState{container.StateExited, container.StateRemoving}, state.Status)
 }
 
 func TestDockerComposeAPIWithWaitForService(t *testing.T) {
@@ -642,13 +642,13 @@ func TestDockerComposeAPIVolumesDeletedOnDown(t *testing.T) {
 	err = compose.Down(context.Background(), RemoveOrphans(true), RemoveVolumes(true), RemoveImagesLocal)
 	require.NoError(t, err, "compose.Down()")
 
-	volumeListFilters := filters.NewArgs()
-	// the "mydata" identifier comes from the "testdata/docker-compose-volume.yml" file
-	volumeListFilters.Add("name", identifier+"_mydata")
-	volumeList, err := compose.dockerClient.VolumeList(ctx, volume.ListOptions{Filters: volumeListFilters})
+	resp, err := compose.dockerClient.VolumeList(ctx, client.VolumeListOptions{
+		// the "mydata" identifier comes from the "testdata/docker-compose-volume.yml" file
+		Filters: make(client.Filters).Add("name", identifier+"_mydata"),
+	})
 	require.NoError(t, err, "compose.dockerClient.VolumeList()")
 
-	require.Empty(t, volumeList.Volumes, "Volumes are not cleaned up")
+	require.Empty(t, resp.Items, "Volumes are not cleaned up")
 }
 
 func TestDockerComposeAPIWithBuild(t *testing.T) {

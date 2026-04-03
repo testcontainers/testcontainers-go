@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
 )
@@ -59,13 +59,13 @@ func DefaultGatewayIP() (string, error) {
 // dockerHostCheck Use a vanilla Docker client to check if the Docker host is reachable.
 // It will avoid recursive calls to this function.
 var dockerHostCheck = func(ctx context.Context, host string) error {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithHost(host), client.WithAPIVersionNegotiation())
+	cli, err := client.New(client.FromEnv, client.WithHost(host))
 	if err != nil {
 		return fmt.Errorf("new client: %w", err)
 	}
 	defer cli.Close()
 
-	_, err = cli.Info(ctx)
+	_, err = cli.Info(ctx, client.InfoOptions{})
 	if err != nil {
 		return fmt.Errorf("docker info: %w", err)
 	}
@@ -198,13 +198,13 @@ func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) st
 		return checkDockerSocketFn(testcontainersDockerSocket)
 	}
 
-	info, err := cli.Info(ctx)
+	info, err := cli.Info(ctx, client.InfoOptions{})
 	if err != nil {
 		panic(err) // Docker Info is required to get the Operating System
 	}
 
 	// Because Docker Desktop runs in a VM, we need to use the default docker path for rootless docker
-	if info.OperatingSystem == "Docker Desktop" {
+	if info.Info.OperatingSystem == "Docker Desktop" {
 		if IsWindows() {
 			return WindowsDockerSocketPath
 		}
