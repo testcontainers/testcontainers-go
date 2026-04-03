@@ -13,9 +13,8 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/containerd/errdefs"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
@@ -79,7 +78,7 @@ func expectedReaperRequest(customize ...func(*ContainerRequest)) ContainerReques
 			hostConfig.Binds = []string{core.MustExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
 			hostConfig.Privileged = true
 		},
-		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),
+		WaitingFor: wait.ForListeningPort("8080/tcp"),
 		Env: map[string]string{
 			"RYUK_CONNECTION_TIMEOUT":   "1m0s",
 			"RYUK_RECONNECTION_TIMEOUT": "10s",
@@ -180,7 +179,7 @@ func testContainerStop(t *testing.T) {
 	state, err = nginxA.State(ctx)
 	require.NoError(t, err)
 	require.False(t, state.Running)
-	require.Equal(t, "exited", state.Status)
+	require.Equal(t, container.StateExited, state.Status)
 }
 
 // testContainerTerminate tests terminating a container.

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"os"
@@ -14,9 +13,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/containerd/platforms"
 	"github.com/cpuguy83/dockercfg"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/registry"
+	"github.com/moby/moby/api/pkg/authconfig"
+	"github.com/moby/moby/api/types/registry"
+	"github.com/moby/moby/client"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -186,18 +187,15 @@ func (c *RegistryContainer) PushImage(ctx context.Context, ref string) error {
 		return fmt.Errorf("failed to get image auth: %w", err)
 	}
 
-	pushOpts := image.PushOptions{
-		All: true,
-	}
-
-	// see https://github.com/docker/docs/blob/e8e1204f914767128814dca0ea008644709c117f/engine/api/sdk/examples.md?plain=1#L649-L657
-	encodedJSON, err := json.Marshal(imageAuth)
+	encodedAuth, err := authconfig.Encode(imageAuth)
 	if err != nil {
 		return fmt.Errorf("failed to encode image auth: %w", err)
 	}
-	pushOpts.RegistryAuth = base64.URLEncoding.EncodeToString(encodedJSON)
 
-	_, err = dockerCli.ImagePush(ctx, ref, pushOpts)
+	_, err = dockerCli.ImagePush(ctx, ref, client.ImagePushOptions{
+		All:          true,
+		RegistryAuth: encodedAuth,
+	})
 	if err != nil {
 		return fmt.Errorf("push image %q: %w", ref, err)
 	}
@@ -211,37 +209,36 @@ func (c *RegistryContainer) PushImage(ctx context.Context, ref string) error {
 // available locally for further operations such as tagging or pushing.
 // It uses the same platform as the registry container's image.
 func (c *RegistryContainer) PullImage(ctx context.Context, ref string) error {
-	dockerCli, err := testcontainers.NewDockerClientWithOpts(ctx)
+	apiClient, err := testcontainers.NewDockerClientWithOpts(ctx)
 	if err != nil {
 		return fmt.Errorf("create docker client: %w", err)
 	}
-	defer dockerCli.Close()
+	defer apiClient.Close()
 
 	inspect, err := c.Inspect(ctx)
 	if err != nil {
 		return fmt.Errorf("inspect registry container: %w", err)
 	}
 
-	platform := runtime.GOARCH
+	var pullOpts client.ImagePullOptions
+	arch := runtime.GOARCH
+
+	// Use the same platform as the registry container's image.
 	if inspect.ImageManifestDescriptor != nil && inspect.ImageManifestDescriptor.Platform != nil {
-		platform = inspect.ImageManifestDescriptor.Platform.Architecture
+		arch = inspect.ImageManifestDescriptor.Platform.Architecture
+	}
+	if p, err := platforms.Parse("linux/" + arch); err == nil {
+		pullOpts.Platforms = append(pullOpts.Platforms, p)
 	}
 
-	pullOpts := image.PullOptions{
-		All: false,
-		// Use the same platform as the registry container's image.
-		Platform: "linux/" + platform,
-	}
-
-	output, err := dockerCli.ImagePull(ctx, ref, pullOpts)
+	output, err := apiClient.ImagePull(ctx, ref, pullOpts)
 	if err != nil {
 		return fmt.Errorf("pull image %q: %w", ref, err)
 	}
 	defer output.Close()
 
-	_, err = io.Copy(io.Discard, output)
-	if err != nil {
-		return fmt.Errorf("read image pull output: %w", err)
+	if err := output.Wait(ctx); err != nil {
+		return fmt.Errorf("pull image %q: %w", ref, err)
 	}
 
 	return nil
@@ -257,7 +254,10 @@ func (c *RegistryContainer) TagImage(ctx context.Context, image, ref string) err
 	}
 	defer dockerCli.Close()
 
-	err = dockerCli.ImageTag(ctx, image, ref)
+	_, err = dockerCli.ImageTag(ctx, client.ImageTagOptions{
+		Source: image,
+		Target: ref,
+	})
 	if err != nil {
 		return fmt.Errorf("tag image %q: %w", image, err)
 	}

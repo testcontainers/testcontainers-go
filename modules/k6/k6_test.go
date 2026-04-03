@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -53,7 +54,8 @@ func TestK6(t *testing.T) {
 		require.NoError(t, err)
 		defer provider.Close()
 
-		require.NoError(t, provider.Client().VolumeRemove(context.Background(), cacheMount, true))
+		_, err = provider.Client().VolumeRemove(context.Background(), cacheMount, client.VolumeRemoveOptions{Force: true})
+		require.NoError(t, err)
 	})
 
 	for _, tc := range testCases {

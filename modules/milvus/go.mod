@@ -17,7 +17,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
-	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cilium/ebpf v0.11.0 // indirect
 	github.com/cockroachdb/errors v1.9.1 // indirect
@@ -33,7 +32,6 @@ require (
 	github.com/cpuguy83/dockercfg v0.3.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/docker v28.5.2+incompatible // indirect
 	github.com/docker/go-connections v0.6.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -56,7 +54,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.16.0 // indirect
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.18.2 // indirect
+	github.com/klauspost/compress v1.18.4 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20250827001030-24949be3fa54 // indirect
@@ -66,14 +64,15 @@ require (
 	github.com/milvus-io/milvus/pkg/v2 v2.0.0-20250319085209-5a6b4e56d59e // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/go-archive v0.2.0 // indirect
-	github.com/moby/patternmatcher v0.6.0 // indirect
+	github.com/moby/moby/api v1.54.1-0.20260401134807-948d5691a093 // indirect
+	github.com/moby/moby/client v0.3.1-0.20260401134807-948d5691a093 // indirect
+	github.com/moby/patternmatcher v0.6.1 // indirect
 	github.com/moby/sys/sequential v0.6.0 // indirect
 	github.com/moby/sys/user v0.4.0 // indirect
 	github.com/moby/sys/userns v0.1.0 // indirect
 	github.com/moby/term v0.5.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/opencontainers/runtime-spec v1.0.2 // indirect
@@ -132,7 +131,7 @@ require (
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
-	golang.org/x/time v0.5.0 // indirect
+	golang.org/x/time v0.11.0 // indirect
 	google.golang.org/genproto v0.0.0-20240624140628-dc46fd24d27d // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect

@@ -161,7 +161,7 @@ type inMemoryLogger struct {
 }
 
 func (iml *inMemoryLogger) Printf(msg string, args ...any) {
-	iml.buffer.Write([]byte(fmt.Sprintf(msg, args...)))
+	fmt.Fprintf(&iml.buffer, msg, args...)
 	iml.buffer.Write([]byte(logSeparator))
 }
 

@@ -6,14 +6,15 @@ replace github.com/testcontainers/testcontainers-go => ../..
 
 require (
 	github.com/compose-spec/compose-go/v2 v2.10.1
-	github.com/docker/cli v29.2.1+incompatible
-	github.com/docker/compose/v5 v5.1.0
-	github.com/docker/docker v28.5.2+incompatible
+	github.com/docker/cli v29.3.1+incompatible
+	github.com/docker/compose/v5 v5.1.1
 	github.com/google/uuid v1.6.0
+	github.com/moby/moby/api v1.54.1-0.20260401134807-948d5691a093
+	github.com/moby/moby/client v0.3.1-0.20260401134807-948d5691a093
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.41.0
 	go.yaml.in/yaml/v3 v3.0.4
-	golang.org/x/sync v0.19.0
+	golang.org/x/sync v0.20.0
 )
 
 require (
@@ -28,7 +29,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/containerd/console v1.0.5 // indirect
 	github.com/containerd/containerd/api v1.10.0 // indirect
-	github.com/containerd/containerd/v2 v2.2.1 // indirect
+	github.com/containerd/containerd/v2 v2.2.2 // indirect
 	github.com/containerd/continuity v0.4.5 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
 	github.com/containerd/errdefs/pkg v0.3.0 // indirect
@@ -40,6 +41,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/buildx v0.31.1 // indirect
+	github.com/docker/docker v28.5.2+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.9.5 // indirect
 	github.com/docker/go-connections v0.6.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
@@ -77,8 +79,6 @@ require (
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/go-archive v0.2.0 // indirect
 	github.com/moby/locker v1.0.1 // indirect
-	github.com/moby/moby/api v1.53.0 // indirect
-	github.com/moby/moby/client v0.2.2 // indirect
 	github.com/moby/patternmatcher v0.6.1 // indirect
 	github.com/moby/sys/atomicwriter v0.1.0 // indirect
 	github.com/moby/sys/capability v0.4.0 // indirect
@@ -136,7 +136,7 @@ require (
 	go.yaml.in/yaml/v4 v4.0.0-rc.4 // indirect
 	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/net v0.51.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/term v0.40.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	golang.org/x/time v0.14.0 // indirect

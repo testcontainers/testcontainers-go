@@ -7,9 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 
-	"github.com/docker/go-connections/nat"
+	dockernetwork "github.com/moby/moby/api/types/network"
 	"golang.org/x/crypto/pkcs12"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -25,9 +26,9 @@ const (
 
 const (
 	// defaultAPIPort is the default port used by for the Lowkey Vault Key Vault API endpoints
-	defaultAPIPort nat.Port = "8443/tcp"
+	defaultAPIPort = "8443/tcp"
 	// defaultMetadataPort is the default port used for the Lowkey Vault Metadata endpoints
-	defaultMetadataPort nat.Port = "8080/tcp"
+	defaultMetadataPort = "8080/tcp"
 )
 
 // Container represents the Lowkey Vault container type used in the module
@@ -59,7 +60,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	// Initialize with module defaults
 	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
 	moduleOpts = append(moduleOpts,
-		testcontainers.WithExposedPorts(defaultAPIPort.Port(), defaultMetadataPort.Port()),
+		testcontainers.WithExposedPorts(defaultAPIPort, defaultMetadataPort),
 		testcontainers.WithEnv(map[string]string{
 			"LOWKEY_VAULT_RELAXED_PORTS": "true",
 		}),
@@ -168,7 +169,7 @@ func (c *Container) IdentityHeader() string {
 	return "header"
 }
 
-func (c *Container) mappedHostAuthority(ctx context.Context, exposedPort nat.Port, accessMode int) (string, error) {
+func (c *Container) mappedHostAuthority(ctx context.Context, exposedPort string, accessMode int) (string, error) {
 	switch accessMode {
 	case Local:
 		host, err := c.resolveLocalHostName(ctx)
@@ -179,13 +180,17 @@ func (c *Container) mappedHostAuthority(ctx context.Context, exposedPort nat.Por
 		if err != nil {
 			return "", fmt.Errorf("port: %w", err)
 		}
-		return fmt.Sprintf("%s:%d", host, port.Int()), nil
+		return net.JoinHostPort(host, port.Port()), nil
 	case Network:
 		host, err := c.resolveNetworkHostName(ctx)
 		if err != nil {
 			return "", fmt.Errorf("host: %w", err)
 		}
-		return fmt.Sprintf("%s:%d", host, exposedPort.Int()), nil
+		port, err := dockernetwork.ParsePort(exposedPort)
+		if err != nil {
+			return "", fmt.Errorf("port: %w", err)
+		}
+		return net.JoinHostPort(host, port.Port()), nil
 	default:
 		return "", fmt.Errorf("unsupported access mode: %d", accessMode)
 	}
