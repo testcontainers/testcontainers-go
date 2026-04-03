@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/go-connections/nat"
 	"github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/lib/pq"
 	"github.com/mdelapenya/tlscert"
+	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -143,8 +143,9 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 	ctx := context.Background()
 
 	port := "5432/tcp"
-	dbURL := func(host string, port nat.Port) string {
-		return fmt.Sprintf("postgres://postgres:password@%s:%s/%s?sslmode=disable", host, port.Port(), dbname)
+	dbURL := func(host string, port string) string {
+		p := network.MustParsePort(port)
+		return fmt.Sprintf("postgres://postgres:password@%s:%s/%s?sslmode=disable", host, p.Port(), dbname)
 	}
 
 	t.Run("default query", func(t *testing.T) {
@@ -154,7 +155,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
-			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL)),
+			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(port, "postgres", dbURL)),
 		)
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
@@ -167,7 +168,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
-			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 10")),
+			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(port, "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 10")),
 		)
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
@@ -180,7 +181,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
-			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 'a' from b")),
+			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(port, "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 'a' from b")),
 		)
 		testcontainers.CleanupContainer(t, ctr)
 		require.Error(t, err)

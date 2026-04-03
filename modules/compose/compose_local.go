@@ -12,8 +12,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
+	"github.com/moby/moby/client"
 	"go.yaml.in/yaml/v3"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -146,25 +145,23 @@ func (dc *LocalDockerCompose) applyStrategyToRunningContainer() error {
 	for k := range dc.WaitStrategyMap {
 		containerName := dc.containerNameFromServiceName(k.service, "_")
 		composeV2ContainerName := dc.containerNameFromServiceName(k.service, "-")
-		f := filters.NewArgs(
-			filters.Arg("name", containerName),
-			filters.Arg("name", composeV2ContainerName),
-			filters.Arg("name", k.service))
-		containerListOptions := container.ListOptions{Filters: f, All: true}
-		containers, err := cli.ContainerList(context.Background(), containerListOptions)
+		containers, err := cli.ContainerList(context.Background(), client.ContainerListOptions{
+			Filters: make(client.Filters).Add("name", containerName).Add("name", composeV2ContainerName).Add("name", k.service),
+			All:     true,
+		})
 		if err != nil {
 			return fmt.Errorf("container list service %q: %w", k.service, err)
 		}
 
-		if len(containers) == 0 {
+		if len(containers.Items) == 0 {
 			return fmt.Errorf("service with name %q not found in list of running containers", k.service)
 		}
 
 		// The length should always be a list of 1, since we are matching one service name at a time
-		if l := len(containers); l > 1 {
+		if l := len(containers.Items); l > 1 {
 			return fmt.Errorf("expecting only one running container for %q but got %d", k.service, l)
 		}
-		container := containers[0]
+		container := containers.Items[0]
 		strategy := dc.WaitStrategyMap[k]
 		dockerProvider, err := testcontainers.NewDockerProvider(testcontainers.WithLogger(dc.Logger))
 		if err != nil {

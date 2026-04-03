@@ -69,7 +69,7 @@ func ExampleRun_usingClient() {
 		return
 	}
 
-	aeroHost := []*aero.Host{aero.NewHost(host, port.Int())}
+	aeroHost := []*aero.Host{aero.NewHost(host, int(port.Num()))}
 
 	// connect to the host
 	cp := aero.NewClientPolicy()

@@ -105,6 +105,10 @@ function createStats(processedData) {
 function createTrendChart(processedData) {
     const { data, versions, byVersion } = processedData;
 
+    // Only show the last 5 versions by default; older ones are hidden but toggleable via legend
+    const visibleCount = 5;
+    const hiddenThreshold = versions.length - visibleCount;
+
     const datasets = versions.map((version, index) => {
         const versionData = byVersion[version];
         const colors = [
@@ -119,7 +123,8 @@ function createTrendChart(processedData) {
             borderColor: color,
             backgroundColor: color + '20',
             tension: 0.4,
-            fill: true
+            fill: true,
+            hidden: index < hiddenThreshold
         };
     });
 
@@ -144,7 +149,7 @@ function createTrendChart(processedData) {
                     position: 'top'
                 },
                 tooltip: {
-                    mode: 'index',
+                    mode: 'x',
                     intersect: false
                 }
             },

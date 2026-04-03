@@ -10,13 +10,14 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -244,7 +245,6 @@ func TestHTTPStrategyWaitUntilReady(t *testing.T) {
 			DialContext: (&net.Dialer{
 				Timeout:   time.Second,
 				KeepAlive: 30 * time.Second,
-				DualStack: true,
 			}).DialContext,
 			ForceAttemptHTTP2:     true,
 			MaxIdleConns:          100,
@@ -295,7 +295,6 @@ func TestHTTPStrategyWaitUntilReadyWithQueryString(t *testing.T) {
 			DialContext: (&net.Dialer{
 				Timeout:   time.Second,
 				KeepAlive: 30 * time.Second,
-				DualStack: true,
 			}).DialContext,
 			ForceAttemptHTTP2:     true,
 			MaxIdleConns:          100,
@@ -356,7 +355,6 @@ func TestHTTPStrategyWaitUntilReadyNoBasicAuth(t *testing.T) {
 			DialContext: (&net.Dialer{
 				Timeout:   time.Second,
 				KeepAlive: 30 * time.Second,
-				DualStack: true,
 			}).DialContext,
 			ForceAttemptHTTP2:     true,
 			MaxIdleConns:          100,
@@ -378,12 +376,12 @@ func TestHttpStrategyFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) 
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
 			defer func() { mappedPortCount++ }()
 			if mappedPortCount == 0 {
-				return "", wait.ErrPortNotFound
+				return network.Port{}, wait.ErrPortNotFound
 			}
-			return "49152", nil
+			return network.MustParsePort("49152"), nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
@@ -393,14 +391,11 @@ func TestHttpStrategyFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) 
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
-					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
-					NetworkSettingsBase: container.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"8080/tcp": []nat.PortBinding{
-								{
-									HostIP:   "127.0.0.1",
-									HostPort: "49152",
-								},
+					Ports: network.PortMap{
+						network.MustParsePort("8080/tcp"): []network.PortBinding{
+							{
+								HostIP:   netip.MustParseAddr("127.0.0.1"),
+								HostPort: "49152",
 							},
 						},
 					},
@@ -424,30 +419,27 @@ func TestHttpStrategyFailsWhileGettingPortDueToExitedContainer(t *testing.T) {
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
 			defer func() { mappedPortCount++ }()
 			if mappedPortCount == 0 {
-				return "", wait.ErrPortNotFound
+				return network.Port{}, wait.ErrPortNotFound
 			}
-			return "49152", nil
+			return network.MustParsePort("49152"), nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
-				Status:   "exited",
+				Status:   container.StateExited,
 				ExitCode: 1,
 			}, nil
 		},
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
-					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
-					NetworkSettingsBase: container.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"8080/tcp": []nat.PortBinding{
-								{
-									HostIP:   "127.0.0.1",
-									HostPort: "49152",
-								},
+					Ports: network.PortMap{
+						network.MustParsePort("8080/tcp"): []network.PortBinding{
+							{
+								HostIP:   netip.MustParseAddr("127.0.0.1"),
+								HostPort: "49152",
 							},
 						},
 					},
@@ -471,29 +463,26 @@ func TestHttpStrategyFailsWhileGettingPortDueToUnexpectedContainerStatus(t *test
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
 			defer func() { mappedPortCount++ }()
 			if mappedPortCount == 0 {
-				return "", wait.ErrPortNotFound
+				return network.Port{}, wait.ErrPortNotFound
 			}
-			return "49152", nil
+			return network.MustParsePort("49152"), nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
-				Status: "dead",
+				Status: container.StateDead,
 			}, nil
 		},
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
-					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
-					NetworkSettingsBase: container.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"8080/tcp": []nat.PortBinding{
-								{
-									HostIP:   "127.0.0.1",
-									HostPort: "49152",
-								},
+					Ports: network.PortMap{
+						network.MustParsePort("8080/tcp"): []network.PortBinding{
+							{
+								HostIP:   netip.MustParseAddr("127.0.0.1"),
+								HostPort: "49152",
 							},
 						},
 					},
@@ -516,8 +505,8 @@ func TestHTTPStrategyFailsWhileRequestSendingDueToOOMKilledContainer(t *testing.
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			return "49152", nil
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
+			return network.MustParsePort("49152"), nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
@@ -527,14 +516,11 @@ func TestHTTPStrategyFailsWhileRequestSendingDueToOOMKilledContainer(t *testing.
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
-					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
-					NetworkSettingsBase: container.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"8080/tcp": []nat.PortBinding{
-								{
-									HostIP:   "127.0.0.1",
-									HostPort: "49152",
-								},
+					Ports: network.PortMap{
+						network.MustParsePort("8080/tcp"): []network.PortBinding{
+							{
+								HostIP:   netip.MustParseAddr("127.0.0.1"),
+								HostPort: "49152",
 							},
 						},
 					},
@@ -557,26 +543,23 @@ func TestHttpStrategyFailsWhileRequestSendingDueToExitedContainer(t *testing.T) 
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			return "49152", nil
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
+			return network.MustParsePort("49152"), nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
-				Status:   "exited",
+				Status:   container.StateExited,
 				ExitCode: 1,
 			}, nil
 		},
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
-					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
-					NetworkSettingsBase: container.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"8080/tcp": []nat.PortBinding{
-								{
-									HostIP:   "127.0.0.1",
-									HostPort: "49152",
-								},
+					Ports: network.PortMap{
+						network.MustParsePort("8080/tcp"): []network.PortBinding{
+							{
+								HostIP:   netip.MustParseAddr("127.0.0.1"),
+								HostPort: "49152",
 							},
 						},
 					},
@@ -599,25 +582,22 @@ func TestHttpStrategyFailsWhileRequestSendingDueToUnexpectedContainerStatus(t *t
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			return "49152", nil
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
+			return network.MustParsePort("49152"), nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
-				Status: "dead",
+				Status: container.StateDead,
 			}, nil
 		},
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
-					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
-					NetworkSettingsBase: container.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"8080/tcp": []nat.PortBinding{
-								{
-									HostIP:   "127.0.0.1",
-									HostPort: "49152",
-								},
+					Ports: network.PortMap{
+						network.MustParsePort("8080/tcp"): []network.PortBinding{
+							{
+								HostIP:   netip.MustParseAddr("127.0.0.1"),
+								HostPort: "49152",
 							},
 						},
 					},
@@ -641,26 +621,23 @@ func TestHttpStrategyFailsWhileGettingPortDueToNoExposedPorts(t *testing.T) {
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
 			defer func() { mappedPortCount++ }()
 			if mappedPortCount == 0 {
-				return "", wait.ErrPortNotFound
+				return network.Port{}, wait.ErrPortNotFound
 			}
-			return "49152", nil
+			return network.MustParsePort("49152"), nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
-				Status:  "running",
+				Status:  container.StateRunning,
 				Running: true,
 			}, nil
 		},
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
-					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
-					NetworkSettingsBase: container.NetworkSettingsBase{
-						Ports: nat.PortMap{},
-					},
+					Ports: network.PortMap{},
 				},
 			}, nil
 		},
@@ -681,30 +658,27 @@ func TestHttpStrategyFailsWhileGettingPortDueToOnlyUDPPorts(t *testing.T) {
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
 			defer func() { mappedPortCount++ }()
 			if mappedPortCount == 0 {
-				return "", wait.ErrPortNotFound
+				return network.Port{}, wait.ErrPortNotFound
 			}
-			return "49152", nil
+			return network.MustParsePort("49152"), nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
 				Running: true,
-				Status:  "running",
+				Status:  container.StateRunning,
 			}, nil
 		},
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
-					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
-					NetworkSettingsBase: container.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"8080/udp": []nat.PortBinding{
-								{
-									HostIP:   "127.0.0.1",
-									HostPort: "49152",
-								},
+					Ports: network.PortMap{
+						network.MustParsePort("8080/udp"): []network.PortBinding{
+							{
+								HostIP:   netip.MustParseAddr("127.0.0.1"),
+								HostPort: "49152",
 							},
 						},
 					},
@@ -728,27 +702,24 @@ func TestHttpStrategyFailsWhileGettingPortDueToExposedPortNoBindings(t *testing.
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
 			defer func() { mappedPortCount++ }()
 			if mappedPortCount == 0 {
-				return "", wait.ErrPortNotFound
+				return network.Port{}, wait.ErrPortNotFound
 			}
-			return "49152", nil
+			return network.MustParsePort("49152"), nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
 				Running: true,
-				Status:  "running",
+				Status:  container.StateRunning,
 			}, nil
 		},
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
-					//nolint:staticcheck // SA1019: NetworkSettingsBase is deprecated, but we need it for compatibility until v29
-					NetworkSettingsBase: container.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"8080/tcp": []nat.PortBinding{},
-						},
+					Ports: network.PortMap{
+						network.MustParsePort("8080/tcp"): []network.PortBinding{},
 					},
 				},
 			}, nil

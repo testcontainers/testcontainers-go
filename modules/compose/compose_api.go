@@ -16,10 +16,7 @@ import (
 	"github.com/compose-spec/compose-go/v2/cli"
 	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/docker/compose/v5/pkg/api"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	dockernetwork "github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -475,22 +472,19 @@ func (d *DockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 		return c, nil
 	}
 
-	containers, err := d.dockerClient.ContainerList(ctx, container.ListOptions{
-		All: true,
-		Filters: filters.NewArgs(
-			filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)),
-			filters.Arg("label", fmt.Sprintf("%s=%s", api.ServiceLabel, svcName)),
-		),
+	res, err := d.dockerClient.ContainerList(ctx, client.ContainerListOptions{
+		All:     true,
+		Filters: make(client.Filters).Add("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)).Add("label", fmt.Sprintf("%s=%s", api.ServiceLabel, svcName)),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("container list: %w", err)
 	}
 
-	if len(containers) == 0 {
+	if len(res.Items) == 0 {
 		return nil, fmt.Errorf("no container found for service name %s", svcName)
 	}
 
-	ctr, err := d.provider.ContainerFromType(ctx, containers[0])
+	ctr, err := d.provider.ContainerFromType(ctx, res.Items[0])
 	if err != nil {
 		return nil, fmt.Errorf("container from type: %w", err)
 	}
@@ -506,16 +500,14 @@ func (d *DockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 //
 // Safe for concurrent calls.
 func (d *DockerCompose) lookupNetworks(ctx context.Context) error {
-	networks, err := d.dockerClient.NetworkList(ctx, dockernetwork.ListOptions{
-		Filters: filters.NewArgs(
-			filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)),
-		),
+	res, err := d.dockerClient.NetworkList(ctx, client.NetworkListOptions{
+		Filters: make(client.Filters).Add("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)),
 	})
 	if err != nil {
 		return fmt.Errorf("network list: %w", err)
 	}
 
-	for _, n := range networks {
+	for _, n := range res.Items {
 		dn := &testcontainers.DockerNetwork{
 			ID:     n.ID,
 			Name:   n.Name,

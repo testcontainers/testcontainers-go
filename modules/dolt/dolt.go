@@ -76,6 +76,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	if err != nil {
 		return dc, fmt.Errorf("run dolt: %w", err)
 	}
+	if dc == nil {
+		return dc, errors.New("run dolt: dolthub container not found")
+	}
 
 	// refresh the credentials from the environment variables
 	inspect, err := ctr.Inspect(ctx)
