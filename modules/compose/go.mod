@@ -9,8 +9,8 @@ require (
 	github.com/docker/cli v29.3.1+incompatible
 	github.com/docker/compose/v5 v5.1.1
 	github.com/google/uuid v1.6.0
-	github.com/moby/moby/api v1.54.1-0.20260401134807-948d5691a093
-	github.com/moby/moby/client v0.3.1-0.20260401134807-948d5691a093
+	github.com/moby/moby/api v1.54.1
+	github.com/moby/moby/client v0.4.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.41.0
 	go.yaml.in/yaml/v3 v3.0.4

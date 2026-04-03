@@ -1060,7 +1060,7 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 	// Always process the output, even if it is not printed
 	// to ensure that errors during the build process are
 	// correctly handled.
-	if err = jsonmessage.DisplayStream(resp.Body, img.BuildLogWriter(), nil); err != nil {
+	if err = jsonmessage.DisplayStream(resp.Body, img.BuildLogWriter()); err != nil {
 		return "", fmt.Errorf("build image: %w", err)
 	}
 
