@@ -151,7 +151,7 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*DockerCompose, error) {
 		return nil, fmt.Errorf("new docker cli: %w", err)
 	}
 
-	if err = dockerCli.Initialize(flags.NewClientOptions()); err != nil {
+	if err = dockerCli.Initialize(&flags.ClientOptions{}); err != nil {
 		return nil, fmt.Errorf("initialize docker cli: %w", err)
 	}
 
