@@ -50,8 +50,8 @@ github.com/inbucket/inbucket v2.0.0+incompatible h1:o/8x3EVhub5Z4VMhX6u6Puaskv3G
 github.com/inbucket/inbucket v2.0.0+incompatible/go.mod h1:61hO8wV7F8cd8mCAceG40EvJ1HAfBugqLDIHf5wtzHA=
 github.com/jhillyerd/inbucket v2.0.0+incompatible h1:gTmxV077ktqV4ZbFjB/0rjiTrdsKQGXWUqYKWjoNIrE=
 github.com/jhillyerd/inbucket v2.0.0+incompatible/go.mod h1:yVEPtM/7T2OWUGzu6wKm1xIrcVPzhI9IW2MzvqIWaYY=
-github.com/klauspost/compress v1.18.4 h1:RPhnKRAQ4Fh8zU2FY/6ZFDwTVTxgJ/EMydqSTzE9a2c=
-github.com/klauspost/compress v1.18.4/go.mod h1:R0h/fSBs8DE4ENlcrlib3PsXS61voFxhIs2DeRhCvJ4=
+github.com/klauspost/compress v1.18.5 h1:/h1gH5Ce+VWNLSWqPzOVn6XBO+vJbCNGvjoaGBFW2IE=
+github.com/klauspost/compress v1.18.5/go.mod h1:cwPg85FWrGar70rWktvGQj8/hthj3wpl0PGDogxkrSQ=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
 github.com/kr/pretty v0.3.1/go.mod h1:hoEshYVHaxMs3cyo3Yncou5ZscifuDolrwPKZanG3xk=
 github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
