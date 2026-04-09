@@ -2,7 +2,7 @@ module github.com/testcontainers/testcontainers-go/modules/azurite
 
 go 1.25.0
 
-toolchain go1.25.7
+toolchain go1.25.9
 
 require (
 	github.com/stretchr/testify v1.11.1

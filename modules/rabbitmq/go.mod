@@ -2,7 +2,7 @@ module github.com/testcontainers/testcontainers-go/modules/rabbitmq
 
 go 1.25.0
 
-toolchain go1.25.7
+toolchain go1.25.9
 
 require (
 	github.com/rabbitmq/amqp091-go v1.9.0

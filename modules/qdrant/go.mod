@@ -2,7 +2,7 @@ module github.com/testcontainers/testcontainers-go/modules/qdrant
 
 go 1.25.0
 
-toolchain go1.25.7
+toolchain go1.25.9
 
 require (
 	github.com/qdrant/go-client v1.7.0

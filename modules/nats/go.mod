@@ -2,7 +2,7 @@ module github.com/testcontainers/testcontainers-go/modules/nats
 
 go 1.25.0
 
-toolchain go1.25.7
+toolchain go1.25.9
 
 require (
 	github.com/nats-io/nats.go v1.33.1

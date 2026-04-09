@@ -2,7 +2,7 @@ module github.com/testcontainers/testcontainers-go/modules/cockroachdb
 
 go 1.25.0
 
-toolchain go1.25.7
+toolchain go1.25.9
 
 require (
 	github.com/jackc/pgx/v5 v5.5.4

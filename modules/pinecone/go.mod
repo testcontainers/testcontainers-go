@@ -2,7 +2,7 @@ module github.com/testcontainers/testcontainers-go/modules/pinecone
 
 go 1.25.0
 
-toolchain go1.25.7
+toolchain go1.25.9
 
 require (
 	github.com/pinecone-io/go-pinecone/v2 v2.2.0

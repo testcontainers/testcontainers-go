@@ -2,7 +2,7 @@ module github.com/testcontainers/testcontainers-go/modules/aerospike
 
 go 1.25.0
 
-toolchain go1.25.7
+toolchain go1.25.9
 
 require (
 	github.com/aerospike/aerospike-client-go/v8 v8.6.0

@@ -2,7 +2,7 @@ module github.com/testcontainers/testcontainers-go/modules/registry
 
 go 1.25.0
 
-toolchain go1.25.7
+toolchain go1.25.9
 
 require (
 	github.com/containerd/platforms v0.2.1

@@ -2,7 +2,7 @@ module github.com/testcontainers/testcontainers-go
 
 go 1.25.0
 
-toolchain go1.25.7
+toolchain go1.25.9
 
 require (
 	dario.cat/mergo v1.0.2
