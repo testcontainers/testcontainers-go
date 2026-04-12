@@ -6,7 +6,7 @@ toolchain go1.25.9
 
 require (
 	github.com/jackc/pgx/v5 v5.5.4
-	github.com/moby/moby/api v1.54.1
+	github.com/moby/moby/api v1.54.2-0.20260407083204-daa0cb7f2359
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.42.0
 )
@@ -42,8 +42,8 @@ require (
 	github.com/klauspost/compress v1.18.5 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.10 // indirect
-	github.com/moby/go-archive v0.2.0 // indirect
-	github.com/moby/moby/client v0.4.0 // indirect
+	github.com/moby/go-archive v0.2.1-0.20260403184245-7cea6367da40 // indirect
+	github.com/moby/moby/client v0.4.1-0.20260407083204-daa0cb7f2359 // indirect
 	github.com/moby/patternmatcher v0.6.1 // indirect
 	github.com/moby/sys/sequential v0.6.0 // indirect
 	github.com/moby/sys/user v0.4.0 // indirect

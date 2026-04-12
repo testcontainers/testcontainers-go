@@ -12,9 +12,9 @@ require (
 	github.com/cpuguy83/dockercfg v0.3.2
 	github.com/google/uuid v1.6.0
 	github.com/magiconair/properties v1.8.10
-	github.com/moby/go-archive v0.2.0
-	github.com/moby/moby/api v1.54.1
-	github.com/moby/moby/client v0.4.0
+	github.com/moby/go-archive v0.2.1-0.20260403184245-7cea6367da40
+	github.com/moby/moby/api v1.54.2-0.20260407083204-daa0cb7f2359
+	github.com/moby/moby/client v0.4.1-0.20260407083204-daa0cb7f2359
 	github.com/moby/patternmatcher v0.6.1
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/shirou/gopsutil/v4 v4.26.3

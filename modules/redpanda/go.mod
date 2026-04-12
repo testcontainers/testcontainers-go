@@ -5,7 +5,7 @@ go 1.25.0
 toolchain go1.25.9
 
 require (
-	github.com/moby/moby/api v1.54.1
+	github.com/moby/moby/api v1.54.2-0.20260407083204-daa0cb7f2359
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.42.0
 	github.com/twmb/franz-go v1.16.1
@@ -22,8 +22,8 @@ require (
 	github.com/docker/go-connections v0.6.0 // indirect
 	github.com/ebitengine/purego v0.10.0 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
-	github.com/moby/go-archive v0.2.0 // indirect
-	github.com/moby/moby/client v0.4.0 // indirect
+	github.com/moby/go-archive v0.2.1-0.20260403184245-7cea6367da40 // indirect
+	github.com/moby/moby/client v0.4.1-0.20260407083204-daa0cb7f2359 // indirect
 	github.com/moby/sys/userns v0.1.0 // indirect
 	github.com/moby/term v0.5.2 // indirect
 	github.com/shirou/gopsutil/v4 v4.26.3 // indirect
