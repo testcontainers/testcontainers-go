@@ -21,7 +21,7 @@ const (
 	// starterScript {
 	starterScriptContent = `#!/bin/bash
 source /etc/confluent/docker/bash-config
-export KAFKA_ADVERTISED_LISTENERS=%s,BROKER://%s:9092
+export KAFKA_ADVERTISED_LISTENERS="%s,BROKER://%s:9092${EXTRA_ADVERTISED_LISTENERS:+,${EXTRA_ADVERTISED_LISTENERS}}"
 echo Starting Kafka KRaft mode
 sed -i '/KAFKA_ZOOKEEPER_CONNECT/d' /etc/confluent/docker/configure
 echo 'kafka-storage format --ignore-formatted -t "$(kafka-storage random-uuid)" -c /etc/kafka/kafka.properties' >> /etc/confluent/docker/configure
