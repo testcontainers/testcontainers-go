@@ -9,8 +9,13 @@ The Testcontainers module for [Dex](https://github.com/dexidp/dex), a CNCF OIDC 
 ## Adding this module to your project dependencies
 
 ```
-go get github.com/testcontainers/testcontainers-go/modules/dex
+go get github.com/guilycst/testcontainers-go/modules/dex
 ```
+
+> Note: this is a fork-hosted distribution path on `guilycst/testcontainers-go`
+> while the module incubates. When upstreamed to
+> `testcontainers/testcontainers-go`, the module path reverts to
+> `github.com/testcontainers/testcontainers-go/modules/dex`.
 
 ## Usage example
 

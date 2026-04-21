@@ -1,4 +1,4 @@
-module github.com/testcontainers/testcontainers-go/modules/dex
+module github.com/guilycst/testcontainers-go/modules/dex
 
 go 1.25.0
 
