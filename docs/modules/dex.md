@@ -32,7 +32,7 @@ The Dex module exposes one entrypoint function to create the Dex container,
 and this function receives three parameters:
 
 ```golang
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*DexContainer, error)
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)
 ```
 
 - `context.Context`, the Go context.

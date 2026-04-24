@@ -17,7 +17,7 @@ import (
 // custom grants, register the client pre-start via WithClient.
 //
 // Not safe for concurrent use.
-func (c *DexContainer) AddClient(ctx context.Context, cl Client) error {
+func (c *Container) AddClient(ctx context.Context, cl Client) error {
 	target, err := c.GRPCEndpoint(ctx)
 	if err != nil {
 		return err
@@ -49,7 +49,7 @@ func (c *DexContainer) AddClient(ctx context.Context, cl Client) error {
 // RemoveClient deletes a client by ID.
 //
 // Not safe for concurrent use.
-func (c *DexContainer) RemoveClient(ctx context.Context, id string) error {
+func (c *Container) RemoveClient(ctx context.Context, id string) error {
 	target, err := c.GRPCEndpoint(ctx)
 	if err != nil {
 		return err
@@ -73,7 +73,7 @@ func (c *DexContainer) RemoveClient(ctx context.Context, id string) error {
 // AddUser registers a user in Dex's password DB via gRPC.
 //
 // Not safe for concurrent use.
-func (c *DexContainer) AddUser(ctx context.Context, u User) error {
+func (c *Container) AddUser(ctx context.Context, u User) error {
 	target, err := c.GRPCEndpoint(ctx)
 	if err != nil {
 		return err
@@ -117,7 +117,7 @@ func (c *DexContainer) AddUser(ctx context.Context, u User) error {
 // RemoveUser deletes a user by email.
 //
 // Not safe for concurrent use.
-func (c *DexContainer) RemoveUser(ctx context.Context, email string) error {
+func (c *Container) RemoveUser(ctx context.Context, email string) error {
 	target, err := c.GRPCEndpoint(ctx)
 	if err != nil {
 		return err

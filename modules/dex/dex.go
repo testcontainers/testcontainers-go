@@ -42,8 +42,8 @@ const (
 	configPath = "/etc/dex/dex.yml"
 )
 
-// DexContainer is a running Dex OIDC provider.
-type DexContainer struct {
+// Container is a running Dex OIDC provider.
+type Container struct {
 	testcontainers.Container
 	issuer string
 }
@@ -51,7 +51,7 @@ type DexContainer struct {
 // Run starts Dex. The image is required (tc-go convention). Module options
 // (WithClient, WithUser, WithIssuer, ...) and generic tc-go customizers may
 // be mixed in the opts slice.
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*DexContainer, error) {
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	settings := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
@@ -61,7 +61,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	container := &DexContainer{}
+	container := &Container{}
 
 	postStart := func(ctx context.Context, c testcontainers.Container) error {
 		if settings.issuer == "" {
@@ -140,26 +140,26 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 }
 
 // IssuerURL returns Dex's issuer URL. Empty if Run has not started.
-func (c *DexContainer) IssuerURL() string { return c.issuer }
+func (c *Container) IssuerURL() string { return c.issuer }
 
 // ConfigEndpoint returns the OIDC discovery document URL.
-func (c *DexContainer) ConfigEndpoint() string {
+func (c *Container) ConfigEndpoint() string {
 	return c.issuer + "/.well-known/openid-configuration"
 }
 
 // JWKSEndpoint returns the JSON Web Key Set URL.
-func (c *DexContainer) JWKSEndpoint() string { return c.issuer + "/keys" }
+func (c *Container) JWKSEndpoint() string { return c.issuer + "/keys" }
 
 // TokenEndpoint returns the OAuth2 token URL.
-func (c *DexContainer) TokenEndpoint() string { return c.issuer + "/token" }
+func (c *Container) TokenEndpoint() string { return c.issuer + "/token" }
 
 // AuthEndpoint returns the OAuth2 authorization URL.
-func (c *DexContainer) AuthEndpoint() string { return c.issuer + "/auth" }
+func (c *Container) AuthEndpoint() string { return c.issuer + "/auth" }
 
 // GRPCEndpoint returns host:mappedPort for Dex's gRPC admin API. Errors
 // propagate from the Docker API, or report that the container has not been
 // started.
-func (c *DexContainer) GRPCEndpoint(ctx context.Context) (string, error) {
+func (c *Container) GRPCEndpoint(ctx context.Context) (string, error) {
 	if c.Container == nil {
 		return "", fmt.Errorf("dex: container not started")
 	}
