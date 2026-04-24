@@ -74,10 +74,16 @@ type yamlConnector struct {
 	Name string `yaml:"name"`
 }
 
-var defaultGrantTypes = []string{
+// baseGrantTypes is the server-level grantTypes list emitted into the
+// Dex config by default. client_credentials is intentionally omitted — Dex
+// ≥ v2.46.0 rejects it at startup unless
+// DEX_CLIENT_CREDENTIAL_GRANT_ENABLED_BY_DEFAULT=true is set, and v2.45.x
+// treats advertising an unenabled grant as a configuration error. render
+// appends client_credentials when WithEnableClientCredentials() has set
+// the matching env var on the container.
+var baseGrantTypes = []string{
 	"authorization_code",
 	"refresh_token",
-	"client_credentials",
 	"password",
 }
 
@@ -118,7 +124,11 @@ func render(o options) ([]byte, error) {
 		}
 		uid := u.userID
 		if uid == "" {
-			uid = newUUIDv4()
+			var uidErr error
+			uid, uidErr = newUUIDv4()
+			if uidErr != nil {
+				return nil, fmt.Errorf("dex: generate user id for %q: %w", u.email, uidErr)
+			}
 		}
 		passwords = append(passwords, yamlPassword{
 			Email:    u.email,
@@ -137,9 +147,13 @@ func render(o options) ([]byte, error) {
 		})
 	}
 
+	grantTypes := append([]string(nil), baseGrantTypes...)
+	if o.enableClientCredentials {
+		grantTypes = append(grantTypes, "client_credentials")
+	}
 	oauth2 := oauth2Block{
 		SkipApprovalScreen: o.skipApprovalScreen,
-		GrantTypes:         defaultGrantTypes,
+		GrantTypes:         grantTypes,
 	}
 	// Dex requires oauth2.passwordConnector to name the connector ID used for
 	// the password grant (ROPC). When the built-in password DB is active its
@@ -170,7 +184,9 @@ func render(o options) ([]byte, error) {
 
 // dexLogLevel maps a standard library slog.Level to the string vocabulary
 // Dex recognises in its YAML `logger.level` field. Values between slog's
-// fixed levels round down (e.g. slog.LevelInfo+1 → "info").
+// fixed levels round up to the next defined level (e.g. slog.LevelInfo+1
+// → "warn", slog.LevelWarn+1 → "error"); sub-debug values clamp to
+// "debug".
 func dexLogLevel(l slog.Level) string {
 	switch {
 	case l <= slog.LevelDebug:
@@ -185,13 +201,15 @@ func dexLogLevel(l slog.Level) string {
 }
 
 // newUUIDv4 generates an RFC 4122 v4 UUID without importing a third-party dep.
-func newUUIDv4() string {
+// Returns an error from crypto/rand.Read rather than panicking so callers in
+// the container-startup and gRPC-admin paths can surface it up the chain.
+func newUUIDv4() (string, error) {
 	var b [16]byte
 	if _, err := rand.Read(b[:]); err != nil {
-		panic(fmt.Errorf("dex: read randomness: %w", err))
+		return "", fmt.Errorf("dex: read randomness: %w", err)
 	}
 	b[6] = (b[6] & 0x0f) | 0x40
 	b[8] = (b[8] & 0x3f) | 0x80
 	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
-		b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
+		b[0:4], b[4:6], b[6:8], b[8:10], b[10:16]), nil
 }

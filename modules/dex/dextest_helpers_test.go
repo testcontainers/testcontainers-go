@@ -42,7 +42,7 @@ func drivePasswordAuthCode(t *testing.T, ctx context.Context, cfg oauth2.Config,
 	authURL := cfg.AuthCodeURL("state-xyz", oauth2.AccessTypeOffline)
 
 	// Step 1: GET /auth → follow redirects until the login form page.
-	req, err := http.NewRequestWithContext(ctx, "GET", authURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, authURL, nil)
 	require.NoError(t, err)
 	resp, err := client.Do(req)
 	require.NoError(t, err)
@@ -62,7 +62,7 @@ func drivePasswordAuthCode(t *testing.T, ctx context.Context, cfg oauth2.Config,
 
 	// Step 2: POST the login form.
 	form := url.Values{"login": {email}, "password": {password}}
-	postReq, err := http.NewRequestWithContext(ctx, "POST", actionURL.String(), strings.NewReader(form.Encode()))
+	postReq, err := http.NewRequestWithContext(ctx, http.MethodPost, actionURL.String(), strings.NewReader(form.Encode()))
 	require.NoError(t, err)
 	postReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 

@@ -8,7 +8,7 @@ The Testcontainers module for [Dex](https://github.com/dexidp/dex), a CNCF OIDC 
 
 ## Adding this module to your project dependencies
 
-```
+```bash
 go get github.com/testcontainers/testcontainers-go/modules/dex
 ```
 
@@ -49,13 +49,11 @@ fmt.Println("issuer:", c.IssuerURL())
 `authorization_code`, `refresh_token`, `password`. Declare per-client via
 `WithClientGrantTypes(...)`.
 
-**`client_credentials` requires Dex ≥ v2.46.0 (not yet released at time of
-writing) with the feature flag enabled.** Dex gates this grant behind the
-env var `DEX_CLIENT_CREDENTIAL_GRANT_ENABLED_BY_DEFAULT=true`. Use
-`WithEnableClientCredentials()` to set it automatically. Currently available
-in `dexidp/dex:master` / `:latest` images; the first tagged release
-containing it (likely `v2.46.0`) will also support it. The module does not
-validate the image tag — the caller must pin a compatible image.
+**`client_credentials` requires Dex ≥ v2.46.0 (or `dexidp/dex:master` until
+that release ships) with the feature flag enabled.** Dex gates this grant
+behind the env var `DEX_CLIENT_CREDENTIAL_GRANT_ENABLED_BY_DEFAULT=true`.
+Use `WithEnableClientCredentials()` to set it automatically. The module
+does not validate the image tag — the caller must pin a compatible image.
 
 ```go
 svc, err := dex.NewClient("svc",
@@ -142,7 +140,9 @@ when a human-readable identifier is needed.
 ### Endpoint getters
 
 `IssuerURL`, `ConfigEndpoint`, `JWKSEndpoint`, `TokenEndpoint`,
-`AuthEndpoint`, `GRPCEndpoint(ctx) (string, error)`.
+`AuthEndpoint`, `GRPCEndpoint`. See godoc for signatures — `GRPCEndpoint`
+takes `context.Context` and may return an error; the others are
+string-only getters.
 
 ### Runtime mutation (gRPC)
 
@@ -151,7 +151,8 @@ use.
 
 - `AddClient` returns `ErrClientExists` when the ID is already registered.
 - `AddUser` returns `ErrUserExists` when the email is already registered.
-- `Remove*` return a plain error containing `"not found"` on unknown IDs.
+- `RemoveClient` wraps `ErrClientNotFound` when the ID is absent.
+- `RemoveUser` wraps `ErrUserNotFound` when the email is absent.
 
 ## Known limitations
 

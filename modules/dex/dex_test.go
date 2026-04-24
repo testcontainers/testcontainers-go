@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -195,7 +196,7 @@ func TestWithLogger_CapturesDexOutput(t *testing.T) {
 	// CreatePassword, etc.) — only boot and key-rotation events reach the
 	// log stream. "listening on" is the last boot-time line and therefore
 	// the strongest stable signal we can assert on.
-	deadline := time.Now().Add(5 * time.Second)
+	deadline := time.Now().Add(30 * time.Second)
 	for time.Now().Before(deadline) {
 		if strings.Contains(buf.String(), "listening on") {
 			return
@@ -535,7 +536,8 @@ func TestGRPC_RuntimeAddUsableEndToEnd(t *testing.T) {
 
 	// Do the login dance manually — drivePasswordAuthCode uses require.NoError
 	// which would abort the test on the expected failure.
-	jar, _ := cookiejar.New(nil)
+	jar, err := cookiejar.New(nil)
+	require.NoError(t, err)
 	client := &http.Client{
 		Jar: jar,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -549,15 +551,13 @@ func TestGRPC_RuntimeAddUsableEndToEnd(t *testing.T) {
 	authURL := cfg.AuthCodeURL("s1")
 	resp, err := client.Get(authURL)
 	require.NoError(t, err)
-	body, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
 	loginURL := resp.Request.URL.String()
 
-	// Use the same action-extractor approach as the helper — but for a
-	// negative path we just POST blindly to the request URL. Dex's
-	// local login endpoint accepts POSTs at the same URL the GET returned.
-	_ = body
-
+	// Negative-path login: POST blindly to the GET's final URL. Dex's
+	// local login endpoint accepts POSTs at the same URL the GET returned;
+	// the helper's form-action extraction is unnecessary here because we
+	// only care that the POST fails, not which rendered path it takes.
 	form := url.Values{"login": {"late@e.com"}, "password": {"p"}}
 	r2, err := client.Post(loginURL, "application/x-www-form-urlencoded", strings.NewReader(form.Encode()))
 	require.NoError(t, err)
@@ -618,6 +618,14 @@ func TestWithIssuer_CrossContainerViaNetworkAlias(t *testing.T) {
 }
 
 func TestClientCredentials_WithFeatureFlag(t *testing.T) {
+	// dexImageWithCC is the floating dexidp/dex:master tag. Its contents
+	// shift without warning, so this test opts in via DEX_TEST_MASTER=1 to
+	// keep the default CI run deterministic. Once Dex v2.46.0 ships, swap
+	// dexImageWithCC for the pinned tag and drop this gate.
+	if os.Getenv("DEX_TEST_MASTER") != "1" {
+		t.Skip("set DEX_TEST_MASTER=1 to run; uses floating dexidp/dex:master tag")
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 

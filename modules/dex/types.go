@@ -181,9 +181,15 @@ var (
 	// ErrClientExists is returned by AddClient when a client with the given
 	// ID is already registered.
 	ErrClientExists = errors.New("dex: client already exists")
+	// ErrClientNotFound is returned by RemoveClient when no client matches
+	// the given ID.
+	ErrClientNotFound = errors.New("dex: client not found")
 	// ErrUserExists is returned by AddUser when a user with the given email
 	// is already registered.
 	ErrUserExists = errors.New("dex: user already exists")
+	// ErrUserNotFound is returned by RemoveUser when no user matches the
+	// given email.
+	ErrUserNotFound = errors.New("dex: user not found")
 	// ErrNoAuthSource is returned when the rendered Dex config would boot
 	// with no working authentication source — neither the password DB nor
 	// any connector. The password DB is enabled by default; callers must

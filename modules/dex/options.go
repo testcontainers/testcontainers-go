@@ -40,15 +40,20 @@ func defaultOptions() options {
 // Option is a functional option for the Dex module. Options return an error
 // so user-supplied values can be validated at Run time rather than failing
 // silently in the rendered YAML.
+//
+// NOTE: Options must be passed directly to dex.Run. They satisfy the
+// testcontainers.ContainerCustomizer interface only so the Run signature
+// can accept them alongside generic tc-go customizers (e.g. network.With*)
+// — Option.Customize is a no-op, so an Option forwarded through any
+// wrapper that dispatches via Customize (instead of type-asserting to
+// Option) is silently dropped.
 type Option func(*options) error
 
 // Compiler check: Option implements testcontainers.ContainerCustomizer.
 var _ testcontainers.ContainerCustomizer = Option(nil)
 
-// Customize is a no-op; Option satisfies the testcontainers.ContainerCustomizer
-// interface so callers can pass Options through any API that accepts tc-go
-// customizers. Real state mutation happens in Run, which drives the Option
-// functions against an internal accumulator.
+// Customize is a no-op; real state mutation happens inside Run. See the
+// Option type-level doc for why this is a no-op.
 func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 	return nil
 }
@@ -79,10 +84,10 @@ func WithUser(u User) Option {
 
 // WithConnector enables a Dex connector by type. For ConnectorPassword this
 // is a no-op — the password DB is enabled by default and the template
-// handles it separately. For other connectors (e.g. ConnectorMock), the
-// entry is added to the rendered YAML.
-//
-// Returns an error when id or name is blank for a non-password connector.
+// handles it separately; id and name are ignored and blank-field
+// validation is skipped in that case. For other connectors
+// (e.g. ConnectorMock) the entry is added to the rendered YAML, and blank
+// id or name returns an error.
 func WithConnector(t ConnectorType, id, name string) Option {
 	return func(o *options) error {
 		if t == ConnectorPassword {
@@ -143,9 +148,14 @@ func WithDisablePasswordDB() Option {
 }
 
 // WithLogger routes Dex container logs through the supplied slog.Logger.
-// When nil or not called, Dex container logs are discarded.
+// When unset, Dex container logs are discarded. Calling WithLogger(nil)
+// is a no-op; to discard logs again after setting a logger, drop the
+// option rather than passing nil.
 func WithLogger(logger *slog.Logger) Option {
 	return func(o *options) error {
+		if logger == nil {
+			return nil
+		}
 		o.logger = logger
 		return nil
 	}

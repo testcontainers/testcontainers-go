@@ -65,7 +65,7 @@ func (c *DexContainer) RemoveClient(ctx context.Context, id string) error {
 		return fmt.Errorf("dex: delete client: %w", err)
 	}
 	if resp.NotFound {
-		return fmt.Errorf("dex: client %q not found", id)
+		return fmt.Errorf("%w: %q", ErrClientNotFound, id)
 	}
 	return nil
 }
@@ -90,7 +90,11 @@ func (c *DexContainer) AddUser(ctx context.Context, u User) error {
 	}
 	userID := u.userID
 	if userID == "" {
-		userID = newUUIDv4()
+		uid, uidErr := newUUIDv4()
+		if uidErr != nil {
+			return fmt.Errorf("dex: generate user id: %w", uidErr)
+		}
+		userID = uid
 	}
 
 	resp, err := api.NewDexClient(conn).CreatePassword(ctx, &api.CreatePasswordReq{
@@ -129,7 +133,7 @@ func (c *DexContainer) RemoveUser(ctx context.Context, email string) error {
 		return fmt.Errorf("dex: delete password: %w", err)
 	}
 	if resp.NotFound {
-		return fmt.Errorf("dex: user %q not found", email)
+		return fmt.Errorf("%w: %q", ErrUserNotFound, email)
 	}
 	return nil
 }

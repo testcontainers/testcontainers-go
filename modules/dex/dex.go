@@ -27,6 +27,8 @@ package dex
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -83,9 +85,17 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			return fmt.Errorf("dex: copy yaml: %w", err)
 		}
 
-		// Wait for Dex to serve discovery + gRPC port before returning.
+		// Wait for Dex to serve discovery + gRPC port before returning. The
+		// discovery path is derived from the issuer's path component so
+		// WithIssuer("http://host/idp") probes "/idp/.well-known/...", not
+		// the default "/dex/...".
+		issuerURL, err := url.Parse(settings.issuer)
+		if err != nil {
+			return fmt.Errorf("dex: parse issuer: %w", err)
+		}
+		discoveryPath := strings.TrimRight(issuerURL.Path, "/") + "/.well-known/openid-configuration"
 		ready := wait.ForAll(
-			wait.ForHTTP("/dex/.well-known/openid-configuration").
+			wait.ForHTTP(discoveryPath).
 				WithPort(httpPort).
 				WithStartupTimeout(60*time.Second),
 			wait.ForListeningPort(grpcPort).

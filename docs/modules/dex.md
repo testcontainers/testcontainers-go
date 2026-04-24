@@ -12,7 +12,7 @@ OAuth2/OIDC flows end-to-end instead of mocking the token endpoint.
 
 Please run the following command to add the Dex module to your Go dependencies:
 
-```
+```bash
 go get github.com/testcontainers/testcontainers-go/modules/dex
 ```
 

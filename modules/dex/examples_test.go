@@ -72,10 +72,10 @@ func ExampleRun_passwordGrant() {
 		dex.WithClient(svc),
 		dex.WithUser(user),
 	)
+	defer testcontainers.TerminateContainer(c)
 	if err != nil {
 		log.Fatalf("run: %v", err)
 	}
-	defer testcontainers.TerminateContainer(c)
 
 	cfg := oauth2.Config{
 		ClientID: "svc", ClientSecret: "s",
