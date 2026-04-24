@@ -1,6 +1,6 @@
 # Dex
 
-Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.42.0"><span class="tc-version">:material-tag: v0.42.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 ## Introduction
 
