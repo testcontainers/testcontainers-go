@@ -19,7 +19,7 @@ go get github.com/testcontainers/testcontainers-go/modules/dex
 ## Usage example
 
 <!--codeinclude-->
-[Creating a Dex container](../../modules/dex/examples_test.go) inside_block:runDexContainer
+[Creating a Dex container](../../modules/dex/examples_test.go) inside_block:runContainer
 <!--/codeinclude-->
 
 ## Module Reference

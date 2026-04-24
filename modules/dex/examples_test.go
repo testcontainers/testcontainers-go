@@ -11,7 +11,7 @@ import (
 )
 
 func ExampleRun_authorizationCode() {
-	// runDexContainer {
+	// runContainer {
 	ctx := context.Background()
 
 	app, err := dex.NewClient("my-app",
