@@ -717,7 +717,6 @@ func TestContainerLogDrainOnTerminate(t *testing.T) {
 	)
 
 	for run := range runs {
-		run := run
 		t.Run(fmt.Sprintf("run-%d", run), func(t *testing.T) {
 			t.Parallel()
 
@@ -736,11 +735,12 @@ func TestContainerLogDrainOnTerminate(t *testing.T) {
 				}),
 				WithWaitStrategy(wait.ForExit()),
 			)
+			require.NoError(t, err)
+			CleanupContainer(t, ctr)
+
 			// Terminate after the container has already exited so the race
 			// window is as narrow as possible.
-			err2 := TerminateContainer(ctr)
-			require.NoError(t, err)
-			require.NoError(t, err2)
+			require.NoError(t, TerminateContainer(ctr))
 
 			got := consumer.Count()
 			require.Equalf(t, lineCount, got,

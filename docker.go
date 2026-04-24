@@ -919,7 +919,7 @@ func (c *DockerContainer) stopLogProduction() error {
 		case <-c.logProductionDone:
 			// Goroutine already finished naturally; nothing more to do.
 			return nil
-		case <-time.After(5 * time.Second):
+		case <-time.After(minLogProductionTimeout):
 			// Timed out waiting for natural exit; force-cancel now.
 		}
 	}
