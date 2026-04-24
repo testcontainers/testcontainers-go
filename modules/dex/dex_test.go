@@ -498,12 +498,13 @@ func TestMockConnector_IssuesToken(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	loc := resp.Request.URL
-	if resp.StatusCode >= 300 && resp.StatusCode < 400 {
-		parsed, perr := url.Parse(resp.Header.Get("Location"))
-		require.NoError(t, perr)
-		loc = parsed
-	}
+	// CheckRedirect returns http.ErrUseLastResponse on the redirect to
+	// cfg.RedirectURL, so resp is always a 3xx with the auth code in
+	// its Location header on the success path.
+	require.GreaterOrEqual(t, resp.StatusCode, 300, "expected redirect to %s, got status %d", cfg.RedirectURL, resp.StatusCode)
+	require.Less(t, resp.StatusCode, 400, "expected redirect to %s, got status %d", cfg.RedirectURL, resp.StatusCode)
+	loc, err := url.Parse(resp.Header.Get("Location"))
+	require.NoError(t, err)
 	code := loc.Query().Get("code")
 	require.NotEmpty(t, code, "mockCallback should redirect with ?code=...; got %q", loc.String())
 
