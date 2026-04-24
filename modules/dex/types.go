@@ -1,6 +1,18 @@
 package dex
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
+
+// validClientGrantTypes is the set of OAuth2 grant types Dex understands.
+// Kept in sync with WithClientGrantTypes' godoc.
+var validClientGrantTypes = map[string]struct{}{
+	"authorization_code": {},
+	"refresh_token":      {},
+	"client_credentials": {},
+	"password":           {},
+}
 
 // Client is a static OAuth2 client registered with Dex at boot time via
 // WithClient. Construct with NewClient so invalid configuration surfaces at
@@ -88,6 +100,9 @@ func WithClientGrantTypes(grants ...string) ClientOption {
 		for _, g := range grants {
 			if g == "" {
 				return errors.New("dex: client grant type must not be blank")
+			}
+			if _, ok := validClientGrantTypes[g]; !ok {
+				return fmt.Errorf("dex: unsupported client grant type %q", g)
 			}
 		}
 		c.grantTypes = append(c.grantTypes, grants...)

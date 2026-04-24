@@ -100,3 +100,28 @@ func TestOptions_WithUser_RejectsZeroValue(t *testing.T) {
 	assert.Error(t, WithUser(User{})(&o), "zero User must be rejected — force NewUser")
 	assert.Empty(t, o.users)
 }
+
+func TestNewClient_WithClientGrantTypes_Allowlist(t *testing.T) {
+	cases := []struct {
+		name    string
+		grants  []string
+		wantErr bool
+	}{
+		{"all four supported", []string{"authorization_code", "refresh_token", "client_credentials", "password"}, false},
+		{"single supported", []string{"authorization_code"}, false},
+		{"blank rejected", []string{""}, true},
+		{"typo rejected", []string{"authorisation_code"}, true},
+		{"unknown grant rejected", []string{"jwt-bearer"}, true},
+		{"valid then invalid rejected", []string{"password", "jwt-bearer"}, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := NewClient("c", WithClientSecret("s"), WithClientGrantTypes(tc.grants...))
+			if tc.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
