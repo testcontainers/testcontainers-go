@@ -69,7 +69,9 @@ func TestRun_DefaultPath_DiscoveryMatches(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotEmpty(t, grpcEP)
 
-	resp, err := http.Get(c.ConfigEndpoint())
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.ConfigEndpoint(), nil)
+	require.NoError(t, err)
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 	require.Equal(t, 200, resp.StatusCode, "discovery endpoint must return 200")
@@ -109,7 +111,9 @@ func TestRun_WithIssuerOverride(t *testing.T) {
 	require.NoError(t, err)
 
 	reachable := fmt.Sprintf("http://%s:%s/dex/.well-known/openid-configuration", host, mapped.Port())
-	resp, err := http.Get(reachable)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reachable, nil)
+	require.NoError(t, err)
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 	require.Equal(t, 200, resp.StatusCode)
@@ -477,7 +481,7 @@ func TestMockConnector_IssuesToken(t *testing.T) {
 
 	// Drive the /auth URL with connector_id=mock so Dex skips the login form.
 	authURL := cfg.AuthCodeURL("state-mock") + "&connector_id=mock"
-	req, err := http.NewRequestWithContext(ctx, "GET", authURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, authURL, nil)
 	require.NoError(t, err)
 
 	client := &http.Client{
@@ -549,7 +553,9 @@ func TestGRPC_RuntimeAddUsableEndToEnd(t *testing.T) {
 	}
 
 	authURL := cfg.AuthCodeURL("s1")
-	resp, err := client.Get(authURL)
+	getReq, err := http.NewRequestWithContext(ctx, http.MethodGet, authURL, nil)
+	require.NoError(t, err)
+	resp, err := client.Do(getReq)
 	require.NoError(t, err)
 	resp.Body.Close()
 	loginURL := resp.Request.URL.String()
@@ -559,7 +565,10 @@ func TestGRPC_RuntimeAddUsableEndToEnd(t *testing.T) {
 	// the helper's form-action extraction is unnecessary here because we
 	// only care that the POST fails, not which rendered path it takes.
 	form := url.Values{"login": {"late@e.com"}, "password": {"p"}}
-	r2, err := client.Post(loginURL, "application/x-www-form-urlencoded", strings.NewReader(form.Encode()))
+	postReq, err := http.NewRequestWithContext(ctx, http.MethodPost, loginURL, strings.NewReader(form.Encode()))
+	require.NoError(t, err)
+	postReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r2, err := client.Do(postReq)
 	require.NoError(t, err)
 	body2, _ := io.ReadAll(r2.Body)
 	r2.Body.Close()
