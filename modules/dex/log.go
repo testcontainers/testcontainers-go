@@ -45,9 +45,13 @@ func (s *slogConsumer) accept(content, logType string) {
 	s.logger.LogAttrs(context.Background(), level, msg, attrs...)
 }
 
+// logfmtUnescaper unescapes the two backslash sequences logfmt allows
+// inside quoted values: \" → " and \\ → \.
+var logfmtUnescaper = strings.NewReplacer(`\\`, `\`, `\"`, `"`)
+
 // parseLogfmt is a minimal logfmt parser — enough for Dex's default
 // format (level=... msg=...). Unknown keys become slog attrs. Quoted
-// values are unquoted.
+// values are unquoted and have their \" / \\ escapes expanded.
 func parseLogfmt(line string) (slog.Level, string, []slog.Attr) {
 	level := slog.LevelInfo
 	msg := ""
@@ -103,7 +107,7 @@ func tokenizeLogfmt(line string) []kv {
 				}
 				i++
 			}
-			out = append(out, kv{k, line[vStart:i]})
+			out = append(out, kv{k, logfmtUnescaper.Replace(line[vStart:i])})
 			if i < len(line) {
 				i++
 			}

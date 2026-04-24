@@ -62,6 +62,13 @@ func TestParseLogfmt_QuotedValue(t *testing.T) {
 	assert.Equal(t, "something went wrong: boom", msg)
 }
 
+func TestParseLogfmt_QuotedValueUnescapes(t *testing.T) {
+	// Dex msg fields with embedded quotes / backslashes must round-trip
+	// without raw \\ or \" sequences leaking into slog attrs.
+	_, msg, _ := parseLogfmt(`level=info msg="he said \"hi\" then C:\\path"`)
+	assert.Equal(t, `he said "hi" then C:\path`, msg)
+}
+
 func TestMapLevel(t *testing.T) {
 	cases := map[string]slog.Level{
 		"debug":   slog.LevelDebug,
