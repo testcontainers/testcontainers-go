@@ -936,6 +936,7 @@ func (c *DockerContainer) stopLogProduction() error {
 		select {
 		case <-c.logProductionDone:
 		case <-time.After(minLogProductionTimeout):
+			c.logger.Printf("timeout waiting for log production goroutine to exit; a goroutine may have leaked")
 		}
 	}
 
