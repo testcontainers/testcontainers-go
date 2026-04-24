@@ -287,12 +287,14 @@ func (d *DockerCompose) Close() error {
 				errs = append(errs, fmt.Errorf("close docker cli client: %w", err))
 			}
 		}
+		d.dockerCli = nil
 	}
 
 	if d.dockerClient != nil {
 		if err := d.dockerClient.Close(); err != nil {
 			errs = append(errs, fmt.Errorf("close docker client: %w", err))
 		}
+		d.dockerClient = nil
 	}
 
 	return errors.Join(errs...)

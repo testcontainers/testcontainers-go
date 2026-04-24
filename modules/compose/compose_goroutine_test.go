@@ -29,13 +29,16 @@ func TestDockerComposeGoroutineLeak(t *testing.T) {
 	// Snapshot goroutines after NewDockerCompose establishes its initial
 	// Docker provider connection, so IgnoreCurrent covers the provider's
 	// keep-alive transport goroutines that pre-date the compose Up/Down cycle.
-	// We additionally ignore Reaper goroutines since they are tracked separately.
 	ignoreExisting := goleak.IgnoreCurrent()
 
+	// Register Close cleanup first so it runs last (t.Cleanup is LIFO).
+	// goleak.VerifyNone is called here so it runs after both Down and Close.
 	t.Cleanup(func() {
 		require.NoError(t, compose.Close(), "compose.Close()")
 		goleak.VerifyNone(t,
 			ignoreExisting,
+			// TODO(#2008): Remove this ignore when the Reaper goroutine leak is fixed.
+			// This references an internal anonymous closure that may change if Reaper is refactored.
 			goleak.IgnoreTopFunction("github.com/testcontainers/testcontainers-go.(*Reaper).connect.func1"),
 		)
 	})
@@ -43,5 +46,10 @@ func TestDockerComposeGoroutineLeak(t *testing.T) {
 	ctx := context.Background()
 
 	require.NoError(t, compose.Up(ctx, Wait(true)), "compose.Up()")
-	require.NoError(t, compose.Down(ctx, RemoveOrphans(true), RemoveVolumes(true)), "compose.Down()")
+
+	// Register Down cleanup after Up so it runs before Close (t.Cleanup is LIFO).
+	// This ensures Down is called even if the test panics after Up succeeds.
+	t.Cleanup(func() {
+		require.NoError(t, compose.Down(ctx, RemoveOrphans(true), RemoveVolumes(true)), "compose.Down()")
+	})
 }
