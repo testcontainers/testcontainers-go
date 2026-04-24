@@ -610,6 +610,7 @@ func TestWithIssuer_CrossContainerViaNetworkAlias(t *testing.T) {
 
 	logs, err := sidecar.Logs(ctx)
 	require.NoError(t, err)
+	defer logs.Close()
 	body, err := io.ReadAll(logs)
 	require.NoError(t, err)
 
