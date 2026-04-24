@@ -41,7 +41,7 @@ func (c *Container) AddClient(ctx context.Context, cl Client) error {
 		return fmt.Errorf("dex: create client: %w", err)
 	}
 	if resp.AlreadyExists {
-		return ErrClientExists
+		return fmt.Errorf("%w: %q", ErrClientExists, cl.id)
 	}
 	return nil
 }
@@ -109,7 +109,7 @@ func (c *Container) AddUser(ctx context.Context, u User) error {
 		return fmt.Errorf("dex: create password: %w", err)
 	}
 	if resp.AlreadyExists {
-		return ErrUserExists
+		return fmt.Errorf("%w: %q", ErrUserExists, u.email)
 	}
 	return nil
 }
