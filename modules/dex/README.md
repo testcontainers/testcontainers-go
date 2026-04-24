@@ -139,10 +139,13 @@ when a human-readable identifier is needed.
 
 ### Endpoint getters
 
-`IssuerURL`, `ConfigEndpoint`, `JWKSEndpoint`, `TokenEndpoint`,
-`AuthEndpoint`, `GRPCEndpoint`. See godoc for signatures — `GRPCEndpoint`
-takes `context.Context` and may return an error; the others are
-string-only getters.
+- `IssuerURL() string`
+- `ConfigEndpoint() string`
+- `JWKSEndpoint() string`
+- `TokenEndpoint() string`
+- `AuthEndpoint() string`
+- `GRPCEndpoint(ctx context.Context) (string, error)` — only getter that
+  may return an error (Docker host/port lookup).
 
 ### Runtime mutation (gRPC)
 
