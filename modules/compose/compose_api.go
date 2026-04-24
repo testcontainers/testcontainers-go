@@ -15,6 +15,7 @@ import (
 
 	"github.com/compose-spec/compose-go/v2/cli"
 	"github.com/compose-spec/compose-go/v2/types"
+	"github.com/docker/cli/cli/command"
 	"github.com/docker/compose/v5/pkg/api"
 	"github.com/moby/moby/client"
 	"golang.org/x/sync/errgroup"
@@ -180,6 +181,10 @@ type DockerCompose struct {
 	// used to synchronize operations
 	lock sync.RWMutex
 
+	// dockerCli is the Docker CLI instance used internally by the compose service.
+	// It is stored here so its HTTP transport connections can be closed after Down().
+	dockerCli *command.DockerCli
+
 	// name/identifier of the stack that will be started
 	// by default a UUID will be used
 	name string
@@ -262,6 +267,15 @@ func (d *DockerCompose) Down(ctx context.Context, opts ...StackDownOption) error
 		for cfg := range d.temporaryConfigs {
 			_ = os.Remove(cfg)
 		}
+	}()
+
+	// Close HTTP transport connections used by the compose CLI and the testcontainers
+	// Docker client to prevent net/http persistConn goroutine leaks.
+	defer func() {
+		if d.dockerCli != nil {
+			_ = d.dockerCli.Client().Close()
+		}
+		_ = d.dockerClient.Close()
 	}()
 
 	return d.composeService.Down(ctx, d.name, options.DownOptions)
