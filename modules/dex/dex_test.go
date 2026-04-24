@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/guilycst/testcontainers-go/modules/dex"
+	"github.com/testcontainers/testcontainers-go/modules/dex"
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"golang.org/x/oauth2"
@@ -31,12 +31,30 @@ const (
 	dexImageWithCC = "dexidp/dex:master"
 )
 
+// mustClient + mustUser are test helpers: the module's NewClient / NewUser
+// constructors return (Client, error), but every test here uses valid input.
+// Wrapping them with require lets the test read like the old field-literal
+// form while preserving constructor validation.
+func mustClient(t *testing.T, id string, opts ...dex.ClientOption) dex.Client {
+	t.Helper()
+	c, err := dex.NewClient(id, opts...)
+	require.NoError(t, err)
+	return c
+}
+
+func mustUser(t *testing.T, email, username, password string, opts ...dex.UserOption) dex.User {
+	t.Helper()
+	u, err := dex.NewUser(email, username, password, opts...)
+	require.NoError(t, err)
+	return u
+}
+
 func TestRun_DefaultPath_DiscoveryMatches(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	c, err := dex.Run(ctx, dexImage,
-		dex.WithUser(dex.User{Email: "u@e.com", Username: "u", Password: "p"}),
+		dex.WithUser(mustUser(t, "u@e.com", "u", "p")),
 	)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
@@ -46,7 +64,9 @@ func TestRun_DefaultPath_DiscoveryMatches(t *testing.T) {
 	assert.Equal(t, c.IssuerURL()+"/keys", c.JWKSEndpoint())
 	assert.Equal(t, c.IssuerURL()+"/token", c.TokenEndpoint())
 	assert.Equal(t, c.IssuerURL()+"/auth", c.AuthEndpoint())
-	assert.NotEmpty(t, c.GRPCEndpoint())
+	grpcEP, err := c.GRPCEndpoint(ctx)
+	require.NoError(t, err)
+	assert.NotEmpty(t, grpcEP)
 
 	resp, err := http.Get(c.ConfigEndpoint())
 	require.NoError(t, err)
@@ -72,7 +92,7 @@ func TestRun_WithIssuerOverride(t *testing.T) {
 
 	c, err := dex.Run(ctx, dexImage,
 		dex.WithIssuer(issuer),
-		dex.WithUser(dex.User{Email: "u@e.com", Username: "u", Password: "p"}),
+		dex.WithUser(mustUser(t, "u@e.com", "u", "p")),
 	)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
@@ -105,17 +125,16 @@ func TestGRPC_AddRemoveClient(t *testing.T) {
 	defer cancel()
 
 	c, err := dex.Run(ctx, dexImage,
-		dex.WithUser(dex.User{Email: "u@e.com", Username: "u", Password: "p"}),
+		dex.WithUser(mustUser(t, "u@e.com", "u", "p")),
 	)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
 
-	cl := dex.Client{
-		ID:           "runtime-app",
-		Secret:       "s",
-		RedirectURIs: []string{"http://localhost/cb"},
-		Name:         "Runtime App",
-	}
+	cl := mustClient(t, "runtime-app",
+		dex.WithClientSecret("s"),
+		dex.WithClientRedirectURIs("http://localhost/cb"),
+		dex.WithClientName("Runtime App"),
+	)
 	require.NoError(t, c.AddClient(ctx, cl))
 
 	// Idempotency: second Add returns ErrClientExists.
@@ -123,10 +142,10 @@ func TestGRPC_AddRemoveClient(t *testing.T) {
 	assert.ErrorIs(t, err, dex.ErrClientExists)
 
 	// Removal succeeds.
-	require.NoError(t, c.RemoveClient(ctx, cl.ID))
+	require.NoError(t, c.RemoveClient(ctx, cl.ID()))
 
 	// Second remove errors (not-found).
-	err = c.RemoveClient(ctx, cl.ID)
+	err = c.RemoveClient(ctx, cl.ID())
 	assert.Error(t, err)
 }
 
@@ -138,7 +157,7 @@ func TestGRPC_AddRemoveUser(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
 
-	u := dex.User{Email: "runtime@example.com", Username: "runtime", Password: "p"}
+	u := mustUser(t, "runtime@example.com", "runtime", "p")
 	require.NoError(t, c.AddUser(ctx, u))
 
 	// Duplicate add errors.
@@ -146,10 +165,10 @@ func TestGRPC_AddRemoveUser(t *testing.T) {
 	assert.ErrorIs(t, err, dex.ErrUserExists)
 
 	// Removal succeeds.
-	require.NoError(t, c.RemoveUser(ctx, u.Email))
+	require.NoError(t, c.RemoveUser(ctx, u.Email()))
 
 	// Second removal errors.
-	err = c.RemoveUser(ctx, u.Email)
+	err = c.RemoveUser(ctx, u.Email())
 	assert.Error(t, err)
 }
 
@@ -162,7 +181,7 @@ func TestWithLogger_CapturesDexOutput(t *testing.T) {
 
 	c, err := dex.Run(ctx, dexImage,
 		dex.WithLogger(logger),
-		dex.WithUser(dex.User{Email: "u@e.com", Username: "u", Password: "p"}),
+		dex.WithUser(mustUser(t, "u@e.com", "u", "p")),
 	)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
@@ -218,18 +237,13 @@ func TestAuthCode_PasswordConnector_Basic(t *testing.T) {
 	const redirectURI = "http://localhost:18080/cb"
 
 	c, err := dex.Run(ctx, dexImage,
-		dex.WithClient(dex.Client{
-			ID:           "e2e-app",
-			Secret:       "e2e-secret",
-			RedirectURIs: []string{redirectURI},
-			GrantTypes:   []string{"authorization_code", "refresh_token"},
-			Name:         "E2E App",
-		}),
-		dex.WithUser(dex.User{
-			Email:    "alice@example.com",
-			Username: "alice",
-			Password: "pass",
-		}),
+		dex.WithClient(mustClient(t, "e2e-app",
+			dex.WithClientSecret("e2e-secret"),
+			dex.WithClientRedirectURIs(redirectURI),
+			dex.WithClientGrantTypes("authorization_code", "refresh_token"),
+			dex.WithClientName("E2E App"),
+		)),
+		dex.WithUser(mustUser(t, "alice@example.com", "alice", "pass")),
 	)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
@@ -260,12 +274,13 @@ func TestAuthCode_RefreshToken(t *testing.T) {
 	const redirectURI = "http://localhost:18080/cb"
 
 	c, err := dex.Run(ctx, dexImage,
-		dex.WithClient(dex.Client{
-			ID: "e2e", Secret: "s", Name: "E2E",
-			RedirectURIs: []string{redirectURI},
-			GrantTypes:   []string{"authorization_code", "refresh_token"},
-		}),
-		dex.WithUser(dex.User{Email: "a@e.com", Username: "a", Password: "p"}),
+		dex.WithClient(mustClient(t, "e2e",
+			dex.WithClientSecret("s"),
+			dex.WithClientName("E2E"),
+			dex.WithClientRedirectURIs(redirectURI),
+			dex.WithClientGrantTypes("authorization_code", "refresh_token"),
+		)),
+		dex.WithUser(mustUser(t, "a@e.com", "a", "p")),
 	)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
@@ -299,12 +314,13 @@ func TestAuthCode_MultipleRedirectURIs(t *testing.T) {
 	uris := []string{"http://localhost:18080/cb", "http://localhost:18090/cb"}
 
 	c, err := dex.Run(ctx, dexImage,
-		dex.WithClient(dex.Client{
-			ID: "e2e", Secret: "s", Name: "E2E",
-			RedirectURIs: uris,
-			GrantTypes:   []string{"authorization_code", "refresh_token"},
-		}),
-		dex.WithUser(dex.User{Email: "a@e.com", Username: "a", Password: "p"}),
+		dex.WithClient(mustClient(t, "e2e",
+			dex.WithClientSecret("s"),
+			dex.WithClientName("E2E"),
+			dex.WithClientRedirectURIs(uris...),
+			dex.WithClientGrantTypes("authorization_code", "refresh_token"),
+		)),
+		dex.WithUser(mustUser(t, "a@e.com", "a", "p")),
 	)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
@@ -333,10 +349,11 @@ func TestClientCredentials_UnsupportedByLocalConnectors(t *testing.T) {
 	defer cancel()
 
 	c, err := dex.Run(ctx, dexImage,
-		dex.WithClient(dex.Client{
-			ID: "svc", Secret: "s", Name: "Service",
-			GrantTypes: []string{"client_credentials"},
-		}),
+		dex.WithClient(mustClient(t, "svc",
+			dex.WithClientSecret("s"),
+			dex.WithClientName("Service"),
+			dex.WithClientGrantTypes("client_credentials"),
+		)),
 	)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
@@ -364,11 +381,12 @@ func TestPasswordGrant_ROPC(t *testing.T) {
 	defer cancel()
 
 	c, err := dex.Run(ctx, dexImage,
-		dex.WithClient(dex.Client{
-			ID: "cli", Secret: "s", Name: "CLI",
-			GrantTypes: []string{"password"},
-		}),
-		dex.WithUser(dex.User{Email: "a@e.com", Username: "a", Password: "p"}),
+		dex.WithClient(mustClient(t, "cli",
+			dex.WithClientSecret("s"),
+			dex.WithClientName("CLI"),
+			dex.WithClientGrantTypes("password"),
+		)),
+		dex.WithUser(mustUser(t, "a@e.com", "a", "p")),
 	)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
@@ -393,16 +411,18 @@ func TestMultipleClients_OneInstance(t *testing.T) {
 	defer cancel()
 
 	c, err := dex.Run(ctx, dexImage,
-		dex.WithClient(dex.Client{
-			ID: "svc", Secret: "s", Name: "SVC",
-			GrantTypes: []string{"password"},
-		}),
-		dex.WithClient(dex.Client{
-			ID: "web", Secret: "s", Name: "Web",
-			RedirectURIs: []string{"http://localhost/cb"},
-			GrantTypes:   []string{"authorization_code", "refresh_token"},
-		}),
-		dex.WithUser(dex.User{Email: "a@e.com", Username: "a", Password: "p"}),
+		dex.WithClient(mustClient(t, "svc",
+			dex.WithClientSecret("s"),
+			dex.WithClientName("SVC"),
+			dex.WithClientGrantTypes("password"),
+		)),
+		dex.WithClient(mustClient(t, "web",
+			dex.WithClientSecret("s"),
+			dex.WithClientName("Web"),
+			dex.WithClientRedirectURIs("http://localhost/cb"),
+			dex.WithClientGrantTypes("authorization_code", "refresh_token"),
+		)),
+		dex.WithUser(mustUser(t, "a@e.com", "a", "p")),
 	)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
@@ -437,11 +457,12 @@ func TestMockConnector_IssuesToken(t *testing.T) {
 
 	c, err := dex.Run(ctx, dexImage,
 		dex.WithConnector(dex.ConnectorMock, "mock", "Mock Connector"),
-		dex.WithClient(dex.Client{
-			ID: "e2e", Secret: "s", Name: "E2E",
-			RedirectURIs: []string{"http://localhost/cb"},
-			GrantTypes:   []string{"authorization_code", "refresh_token"},
-		}),
+		dex.WithClient(mustClient(t, "e2e",
+			dex.WithClientSecret("s"),
+			dex.WithClientName("E2E"),
+			dex.WithClientRedirectURIs("http://localhost/cb"),
+			dex.WithClientGrantTypes("authorization_code", "refresh_token"),
+		)),
 	)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
@@ -493,14 +514,12 @@ func TestGRPC_RuntimeAddUsableEndToEnd(t *testing.T) {
 	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
 
 	// Seed client + user at runtime.
-	require.NoError(t, c.AddClient(ctx, dex.Client{
-		ID: "late-app", Secret: "s",
-		RedirectURIs: []string{"http://localhost/cb"},
-		Name:         "Late App",
-	}))
-	require.NoError(t, c.AddUser(ctx, dex.User{
-		Email: "late@e.com", Username: "late", Password: "p",
-	}))
+	require.NoError(t, c.AddClient(ctx, mustClient(t, "late-app",
+		dex.WithClientSecret("s"),
+		dex.WithClientRedirectURIs("http://localhost/cb"),
+		dex.WithClientName("Late App"),
+	)))
+	require.NoError(t, c.AddUser(ctx, mustUser(t, "late@e.com", "late", "p")))
 
 	cfg := oauth2.Config{
 		ClientID: "late-app", ClientSecret: "s",
@@ -565,7 +584,7 @@ func TestWithIssuer_CrossContainerViaNetworkAlias(t *testing.T) {
 
 	c, err := dex.Run(ctx, dexImage,
 		dex.WithIssuer(issuer),
-		dex.WithUser(dex.User{Email: "u@e.com", Username: "u", Password: "p"}),
+		dex.WithUser(mustUser(t, "u@e.com", "u", "p")),
 		network.WithNetwork([]string{"dex"}, net),
 	)
 	require.NoError(t, err)
@@ -604,10 +623,11 @@ func TestClientCredentials_WithFeatureFlag(t *testing.T) {
 
 	c, err := dex.Run(ctx, dexImageWithCC,
 		dex.WithEnableClientCredentials(),
-		dex.WithClient(dex.Client{
-			ID: "svc", Secret: "s", Name: "Service",
-			GrantTypes: []string{"client_credentials"},
-		}),
+		dex.WithClient(mustClient(t, "svc",
+			dex.WithClientSecret("s"),
+			dex.WithClientName("Service"),
+			dex.WithClientGrantTypes("client_credentials"),
+		)),
 	)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
@@ -630,12 +650,13 @@ func TestConsumer_IDTokenVerifies_CoreosOIDC(t *testing.T) {
 	const redirectURI = "http://localhost:18080/cb"
 
 	c, err := dex.Run(ctx, dexImage,
-		dex.WithClient(dex.Client{
-			ID: "e2e", Secret: "s", Name: "E2E",
-			RedirectURIs: []string{redirectURI},
-			GrantTypes:   []string{"authorization_code", "refresh_token"},
-		}),
-		dex.WithUser(dex.User{Email: "a@e.com", Username: "a", Password: "p"}),
+		dex.WithClient(mustClient(t, "e2e",
+			dex.WithClientSecret("s"),
+			dex.WithClientName("E2E"),
+			dex.WithClientRedirectURIs(redirectURI),
+			dex.WithClientGrantTypes("authorization_code", "refresh_token"),
+		)),
+		dex.WithUser(mustUser(t, "a@e.com", "a", "p")),
 	)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })

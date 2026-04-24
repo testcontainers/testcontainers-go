@@ -1,6 +1,7 @@
 package dex
 
 import (
+	"log/slog"
 	"strings"
 	"testing"
 
@@ -9,6 +10,20 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/yaml.v3"
 )
+
+func mustClient(t *testing.T, id string, opts ...ClientOption) Client {
+	t.Helper()
+	c, err := NewClient(id, opts...)
+	require.NoError(t, err)
+	return c
+}
+
+func mustUser(t *testing.T, email, username, password string, opts ...UserOption) User {
+	t.Helper()
+	u, err := NewUser(email, username, password, opts...)
+	require.NoError(t, err)
+	return u
+}
 
 func TestRender_MinimalDefaults(t *testing.T) {
 	o := defaultOptions()
@@ -36,17 +51,17 @@ func TestRender_WithClients(t *testing.T) {
 	o := defaultOptions()
 	o.issuer = "http://h:5556/dex"
 	o.clients = []Client{
-		{
-			ID: "app1", Secret: "s1",
-			RedirectURIs: []string{"http://a/cb", "http://b/cb"},
-			GrantTypes:   []string{"authorization_code", "refresh_token"},
-			Name:         "App 1",
-		},
-		{
-			ID: "svc", Secret: "s2",
-			GrantTypes: []string{"client_credentials"},
-			Name:       "Service",
-		},
+		mustClient(t, "app1",
+			WithClientSecret("s1"),
+			WithClientRedirectURIs("http://a/cb", "http://b/cb"),
+			WithClientGrantTypes("authorization_code", "refresh_token"),
+			WithClientName("App 1"),
+		),
+		mustClient(t, "svc",
+			WithClientSecret("s2"),
+			WithClientGrantTypes("client_credentials"),
+			WithClientName("Service"),
+		),
 	}
 
 	out, err := render(o)
@@ -71,7 +86,7 @@ func TestRender_WithClients(t *testing.T) {
 func TestRender_WithUsers_BcryptShape(t *testing.T) {
 	o := defaultOptions()
 	o.issuer = "http://h:5556/dex"
-	o.users = []User{{Email: "u@e.com", Username: "u", Password: "p"}}
+	o.users = []User{mustUser(t, "u@e.com", "u", "p")}
 
 	out, err := render(o)
 	require.NoError(t, err)
@@ -133,7 +148,7 @@ func TestRender_IssuerRequired(t *testing.T) {
 func TestRender_BcryptCost(t *testing.T) {
 	o := defaultOptions()
 	o.issuer = "http://h:5556/dex"
-	o.users = []User{{Email: "u@e.com", Username: "u", Password: "p"}}
+	o.users = []User{mustUser(t, "u@e.com", "u", "p")}
 
 	out, err := render(o)
 	require.NoError(t, err)
@@ -154,7 +169,7 @@ func TestRender_BcryptCost(t *testing.T) {
 func TestRender_UserWithExplicitUserID(t *testing.T) {
 	o := defaultOptions()
 	o.issuer = "http://h:5556/dex"
-	o.users = []User{{Email: "u@e.com", Username: "u", Password: "p", UserID: "fixed-id-123"}}
+	o.users = []User{mustUser(t, "u@e.com", "u", "p", WithUserID("fixed-id-123"))}
 
 	out, err := render(o)
 	require.NoError(t, err)
@@ -213,7 +228,7 @@ func TestRender_YAMLInjection_NameField(t *testing.T) {
 	// template-based renderer. yaml.Marshal must escape it such that
 	// the round-tripped value equals the input verbatim.
 	malicious := "real-name\nmalicious_key: poison"
-	o.clients = []Client{{ID: "c", Secret: "s", Name: malicious}}
+	o.clients = []Client{mustClient(t, "c", WithClientSecret("s"), WithClientName(malicious))}
 
 	out, err := render(o)
 	require.NoError(t, err)
@@ -230,34 +245,17 @@ func TestRender_YAMLInjection_NameField(t *testing.T) {
 	assert.Empty(t, got.Malicious, "structural injection must not create a top-level key")
 }
 
-func TestParseImageTag(t *testing.T) {
-	cases := map[string]string{
-		"dexidp/dex:v2.45.1":                     "v2.45.1",
-		"dexidp/dex:master":                      "master",
-		"dexidp/dex:latest-alpine":               "latest-alpine",
-		"ghcr.io/dexidp/dex:v2.46.0":             "v2.46.0",
-		"localhost:5000/dex:v2.46.0":             "v2.46.0",
-		"dexidp/dex":                             "",
-		"dexidp/dex@sha256:abcd":                 "",
-		"dexidp/dex:v2.46.0@sha256:deadbeefcafe": "v2.46.0",
+func TestDexLogLevel(t *testing.T) {
+	cases := map[slog.Level]string{
+		slog.LevelDebug:     "debug",
+		slog.LevelDebug - 1: "debug",
+		slog.LevelInfo:      "info",
+		slog.LevelInfo + 1:  "warn",
+		slog.LevelWarn:      "warn",
+		slog.LevelWarn + 1:  "error",
+		slog.LevelError:     "error",
 	}
 	for in, want := range cases {
-		assert.Equal(t, want, parseImageTag(in), "input=%q", in)
-	}
-}
-
-func TestImageSupportsClientCredentials(t *testing.T) {
-	good := []string{"master", "latest", "master-alpine", "latest-distroless",
-		"v2.46.0", "v2.46.1", "v2.47.0", "v3.0.0",
-		"custom-build-abc", // unknown non-semver → trusted
-	}
-	for _, tag := range good {
-		assert.True(t, imageSupportsClientCredentials(tag), "tag=%q should be supported", tag)
-	}
-
-	bad := []string{"v2.45.0", "v2.45.1", "v2.45.1-alpine", "v2.44.0",
-		"v2.0.0", "v1.99.99"}
-	for _, tag := range bad {
-		assert.False(t, imageSupportsClientCredentials(tag), "tag=%q should NOT be supported", tag)
+		assert.Equal(t, want, dexLogLevel(in), "slog.Level=%v", in)
 	}
 }

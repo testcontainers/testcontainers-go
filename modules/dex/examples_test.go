@@ -6,28 +6,37 @@ import (
 	"log"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/guilycst/testcontainers-go/modules/dex"
+	"github.com/testcontainers/testcontainers-go/modules/dex"
 	"golang.org/x/oauth2"
 )
 
 func ExampleRun_authorizationCode() {
+	// runDexContainer {
 	ctx := context.Background()
-	c, err := dex.Run(ctx, "dexidp/dex:v2.45.1",
-		dex.WithClient(dex.Client{
-			ID:           "my-app",
-			Secret:       "secret",
-			RedirectURIs: []string{"http://localhost:8080/callback"},
-			GrantTypes:   []string{"authorization_code", "refresh_token"},
-			Name:         "My App",
-		}),
-		dex.WithUser(dex.User{
-			Email: "u@example.com", Username: "u", Password: "p",
-		}),
+
+	app, err := dex.NewClient("my-app",
+		dex.WithClientSecret("secret"),
+		dex.WithClientRedirectURIs("http://localhost:8080/callback"),
+		dex.WithClientGrantTypes("authorization_code", "refresh_token"),
+		dex.WithClientName("My App"),
 	)
+	if err != nil {
+		log.Fatalf("new client: %v", err)
+	}
+	user, err := dex.NewUser("u@example.com", "u", "p")
+	if err != nil {
+		log.Fatalf("new user: %v", err)
+	}
+
+	c, err := dex.Run(ctx, "dexidp/dex:v2.45.1",
+		dex.WithClient(app),
+		dex.WithUser(user),
+	)
+	defer testcontainers.TerminateContainer(c)
 	if err != nil {
 		log.Fatalf("run: %v", err)
 	}
-	defer testcontainers.TerminateContainer(c)
+	// }
 
 	_ = oauth2.Config{
 		ClientID:     "my-app",
@@ -45,14 +54,23 @@ func ExampleRun_passwordGrant() {
 	// service-account user. (client_credentials requires an upstream
 	// connector — see module README.)
 	ctx := context.Background()
+
+	svc, err := dex.NewClient("svc",
+		dex.WithClientSecret("s"),
+		dex.WithClientName("Service"),
+		dex.WithClientGrantTypes("password"),
+	)
+	if err != nil {
+		log.Fatalf("new client: %v", err)
+	}
+	user, err := dex.NewUser("svc@svc.local", "svc", "svc-secret")
+	if err != nil {
+		log.Fatalf("new user: %v", err)
+	}
+
 	c, err := dex.Run(ctx, "dexidp/dex:v2.45.1",
-		dex.WithClient(dex.Client{
-			ID: "svc", Secret: "s", Name: "Service",
-			GrantTypes: []string{"password"},
-		}),
-		dex.WithUser(dex.User{
-			Email: "svc@svc.local", Username: "svc", Password: "svc-secret",
-		}),
+		dex.WithClient(svc),
+		dex.WithUser(user),
 	)
 	if err != nil {
 		log.Fatalf("run: %v", err)

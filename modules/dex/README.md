@@ -1,6 +1,6 @@
 # Dex
 
-Not available until the next release of testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.42.0"><span class="tc-version">:material-tag: v0.42.0</span></a>
 
 ## Introduction
 
@@ -9,32 +9,32 @@ The Testcontainers module for [Dex](https://github.com/dexidp/dex), a CNCF OIDC 
 ## Adding this module to your project dependencies
 
 ```
-go get github.com/guilycst/testcontainers-go/modules/dex
+go get github.com/testcontainers/testcontainers-go/modules/dex
 ```
-
-> Note: this is a fork-hosted distribution path on `guilycst/testcontainers-go`
-> while the module incubates. When upstreamed to
-> `testcontainers/testcontainers-go`, the module path reverts to
-> `github.com/testcontainers/testcontainers-go/modules/dex`.
 
 ## Usage example
 
 ```go
 ctx := context.Background()
 
+app, err := dex.NewClient("my-app",
+    dex.WithClientSecret("secret"),
+    dex.WithClientRedirectURIs("http://localhost:8080/callback"),
+    dex.WithClientGrantTypes("authorization_code", "refresh_token"),
+    dex.WithClientName("My App"),
+)
+if err != nil {
+    log.Fatalf("new client: %v", err)
+}
+
+user, err := dex.NewUser("user@example.com", "user", "password")
+if err != nil {
+    log.Fatalf("new user: %v", err)
+}
+
 c, err := dex.Run(ctx, "dexidp/dex:v2.45.1",
-    dex.WithClient(dex.Client{
-        ID:           "my-app",
-        Secret:       "secret",
-        RedirectURIs: []string{"http://localhost:8080/callback"},
-        GrantTypes:   []string{"authorization_code", "refresh_token"},
-        Name:         "My App",
-    }),
-    dex.WithUser(dex.User{
-        Email:    "user@example.com",
-        Username: "user",
-        Password: "password",
-    }),
+    dex.WithClient(app),
+    dex.WithUser(user),
 )
 if err != nil {
     log.Fatalf("run dex: %v", err)
@@ -47,28 +47,28 @@ fmt.Println("issuer:", c.IssuerURL())
 ## Supported grants
 
 `authorization_code`, `refresh_token`, `password`. Declare per-client via
-`WithClient(Client{GrantTypes: ...})`.
+`WithClientGrantTypes(...)`.
 
 **`client_credentials` requires Dex ≥ v2.46.0 (not yet released at time of
 writing) with the feature flag enabled.** Dex gates this grant behind the
 env var `DEX_CLIENT_CREDENTIAL_GRANT_ENABLED_BY_DEFAULT=true`. Use
 `WithEnableClientCredentials()` to set it automatically. Currently available
 in `dexidp/dex:master` / `:latest` images; the first tagged release
-containing it (likely `v2.46.0`) will also support it.
+containing it (likely `v2.46.0`) will also support it. The module does not
+validate the image tag — the caller must pin a compatible image.
 
 ```go
+svc, err := dex.NewClient("svc",
+    dex.WithClientSecret("s"),
+    dex.WithClientName("Service"),
+    dex.WithClientGrantTypes("client_credentials"),
+)
+// ...
 c, err := dex.Run(ctx, "dexidp/dex:master",
     dex.WithEnableClientCredentials(),
-    dex.WithClient(dex.Client{
-        ID: "svc", Secret: "s", Name: "Service",
-        GrantTypes: []string{"client_credentials"},
-    }),
+    dex.WithClient(svc),
 )
 ```
-
-The module logs a warning when `WithEnableClientCredentials()` is set but
-the image tag predates the feature (`v2.45.x` or earlier). Token exchanges
-will fail with `unsupported_grant_type` in that case.
 
 Clients added at runtime via `AddClient` inherit Dex's defaults
 (`authorization_code` + `refresh_token`) because Dex's gRPC `api.Client` proto
@@ -78,7 +78,8 @@ pre-start via `WithClient`.
 ## Connectors
 
 - `ConnectorPassword` — Dex's built-in static password DB (default; enabled
-  automatically when a user is seeded via `WithUser`).
+  automatically when a user is seeded via `WithUser`). Disable via
+  `WithDisablePasswordDB()` when running connector-only flows.
 - `ConnectorMock` — Dex's `mockCallback` test connector (returns a fixed user,
   `kilgore@kilgore.trout`).
 
@@ -93,10 +94,11 @@ and a network alias). The caller owns reachability when overriding.
 
 Dex's password connector emits these standard claims in ID tokens:
 
-- `sub` — stable user ID (auto-generated UUID if `User.UserID` is empty).
+- `sub` — stable user ID (auto-generated UUID when constructed via `NewUser`
+  without `WithUserID`).
 - `email` — user's email address.
 - `email_verified` — always `true` for static password entries.
-- `name` — the value of `User.Username`.
+- `name` — the value of `User`'s username.
 - `iss` — the issuer URL.
 - `aud` — the client ID.
 
@@ -107,26 +109,40 @@ when a human-readable identifier is needed.
 
 ### Types
 
-- `Client{ID, Secret, RedirectURIs, GrantTypes, Public, Name}`
-- `User{Email, Username, Password, UserID}`
+- `Client` — opaque OAuth2 client value. Construct with `NewClient(id, opts...)`.
+- `User` — opaque password entry. Construct with `NewUser(email, username, password, opts...)`.
 - `ConnectorType` — `ConnectorPassword`, `ConnectorMock`
+- `Storage` — `StorageSQLite` (default), `StorageMemory`
 
-### Options
+### Client options (`ClientOption`)
+
+- `WithClientSecret(string)`
+- `WithClientName(string)`
+- `WithClientRedirectURIs(...string)`
+- `WithClientGrantTypes(...string)`
+- `WithClientPublic()`
+
+### User options (`UserOption`)
+
+- `WithUserID(string)` — pin a stable subject claim. Omit to auto-generate UUIDv4.
+
+### Module options
 
 - `WithClient(Client)`
 - `WithUser(User)`
 - `WithConnector(type, id, name)`
 - `WithIssuer(url)`
 - `WithSkipApprovalScreen(bool)`
-- `WithStorage(kind)` — `"sqlite3"` (default) or `"memory"`
+- `WithStorage(Storage)` — `StorageSQLite` (default) or `StorageMemory`
+- `WithDisablePasswordDB()` — opt out of the built-in password DB
 - `WithLogger(*slog.Logger)` — captures Dex logs
-- `WithLogLevel(level)` — sets Dex's `logger.level` YAML key (`debug|info|warn|error`)
+- `WithLogLevel(slog.Level)` — sets Dex's `logger.level` YAML key
 - `WithEnableClientCredentials()` — enables the OAuth2 `client_credentials` grant via feature flag (requires Dex ≥ v2.46.0 or `:master`)
 
 ### Endpoint getters
 
 `IssuerURL`, `ConfigEndpoint`, `JWKSEndpoint`, `TokenEndpoint`,
-`AuthEndpoint`, `GRPCEndpoint`.
+`AuthEndpoint`, `GRPCEndpoint(ctx) (string, error)`.
 
 ### Runtime mutation (gRPC)
 
