@@ -84,7 +84,7 @@ func (c *DexContainer) AddUser(ctx context.Context, u User) error {
 	}
 	defer conn.Close()
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(u.password), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(u.password), testBcryptCost)
 	if err != nil {
 		return fmt.Errorf("dex: bcrypt: %w", err)
 	}

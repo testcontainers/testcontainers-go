@@ -147,7 +147,7 @@ func TestGRPC_AddRemoveClient(t *testing.T) {
 
 	// Second remove errors (not-found).
 	err = c.RemoveClient(ctx, cl.ID())
-	assert.Error(t, err)
+	assert.ErrorIs(t, err, dex.ErrClientNotFound)
 }
 
 func TestGRPC_AddRemoveUser(t *testing.T) {
@@ -170,7 +170,7 @@ func TestGRPC_AddRemoveUser(t *testing.T) {
 
 	// Second removal errors.
 	err = c.RemoveUser(ctx, u.Email())
-	assert.Error(t, err)
+	assert.ErrorIs(t, err, dex.ErrUserNotFound)
 }
 
 func TestWithLogger_CapturesDexOutput(t *testing.T) {
