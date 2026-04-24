@@ -927,9 +927,16 @@ func (c *DockerContainer) stopLogProduction() error {
 	// Signal the log production to stop (for still-running containers).
 	c.logProductionCancel(errLogProductionStop)
 
-	// Wait for the goroutine to acknowledge the cancellation.
+	// Wait for the goroutine to acknowledge the cancellation. Context
+	// cancellation propagates into the Docker transport and should unblock
+	// stdcopy.StdCopy promptly, but we bound the wait to match
+	// minLogProductionTimeout to guard against stuck kernel socket reads or
+	// daemon transport failures that might not honour context cancellation.
 	if c.logProductionDone != nil {
-		<-c.logProductionDone
+		select {
+		case <-c.logProductionDone:
+		case <-time.After(minLogProductionTimeout):
+		}
 	}
 
 	if err := context.Cause(c.logProductionCtx); err != nil {
