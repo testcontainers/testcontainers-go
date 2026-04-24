@@ -269,16 +269,33 @@ func (d *DockerCompose) Down(ctx context.Context, opts ...StackDownOption) error
 		}
 	}()
 
-	// Close HTTP transport connections used by the compose CLI and the testcontainers
-	// Docker client to prevent net/http persistConn goroutine leaks.
-	defer func() {
-		if d.dockerCli != nil {
-			_ = d.dockerCli.Client().Close()
-		}
-		_ = d.dockerClient.Close()
-	}()
-
 	return d.composeService.Down(ctx, d.name, options.DownOptions)
+}
+
+// Close releases the HTTP transport connections held by the internal Docker CLI
+// and the testcontainers Docker client, preventing net/http persistConn goroutine
+// leaks. Call Close after Down when the compose stack will no longer be used.
+func (d *DockerCompose) Close() error {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	var errs []error
+
+	if d.dockerCli != nil {
+		if cli := d.dockerCli.Client(); cli != nil {
+			if err := cli.Close(); err != nil {
+				errs = append(errs, fmt.Errorf("close docker cli client: %w", err))
+			}
+		}
+	}
+
+	if d.dockerClient != nil {
+		if err := d.dockerClient.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("close docker client: %w", err))
+		}
+	}
+
+	return errors.Join(errs...)
 }
 
 func (d *DockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err error) {
