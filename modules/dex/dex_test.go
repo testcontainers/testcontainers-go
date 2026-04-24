@@ -331,15 +331,17 @@ func TestAuthCode_MultipleRedirectURIs(t *testing.T) {
 	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
 
 	for _, uri := range uris {
-		cfg := oauth2.Config{
-			ClientID:     "e2e",
-			ClientSecret: "s",
-			RedirectURL:  uri,
-			Endpoint:     oauth2.Endpoint{AuthURL: c.AuthEndpoint(), TokenURL: c.TokenEndpoint()},
-			Scopes:       []string{"openid"},
-		}
-		tok := drivePasswordAuthCode(t, ctx, cfg, "a@e.com", "p")
-		assert.NotEmpty(t, tok.AccessToken, "uri=%s", uri)
+		t.Run(uri, func(t *testing.T) {
+			cfg := oauth2.Config{
+				ClientID:     "e2e",
+				ClientSecret: "s",
+				RedirectURL:  uri,
+				Endpoint:     oauth2.Endpoint{AuthURL: c.AuthEndpoint(), TokenURL: c.TokenEndpoint()},
+				Scopes:       []string{"openid"},
+			}
+			tok := drivePasswordAuthCode(t, ctx, cfg, "a@e.com", "p")
+			assert.NotEmpty(t, tok.AccessToken)
+		})
 	}
 }
 
