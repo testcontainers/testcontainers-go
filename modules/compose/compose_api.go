@@ -15,6 +15,7 @@ import (
 
 	"github.com/compose-spec/compose-go/v2/cli"
 	"github.com/compose-spec/compose-go/v2/types"
+	"github.com/docker/cli/cli/command"
 	"github.com/docker/compose/v5/pkg/api"
 	"github.com/moby/moby/client"
 	"golang.org/x/sync/errgroup"
@@ -180,6 +181,10 @@ type DockerCompose struct {
 	// used to synchronize operations
 	lock sync.RWMutex
 
+	// dockerCli is the Docker CLI instance used internally by the compose service.
+	// It is stored here so its HTTP transport connections can be closed after Down().
+	dockerCli *command.DockerCli
+
 	// name/identifier of the stack that will be started
 	// by default a UUID will be used
 	name string
@@ -265,6 +270,34 @@ func (d *DockerCompose) Down(ctx context.Context, opts ...StackDownOption) error
 	}()
 
 	return d.composeService.Down(ctx, d.name, options.DownOptions)
+}
+
+// Close releases the HTTP transport connections held by the internal Docker CLI
+// and the testcontainers Docker client, preventing net/http persistConn goroutine
+// leaks. Call Close after Down when the compose stack will no longer be used.
+func (d *DockerCompose) Close() error {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	var errs []error
+
+	if d.dockerCli != nil {
+		if cli := d.dockerCli.Client(); cli != nil {
+			if err := cli.Close(); err != nil {
+				errs = append(errs, fmt.Errorf("close docker cli client: %w", err))
+			}
+		}
+		d.dockerCli = nil
+	}
+
+	if d.dockerClient != nil {
+		if err := d.dockerClient.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("close docker client: %w", err))
+		}
+		d.dockerClient = nil
+	}
+
+	return errors.Join(errs...)
 }
 
 func (d *DockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err error) {

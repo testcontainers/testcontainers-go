@@ -87,6 +87,8 @@ type DockerContainer struct {
 	// logProductionCancel is used to signal the log production to stop.
 	logProductionCancel context.CancelCauseFunc
 	logProductionCtx    context.Context
+	// logProductionDone is closed when the log production goroutine exits.
+	logProductionDone chan struct{}
 
 	logProductionTimeout *time.Duration
 	logger               log.Logger
@@ -813,16 +815,19 @@ func (c *DockerContainer) startLogProduction(ctx context.Context, opts ...LogPro
 
 	// Setup the log production context which will be used to stop the log production.
 	c.logProductionCtx, c.logProductionCancel = context.WithCancelCause(ctx)
+	c.logProductionDone = make(chan struct{})
 
 	// We capture context cancel function to avoid data race with multiple
 	// calls to startLogProduction.
-	go func(cancel context.CancelCauseFunc) {
+	go func(cancel context.CancelCauseFunc, done chan struct{}) {
 		// Ensure the context is cancelled when log productions completes
 		// so that GetLogProductionErrorChannel functions correctly.
 		defer cancel(nil)
+		// Signal that the goroutine has exited so stopLogProduction can drain.
+		defer close(done)
 
 		c.logProducer(stdout, stderr)
-	}(c.logProductionCancel)
+	}(c.logProductionCancel, c.logProductionDone)
 
 	return nil
 }
@@ -903,8 +908,37 @@ func (c *DockerContainer) stopLogProduction() error {
 		return nil
 	}
 
-	// Signal the log production to stop.
+	// Wait for the log production goroutine to finish draining any buffered
+	// logs before cancelling. When the container has already exited, the
+	// goroutine will reach EOF naturally and close logProductionDone on its
+	// own. The bounded timeout prevents blocking indefinitely when the
+	// container is still actively streaming (e.g. Stop() called on a running
+	// container).
+	if c.logProductionDone != nil {
+		select {
+		case <-c.logProductionDone:
+			// Goroutine already finished naturally; nothing more to do.
+			return nil
+		case <-time.After(minLogProductionTimeout):
+			// Timed out waiting for natural exit; force-cancel now.
+		}
+	}
+
+	// Signal the log production to stop (for still-running containers).
 	c.logProductionCancel(errLogProductionStop)
+
+	// Wait for the goroutine to acknowledge the cancellation. Context
+	// cancellation propagates into the Docker transport and should unblock
+	// stdcopy.StdCopy promptly, but we bound the wait to match
+	// minLogProductionTimeout to guard against stuck kernel socket reads or
+	// daemon transport failures that might not honour context cancellation.
+	if c.logProductionDone != nil {
+		select {
+		case <-c.logProductionDone:
+		case <-time.After(minLogProductionTimeout):
+			c.logger.Printf("timeout waiting for log production goroutine to exit; a goroutine may have leaked")
+		}
+	}
 
 	if err := context.Cause(c.logProductionCtx); err != nil {
 		switch {

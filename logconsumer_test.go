@@ -685,3 +685,68 @@ func TestRestartContainerWithLogConsumer(t *testing.T) {
 	logConsumer.AssertRead()
 	logConsumer.AssertRead()
 }
+
+// countingLogConsumer counts all log lines received.
+type countingLogConsumer struct {
+	mu    sync.Mutex
+	count int
+}
+
+func (c *countingLogConsumer) Accept(_ Log) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.count++
+}
+
+func (c *countingLogConsumer) Count() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.count
+}
+
+// TestContainerLogDrainOnTerminate verifies that no log lines are dropped when
+// Terminate() is called on a container that has already exited after emitting a
+// burst of logs. This is a regression test for the data-loss race described in
+// https://github.com/testcontainers/testcontainers-go/issues/2887, where
+// stopLogProduction() returned immediately after cancelling the context, leaving
+// the logProducer goroutine mid-read with buffered data that was never delivered.
+func TestContainerLogDrainOnTerminate(t *testing.T) {
+	const (
+		lineCount = 1000
+		runs      = 5
+	)
+
+	for run := range runs {
+		t.Run(fmt.Sprintf("run-%d", run), func(t *testing.T) {
+			t.Parallel()
+
+			consumer := &countingLogConsumer{}
+
+			ctx := context.Background()
+			ctr, err := Run(
+				ctx,
+				"alpine:latest",
+				// Emit lineCount lines then exit.
+				WithCmd("sh", "-c", fmt.Sprintf(
+					"for i in $(seq 1 %d); do echo line-$i; done", lineCount,
+				)),
+				WithLogConsumerConfig(&LogConsumerConfig{
+					Consumers: []LogConsumer{consumer},
+				}),
+				WithWaitStrategy(wait.ForExit()),
+			)
+			require.NoError(t, err)
+			CleanupContainer(t, ctr)
+
+			// Terminate after the container has already exited so the race
+			// window is as narrow as possible.
+			require.NoError(t, TerminateContainer(ctr))
+
+			got := consumer.Count()
+			require.Equalf(t, lineCount, got,
+				"run %d: expected %d log lines, got %d (%d dropped)",
+				run, lineCount, got, lineCount-got,
+			)
+		})
+	}
+}
