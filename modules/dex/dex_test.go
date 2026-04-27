@@ -19,12 +19,13 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/clientcredentials"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/dex"
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/clientcredentials"
 )
 
 const (
@@ -144,7 +145,7 @@ func TestGRPC_AddRemoveClient(t *testing.T) {
 
 	// Idempotency: second Add returns ErrClientExists.
 	err = c.AddClient(ctx, cl)
-	assert.ErrorIs(t, err, dex.ErrClientExists)
+	require.ErrorIs(t, err, dex.ErrClientExists)
 
 	// Removal succeeds.
 	require.NoError(t, c.RemoveClient(ctx, cl.ID()))
@@ -167,7 +168,7 @@ func TestGRPC_AddRemoveUser(t *testing.T) {
 
 	// Duplicate add errors.
 	err = c.AddUser(ctx, u)
-	assert.ErrorIs(t, err, dex.ErrUserExists)
+	require.ErrorIs(t, err, dex.ErrUserExists)
 
 	// Removal succeeds.
 	require.NoError(t, c.RemoveUser(ctx, u.Email()))
@@ -487,7 +488,7 @@ func TestMockConnector_IssuesToken(t *testing.T) {
 	require.NoError(t, err)
 
 	client := &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		CheckRedirect: func(req *http.Request, _ []*http.Request) error {
 			if strings.HasPrefix(req.URL.String(), cfg.RedirectURL) {
 				return http.ErrUseLastResponse
 			}
@@ -547,7 +548,7 @@ func TestGRPC_RuntimeAddUsableEndToEnd(t *testing.T) {
 	require.NoError(t, err)
 	client := &http.Client{
 		Jar: jar,
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		CheckRedirect: func(req *http.Request, _ []*http.Request) error {
 			if strings.HasPrefix(req.URL.String(), cfg.RedirectURL) {
 				return http.ErrUseLastResponse
 			}

@@ -26,6 +26,7 @@ package dex
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -161,7 +162,7 @@ func (c *Container) AuthEndpoint() string { return c.issuer + "/auth" }
 // started.
 func (c *Container) GRPCEndpoint(ctx context.Context) (string, error) {
 	if c.Container == nil {
-		return "", fmt.Errorf("dex: container not started")
+		return "", errors.New("dex: container not started")
 	}
 	host, err := c.Host(ctx)
 	if err != nil {

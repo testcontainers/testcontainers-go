@@ -69,35 +69,35 @@ func TestOptions_WithConnector_RejectsBlankFields(t *testing.T) {
 	o := defaultOptions()
 
 	err := WithConnector(ConnectorMock, "", "Mock")(&o)
-	assert.Error(t, err, "blank id must be rejected")
+	require.Error(t, err, "blank id must be rejected")
 
 	err = WithConnector(ConnectorMock, "id", "")(&o)
-	assert.Error(t, err, "blank name must be rejected")
+	require.Error(t, err, "blank name must be rejected")
 
 	assert.Empty(t, o.connectors, "rejected options must not mutate state")
 }
 
 func TestOptions_WithIssuer_RejectsBlank(t *testing.T) {
 	o := defaultOptions()
-	assert.Error(t, WithIssuer("")(&o))
+	require.Error(t, WithIssuer("")(&o))
 	assert.Empty(t, o.issuer)
 }
 
 func TestOptions_WithStorage_RejectsBlank(t *testing.T) {
 	o := defaultOptions()
-	assert.Error(t, WithStorage("")(&o))
+	require.Error(t, WithStorage("")(&o))
 	assert.Equal(t, StorageSQLite, o.storage, "failed option must leave default intact")
 }
 
 func TestOptions_WithClient_RejectsZeroValue(t *testing.T) {
 	o := defaultOptions()
-	assert.Error(t, WithClient(Client{})(&o), "zero Client must be rejected — force NewClient")
+	require.Error(t, WithClient(Client{})(&o), "zero Client must be rejected — force NewClient")
 	assert.Empty(t, o.clients)
 }
 
 func TestOptions_WithUser_RejectsZeroValue(t *testing.T) {
 	o := defaultOptions()
-	assert.Error(t, WithUser(User{})(&o), "zero User must be rejected — force NewUser")
+	require.Error(t, WithUser(User{})(&o), "zero User must be rejected — force NewUser")
 	assert.Empty(t, o.users)
 }
 

@@ -2,6 +2,7 @@ package dex
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -92,7 +93,7 @@ var baseGrantTypes = []string{
 // issuer has been populated.
 func render(o options) ([]byte, error) {
 	if o.issuer == "" {
-		return nil, fmt.Errorf("dex: issuer is empty (internal bug — Run should populate before render)")
+		return nil, errors.New("dex: issuer is empty (internal bug — Run should populate before render)")
 	}
 
 	if !o.enablePasswordDB && len(o.connectors) == 0 {

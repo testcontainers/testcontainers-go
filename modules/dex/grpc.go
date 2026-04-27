@@ -2,6 +2,7 @@ package dex
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/dexidp/dex/api/v2"
@@ -140,7 +141,7 @@ func (c *Container) RemoveUser(ctx context.Context, email string) error {
 
 func dial(target string) (*grpc.ClientConn, error) {
 	if target == "" {
-		return nil, fmt.Errorf("dex: grpc endpoint empty (container not started)")
+		return nil, errors.New("dex: grpc endpoint empty (container not started)")
 	}
 	conn, err := grpc.NewClient(target,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),

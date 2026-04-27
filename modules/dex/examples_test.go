@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"log"
 
+	"golang.org/x/oauth2"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/dex"
-	"golang.org/x/oauth2"
 )
 
 func ExampleRun_authorizationCode() {
@@ -32,10 +33,10 @@ func ExampleRun_authorizationCode() {
 		dex.WithClient(app),
 		dex.WithUser(user),
 	)
-	defer testcontainers.TerminateContainer(c)
 	if err != nil {
 		log.Fatalf("run: %v", err)
 	}
+	defer func() { _ = testcontainers.TerminateContainer(c) }()
 	// }
 
 	_ = oauth2.Config{
@@ -72,10 +73,10 @@ func ExampleRun_passwordGrant() {
 		dex.WithClient(svc),
 		dex.WithUser(user),
 	)
-	defer testcontainers.TerminateContainer(c)
 	if err != nil {
 		log.Fatalf("run: %v", err)
 	}
+	defer func() { _ = testcontainers.TerminateContainer(c) }()
 
 	cfg := oauth2.Config{
 		ClientID: "svc", ClientSecret: "s",
@@ -84,7 +85,7 @@ func ExampleRun_passwordGrant() {
 	}
 	tok, err := cfg.PasswordCredentialsToken(ctx, "svc@svc.local", "svc-secret")
 	if err != nil {
-		log.Fatalf("token: %v", err)
+		panic(fmt.Errorf("token: %w", err))
 	}
 	fmt.Println("has access token:", tok.AccessToken != "")
 	// Output: has access token: true

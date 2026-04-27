@@ -29,7 +29,7 @@ func drivePasswordAuthCode(t *testing.T, ctx context.Context, cfg oauth2.Config,
 
 	client := &http.Client{
 		Jar: jar,
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		CheckRedirect: func(req *http.Request, _ []*http.Request) error {
 			// Stop at the redirect back to our registered redirect URI —
 			// we parse the code from that URL.
 			if strings.HasPrefix(req.URL.String(), cfg.RedirectURL) {

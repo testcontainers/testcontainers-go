@@ -104,7 +104,7 @@ func TestRender_WithUsers_BcryptShape(t *testing.T) {
 	p := got.StaticPasswords[0]
 	assert.Equal(t, "u@e.com", p.Email)
 	assert.True(t, strings.HasPrefix(p.Hash, "$2a$") || strings.HasPrefix(p.Hash, "$2b$"), "bcrypt prefix")
-	assert.NoError(t, bcrypt.CompareHashAndPassword([]byte(p.Hash), []byte("p")))
+	require.NoError(t, bcrypt.CompareHashAndPassword([]byte(p.Hash), []byte("p")))
 	assert.NotEmpty(t, p.UserID, "userID should be auto-populated")
 }
 
