@@ -17,7 +17,7 @@ require (
 	github.com/moby/moby/client v0.4.0
 	github.com/moby/patternmatcher v0.6.1
 	github.com/opencontainers/image-spec v1.1.1
-	github.com/shirou/gopsutil/v4 v4.26.3
+	github.com/shirou/gopsutil/v4 v4.26.4
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/crypto v0.51.0
 	golang.org/x/sys v0.44.0
