@@ -15,7 +15,7 @@ import (
 func TestOpenLDAP(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := openldap.Run(ctx, "bitnami/openldap:2.6.6")
+	ctr, err := openldap.Run(ctx, "bitnamilegacy/openldap:2.6.6")
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 }
@@ -24,7 +24,7 @@ func TestOpenLDAPWithAdminUsernameAndPassword(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := openldap.Run(ctx,
-		"bitnami/openldap:2.6.6",
+		"bitnamilegacy/openldap:2.6.6",
 		openldap.WithAdminUsername("openldap"),
 		openldap.WithAdminPassword("openldap"),
 	)
@@ -46,7 +46,7 @@ func TestOpenLDAPWithAdminUsernameAndPassword(t *testing.T) {
 func TestOpenLDAPWithDifferentRoot(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := openldap.Run(ctx, "bitnami/openldap:2.6.6", openldap.WithRoot("dc=mydomain,dc=com"))
+	ctr, err := openldap.Run(ctx, "bitnamilegacy/openldap:2.6.6", openldap.WithRoot("dc=mydomain,dc=com"))
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -67,7 +67,7 @@ func TestOpenLDAPWithDifferentRoot(t *testing.T) {
 func TestOpenLDAPLoadLdif(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := openldap.Run(ctx, "bitnami/openldap:2.6.6")
+	ctr, err := openldap.Run(ctx, "bitnamilegacy/openldap:2.6.6")
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -129,7 +129,7 @@ userPassword: Password1
 	err = f.Close()
 	require.NoError(t, err)
 
-	ctr, err := openldap.Run(ctx, "bitnami/openldap:2.6.6", openldap.WithInitialLdif(f.Name()))
+	ctr, err := openldap.Run(ctx, "bitnamilegacy/openldap:2.6.6", openldap.WithInitialLdif(f.Name()))
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 

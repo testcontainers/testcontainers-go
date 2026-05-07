@@ -2,6 +2,7 @@ package surrealdb
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -87,4 +88,22 @@ func TestSurrealDBWithAuth(t *testing.T) {
 	require.Equal(t, "Tobie", resultData["name"].(map[string]any)["first"])
 	require.Equal(t, "Morgan Hitchcock", resultData["name"].(map[string]any)["last"])
 	require.Equal(t, true, resultData["marketing"])
+}
+
+func TestSurrealDBWithAllowAllCaps(t *testing.T) {
+	ctx := context.Background()
+
+	ctr, err := Run(ctx, "surrealdb/surrealdb:v1.1.1", WithAllowAllCaps())
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	inspect, err := ctr.Inspect(ctx)
+	require.NoError(t, err)
+
+	for _, env := range inspect.Config.Env {
+		if v, ok := strings.CutPrefix(env, "SURREAL_CAPS_ALLOW_ALL="); ok {
+			require.Equal(t, "true", v)
+			break
+		}
+	}
 }

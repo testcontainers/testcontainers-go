@@ -2,7 +2,6 @@ package nginx
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -15,33 +14,24 @@ type nginxContainer struct {
 }
 
 func startContainer(ctx context.Context) (*nginxContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        "nginx",
-		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForHTTP("/").WithStartupTimeout(10 * time.Second),
-	}
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	ctr, err := testcontainers.Run(
+		ctx, "nginx",
+		testcontainers.WithExposedPorts("80/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForHTTP("/").WithStartupTimeout(10*time.Second)),
+	)
 	var nginxC *nginxContainer
-	if container != nil {
-		nginxC = &nginxContainer{Container: container}
+	if ctr != nil {
+		nginxC = &nginxContainer{Container: ctr}
 	}
 	if err != nil {
 		return nginxC, err
 	}
 
-	ip, err := container.Host(ctx)
+	endpoint, err := ctr.PortEndpoint(ctx, "80", "http")
 	if err != nil {
 		return nginxC, err
 	}
 
-	mappedPort, err := container.MappedPort(ctx, "80")
-	if err != nil {
-		return nginxC, err
-	}
-
-	nginxC.URI = fmt.Sprintf("http://%s:%s", ip, mappedPort.Port())
+	nginxC.URI = endpoint
 	return nginxC, nil
 }

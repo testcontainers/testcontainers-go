@@ -6,7 +6,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/moby/moby/api/pkg/stdcopy"
 	"github.com/stretchr/testify/require"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
@@ -47,14 +47,8 @@ func TestExecWithOptions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			req := ContainerRequest{
-				Image: nginxAlpineImage,
-			}
 
-			ctr, err := GenericContainer(ctx, GenericContainerRequest{
-				ContainerRequest: req,
-				Started:          true,
-			})
+			ctr, err := Run(ctx, nginxAlpineImage)
 			CleanupContainer(t, ctr)
 			require.NoError(t, err)
 
@@ -79,14 +73,8 @@ func TestExecWithOptions(t *testing.T) {
 
 func TestExecWithMultiplexedResponse(t *testing.T) {
 	ctx := context.Background()
-	req := ContainerRequest{
-		Image: nginxAlpineImage,
-	}
 
-	ctr, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	ctr, err := Run(ctx, nginxAlpineImage)
 	CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -106,14 +94,8 @@ func TestExecWithMultiplexedResponse(t *testing.T) {
 
 func TestExecWithNonMultiplexedResponse(t *testing.T) {
 	ctx := context.Background()
-	req := ContainerRequest{
-		Image: nginxAlpineImage,
-	}
 
-	ctr, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	ctr, err := Run(ctx, nginxAlpineImage)
 	CleanupContainer(t, ctr)
 	require.NoError(t, err)
 

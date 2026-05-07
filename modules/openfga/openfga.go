@@ -25,7 +25,7 @@ func (c *OpenFGAContainer) GrpcEndpoint(ctx context.Context) (string, error) {
 // HttpEndpoint returns the HTTP endpoint for the OpenFGA container,
 // which uses the 8080/tcp port.
 //
-//nolint:revive //FIXME
+//nolint:revive,staticcheck //FIXME
 func (c *OpenFGAContainer) HttpEndpoint(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, "8080/tcp", "http")
 }
@@ -49,11 +49,11 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the OpenFGA container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*OpenFGAContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		Cmd:          []string{"run"},
-		ExposedPorts: []string{"3000/tcp", "8080/tcp", "8081/tcp"},
-		WaitingFor: wait.ForAll(
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
+		testcontainers.WithCmd("run"),
+		testcontainers.WithExposedPorts("3000/tcp", "8080/tcp", "8081/tcp"),
+		testcontainers.WithWaitStrategy(
 			wait.ForHTTP("/healthz").WithPort("8080/tcp").WithResponseMatcher(func(r io.Reader) bool {
 				bs, err := io.ReadAll(r)
 				if err != nil {
@@ -66,27 +66,18 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				return status == http.StatusOK
 			}),
 		),
-	}
+	)
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *OpenFGAContainer
-	if container != nil {
-		c = &OpenFGAContainer{Container: container}
+	if ctr != nil {
+		c = &OpenFGAContainer{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run openfga: %w", err)
 	}
 
 	return c, nil

@@ -2,6 +2,10 @@ h1, h2, h3, h4, h5, h6 {
     font-family: 'Rubik', sans-serif;
 }
 
+.md-typeset h5 {
+    text-transform: none;
+}
+
 [data-md-color-scheme="testcontainers"] {
     --md-primary-fg-color:       #00bac2;
     --md-accent-fg-color:        #361E5B;

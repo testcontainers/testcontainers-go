@@ -80,6 +80,26 @@ func TestValkeyWithSnapshotting(t *testing.T) {
 	assertSetsGets(t, ctx, valkeyContainer, 10)
 }
 
+func TestRedisWithTLS(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("mtls-disabled", func(t *testing.T) {
+		valkeyContainer, err := tcvalkey.Run(ctx, "valkey/valkey:7.2.5", tcvalkey.WithTLS())
+		testcontainers.CleanupContainer(t, valkeyContainer)
+		require.NoError(t, err)
+
+		assertSetsGets(t, ctx, valkeyContainer, 1)
+	})
+
+	t.Run("mtls-enabled", func(t *testing.T) {
+		valkeyContainer, err := tcvalkey.Run(ctx, "valkey/valkey:7.2.5", tcvalkey.WithTLS(), testcontainers.WithCmdArgs("--tls-auth-clients", "no"))
+		testcontainers.CleanupContainer(t, valkeyContainer)
+		require.NoError(t, err)
+
+		assertSetsGets(t, ctx, valkeyContainer, 1)
+	})
+}
+
 func assertSetsGets(t *testing.T, ctx context.Context, valkeyContainer *tcvalkey.ValkeyContainer, keyCount int) {
 	t.Helper()
 	// connectionString {
@@ -92,6 +112,10 @@ func assertSetsGets(t *testing.T, ctx context.Context, valkeyContainer *tcvalkey
 	// codebase but that's out of scope for this example
 	options, err := valkey.ParseURL(uri)
 	require.NoError(t, err)
+
+	// tlsConfig {
+	options.TLSConfig = valkeyContainer.TLSConfig()
+	// }
 
 	client, err := valkey.NewClient(options)
 	require.NoError(t, err)

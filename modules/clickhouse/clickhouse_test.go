@@ -9,7 +9,6 @@ import (
 	ch "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/cenkalti/backoff/v4"
-	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -24,7 +23,7 @@ const (
 )
 
 type Test struct {
-	Id uint64
+	ID uint64
 }
 
 func TestClickHouseDefaultConfig(t *testing.T) {
@@ -205,16 +204,9 @@ func TestClickHouseWithZookeeper(t *testing.T) {
 	ctx := context.Background()
 
 	// withZookeeper {
-	zkPort := nat.Port("2181/tcp")
+	zkPort := "2181/tcp"
 
-	zkcontainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			ExposedPorts: []string{zkPort.Port()},
-			Image:        "zookeeper:3.7",
-			WaitingFor:   wait.ForListeningPort(zkPort),
-		},
-		Started: true,
-	})
+	zkcontainer, err := testcontainers.Run(ctx, "zookeeper:3.7", testcontainers.WithExposedPorts(zkPort), testcontainers.WithWaitStrategy(wait.ForListeningPort(zkPort)))
 	testcontainers.CleanupContainer(t, zkcontainer)
 	require.NoError(t, err)
 
@@ -226,7 +218,7 @@ func TestClickHouseWithZookeeper(t *testing.T) {
 		clickhouse.WithUsername(user),
 		clickhouse.WithPassword(password),
 		clickhouse.WithDatabase(dbname),
-		clickhouse.WithZookeeper(ipaddr, zkPort.Port()),
+		clickhouse.WithZookeeper(ipaddr, "2181"),
 	)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
@@ -276,7 +268,7 @@ func performReplicatedCRUD(t *testing.T, conn driver.Conn) ([]Test, error) {
 			for rows.Next() {
 				var r Test
 
-				err := rows.Scan(&r.Id)
+				err := rows.Scan(&r.ID)
 				if err != nil {
 					return nil, err
 				}
@@ -325,7 +317,7 @@ func getAllRows(conn driver.Conn) ([]Test, error) {
 	for rows.Next() {
 		var r Test
 
-		err := rows.Scan(&r.Id)
+		err := rows.Scan(&r.ID)
 		if err != nil {
 			return nil, err
 		}

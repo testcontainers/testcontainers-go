@@ -1,6 +1,6 @@
 # CockroachDB
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/cockroachdb
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
@@ -48,13 +48,15 @@ When starting the CockroachDB container, you can pass options in a variadic way 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "cockroachdb/cockroach:latest-v23.1")`.
 
-{% include "../features/common_functional_options.md" %}
-
 #### Database
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
 
 Set the database that is created & dialled with `cockroachdb.WithDatabase`.
 
 #### User and Password
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
 
 You can configure the container to create a user with a password by setting `cockroachdb.WithUser` and `cockroachdb.WithPassword`.
 
@@ -62,9 +64,13 @@ You can configure the container to create a user with a password by setting `coc
 
 #### Store size
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
+
 Control the maximum amount of memory used for storage, by default this is 100% but can be changed by provided a valid option to `WithStoreSize`. Checkout https://www.cockroachlabs.com/docs/stable/cockroach-start#store for the full range of options available.
 
 #### TLS authentication
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.35.0"><span class="tc-version">:material-tag: v0.35.0</span></a>
 
 `cockroachdb.WithInsecure` lets you disable the use of TLS on connections.
 
@@ -72,8 +78,14 @@ Control the maximum amount of memory used for storage, by default this is 100% b
 
 #### Initialization Scripts
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.35.0"><span class="tc-version">:material-tag: v0.35.0</span></a>
+
 `cockroachdb.WithInitScripts` adds the given scripts to those automatically run when the container starts.
 These will be ignored if data exists in the `/cockroach/cockroach-data` directory within the container.
+
+#### No Cluster Defaults
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.35.0"><span class="tc-version">:material-tag: v0.35.0</span></a>
 
 `cockroachdb.WithNoClusterDefaults` disables the default cluster settings script.
 
@@ -82,19 +94,27 @@ which configures the settings recommended by Cockroach Labs for
 [local testing clusters](https://www.cockroachlabs.com/docs/stable/local-testing)
 unless data exists in the `/cockroach/cockroach-data` directory within the container.
 
+{% include "../features/common_functional_options_list.md" %}
+
 ### Container Methods
 
 The CockroachDB container exposes the following methods:
 
 #### ConnectionString
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
+
 Dial address to open a new connection.
 
 #### MustConnectionString
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
+
 Same as `ConnectionString` but any error to generate the address will raise a panic
 
 #### TLSConfig
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.28.0"><span class="tc-version">:material-tag: v0.28.0</span></a>
 
 Returns `*tls.Config` setup to allow you to dial your client over TLS, if enabled, else this will error with `cockroachdb.ErrTLSNotEnabled`.
 
@@ -102,5 +122,7 @@ Returns `*tls.Config` setup to allow you to dial your client over TLS, if enable
     The `TLSConfig()` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
 
 #### ConnectionConfig
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.35.0"><span class="tc-version">:material-tag: v0.35.0</span></a>
 
 Returns `*pgx.ConnConfig` which can be passed to `pgx.ConnectConfig` to open a new connection.

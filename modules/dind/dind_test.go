@@ -2,12 +2,10 @@ package dind_test
 
 import (
 	"context"
-	"slices"
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -26,14 +24,14 @@ func Test_LoadImages(t *testing.T) {
 	host, err := dindContainer.Host(ctx)
 	require.NoError(t, err)
 
-	cli, err := client.NewClientWithOpts(client.WithHost(host), client.WithAPIVersionNegotiation())
+	cli, err := client.New(client.WithHost(host))
 	require.NoError(t, err)
 
 	provider, err := testcontainers.ProviderDocker.GetProvider()
 	require.NoError(t, err)
 
 	// ensure nginx image is available locally
-	err = provider.PullImage(ctx, "nginx")
+	err = provider.PullImage(ctx, "nginx:1.27")
 	require.NoError(t, err)
 
 	t.Run("not-available", func(t *testing.T) {
@@ -42,16 +40,21 @@ func Test_LoadImages(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		err := dindContainer.LoadImage(ctx, "nginx")
+		err := dindContainer.LoadImage(ctx, "nginx:1.27")
 		require.NoError(t, err)
 
-		images, err := cli.ImageList(ctx, image.ListOptions{})
+		res, err := cli.ImageList(ctx, client.ImageListOptions{})
 		require.NoError(t, err)
 
-		found := slices.ContainsFunc(images, func(img image.Summary) bool {
-			return len(img.RepoTags) > 0 && img.RepoTags[0] == "nginx:latest"
-		})
+		if len(res.Items) == 0 || len(res.Items) > 1 {
+			t.Fatalf("got %d images, expected 1", len(res.Items))
+		}
 
-		require.True(t, found)
+		img, err := cli.ImageInspect(ctx, res.Items[0].ID)
+		require.NoError(t, err)
+
+		require.Equal(t, "nginx:1.27", img.RepoTags[0])
+		require.Equal(t, []string{"/docker-entrypoint.sh"}, []string(img.Config.Entrypoint))
+		require.Equal(t, []string{"nginx", "-g", "daemon off;"}, []string(img.Config.Cmd))
 	})
 }

@@ -16,11 +16,8 @@ import (
 	"github.com/compose-spec/compose-go/v2/cli"
 	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/docker/cli/cli/command"
-	"github.com/docker/compose/v2/pkg/api"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	dockernetwork "github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/client"
+	"github.com/docker/compose/v5/pkg/api"
+	"github.com/moby/moby/client"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -184,6 +181,10 @@ type DockerCompose struct {
 	// used to synchronize operations
 	lock sync.RWMutex
 
+	// dockerCli is the Docker CLI instance used internally by the compose service.
+	// It is stored here so its HTTP transport connections can be closed after Down().
+	dockerCli *command.DockerCli
+
 	// name/identifier of the stack that will be started
 	// by default a UUID will be used
 	name string
@@ -212,7 +213,7 @@ type DockerCompose struct {
 	networks map[string]*testcontainers.DockerNetwork
 
 	// docker/compose API service instance used to control the compose stack
-	composeService api.Service
+	composeService api.Compose
 
 	// Docker API client used to interact with single container instances and the Docker API e.g. to list containers
 	dockerClient client.APIClient
@@ -269,6 +270,34 @@ func (d *DockerCompose) Down(ctx context.Context, opts ...StackDownOption) error
 	}()
 
 	return d.composeService.Down(ctx, d.name, options.DownOptions)
+}
+
+// Close releases the HTTP transport connections held by the internal Docker CLI
+// and the testcontainers Docker client, preventing net/http persistConn goroutine
+// leaks. Call Close after Down when the compose stack will no longer be used.
+func (d *DockerCompose) Close() error {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	var errs []error
+
+	if d.dockerCli != nil {
+		if cli := d.dockerCli.Client(); cli != nil {
+			if err := cli.Close(); err != nil {
+				errs = append(errs, fmt.Errorf("close docker cli client: %w", err))
+			}
+		}
+		d.dockerCli = nil
+	}
+
+	if d.dockerClient != nil {
+		if err := d.dockerClient.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("close docker client: %w", err))
+		}
+		d.dockerClient = nil
+	}
+
+	return errors.Join(errs...)
 }
 
 func (d *DockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err error) {
@@ -334,7 +363,7 @@ func (d *DockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err erro
 	if !d.provider.Config().Config.RyukDisabled {
 		// NewReaper is deprecated: we need to find a way to create the reaper for compose
 		// bypassing the deprecation.
-		reaper, err = testcontainers.NewReaper(ctx, testcontainers.SessionID(), d.provider, "")
+		reaper, err = testcontainers.NewReaper(ctx, testcontainers.SessionID(), d.provider, "") //nolint:staticcheck // intentional use of deprecated API for compose
 		if err != nil {
 			return fmt.Errorf("create reaper: %w", err)
 		}
@@ -476,22 +505,19 @@ func (d *DockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 		return c, nil
 	}
 
-	containers, err := d.dockerClient.ContainerList(ctx, container.ListOptions{
-		All: true,
-		Filters: filters.NewArgs(
-			filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)),
-			filters.Arg("label", fmt.Sprintf("%s=%s", api.ServiceLabel, svcName)),
-		),
+	res, err := d.dockerClient.ContainerList(ctx, client.ContainerListOptions{
+		All:     true,
+		Filters: make(client.Filters).Add("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)).Add("label", fmt.Sprintf("%s=%s", api.ServiceLabel, svcName)),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("container list: %w", err)
 	}
 
-	if len(containers) == 0 {
+	if len(res.Items) == 0 {
 		return nil, fmt.Errorf("no container found for service name %s", svcName)
 	}
 
-	ctr, err := d.provider.ContainerFromType(ctx, containers[0])
+	ctr, err := d.provider.ContainerFromType(ctx, res.Items[0])
 	if err != nil {
 		return nil, fmt.Errorf("container from type: %w", err)
 	}
@@ -507,16 +533,14 @@ func (d *DockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 //
 // Safe for concurrent calls.
 func (d *DockerCompose) lookupNetworks(ctx context.Context) error {
-	networks, err := d.dockerClient.NetworkList(ctx, dockernetwork.ListOptions{
-		Filters: filters.NewArgs(
-			filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)),
-		),
+	res, err := d.dockerClient.NetworkList(ctx, client.NetworkListOptions{
+		Filters: make(client.Filters).Add("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)),
 	})
 	if err != nil {
 		return fmt.Errorf("network list: %w", err)
 	}
 
-	for _, n := range networks {
+	for _, n := range res.Items {
 		dn := &testcontainers.DockerNetwork{
 			ID:     n.ID,
 			Name:   n.Name,
@@ -530,27 +554,14 @@ func (d *DockerCompose) lookupNetworks(ctx context.Context) error {
 }
 
 func (d *DockerCompose) compileProject(ctx context.Context) (*types.Project, error) {
-	const nameAndDefaultConfigPath = 2
-	projectOptions := make([]cli.ProjectOptionsFn, len(d.projectOptions), len(d.projectOptions)+nameAndDefaultConfigPath)
-
-	copy(projectOptions, d.projectOptions)
-	projectOptions = append(projectOptions, cli.WithName(d.name), cli.WithDefaultConfigPath)
-
-	compiledOptions, err := cli.NewProjectOptions(d.configs, projectOptions...)
-	if err != nil {
-		return nil, fmt.Errorf("new project options: %w", err)
-	}
-
-	proj, err := compiledOptions.LoadProject(ctx)
+	proj, err := d.composeService.LoadProject(ctx, api.ProjectLoadOptions{
+		ProjectName:       d.name,
+		ConfigPaths:       d.configs,
+		Profiles:          d.projectProfiles,
+		ProjectOptionsFns: d.projectOptions,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("load project: %w", err)
-	}
-
-	if len(d.projectProfiles) > 0 {
-		proj, err = proj.WithProfiles(d.projectProfiles)
-		if err != nil {
-			return nil, fmt.Errorf("with profiles: %w", err)
-		}
 	}
 
 	for i, s := range proj.Services {
@@ -565,9 +576,9 @@ func (d *DockerCompose) compileProject(ctx context.Context) (*types.Project, err
 
 		testcontainers.AddGenericLabels(s.CustomLabels)
 
-		for i, envFile := range compiledOptions.EnvFiles {
+		for j, envFile := range s.EnvFiles {
 			// add a label for each env file, indexed by its position
-			s.CustomLabels[fmt.Sprintf("%s.%d", api.EnvironmentFileLabel, i)] = envFile
+			s.CustomLabels[fmt.Sprintf("%s.%d", api.EnvironmentFileLabel, j)] = envFile.Path
 		}
 
 		proj.Services[i] = s
@@ -599,12 +610,4 @@ func withEnv(env map[string]string) func(*cli.ProjectOptions) error {
 
 		return nil
 	}
-}
-
-func makeClient(*command.DockerCli) (client.APIClient, error) {
-	dockerClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
-	if err != nil {
-		return nil, fmt.Errorf("new docker client: %w", err)
-	}
-	return dockerClient, nil
 }

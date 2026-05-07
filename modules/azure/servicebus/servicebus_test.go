@@ -78,6 +78,6 @@ func TestServiceBus_noEULA(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := servicebus.Run(ctx, "mcr.microsoft.com/azure-messaging/servicebus-emulator:1.1.2")
+	testcontainers.CleanupContainer(t, ctr)
 	require.Error(t, err)
-	require.Nil(t, ctr)
 }

@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/netip"
 
-	dockernetwork "github.com/docker/docker/api/types/network"
+	dockernetwork "github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go/network"
 )
@@ -43,8 +44,8 @@ func ExampleNew_withOptions() {
 		Driver: "default",
 		Config: []dockernetwork.IPAMConfig{
 			{
-				Subnet:  "10.1.1.0/24",
-				Gateway: "10.1.1.254",
+				Subnet:  netip.MustParsePrefix("10.1.1.0/24"),
+				Gateway: netip.MustParseAddr("10.1.1.254"),
 			},
 		},
 		Options: map[string]string{

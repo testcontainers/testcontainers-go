@@ -2,11 +2,14 @@ package network_test
 
 import (
 	"context"
+	"net/netip"
+	"os"
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/filters"
-	dockernetwork "github.com/docker/docker/api/types/network"
+	"github.com/moby/moby/api/types/container"
+	dockernetwork "github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -35,31 +38,23 @@ func TestNew(t *testing.T) {
 
 	networkName := net.Name
 
-	nginxC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: nginxAlpineImage,
-			ExposedPorts: []string{
-				"80/tcp",
-			},
-			Networks: []string{
-				networkName,
-			},
-		},
-		Started: true,
-	})
+	nginxC, err := testcontainers.Run(ctx, nginxAlpineImage,
+		testcontainers.WithExposedPorts(nginxDefaultPort),
+		network.WithNetwork([]string{"nginx"}, net),
+	)
 	testcontainers.CleanupContainer(t, nginxC)
 	require.NoError(t, err)
 
-	client, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	apiClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	require.NoError(t, err)
 
-	resources, err := client.NetworkList(context.Background(), dockernetwork.ListOptions{
-		Filters: filters.NewArgs(filters.Arg("name", networkName)),
+	resources, err := apiClient.NetworkList(context.Background(), client.NetworkListOptions{
+		Filters: make(client.Filters).Add("name", networkName),
 	})
 	require.NoError(t, err)
-	require.Len(t, resources, 1)
+	require.Len(t, resources.Items, 1)
 
-	newNetwork := resources[0]
+	newNetwork := resources.Items[0]
 	expectedLabels := testcontainers.GenericLabels()
 	expectedLabels["this-is-a-test"] = "true"
 
@@ -81,23 +76,10 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 
 	aliases := []string{"alias1", "alias2", "alias3"}
 
-	gcr := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: nginxAlpineImage,
-			ExposedPorts: []string{
-				nginxDefaultPort,
-			},
-			Networks: []string{
-				networkName,
-			},
-			NetworkAliases: map[string][]string{
-				networkName: aliases,
-			},
-		},
-		Started: true,
-	}
-
-	nginx, err := testcontainers.GenericContainer(ctx, gcr)
+	nginx, err := testcontainers.Run(ctx, nginxAlpineImage,
+		testcontainers.WithExposedPorts(nginxDefaultPort),
+		network.WithNetwork(aliases, newNetwork),
+	)
 	testcontainers.CleanupContainer(t, nginx)
 	require.NoError(t, err)
 
@@ -133,22 +115,12 @@ func TestContainerIPs(t *testing.T) {
 	require.NoError(t, err)
 	testcontainers.CleanupNetwork(t, newNetwork)
 
-	networkName := newNetwork.Name
-
-	nginx, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: nginxAlpineImage,
-			ExposedPorts: []string{
-				nginxDefaultPort,
-			},
-			Networks: []string{
-				"bridge",
-				networkName,
-			},
-			WaitingFor: wait.ForListeningPort(nginxDefaultPort),
-		},
-		Started: true,
-	})
+	nginx, err := testcontainers.Run(ctx, nginxAlpineImage,
+		testcontainers.WithExposedPorts(nginxDefaultPort),
+		network.WithNetwork([]string{"nginx"}, newNetwork),
+		network.WithBridgeNetwork(),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort(nginxDefaultPort)),
+	)
 	testcontainers.CleanupContainer(t, nginx)
 	require.NoError(t, err)
 
@@ -163,30 +135,28 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	networks := []string{}
-
 	maxNetworksCount := 2
+	networks := make([]string, 0, maxNetworksCount)
 
-	for i := 0; i < maxNetworksCount; i++ {
+	opts := make([]testcontainers.ContainerCustomizer, 0, 2+maxNetworksCount)
+	opts = append(opts,
+		testcontainers.WithExposedPorts(nginxDefaultPort),
+		testcontainers.WithWaitStrategy(
+			wait.ForListeningPort(nginxDefaultPort),
+			wait.ForLog("Configuration complete; ready for start up"),
+		),
+	)
+
+	for range maxNetworksCount {
 		n, err := network.New(ctx)
 		require.NoError(t, err)
 		testcontainers.CleanupNetwork(t, n)
 
 		networks = append(networks, n.Name)
+		opts = append(opts, network.WithNetwork([]string{"nginx"}, n))
 	}
 
-	nginx, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        nginxAlpineImage,
-			ExposedPorts: []string{nginxDefaultPort},
-			WaitingFor: wait.ForAll(
-				wait.ForListeningPort(nginxDefaultPort),
-				wait.ForLog("Configuration complete; ready for start up"),
-			),
-			Networks: networks,
-		},
-		Started: true,
-	})
+	nginx, err := testcontainers.Run(ctx, nginxAlpineImage, opts...)
 	testcontainers.CleanupContainer(t, nginx)
 	require.NoError(t, err)
 
@@ -196,8 +166,9 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 	require.NoError(t, err)
 	defer cli.Close()
 
-	cnt, err := cli.ContainerInspect(ctx, containerID)
+	res, err := cli.ContainerInspect(ctx, containerID, client.ContainerInspectOptions{})
 	require.NoError(t, err)
+	cnt := res.Container
 	require.Len(t, cnt.NetworkSettings.Networks, maxNetworksCount)
 	require.NotNil(t, cnt.NetworkSettings.Networks[networks[0]])
 	require.NotNil(t, cnt.NetworkSettings.Networks[networks[1]])
@@ -212,23 +183,15 @@ func TestMultipleContainersInTheNewNetwork(t *testing.T) {
 
 	networkName := net.Name
 
-	c1, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:    nginxAlpineImage,
-			Networks: []string{networkName},
-		},
-		Started: true,
-	})
+	c1, err := testcontainers.Run(ctx, nginxAlpineImage,
+		network.WithNetwork([]string{"nginx1"}, net),
+	)
 	testcontainers.CleanupContainer(t, c1)
 	require.NoError(t, err)
 
-	c2, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:    nginxAlpineImage,
-			Networks: []string{networkName},
-		},
-		Started: true,
-	})
+	c2, err := testcontainers.Run(ctx, nginxAlpineImage,
+		network.WithNetwork([]string{"nginx2"}, net),
+	)
 	testcontainers.CleanupContainer(t, c2)
 	require.NoError(t, err)
 
@@ -254,8 +217,8 @@ func TestNew_withOptions(t *testing.T) {
 		Driver: "default",
 		Config: []dockernetwork.IPAMConfig{
 			{
-				Subnet:  "10.1.1.0/24",
-				Gateway: "10.1.1.254",
+				Subnet:  netip.MustParsePrefix("10.1.1.0/24"),
+				Gateway: netip.MustParseAddr("10.1.1.254"),
 			},
 		},
 		Options: map[string]string{
@@ -273,17 +236,10 @@ func TestNew_withOptions(t *testing.T) {
 
 	networkName := net.Name
 
-	nginx, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: nginxAlpineImage,
-			ExposedPorts: []string{
-				"80/tcp",
-			},
-			Networks: []string{
-				networkName,
-			},
-		},
-	})
+	nginx, err := testcontainers.Run(ctx, nginxAlpineImage,
+		network.WithNetwork([]string{"nginx"}, net),
+		testcontainers.WithExposedPorts(nginxDefaultPort),
+	)
 	testcontainers.CleanupContainer(t, nginx)
 	require.NoError(t, err)
 
@@ -306,7 +262,7 @@ func TestWithNetwork(t *testing.T) {
 	networkName := nw.Name
 
 	// check that the network is reused, multiple times
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		req := testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{},
 		}
@@ -322,16 +278,16 @@ func TestWithNetwork(t *testing.T) {
 	}
 
 	// verify that the network is created only once
-	client, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	apiClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	require.NoError(t, err)
 
-	resources, err := client.NetworkList(context.Background(), dockernetwork.ListOptions{
-		Filters: filters.NewArgs(filters.Arg("name", networkName)),
+	resources, err := apiClient.NetworkList(context.Background(), client.NetworkListOptions{
+		Filters: make(client.Filters).Add("name", networkName),
 	})
 	require.NoError(t, err)
-	require.Len(t, resources, 1)
+	require.Len(t, resources.Items, 1)
 
-	newNetwork := resources[0]
+	newNetwork := resources.Items[0]
 
 	expectedLabels := testcontainers.GenericLabels()
 	expectedLabels["network-type"] = "unique"
@@ -340,6 +296,44 @@ func TestWithNetwork(t *testing.T) {
 	require.False(t, newNetwork.Attachable)
 	require.False(t, newNetwork.Internal)
 	require.Equal(t, expectedLabels, newNetwork.Labels)
+}
+
+func TestWithNetworkName(t *testing.T) {
+	t.Run("bridge/success", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{},
+		}
+
+		err := network.WithBridgeNetwork()(&req)
+		require.NoError(t, err)
+
+		require.Len(t, req.Networks, 1)
+		require.Equal(t, "bridge", req.Networks[0])
+	})
+
+	t.Run("bridge/error/network-scoped-alias", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{},
+		}
+
+		err := network.WithNetworkName([]string{"alias"}, "bridge")(&req)
+		require.Error(t, err)
+	})
+
+	t.Run("user-defined/success", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{},
+		}
+
+		err := network.WithNetworkName([]string{"alias"}, "user-defined")(&req)
+		require.NoError(t, err)
+
+		require.Len(t, req.Networks, 1)
+		require.Equal(t, "user-defined", req.Networks[0])
+
+		require.Len(t, req.NetworkAliases, 1)
+		require.Equal(t, map[string][]string{"user-defined": {"alias"}}, req.NetworkAliases)
+	})
 }
 
 func TestWithSyntheticNetwork(t *testing.T) {
@@ -365,19 +359,14 @@ func TestWithSyntheticNetwork(t *testing.T) {
 	require.Equal(t, map[string][]string{networkName: {"alias"}}, req.NetworkAliases)
 
 	// verify that the network is created only once
-	client, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	apiClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	require.NoError(t, err)
 
-	resources, err := client.NetworkList(context.Background(), dockernetwork.ListOptions{
-		Filters: filters.NewArgs(filters.Arg("name", networkName)),
+	resources, err := apiClient.NetworkList(context.Background(), client.NetworkListOptions{
+		Filters: make(client.Filters).Add("name", networkName),
 	})
 	require.NoError(t, err)
-	require.Empty(t, resources) // no Docker network was created
-
-	c, err := testcontainers.GenericContainer(context.Background(), req)
-	testcontainers.CleanupContainer(t, c)
-	require.NoError(t, err)
-	require.NotNil(t, c)
+	require.Empty(t, resources.Items) // no Docker network was created
 }
 
 func TestWithNewNetwork(t *testing.T) {
@@ -398,18 +387,19 @@ func TestWithNewNetwork(t *testing.T) {
 	require.Len(t, req.NetworkAliases, 1)
 	require.Equal(t, map[string][]string{networkName: {"alias"}}, req.NetworkAliases)
 
-	client, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	apiClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	require.NoError(t, err)
 
-	resources, err := client.NetworkList(context.Background(), dockernetwork.ListOptions{
-		Filters: filters.NewArgs(filters.Arg("name", networkName)),
+	resources, err := apiClient.NetworkList(context.Background(), client.NetworkListOptions{
+		Filters: make(client.Filters).Add("name", networkName),
 	})
 	require.NoError(t, err)
-	require.Len(t, resources, 1)
+	require.Len(t, resources.Items, 1)
 
-	newNetwork := resources[0]
+	newNetwork := resources.Items[0]
 	defer func() {
-		require.NoError(t, client.NetworkRemove(context.Background(), newNetwork.ID))
+		_, err := apiClient.NetworkRemove(context.Background(), newNetwork.ID, client.NetworkRemoveOptions{})
+		require.NoError(t, err)
 	}()
 
 	expectedLabels := testcontainers.GenericLabels()
@@ -442,6 +432,30 @@ func TestWithNewNetworkContextTimeout(t *testing.T) {
 }
 
 func TestCleanupWithNil(t *testing.T) {
-	var network *testcontainers.DockerNetwork
-	testcontainers.CleanupNetwork(t, network)
+	var nw *testcontainers.DockerNetwork
+	testcontainers.CleanupNetwork(t, nw)
+}
+
+func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
+	if os.Getenv("XDG_RUNTIME_DIR") != "" {
+		t.Skip("Skipping test that requires host network access when running in a container")
+	}
+
+	// skipIfDockerDesktop {
+	ctx := context.Background()
+	testcontainers.SkipIfDockerDesktop(t, ctx)
+	// }
+
+	nginx, err := testcontainers.Run(
+		ctx, nginxAlpineImage,
+		testcontainers.WithHostConfigModifier(func(hc *container.HostConfig) {
+			hc.NetworkMode = "host"
+		}),
+		network.WithNetworkName([]string{"nginx"}, "new-network"),
+	)
+	testcontainers.CleanupContainer(t, nginx)
+	if err != nil {
+		// Error when NetworkMode = host and Network = []string{"bridge"}
+		t.Logf("Can't use Network and NetworkMode together, %s\n", err)
+	}
 }

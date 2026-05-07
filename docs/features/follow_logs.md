@@ -26,8 +26,8 @@ You can associate `LogConsumer`s in two manners:
 
 ## Passing the LogConsumers in the ContainerRequest
 
-This will represent the current way for associating `LogConsumer`s. You simply define your consumers, and attach them as a slice to the `ContainerRequest` in the
-`LogConsumerCfg` field. See the following example, where `g` is an instance of a given `LogConsumer` struct.
+This will represent the current way for associating `LogConsumer`s. You simply define your consumers, and attach them as a slice using the `WithLogConsumerConfig` functional option.
+See the following example, where `g` is an instance of a given `LogConsumer` struct.
 
 <!--codeinclude-->
 [Passing LogConsumers](../../logconsumer_test.go) inside_block:logConsumersAtRequest

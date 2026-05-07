@@ -73,20 +73,18 @@ func ExampleRun_withAuthentication() {
 	// build a custom redis image from the private registry,
 	// using RegistryName of the container as the registry.
 
-	redisC, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			FromDockerfile: testcontainers.FromDockerfile{
-				Context: filepath.Join("testdata", "redis"),
-				BuildArgs: map[string]*string{
-					"REGISTRY_HOST": &registryHost,
-				},
+	redisC, err := testcontainers.Run(
+		context.Background(), "",
+		testcontainers.WithDockerfile(testcontainers.FromDockerfile{
+			Context: filepath.Join("testdata", "redis"),
+			BuildArgs: map[string]*string{
+				"REGISTRY_HOST": &registryHost,
 			},
-			AlwaysPullImage: true, // make sure the authentication takes place
-			ExposedPorts:    []string{"6379/tcp"},
-			WaitingFor:      wait.ForLog("Ready to accept connections"),
-		},
-		Started: true,
-	})
+		}),
+		testcontainers.WithAlwaysPull(), // make sure the authentication takes place
+		testcontainers.WithExposedPorts("6379/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForLog("Ready to accept connections")),
+	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(redisC); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -155,22 +153,19 @@ func ExampleRun_pushImage() {
 	repo := registryContainer.RegistryName + "/customredis"
 	tag := "v1.2.3"
 
-	redisC, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			FromDockerfile: testcontainers.FromDockerfile{
-				Context: filepath.Join("testdata", "redis"),
-				BuildArgs: map[string]*string{
-					"REGISTRY_HOST": &registryHost,
-				},
-				Repo: repo,
-				Tag:  tag,
+	redisC, err := testcontainers.Run(context.Background(), "",
+		testcontainers.WithDockerfile(testcontainers.FromDockerfile{
+			Context: filepath.Join("testdata", "redis"),
+			BuildArgs: map[string]*string{
+				"REGISTRY_HOST": &registryHost,
 			},
-			AlwaysPullImage: true, // make sure the authentication takes place
-			ExposedPorts:    []string{"6379/tcp"},
-			WaitingFor:      wait.ForLog("Ready to accept connections"),
-		},
-		Started: true,
-	})
+			Repo: repo,
+			Tag:  tag,
+		}),
+		testcontainers.WithAlwaysPull(), // make sure the authentication takes place
+		testcontainers.WithExposedPorts("6379/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForLog("Ready to accept connections")),
+	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(redisC); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -184,6 +179,7 @@ func ExampleRun_pushImage() {
 	// pushingImage {
 	// repo is localhost:32878/customredis
 	// tag is v1.2.3
+	newImage := fmt.Sprintf("%s:%s", repo, tag)
 	err = registryContainer.PushImage(context.Background(), fmt.Sprintf("%s:%s", repo, tag))
 	if err != nil {
 		log.Printf("failed to push image: %s", err)
@@ -191,7 +187,43 @@ func ExampleRun_pushImage() {
 	}
 	// }
 
-	newImage := fmt.Sprintf("%s:%s", repo, tag)
+	// pull a redis image from an public registry,
+	// tag it specifying the local registry name,
+	// and push to the private registry.
+
+	defaultRegistryURI := "docker.io/library"
+	defaultImage := "redis"
+	defaultTag := "5.0-alpine"
+
+	// pullingImage {
+	// defaultRegistryURI is localhost:32878
+	// defaultImage is customredis
+	// defaultTag is v1.2.3
+	imageRef := fmt.Sprintf("%s/%s:%s", defaultRegistryURI, defaultImage, defaultTag)
+	err = registryContainer.PullImage(ctx, imageRef)
+	if err != nil {
+		log.Printf("failed to pull image: %s", err)
+		return
+	}
+	// }
+
+	// taggingImage {
+	// defaultRegistryURI is localhost:32878
+	// defaultImage is customredis
+	// defaultTag is v1.2.3
+	taggedImage := fmt.Sprintf("%s/%s:%s", registryContainer.RegistryName, defaultImage, defaultTag)
+	err = registryContainer.TagImage(ctx, imageRef, taggedImage)
+	if err != nil {
+		log.Printf("failed to tag image: %s", err)
+		return
+	}
+	// }
+
+	err = registryContainer.PushImage(context.Background(), taggedImage)
+	if err != nil {
+		log.Printf("failed to push image: %s", err)
+		return
+	}
 
 	// now run a container from the new image
 	// But first remove the local image to avoid using the local one.
@@ -204,28 +236,29 @@ func ExampleRun_pushImage() {
 		return
 	}
 	// }
+	err = registryContainer.DeleteImage(context.Background(), taggedImage)
+	if err != nil {
+		log.Printf("failed to delete image: %s", err)
+		return
+	}
 
-	newRedisC, err := testcontainers.GenericContainer(context.Background(), testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        newImage,
-			ExposedPorts: []string{"6379/tcp"},
-			WaitingFor:   wait.ForLog("Ready to accept connections"),
-		},
-		Started: true,
-	})
+	newRedisC, err := testcontainers.Run(context.Background(), taggedImage,
+		testcontainers.WithExposedPorts("6379/tcp"),
+		testcontainers.WithWaitStrategy(wait.ForLog("Ready to accept connections")),
+	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(newRedisC); err != nil {
 			log.Printf("failed to terminate container: %s", err)
 		}
 	}()
 	if err != nil {
-		log.Printf("failed to start container from %s: %s", newImage, err)
+		log.Printf("failed to start container from %s: %s", taggedImage, err)
 		return
 	}
 
 	state, err := newRedisC.State(context.Background())
 	if err != nil {
-		log.Printf("failed to get redis container state from %s: %s", newImage, err)
+		log.Printf("failed to get redis container state from %s: %s", taggedImage, err)
 		return
 	}
 

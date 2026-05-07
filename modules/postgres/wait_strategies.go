@@ -14,7 +14,7 @@ import (
 //     Without this, the tests will be flaky on those OSes!
 func BasicWaitStrategies() testcontainers.CustomizeRequestOption {
 	// waitStrategy {
-	return testcontainers.WithWaitStrategy(
+	return testcontainers.WithAdditionalWaitStrategy(
 		// First, we wait for the container to log readiness twice.
 		// This is because it will restart itself after the first startup.
 		wait.ForLog("database system is ready to accept connections").WithOccurrence(2),

@@ -3,6 +3,7 @@ package couchbase
 import "github.com/testcontainers/testcontainers-go"
 
 // Option is a function that configures the Couchbase container.
+//
 // Deprecated: Use the With* functions instead.
 type Option func(*Config)
 
@@ -19,6 +20,7 @@ type Config struct {
 
 // WithEnterpriseService enables the eventing service in the container.
 // Only available in the Enterprise Edition of Couchbase Server.
+//
 // Deprecated: Use WithServiceEventing instead.
 func WithEventingService() Option {
 	return func(c *Config) {
@@ -28,7 +30,8 @@ func WithEventingService() Option {
 
 // WithAnalyticsService enables the analytics service in the container.
 // Only available in the Enterprise Edition of Couchbase Server.
-// Deprecated: Use WithServiceAnalytics instead.
+//
+// Deprecated: Use [WithServiceAnalytics] instead.
 func WithAnalyticsService() Option {
 	return func(c *Config) {
 		c.enabledServices = append(c.enabledServices, analytics)
@@ -54,7 +57,8 @@ func WithAdminCredentials(username, password string) credentialsCustomizer {
 }
 
 // WithCredentials sets the username and password for the administrator user.
-// Deprecated: Use WithAdminCredentials instead.
+//
+// Deprecated: Use [WithAdminCredentials] instead.
 func WithCredentials(username, password string) Option {
 	return func(c *Config) {
 		c.username = username
@@ -63,7 +67,8 @@ func WithCredentials(username, password string) Option {
 }
 
 // WithBucket adds a bucket to the container.
-// Deprecated: Use WithBuckets instead.
+//
+// Deprecated: Use [WithBuckets] instead.
 func WithBucket(bucket bucket) Option {
 	return func(c *Config) {
 		c.buckets = append(c.buckets, bucket)
@@ -87,6 +92,7 @@ func WithBuckets(bucket ...bucket) bucketCustomizer {
 }
 
 // WithImageName allows to override the default image name.
+//
 // Deprecated: Use testcontainers.WithImage instead.
 func WithImageName(imageName string) Option {
 	return func(c *Config) {
@@ -111,7 +117,8 @@ func WithIndexStorage(indexStorageMode indexStorageMode) indexStorageCustomizer 
 }
 
 // WithIndexStorageMode sets the storage mode to be used in the cluster.
-// Deprecated: Use WithIndexStorage instead.
+//
+// Deprecated: Use [WithIndexStorage] instead.
 func WithIndexStorageMode(indexStorageMode indexStorageMode) Option {
 	return func(c *Config) {
 		c.indexStorageMode = indexStorageMode

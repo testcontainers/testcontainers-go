@@ -14,8 +14,9 @@ updates:
       directories:
         - /
         - /examples/nginx
-        - /examples/toxiproxy
         - /modulegen
+        - /modules/aerospike
+        - /modules/arangodb
         - /modules/artemis
         - /modules/azure
         - /modules/azurite
@@ -28,10 +29,13 @@ updates:
         - /modules/couchbase
         - /modules/databend
         - /modules/dind
+        - /modules/dockermcpgateway
+        - /modules/dockermodelrunner
         - /modules/dolt
         - /modules/dynamodb
         - /modules/elasticsearch
         - /modules/etcd
+        - /modules/forgejo
         - /modules/gcloud
         - /modules/grafana-lgtm
         - /modules/inbucket
@@ -42,6 +46,7 @@ updates:
         - /modules/localstack
         - /modules/mariadb
         - /modules/meilisearch
+        - /modules/memcached
         - /modules/milvus
         - /modules/minio
         - /modules/mockserver
@@ -49,6 +54,7 @@ updates:
         - /modules/mssql
         - /modules/mysql
         - /modules/nats
+        - /modules/nebulagraph
         - /modules/neo4j
         - /modules/ollama
         - /modules/openfga
@@ -63,7 +69,11 @@ updates:
         - /modules/redpanda
         - /modules/registry
         - /modules/scylladb
+        - /modules/socat
+        - /modules/solace
         - /modules/surrealdb
+        - /modules/tidb
+        - /modules/toxiproxy
         - /modules/valkey
         - /modules/vault
         - /modules/vearch

@@ -127,17 +127,21 @@ func ExampleRun_connectWithClientWithModules() {
 		return
 	}
 
+	// httpHostAddress {
 	scheme, host, err := weaviateContainer.HttpHostAddress(ctx)
 	if err != nil {
 		log.Printf("failed to get http schema and host: %s", err)
 		return
 	}
+	// }
 
+	// grpcHostAddress {
 	grpcHost, err := weaviateContainer.GrpcHostAddress(ctx)
 	if err != nil {
 		log.Printf("failed to get gRPC host: %s", err)
 		return
 	}
+	// }
 
 	connectionClient := &http.Client{}
 	headers := map[string]string{

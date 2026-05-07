@@ -74,7 +74,33 @@ readonly ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 readonly excluded_modules=(".devcontainer" ".vscode" "docs")
 
 # define an array of files that won't be included in the list
-readonly excluded_files=("mkdocs.yml" ".github/dependabot.yml" ".github/workflows/sonar-*.yml")
+readonly excluded_files=(
+    ".github/dependabot.yml"
+    ".github/FUNDING.yml"
+    ".github/PULL_REQUEST_TEMPLATE.md"
+    ".github/release-drafter.yml"
+    ".github/settings.yml"
+    ".github/workflows/codeql.yml"
+    ".github/workflows/conventions.yml"
+    ".github/workflows/docker-projects-latest.yml"
+    ".github/workflows/release-drafter.yml"
+    ".github/workflows/scorecards.yml"
+    ".github/workflows/sonar-*.yml"
+    ".github/workflows/usage-metrics.yml"
+    "scripts/bump-*.sh"
+    "scripts/check_environment.sh"
+    "scripts/*release.sh"
+    "AI.md"
+    "CONTRIBUTING.md"
+    "LICENSE"
+    "mkdocs.yml"
+    "Pipfile*"
+    "README.md"
+    "RELEASING.md"
+    "requirements.txt"
+    "runtime.txt"
+    "docs/usage-metrics.csv"
+)
 
 # define an array of modules that won't be part of the build
 readonly no_build_modules=("modules/k6")
@@ -100,8 +126,11 @@ readonly rootModule="\"\""
 # capture the modulegen module
 readonly modulegenModule="\"modulegen\""
 
+# capture the usage-metrics module
+readonly usageMetricsModule="\"usage-metrics\""
+
 # merge all modules and examples into a single array
-allModules=(${rootModule} ${modulegenModule} "${modules[@]}")
+allModules=(${rootModule} ${modulegenModule} ${usageMetricsModule} "${modules[@]}")
 
 # sort allModules array
 IFS=$'\n' allModules=($(sort <<<"${allModules[*]}"))
@@ -141,6 +170,8 @@ for file in $modified_files; do
         fi
     elif [[ $file == modulegen/* ]]; then
         modified_modules+=("\"modulegen\"")
+    elif [[ $file == usage-metrics/* ]]; then
+        modified_modules+=("\"usage-metrics\"")
     else
         # a file from the core module is modified, so include all modules in the list and stop the loop
         # check if the file is in one of the excluded modules

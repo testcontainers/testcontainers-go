@@ -6,16 +6,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/netip"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/api/types/strslice"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/mount"
+	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -28,6 +27,32 @@ func TestPreCreateModifierHook(t *testing.T) {
 	provider, err := NewDockerProvider()
 	require.NoError(t, err)
 	defer provider.Close()
+
+	t.Run("mount-errors", func(t *testing.T) {
+		// imageMounts {
+		req := ContainerRequest{
+			// three mounts, one valid and two invalid
+			Mounts: ContainerMounts{
+				{
+					Source: NewDockerImageMountSource("nginx:latest", "var/www/html"),
+					Target: "/var/www/valid",
+				},
+				ImageMount("nginx:latest", "../var/www/html", "/var/www/invalid1"),
+				ImageMount("nginx:latest", "/var/www/html", "/var/www/invalid2"),
+			},
+		}
+		// }
+
+		err = provider.preCreateContainerHook(ctx, req, &container.Config{}, &container.HostConfig{}, &network.NetworkingConfig{})
+		require.Error(t, err)
+
+		var errs []error
+		var joinErr interface{ Unwrap() []error }
+		if errors.As(err, &joinErr) {
+			errs = joinErr.Unwrap()
+		}
+		require.Len(t, errs, 2) // one valid and two invalid mounts
+	})
 
 	t.Run("No exposed ports", func(t *testing.T) {
 		// reqWithModifiers {
@@ -48,10 +73,10 @@ func TestPreCreateModifierHook(t *testing.T) {
 				},
 			},
 			HostConfigModifier: func(hostConfig *container.HostConfig) {
-				hostConfig.PortBindings = nat.PortMap{
-					"80/tcp": []nat.PortBinding{
+				hostConfig.PortBindings = network.PortMap{
+					network.MustParsePort("80/tcp"): []network.PortBinding{
 						{
-							HostIP:   "1",
+							HostIP:   netip.MustParseAddr("127.0.0.1"),
 							HostPort: "2",
 						},
 					},
@@ -85,7 +110,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 			"Docker config's env should be overwritten by the modifier",
 		)
 		assert.Equal(t,
-			nat.PortSet(nat.PortSet{"80/tcp": struct{}{}}),
+			network.PortSet{network.MustParsePort("80/tcp"): struct{}{}},
 			inputConfig.ExposedPorts,
 			"Docker config's exposed ports should be overwritten by the modifier",
 		)
@@ -105,15 +130,15 @@ func TestPreCreateModifierHook(t *testing.T) {
 			"Host config's mounts should be mapped to Docker types",
 		)
 
-		assert.Equal(t, nat.PortMap{
-			"80/tcp": []nat.PortBinding{
+		assert.Equal(t, network.PortMap{
+			network.MustParsePort("80/tcp"): []network.PortBinding{
 				{
-					HostIP:   "",
-					HostPort: "",
+					HostIP:   netip.MustParseAddr("127.0.0.1"),
+					HostPort: "2",
 				},
 			},
 		}, inputHostConfig.PortBindings,
-			"Host config's port bindings should be overwritten by the modifier",
+			"Host config's port bindings should be preserved from the modifier",
 		)
 
 		assert.Equal(
@@ -134,10 +159,10 @@ func TestPreCreateModifierHook(t *testing.T) {
 		req := ContainerRequest{
 			Image: nginxAlpineImage, // alpine image does expose port 80
 			HostConfigModifier: func(hostConfig *container.HostConfig) {
-				hostConfig.PortBindings = nat.PortMap{
-					"80/tcp": []nat.PortBinding{
+				hostConfig.PortBindings = network.PortMap{
+					network.MustParsePort("80/tcp"): []network.PortBinding{
 						{
-							HostIP:   "1",
+							HostIP:   netip.MustParseAddr("127.0.0.1"),
 							HostPort: "2",
 						},
 					},
@@ -160,12 +185,12 @@ func TestPreCreateModifierHook(t *testing.T) {
 
 		assert.Equal(
 			t,
-			nat.PortSet(nat.PortSet{}),
+			network.PortSet{},
 			inputConfig.ExposedPorts,
 			"Docker config's exposed ports should be empty",
 		)
 		assert.Equal(t,
-			nat.PortMap{},
+			network.PortMap{},
 			inputHostConfig.PortBindings,
 			"Host config's portBinding should be empty",
 		)
@@ -200,8 +225,8 @@ func TestPreCreateModifierHook(t *testing.T) {
 		// assertions
 
 		assert.Equal(t, req.AutoRemove, inputHostConfig.AutoRemove, "Deprecated AutoRemove should come from the container request")
-		assert.Equal(t, strslice.StrSlice(req.CapAdd), inputHostConfig.CapAdd, "Deprecated CapAdd should come from the container request")
-		assert.Equal(t, strslice.StrSlice(req.CapDrop), inputHostConfig.CapDrop, "Deprecated CapDrop should come from the container request")
+		assert.Equal(t, req.CapAdd, inputHostConfig.CapAdd, "Deprecated CapAdd should come from the container request")
+		assert.Equal(t, req.CapDrop, inputHostConfig.CapDrop, "Deprecated CapDrop should come from the container request")
 		assert.Equal(t, req.Binds, inputHostConfig.Binds, "Deprecated Binds should come from the container request")
 		assert.Equal(t, req.ExtraHosts, inputHostConfig.ExtraHosts, "Deprecated ExtraHosts should come from the container request")
 		assert.Equal(t, req.Resources, inputHostConfig.Resources, "Deprecated Resources should come from the container request")
@@ -301,10 +326,10 @@ func TestPreCreateModifierHook(t *testing.T) {
 		req := ContainerRequest{
 			Image: nginxAlpineImage, // alpine image does expose port 80
 			HostConfigModifier: func(hostConfig *container.HostConfig) {
-				hostConfig.PortBindings = nat.PortMap{
-					"80/tcp": []nat.PortBinding{
+				hostConfig.PortBindings = network.PortMap{
+					network.MustParsePort("80/tcp"): []network.PortBinding{
 						{
-							HostIP:   "localhost",
+							HostIP:   netip.MustParseAddr("127.0.0.1"),
 							HostPort: "8080",
 						},
 					},
@@ -324,18 +349,18 @@ func TestPreCreateModifierHook(t *testing.T) {
 		require.NoError(t, err)
 
 		// assertions
-		assert.Equal(t, "localhost", inputHostConfig.PortBindings["80/tcp"][0].HostIP)
-		assert.Equal(t, "8080", inputHostConfig.PortBindings["80/tcp"][0].HostPort)
+		assert.Equal(t, "127.0.0.1", inputHostConfig.PortBindings[network.MustParsePort("80/tcp")][0].HostIP.String())
+		assert.Equal(t, "8080", inputHostConfig.PortBindings[network.MustParsePort("80/tcp")][0].HostPort)
 	})
 
 	t.Run("Request contains exposed port modifiers with protocol", func(t *testing.T) {
 		req := ContainerRequest{
 			Image: nginxAlpineImage, // alpine image does expose port 80
 			HostConfigModifier: func(hostConfig *container.HostConfig) {
-				hostConfig.PortBindings = nat.PortMap{
-					"80/tcp": []nat.PortBinding{
+				hostConfig.PortBindings = network.PortMap{
+					network.MustParsePort("80/tcp"): []network.PortBinding{
 						{
-							HostIP:   "localhost",
+							HostIP:   netip.MustParseAddr("127.0.0.1"),
 							HostPort: "8080",
 						},
 					},
@@ -355,163 +380,91 @@ func TestPreCreateModifierHook(t *testing.T) {
 		require.NoError(t, err)
 
 		// assertions
-		assert.Equal(t, "localhost", inputHostConfig.PortBindings["80/tcp"][0].HostIP)
-		assert.Equal(t, "8080", inputHostConfig.PortBindings["80/tcp"][0].HostPort)
+		assert.Equal(t, "127.0.0.1", inputHostConfig.PortBindings[network.MustParsePort("80/tcp")][0].HostIP.String())
+		assert.Equal(t, "8080", inputHostConfig.PortBindings[network.MustParsePort("80/tcp")][0].HostPort)
 	})
 }
 
 func TestMergePortBindings(t *testing.T) {
 	type arg struct {
-		configPortMap nat.PortMap
-		parsedPortMap nat.PortMap
-		exposedPorts  []string
+		configPortMap  network.PortMap
+		exposedPortSet network.PortSet
 	}
 	cases := []struct {
 		name     string
 		arg      arg
-		expected nat.PortMap
+		expected network.PortMap
 	}{
 		{
 			name: "empty ports",
 			arg: arg{
-				configPortMap: nil,
-				parsedPortMap: nil,
-				exposedPorts:  nil,
+				configPortMap:  nil,
+				exposedPortSet: nil,
 			},
-			expected: map[nat.Port][]nat.PortBinding{},
+			expected: network.PortMap{},
 		},
 		{
 			name: "config port map but not exposed",
 			arg: arg{
-				configPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "1", HostPort: "2"}},
+				configPortMap: network.PortMap{
+					network.MustParsePort("80/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "2"}},
 				},
-				parsedPortMap: nil,
-				exposedPorts:  nil,
+				exposedPortSet: nil,
 			},
-			expected: map[nat.Port][]nat.PortBinding{},
+			expected: network.PortMap{},
 		},
 		{
 			name: "parsed port map without config",
 			arg: arg{
 				configPortMap: nil,
-				parsedPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "", HostPort: ""}},
+				exposedPortSet: network.PortSet{
+					network.MustParsePort("80/tcp"): struct{}{},
 				},
-				exposedPorts: nil,
 			},
-			expected: map[nat.Port][]nat.PortBinding{
-				"80/tcp": {{HostIP: "", HostPort: ""}},
+			expected: network.PortMap{
+				network.MustParsePort("80/tcp"): {{HostPort: "0"}},
 			},
 		},
 		{
 			name: "parsed and configured but not exposed",
 			arg: arg{
-				configPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "1", HostPort: "2"}},
+				configPortMap: network.PortMap{
+					network.MustParsePort("80/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "2"}},
 				},
-				parsedPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "", HostPort: ""}},
+				exposedPortSet: network.PortSet{
+					network.MustParsePort("80/tcp"): struct{}{},
 				},
-				exposedPorts: nil,
 			},
-			expected: map[nat.Port][]nat.PortBinding{
-				"80/tcp": {{HostIP: "", HostPort: ""}},
+			expected: network.PortMap{
+				network.MustParsePort("80/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "2"}},
 			},
 		},
 		{
 			name: "merge both parsed and config",
 			arg: arg{
-				configPortMap: map[nat.Port][]nat.PortBinding{
-					"60/tcp": {{HostIP: "1", HostPort: "2"}},
-					"70/tcp": {{HostIP: "1", HostPort: "2"}},
-					"80/tcp": {{HostIP: "1", HostPort: "2"}},
+				configPortMap: network.PortMap{
+					network.MustParsePort("60/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "2"}},
+					network.MustParsePort("70/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "2"}},
+					network.MustParsePort("80/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "2"}},
 				},
-				parsedPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "", HostPort: ""}},
-					"90/tcp": {{HostIP: "", HostPort: ""}},
+				exposedPortSet: network.PortSet{
+					network.MustParsePort("70/tcp"): struct{}{},
+					network.MustParsePort("80/tcp"): struct{}{},
+					network.MustParsePort("90/tcp"): struct{}{},
 				},
-				exposedPorts: []string{"70", "80/tcp"},
 			},
-			expected: map[nat.Port][]nat.PortBinding{
-				"70/tcp": {{HostIP: "1", HostPort: "2"}},
-				"80/tcp": {{HostIP: "1", HostPort: "2"}},
-				"90/tcp": {{HostIP: "", HostPort: ""}},
+			expected: network.PortMap{
+				network.MustParsePort("70/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "2"}},
+				network.MustParsePort("80/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "2"}},
+				network.MustParsePort("90/tcp"): {{HostPort: "0"}},
 			},
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			res := mergePortBindings(c.arg.configPortMap, c.arg.parsedPortMap, c.arg.exposedPorts)
+			res := mergePortBindings(c.arg.configPortMap, c.arg.exposedPortSet)
 			assert.Equal(t, c.expected, res)
-		})
-	}
-}
-
-func TestPortMappingCheck(t *testing.T) {
-	makePortMap := func(ports ...string) nat.PortMap {
-		out := make(nat.PortMap)
-		for _, port := range ports {
-			// We don't care about the actual binding in this test
-			out[nat.Port(port)] = nil
-		}
-		return out
-	}
-
-	tests := map[string]struct {
-		exposedAndMappedPorts nat.PortMap
-		exposedPorts          []string
-		expectError           bool
-	}{
-		"no-protocol": {
-			exposedAndMappedPorts: makePortMap("1024/tcp"),
-			exposedPorts:          []string{"1024"},
-		},
-		"protocol": {
-			exposedAndMappedPorts: makePortMap("1024/tcp"),
-			exposedPorts:          []string{"1024/tcp"},
-		},
-		"protocol-target-port": {
-			exposedAndMappedPorts: makePortMap("1024/tcp"),
-			exposedPorts:          []string{"1024:1024/tcp"},
-		},
-		"target-port": {
-			exposedAndMappedPorts: makePortMap("1024/tcp"),
-			exposedPorts:          []string{"1024:1024"},
-		},
-		"multiple-ports": {
-			exposedAndMappedPorts: makePortMap("1024/tcp", "1025/tcp", "1026/tcp"),
-			exposedPorts:          []string{"1024", "25:1025/tcp", "1026:1026"},
-		},
-		"only-ipv4": {
-			exposedAndMappedPorts: makePortMap("1024/tcp"),
-			exposedPorts:          []string{"0.0.0.0::1024/tcp"},
-		},
-		"no-mapped-ports": {
-			exposedAndMappedPorts: makePortMap(),
-			exposedPorts:          []string{"1024"},
-			expectError:           true,
-		},
-		"wrong-mapped-port": {
-			exposedAndMappedPorts: makePortMap("1023/tcp"),
-			exposedPorts:          []string{"1024"},
-			expectError:           true,
-		},
-		"subset-mapped-ports": {
-			exposedAndMappedPorts: makePortMap("1024/tcp", "1025/tcp"),
-			exposedPorts:          []string{"1024", "1025", "1026"},
-			expectError:           true,
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			err := checkPortsMapped(tt.exposedAndMappedPorts, tt.exposedPorts)
-			if tt.expectError {
-				require.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
 		})
 	}
 }
@@ -522,11 +475,11 @@ func TestLifecycleHooks(t *testing.T) {
 		reuse bool
 	}{
 		{
-			name:  "GenericContainer",
+			name:  "RunContainer",
 			reuse: false,
 		},
 		{
-			name:  "ReuseContainer",
+			name:  "RunReusableContainer",
 			reuse: true,
 		},
 	}
@@ -535,115 +488,108 @@ func TestLifecycleHooks(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			prints := []string{}
 			ctx := context.Background()
-			// reqWithLifecycleHooks {
-			req := ContainerRequest{
-				Image: nginxAlpineImage,
-				LifecycleHooks: []ContainerLifecycleHooks{
-					{
-						PreCreates: []ContainerRequestHook{
-							func(_ context.Context, _ ContainerRequest) error {
-								prints = append(prints, "pre-create hook 1")
-								return nil
-							},
-							func(_ context.Context, _ ContainerRequest) error {
-								prints = append(prints, "pre-create hook 2")
-								return nil
-							},
+			// optsWithLifecycleHooks {
+			opts := []ContainerCustomizer{
+				WithAdditionalLifecycleHooks(ContainerLifecycleHooks{
+					PreCreates: []ContainerRequestHook{
+						func(_ context.Context, _ ContainerRequest) error {
+							prints = append(prints, "pre-create hook 1")
+							return nil
 						},
-						PostCreates: []ContainerHook{
-							func(_ context.Context, _ Container) error {
-								prints = append(prints, "post-create hook 1")
-								return nil
-							},
-							func(_ context.Context, _ Container) error {
-								prints = append(prints, "post-create hook 2")
-								return nil
-							},
-						},
-						PreStarts: []ContainerHook{
-							func(_ context.Context, _ Container) error {
-								prints = append(prints, "pre-start hook 1")
-								return nil
-							},
-							func(_ context.Context, _ Container) error {
-								prints = append(prints, "pre-start hook 2")
-								return nil
-							},
-						},
-						PostStarts: []ContainerHook{
-							func(_ context.Context, _ Container) error {
-								prints = append(prints, "post-start hook 1")
-								return nil
-							},
-							func(_ context.Context, _ Container) error {
-								prints = append(prints, "post-start hook 2")
-								return nil
-							},
-						},
-						PostReadies: []ContainerHook{
-							func(_ context.Context, _ Container) error {
-								prints = append(prints, "post-ready hook 1")
-								return nil
-							},
-							func(_ context.Context, _ Container) error {
-								prints = append(prints, "post-ready hook 2")
-								return nil
-							},
-						},
-						PreStops: []ContainerHook{
-							func(_ context.Context, _ Container) error {
-								prints = append(prints, "pre-stop hook 1")
-								return nil
-							},
-							func(_ context.Context, _ Container) error {
-								prints = append(prints, "pre-stop hook 2")
-								return nil
-							},
-						},
-						PostStops: []ContainerHook{
-							func(_ context.Context, _ Container) error {
-								prints = append(prints, "post-stop hook 1")
-								return nil
-							},
-							func(_ context.Context, _ Container) error {
-								prints = append(prints, "post-stop hook 2")
-								return nil
-							},
-						},
-						PreTerminates: []ContainerHook{
-							func(_ context.Context, _ Container) error {
-								prints = append(prints, "pre-terminate hook 1")
-								return nil
-							},
-							func(_ context.Context, _ Container) error {
-								prints = append(prints, "pre-terminate hook 2")
-								return nil
-							},
-						},
-						PostTerminates: []ContainerHook{
-							func(_ context.Context, _ Container) error {
-								prints = append(prints, "post-terminate hook 1")
-								return nil
-							},
-							func(_ context.Context, _ Container) error {
-								prints = append(prints, "post-terminate hook 2")
-								return nil
-							},
+						func(_ context.Context, _ ContainerRequest) error {
+							prints = append(prints, "pre-create hook 2")
+							return nil
 						},
 					},
-				},
+					PostCreates: []ContainerHook{
+						func(_ context.Context, _ Container) error {
+							prints = append(prints, "post-create hook 1")
+							return nil
+						},
+						func(_ context.Context, _ Container) error {
+							prints = append(prints, "post-create hook 2")
+							return nil
+						},
+					},
+					PreStarts: []ContainerHook{
+						func(_ context.Context, _ Container) error {
+							prints = append(prints, "pre-start hook 1")
+							return nil
+						},
+						func(_ context.Context, _ Container) error {
+							prints = append(prints, "pre-start hook 2")
+							return nil
+						},
+					},
+					PostStarts: []ContainerHook{
+						func(_ context.Context, _ Container) error {
+							prints = append(prints, "post-start hook 1")
+							return nil
+						},
+						func(_ context.Context, _ Container) error {
+							prints = append(prints, "post-start hook 2")
+							return nil
+						},
+					},
+					PostReadies: []ContainerHook{
+						func(_ context.Context, _ Container) error {
+							prints = append(prints, "post-ready hook 1")
+							return nil
+						},
+						func(_ context.Context, _ Container) error {
+							prints = append(prints, "post-ready hook 2")
+							return nil
+						},
+					},
+					PreStops: []ContainerHook{
+						func(_ context.Context, _ Container) error {
+							prints = append(prints, "pre-stop hook 1")
+							return nil
+						},
+						func(_ context.Context, _ Container) error {
+							prints = append(prints, "pre-stop hook 2")
+							return nil
+						},
+					},
+					PostStops: []ContainerHook{
+						func(_ context.Context, _ Container) error {
+							prints = append(prints, "post-stop hook 1")
+							return nil
+						},
+						func(_ context.Context, _ Container) error {
+							prints = append(prints, "post-stop hook 2")
+							return nil
+						},
+					},
+					PreTerminates: []ContainerHook{
+						func(_ context.Context, _ Container) error {
+							prints = append(prints, "pre-terminate hook 1")
+							return nil
+						},
+						func(_ context.Context, _ Container) error {
+							prints = append(prints, "pre-terminate hook 2")
+							return nil
+						},
+					},
+					PostTerminates: []ContainerHook{
+						func(_ context.Context, _ Container) error {
+							prints = append(prints, "post-terminate hook 1")
+							return nil
+						},
+						func(_ context.Context, _ Container) error {
+							prints = append(prints, "post-terminate hook 2")
+							return nil
+						},
+					},
+				}),
 			}
 			// }
 
 			if tt.reuse {
-				req.Name = "reuse-container"
+				opts = append(opts, WithReuseByName("reuse-container"))
 			}
 
-			c, err := GenericContainer(ctx, GenericContainerRequest{
-				ContainerRequest: req,
-				Reuse:            tt.reuse,
-				Started:          true,
-			})
+			c, err := Run(ctx, nginxAlpineImage, opts...)
 			CleanupContainer(t, c)
 			require.NoError(t, err)
 			require.NotNil(t, c)
@@ -677,21 +623,15 @@ func (l *inMemoryLogger) Printf(format string, args ...any) {
 func TestLifecycleHooks_WithDefaultLogger(t *testing.T) {
 	ctx := context.Background()
 
-	// reqWithDefaultLoggingHook {
+	// optsWithDefaultLoggingHook {
 	dl := inMemoryLogger{}
 
-	req := ContainerRequest{
-		Image: nginxAlpineImage,
-		LifecycleHooks: []ContainerLifecycleHooks{
-			DefaultLoggingHook(&dl),
-		},
+	opts := []ContainerCustomizer{
+		WithLifecycleHooks(DefaultLoggingHook(&dl)),
 	}
 	// }
 
-	c, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	c, err := Run(ctx, nginxAlpineImage, opts...)
 	CleanupContainer(t, c)
 	require.NoError(t, err)
 	require.NotNil(t, c)
@@ -790,7 +730,7 @@ func TestCombineLifecycleHooks(t *testing.T) {
 	// - pre-X hooks: first default (2*2), then user-defined (3*2)
 	// - post-X hooks: first user-defined (3*2), then default (2*2)
 
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		var hookType string
 		// this is the particular order of execution for the hooks
 		switch i {
@@ -848,18 +788,11 @@ func TestLifecycleHooks_WithMultipleHooks(t *testing.T) {
 
 	dl := inMemoryLogger{}
 
-	req := ContainerRequest{
-		Image: nginxAlpineImage,
-		LifecycleHooks: []ContainerLifecycleHooks{
-			DefaultLoggingHook(&dl),
-			DefaultLoggingHook(&dl),
-		},
+	opts := []ContainerCustomizer{
+		WithLifecycleHooks(DefaultLoggingHook(&dl), DefaultLoggingHook(&dl)),
 	}
 
-	c, err := GenericContainer(ctx, GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	c, err := Run(ctx, nginxAlpineImage, opts...)
 	CleanupContainer(t, c)
 	require.NoError(t, err)
 	require.NotNil(t, c)
@@ -889,22 +822,17 @@ func (l *linesTestLogger) Printf(format string, args ...any) {
 func TestPrintContainerLogsOnError(t *testing.T) {
 	ctx := context.Background()
 
-	req := ContainerRequest{
-		Image:      "alpine",
-		Cmd:        []string{"echo", "-n", "I am expecting this"},
-		WaitingFor: wait.ForLog("I was expecting that").WithStartupTimeout(5 * time.Second),
-	}
-
 	arrayOfLinesLogger := linesTestLogger{
 		data: []string{},
 	}
 
-	ctr, err := GenericContainer(ctx, GenericContainerRequest{
-		ProviderType:     providerType,
-		ContainerRequest: req,
-		Logger:           &arrayOfLinesLogger,
-		Started:          true,
-	})
+	opts := []ContainerCustomizer{
+		WithCmd("echo", "-n", "I am expecting this"),
+		WithLogger(&arrayOfLinesLogger),
+		WithWaitStrategy(wait.ForLog("I was expecting that").WithStartupTimeout(2 * time.Second)),
+	}
+
+	ctr, err := Run(ctx, "alpine", opts...)
 	CleanupContainer(t, ctr)
 	// it should fail because the waiting for condition is not met
 	require.Error(t, err)
@@ -1051,13 +979,13 @@ func Test_combineContainerHooks(t *testing.T) {
 	gotVal := reflect.ValueOf(got)
 	gotType := reflect.TypeOf(got)
 	expectedVal := reflect.ValueOf(expects)
-	for i := 0; i < gotVal.NumField(); i++ {
+	for i := range gotVal.NumField() {
 		fieldName := gotType.Field(i).Name
 		gotField := gotVal.Field(i)
 		expectedField := expectedVal.Field(i)
 		require.Equalf(t, expectedField.Len(), 2, "field %q not setup len expected %d got %d", fieldName, 2, expectedField.Len()) //nolint:testifylint // False positive.
 		require.Equalf(t, expectedField.Len(), gotField.Len(), "field %q len expected %d got %d", fieldName, gotField.Len(), expectedField.Len())
-		for j := 0; j < gotField.Len(); j++ {
+		for j := range gotField.Len() {
 			gotIndex := gotField.Index(j)
 			expectedIndex := expectedField.Index(j)
 			var gotID string

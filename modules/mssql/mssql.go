@@ -33,11 +33,9 @@ func (c *MSSQLServerContainer) Password() string {
 
 // WithAcceptEULA sets the ACCEPT_EULA environment variable to "Y"
 func WithAcceptEULA() testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["ACCEPT_EULA"] = "Y"
-
-		return nil
-	}
+	return testcontainers.WithEnv(map[string]string{
+		"ACCEPT_EULA": "Y",
+	})
 }
 
 // WithPassword sets the MSSQL_SA_PASSWORD environment variable to the provided password
@@ -46,9 +44,10 @@ func WithPassword(password string) testcontainers.CustomizeRequestOption {
 		if password == "" {
 			password = defaultPassword
 		}
-		req.Env["MSSQL_SA_PASSWORD"] = password
 
-		return nil
+		return testcontainers.WithEnv(map[string]string{
+			"MSSQL_SA_PASSWORD": password,
+		})(req)
 	}
 }
 
@@ -96,11 +95,9 @@ func WithInitSQL(files ...io.Reader) testcontainers.CustomizeRequestOption {
 			hooks = append(hooks, hook)
 		}
 
-		req.LifecycleHooks = append(req.LifecycleHooks, testcontainers.ContainerLifecycleHooks{
+		return testcontainers.WithAdditionalLifecycleHooks(testcontainers.ContainerLifecycleHooks{
 			PostReadies: hooks,
-		})
-
-		return nil
+		})(req)
 	}
 }
 
@@ -112,41 +109,50 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the MSSQLServer container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MSSQLServerContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{defaultPort},
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(defaultPort),
+		testcontainers.WithEnv(map[string]string{
 			"MSSQL_SA_PASSWORD": defaultPassword,
-		},
-		WaitingFor: wait.ForAll(
+		}),
+		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort(defaultPort).WithStartupTimeout(time.Minute),
 			wait.ForLog("Recovery is complete."),
 		),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
+	// Validate EULA acceptance after applying user options
+	validateEULA := func(req *testcontainers.GenericContainerRequest) error {
+		if strings.ToUpper(req.Env["ACCEPT_EULA"]) != "Y" {
+			return errors.New("EULA not accepted. Please use the WithAcceptEULA option to accept the EULA")
 		}
+		return nil
 	}
 
-	if strings.ToUpper(genericContainerReq.Env["ACCEPT_EULA"]) != "Y" {
-		return nil, errors.New("EULA not accepted. Please use the WithAcceptEULA option to accept the EULA")
-	}
+	moduleOpts = append(moduleOpts, testcontainers.CustomizeRequestOption(validateEULA))
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *MSSQLServerContainer
-	if container != nil {
-		c = &MSSQLServerContainer{Container: container, password: req.Env["MSSQL_SA_PASSWORD"], username: defaultUsername}
+	if ctr != nil {
+		c = &MSSQLServerContainer{Container: ctr, username: defaultUsername}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run mssql: %w", err)
+	}
+
+	// Retrieve password from container environment
+	inspect, err := ctr.Inspect(ctx)
+	if err != nil {
+		return c, fmt.Errorf("inspect mssql: %w", err)
+	}
+
+	for _, env := range inspect.Config.Env {
+		if v, ok := strings.CutPrefix(env, "MSSQL_SA_PASSWORD="); ok {
+			c.password = v
+			break
+		}
 	}
 
 	return c, nil
@@ -154,19 +160,14 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // ConnectionString returns the connection string for the MSSQLServer container
 func (c *MSSQLServerContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
-	host, err := c.Host(ctx)
+	endpoint, err := c.PortEndpoint(ctx, defaultPort, "")
 	if err != nil {
-		return "", fmt.Errorf("host: %w", err)
-	}
-
-	containerPort, err := c.MappedPort(ctx, defaultPort)
-	if err != nil {
-		return "", fmt.Errorf("mapped port: %w", err)
+		return "", fmt.Errorf("port endpoint: %w", err)
 	}
 
 	extraArgs := strings.Join(args, "&")
 
-	connStr := fmt.Sprintf("sqlserver://%s:%s@%s:%s?%s", c.username, c.password, host, containerPort.Port(), extraArgs)
+	connStr := fmt.Sprintf("sqlserver://%s:%s@%s?%s", c.username, c.password, endpoint, extraArgs)
 
 	return connStr, nil
 }

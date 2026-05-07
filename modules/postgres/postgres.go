@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"path/filepath"
 	"strings"
 
@@ -50,18 +49,13 @@ func (c *PostgresContainer) MustConnectionString(ctx context.Context, args ...st
 // which will be appended to the connection string. The format of the extra arguments is the same as the
 // connection string format, e.g. "connect_timeout=10" or "application_name=myapp"
 func (c *PostgresContainer) ConnectionString(ctx context.Context, args ...string) (string, error) {
-	containerPort, err := c.MappedPort(ctx, "5432/tcp")
-	if err != nil {
-		return "", err
-	}
-
-	host, err := c.Host(ctx)
+	endpoint, err := c.PortEndpoint(ctx, "5432/tcp", "")
 	if err != nil {
 		return "", err
 	}
 
 	extraArgs := strings.Join(args, "&")
-	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s?%s", c.user, c.password, net.JoinHostPort(host, containerPort.Port()), c.dbName, extraArgs)
+	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s?%s", c.user, c.password, endpoint, c.dbName, extraArgs)
 	return connStr, nil
 }
 
@@ -76,67 +70,70 @@ func WithConfigFile(cfg string) testcontainers.CustomizeRequestOption {
 			FileMode:          0o755,
 		}
 
-		req.Files = append(req.Files, cfgFile)
-		req.Cmd = append(req.Cmd, "-c", "config_file=/etc/postgresql.conf")
+		if err := testcontainers.WithFiles(cfgFile)(req); err != nil {
+			return err
+		}
 
-		return nil
+		return testcontainers.WithCmdArgs("-c", "config_file=/etc/postgresql.conf")(req)
 	}
 }
 
 // WithDatabase sets the initial database to be created when the container starts
 // It can be used to define a different name for the default database that is created when the image is first started.
 // If it is not specified, then the value of WithUser will be used.
-func WithDatabase(dbName string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["POSTGRES_DB"] = dbName
-
-		return nil
-	}
+func WithDatabase(dbName string) testcontainers.ContainerCustomizer {
+	return testcontainers.WithEnv(map[string]string{"POSTGRES_DB": dbName})
 }
 
-// WithInitScripts sets the init scripts to be run when the container starts
+// WithInitScripts sets the init scripts to be run when the container starts.
+// These init scripts will be executed in sorted name order as defined by the container's current locale, which defaults to en_US.utf8.
+// If you need to run your scripts in a specific order, consider using `WithOrderedInitScripts` instead.
 func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		initScripts := []testcontainers.ContainerFile{}
-		for _, script := range scripts {
-			cf := testcontainers.ContainerFile{
-				HostFilePath:      script,
-				ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
-				FileMode:          0o755,
-			}
-			initScripts = append(initScripts, cf)
+	containerFiles := make([]testcontainers.ContainerFile, 0, len(scripts))
+	for _, script := range scripts {
+		initScript := testcontainers.ContainerFile{
+			HostFilePath:      script,
+			ContainerFilePath: "/docker-entrypoint-initdb.d/" + filepath.Base(script),
+			FileMode:          0o755,
 		}
-		req.Files = append(req.Files, initScripts...)
-
-		return nil
+		containerFiles = append(containerFiles, initScript)
 	}
+
+	return testcontainers.WithFiles(containerFiles...)
+}
+
+// WithOrderedInitScripts sets the init scripts to be run when the container starts.
+// The scripts will be run in the order that they are provided in this function.
+func WithOrderedInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
+	containerFiles := make([]testcontainers.ContainerFile, 0, len(scripts))
+	for idx, script := range scripts {
+		initScript := testcontainers.ContainerFile{
+			HostFilePath:      script,
+			ContainerFilePath: "/docker-entrypoint-initdb.d/" + fmt.Sprintf("%03d-%s", idx, filepath.Base(script)),
+			FileMode:          0o755,
+		}
+		containerFiles = append(containerFiles, initScript)
+	}
+
+	return testcontainers.WithFiles(containerFiles...)
 }
 
 // WithPassword sets the initial password of the user to be created when the container starts
 // It is required for you to use the PostgreSQL image. It must not be empty or undefined.
 // This environment variable sets the superuser password for PostgreSQL.
-func WithPassword(password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Env["POSTGRES_PASSWORD"] = password
-
-		return nil
-	}
+func WithPassword(password string) testcontainers.ContainerCustomizer {
+	return testcontainers.WithEnv(map[string]string{"POSTGRES_PASSWORD": password})
 }
 
 // WithUsername sets the initial username to be created when the container starts
 // It is used in conjunction with WithPassword to set a user and its password.
 // It will create the specified user with superuser power and a database with the same name.
 // If it is not specified, then the default user of postgres will be used.
-func WithUsername(user string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		if user == "" {
-			user = defaultUser
-		}
-
-		req.Env["POSTGRES_USER"] = user
-
-		return nil
+func WithUsername(user string) testcontainers.ContainerCustomizer {
+	if user == "" {
+		user = defaultUser
 	}
+	return testcontainers.WithEnv(map[string]string{"POSTGRES_USER": user})
 }
 
 // Deprecated: use Run instead
@@ -147,48 +144,65 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Postgres container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*PostgresContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image: img,
-		Env: map[string]string{
-			"POSTGRES_USER":     defaultUser,
-			"POSTGRES_PASSWORD": defaultPassword,
-			"POSTGRES_DB":       defaultUser, // defaults to the user name
-		},
-		ExposedPorts: []string{"5432/tcp"},
-		Cmd:          []string{"postgres", "-c", "fsync=off"},
-	}
-
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
 	// Gather all config options (defaults and then apply provided options)
 	settings := defaultOptions()
 	for _, opt := range opts {
 		if apply, ok := opt.(Option); ok {
 			apply(&settings)
 		}
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
+		testcontainers.WithEnv(map[string]string{
+			"POSTGRES_USER":     defaultUser,
+			"POSTGRES_PASSWORD": defaultPassword,
+			"POSTGRES_DB":       defaultUser, // defaults to the user name
+		}),
+		testcontainers.WithExposedPorts("5432/tcp"),
+		testcontainers.WithCmd("postgres", "-c", "fsync=off"),
+	)
+
+	moduleOpts = append(moduleOpts, opts...)
+
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *PostgresContainer
-	if container != nil {
+	if ctr != nil {
 		c = &PostgresContainer{
-			Container:     container,
-			dbName:        req.Env["POSTGRES_DB"],
-			password:      req.Env["POSTGRES_PASSWORD"],
-			user:          req.Env["POSTGRES_USER"],
+			Container:     ctr,
+			dbName:        defaultUser,
+			password:      defaultPassword,
+			user:          defaultUser,
 			sqlDriverName: settings.SQLDriverName,
 			snapshotName:  settings.Snapshot,
 		}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run postgres: %w", err)
+	}
+
+	// Retrieve the actual env vars set on the container
+	inspect, err := ctr.Inspect(ctx)
+	if err != nil {
+		return c, fmt.Errorf("inspect postgres: %w", err)
+	}
+
+	var foundDB, foundUser, foundPass bool
+	for _, env := range inspect.Config.Env {
+		if v, ok := strings.CutPrefix(env, "POSTGRES_DB="); ok {
+			c.dbName, foundDB = v, true
+		}
+		if v, ok := strings.CutPrefix(env, "POSTGRES_USER="); ok {
+			c.user, foundUser = v, true
+		}
+		if v, ok := strings.CutPrefix(env, "POSTGRES_PASSWORD="); ok {
+			c.password, foundPass = v, true
+		}
+
+		if foundDB && foundUser && foundPass {
+			break
+		}
 	}
 
 	return c, nil
@@ -219,7 +233,7 @@ func WithSSLCert(caCertFile string, certFile string, keyFile string) testcontain
 	return func(req *testcontainers.GenericContainerRequest) error {
 		const entrypointPath = "/usr/local/bin/docker-entrypoint-ssl.bash"
 
-		req.Files = append(req.Files,
+		if err := testcontainers.WithFiles(
 			testcontainers.ContainerFile{
 				HostFilePath:      caCertFile,
 				ContainerFilePath: "/tmp/testcontainers-go/postgres/ca_cert.pem",
@@ -240,10 +254,11 @@ func WithSSLCert(caCertFile string, certFile string, keyFile string) testcontain
 				ContainerFilePath: entrypointPath,
 				FileMode:          defaultPermission,
 			},
-		)
-		req.Entrypoint = []string{"sh", entrypointPath}
+		)(req); err != nil {
+			return err
+		}
 
-		return nil
+		return testcontainers.WithEntrypoint("sh", entrypointPath)(req)
 	}
 }
 
@@ -286,8 +301,11 @@ func (c *PostgresContainer) Restore(ctx context.Context, opts ...SnapshotOption)
 
 	// execute the commands to restore the snapshot, in order
 	return c.execCommandsSQL(ctx,
-		// Drop the entire database by connecting to the postgres global database
-		fmt.Sprintf(`DROP DATABASE "%s" with (FORCE)`, c.dbName),
+		// Terminate all connections to the template database explicitly as the forced drop below will sometimes
+		// not terminate them and then fail to drop the database.
+		fmt.Sprintf(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '%s' AND pid <> pg_backend_pid()`, snapshotName),
+		// Drop the database if it exists
+		fmt.Sprintf(`DROP DATABASE IF EXISTS "%s" with (FORCE)`, c.dbName),
 		// Then restore the previous snapshot
 		fmt.Sprintf(`CREATE DATABASE "%s" WITH TEMPLATE "%s" OWNER "%s"`, c.dbName, snapshotName, c.user),
 	)

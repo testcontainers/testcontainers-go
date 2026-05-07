@@ -1,6 +1,6 @@
 # Ollama
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
 
 ## Introduction
 
@@ -29,7 +29,7 @@ If the local Ollama binary fails to execute, the module will fall back to the co
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
@@ -44,18 +44,18 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the Ollama container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "ollama/ollama:0.5.7")`.
 
+### Container Options
+
+When starting the Ollama container, you can pass options in a variadic way to configure it.
+
 #### Use Local
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.35.0"><span class="tc-version">:material-tag: v0.35.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.35.0"><span class="tc-version">:material-tag: v0.35.0</span></a>
 
 !!!warning
     Please make sure the local Ollama binary is not running when using the local version of the module:
@@ -98,13 +98,15 @@ The local Ollama binary will create a log file in the current working directory,
     If the environment variable is not set, it will default to `localhost:0`
     which bind to a loopback address on an ephemeral port to avoid port conflicts.
 
-{% include "../features/common_functional_options.md" %}
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 
 The Ollama container exposes the following methods:
 
 #### ConnectionString
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
 
 This method returns the connection string to connect to the Ollama container, using the default `11434` port.
 
@@ -113,6 +115,8 @@ This method returns the connection string to connect to the Ollama container, us
 <!--/codeinclude-->
 
 #### Commit
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
 
 This method commits the container to a new image, returning the new image ID.
 It should be used after a model has been pulled and loaded into the container in order to create a new image with the model,

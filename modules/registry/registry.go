@@ -9,12 +9,15 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 
+	"github.com/containerd/platforms"
 	"github.com/cpuguy83/dockercfg"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/registry"
+	"github.com/moby/moby/api/pkg/authconfig"
+	"github.com/moby/moby/api/types/registry"
+	"github.com/moby/moby/client"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -51,7 +54,7 @@ func (c *RegistryContainer) HostAddress(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("mapped port: %w", err)
 	}
 
-	host, err := c.Container.Host(ctx)
+	host, err := c.Host(ctx)
 	if err != nil {
 		return "", fmt.Errorf("host: %w", err)
 	}
@@ -173,36 +176,93 @@ func (c *RegistryContainer) ImageExists(ctx context.Context, imageRef string) er
 // PushImage pushes an image to the Registry container. It will use the internally stored RegistryName
 // to push the image to the container, and it will finally wait for the image to be pushed.
 func (c *RegistryContainer) PushImage(ctx context.Context, ref string) error {
-	dockerProvider, err := testcontainers.NewDockerProvider()
+	dockerCli, err := testcontainers.NewDockerClientWithOpts(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to create Docker provider: %w", err)
+		return fmt.Errorf("create docker client: %w", err)
 	}
-	defer dockerProvider.Close()
-
-	dockerCli := dockerProvider.Client()
+	defer dockerCli.Close()
 
 	_, imageAuth, err := testcontainers.DockerImageAuth(ctx, ref)
 	if err != nil {
 		return fmt.Errorf("failed to get image auth: %w", err)
 	}
 
-	pushOpts := image.PushOptions{
-		All: true,
-	}
-
-	// see https://github.com/docker/docs/blob/e8e1204f914767128814dca0ea008644709c117f/engine/api/sdk/examples.md?plain=1#L649-L657
-	encodedJSON, err := json.Marshal(imageAuth)
+	encodedAuth, err := authconfig.Encode(imageAuth)
 	if err != nil {
 		return fmt.Errorf("failed to encode image auth: %w", err)
 	}
-	pushOpts.RegistryAuth = base64.URLEncoding.EncodeToString(encodedJSON)
 
-	_, err = dockerCli.ImagePush(ctx, ref, pushOpts)
+	_, err = dockerCli.ImagePush(ctx, ref, client.ImagePushOptions{
+		All:          true,
+		RegistryAuth: encodedAuth,
+	})
 	if err != nil {
-		return fmt.Errorf("failed to push image %s: %w", ref, err)
+		return fmt.Errorf("push image %q: %w", ref, err)
 	}
 
 	return c.ImageExists(ctx, ref)
+}
+
+// PullImage pulls an image from an external registry into the local Docker daemon.
+// Differently from PushImage, which uploads an image to the testcontainers managed registry,
+// this method downloads (copies) the specified image reference so it becomes
+// available locally for further operations such as tagging or pushing.
+// It uses the same platform as the registry container's image.
+func (c *RegistryContainer) PullImage(ctx context.Context, ref string) error {
+	apiClient, err := testcontainers.NewDockerClientWithOpts(ctx)
+	if err != nil {
+		return fmt.Errorf("create docker client: %w", err)
+	}
+	defer apiClient.Close()
+
+	inspect, err := c.Inspect(ctx)
+	if err != nil {
+		return fmt.Errorf("inspect registry container: %w", err)
+	}
+
+	var pullOpts client.ImagePullOptions
+	arch := runtime.GOARCH
+
+	// Use the same platform as the registry container's image.
+	if inspect.ImageManifestDescriptor != nil && inspect.ImageManifestDescriptor.Platform != nil {
+		arch = inspect.ImageManifestDescriptor.Platform.Architecture
+	}
+	if p, err := platforms.Parse("linux/" + arch); err == nil {
+		pullOpts.Platforms = append(pullOpts.Platforms, p)
+	}
+
+	output, err := apiClient.ImagePull(ctx, ref, pullOpts)
+	if err != nil {
+		return fmt.Errorf("pull image %q: %w", ref, err)
+	}
+	defer output.Close()
+
+	if err := output.Wait(ctx); err != nil {
+		return fmt.Errorf("pull image %q: %w", ref, err)
+	}
+
+	return nil
+}
+
+// TagImage tags an image from the local Registry.
+// This function is helpful when you want to push an image to your Registry
+// instance made by testcontainer.
+func (c *RegistryContainer) TagImage(ctx context.Context, image, ref string) error {
+	dockerCli, err := testcontainers.NewDockerClientWithOpts(ctx)
+	if err != nil {
+		return fmt.Errorf("create docker client: %w", err)
+	}
+	defer dockerCli.Close()
+
+	_, err = dockerCli.ImageTag(ctx, client.ImageTagOptions{
+		Source: image,
+		Target: ref,
+	})
+	if err != nil {
+		return fmt.Errorf("tag image %q: %w", image, err)
+	}
+
+	return nil
 }
 
 // Deprecated: use Run instead
@@ -213,36 +273,26 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Registry container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*RegistryContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{registryPort},
-		Env: map[string]string{
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithExposedPorts(registryPort),
+		testcontainers.WithEnv(map[string]string{
 			// convenient for testing
 			"REGISTRY_STORAGE_DELETE_ENABLED": "true",
-		},
-		WaitingFor: wait.ForHTTP("/").
-			WithPort(registryPort).
-			WithStartupTimeout(10 * time.Second),
+		}),
+		testcontainers.WithWaitStrategy(
+			wait.ForHTTP("/").
+				WithPort(registryPort).
+				WithStartupTimeout(10 * time.Second),
+		),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, err
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	container, err := testcontainers.Run(ctx, img, append(moduleOpts, opts...)...)
 	var c *RegistryContainer
 	if container != nil {
 		c = &RegistryContainer{Container: container}
 	}
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run registry: %w", err)
 	}
 
 	address, err := c.Address(ctx)

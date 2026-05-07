@@ -1,6 +1,6 @@
 # SurrealDB
 
-Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/surrealdb
 
 ### Run function
 
-- Since testcontainers-go <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.32.0"><span class="tc-version">:material-tag: v0.32.0</span></a>
 
 !!!info
     The `RunContainer(ctx, opts...)` function is deprecated and will be removed in the next major release of _Testcontainers for Go_.
@@ -39,18 +39,18 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-### Container Options
-
-When starting the SurrealDB container, you can pass options in a variadic way to configure it.
-
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "surrealdb/surrealdb:v1.1.1")`.
 
-{% include "../features/common_functional_options.md" %}
+### Container Options
+
+When starting the SurrealDB container, you can pass options in a variadic way to configure it.
 
 #### Set username and password
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
 
 If you need to set different credentials, you can use `WithUsername` and `WithPassword` options.
 
@@ -59,21 +59,31 @@ If you need to set different credentials, you can use `WithUsername` and `WithPa
 
 #### WithAuthentication
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
+
 If you need to enable authentication, you can use `WithAuthentication` option. By default, it is disabled.
 
 #### WithStrictMode
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
 
 If you need to enable the strict mode for SurrealDB, you can use `WithStrictMode` option. By default, it is disabled.
 
 ### WithAllowAllCaps
 
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
+
 If you need to enable the all caps mode for SurrealDB, you can use `WithAllowAllCaps` option. By default, it is disabled.
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 
 The SurrealDB container exposes the following methods:
 
 #### URL
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.29.0"><span class="tc-version">:material-tag: v0.29.0</span></a>
 
 This method returns the websocket URL string to connect to the SurrealDB API, using the `8000` port.
 

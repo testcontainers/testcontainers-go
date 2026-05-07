@@ -30,49 +30,49 @@ import (
 
 func TestWithRedis(t *testing.T) {
 	ctx := context.Background()
-	req := testcontainers.ContainerRequest{
-		Image:        "redis:latest",
-		ExposedPorts: []string{"6379/tcp"},
-		WaitingFor:   wait.ForLog("Ready to accept connections"),
-	}
-	redisC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	redisC, err := testcontainers.Run(
+		ctx, "redis:latest",
+		testcontainers.WithExposedPorts("6379/tcp"),
+		testcontainers.WithWaitStrategy(
+			wait.ForListeningPort("6379/tcp"),
+			wait.ForLog("Ready to accept connections"),
+		),
+	)
 	testcontainers.CleanupContainer(t, redisC)
 	require.NoError(t, err)
 }
 ```
 
-The `testcontainers.ContainerRequest` describes how the Docker container will
+The `testcontainers.Run` function receives the image name and a list of options with how the Docker container will
 look.
 
-* `Image` is the Docker image the container starts from.
-* `ExposedPorts` lists the ports to be exposed from the container.
-* `WaitingFor` is a field you can use to validate when a container is ready. It
+* `WithExposedPorts` is an option that lists the ports to be exposed from the container.
+* `WithWaitStrategy` is an option that you can use to validate when a container is ready. It
   is important to get this set because it helps to know when the container is
   ready to receive any traffic. In this case, we check for the logs we know come
   from Redis, telling us that it is ready to accept requests.
 
-When you use `ExposedPorts` you have to imagine yourself using `docker run -p
+When you use `WithExposedPorts` you have to imagine yourself using `docker run -p
 <port>`.  When you do so, `dockerd` maps the selected `<port>` from inside the
 container to a random one available on your host.
 
 In the previous example, we expose `6379` for `tcp` traffic to the outside. This
 allows Redis to be reachable from your code that runs outside the container, but
-it also makes parallelization possible because if you add `t.Parallel` to your
+it also makes parallelization possible because if you add `t.Parallel()` to your
 tests, and each of them starts a Redis container each of them will be exposed on a
 different random port.
 
-`testcontainers.GenericContainer` creates the container. In this example we are
-using `Started: true`. It means that the container function will wait for the
-container to be up and running. If you set the `Start` value to `false` it won't
-start, leaving to you the decision about when to start it.
+`testcontainers.Run` creates and starts the container. In this example we are
+not using the `WithNoStart()` option. It means that the container function will wait for the
+container to be up and running. If you pass the `WithNoStart()` option, it won't
+start, leaving to you the decision about when to start it.	
 
 All the containers must be removed at some point, otherwise they will run until
-the host is overloaded. One of the ways we have to clean up is by deferring the
-terminated function: `defer testcontainers.TerminateContainer(redisC)` which
-automatically handles nil container so is safe to use even in the error case.
+Ryuk the resource reaper terminates them, or when the host is overloaded.
+One of the ways we have to clean up the container immediately is by using the `testing`
+package from the standard library along with the `CleanupContainer` function:
+`testcontainers.CleanupContainer(t, redisC)`. This function
+automatically handles nil container so it can be used before any error check.
 
 !!!tip
 

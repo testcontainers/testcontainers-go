@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/docker/docker/api/types/system"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/api/types/system"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -104,7 +104,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 		host, err := extractDockerHost(context.Background())
 		require.Error(t, err)
-		require.Equal(t, "", host)
+		require.Empty(t, host)
 	})
 
 	t.Run("Docker Host as environment variable", func(t *testing.T) {
@@ -122,7 +122,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 		host, err := extractDockerHost(context.WithValue(ctx, DockerHostContextKey, "path-to-docker-sock"))
 		require.Error(t, err)
-		require.Equal(t, "", host)
+		require.Empty(t, host)
 	})
 
 	t.Run("Malformed Schema Docker Host is passed in context", func(t *testing.T) {
@@ -132,7 +132,7 @@ func TestExtractDockerHost(t *testing.T) {
 
 		host, err := extractDockerHost(context.WithValue(ctx, DockerHostContextKey, "http://path to docker sock"))
 		require.Error(t, err)
-		require.Equal(t, "", host)
+		require.Empty(t, host)
 	})
 
 	t.Run("Unix Docker Host is passed in context", func(t *testing.T) {
@@ -169,7 +169,7 @@ func TestExtractDockerHost(t *testing.T) {
 		setupRootlessNotFound(t)
 		host, err := extractDockerHost(context.Background())
 		require.Error(t, err)
-		require.Equal(t, "", host)
+		require.Empty(t, host)
 	})
 
 	t.Run("Extract Docker socket", func(t *testing.T) {
@@ -177,13 +177,26 @@ func TestExtractDockerHost(t *testing.T) {
 		t.Cleanup(resetSocketOverrideFn)
 
 		t.Run("Testcontainers host is defined in properties", func(t *testing.T) {
-			content := "tc.host=" + testRemoteHost
+			t.Run("TCP host", func(t *testing.T) {
+				content := "tc.host=" + testRemoteHost
 
-			setupTestcontainersProperties(t, content)
+				setupTestcontainersProperties(t, content)
 
-			socket, err := testcontainersHostFromProperties(context.Background())
-			require.NoError(t, err)
-			require.Equal(t, testRemoteHost, socket)
+				socket, err := testcontainersHostFromProperties(context.Background())
+				require.NoError(t, err)
+				require.Equal(t, testRemoteHost, socket)
+			})
+
+			t.Run("Unix socket host preserves schema", func(t *testing.T) {
+				unixSocket := "unix:///var/run/docker.sock"
+				content := "tc.host=" + unixSocket
+
+				setupTestcontainersProperties(t, content)
+
+				socket, err := testcontainersHostFromProperties(context.Background())
+				require.NoError(t, err)
+				require.Equal(t, unixSocket, socket)
+			})
 		})
 
 		t.Run("Testcontainers host is not defined in properties", func(t *testing.T) {
@@ -312,9 +325,9 @@ type mockCli struct {
 
 // Info returns a mock implementation of types.Info, which is handy for detecting the operating system,
 // which is used to determine the default docker socket path.
-func (m mockCli) Info(_ context.Context) (system.Info, error) {
-	return system.Info{
-		OperatingSystem: m.OS,
+func (m mockCli) Info(context.Context, client.InfoOptions) (client.SystemInfoResult, error) {
+	return client.SystemInfoResult{
+		Info: system.Info{OperatingSystem: m.OS},
 	}, nil
 }
 

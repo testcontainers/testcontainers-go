@@ -20,33 +20,24 @@ type DynamoDBContainer struct {
 
 // Run creates an instance of the DynamoDB container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*DynamoDBContainer, error) {
-	req := testcontainers.ContainerRequest{
-		Image:        img,
-		ExposedPorts: []string{string(port)},
-		Entrypoint:   []string{"java", "-Djava.library.path=./DynamoDBLocal_lib"},
-		Cmd:          []string{"-jar", "DynamoDBLocal.jar"},
-		WaitingFor:   wait.ForListeningPort(port),
-	}
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 4+len(opts))
+	moduleOpts = append(moduleOpts,
+		testcontainers.WithEntrypoint("java", "-Djava.library.path=./DynamoDBLocal_lib"),
+		testcontainers.WithCmd("-jar", "DynamoDBLocal.jar"),
+		testcontainers.WithExposedPorts(port),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort(port)),
+	)
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
+	moduleOpts = append(moduleOpts, opts...)
 
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *DynamoDBContainer
-	if container != nil {
-		c = &DynamoDBContainer{Container: container}
+	if ctr != nil {
+		c = &DynamoDBContainer{Container: ctr}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run dynamodb: %w", err)
 	}
 
 	return c, nil
@@ -54,26 +45,21 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // ConnectionString returns DynamoDB local endpoint host and port in <host>:<port> format
 func (c *DynamoDBContainer) ConnectionString(ctx context.Context) (string, error) {
-	mappedPort, err := c.MappedPort(ctx, port)
-	if err != nil {
-		return "", err
-	}
-
-	hostIP, err := c.Host(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	return hostIP + ":" + mappedPort.Port(), nil
+	return c.PortEndpoint(ctx, port, "")
 }
 
 // WithSharedDB allows container reuse between successive runs. Data will be persisted
 func WithSharedDB() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
-		req.Cmd = append(req.Cmd, "-sharedDb")
+		err := testcontainers.WithCmdArgs("-sharedDb")(req)
+		if err != nil {
+			return fmt.Errorf("with shared db: %w", err)
+		}
 
-		req.Reuse = true
-		req.Name = containerName
+		err = testcontainers.WithReuseByName(containerName)(req)
+		if err != nil {
+			return fmt.Errorf("with reuse by name: %w", err)
+		}
 
 		return nil
 	}
@@ -83,8 +69,6 @@ func WithSharedDB() testcontainers.CustomizeRequestOption {
 func WithDisableTelemetry() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		// if other flags (e.g. -sharedDb) exist, append to them
-		req.Cmd = append(req.Cmd, "-disableTelemetry")
-
-		return nil
+		return testcontainers.WithCmdArgs("-disableTelemetry")(req)
 	}
 }

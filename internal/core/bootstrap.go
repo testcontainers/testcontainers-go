@@ -84,7 +84,7 @@ func init() {
 	}
 
 	hasher := sha256.New()
-	_, err = hasher.Write([]byte(fmt.Sprintf(sessionIDPlaceholder, parentPid, createTime)))
+	_, err = fmt.Fprintf(hasher, sessionIDPlaceholder, parentPid, createTime)
 	if err != nil {
 		sessionID = uuid.New().String()
 		return

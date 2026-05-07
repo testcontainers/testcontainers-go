@@ -7,27 +7,30 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// Deprecated: use RunSpanner instead
+// Deprecated: use [spanner.Run] instead
 // RunSpannerContainer creates an instance of the GCloud container type for Spanner.
 func RunSpannerContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
 	return RunSpanner(ctx, "gcr.io/cloud-spanner-emulator/emulator:1.4.0", opts...)
 }
 
+// Deprecated: use [spanner.Run] instead
 // RunSpanner creates an instance of the GCloud container type for Spanner.
 func RunSpanner(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
-	req := testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        img,
-			ExposedPorts: []string{"9010/tcp"},
-			WaitingFor:   wait.ForLog("Cloud Spanner emulator running"),
-		},
-		Started: true,
-	}
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 2+len(opts))
+	moduleOpts = append(moduleOpts,
+		testcontainers.WithExposedPorts("9010/tcp"),
+		testcontainers.WithWaitStrategy(
+			wait.ForListeningPort("9010/tcp"),
+			wait.ForLog("Cloud Spanner emulator running"),
+		),
+	)
 
-	settings, err := applyOptions(&req, opts)
+	moduleOpts = append(moduleOpts, opts...)
+
+	settings, err := applyOptions(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	return newGCloudContainer(ctx, req, 9010, settings, "")
+	return newGCloudContainer(ctx, img, 9010, settings, "", moduleOpts...)
 }

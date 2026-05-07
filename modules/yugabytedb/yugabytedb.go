@@ -3,7 +3,6 @@ package yugabytedb
 import (
 	"context"
 	"fmt"
-	"net"
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -50,50 +49,61 @@ type Container struct {
 // [*Container.YSQLConnectionString] and [*Container.YCQLConfigureClusterConfig]
 // methods to use the container in their respective clients.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	req := testcontainers.ContainerRequest{
-		Image: img,
-		Cmd:   []string{"bin/yugabyted", "start", "--background=false"},
-		WaitingFor: wait.ForAll(
+	moduleOpts := []testcontainers.ContainerCustomizer{
+		testcontainers.WithCmd("bin/yugabyted", "start", "--background=false"),
+		testcontainers.WithWaitStrategy(
 			wait.ForLog("YugabyteDB Started").WithOccurrence(1),
 			wait.ForLog("Data placement constraint successfully verified").WithOccurrence(1),
 			wait.ForListeningPort(ysqlPort),
 			wait.ForListeningPort(ycqlPort),
 		),
-		ExposedPorts: []string{ycqlPort, ysqlPort},
-		Env: map[string]string{
+		testcontainers.WithExposedPorts(ycqlPort, ysqlPort),
+		testcontainers.WithEnv(map[string]string{
 			ycqlKeyspaceEnv:         ycqlKeyspace,
 			ycqlUserNameEnv:         ycqlUserName,
 			ycqlPasswordEnv:         ycqlPassword,
 			ysqlDatabaseNameEnv:     ysqlDatabaseName,
 			ysqlDatabaseUserEnv:     ysqlDatabaseUser,
 			ysqlDatabasePasswordEnv: ysqlDatabasePassword,
-		},
+		}),
 	}
 
-	genericContainerReq := testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	}
-
-	for _, opt := range opts {
-		if err := opt.Customize(&genericContainerReq); err != nil {
-			return nil, fmt.Errorf("customize: %w", err)
-		}
-	}
-
-	container, err := testcontainers.GenericContainer(ctx, genericContainerReq)
+	ctr, err := testcontainers.Run(ctx, img, append(moduleOpts, opts...)...)
 	var c *Container
-	if container != nil {
+	if ctr != nil {
 		c = &Container{
-			Container:            container,
-			ysqlDatabaseName:     req.Env[ysqlDatabaseNameEnv],
-			ysqlDatabaseUser:     req.Env[ysqlDatabaseUserEnv],
-			ysqlDatabasePassword: req.Env[ysqlDatabasePasswordEnv],
+			Container:            ctr,
+			ysqlDatabaseName:     ysqlDatabaseName,
+			ysqlDatabaseUser:     ysqlDatabaseUser,
+			ysqlDatabasePassword: ysqlDatabasePassword,
 		}
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("generic container: %w", err)
+		return c, fmt.Errorf("run yugabytedb: %w", err)
+	}
+
+	// Inspect the container to get the actual env var values after user customizations
+	inspect, err := ctr.Inspect(ctx)
+	if err != nil {
+		return c, fmt.Errorf("inspect yugabytedb: %w", err)
+	}
+
+	var foundName, foundUser, foundPassword bool
+	for _, env := range inspect.Config.Env {
+		if v, ok := strings.CutPrefix(env, ysqlDatabaseNameEnv+"="); ok {
+			c.ysqlDatabaseName, foundName = v, true
+		}
+		if v, ok := strings.CutPrefix(env, ysqlDatabaseUserEnv+"="); ok {
+			c.ysqlDatabaseUser, foundUser = v, true
+		}
+		if v, ok := strings.CutPrefix(env, ysqlDatabasePasswordEnv+"="); ok {
+			c.ysqlDatabasePassword, foundPassword = v, true
+		}
+
+		if foundName && foundUser && foundPassword {
+			break
+		}
 	}
 
 	return c, nil
@@ -105,21 +115,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // Additional arguments are appended to the connection string as query parameters
 // in the form of key=value pairs separated by "&".
 func (y *Container) YSQLConnectionString(ctx context.Context, args ...string) (string, error) {
-	host, err := y.Host(ctx)
+	endpoint, err := y.PortEndpoint(ctx, ysqlPort, "")
 	if err != nil {
-		return "", fmt.Errorf("host: %w", err)
-	}
-
-	mappedPort, err := y.MappedPort(ctx, ysqlPort)
-	if err != nil {
-		return "", fmt.Errorf("mapped port: %w", err)
+		return "", fmt.Errorf("port endpoint: %w", err)
 	}
 
 	return fmt.Sprintf(
 		"postgres://%s:%s@%s/%s?%s",
 		y.ysqlDatabaseUser,
 		y.ysqlDatabasePassword,
-		net.JoinHostPort(host, mappedPort.Port()),
+		endpoint,
 		y.ysqlDatabaseName,
 		strings.Join(args, "&"),
 	), nil
