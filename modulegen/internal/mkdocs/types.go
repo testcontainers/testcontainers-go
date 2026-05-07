@@ -23,6 +23,7 @@ type Config struct {
 		Favicon string `yaml:"favicon"`
 	} `yaml:"theme"`
 	ExtraCSS           []string `yaml:"extra_css"`
+	ExtraJavascript    []string `yaml:"extra_javascript"`
 	RepoName           string   `yaml:"repo_name"`
 	RepoURL            string   `yaml:"repo_url"`
 	MarkdownExtensions []any    `yaml:"markdown_extensions"`
@@ -34,6 +35,7 @@ type Config struct {
 		Modules            []string `yaml:"Modules,omitempty"`
 		SystemRequirements []any    `yaml:"System Requirements,omitempty"`
 		Dependabot         string   `yaml:"Dependabot,omitempty"`
+		UsageMetrics       string   `yaml:"Usage Metrics,omitempty"`
 		Contributing       string   `yaml:"Contributing,omitempty"`
 		GettingHelp        string   `yaml:"Getting help,omitempty"`
 	} `yaml:"nav"`

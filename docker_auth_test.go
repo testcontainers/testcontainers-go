@@ -12,9 +12,8 @@ import (
 
 	"github.com/containerd/errdefs"
 	"github.com/cpuguy83/dockercfg"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/registry"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/api/types/registry"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
@@ -123,6 +122,20 @@ func TestDockerImageAuth(t *testing.T) {
 		require.Equal(t, base64, cfg.Auth)
 	})
 
+	t.Run("match the default registry authentication by host", func(t *testing.T) {
+		imageReg := "docker.io"
+		imagePath := "/my/image:latest"
+		reg := defaultRegistry(context.Background())
+		base64 := setAuthConfig(t, reg, "gopher", "secret")
+
+		registry, cfg, err := DockerImageAuth(context.Background(), imageReg+imagePath)
+		require.NoError(t, err)
+		require.Equal(t, reg, registry)
+		require.Equal(t, "gopher", cfg.Username)
+		require.Equal(t, "secret", cfg.Password)
+		require.Equal(t, base64, cfg.Auth)
+	})
+
 	t.Run("fail to match registry authentication due to invalid host", func(t *testing.T) {
 		imageReg := "example-auth.com"
 		imagePath := "/my/image:latest"
@@ -177,13 +190,13 @@ func removeImageFromLocalCache(t *testing.T, img string) {
 	t.Helper()
 	ctx := context.Background()
 
-	testcontainersClient, err := NewDockerClientWithOpts(ctx, client.WithVersion(daemonMaxVersion))
+	testcontainersClient, err := NewDockerClientWithOpts(ctx, client.WithAPIVersion(daemonMaxVersion))
 	if err != nil {
 		t.Log("could not create client to cleanup registry: ", err)
 	}
 	defer testcontainersClient.Close()
 
-	_, err = testcontainersClient.ImageRemove(ctx, img, image.RemoveOptions{
+	_, err = testcontainersClient.ImageRemove(ctx, img, client.ImageRemoveOptions{
 		Force:         true,
 		PruneChildren: true,
 	})
@@ -290,7 +303,7 @@ func prepareLocalRegistryWithAuth(t *testing.T) string {
 
 	ip := localAddress(t)
 	mp := mappedPort.Port()
-	addr := ip + ":" + mp
+	addr := net.JoinHostPort(ip, mp)
 
 	t.Cleanup(func() {
 		removeImageFromLocalCache(t, addr+"/redis:5.0-alpine")

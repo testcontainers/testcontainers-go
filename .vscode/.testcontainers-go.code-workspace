@@ -90,6 +90,10 @@
             "path": "../modules/etcd"
         },
         {
+            "name": "module / forgejo",
+            "path": "../modules/forgejo"
+        },
+        {
             "name": "module / gcloud",
             "path": "../modules/gcloud"
         },
@@ -232,6 +236,10 @@
         {
             "name": "module / surrealdb",
             "path": "../modules/surrealdb"
+        },
+        {
+            "name": "module / tidb",
+            "path": "../modules/tidb"
         },
         {
             "name": "module / toxiproxy",

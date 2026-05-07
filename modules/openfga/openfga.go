@@ -49,7 +49,8 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the OpenFGA container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*OpenFGAContainer, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithCmd("run"),
 		testcontainers.WithExposedPorts("3000/tcp", "8080/tcp", "8081/tcp"),
 		testcontainers.WithWaitStrategy(
@@ -65,7 +66,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				return status == http.StatusOK
 			}),
 		),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 

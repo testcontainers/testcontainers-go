@@ -6,8 +6,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/docker/go-connections/nat"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -39,12 +37,12 @@ func (c *Container) Password() string {
 // BrokerEndpoint returns the host:port for the combined protocols endpoint.
 // The endpoint accepts CORE, MQTT, AMQP, STOMP, HORNETQ and OPENWIRE protocols.
 func (c *Container) BrokerEndpoint(ctx context.Context) (string, error) {
-	return c.PortEndpoint(ctx, nat.Port(defaultBrokerPort), "")
+	return c.PortEndpoint(ctx, defaultBrokerPort, "")
 }
 
 // ConsoleURL returns the URL for the management console.
 func (c *Container) ConsoleURL(ctx context.Context) (string, error) {
-	hostPort, err := c.PortEndpoint(ctx, nat.Port(defaultHTTPPort), "")
+	hostPort, err := c.PortEndpoint(ctx, defaultHTTPPort, "")
 	if err != nil {
 		return "", err
 	}
@@ -97,7 +95,8 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Artemis container type with a given image
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultBrokerPort, defaultHTTPPort),
 		testcontainers.WithEnv(map[string]string{
 			"ARTEMIS_USER":     defaultUser,
@@ -109,7 +108,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			wait.ForLog("Server is now live"),
 			wait.ForLog("REST API available"),
 		),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 

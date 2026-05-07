@@ -99,9 +99,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 		defaultOptions.network = azuriteNetwork
 
-		azuriteOpts := []testcontainers.ContainerCustomizer{
+		azuriteOpts := make([]testcontainers.ContainerCustomizer, 0, 1+len(defaultOptions.azuriteOptions))
+		azuriteOpts = append(azuriteOpts,
 			network.WithNetwork([]string{aliasAzurite}, azuriteNetwork),
-		}
+		)
 		azuriteOpts = append(azuriteOpts, defaultOptions.azuriteOptions...)
 
 		// start the azurite container first

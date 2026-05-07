@@ -9,8 +9,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
+	"github.com/docker/go-units"
+	"github.com/moby/moby/api/types/container"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -26,6 +26,15 @@ type Container struct {
 }
 
 // Run starts a Solace container with the provided image and options
+//
+// The container requires specific ulimits to start successfully:
+//   - nofile: 1048576 (number of open files)
+//   - core: -1 (for core dumps)
+//   - memlock: -1 (for memory locking)
+//
+// See https://docs.solace.com for more information.
+// - https://docs.solace.com/Software-Broker/Managing-Core-Files.htm
+// - https://docs.solace.com/Software-Broker/Container-Tasks/Config-Container-Storage.htm?Highlight=ulimit
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	// Override default options with provided ones
 	settings := defaultOptions()
@@ -49,25 +58,44 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	// Add port-based wait strategies for each service
 	for i, service := range settings.services {
 		port := fmt.Sprintf("%d/tcp", service.Port)
-		waitStrategies[i+1] = wait.ForListeningPort(nat.Port(port))
+		waitStrategies[i+1] = wait.ForListeningPort(port)
 		exposedPorts[i] = fmt.Sprintf("%d/tcp", service.Port)
 	}
 
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(exposedPorts...),
 		testcontainers.WithHostConfigModifier(func(hc *container.HostConfig) {
 			hc.ShmSize = settings.shmSize
+			// Where disk space permits, Solace docs recommends the core file size "rlimit" for event brokers to be "unlimited".
+			hc.Ulimits = []*units.Ulimit{
+				{
+					Name: "nofile",
+					Soft: 1048576,
+					Hard: 1048576,
+				},
+				{
+					Name: "core",
+					Soft: -1,
+					Hard: -1,
+				},
+				{
+					Name: "memlock",
+					Soft: -1,
+					Hard: -1,
+				},
+			}
 		}),
 		testcontainers.WithWaitStrategy(waitStrategies...),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
-	container, err := testcontainers.Run(ctx, img, moduleOpts...)
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 
 	var c *Container
-	if container != nil {
+	if ctr != nil {
 		c = &Container{
-			Container: container,
+			Container: ctr,
 			settings:  settings,
 		}
 	}
@@ -92,9 +120,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	code, out, err := c.Exec(ctx, []string{"/usr/sw/loads/currentload/bin/cli", "-A", "-es", "script.cli"})
 	output := ""
 	if out != nil {
-		bytes, readErr := io.ReadAll(out)
+		b, readErr := io.ReadAll(out)
 		if readErr == nil {
-			output = string(bytes)
+			output = string(b)
 		} else {
 			output = fmt.Sprintf("[ERROR reading CLI output: %v]", readErr)
 		}
@@ -111,7 +139,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 // BrokerURLFor returns the origin URL for a given service
 func (c *Container) BrokerURLFor(ctx context.Context, service Service) (string, error) {
-	p := nat.Port(fmt.Sprintf("%d/tcp", service.Port))
+	p := fmt.Sprintf("%d/tcp", service.Port)
 	return c.PortEndpoint(ctx, p, service.Protocol)
 }
 
@@ -125,7 +153,7 @@ func (c *Container) Password() string {
 	return c.settings.password
 }
 
-// Vpn returns the VPN name configured for the Solace container
+// VPN returns the VPN name configured for the Solace container
 func (c *Container) VPN() string {
 	return c.settings.vpn
 }

@@ -803,6 +803,8 @@ func containerHost(ctx context.Context, opts ...testcontainers.ContainerCustomiz
 		return "", err
 	}
 
+	defer p.Close()
+
 	if p, ok := p.(*testcontainers.DockerProvider); ok {
 		return p.DaemonHost(ctx)
 	}

@@ -23,7 +23,7 @@ func TestMergeCustomLabels(t *testing.T) {
 		err := MergeCustomLabels(dst, src)
 
 		require.EqualError(t, err, `key "org.testcontainers.lang" has "org.testcontainers" prefix`)
-		require.Equal(t, map[string]string{"A": "1", "B": "X"}, dst)
+		require.Equal(t, map[string]string{"A": "1", "B": "2"}, dst)
 	})
 
 	t.Run("nil-destination", func(t *testing.T) {

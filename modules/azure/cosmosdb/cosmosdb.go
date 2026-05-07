@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/docker/go-connections/nat"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -27,16 +25,17 @@ type Container struct {
 // Run creates an instance of the CosmosDB container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	// Initialize with module defaults
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultPort),
 		testcontainers.WithCmdArgs("--enable-explorer", "false"),
 		testcontainers.WithWaitStrategy(
 			wait.ForAll(
 				wait.ForLog("Started"),
-				wait.ForListeningPort(nat.Port(defaultPort)),
+				wait.ForListeningPort(defaultPort),
 			),
 		),
-	}
+	)
 
 	// Add user-provided options
 	moduleOpts = append(moduleOpts, opts...)

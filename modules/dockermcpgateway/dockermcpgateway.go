@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/container"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/internal/core"
@@ -63,9 +63,11 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		cmds = append(cmds, "--secrets="+secretsPath)
 
 		secretsContent := ""
+		var secretsContentSb66 strings.Builder
 		for key, value := range settings.secrets {
-			secretsContent += key + "=" + value + "\n"
+			secretsContentSb66.WriteString(key + "=" + value + "\n")
 		}
+		secretsContent += secretsContentSb66.String()
 
 		moduleOpts = append(moduleOpts, testcontainers.WithFiles(testcontainers.ContainerFile{
 			Reader:            strings.NewReader(secretsContent),

@@ -44,8 +44,7 @@ func TestWeaviate(t *testing.T) {
 		// }
 		require.NoError(t, err)
 
-		var opts []grpc.DialOption
-
+		opts := make([]grpc.DialOption, 0, 1)
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		conn, err := grpc.NewClient(host, opts...)
 		require.NoErrorf(t, err, "failed to dial connection")

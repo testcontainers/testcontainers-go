@@ -47,7 +47,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "chromadb/chroma:0.4.24")`.
+In example: `Run(context.Background(), "chromadb/chroma:1.4.0")`.
 
 ### Container Options
 
@@ -75,12 +75,11 @@ This method returns the REST endpoint of the Chroma container, using the default
 
 The following example demonstrates how to create a Chroma client using the Chroma module.
 
-First of all, you need to import the Chroma module and the Swagger client:
+First of all, you need to import the Chroma module and the chroma-go client:
 
 ```golang
 import (
-    chromago "github.com/amikos-tech/chroma-go"
-    "github.com/amikos-tech/chroma-go/types"
+    chromago "github.com/amikos-tech/chroma-go/pkg/api/v2"
 )
 ```
 
