@@ -81,6 +81,11 @@ func (c *Container) LoadImage(ctx context.Context, image string) (err error) {
 	if err != nil {
 		return fmt.Errorf("create temporary images file: %w", err)
 	}
+	// Close the file handle immediately: SaveImages and CopyFileToContainer
+	// open the file by name.
+	if err = imagesTar.Close(); err != nil {
+		return fmt.Errorf("close temporary images file: %w", err)
+	}
 	defer func() {
 		err = errors.Join(err, os.Remove(imagesTar.Name()))
 	}()
