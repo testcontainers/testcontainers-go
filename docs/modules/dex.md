@@ -26,7 +26,7 @@ go get github.com/testcontainers/testcontainers-go/modules/dex
 
 ### Run function
 
-- Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 The Dex module exposes one entrypoint function to create the Dex container,
 and this function receives three parameters:
