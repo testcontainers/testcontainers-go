@@ -1,21 +1,24 @@
-module github.com/testcontainers/testcontainers-go/modules/nebulagraph
+module github.com/testcontainers/testcontainers-go/modules/dex
 
 go 1.25.0
 
 toolchain go1.25.9
 
 require (
-	github.com/jolestar/go-commons-pool v2.0.0+incompatible
-	github.com/nebula-contrib/nebula-sirius v1.0.0-rc2
+	github.com/coreos/go-oidc/v3 v3.18.0
+	github.com/dexidp/dex/api/v2 v2.4.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.42.0
+	golang.org/x/crypto v0.48.0
+	golang.org/x/oauth2 v0.36.0
+	google.golang.org/grpc v1.75.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/apache/thrift v0.23.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
@@ -29,6 +32,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.10.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -59,11 +63,9 @@ require (
 	go.opentelemetry.io/otel v1.41.0 // indirect
 	go.opentelemetry.io/otel/metric v1.41.0 // indirect
 	go.opentelemetry.io/otel/trace v1.41.0 // indirect
-	golang.org/x/crypto v0.50.0 // indirect
-	golang.org/x/net v0.52.0 // indirect
-	golang.org/x/sys v0.43.0 // indirect
-	golang.org/x/text v0.36.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
+	golang.org/x/net v0.49.0 // indirect
+	golang.org/x/sys v0.42.0 // indirect
+	golang.org/x/text v0.34.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
+	google.golang.org/protobuf v1.36.8 // indirect
 )
-
-replace github.com/testcontainers/testcontainers-go => ../..

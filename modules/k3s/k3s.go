@@ -193,6 +193,11 @@ func (c *K3sContainer) LoadImagesWithOpts(ctx context.Context, images []string, 
 	if err != nil {
 		return fmt.Errorf("creating temporary images file %w", err)
 	}
+	// Close the file handle immediately: SaveImages and CopyFileToContainer
+	// open the file by name.
+	if err = imagesTar.Close(); err != nil {
+		return fmt.Errorf("close temporary images file: %w", err)
+	}
 	defer func() {
 		_ = os.Remove(imagesTar.Name())
 	}()
