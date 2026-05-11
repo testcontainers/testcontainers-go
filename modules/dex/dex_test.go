@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
@@ -58,17 +57,17 @@ func TestRun_DefaultPath_DiscoveryMatches(t *testing.T) {
 	c, err := dex.Run(ctx, dexImage,
 		dex.WithUser(mustUser(t, "u@e.com", "u", "p")),
 	)
+	testcontainers.CleanupContainer(t, c)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
 
-	assert.NotEmpty(t, c.IssuerURL())
-	assert.Equal(t, c.IssuerURL()+"/.well-known/openid-configuration", c.ConfigEndpoint())
-	assert.Equal(t, c.IssuerURL()+"/keys", c.JWKSEndpoint())
-	assert.Equal(t, c.IssuerURL()+"/token", c.TokenEndpoint())
-	assert.Equal(t, c.IssuerURL()+"/auth", c.AuthEndpoint())
+	require.NotEmpty(t, c.IssuerURL())
+	require.Equal(t, c.IssuerURL()+"/.well-known/openid-configuration", c.ConfigEndpoint())
+	require.Equal(t, c.IssuerURL()+"/keys", c.JWKSEndpoint())
+	require.Equal(t, c.IssuerURL()+"/token", c.TokenEndpoint())
+	require.Equal(t, c.IssuerURL()+"/auth", c.AuthEndpoint())
 	grpcEP, err := c.GRPCEndpoint(ctx)
 	require.NoError(t, err)
-	assert.NotEmpty(t, grpcEP)
+	require.NotEmpty(t, grpcEP)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.ConfigEndpoint(), nil)
 	require.NoError(t, err)
@@ -82,10 +81,10 @@ func TestRun_DefaultPath_DiscoveryMatches(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, json.Unmarshal(body, &doc))
 
-	assert.Equal(t, c.IssuerURL(), doc["issuer"])
-	assert.Equal(t, c.JWKSEndpoint(), doc["jwks_uri"])
-	assert.Equal(t, c.TokenEndpoint(), doc["token_endpoint"])
-	assert.Equal(t, c.AuthEndpoint(), doc["authorization_endpoint"])
+	require.Equal(t, c.IssuerURL(), doc["issuer"])
+	require.Equal(t, c.JWKSEndpoint(), doc["jwks_uri"])
+	require.Equal(t, c.TokenEndpoint(), doc["token_endpoint"])
+	require.Equal(t, c.AuthEndpoint(), doc["authorization_endpoint"])
 }
 
 func TestRun_WithIssuerOverride(t *testing.T) {
@@ -98,11 +97,11 @@ func TestRun_WithIssuerOverride(t *testing.T) {
 		dex.WithIssuer(issuer),
 		dex.WithUser(mustUser(t, "u@e.com", "u", "p")),
 	)
+	testcontainers.CleanupContainer(t, c)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
 
-	assert.Equal(t, issuer, c.IssuerURL())
-	assert.Equal(t, issuer+"/.well-known/openid-configuration", c.ConfigEndpoint())
+	require.Equal(t, issuer, c.IssuerURL())
+	require.Equal(t, issuer+"/.well-known/openid-configuration", c.ConfigEndpoint())
 
 	// Cross-check: discovery doc MUST echo the overridden issuer, proving
 	// the YAML was rendered with the override and Dex booted against it.
@@ -123,7 +122,7 @@ func TestRun_WithIssuerOverride(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	require.NoError(t, json.Unmarshal(body, &doc))
-	assert.Equal(t, issuer, doc["issuer"], "discovery doc must echo the overridden issuer")
+	require.Equal(t, issuer, doc["issuer"], "discovery doc must echo the overridden issuer")
 }
 
 func TestGRPC_AddRemoveClient(t *testing.T) {
@@ -133,8 +132,8 @@ func TestGRPC_AddRemoveClient(t *testing.T) {
 	c, err := dex.Run(ctx, dexImage,
 		dex.WithUser(mustUser(t, "u@e.com", "u", "p")),
 	)
+	testcontainers.CleanupContainer(t, c)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
 
 	cl := mustClient(t, "runtime-app",
 		dex.WithClientSecret("s"),
@@ -152,7 +151,7 @@ func TestGRPC_AddRemoveClient(t *testing.T) {
 
 	// Second remove errors (not-found).
 	err = c.RemoveClient(ctx, cl.ID())
-	assert.ErrorIs(t, err, dex.ErrClientNotFound)
+	require.ErrorIs(t, err, dex.ErrClientNotFound)
 }
 
 func TestGRPC_AddRemoveUser(t *testing.T) {
@@ -160,8 +159,8 @@ func TestGRPC_AddRemoveUser(t *testing.T) {
 	defer cancel()
 
 	c, err := dex.Run(ctx, dexImage)
+	testcontainers.CleanupContainer(t, c)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
 
 	u := mustUser(t, "runtime@example.com", "runtime", "p")
 	require.NoError(t, c.AddUser(ctx, u))
@@ -175,7 +174,7 @@ func TestGRPC_AddRemoveUser(t *testing.T) {
 
 	// Second removal errors.
 	err = c.RemoveUser(ctx, u.Email())
-	assert.ErrorIs(t, err, dex.ErrUserNotFound)
+	require.ErrorIs(t, err, dex.ErrUserNotFound)
 }
 
 func TestWithLogger_CapturesDexOutput(t *testing.T) {
@@ -189,8 +188,8 @@ func TestWithLogger_CapturesDexOutput(t *testing.T) {
 		dex.WithLogger(logger),
 		dex.WithUser(mustUser(t, "u@e.com", "u", "p")),
 	)
+	testcontainers.CleanupContainer(t, c)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
 
 	// Poll for the "listening on" line that Dex always emits at the end of
 	// its startup sequence. This proves the log pipe is fully wired — not
@@ -251,8 +250,8 @@ func TestAuthCode_PasswordConnector_Basic(t *testing.T) {
 		)),
 		dex.WithUser(mustUser(t, "alice@example.com", "alice", "pass")),
 	)
+	testcontainers.CleanupContainer(t, c)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
 
 	cfg := oauth2.Config{
 		ClientID:     "e2e-app",
@@ -266,11 +265,11 @@ func TestAuthCode_PasswordConnector_Basic(t *testing.T) {
 	}
 
 	tok := drivePasswordAuthCode(t, ctx, cfg, "alice@example.com", "pass")
-	assert.NotEmpty(t, tok.AccessToken)
+	require.NotEmpty(t, tok.AccessToken)
 
 	idToken, ok := tok.Extra("id_token").(string)
 	require.True(t, ok, "id_token missing from response")
-	assert.NotEmpty(t, idToken)
+	require.NotEmpty(t, idToken)
 }
 
 func TestAuthCode_RefreshToken(t *testing.T) {
@@ -288,8 +287,8 @@ func TestAuthCode_RefreshToken(t *testing.T) {
 		)),
 		dex.WithUser(mustUser(t, "a@e.com", "a", "p")),
 	)
+	testcontainers.CleanupContainer(t, c)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
 
 	cfg := oauth2.Config{
 		ClientID:     "e2e",
@@ -310,7 +309,7 @@ func TestAuthCode_RefreshToken(t *testing.T) {
 	src := cfg.TokenSource(ctx, &expired)
 	newTok, err := src.Token()
 	require.NoError(t, err, "refresh exchange failed")
-	assert.NotEqual(t, tok.AccessToken, newTok.AccessToken, "refresh yields new access token")
+	require.NotEqual(t, tok.AccessToken, newTok.AccessToken, "refresh yields new access token")
 }
 
 func TestAuthCode_MultipleRedirectURIs(t *testing.T) {
@@ -328,8 +327,8 @@ func TestAuthCode_MultipleRedirectURIs(t *testing.T) {
 		)),
 		dex.WithUser(mustUser(t, "a@e.com", "a", "p")),
 	)
+	testcontainers.CleanupContainer(t, c)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
 
 	for _, uri := range uris {
 		t.Run(uri, func(t *testing.T) {
@@ -341,7 +340,7 @@ func TestAuthCode_MultipleRedirectURIs(t *testing.T) {
 				Scopes:       []string{"openid"},
 			}
 			tok := drivePasswordAuthCode(t, ctx, cfg, "a@e.com", "p")
-			assert.NotEmpty(t, tok.AccessToken)
+			require.NotEmpty(t, tok.AccessToken)
 		})
 	}
 }
@@ -363,8 +362,8 @@ func TestClientCredentials_UnsupportedByLocalConnectors(t *testing.T) {
 			dex.WithClientGrantTypes("client_credentials"),
 		)),
 	)
+	testcontainers.CleanupContainer(t, c)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
 
 	cfg := clientcredentials.Config{
 		ClientID:     "svc",
@@ -379,7 +378,7 @@ func TestClientCredentials_UnsupportedByLocalConnectors(t *testing.T) {
 	// message is "unsupported_grant_type" or similar. Match loosely so
 	// minor Dex wording changes don't flake.
 	msg := strings.ToLower(err.Error())
-	assert.True(t,
+	require.True(t,
 		strings.Contains(msg, "unsupported") || strings.Contains(msg, "grant"),
 		"expected grant-related error, got: %v", err)
 }
@@ -396,8 +395,8 @@ func TestPasswordGrant_ROPC(t *testing.T) {
 		)),
 		dex.WithUser(mustUser(t, "a@e.com", "a", "p")),
 	)
+	testcontainers.CleanupContainer(t, c)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
 
 	cfg := oauth2.Config{
 		ClientID:     "cli",
@@ -407,7 +406,7 @@ func TestPasswordGrant_ROPC(t *testing.T) {
 	}
 	tok, err := cfg.PasswordCredentialsToken(ctx, "a@e.com", "p")
 	require.NoError(t, err)
-	assert.NotEmpty(t, tok.AccessToken)
+	require.NotEmpty(t, tok.AccessToken)
 }
 
 func TestMultipleClients_OneInstance(t *testing.T) {
@@ -432,8 +431,8 @@ func TestMultipleClients_OneInstance(t *testing.T) {
 		)),
 		dex.WithUser(mustUser(t, "a@e.com", "a", "p")),
 	)
+	testcontainers.CleanupContainer(t, c)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
 
 	// Service-account client via password grant.
 	svcCfg := oauth2.Config{
@@ -454,9 +453,9 @@ func TestMultipleClients_OneInstance(t *testing.T) {
 		Scopes:      []string{"openid"},
 	}
 	webTok := drivePasswordAuthCode(t, ctx, webCfg, "a@e.com", "p")
-	assert.NotEmpty(t, webTok.AccessToken)
+	require.NotEmpty(t, webTok.AccessToken)
 
-	assert.NotEqual(t, svcTok.AccessToken, webTok.AccessToken, "tokens from distinct clients must differ")
+	require.NotEqual(t, svcTok.AccessToken, webTok.AccessToken, "tokens from distinct clients must differ")
 }
 
 func TestMockConnector_IssuesToken(t *testing.T) {
@@ -472,8 +471,8 @@ func TestMockConnector_IssuesToken(t *testing.T) {
 			dex.WithClientGrantTypes("authorization_code", "refresh_token"),
 		)),
 	)
+	testcontainers.CleanupContainer(t, c)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
 
 	cfg := oauth2.Config{
 		ClientID: "e2e", ClientSecret: "s",
@@ -511,7 +510,7 @@ func TestMockConnector_IssuesToken(t *testing.T) {
 
 	tok, err := cfg.Exchange(ctx, code)
 	require.NoError(t, err)
-	assert.NotEmpty(t, tok.AccessToken)
+	require.NotEmpty(t, tok.AccessToken)
 }
 
 func TestGRPC_RuntimeAddUsableEndToEnd(t *testing.T) {
@@ -520,7 +519,7 @@ func TestGRPC_RuntimeAddUsableEndToEnd(t *testing.T) {
 
 	c, err := dex.Run(ctx, dexImage)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
+	testcontainers.CleanupContainer(t, c)
 
 	// Seed client + user at runtime.
 	require.NoError(t, c.AddClient(ctx, mustClient(t, "late-app",
@@ -537,7 +536,7 @@ func TestGRPC_RuntimeAddUsableEndToEnd(t *testing.T) {
 		Scopes:      []string{"openid"},
 	}
 	tok := drivePasswordAuthCode(t, ctx, cfg, "late@e.com", "p")
-	assert.NotEmpty(t, tok.AccessToken)
+	require.NotEmpty(t, tok.AccessToken)
 
 	// Remove user — subsequent login attempt must fail.
 	require.NoError(t, c.RemoveUser(ctx, "late@e.com"))
@@ -580,7 +579,7 @@ func TestGRPC_RuntimeAddUsableEndToEnd(t *testing.T) {
 	// copy ("Invalid Email Address and password") may drift across
 	// versions; match loosely.
 	lower := strings.ToLower(string(body2))
-	assert.True(t,
+	require.True(t,
 		strings.Contains(lower, "invalid") || strings.Contains(lower, "authentication failed") || r2.StatusCode >= 400,
 		"removed user should fail login; got status=%d body-prefix=%.200q", r2.StatusCode, lower)
 }
@@ -591,7 +590,7 @@ func TestWithIssuer_CrossContainerViaNetworkAlias(t *testing.T) {
 
 	net, err := network.New(ctx)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = net.Remove(ctx) })
+	testcontainers.CleanupNetwork(t, net)
 
 	const issuer = "http://dex:5556/dex"
 
@@ -601,7 +600,7 @@ func TestWithIssuer_CrossContainerViaNetworkAlias(t *testing.T) {
 		network.WithNetwork([]string{"dex"}, net),
 	)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
+	testcontainers.CleanupContainer(t, c)
 
 	// Sidecar: curl the discovery endpoint through the network alias.
 	sidecarReq := testcontainers.ContainerRequest{
@@ -619,7 +618,7 @@ func TestWithIssuer_CrossContainerViaNetworkAlias(t *testing.T) {
 		Started:          true,
 	})
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = testcontainers.TerminateContainer(sidecar) })
+	testcontainers.CleanupContainer(t, sidecar)
 
 	logs, err := sidecar.Logs(ctx)
 	require.NoError(t, err)
@@ -627,7 +626,7 @@ func TestWithIssuer_CrossContainerViaNetworkAlias(t *testing.T) {
 	body, err := io.ReadAll(logs)
 	require.NoError(t, err)
 
-	assert.Contains(t, string(body), issuer,
+	require.Contains(t, string(body), issuer,
 		"discovery doc fetched via network alias must echo overridden issuer")
 }
 
@@ -652,7 +651,7 @@ func TestClientCredentials_WithFeatureFlag(t *testing.T) {
 		)),
 	)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
+	testcontainers.CleanupContainer(t, c)
 
 	cfg := clientcredentials.Config{
 		ClientID:     "svc",
@@ -662,7 +661,7 @@ func TestClientCredentials_WithFeatureFlag(t *testing.T) {
 	}
 	tok, err := cfg.TokenSource(ctx).Token()
 	require.NoError(t, err, "CC grant should succeed with feature flag enabled on master image")
-	assert.NotEmpty(t, tok.AccessToken)
+	require.NotEmpty(t, tok.AccessToken)
 }
 
 func TestConsumer_IDTokenVerifies_CoreosOIDC(t *testing.T) {
@@ -681,7 +680,7 @@ func TestConsumer_IDTokenVerifies_CoreosOIDC(t *testing.T) {
 		dex.WithUser(mustUser(t, "a@e.com", "a", "p")),
 	)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
+	testcontainers.CleanupContainer(t, c)
 
 	cfg := oauth2.Config{
 		ClientID: "e2e", ClientSecret: "s",
@@ -709,7 +708,7 @@ func TestConsumer_IDTokenVerifies_CoreosOIDC(t *testing.T) {
 		Sub   string `json:"sub"`
 	}
 	require.NoError(t, idToken.Claims(&claims))
-	assert.Equal(t, "a@e.com", claims.Email)
-	assert.Equal(t, "a", claims.Name)
-	assert.NotEmpty(t, claims.Sub)
+	require.Equal(t, "a@e.com", claims.Email)
+	require.Equal(t, "a", claims.Name)
+	require.NotEmpty(t, claims.Sub)
 }

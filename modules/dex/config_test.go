@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/yaml.v3"
@@ -35,16 +34,16 @@ func TestRender_MinimalDefaults(t *testing.T) {
 	var got map[string]any
 	require.NoError(t, yaml.Unmarshal(out, &got))
 
-	assert.Equal(t, "http://localhost:5556/dex", got["issuer"])
-	assert.Equal(t, true, got["enablePasswordDB"])
+	require.Equal(t, "http://localhost:5556/dex", got["issuer"])
+	require.Equal(t, true, got["enablePasswordDB"])
 	storage := got["storage"].(map[string]any)
-	assert.Equal(t, "sqlite3", storage["type"])
+	require.Equal(t, "sqlite3", storage["type"])
 	web := got["web"].(map[string]any)
-	assert.Equal(t, "0.0.0.0:5556", web["http"])
+	require.Equal(t, "0.0.0.0:5556", web["http"])
 	grpc := got["grpc"].(map[string]any)
-	assert.Equal(t, "0.0.0.0:5557", grpc["addr"])
+	require.Equal(t, "0.0.0.0:5557", grpc["addr"])
 	oauth2 := got["oauth2"].(map[string]any)
-	assert.Equal(t, true, oauth2["skipApprovalScreen"])
+	require.Equal(t, true, oauth2["skipApprovalScreen"])
 }
 
 func TestRender_WithClients(t *testing.T) {
@@ -78,9 +77,9 @@ func TestRender_WithClients(t *testing.T) {
 	}
 	require.NoError(t, yaml.Unmarshal(out, &got))
 	require.Len(t, got.StaticClients, 2)
-	assert.Equal(t, "app1", got.StaticClients[0].ID)
-	assert.Equal(t, []string{"http://a/cb", "http://b/cb"}, got.StaticClients[0].RedirectURIs)
-	assert.Equal(t, []string{"client_credentials"}, got.StaticClients[1].GrantTypes)
+	require.Equal(t, "app1", got.StaticClients[0].ID)
+	require.Equal(t, []string{"http://a/cb", "http://b/cb"}, got.StaticClients[0].RedirectURIs)
+	require.Equal(t, []string{"client_credentials"}, got.StaticClients[1].GrantTypes)
 }
 
 func TestRender_WithUsers_BcryptShape(t *testing.T) {
@@ -102,10 +101,10 @@ func TestRender_WithUsers_BcryptShape(t *testing.T) {
 	require.NoError(t, yaml.Unmarshal(out, &got))
 	require.Len(t, got.StaticPasswords, 1)
 	p := got.StaticPasswords[0]
-	assert.Equal(t, "u@e.com", p.Email)
-	assert.True(t, strings.HasPrefix(p.Hash, "$2a$") || strings.HasPrefix(p.Hash, "$2b$"), "bcrypt prefix")
+	require.Equal(t, "u@e.com", p.Email)
+	require.True(t, strings.HasPrefix(p.Hash, "$2a$") || strings.HasPrefix(p.Hash, "$2b$"), "bcrypt prefix")
 	require.NoError(t, bcrypt.CompareHashAndPassword([]byte(p.Hash), []byte("p")))
-	assert.NotEmpty(t, p.UserID, "userID should be auto-populated")
+	require.NotEmpty(t, p.UserID, "userID should be auto-populated")
 }
 
 func TestRender_WithConnectors(t *testing.T) {
@@ -125,7 +124,7 @@ func TestRender_WithConnectors(t *testing.T) {
 	}
 	require.NoError(t, yaml.Unmarshal(out, &got))
 	require.Len(t, got.Connectors, 1)
-	assert.Equal(t, "mockCallback", got.Connectors[0].Type)
+	require.Equal(t, "mockCallback", got.Connectors[0].Type)
 }
 
 func TestRender_NoAuthSource_Errors(t *testing.T) {
@@ -135,14 +134,14 @@ func TestRender_NoAuthSource_Errors(t *testing.T) {
 	// no connectors
 
 	_, err := render(o)
-	assert.ErrorIs(t, err, ErrNoAuthSource)
+	require.ErrorIs(t, err, ErrNoAuthSource)
 }
 
 func TestRender_IssuerRequired(t *testing.T) {
 	o := defaultOptions()
 	// issuer empty
 	_, err := render(o)
-	assert.Error(t, err, "render must error when issuer is empty")
+	require.Error(t, err, "render must error when issuer is empty")
 }
 
 func TestRender_BcryptCost(t *testing.T) {
@@ -163,7 +162,7 @@ func TestRender_BcryptCost(t *testing.T) {
 	require.NoError(t, err)
 	// Dex v2.45+ enforces a minimum bcrypt cost of 10; we use exactly 10 to
 	// satisfy that constraint while staying well below the production default (14).
-	assert.Equal(t, 10, cost, "bcrypt cost must be exactly 10: meets Dex minimum, fast enough for tests")
+	require.Equal(t, 10, cost, "bcrypt cost must be exactly 10: meets Dex minimum, fast enough for tests")
 }
 
 func TestRender_UserWithExplicitUserID(t *testing.T) {
@@ -181,7 +180,7 @@ func TestRender_UserWithExplicitUserID(t *testing.T) {
 	}
 	require.NoError(t, yaml.Unmarshal(out, &got))
 	require.Len(t, got.StaticPasswords, 1)
-	assert.Equal(t, "fixed-id-123", got.StaticPasswords[0].UserID)
+	require.Equal(t, "fixed-id-123", got.StaticPasswords[0].UserID)
 }
 
 func TestRender_PasswordConnector_SetWhenPasswordDBEnabled(t *testing.T) {
@@ -198,7 +197,7 @@ func TestRender_PasswordConnector_SetWhenPasswordDBEnabled(t *testing.T) {
 		} `yaml:"oauth2"`
 	}
 	require.NoError(t, yaml.Unmarshal(out, &got))
-	assert.Equal(t, "local", got.OAuth2.PasswordConnector,
+	require.Equal(t, "local", got.OAuth2.PasswordConnector,
 		"oauth2.passwordConnector must be 'local' when enablePasswordDB is true")
 }
 
@@ -217,7 +216,7 @@ func TestRender_PasswordConnector_OmitWhenPasswordDBDisabled(t *testing.T) {
 		} `yaml:"oauth2"`
 	}
 	require.NoError(t, yaml.Unmarshal(out, &got))
-	assert.Empty(t, got.OAuth2.PasswordConnector,
+	require.Empty(t, got.OAuth2.PasswordConnector,
 		"oauth2.passwordConnector must be omitted when enablePasswordDB is false")
 }
 
@@ -241,8 +240,8 @@ func TestRender_YAMLInjection_NameField(t *testing.T) {
 	}
 	require.NoError(t, yaml.Unmarshal(out, &got))
 	require.Len(t, got.StaticClients, 1)
-	assert.Equal(t, malicious, got.StaticClients[0].Name, "injected characters must round-trip as data, not structure")
-	assert.Empty(t, got.Malicious, "structural injection must not create a top-level key")
+	require.Equal(t, malicious, got.StaticClients[0].Name, "injected characters must round-trip as data, not structure")
+	require.Empty(t, got.Malicious, "structural injection must not create a top-level key")
 }
 
 func TestDexLogLevel(t *testing.T) {
@@ -256,6 +255,6 @@ func TestDexLogLevel(t *testing.T) {
 		slog.LevelError:     "error",
 	}
 	for in, want := range cases {
-		assert.Equal(t, want, dexLogLevel(in), "slog.Level=%v", in)
+		require.Equal(t, want, dexLogLevel(in), "slog.Level=%v", in)
 	}
 }

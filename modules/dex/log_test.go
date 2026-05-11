@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,9 +17,9 @@ func TestSlogConsumer_EmitsRecord(t *testing.T) {
 	consumer.accept(line, "STDOUT")
 
 	out := buf.String()
-	assert.Contains(t, out, "test message")
-	assert.Contains(t, out, "level=WARN")
-	assert.Contains(t, out, "component=server")
+	require.Contains(t, out, "test message")
+	require.Contains(t, out, "level=WARN")
+	require.Contains(t, out, "component=server")
 }
 
 func TestSlogConsumer_StderrMinWarn(t *testing.T) {
@@ -33,7 +32,7 @@ func TestSlogConsumer_StderrMinWarn(t *testing.T) {
 
 	out := buf.String()
 	require.NotEmpty(t, out)
-	assert.Contains(t, out, "level=WARN", "stderr lines promoted to at least WARN")
+	require.Contains(t, out, "level=WARN", "stderr lines promoted to at least WARN")
 }
 
 func TestSlogConsumer_EmptyLineIgnored(t *testing.T) {
@@ -44,29 +43,29 @@ func TestSlogConsumer_EmptyLineIgnored(t *testing.T) {
 	consumer.accept("", "STDOUT")
 	consumer.accept("\n", "STDOUT")
 
-	assert.Empty(t, buf.String(), "empty lines must not emit records")
+	require.Empty(t, buf.String(), "empty lines must not emit records")
 }
 
 func TestParseLogfmt_UnknownKeysBecomeAttrs(t *testing.T) {
 	_, msg, attrs := parseLogfmt(`level=info msg=hello foo=bar baz=qux`)
-	assert.Equal(t, "hello", msg)
+	require.Equal(t, "hello", msg)
 	require.Len(t, attrs, 2)
-	assert.Equal(t, "foo", attrs[0].Key)
-	assert.Equal(t, "bar", attrs[0].Value.String())
-	assert.Equal(t, "baz", attrs[1].Key)
-	assert.Equal(t, "qux", attrs[1].Value.String())
+	require.Equal(t, "foo", attrs[0].Key)
+	require.Equal(t, "bar", attrs[0].Value.String())
+	require.Equal(t, "baz", attrs[1].Key)
+	require.Equal(t, "qux", attrs[1].Value.String())
 }
 
 func TestParseLogfmt_QuotedValue(t *testing.T) {
 	_, msg, _ := parseLogfmt(`level=error msg="something went wrong: boom"`)
-	assert.Equal(t, "something went wrong: boom", msg)
+	require.Equal(t, "something went wrong: boom", msg)
 }
 
 func TestParseLogfmt_QuotedValueUnescapes(t *testing.T) {
 	// Dex msg fields with embedded quotes / backslashes must round-trip
 	// without raw \\ or \" sequences leaking into slog attrs.
 	_, msg, _ := parseLogfmt(`level=info msg="he said \"hi\" then C:\\path"`)
-	assert.Equal(t, `he said "hi" then C:\path`, msg)
+	require.Equal(t, `he said "hi" then C:\path`, msg)
 }
 
 func TestMapLevel(t *testing.T) {
@@ -80,6 +79,6 @@ func TestMapLevel(t *testing.T) {
 		"bogus":   slog.LevelInfo, // default
 	}
 	for in, want := range cases {
-		assert.Equal(t, want, mapLevel(in), "input=%q", in)
+		require.Equal(t, want, mapLevel(in), "input=%q", in)
 	}
 }
