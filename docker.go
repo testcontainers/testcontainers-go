@@ -1905,6 +1905,19 @@ func (p *DockerProvider) PullImage(ctx context.Context, img string) error {
 	return p.attemptToPullImage(ctx, img, client.ImagePullOptions{})
 }
 
+// PullImageWithPlatform pulls an image from the registry for the given platform (e.g. "linux/amd64").
+func (p *DockerProvider) PullImageWithPlatform(ctx context.Context, img, platform string) error {
+	pullOpt := client.ImagePullOptions{}
+	if platform != "" {
+		pf, err := platforms.Parse(platform)
+		if err != nil {
+			return fmt.Errorf("invalid platform %s: %w", platform, err)
+		}
+		pullOpt.Platforms = append(pullOpt.Platforms, pf)
+	}
+	return p.attemptToPullImage(ctx, img, pullOpt)
+}
+
 var permanentClientErrors = []func(error) bool{
 	errdefs.IsNotFound,
 	errdefs.IsInvalidArgument,
