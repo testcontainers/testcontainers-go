@@ -518,7 +518,7 @@ func TestRun_localExec(t *testing.T) {
 
 		bs, err = io.ReadAll(logs)
 		require.NoError(t, err)
-		require.Contains(t, string(bs), "llama runner started")
+		require.Contains(t, string(bs), "llama-server started")
 	})
 }
 
