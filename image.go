@@ -30,5 +30,5 @@ type ImageProvider interface {
 	SaveImages(context.Context, string, ...string) error
 	SaveImagesWithOpts(context.Context, string, []string, ...SaveImageOption) error
 	PullImage(context.Context, string) error
-	PullImageWithPlatform(context.Context, string, string) error
+	PullImageWithOpts(context.Context, string, ...PullImageOption) error
 }

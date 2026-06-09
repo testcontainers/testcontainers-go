@@ -40,8 +40,6 @@ func Test_LoadImages(t *testing.T) {
 	provider, err := testcontainers.ProviderDocker.GetProvider()
 	require.NoError(t, err)
 
-	dockerProvider, _ := provider.(*testcontainers.DockerProvider)
-
 	// This function only works for single architecture images
 	// Forces the test to use a single-arch version of the image
 	arch := platforms.DefaultSpec().Architecture
@@ -62,7 +60,7 @@ func Test_LoadImages(t *testing.T) {
 	t.Run("Test load image with wrong architecture", func(t *testing.T) {
 		p, _ := platforms.Parse("linux/s390x")
 		img := "nginx:mainline"
-		err = dockerProvider.PullImageWithOpts(ctx, img, testcontainers.PullDockerImageWithPlatform(p))
+		err = provider.PullImageWithOpts(ctx, img, testcontainers.PullDockerImageWithPlatform(p))
 		require.NoError(t, err)
 
 		err := k3sContainer.LoadImages(ctx, img)
@@ -135,8 +133,6 @@ func Test_LoadImagesWithPlatform(t *testing.T) {
 	provider, err := testcontainers.ProviderDocker.GetProvider()
 	require.NoError(t, err)
 
-	dockerProvider, _ := provider.(*testcontainers.DockerProvider)
-
 	// ensure nginx image is available locally
 	err = provider.PullImage(ctx, "nginx")
 	require.NoError(t, err)
@@ -150,7 +146,7 @@ func Test_LoadImagesWithPlatform(t *testing.T) {
 	t.Run("Test load image with wrong architecture", func(t *testing.T) {
 		pullPlatform, _ := platforms.Parse("linux/s390x")
 		img := "nginx:mainline"
-		err = dockerProvider.PullImageWithOpts(ctx, img, testcontainers.PullDockerImageWithPlatform(pullPlatform))
+		err = provider.PullImageWithOpts(ctx, img, testcontainers.PullDockerImageWithPlatform(pullPlatform))
 		require.NoError(t, err)
 
 		loadPlatform, _ := platforms.Parse("linux/amd64")
