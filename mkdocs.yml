@@ -55,10 +55,11 @@ nav:
             - HostPort: features/wait/host_port.md
             - HTTP: features/wait/http.md
             - Log: features/wait/log.md
-            - Multi: features/wait/multi.md
             - SQL: features/wait/sql.md
             - TLS: features/wait/tls.md
             - Walk: features/wait/walk.md
+            - All: features/wait/all.md
+            - Any: features/wait/any.md
         - features/files_and_mounts.md
         - features/follow_logs.md
         - features/garbage_collector.md
