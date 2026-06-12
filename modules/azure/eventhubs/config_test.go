@@ -2,6 +2,7 @@ package eventhubs_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -103,7 +104,7 @@ func TestNewConfig_validation(t *testing.T) {
 			),
 		)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "partition count must be >= 1")
+		assert.Contains(t, err.Error(), "partition count must be 1")
 	})
 
 	t.Run("negative partition count", func(t *testing.T) {
@@ -113,7 +114,43 @@ func TestNewConfig_validation(t *testing.T) {
 			),
 		)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "partition count must be >= 1")
+		assert.Contains(t, err.Error(), "partition count must be 1")
+	})
+
+	t.Run("partition count exceeds emulator limit", func(t *testing.T) {
+		_, err := eventhubs.NewConfig(
+			eventhubs.WithNamespace("ns1",
+				eventhubs.WithEntity("eh1", 33),
+			),
+		)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "partition count must be 1")
+	})
+
+	t.Run("too many entities per namespace", func(t *testing.T) {
+		entityOpts := make([]eventhubs.NamespaceOption, 11)
+		for i := range entityOpts {
+			entityOpts[i] = eventhubs.WithEntity(fmt.Sprintf("eh%d", i+1), 1)
+		}
+		_, err := eventhubs.NewConfig(
+			eventhubs.WithNamespace("ns1", entityOpts...),
+		)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "entities, emulator limit is 10")
+	})
+
+	t.Run("too many consumer groups per entity", func(t *testing.T) {
+		cgOpts := make([]eventhubs.EntityOption, 21)
+		for i := range cgOpts {
+			cgOpts[i] = eventhubs.WithConsumerGroup(fmt.Sprintf("cg%d", i+1))
+		}
+		_, err := eventhubs.NewConfig(
+			eventhubs.WithNamespace("ns1",
+				eventhubs.WithEntity("eh1", 1, cgOpts...),
+			),
+		)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "consumer groups, emulator limit is 20")
 	})
 
 	t.Run("empty consumer group name", func(t *testing.T) {
@@ -175,8 +212,8 @@ func TestNewConfig_validation(t *testing.T) {
 
 	t.Run("multiple errors aggregated", func(t *testing.T) {
 		_, err := eventhubs.NewConfig(
-			eventhubs.WithNamespace("",    // empty name → error 1
-			),
+			eventhubs.WithNamespace(""), // empty name → error 1
+
 			eventhubs.WithLoggingType(""), // empty logging type → error 2
 		)
 		require.Error(t, err)

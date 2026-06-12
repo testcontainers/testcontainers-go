@@ -6,6 +6,17 @@ import (
 	"strconv"
 )
 
+// Emulator usage quotas from
+// https://learn.microsoft.com/en-us/azure/event-hubs/overview-emulator#usage-quotas
+const (
+	// maxEntitiesPerNamespace is the maximum number of event hub entities per namespace.
+	maxEntitiesPerNamespace = 10
+	// maxPartitionCount is the maximum number of partitions per event hub entity.
+	maxPartitionCount = 32
+	// maxConsumerGroupsPerEntity is the maximum number of consumer groups per entity.
+	maxConsumerGroupsPerEntity = 20
+)
+
 // Config is the root structure marshalled to JSON for the Event Hubs emulator config file.
 // It is exported so advanced users can construct it directly or round-trip via json.Unmarshal.
 type Config struct {
@@ -111,6 +122,10 @@ func (c *Config) validate() error {
 		}
 		nsNames[ns.Name] = true
 
+		if len(ns.Entities) > maxEntitiesPerNamespace {
+			errs = append(errs, fmt.Errorf("config: namespace %q has %d entities, emulator limit is %d", ns.Name, len(ns.Entities), maxEntitiesPerNamespace))
+		}
+
 		entityNames := make(map[string]bool, len(ns.Entities))
 		for j, e := range ns.Entities {
 			if e.Name == "" {
@@ -123,8 +138,12 @@ func (c *Config) validate() error {
 			entityNames[e.Name] = true
 
 			pc, err := strconv.Atoi(e.PartitionCount)
-			if err != nil || pc < 1 {
-				errs = append(errs, fmt.Errorf("config: namespace %q entity %q: partition count must be >= 1, got %q", ns.Name, e.Name, e.PartitionCount))
+			if err != nil || pc < 1 || pc > maxPartitionCount {
+				errs = append(errs, fmt.Errorf("config: namespace %q entity %q: partition count must be 1–%d, got %q", ns.Name, e.Name, maxPartitionCount, e.PartitionCount))
+			}
+
+			if len(e.ConsumerGroups) > maxConsumerGroupsPerEntity {
+				errs = append(errs, fmt.Errorf("config: namespace %q entity %q has %d consumer groups, emulator limit is %d", ns.Name, e.Name, len(e.ConsumerGroups), maxConsumerGroupsPerEntity))
 			}
 
 			cgNames := make(map[string]bool, len(e.ConsumerGroups))
@@ -199,8 +218,8 @@ func WithEntity(name string, partitionCount int, opts ...EntityOption) Namespace
 		if name == "" {
 			return fmt.Errorf("config: entity name is empty in namespace %q", n.Name)
 		}
-		if partitionCount < 1 {
-			return fmt.Errorf("config: entity %q: partition count must be >= 1, got %d", name, partitionCount)
+		if partitionCount < 1 || partitionCount > maxPartitionCount {
+			return fmt.Errorf("config: entity %q: partition count must be 1–%d, got %d", name, maxPartitionCount, partitionCount)
 		}
 		e := Entity{
 			Name:           name,
