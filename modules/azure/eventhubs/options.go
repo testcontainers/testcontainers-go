@@ -50,9 +50,12 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 	return nil
 }
 
-// WithAzurite sets the image and options for the Azurite container.
+// WithAzurite sets the image and options for the Azurite container that the
+// module will create automatically.
 // By default, the image is "mcr.microsoft.com/azure-storage/azurite:3.33.0".
-// It returns an error if WithAzuriteContainer has already been applied.
+// It is mutually exclusive with WithAzuriteContainer: passing both options to
+// Run returns an error. If you already have a running Azurite container, use
+// WithAzuriteContainer instead — the image and options set here will not apply.
 func WithAzurite(img string, opts ...testcontainers.ContainerCustomizer) Option {
 	return func(o *options) error {
 		if o.azuriteUserProvided {

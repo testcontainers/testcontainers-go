@@ -184,6 +184,9 @@ When starting the EventHubs container, you can pass options in a variadic way to
 
 This option allows you to set a different Azurite Docker image, instead of the default one, and also pass options to the Azurite container, in the form of a variadic argument of `testcontainers.ContainerCustomizer`.
 
+!!! warning
+    `WithAzurite` and [`WithAzuriteContainer`](#withazuritecontainer) are mutually exclusive. Passing both to `Run` returns an error. If you already have a running Azurite container, use `WithAzuriteContainer` instead — the image and options set here will not apply.
+
 #### WithAcceptEULA
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
@@ -195,6 +198,9 @@ This option allows you to accept the EULA for the EventHubs container.
 - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
 This option allows you to supply a pre-existing Azurite container and Docker network instead of letting the module create them automatically. When this option is used, calling `Terminate()` on the EventHubs container will **not** stop or remove the Azurite container or the network — the caller is responsible for their lifecycle.
+
+!!! warning
+    `WithAzuriteContainer` and [`WithAzurite`](#withazurite) are mutually exclusive. Passing both to `Run` returns an error. Any Azurite image or options set via `WithAzurite` are ignored when `WithAzuriteContainer` is supplied.
 
 <!--codeinclude-->
 [Create Network](../../modules/azure/eventhubs/examples_test.go) inside_block:withAzuriteContainer_network
