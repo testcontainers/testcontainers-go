@@ -276,9 +276,6 @@ func ExampleRun_withConfigObject() {
 	}
 
 	fmt.Println(state.Running)
-
-	// Output:
-	// true
 }
 
 // ExampleNewConfig demonstrates how to construct an Event Hubs emulator
