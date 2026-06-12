@@ -4,11 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 // Emulator usage quotas from
 // https://learn.microsoft.com/en-us/azure/event-hubs/overview-emulator#usage-quotas
 const (
+	// EmulatorNamespaceName is the fixed namespace name required by the EventHubs emulator.
+	// The emulator supports exactly one namespace and its name cannot be changed.
+	EmulatorNamespaceName = "emulatorns1"
+
 	// maxEntitiesPerNamespace is the maximum number of event hub entities per namespace.
 	maxEntitiesPerNamespace = 10
 	// maxPartitionCount is the maximum number of partitions per event hub entity.
@@ -111,11 +116,18 @@ func (c *Config) validate() error {
 		errs = append(errs, errors.New("config: logging type is empty"))
 	}
 
+	if len(c.UserConfig.NamespaceConfig) > 1 {
+		errs = append(errs, fmt.Errorf("config: emulator supports only 1 namespace, got %d", len(c.UserConfig.NamespaceConfig)))
+	}
+
 	nsNames := make(map[string]bool, len(c.UserConfig.NamespaceConfig))
 	for i, ns := range c.UserConfig.NamespaceConfig {
 		if ns.Name == "" {
 			errs = append(errs, fmt.Errorf("config: namespace[%d]: name is empty", i))
 			continue
+		}
+		if !strings.EqualFold(ns.Name, EmulatorNamespaceName) {
+			errs = append(errs, fmt.Errorf("config: namespace name %q is not valid: emulator preset namespace name cannot be changed from %q", ns.Name, EmulatorNamespaceName))
 		}
 		if nsNames[ns.Name] {
 			errs = append(errs, fmt.Errorf("config: duplicate namespace name %q", ns.Name))

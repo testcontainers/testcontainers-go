@@ -98,8 +98,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		),
 	}
 
-	switch {
-	case defaultOptions.azuriteContainer == nil:
+	switch defaultOptions.azuriteContainer {
+	case nil:
 		// Module-managed Azurite: create a new network, start Azurite, wire env vars.
 		azuriteNetwork, err := network.New(ctx)
 		if err != nil {

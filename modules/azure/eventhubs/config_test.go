@@ -18,7 +18,7 @@ import (
 func TestNewConfig_happyPath(t *testing.T) {
 	cfg, err := eventhubs.NewConfig(
 		eventhubs.WithLoggingType("File"),
-		eventhubs.WithNamespace("emulatorNs1",
+		eventhubs.WithNamespace(eventhubs.EmulatorNamespaceName,
 			eventhubs.WithEntity("eh1", 1,
 				eventhubs.WithConsumerGroup("cg1"),
 			),
@@ -32,12 +32,15 @@ func TestNewConfig_happyPath(t *testing.T) {
 	require.NoError(t, err)
 
 	// Canonical fixture JSON (matches testdata/eventhubs_config.json shape).
+	// The emulator preset namespace name is case-insensitive; testdata uses "emulatorNs1"
+	// which the builder stores as-supplied. We compare via map[string]any so
+	// key-order differences are irrelevant.
 	const fixtureJSON = `{
 		"UserConfig": {
 			"NamespaceConfig": [
 				{
 					"Type": "EventHub",
-					"Name": "emulatorNs1",
+					"Name": "emulatorns1",
 					"Entities": [
 						{
 							"Name": "eh1",
@@ -68,7 +71,7 @@ func TestNewConfig_happyPath(t *testing.T) {
 // "File" when WithLoggingType is not specified.
 func TestNewConfig_defaultLoggingType(t *testing.T) {
 	cfg, err := eventhubs.NewConfig(
-		eventhubs.WithNamespace("ns1",
+		eventhubs.WithNamespace(eventhubs.EmulatorNamespaceName,
 			eventhubs.WithEntity("eh1", 1),
 		),
 	)
@@ -87,9 +90,33 @@ func TestNewConfig_validation(t *testing.T) {
 		assert.Contains(t, err.Error(), "namespace name is empty")
 	})
 
+	t.Run("wrong namespace name", func(t *testing.T) {
+		_, err := eventhubs.NewConfig(
+			eventhubs.WithNamespace("mynamespace",
+				eventhubs.WithEntity("eh1", 1),
+			),
+		)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "namespace name")
+		assert.Contains(t, err.Error(), "cannot be changed from")
+	})
+
+	t.Run("too many namespaces", func(t *testing.T) {
+		_, err := eventhubs.NewConfig(
+			eventhubs.WithNamespace(eventhubs.EmulatorNamespaceName,
+				eventhubs.WithEntity("eh1", 1),
+			),
+			eventhubs.WithNamespace(eventhubs.EmulatorNamespaceName,
+				eventhubs.WithEntity("eh2", 1),
+			),
+		)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "emulator supports only 1 namespace")
+	})
+
 	t.Run("empty entity name", func(t *testing.T) {
 		_, err := eventhubs.NewConfig(
-			eventhubs.WithNamespace("ns1",
+			eventhubs.WithNamespace(eventhubs.EmulatorNamespaceName,
 				eventhubs.WithEntity("", 1),
 			),
 		)
@@ -99,7 +126,7 @@ func TestNewConfig_validation(t *testing.T) {
 
 	t.Run("zero partition count", func(t *testing.T) {
 		_, err := eventhubs.NewConfig(
-			eventhubs.WithNamespace("ns1",
+			eventhubs.WithNamespace(eventhubs.EmulatorNamespaceName,
 				eventhubs.WithEntity("eh1", 0),
 			),
 		)
@@ -109,7 +136,7 @@ func TestNewConfig_validation(t *testing.T) {
 
 	t.Run("negative partition count", func(t *testing.T) {
 		_, err := eventhubs.NewConfig(
-			eventhubs.WithNamespace("ns1",
+			eventhubs.WithNamespace(eventhubs.EmulatorNamespaceName,
 				eventhubs.WithEntity("eh1", -5),
 			),
 		)
@@ -119,7 +146,7 @@ func TestNewConfig_validation(t *testing.T) {
 
 	t.Run("partition count exceeds emulator limit", func(t *testing.T) {
 		_, err := eventhubs.NewConfig(
-			eventhubs.WithNamespace("ns1",
+			eventhubs.WithNamespace(eventhubs.EmulatorNamespaceName,
 				eventhubs.WithEntity("eh1", 33),
 			),
 		)
@@ -133,7 +160,7 @@ func TestNewConfig_validation(t *testing.T) {
 			entityOpts[i] = eventhubs.WithEntity(fmt.Sprintf("eh%d", i+1), 1)
 		}
 		_, err := eventhubs.NewConfig(
-			eventhubs.WithNamespace("ns1", entityOpts...),
+			eventhubs.WithNamespace(eventhubs.EmulatorNamespaceName, entityOpts...),
 		)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "entities, emulator limit is 10")
@@ -145,7 +172,7 @@ func TestNewConfig_validation(t *testing.T) {
 			cgOpts[i] = eventhubs.WithConsumerGroup(fmt.Sprintf("cg%d", i+1))
 		}
 		_, err := eventhubs.NewConfig(
-			eventhubs.WithNamespace("ns1",
+			eventhubs.WithNamespace(eventhubs.EmulatorNamespaceName,
 				eventhubs.WithEntity("eh1", 1, cgOpts...),
 			),
 		)
@@ -155,7 +182,7 @@ func TestNewConfig_validation(t *testing.T) {
 
 	t.Run("empty consumer group name", func(t *testing.T) {
 		_, err := eventhubs.NewConfig(
-			eventhubs.WithNamespace("ns1",
+			eventhubs.WithNamespace(eventhubs.EmulatorNamespaceName,
 				eventhubs.WithEntity("eh1", 1,
 					eventhubs.WithConsumerGroup(""),
 				),
@@ -173,22 +200,9 @@ func TestNewConfig_validation(t *testing.T) {
 		assert.Contains(t, err.Error(), "logging type is empty")
 	})
 
-	t.Run("duplicate namespace names", func(t *testing.T) {
-		_, err := eventhubs.NewConfig(
-			eventhubs.WithNamespace("ns1",
-				eventhubs.WithEntity("eh1", 1),
-			),
-			eventhubs.WithNamespace("ns1",
-				eventhubs.WithEntity("eh2", 1),
-			),
-		)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "duplicate namespace name")
-	})
-
 	t.Run("duplicate entity names within namespace", func(t *testing.T) {
 		_, err := eventhubs.NewConfig(
-			eventhubs.WithNamespace("ns1",
+			eventhubs.WithNamespace(eventhubs.EmulatorNamespaceName,
 				eventhubs.WithEntity("eh1", 1),
 				eventhubs.WithEntity("eh1", 2),
 			),
@@ -199,7 +213,7 @@ func TestNewConfig_validation(t *testing.T) {
 
 	t.Run("duplicate consumer group names within entity", func(t *testing.T) {
 		_, err := eventhubs.NewConfig(
-			eventhubs.WithNamespace("ns1",
+			eventhubs.WithNamespace(eventhubs.EmulatorNamespaceName,
 				eventhubs.WithEntity("eh1", 1,
 					eventhubs.WithConsumerGroup("cg1"),
 					eventhubs.WithConsumerGroup("cg1"),
@@ -212,8 +226,7 @@ func TestNewConfig_validation(t *testing.T) {
 
 	t.Run("multiple errors aggregated", func(t *testing.T) {
 		_, err := eventhubs.NewConfig(
-			eventhubs.WithNamespace(""), // empty name → error 1
-
+			eventhubs.WithNamespace(""),   // empty name → error 1
 			eventhubs.WithLoggingType(""), // empty logging type → error 2
 		)
 		require.Error(t, err)
@@ -227,7 +240,7 @@ func TestNewConfig_validation(t *testing.T) {
 // partition count produces "PartitionCount":"3" (a string) in the marshalled JSON.
 func TestNewConfig_partitionCountStringified(t *testing.T) {
 	cfg, err := eventhubs.NewConfig(
-		eventhubs.WithNamespace("ns1",
+		eventhubs.WithNamespace(eventhubs.EmulatorNamespaceName,
 			eventhubs.WithEntity("e", 3),
 		),
 	)
@@ -261,11 +274,11 @@ func TestMustNewConfig_panicsOnInvalid(t *testing.T) {
 	})
 }
 
-// TestNewConfig_multipleNamespaces verifies that multiple namespaces and
-// entities are composed correctly.
-func TestNewConfig_multipleNamespaces(t *testing.T) {
+// TestNewConfig_multipleEntities verifies that multiple entities within the
+// single emulator namespace are composed correctly.
+func TestNewConfig_multipleEntities(t *testing.T) {
 	cfg, err := eventhubs.NewConfig(
-		eventhubs.WithNamespace("ns1",
+		eventhubs.WithNamespace(eventhubs.EmulatorNamespaceName,
 			eventhubs.WithEntity("eh1", 2,
 				eventhubs.WithConsumerGroup("cg1"),
 				eventhubs.WithConsumerGroup("$Default"),
@@ -274,24 +287,34 @@ func TestNewConfig_multipleNamespaces(t *testing.T) {
 				eventhubs.WithConsumerGroup("cg1"),
 			),
 		),
-		eventhubs.WithNamespace("ns2",
-			eventhubs.WithEntity("eh3", 4),
+	)
+	require.NoError(t, err)
+	require.Len(t, cfg.UserConfig.NamespaceConfig, 1)
+	require.Equal(t, eventhubs.EmulatorNamespaceName, cfg.UserConfig.NamespaceConfig[0].Name)
+	require.Len(t, cfg.UserConfig.NamespaceConfig[0].Entities, 2)
+	assert.Equal(t, "2", cfg.UserConfig.NamespaceConfig[0].Entities[0].PartitionCount)
+	assert.Len(t, cfg.UserConfig.NamespaceConfig[0].Entities[0].ConsumerGroups, 2)
+	assert.Equal(t, "eh2", cfg.UserConfig.NamespaceConfig[0].Entities[1].Name)
+}
+
+// TestNewConfig_caseInsensitiveNamespaceName verifies that WithNamespace accepts
+// the emulator namespace name regardless of capitalisation (e.g. "emulatorNs1").
+func TestNewConfig_caseInsensitiveNamespaceName(t *testing.T) {
+	// "emulatorNs1" is the capitalisation used in the existing testdata fixture.
+	cfg, err := eventhubs.NewConfig(
+		eventhubs.WithNamespace("emulatorNs1",
+			eventhubs.WithEntity("eh1", 1),
 		),
 	)
 	require.NoError(t, err)
-	require.Len(t, cfg.UserConfig.NamespaceConfig, 2)
-	require.Equal(t, "ns1", cfg.UserConfig.NamespaceConfig[0].Name)
-	require.Len(t, cfg.UserConfig.NamespaceConfig[0].Entities, 2)
-	require.Equal(t, "2", cfg.UserConfig.NamespaceConfig[0].Entities[0].PartitionCount)
-	require.Len(t, cfg.UserConfig.NamespaceConfig[0].Entities[0].ConsumerGroups, 2)
-	require.Equal(t, "ns2", cfg.UserConfig.NamespaceConfig[1].Name)
+	assert.Equal(t, "emulatorNs1", cfg.UserConfig.NamespaceConfig[0].Name)
 }
 
 // TestNewConfig_withNamespaceType verifies that WithNamespaceType overrides
 // the default "EventHub" type.
 func TestNewConfig_withNamespaceType(t *testing.T) {
 	cfg, err := eventhubs.NewConfig(
-		eventhubs.WithNamespace("ns1",
+		eventhubs.WithNamespace(eventhubs.EmulatorNamespaceName,
 			eventhubs.WithNamespaceType("CustomType"),
 			eventhubs.WithEntity("eh1", 1),
 		),
