@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -93,24 +92,16 @@ func TestEventHubs_withAzuriteContainer(t *testing.T) {
 
 	// Create an independent network and Azurite container that the test owns.
 	nw, err := network.New(ctx)
+	testcontainers.CleanupNetwork(t, nw)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		if err := nw.Remove(ctx); err != nil {
-			t.Logf("cleanup: remove network: %v", err)
-		}
-	})
 
 	azuriteCtr, err := azurite.Run(
 		ctx,
 		"mcr.microsoft.com/azure-storage/azurite:3.33.0",
 		network.WithNetwork([]string{"azurite"}, nw),
 	)
+	testcontainers.CleanupContainer(t, azuriteCtr)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		if err := azuriteCtr.Terminate(ctx); err != nil {
-			t.Logf("cleanup: terminate azurite: %v", err)
-		}
-	})
 
 	// Run the EventHubs container using the pre-built Azurite.
 	ehCtr, err := eventhubs.Run(
@@ -119,6 +110,9 @@ func TestEventHubs_withAzuriteContainer(t *testing.T) {
 		eventhubs.WithAcceptEULA(),
 		eventhubs.WithAzuriteContainer(azuriteCtr, nw, "azurite"),
 	)
+	// Note: no CleanupContainer here — we call Terminate explicitly below to
+	// test that it does NOT stop azurite, then CleanupContainer handles the rest.
+	testcontainers.CleanupContainer(t, ehCtr)
 	require.NoError(t, err)
 
 	// Both containers must be on the same network.
@@ -129,7 +123,7 @@ func TestEventHubs_withAzuriteContainer(t *testing.T) {
 	azNetworks, err := azuriteCtr.Networks(ctx)
 	require.NoError(t, err)
 	require.Len(t, azNetworks, 1)
-	assert.Equal(t, azNetworks[0], ehNetworks[0])
+	require.Equal(t, azNetworks[0], ehNetworks[0])
 
 	// Terminate the EventHubs container — must NOT touch azurite.
 	require.NoError(t, ehCtr.Terminate(ctx))
@@ -137,7 +131,7 @@ func TestEventHubs_withAzuriteContainer(t *testing.T) {
 	// Azurite should still be running.
 	state, err := azuriteCtr.State(ctx)
 	require.NoError(t, err)
-	assert.True(t, state.Running, "azurite container must still be running after eventhubs Terminate()")
+	require.True(t, state.Running, "azurite container must still be running after eventhubs Terminate()")
 }
 
 // TestEventHubs_withAzuriteContainer_nilGuards verifies that nil container
@@ -146,14 +140,14 @@ func TestEventHubs_withAzuriteContainer_nilGuards(t *testing.T) {
 	ctx := context.Background()
 
 	nw, err := network.New(ctx)
+	testcontainers.CleanupNetwork(t, nw)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = nw.Remove(ctx) })
 
 	azuriteCtr, err := azurite.Run(ctx, "mcr.microsoft.com/azure-storage/azurite:3.33.0",
 		network.WithNetwork([]string{"azurite"}, nw),
 	)
+	testcontainers.CleanupContainer(t, azuriteCtr)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = azuriteCtr.Terminate(ctx) })
 
 	t.Run("nil container", func(t *testing.T) {
 		_, err := eventhubs.Run(
@@ -163,7 +157,7 @@ func TestEventHubs_withAzuriteContainer_nilGuards(t *testing.T) {
 			eventhubs.WithAzuriteContainer(nil, nw, "azurite"),
 		)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "azurite container is nil")
+		require.Contains(t, err.Error(), "azurite container is nil")
 	})
 
 	t.Run("nil network", func(t *testing.T) {
@@ -174,7 +168,7 @@ func TestEventHubs_withAzuriteContainer_nilGuards(t *testing.T) {
 			eventhubs.WithAzuriteContainer(azuriteCtr, nil, "azurite"),
 		)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "docker network is nil")
+		require.Contains(t, err.Error(), "docker network is nil")
 	})
 }
 
@@ -184,14 +178,14 @@ func TestEventHubs_withAzuriteContainer_conflict(t *testing.T) {
 	ctx := context.Background()
 
 	nw, err := network.New(ctx)
+	testcontainers.CleanupNetwork(t, nw)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = nw.Remove(ctx) })
 
 	azuriteCtr, err := azurite.Run(ctx, "mcr.microsoft.com/azure-storage/azurite:3.33.0",
 		network.WithNetwork([]string{"azurite"}, nw),
 	)
+	testcontainers.CleanupContainer(t, azuriteCtr)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = azuriteCtr.Terminate(ctx) })
 
 	t.Run("WithAzurite then WithAzuriteContainer", func(t *testing.T) {
 		_, err := eventhubs.Run(
@@ -202,7 +196,7 @@ func TestEventHubs_withAzuriteContainer_conflict(t *testing.T) {
 			eventhubs.WithAzuriteContainer(azuriteCtr, nw, "azurite"),
 		)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "mutually exclusive")
+		require.Contains(t, err.Error(), "mutually exclusive")
 	})
 
 	t.Run("WithAzuriteContainer then WithAzurite", func(t *testing.T) {
@@ -214,7 +208,7 @@ func TestEventHubs_withAzuriteContainer_conflict(t *testing.T) {
 			eventhubs.WithAzurite("mcr.microsoft.com/azure-storage/azurite:3.33.0"),
 		)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "mutually exclusive")
+		require.Contains(t, err.Error(), "mutually exclusive")
 	})
 }
 
@@ -258,7 +252,7 @@ func TestEventHubs_withConfigObject(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, json.Unmarshal(wantJSON, &wantMap))
 
-	assert.Equal(t, wantMap, gotMap)
+	require.Equal(t, wantMap, gotMap)
 }
 
 // TestEventHubs_withConfigObject_nil verifies that WithConfigObject(nil) errors.
@@ -273,5 +267,5 @@ func TestEventHubs_withConfigObject_nil(t *testing.T) {
 	)
 	testcontainers.CleanupContainer(t, ctr)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "config is nil")
+	require.Contains(t, err.Error(), "config is nil")
 }

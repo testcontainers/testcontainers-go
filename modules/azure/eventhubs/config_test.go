@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/modules/azure/eventhubs"
@@ -64,7 +63,7 @@ func TestNewConfig_happyPath(t *testing.T) {
 	require.NoError(t, json.Unmarshal(got, &gotMap))
 	require.NoError(t, json.Unmarshal([]byte(fixtureJSON), &wantMap))
 
-	assert.Equal(t, wantMap, gotMap)
+	require.Equal(t, wantMap, gotMap)
 }
 
 // TestNewConfig_defaultLoggingType verifies that the default logging type is
@@ -76,7 +75,7 @@ func TestNewConfig_defaultLoggingType(t *testing.T) {
 		),
 	)
 	require.NoError(t, err)
-	assert.Equal(t, "File", cfg.UserConfig.LoggingConfig.Type)
+	require.Equal(t, "File", cfg.UserConfig.LoggingConfig.Type)
 }
 
 // TestNewConfig_validation checks that NewConfig aggregates multiple validation
@@ -87,7 +86,7 @@ func TestNewConfig_validation(t *testing.T) {
 			eventhubs.WithNamespace(""),
 		)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "namespace name is empty")
+		require.Contains(t, err.Error(), "namespace name is empty")
 	})
 
 	t.Run("wrong namespace name", func(t *testing.T) {
@@ -97,8 +96,8 @@ func TestNewConfig_validation(t *testing.T) {
 			),
 		)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "namespace name")
-		assert.Contains(t, err.Error(), "cannot be changed from")
+		require.Contains(t, err.Error(), "namespace name")
+		require.Contains(t, err.Error(), "cannot be changed from")
 	})
 
 	t.Run("too many namespaces", func(t *testing.T) {
@@ -111,7 +110,7 @@ func TestNewConfig_validation(t *testing.T) {
 			),
 		)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "emulator supports only 1 namespace")
+		require.Contains(t, err.Error(), "emulator supports only 1 namespace")
 	})
 
 	t.Run("empty entity name", func(t *testing.T) {
@@ -121,7 +120,7 @@ func TestNewConfig_validation(t *testing.T) {
 			),
 		)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "entity name is empty")
+		require.Contains(t, err.Error(), "entity name is empty")
 	})
 
 	t.Run("zero partition count", func(t *testing.T) {
@@ -131,7 +130,7 @@ func TestNewConfig_validation(t *testing.T) {
 			),
 		)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "partition count must be 1")
+		require.Contains(t, err.Error(), "partition count must be 1")
 	})
 
 	t.Run("negative partition count", func(t *testing.T) {
@@ -141,7 +140,7 @@ func TestNewConfig_validation(t *testing.T) {
 			),
 		)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "partition count must be 1")
+		require.Contains(t, err.Error(), "partition count must be 1")
 	})
 
 	t.Run("partition count exceeds emulator limit", func(t *testing.T) {
@@ -151,7 +150,7 @@ func TestNewConfig_validation(t *testing.T) {
 			),
 		)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "partition count must be 1")
+		require.Contains(t, err.Error(), "partition count must be 1")
 	})
 
 	t.Run("too many entities per namespace", func(t *testing.T) {
@@ -163,7 +162,7 @@ func TestNewConfig_validation(t *testing.T) {
 			eventhubs.WithNamespace(eventhubs.EmulatorNamespaceName, entityOpts...),
 		)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "entities, emulator limit is 10")
+		require.Contains(t, err.Error(), "entities, emulator limit is 10")
 	})
 
 	t.Run("too many consumer groups per entity", func(t *testing.T) {
@@ -177,7 +176,7 @@ func TestNewConfig_validation(t *testing.T) {
 			),
 		)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "consumer groups, emulator limit is 20")
+		require.Contains(t, err.Error(), "consumer groups, emulator limit is 20")
 	})
 
 	t.Run("empty consumer group name", func(t *testing.T) {
@@ -189,7 +188,7 @@ func TestNewConfig_validation(t *testing.T) {
 			),
 		)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "consumer group name is empty")
+		require.Contains(t, err.Error(), "consumer group name is empty")
 	})
 
 	t.Run("empty logging type", func(t *testing.T) {
@@ -197,7 +196,7 @@ func TestNewConfig_validation(t *testing.T) {
 			eventhubs.WithLoggingType(""),
 		)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "logging type is empty")
+		require.Contains(t, err.Error(), "logging type is empty")
 	})
 
 	t.Run("duplicate entity names within namespace", func(t *testing.T) {
@@ -208,7 +207,7 @@ func TestNewConfig_validation(t *testing.T) {
 			),
 		)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "duplicate entity name")
+		require.Contains(t, err.Error(), "duplicate entity name")
 	})
 
 	t.Run("duplicate consumer group names within entity", func(t *testing.T) {
@@ -221,7 +220,7 @@ func TestNewConfig_validation(t *testing.T) {
 			),
 		)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "duplicate consumer group name")
+		require.Contains(t, err.Error(), "duplicate consumer group name")
 	})
 
 	t.Run("multiple errors aggregated", func(t *testing.T) {
@@ -231,8 +230,8 @@ func TestNewConfig_validation(t *testing.T) {
 		)
 		require.Error(t, err)
 		// Both error messages should appear in the joined error string.
-		assert.Contains(t, err.Error(), "namespace name is empty")
-		assert.Contains(t, err.Error(), "logging type is empty")
+		require.Contains(t, err.Error(), "namespace name is empty")
+		require.Contains(t, err.Error(), "logging type is empty")
 	})
 }
 
@@ -261,13 +260,13 @@ func TestNewConfig_partitionCountStringified(t *testing.T) {
 	// PartitionCount must be a JSON string, not a number.
 	pc, ok := entity["PartitionCount"].(string)
 	require.True(t, ok, "PartitionCount should be a JSON string, got %T", entity["PartitionCount"])
-	assert.Equal(t, "3", pc)
+	require.Equal(t, "3", pc)
 }
 
 // TestMustNewConfig_panicsOnInvalid verifies that MustNewConfig panics when
 // given invalid options.
 func TestMustNewConfig_panicsOnInvalid(t *testing.T) {
-	assert.Panics(t, func() {
+	require.Panics(t, func() {
 		eventhubs.MustNewConfig(
 			eventhubs.WithNamespace(""), // empty name → validation error → panic
 		)
@@ -292,9 +291,9 @@ func TestNewConfig_multipleEntities(t *testing.T) {
 	require.Len(t, cfg.UserConfig.NamespaceConfig, 1)
 	require.Equal(t, eventhubs.EmulatorNamespaceName, cfg.UserConfig.NamespaceConfig[0].Name)
 	require.Len(t, cfg.UserConfig.NamespaceConfig[0].Entities, 2)
-	assert.Equal(t, "2", cfg.UserConfig.NamespaceConfig[0].Entities[0].PartitionCount)
-	assert.Len(t, cfg.UserConfig.NamespaceConfig[0].Entities[0].ConsumerGroups, 2)
-	assert.Equal(t, "eh2", cfg.UserConfig.NamespaceConfig[0].Entities[1].Name)
+	require.Equal(t, "2", cfg.UserConfig.NamespaceConfig[0].Entities[0].PartitionCount)
+	require.Len(t, cfg.UserConfig.NamespaceConfig[0].Entities[0].ConsumerGroups, 2)
+	require.Equal(t, "eh2", cfg.UserConfig.NamespaceConfig[0].Entities[1].Name)
 }
 
 // TestNewConfig_caseInsensitiveNamespaceName verifies that WithNamespace accepts
@@ -307,7 +306,7 @@ func TestNewConfig_caseInsensitiveNamespaceName(t *testing.T) {
 		),
 	)
 	require.NoError(t, err)
-	assert.Equal(t, "emulatorNs1", cfg.UserConfig.NamespaceConfig[0].Name)
+	require.Equal(t, "emulatorNs1", cfg.UserConfig.NamespaceConfig[0].Name)
 }
 
 // TestNewConfig_withNamespaceType verifies that WithNamespaceType overrides
@@ -320,5 +319,5 @@ func TestNewConfig_withNamespaceType(t *testing.T) {
 		),
 	)
 	require.NoError(t, err)
-	assert.Equal(t, "CustomType", cfg.UserConfig.NamespaceConfig[0].Type)
+	require.Equal(t, "CustomType", cfg.UserConfig.NamespaceConfig[0].Type)
 }
