@@ -235,7 +235,7 @@ func ExampleRun_withConfigObject() {
 
 	// withConfigObject_buildConfig {
 	cfg, err := eventhubs.NewConfig(
-		eventhubs.WithNamespace("emulatorNs1",
+		eventhubs.WithNamespace(eventhubs.EmulatorNamespaceName,
 			eventhubs.WithEntity("eh1", 2,
 				eventhubs.WithConsumerGroup("cg1"),
 				eventhubs.WithConsumerGroup("$Default"),
@@ -288,7 +288,7 @@ func ExampleNewConfig() {
 	// ExampleNewConfig_build {
 	cfg, err := eventhubs.NewConfig(
 		eventhubs.WithLoggingType("File"),
-		eventhubs.WithNamespace("emulatorNs1",
+		eventhubs.WithNamespace(eventhubs.EmulatorNamespaceName,
 			eventhubs.WithEntity("eh1", 1,
 				eventhubs.WithConsumerGroup("cg1"),
 			),
@@ -305,5 +305,5 @@ func ExampleNewConfig() {
 
 	// Output:
 	// File
-	// emulatorNs1
+	// emulatorns1
 }

@@ -120,7 +120,6 @@ func (c *Config) validate() error {
 		errs = append(errs, fmt.Errorf("config: emulator supports only 1 namespace, got %d", len(c.UserConfig.NamespaceConfig)))
 	}
 
-	nsNames := make(map[string]bool, len(c.UserConfig.NamespaceConfig))
 	for i, ns := range c.UserConfig.NamespaceConfig {
 		if ns.Name == "" {
 			errs = append(errs, fmt.Errorf("config: namespace[%d]: name is empty", i))
@@ -129,10 +128,6 @@ func (c *Config) validate() error {
 		if !strings.EqualFold(ns.Name, EmulatorNamespaceName) {
 			errs = append(errs, fmt.Errorf("config: namespace name %q is not valid: emulator preset namespace name cannot be changed from %q", ns.Name, EmulatorNamespaceName))
 		}
-		if nsNames[ns.Name] {
-			errs = append(errs, fmt.Errorf("config: duplicate namespace name %q", ns.Name))
-		}
-		nsNames[ns.Name] = true
 
 		if len(ns.Entities) > maxEntitiesPerNamespace {
 			errs = append(errs, fmt.Errorf("config: namespace %q has %d entities, emulator limit is %d", ns.Name, len(ns.Entities), maxEntitiesPerNamespace))
@@ -223,7 +218,7 @@ func WithNamespaceType(t string) NamespaceOption {
 }
 
 // WithEntity appends an entity to the enclosing namespace.
-// partitionCount must be >= 1. Sub-options are applied to the freshly-appended
+// partitionCount must be 1–32. Sub-options are applied to the freshly-appended
 // Entity in order. Errors from sub-options are collected and joined.
 func WithEntity(name string, partitionCount int, opts ...EntityOption) NamespaceOption {
 	return func(n *NamespaceConfig) error {
