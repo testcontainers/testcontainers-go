@@ -15,7 +15,7 @@ $(GOBIN)/mockery:
 	$(call go_install,github.com/vektra/mockery/v2@v2.53.4)
 
 $(GOBIN)/gci:
-	$(call go_install,github.com/daixiang0/gci@v0.13.5)
+	$(call go_install,github.com/daixiang0/gci@v0.13.7)
 
 .PHONY: install
 install: $(GOBIN)/golangci-lint $(GOBIN)/gotestsum $(GOBIN)/mockery
