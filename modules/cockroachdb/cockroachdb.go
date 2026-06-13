@@ -120,7 +120,7 @@ func (c *CockroachDBContainer) ConnectionConfig(ctx context.Context) (*pgx.ConnC
 		return nil, fmt.Errorf("host: %w", err)
 	}
 
-	return c.connConfig(host, port.String())
+	return c.connConfig(host, port)
 }
 
 // TLSConfig returns config necessary to connect to CockroachDB over TLS.
@@ -199,7 +199,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				certsDir+"/client."+defaultUser+".crt",
 				certsDir+"/client."+defaultUser+".key",
 			).WithRootCAs(fileCACert).WithServerName("127.0.0.1"),
-			wait.ForSQL(defaultSQLPort, "pgx/v5", func(host string, port string) string {
+			wait.ForSQL(defaultSQLPort, "pgx/v5", func(host string, port network.Port) string {
 				connStr, err := ctr.connString(host, port)
 				if err != nil {
 					panic(err)
@@ -225,7 +225,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 }
 
 // connString returns a connection string for the given host, port and options.
-func (c *CockroachDBContainer) connString(host string, port string) (string, error) {
+func (c *CockroachDBContainer) connString(host string, port network.Port) (string, error) {
 	cfg, err := c.connConfig(host, port)
 	if err != nil {
 		return "", fmt.Errorf("connection config: %w", err)
@@ -235,11 +235,7 @@ func (c *CockroachDBContainer) connString(host string, port string) (string, err
 }
 
 // connConfig returns a [pgx.ConnConfig] for the given host, port and options.
-func (c *CockroachDBContainer) connConfig(host string, port string) (*pgx.ConnConfig, error) {
-	p, err := network.ParsePort(port)
-	if err != nil {
-		return nil, err
-	}
+func (c *CockroachDBContainer) connConfig(host string, port network.Port) (*pgx.ConnConfig, error) {
 	var user *url.Userinfo
 	if c.password != "" {
 		user = url.UserPassword(c.user, c.password)
@@ -264,7 +260,7 @@ func (c *CockroachDBContainer) connConfig(host string, port string) (*pgx.ConnCo
 	u := url.URL{
 		Scheme:   "postgres",
 		User:     user,
-		Host:     net.JoinHostPort(host, p.Port()),
+		Host:     net.JoinHostPort(host, port.Port()),
 		Path:     c.database,
 		RawQuery: params.Encode(),
 	}

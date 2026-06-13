@@ -143,8 +143,7 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 	ctx := context.Background()
 
 	port := "5432/tcp"
-	dbURL := func(host string, port string) string {
-		p := network.MustParsePort(port)
+	dbURL := func(host string, p network.Port) string {
 		return fmt.Sprintf("postgres://postgres:password@%s:%s/%s?sslmode=disable", host, p.Port(), dbname)
 	}
 
