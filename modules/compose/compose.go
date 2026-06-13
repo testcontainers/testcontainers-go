@@ -182,6 +182,7 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*DockerCompose, error) {
 		logger:           composeOptions.Logger,
 		projectProfiles:  composeOptions.Profiles,
 		composeService:   composeService,
+		dockerCli:        dockerCli,
 		dockerClient:     dockerClient,
 		waitStrategies:   make(map[string]wait.Strategy),
 		containers:       make(map[string]*testcontainers.DockerContainer),
