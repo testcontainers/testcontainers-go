@@ -92,8 +92,80 @@ to the Kubernetes Rest Client API using a Kubernetes client. It'll be returned i
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.25.0"><span class="tc-version">:material-tag: v0.25.0</span></a>
 
-The `LoadImages` method loads a list of images into the kubernetes cluster and makes them available to pods.
+The `LoadImages` method imports images from the local Docker daemon into the k3s cluster and makes them available to pods.
 
-This is useful for testing images generated locally without having to push them to a public docker registry or having to configure `k3s` to [use a private registry](https://docs.k3s.io/installation/private-registry).
+```golang
+func (c *K3sContainer) LoadImages(ctx context.Context, images ...string) error
+```
 
-The images must be already present in the node running the test. [DockerProvider](https://pkg.go.dev/github.com/testcontainers/testcontainers-go#DockerProvider) offers a method for pulling images, which can be used from the test code to ensure the image is present locally before loading them to the cluster.
+This is useful for testing images built locally without pushing them to a registry or configuring k3s to [use a private registry](https://docs.k3s.io/installation/private-registry).
+
+Images must already be present on the Docker host running the test. Use [DockerProvider.PullImage](https://pkg.go.dev/github.com/testcontainers/testcontainers-go#DockerProvider.PullImage) or [DockerProvider.PullImageWithOpts](https://pkg.go.dev/github.com/testcontainers/testcontainers-go#DockerProvider.PullImageWithOpts) to pull them first.
+
+`LoadImages` delegates to `LoadImagesWithPlatform` with a `nil` platform. It works best with single-architecture image references (for example `amd64/nginx`). For multi-architecture images, use `LoadImagesWithPlatform` together with `PullImageWithOpts` and `PullDockerImageWithPlatform`.
+
+When creating pods that use loaded images, set `imagePullPolicy: Never` so Kubernetes uses the imported image instead of pulling from a registry.
+
+Example:
+
+```golang
+provider, err := testcontainers.ProviderDocker.GetProvider()
+if err != nil {
+    // handle error
+}
+
+if err := provider.PullImage(ctx, "amd64/nginx"); err != nil {
+    // handle error
+}
+
+if err := k3sContainer.LoadImages(ctx, "amd64/nginx"); err != nil {
+    // handle error
+}
+```
+
+#### LoadImagesWithPlatform
+
+The `LoadImagesWithPlatform` method imports images from the local Docker daemon into the k3s cluster for an optional OCI platform.
+
+```golang
+func (c *K3sContainer) LoadImagesWithPlatform(ctx context.Context, images []string, platform *v1.Platform) error
+```
+
+When `platform` is `nil`, behaviour matches `LoadImages`: Docker exports the image without a platform filter and containerd imports the tar without a `--platform` flag.
+
+When `platform` is set, the image is exported with [SaveDockerImageWithPlatforms](https://pkg.go.dev/github.com/testcontainers/testcontainers-go#SaveDockerImageWithPlatforms) and imported with `ctr import --platform`.
+
+Use this method on multi-architecture hosts or when loading multi-architecture image tags. Pull the same platform into Docker first:
+
+```golang
+hostPlatform := platforms.DefaultSpec()
+hostPlatform.OS = "linux"
+
+provider, err := testcontainers.ProviderDocker.GetProvider()
+if err != nil {
+    // handle error
+}
+
+if err := provider.PullImageWithOpts(
+    ctx,
+    "amd64/nginx",
+    testcontainers.PullDockerImageWithPlatform(hostPlatform),
+); err != nil {
+    // handle error
+}
+
+if err := k3sContainer.LoadImagesWithPlatform(ctx, []string{"amd64/nginx"}, &hostPlatform); err != nil {
+    // handle error
+}
+```
+
+#### LoadImagesWithOpts
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.25.0"><span class="tc-version">:material-tag: v0.25.0</span></a>
+
+!!! warning
+    `LoadImagesWithOpts` is deprecated. Use `LoadImagesWithPlatform` to import images into the k3s cluster.
+
+This method is not related to [DockerProvider.PullImageWithOpts](https://pkg.go.dev/github.com/testcontainers/testcontainers-go#DockerProvider.PullImageWithOpts), which pulls images from a registry into the local Docker daemon.
+
+The deprecated method exported `SaveImageOption` values to `docker save` but always imported with `ctr import --all-platforms`, which is unsafe on multi-architecture hosts.

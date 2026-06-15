@@ -180,12 +180,14 @@ func unmarshal(bytes []byte) (*KubeConfigValue, error) {
 	return &kubeConfig, nil
 }
 
-// LoadImages imports local images into the cluster using containerd
+// LoadImages imports local images into the cluster using containerd.
+// It delegates to LoadImagesWithPlatform with a nil platform.
 func (c *K3sContainer) LoadImages(ctx context.Context, images ...string) error {
 	return c.LoadImagesWithPlatform(ctx, images, nil)
 }
 
-// Deprecated: use LoadImagesWithPlatform instead
+// Deprecated: use LoadImagesWithPlatform to import images into the k3s cluster.
+// PullImageWithOpts (on the Docker provider) is the supported API for pulling images from a registry.
 func (c *K3sContainer) LoadImagesWithOpts(ctx context.Context, images []string, opts ...testcontainers.SaveImageOption) error {
 	provider, err := testcontainers.ProviderDocker.GetProvider()
 	if err != nil {
@@ -229,7 +231,9 @@ func (c *K3sContainer) LoadImagesWithOpts(ctx context.Context, images []string, 
 	return nil
 }
 
-// LoadImagesWithPlatform imports local images into the cluster using containerd for a specific platform
+// LoadImagesWithPlatform imports local images into the cluster using containerd.
+// When platform is nil, no platform filter is applied on export or import.
+// When platform is set, the image is exported and imported for that OCI platform.
 func (c *K3sContainer) LoadImagesWithPlatform(ctx context.Context, images []string, platform *v1.Platform) error {
 	provider, err := testcontainers.ProviderDocker.GetProvider()
 	if err != nil {
@@ -246,11 +250,14 @@ func (c *K3sContainer) LoadImagesWithPlatform(ctx context.Context, images []stri
 	if err != nil {
 		return fmt.Errorf("creating temporary images file %w", err)
 	}
+	if err = imagesTar.Close(); err != nil {
+		return fmt.Errorf("close temporary images file: %w", err)
+	}
 	defer func() {
 		_ = os.Remove(imagesTar.Name())
 	}()
 
-	err = provider.SaveImagesWithOpts(context.Background(), imagesTar.Name(), images, opts...)
+	err = provider.SaveImagesWithOpts(ctx, imagesTar.Name(), images, opts...)
 	if err != nil {
 		return fmt.Errorf("saving images %w", err)
 	}

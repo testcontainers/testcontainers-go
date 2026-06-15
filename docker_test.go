@@ -18,8 +18,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/containerd/platforms"
 	"github.com/containerd/errdefs"
+	"github.com/containerd/platforms"
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/client"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
