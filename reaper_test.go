@@ -19,7 +19,6 @@ import (
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // testSessionID the tests need to create a reaper in a different session, so that it does not interfere with other tests
@@ -78,7 +77,7 @@ func expectedReaperRequest(customize ...func(*ContainerRequest)) ContainerReques
 			hostConfig.Binds = []string{core.MustExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
 			hostConfig.Privileged = true
 		},
-		WaitingFor: wait.ForListeningPort("8080/tcp"),
+		WaitingFor: defaultRyukWaitStrategy("8080/tcp"),
 		Env: map[string]string{
 			"RYUK_CONNECTION_TIMEOUT":   "1m0s",
 			"RYUK_RECONNECTION_TIMEOUT": "10s",
