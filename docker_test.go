@@ -1870,6 +1870,16 @@ func TestDockerProvider_attemptToPullImage_retries(t *testing.T) {
 	}
 }
 
+func TestDockerProvider_PullImageWithPlatform_invalidPlatform(t *testing.T) {
+	p, err := NewDockerProvider()
+	require.NoError(t, err)
+	defer p.Close()
+
+	err = p.PullImageWithPlatform(context.Background(), "redis:latest", "not-a-valid-platform")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid platform")
+}
+
 func TestCustomPrefixTrailingSlashIsProperlyRemovedIfPresent(t *testing.T) {
 	hubPrefixWithTrailingSlash := "public.ecr.aws/"
 	dockerImage := "amazonlinux/amazonlinux:2023"

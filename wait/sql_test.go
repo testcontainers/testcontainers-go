@@ -14,7 +14,7 @@ import (
 
 func Test_waitForSql_WithQuery(t *testing.T) {
 	t.Run("default query", func(t *testing.T) {
-		w := ForSQL("5432/tcp", "postgres", func(_ string, _ string) string {
+		w := ForSQL("5432/tcp", "postgres", func(_ string, _ network.Port) string {
 			return "fake-url"
 		})
 
@@ -23,7 +23,7 @@ func Test_waitForSql_WithQuery(t *testing.T) {
 	t.Run("custom query", func(t *testing.T) {
 		const q = "SELECT 100;"
 
-		w := ForSQL("5432/tcp", "postgres", func(_ string, _ string) string {
+		w := ForSQL("5432/tcp", "postgres", func(_ string, _ network.Port) string {
 			return "fake-url"
 		}).WithQuery(q)
 
@@ -95,7 +95,7 @@ func TestWaitForSQLSucceeds(t *testing.T) {
 		},
 	}
 
-	wg := ForSQL("3306", "mock", func(_ string, _ string) string { return "" }).
+	wg := ForSQL("3306", "mock", func(_ string, _ network.Port) string { return "" }).
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
@@ -123,7 +123,7 @@ func TestWaitForSQLFailsWhileGettingPortDueToOOMKilledContainer(t *testing.T) {
 		},
 	}
 
-	wg := ForSQL("3306", "mock", func(_ string, _ string) string { return "" }).
+	wg := ForSQL("3306", "mock", func(_ string, _ network.Port) string { return "" }).
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
@@ -154,7 +154,7 @@ func TestWaitForSQLFailsWhileGettingPortDueToExitedContainer(t *testing.T) {
 		},
 	}
 
-	wg := ForSQL("3306", "mock", func(_ string, _ string) string { return "" }).
+	wg := ForSQL("3306", "mock", func(_ string, _ network.Port) string { return "" }).
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
@@ -184,7 +184,7 @@ func TestWaitForSQLFailsWhileGettingPortDueToUnexpectedContainerStatus(t *testin
 		},
 	}
 
-	wg := ForSQL("3306", "mock", func(_ string, _ string) string { return "" }).
+	wg := ForSQL("3306", "mock", func(_ string, _ network.Port) string { return "" }).
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
@@ -209,7 +209,7 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToOOMKilledContainer(t *testing.T)
 		},
 	}
 
-	wg := ForSQL("3306", "mock", func(_ string, _ string) string { return "" }).
+	wg := ForSQL("3306", "mock", func(_ string, _ network.Port) string { return "" }).
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
@@ -235,7 +235,7 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToExitedContainer(t *testing.T) {
 		},
 	}
 
-	wg := ForSQL("3306", "mock", func(_ string, _ string) string { return "" }).
+	wg := ForSQL("3306", "mock", func(_ string, _ network.Port) string { return "" }).
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 
@@ -260,7 +260,7 @@ func TestWaitForSQLFailsWhileQueryExecutingDueToUnexpectedContainerStatus(t *tes
 		},
 	}
 
-	wg := ForSQL("3306", "mock", func(_ string, _ string) string { return "" }).
+	wg := ForSQL("3306", "mock", func(_ string, _ network.Port) string { return "" }).
 		WithStartupTimeout(500 * time.Millisecond).
 		WithPollInterval(100 * time.Millisecond)
 

@@ -165,8 +165,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-The EventHubs container needs an Azurite container to be running, for that reason _Testcontainers for Go_ **automatically creates a Docker network and an Azurite container** for EventHubs to work.
+The EventHubs container needs an Azurite container to be running. By default, _Testcontainers for Go_ **automatically creates a Docker network and an Azurite container** for EventHubs to work.
 When terminating the EventHubs container, the Azurite container and the Docker network are also terminated.
+If you want to manage the Azurite container and network yourself, use the [`WithAzuriteContainer`](#withazuritecontainer) option instead.
 
 #### Image
 
@@ -183,11 +184,29 @@ When starting the EventHubs container, you can pass options in a variadic way to
 
 This option allows you to set a different Azurite Docker image, instead of the default one, and also pass options to the Azurite container, in the form of a variadic argument of `testcontainers.ContainerCustomizer`.
 
+!!! warning
+    `WithAzurite` and [`WithAzuriteContainer`](#withazuritecontainer) are mutually exclusive. Passing both to `Run` returns an error. If you already have a running Azurite container, use `WithAzuriteContainer` instead — the image and options set here will not apply.
+
 #### WithAcceptEULA
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 This option allows you to accept the EULA for the EventHubs container.
+
+#### WithAzuriteContainer
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This option allows you to supply a pre-existing Azurite container and Docker network instead of letting the module create them automatically. When this option is used, calling `Terminate()` on the EventHubs container will **not** stop or remove the Azurite container or the network — the caller is responsible for their lifecycle.
+
+!!! warning
+    `WithAzuriteContainer` and [`WithAzurite`](#withazurite) are mutually exclusive. Passing both to `Run` returns an error. Any Azurite image or options set via `WithAzurite` are ignored when `WithAzuriteContainer` is supplied.
+
+<!--codeinclude-->
+[Create Network](../../modules/azure/eventhubs/examples_test.go) inside_block:withAzuriteContainer_network
+[Start Azurite](../../modules/azure/eventhubs/examples_test.go) inside_block:withAzuriteContainer_azurite
+[Run EventHubs with external Azurite](../../modules/azure/eventhubs/examples_test.go) inside_block:withAzuriteContainer_eventhubs
+<!--/codeinclude-->
 
 #### WithConfig
 
@@ -199,6 +218,24 @@ The config file must be a valid EventHubs config file, and it must be a valid JS
 
 <!--codeinclude-->
 [EventHubs JSON Config](../../modules/azure/eventhubs/testdata/eventhubs_config.json)
+<!--/codeinclude-->
+
+#### WithConfigObject
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This option is the statically-typed counterpart to `WithConfig`. It accepts a `*Config` value built with the functional-options API (`NewConfig`, `WithNamespace`, `WithEntity`, `WithConsumerGroup`, `WithLoggingType`) and marshals it to JSON at container start time.
+
+The emulator enforces the following hard limits, which `NewConfig` validates before the container starts:
+
+- Exactly **1 namespace**, whose name must be `eventhubs.EmulatorNamespaceName` (`"emulatorns1"`, case-insensitive).
+- At most **10 entities** per namespace.
+- Partition count **1–32** per entity.
+- At most **20 consumer groups** per entity.
+
+<!--codeinclude-->
+[Build Config](../../modules/azure/eventhubs/examples_test.go) inside_block:withConfigObject_buildConfig
+[Run EventHubs with Config Object](../../modules/azure/eventhubs/examples_test.go) inside_block:withConfigObject_run
 <!--/codeinclude-->
 
 {% include "../features/common_functional_options_list.md" %}
@@ -226,6 +263,14 @@ In the following example, inspired by the [Azure Event Hubs Go SDK](https://lear
 [Create Sample Events](../../modules/azure/eventhubs/examples_test.go) inside_block:createSampleEvents
 [Create Batch](../../modules/azure/eventhubs/examples_test.go) inside_block:createBatch
 [Send Event Data Batch to the EventHub](../../modules/azure/eventhubs/examples_test.go) inside_block:sendEventDataBatch
+<!--/codeinclude-->
+
+#### Build a typed config with NewConfig
+
+The `NewConfig` function provides a statically-typed, validated alternative to writing the JSON config by hand.
+
+<!--codeinclude-->
+[Build Config](../../modules/azure/eventhubs/examples_test.go) inside_block:ExampleNewConfig_build
 <!--/codeinclude-->
 
 ## ServiceBus

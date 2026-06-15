@@ -10,12 +10,16 @@ The SQL wait strategy will check the result of a SQL query executed in a contain
 - the poll interval to be used in milliseconds, default is 100 milliseconds.
 
 ```golang
+dbURL := func(host string, port network.Port) string {
+    return fmt.Sprintf("postgres://user:[REDACTED]@%s:%s/db?sslmode=disable", host, port.Port())
+}
+
 req := ContainerRequest{
     Image:        "postgres:14.1-alpine",
     ExposedPorts: []string{port},
     Cmd:          []string{"postgres", "-c", "fsync=off"},
     Env:          env,
-    WaitingFor: wait.ForSQL(nat.Port(port), "postgres", dbURL).
+    WaitingFor: wait.ForSQL(port, "postgres", dbURL).
         WithStartupTimeout(time.Second * 5).
         WithQuery("SELECT 10"),
 }
