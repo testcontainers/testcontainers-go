@@ -1,4 +1,4 @@
-package redis_test
+package example
 
 import (
 	"context"
