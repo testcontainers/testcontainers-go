@@ -7,9 +7,8 @@ import (
 	"io"
 	"sync/atomic"
 	"testing"
-	"time"
-
 	"testing/synctest"
+	"time"
 )
 
 func TestAnyMultiStrategy_WaitsForAny(t *testing.T) {
