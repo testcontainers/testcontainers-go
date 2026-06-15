@@ -13,9 +13,10 @@ Below you can find a list of the available wait strategies that you can use:
 - [HostPort](./host_port.md)
 - [HTTP](./http.md)
 - [Log](./log.md)
-- [Multi](./multi.md)
 - [SQL](./sql.md)
 - [TLS](./tls.md)
+- [ForAll](./all.md)
+- [ForAny](./any.md)
 
 ## Startup timeout and Poll interval
 
