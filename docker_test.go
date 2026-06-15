@@ -19,8 +19,10 @@ import (
 	"time"
 
 	"github.com/containerd/errdefs"
+	"github.com/containerd/platforms"
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/client"
+	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
@@ -1654,6 +1656,7 @@ type errMockCli struct {
 	imageBuildCount    int
 	containerListCount int
 	imagePullCount     int
+	imagePullOpts      []client.ImagePullOptions
 }
 
 type fakeStreamResult struct {
@@ -1674,8 +1677,9 @@ func (f *errMockCli) ContainerList(_ context.Context, _ client.ContainerListOpti
 	return client.ContainerListResult{Items: []container.Summary{{}}}, f.err
 }
 
-func (f *errMockCli) ImagePull(_ context.Context, _ string, _ client.ImagePullOptions) (client.ImagePullResponse, error) {
+func (f *errMockCli) ImagePull(_ context.Context, _ string, opts client.ImagePullOptions) (client.ImagePullResponse, error) {
 	f.imagePullCount++
+	f.imagePullOpts = append(f.imagePullOpts, opts)
 	return fakeStreamResult{ReadCloser: io.NopCloser(&bytes.Buffer{})}, f.err
 }
 
@@ -1870,14 +1874,58 @@ func TestDockerProvider_attemptToPullImage_retries(t *testing.T) {
 	}
 }
 
-func TestDockerProvider_PullImageWithPlatform_invalidPlatform(t *testing.T) {
-	p, err := NewDockerProvider()
-	require.NoError(t, err)
-	defer p.Close()
+func TestPullDockerImageWithPlatform(t *testing.T) {
+	t.Run("single platform", func(t *testing.T) {
+		platform, err := platforms.Parse("linux/amd64")
+		require.NoError(t, err)
 
-	err = p.PullImageWithPlatform(context.Background(), "redis:latest", "not-a-valid-platform")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid platform")
+		opts := pullImageOptions{}
+		err = PullDockerImageWithPlatform(platform)(&opts)
+		require.NoError(t, err)
+		require.Equal(t, []specs.Platform{platform}, opts.dockerPullOpts.Platforms)
+	})
+
+	t.Run("multiple platforms via separate options", func(t *testing.T) {
+		amd64, err := platforms.Parse("linux/amd64")
+		require.NoError(t, err)
+		arm64, err := platforms.Parse("linux/arm64")
+		require.NoError(t, err)
+
+		opts := pullImageOptions{}
+		require.NoError(t, PullDockerImageWithPlatform(amd64)(&opts))
+		require.NoError(t, PullDockerImageWithPlatform(arm64)(&opts))
+		require.Equal(t, []specs.Platform{amd64, arm64}, opts.dockerPullOpts.Platforms)
+	})
+
+	t.Run("invalid platform", func(t *testing.T) {
+		_, err := platforms.Parse("not-a-valid-platform")
+		require.Error(t, err)
+	})
+}
+
+func TestDockerProvider_PullImageWithOpts_separatePullsWithDifferentPlatforms(t *testing.T) {
+	amd64, err := platforms.Parse("linux/amd64")
+	require.NoError(t, err)
+	arm64, err := platforms.Parse("linux/arm64")
+	require.NoError(t, err)
+
+	mock := &errMockCli{}
+	p := &DockerProvider{
+		DockerProviderOptions: &DockerProviderOptions{
+			GenericProviderOptions: &GenericProviderOptions{
+				Logger: log.Default(),
+			},
+		},
+		client: mock,
+	}
+
+	ctx := context.Background()
+	require.NoError(t, p.PullImageWithOpts(ctx, "nginx:mainline", PullDockerImageWithPlatform(amd64)))
+	require.NoError(t, p.PullImageWithOpts(ctx, "nginx:mainline", PullDockerImageWithPlatform(arm64)))
+
+	require.Equal(t, 2, mock.imagePullCount)
+	require.Equal(t, []specs.Platform{amd64}, mock.imagePullOpts[0].Platforms)
+	require.Equal(t, []specs.Platform{arm64}, mock.imagePullOpts[1].Platforms)
 }
 
 func TestCustomPrefixTrailingSlashIsProperlyRemovedIfPresent(t *testing.T) {
