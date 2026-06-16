@@ -1895,6 +1895,7 @@ func (p *DockerProvider) SaveImagesWithOpts(ctx context.Context, output string, 
 func SaveDockerImageWithPlatforms(platforms ...specs.Platform) SaveImageOption {
 	return func(opts *saveImageOptions) error {
 		opts.dockerSaveOpts = append(opts.dockerSaveOpts, client.ImageSaveWithPlatforms(platforms...))
+		opts.platforms = append(opts.platforms, platforms...)
 
 		return nil
 	}

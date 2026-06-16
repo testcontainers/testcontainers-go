@@ -181,71 +181,25 @@ func unmarshal(bytes []byte) (*KubeConfigValue, error) {
 }
 
 // LoadImages imports local images into the cluster using containerd.
-// It delegates to LoadImagesWithPlatform with a nil platform.
+// It delegates to LoadImagesWithOpts without save options.
 func (c *K3sContainer) LoadImages(ctx context.Context, images ...string) error {
-	return c.LoadImagesWithPlatform(ctx, images, nil)
+	return c.LoadImagesWithOpts(ctx, images)
 }
 
-// Deprecated: use LoadImagesWithPlatform to import images into the k3s cluster.
-// PullImageWithOpts (on the Docker provider) is the supported API for pulling images from a registry.
+// LoadImagesWithOpts imports local images into the cluster using containerd, passing
+// options through to docker save. When SaveDockerImageWithPlatforms is used, containerd
+// import uses the same platform instead of --all-platforms.
 func (c *K3sContainer) LoadImagesWithOpts(ctx context.Context, images []string, opts ...testcontainers.SaveImageOption) error {
 	provider, err := testcontainers.ProviderDocker.GetProvider()
 	if err != nil {
 		return fmt.Errorf("getting docker provider %w", err)
 	}
 
-	// save image
-	imagesTar, err := os.CreateTemp(os.TempDir(), "images*.tar")
+	importPlatform, err := testcontainers.ResolveSaveImageOptions(opts...)
 	if err != nil {
-		return fmt.Errorf("creating temporary images file %w", err)
-	}
-	// Close the file handle immediately: SaveImages and CopyFileToContainer
-	// open the file by name.
-	if err = imagesTar.Close(); err != nil {
-		return fmt.Errorf("close temporary images file: %w", err)
-	}
-	defer func() {
-		_ = os.Remove(imagesTar.Name())
-	}()
-
-	err = provider.SaveImagesWithOpts(context.Background(), imagesTar.Name(), images, opts...)
-	if err != nil {
-		return fmt.Errorf("saving images %w", err)
+		return err
 	}
 
-	containerPath := "/tmp/" + filepath.Base(imagesTar.Name())
-	err = c.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0x644)
-	if err != nil {
-		return fmt.Errorf("copying image to container %w", err)
-	}
-
-	exit, reader, err := c.Exec(ctx, []string{"ctr", "-n=k8s.io", "images", "import", "--all-platforms", containerPath})
-	if err != nil {
-		return fmt.Errorf("importing image %w", err)
-	}
-	if exit != 0 {
-		b, _ := io.ReadAll(reader)
-		return fmt.Errorf("importing image %s", string(b))
-	}
-
-	return nil
-}
-
-// LoadImagesWithPlatform imports local images into the cluster using containerd.
-// When platform is nil, no platform filter is applied on export or import.
-// When platform is set, the image is exported and imported for that OCI platform.
-func (c *K3sContainer) LoadImagesWithPlatform(ctx context.Context, images []string, platform *v1.Platform) error {
-	provider, err := testcontainers.ProviderDocker.GetProvider()
-	if err != nil {
-		return fmt.Errorf("getting docker provider %w", err)
-	}
-
-	opts := []testcontainers.SaveImageOption{}
-	if platform != nil {
-		opts = append(opts, testcontainers.SaveDockerImageWithPlatforms(*platform))
-	}
-
-	// save image
 	imagesTar, err := os.CreateTemp(os.TempDir(), "images*.tar")
 	if err != nil {
 		return fmt.Errorf("creating temporary images file %w", err)
@@ -263,17 +217,15 @@ func (c *K3sContainer) LoadImagesWithPlatform(ctx context.Context, images []stri
 	}
 
 	containerPath := "/tmp/" + filepath.Base(imagesTar.Name())
-	err = c.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0x644)
+	err = c.CopyFileToContainer(ctx, imagesTar.Name(), containerPath, 0o644)
 	if err != nil {
 		return fmt.Errorf("copying image to container %w", err)
 	}
 
 	cmd := []string{"ctr", "-n=k8s.io", "images", "import"}
-
-	if platform != nil {
-		cmd = append(cmd, "--platform", platforms.Format(*platform))
+	if importPlatform != nil {
+		cmd = append(cmd, "--platform", platforms.Format(*importPlatform))
 	}
-
 	cmd = append(cmd, containerPath)
 
 	exit, reader, err := c.Exec(ctx, cmd)
@@ -286,4 +238,15 @@ func (c *K3sContainer) LoadImagesWithPlatform(ctx context.Context, images []stri
 	}
 
 	return nil
+}
+
+// LoadImagesWithPlatform imports local images into the cluster using containerd.
+// It is a convenience wrapper around LoadImagesWithOpts with SaveDockerImageWithPlatforms.
+func (c *K3sContainer) LoadImagesWithPlatform(ctx context.Context, images []string, platform *v1.Platform) error {
+	opts := []testcontainers.SaveImageOption{}
+	if platform != nil {
+		opts = append(opts, testcontainers.SaveDockerImageWithPlatforms(*platform))
+	}
+
+	return c.LoadImagesWithOpts(ctx, images, opts...)
 }
