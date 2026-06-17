@@ -13,6 +13,7 @@ import (
 
 // newStateTarget creates a new mockStrategyTarget whose State method always returns the given state.
 func newStateTarget(t *testing.T, state *container.State) *mockStrategyTarget {
+	t.Helper()
 	target := newMockStrategyTarget(t)
 	target.EXPECT().State(anyContext).Return(state, nil)
 	return target
