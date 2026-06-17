@@ -1895,6 +1895,7 @@ func (p *DockerProvider) SaveImagesWithOpts(ctx context.Context, output string, 
 func SaveDockerImageWithPlatforms(platforms ...specs.Platform) SaveImageOption {
 	return func(opts *saveImageOptions) error {
 		opts.dockerSaveOpts = append(opts.dockerSaveOpts, client.ImageSaveWithPlatforms(platforms...))
+		opts.platforms = append(opts.platforms, platforms...)
 
 		return nil
 	}
@@ -1905,17 +1906,25 @@ func (p *DockerProvider) PullImage(ctx context.Context, img string) error {
 	return p.attemptToPullImage(ctx, img, client.ImagePullOptions{})
 }
 
-// PullImageWithPlatform pulls an image from the registry for the given platform (e.g. "linux/amd64").
-func (p *DockerProvider) PullImageWithPlatform(ctx context.Context, img, platform string) error {
-	pullOpt := client.ImagePullOptions{}
-	if platform != "" {
-		pf, err := platforms.Parse(platform)
-		if err != nil {
-			return fmt.Errorf("invalid platform %s: %w", platform, err)
+// PullImageWithOpts pulls image from registry, passing options to the provider.
+func (p *DockerProvider) PullImageWithOpts(ctx context.Context, img string, opts ...PullImageOption) error {
+	pullOpts := pullImageOptions{}
+
+	for _, opt := range opts {
+		if err := opt(&pullOpts); err != nil {
+			return fmt.Errorf("applying pull image option: %w", err)
 		}
-		pullOpt.Platforms = append(pullOpt.Platforms, pf)
 	}
-	return p.attemptToPullImage(ctx, img, pullOpt)
+
+	return p.attemptToPullImage(ctx, img, pullOpts.dockerPullOpts)
+}
+
+func PullDockerImageWithPlatform(platform specs.Platform) PullImageOption {
+	return func(opts *pullImageOptions) error {
+		opts.dockerPullOpts.Platforms = append(opts.dockerPullOpts.Platforms, platform)
+
+		return nil
+	}
 }
 
 var permanentClientErrors = []func(error) bool{
