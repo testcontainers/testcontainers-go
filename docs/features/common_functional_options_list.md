@@ -43,8 +43,6 @@ The following options are exposed by the `testcontainers` package.
 - [`WithAlwaysPull`](/features/creating_container/#withalwayspull) Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.38.0"><span class="tc-version">:material-tag: v0.38.0</span></a>
 - [`WithImageSubstitutors`](/features/creating_container/#withimagesubstitutors) Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.26.0"><span class="tc-version">:material-tag: v0.26.0</span></a>
 - [`WithImagePlatform`](/features/creating_container/#withimageplatform) Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.38.0"><span class="tc-version">:material-tag: v0.38.0</span></a>
-- [`PullDockerImageWithPlatform`](/features/creating_container/#pulldockerimagewithplatform) Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
-- [`SaveDockerImageWithPlatforms`](/features/creating_container/#savedockerimagewithplatforms) Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.42.0"><span class="tc-version">:material-tag: v0.42.0</span></a>
 
 ### Networking Options
 

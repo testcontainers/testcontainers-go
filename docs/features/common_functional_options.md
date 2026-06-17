@@ -322,61 +322,6 @@ Using the `WithImageSubstitutors` options, you could define your own substitutio
 
 If you need to set the platform for a container, you can use `testcontainers.WithImagePlatform(platform string)`.
 
-##### PullDockerImageWithPlatform
-
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
-
-If you need to pull an image for a specific OCI platform, you can use `testcontainers.PullDockerImageWithPlatform` with [DockerProvider.PullImageWithOpts](https://pkg.go.dev/github.com/testcontainers/testcontainers-go#DockerProvider.PullImageWithOpts).
-
-```golang
-platform, err := platforms.Parse("linux/amd64")
-if err != nil {
-    // handle error
-}
-
-provider, err := testcontainers.ProviderDocker.GetProvider()
-if err != nil {
-    // handle error
-}
-
-if err := provider.PullImageWithOpts(
-    ctx,
-    "nginx:mainline",
-    testcontainers.PullDockerImageWithPlatform(platform),
-); err != nil {
-    // handle error
-}
-```
-
-##### SaveDockerImageWithPlatforms
-
-- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.42.0"><span class="tc-version">:material-tag: v0.42.0</span></a>
-
-If you need to export an image for specific OCI platforms, you can use `testcontainers.SaveDockerImageWithPlatforms` with [DockerProvider.SaveImagesWithOpts](https://pkg.go.dev/github.com/testcontainers/testcontainers-go#DockerProvider.SaveImagesWithOpts).
-
-When loading images into the k3s module with [LoadImagesWithOpts](/modules/k3s/#loadimageswithopts), this option also coordinates the containerd import platform.
-
-```golang
-platform, err := platforms.Parse("linux/amd64")
-if err != nil {
-    // handle error
-}
-
-provider, err := testcontainers.ProviderDocker.GetProvider()
-if err != nil {
-    // handle error
-}
-
-if err := provider.SaveImagesWithOpts(
-    ctx,
-    output,
-    []string{"nginx:mainline"},
-    testcontainers.SaveDockerImageWithPlatforms(platform),
-); err != nil {
-    // handle error
-}
-```
-
 #### Networking Options
 
 ##### WithNetwork
