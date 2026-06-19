@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -321,17 +320,16 @@ func (d *DockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err erro
 	}
 
 	if len(upOptions.Services) != len(d.project.Services) {
-		sort.Strings(upOptions.Services)
-
-		filteredServices := types.Services{}
-
-		for _, srv := range upOptions.Services {
-			if srvConfig, ok := d.project.Services[srv]; ok {
-				filteredServices[srv] = srvConfig
-			}
+		// Disable (rather than delete) the non-selected services so a selected
+		// service's `service:` additional build-contexts stay resolvable at build
+		// time; only the selected services are created and started.
+		// IgnoreDependencies excludes their runtime depends_on from the selection.
+		d.project, err = d.project.WithSelectedServices(upOptions.Services, types.IgnoreDependencies)
+		if err != nil {
+			return err
 		}
-
-		d.project.Services = filteredServices
+		// WithSelectedServices returns a new project; point the up options at it too.
+		upOptions.Project = d.project
 	}
 
 	err = d.composeService.Up(ctx, d.project, api.UpOptions{
