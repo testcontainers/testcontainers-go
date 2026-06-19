@@ -8,8 +8,8 @@ require (
 	github.com/moby/moby/client v0.4.0
 	github.com/openai/openai-go v0.1.0-beta.9
 	github.com/stretchr/testify v1.11.1
-	github.com/testcontainers/testcontainers-go v0.42.0
-	github.com/testcontainers/testcontainers-go/modules/socat v0.42.0
+	github.com/testcontainers/testcontainers-go v0.43.0
+	github.com/testcontainers/testcontainers-go/modules/socat v0.43.0
 	github.com/tmc/langchaingo v0.1.13
 )
 

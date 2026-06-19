@@ -7,7 +7,7 @@ toolchain go1.25.9
 require (
 	github.com/pinecone-io/go-pinecone/v2 v2.2.0
 	github.com/stretchr/testify v1.11.1
-	github.com/testcontainers/testcontainers-go v0.42.0
+	github.com/testcontainers/testcontainers-go v0.43.0
 )
 
 require (

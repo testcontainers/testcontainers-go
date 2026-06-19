@@ -9,7 +9,7 @@ require (
 	github.com/moby/moby/api v1.54.2
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/stretchr/testify v1.11.1
-	github.com/testcontainers/testcontainers-go v0.42.0
+	github.com/testcontainers/testcontainers-go v0.43.0
 	go.yaml.in/yaml/v3 v3.0.4
 	k8s.io/api v0.29.2
 	k8s.io/apimachinery v0.29.2

@@ -7,7 +7,7 @@ toolchain go1.25.9
 require (
 	github.com/IBM/sarama v1.42.1
 	github.com/stretchr/testify v1.11.1
-	github.com/testcontainers/testcontainers-go v0.42.0
+	github.com/testcontainers/testcontainers-go v0.43.0
 	golang.org/x/mod v0.33.0
 )
 

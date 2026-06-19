@@ -195,7 +195,7 @@ This option allows you to accept the EULA for the EventHubs container.
 
 #### WithAzuriteContainer
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
 
 This option allows you to supply a pre-existing Azurite container and Docker network instead of letting the module create them automatically. When this option is used, calling `Terminate()` on the EventHubs container will **not** stop or remove the Azurite container or the network — the caller is responsible for their lifecycle.
 
@@ -222,7 +222,7 @@ The config file must be a valid EventHubs config file, and it must be a valid JS
 
 #### WithConfigObject
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
 
 This option is the statically-typed counterpart to `WithConfig`. It accepts a `*Config` value built with the functional-options API (`NewConfig`, `WithNamespace`, `WithEntity`, `WithConsumerGroup`, `WithLoggingType`) and marshals it to JSON at container start time.
 

@@ -8,7 +8,7 @@ require (
 	github.com/moby/moby/api v1.54.2
 	github.com/modelcontextprotocol/go-sdk v1.4.1
 	github.com/stretchr/testify v1.11.1
-	github.com/testcontainers/testcontainers-go v0.42.0
+	github.com/testcontainers/testcontainers-go v0.43.0
 )
 
 require (

@@ -18,8 +18,8 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue v1.0.0
 	github.com/moby/moby/api v1.54.2
 	github.com/stretchr/testify v1.11.1
-	github.com/testcontainers/testcontainers-go v0.42.0
-	github.com/testcontainers/testcontainers-go/modules/mssql v0.42.0
+	github.com/testcontainers/testcontainers-go v0.43.0
+	github.com/testcontainers/testcontainers-go/modules/mssql v0.43.0
 	golang.org/x/crypto v0.51.0
 	software.sslmate.com/src/go-pkcs12 v0.7.0
 )

@@ -12,7 +12,7 @@ require (
 	cloud.google.com/go/pubsub v1.36.2
 	cloud.google.com/go/spanner v1.57.0
 	github.com/stretchr/testify v1.11.1
-	github.com/testcontainers/testcontainers-go v0.42.0
+	github.com/testcontainers/testcontainers-go v0.43.0
 	google.golang.org/api v0.169.0
 	google.golang.org/grpc v1.81.0
 )

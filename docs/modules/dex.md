@@ -1,6 +1,6 @@
 # Dex
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
 
 ## Introduction
 
@@ -26,7 +26,7 @@ go get github.com/testcontainers/testcontainers-go/modules/dex
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
 
 The Dex module exposes one entrypoint function to create the Dex container,
 and this function receives three parameters:
@@ -59,7 +59,7 @@ configure it.
 
 #### Clients
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
 
 `Client` is an opaque value type. Construct it with `NewClient(id, opts...)`
 so invalid values surface at call-site. `NewClient` returns
@@ -86,7 +86,7 @@ declared pre-start via `WithClient`.
 
 #### Users
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
 
 `User` is an opaque value type. `NewUser(email, username, password, opts...)`
 returns `(User, error)`. Use `WithUserID(id)` to pin the stable `sub` claim;
@@ -106,7 +106,7 @@ other connectors.
 
 #### Connectors
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
 
 `WithConnector(type, id, name)` enables a Dex connector. Supported types:
 
@@ -119,7 +119,7 @@ Blank `id` or `name` values are rejected at `Run` time.
 
 #### Issuer
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
 
 By default the issuer is derived from the host and mapped HTTP port:
 `http://<host>:<mappedPort>/dex`. `WithIssuer(url)` overrides the default.
@@ -128,7 +128,7 @@ Docker network with a network alias); the caller owns reachability.
 
 #### Storage
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
 
 `WithStorage(Storage)` selects Dex's storage backend. Available constants:
 
@@ -138,7 +138,7 @@ Docker network with a network alias); the caller owns reachability.
 
 #### Logging
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
 
 `WithLogger(*slog.Logger)` routes Dex container logs through a `slog.Logger`.
 Unset by default — container logs are discarded. Stderr lines are promoted
@@ -149,7 +149,7 @@ between slog's fixed levels round down. Default: `slog.LevelInfo`.
 
 #### Client credentials grant
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
 
 `WithEnableClientCredentials()` sets the env var
 `DEX_CLIENT_CREDENTIAL_GRANT_ENABLED_BY_DEFAULT=true`, which Dex ≥ v2.46.0
@@ -158,7 +158,7 @@ compatible image (see the `Image` warning above).
 
 #### Approval screen
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
 
 `WithSkipApprovalScreen(bool)` toggles Dex's `oauth2.skipApprovalScreen`.
 Default: `true` (tests rarely want a human-in-the-loop prompt).
@@ -171,37 +171,37 @@ The Dex container exposes the following methods:
 
 #### IssuerURL
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
 
 Returns Dex's issuer URL. Empty if `Run` has not started.
 
 #### ConfigEndpoint
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
 
 Returns the OIDC discovery document URL (`/.well-known/openid-configuration`).
 
 #### JWKSEndpoint
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
 
 Returns the JSON Web Key Set URL (`/keys`).
 
 #### TokenEndpoint
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
 
 Returns the OAuth2 token URL (`/token`).
 
 #### AuthEndpoint
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
 
 Returns the OAuth2 authorization URL (`/auth`).
 
 #### GRPCEndpoint
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
 
 Returns `host:mappedPort` for Dex's gRPC admin API. Takes a `context.Context`
 and returns an error if the container is not started or the Docker API
@@ -213,7 +213,7 @@ target, err := c.GRPCEndpoint(ctx)
 
 #### AddClient
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
 
 Registers a client at runtime via Dex's gRPC admin API. Returns
 `ErrClientExists` when the ID is already registered. Not safe for
@@ -221,14 +221,14 @@ concurrent use.
 
 #### RemoveClient
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
 
 Deletes a client by ID. Returns a plain error containing `"not found"` for
 unknown IDs. Not safe for concurrent use.
 
 #### AddUser
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
 
 Registers a user in Dex's password DB at runtime via gRPC. Returns
 `ErrUserExists` when the email is already registered. Not safe for
@@ -236,7 +236,7 @@ concurrent use.
 
 #### RemoveUser
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
 
 Deletes a user by email. Returns a plain error containing `"not found"` for
 unknown emails. Not safe for concurrent use.

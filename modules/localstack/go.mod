@@ -13,7 +13,7 @@ require (
 	github.com/aws/smithy-go v1.24.2
 	github.com/moby/moby/api v1.54.2
 	github.com/stretchr/testify v1.11.1
-	github.com/testcontainers/testcontainers-go v0.42.0
+	github.com/testcontainers/testcontainers-go v0.43.0
 	golang.org/x/mod v0.33.0
 )
 
