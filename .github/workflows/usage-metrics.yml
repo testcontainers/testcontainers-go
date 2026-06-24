@@ -62,7 +62,7 @@ jobs:
           done
 
           # Query all versions in a single command
-          go run collect-metrics.go $VERSION_FLAGS -csv "../docs/usage-metrics/core.csv"
+          go run collect.go versions $VERSION_FLAGS -csv "../docs/usage-metrics/core.csv"
 
       - name: Create or update Pull Request
         run: |

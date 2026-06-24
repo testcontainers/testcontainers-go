@@ -57,7 +57,7 @@ jobs:
           echo "Querying modules: ${MODULE_FLAGS[*]}"
 
           # Query all modules in a single command
-          go run collect-module-metrics.go "${MODULE_FLAGS[@]}" -csv "../docs/usage-metrics/modules.csv"
+          go run collect.go modules "${MODULE_FLAGS[@]}" -csv "../docs/usage-metrics/modules.csv"
 
       - name: Create or update Pull Request
         run: |
