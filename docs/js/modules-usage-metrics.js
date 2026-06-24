@@ -4,12 +4,12 @@
 let moduleChartInstances = {};
 
 // Track if already initialized
-let isInitialized = false;
+let isModulesInitialized = false;
 
 // Load and parse CSV data
 async function loadModuleData() {
     try {
-        const response = await fetch('../modules-usage-metrics.csv');
+        const response = await fetch('../modules.csv');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -113,33 +113,33 @@ function createModuleStats(processedData) {
 function createModuleTrendChart(processedData) {
     const { modules, byModule } = processedData;
 
-    // Only show the last 5 modules by default; older ones are hidden but toggleable via legend
-    const visibleCount = 5;
-    const hiddenThreshold = modules.length - visibleCount;
+    const colors = [
+        '#667eea', '#764ba2', '#f093fb', '#4facfe',
+        '#43e97b', '#fa709a', '#fee140', '#30cfd0',
+        '#a18cd1', '#fda085'
+    ];
 
-    const datasets = modules.map((module, index) => {
-        const moduleData = byModule[module];
-        const colors = [
-            '#667eea', '#764ba2', '#f093fb', '#4facfe',
-            '#43e97b', '#fa709a', '#fee140', '#30cfd0'
-        ];
-        const color = colors[index % colors.length];
+    // Show only the top 10 modules by latest count to keep the legend readable
+    const top10 = modules
+        .map(module => ({ module, count: byModule[module].at(-1)?.count ?? 0 }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10)
+        .map(e => e.module);
 
-        return {
-            label: module,
-            data: moduleData.map(d => ({ x: d.date, y: d.count })),
-            borderColor: color,
-            backgroundColor: color + '20',
-            tension: 0.4,
-            fill: true,
-            hidden: index < hiddenThreshold
-        };
-    });
+    const datasets = top10.map((module, index) => ({
+        label: module,
+        data: byModule[module].map(d => ({ x: d.date, y: d.count })),
+        borderColor: colors[index],
+        backgroundColor: colors[index] + '20',
+        tension: 0.4,
+        fill: false,
+        borderWidth: 2,
+        pointRadius: 3
+    }));
 
     const canvas = document.getElementById('moduleTrendChart');
     if (!canvas) return;
 
-    // Destroy existing chart if it exists
     if (moduleChartInstances.moduleTrendChart) {
         moduleChartInstances.moduleTrendChart.destroy();
     }
@@ -154,7 +154,7 @@ function createModuleTrendChart(processedData) {
             plugins: {
                 legend: {
                     display: true,
-                    position: 'top'
+                    position: 'right'
                 },
                 tooltip: {
                     mode: 'x',
@@ -166,21 +166,13 @@ function createModuleTrendChart(processedData) {
                     type: 'time',
                     time: {
                         unit: 'month',
-                        displayFormats: {
-                            month: 'MMM yyyy'
-                        }
+                        displayFormats: { month: 'MMM yyyy' }
                     },
-                    title: {
-                        display: true,
-                        text: 'Date'
-                    }
+                    title: { display: true, text: 'Date' }
                 },
                 y: {
                     beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Import Count'
-                    }
+                    title: { display: true, text: 'Import Count' }
                 }
             }
         }
@@ -348,10 +340,109 @@ function createModuleLatestChart(processedData) {
     });
 }
 
+function createPerModuleCharts(processedData) {
+    const { modules, byModule } = processedData;
+    const container = document.getElementById('per-module-charts');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    modules.forEach(module => {
+        const moduleData = byModule[module];
+
+        const chartDiv = document.createElement('div');
+        chartDiv.className = 'chart-container';
+
+        const title = document.createElement('h3');
+        title.className = 'chart-title';
+        title.textContent = module;
+        chartDiv.appendChild(title);
+
+        const canvas = document.createElement('canvas');
+        const canvasId = `moduleChart-${module}`;
+        canvas.id = canvasId;
+        chartDiv.appendChild(canvas);
+        container.appendChild(chartDiv);
+
+        if (moduleChartInstances[canvasId]) {
+            moduleChartInstances[canvasId].destroy();
+        }
+
+        const ctx = canvas.getContext('2d');
+        moduleChartInstances[canvasId] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: module,
+                    data: moduleData.map(d => ({ x: d.date, y: d.count })),
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#667eea',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => `${context.parsed.y} imports`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: { unit: 'month', displayFormats: { month: 'MMM yyyy' } },
+                        title: { display: false }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: { display: false }
+                    }
+                }
+            }
+        });
+    });
+}
+
+function updateModuleFilterCount(query) {
+    const containers = document.querySelectorAll('#per-module-charts .chart-container');
+    const countEl = document.getElementById('module-filter-count');
+    if (!countEl) return;
+    const q = query.toLowerCase().trim();
+    const visible = q
+        ? [...containers].filter(c => c.querySelector('.chart-title')?.textContent.toLowerCase().includes(q)).length
+        : containers.length;
+    countEl.textContent = `${visible} of ${containers.length} modules`;
+}
+
+function setupModuleFilter() {
+    const filterInput = document.getElementById('module-filter');
+    if (!filterInput) return;
+
+    filterInput.addEventListener('input', () => {
+        const q = filterInput.value.toLowerCase().trim();
+        document.querySelectorAll('#per-module-charts .chart-container').forEach(container => {
+            const name = container.querySelector('.chart-title')?.textContent.toLowerCase() ?? '';
+            container.style.display = (!q || name.includes(q)) ? '' : 'none';
+        });
+        updateModuleFilterCount(filterInput.value);
+    });
+}
+
 // Main execution
 async function initModules() {
     // Prevent multiple initializations
-    if (isInitialized) {
+    if (isModulesInitialized) {
         return;
     }
 
@@ -361,7 +452,7 @@ async function initModules() {
         return;
     }
 
-    isInitialized = true;
+    isModulesInitialized = true;
 
     try {
         const data = await loadModuleData();
@@ -377,6 +468,9 @@ async function initModules() {
         createModuleChart(processedData);
         createModuleTrendChart(processedData);
         createModuleLatestChart(processedData);
+        createPerModuleCharts(processedData);
+        setupModuleFilter();
+        updateModuleFilterCount('');
 
         // Set update time
         const updateTimeEl = document.getElementById('update-time');
@@ -385,7 +479,7 @@ async function initModules() {
         }
     } catch (error) {
         console.error('Initialization failed:', error);
-        isInitialized = false; // Allow retry on error
+        isModulesInitialized = false; // Allow retry on error
     }
 }
 

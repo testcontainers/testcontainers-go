@@ -160,8 +160,8 @@ nav:
         - system_requirements/using_podman.md
         - system_requirements/rancher.md
     - Usage Metrics:
-        - Core Library: usage-metrics.md
-        - Modules: modules-usage-metrics.md
+        - Core Library: usage-metrics/index.md
+        - Modules: usage-metrics/modules.md
     - Dependabot: dependabot.md
     - Contributing: contributing.md
     - Getting help: getting_help.md
