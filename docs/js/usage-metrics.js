@@ -9,7 +9,7 @@ let isInitialized = false;
 // Load and parse CSV data
 async function loadData() {
     try {
-        const response = await fetch('../usage-metrics.csv');
+        const response = await fetch('core.csv');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }

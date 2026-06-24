@@ -25,6 +25,7 @@ extra_javascript:
     - https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js
     - https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js
     - js/usage-metrics.js
+    - js/modules-usage-metrics.js
 repo_name: testcontainers-go
 repo_url: https://github.com/testcontainers/testcontainers-go
 markdown_extensions:
@@ -158,7 +159,9 @@ nav:
         - system_requirements/using_colima.md
         - system_requirements/using_podman.md
         - system_requirements/rancher.md
-    - Usage Metrics: usage-metrics.md
+    - Usage Metrics:
+        - Core Library: usage-metrics/index.md
+        - Modules: usage-metrics/modules.md
     - Dependabot: dependabot.md
     - Contributing: contributing.md
     - Getting help: getting_help.md
