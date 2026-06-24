@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -68,6 +69,12 @@ func TestIsRetryableError(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("context.DeadlineExceeded is retryable", func(t *testing.T) {
+		if !isRetryableError(context.DeadlineExceeded) {
+			t.Error("isRetryableError(context.DeadlineExceeded) = false, want true")
+		}
+	})
 }
 
 // --- appendToCSV ---

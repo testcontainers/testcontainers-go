@@ -34,10 +34,12 @@ jobs:
       - name: Query modules
         id: query
         working-directory: usage-metrics
+        env:
+          MODULES_INPUT: ${{ github.event.inputs.modules }}
         run: |
           # Build module flags array
           MODULE_FLAGS=()
-          MODULES="${{ github.event.inputs.modules }}"
+          MODULES="$MODULES_INPUT"
           if [ -z "$MODULES" ]; then
             # Discover all modules by listing subdirectories under modules/ that contain a go.mod file
             while IFS= read -r go_mod_path; do
@@ -82,7 +84,7 @@ jobs:
             echo "Branch $BRANCH_NAME already exists, pushing new commit to it"
             # Reset the working tree so checkout succeeds
             git checkout -- docs/usage-metrics/modules.csv
-            git fetch origin "$BRANCH_NAME"
+            git fetch origin "$BRANCH_NAME:refs/remotes/origin/$BRANCH_NAME"
             git checkout "$BRANCH_NAME"
           else
             echo "Creating new branch $BRANCH_NAME"
