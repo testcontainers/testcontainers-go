@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -185,8 +186,7 @@ func collectWithTimings(items []string, search func(string) (int, error), csvPat
 
 	for item, count := range results {
 		if err := appendToCSV(csvPath, column, date, item, count); err != nil {
-			log.Printf("Warning: failed to write %s=%s: %v", column, item, err)
-			continue
+			return fmt.Errorf("write %s=%s: %w", column, item, err)
 		}
 		fmt.Printf("Successfully recorded: %s=%s has %d usages on %s\n", column, item, count, date)
 	}
@@ -217,12 +217,18 @@ func runGHSearch(query string) (int, error) {
 	params.Add("q", query)
 	endpoint := "/search/code?" + params.Encode()
 
-	output, err := exec.Command("gh", "api",
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	output, err := exec.CommandContext(ctx, "gh", "api",
 		"-H", "Accept: application/vnd.github+json",
 		"-H", "X-GitHub-Api-Version: 2022-11-28",
 		endpoint,
 	).Output()
 	if err != nil {
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			return 0, fmt.Errorf("gh api timeout after 30s: %w", ctx.Err())
+		}
 		exitErr := &exec.ExitError{}
 		if errors.As(err, &exitErr) {
 			return 0, fmt.Errorf("gh api failed: %s", string(exitErr.Stderr))
@@ -262,6 +268,12 @@ func sortCSV(csvPath string) error {
 
 	header := records[0]
 	data := records[1:]
+
+	for i, row := range data {
+		if len(row) < 2 {
+			return fmt.Errorf("invalid csv row %d: expected at least 2 columns, got %d", i+2, len(row))
+		}
+	}
 
 	sort.SliceStable(data, func(i, j int) bool {
 		if data[i][0] != data[j][0] {
