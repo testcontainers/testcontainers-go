@@ -207,6 +207,7 @@ func isRateLimitError(err error) bool {
 
 func isRetryableError(err error) bool {
 	return isRateLimitError(err) ||
+		errors.Is(err, context.DeadlineExceeded) ||
 		strings.Contains(err.Error(), "500") ||
 		strings.Contains(err.Error(), "502") ||
 		strings.Contains(err.Error(), "503")
