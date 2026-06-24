@@ -60,7 +60,9 @@ func main() {
 		var items arrayFlags
 		csvPath := fs.String("csv", filepath.Join("..", "docs", "usage-metrics", "core.csv"), "Path to CSV file")
 		fs.Var(&items, "version", "Version to query (can be specified multiple times)")
-		fs.Parse(args)
+		if err := fs.Parse(args); err != nil {
+			log.Fatalf("Failed to parse flags: %v", err)
+		}
 
 		if len(items) == 0 {
 			log.Fatal("At least one version is required. Use -version flag (can be repeated)")
@@ -78,7 +80,9 @@ func main() {
 		var items arrayFlags
 		csvPath := fs.String("csv", filepath.Join("..", "docs", "usage-metrics", "modules.csv"), "Path to CSV file")
 		fs.Var(&items, "module", "Module to query (can be specified multiple times)")
-		fs.Parse(args)
+		if err := fs.Parse(args); err != nil {
+			log.Fatalf("Failed to parse flags: %v", err)
+		}
 
 		if len(items) == 0 {
 			log.Fatal("At least one module is required. Use -module flag (can be repeated)")

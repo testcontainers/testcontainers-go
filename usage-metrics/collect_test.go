@@ -186,7 +186,7 @@ func TestCollect_DeduplicatesItems(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "out.csv")
 
 	calls := 0
-	search := func(item string) (int, error) { calls++; return 1, nil }
+	search := func(_ string) (int, error) { calls++; return 1, nil }
 
 	err := collectWithTimings([]string{"kafka", "kafka", " kafka "}, search, path, "module", zeroTimings)
 	if err != nil {
@@ -199,7 +199,7 @@ func TestCollect_DeduplicatesItems(t *testing.T) {
 
 func TestCollect_EmptyItemsAfterTrim(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "out.csv")
-	search := func(item string) (int, error) { return 0, nil }
+	search := func(_ string) (int, error) { return 0, nil }
 
 	err := collectWithTimings([]string{"", "  ", ""}, search, path, "module", zeroTimings)
 	if err == nil {
@@ -210,7 +210,7 @@ func TestCollect_EmptyItemsAfterTrim(t *testing.T) {
 func TestCollect_NonRetryableErrorAborts(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "out.csv")
 	fatal := errors.New("404 Not Found")
-	search := func(item string) (int, error) { return 0, fatal }
+	search := func(_ string) (int, error) { return 0, fatal }
 
 	err := collectWithTimings([]string{"kafka"}, search, path, "module", zeroTimings)
 	if err == nil {
@@ -222,7 +222,7 @@ func TestCollect_RetryableErrorRetriesAndSucceeds(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "out.csv")
 
 	attempts := 0
-	search := func(item string) (int, error) {
+	search := func(_ string) (int, error) {
 		attempts++
 		if attempts < 2 {
 			return 0, errors.New("429 Too Many Requests")
@@ -244,7 +244,7 @@ func TestCollect_RetryableErrorRetriesAndSucceeds(t *testing.T) {
 
 func TestCollect_ExhaustsRetriesWithoutError(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "out.csv")
-	search := func(item string) (int, error) { return 0, errors.New("503 Service Unavailable") }
+	search := func(_ string) (int, error) { return 0, errors.New("503 Service Unavailable") }
 
 	// Should NOT return an error — just logs a warning and continues.
 	err := collectWithTimings([]string{"kafka"}, search, path, "module", zeroTimings)
