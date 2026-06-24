@@ -87,6 +87,52 @@ body:has(.stats-grid) .md-content__inner > article {
     margin: 20px 0;
 }
 
+.module-filter-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.module-filter-input {
+    padding: 8px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    width: 300px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.module-filter-input:focus {
+    border-color: #667eea;
+}
+
+.module-filter-count {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.per-module-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.per-module-grid .chart-container {
+    margin-bottom: 0;
+}
+
+.per-module-grid .chart-container canvas {
+    max-height: 200px;
+}
+
+.per-module-grid .chart-title {
+    font-size: 1rem;
+    margin-bottom: 10px;
+}
+
 .metrics-info {
     text-align: center;
     margin-top: 40px;
