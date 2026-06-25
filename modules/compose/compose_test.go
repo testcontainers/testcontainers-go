@@ -433,6 +433,6 @@ func checkIfError(t *testing.T, err ExecError) {
 
 	require.NoErrorf(t, err.Stderr, "An error in Stderr happened when running %v", err.Command)
 
-	assert.NotNil(t, err.StdoutOutput)
-	assert.NotNil(t, err.StderrOutput)
+	require.NotNil(t, err.StdoutOutput)
+	require.NotNil(t, err.StderrOutput)
 }

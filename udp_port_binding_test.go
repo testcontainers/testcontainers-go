@@ -39,7 +39,7 @@ func TestUDPPortBinding(t *testing.T) {
 		})
 		require.NoError(t, err)
 		defer func() {
-			assert.NoError(t, container.Terminate(ctx))
+			require.NoError(t, container.Terminate(ctx))
 		}()
 
 		// Test MappedPort function - this was the bug
@@ -78,7 +78,7 @@ func TestUDPPortBinding(t *testing.T) {
 		})
 		require.NoError(t, err)
 		defer func() {
-			assert.NoError(t, container.Terminate(ctx))
+			require.NoError(t, container.Terminate(ctx))
 		}()
 
 		tcpPort := "80/tcp"
