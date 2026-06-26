@@ -1,7 +1,7 @@
 # Tekton
 
 To enable access to Docker in Tekton, a dind sidecar needs to be added. An example of it can be found 
-[here](https://github.com/tektoncd/pipeline/blob/main/examples/v1beta1/taskruns/dind-sidecar.yaml)
+[here]((https://github.com/tektoncd/pipeline/blob/main/examples/v1/taskruns/dind-sidecar.yaml)
 
 This is an example
 
