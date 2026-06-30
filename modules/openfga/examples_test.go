@@ -47,6 +47,7 @@ func ExampleRun() {
 }
 
 func ExampleRun_connectToPlayground() {
+	// enablePlayground {
 	openfgaContainer, err := openfga.Run(
 		context.Background(),
 		"openfga/openfga:v1.18.0",
@@ -59,6 +60,7 @@ func ExampleRun_connectToPlayground() {
 				return status == http.StatusOK
 			})),
 	)
+	// }
 	defer func() {
 		if err := testcontainers.TerminateContainer(openfgaContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
