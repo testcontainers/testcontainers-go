@@ -15,13 +15,14 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/openfga"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func ExampleRun() {
 	// runOpenFGAContainer {
 	ctx := context.Background()
 
-	openfgaContainer, err := openfga.Run(ctx, "openfga/openfga:v1.5.0")
+	openfgaContainer, err := openfga.Run(ctx, "openfga/openfga:v1.18.0")
 	defer func() {
 		if err := testcontainers.TerminateContainer(openfgaContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -46,7 +47,18 @@ func ExampleRun() {
 }
 
 func ExampleRun_connectToPlayground() {
-	openfgaContainer, err := openfga.Run(context.Background(), "openfga/openfga:v1.5.0")
+	openfgaContainer, err := openfga.Run(
+		context.Background(),
+		"openfga/openfga:v1.18.0",
+		testcontainers.WithEnv(map[string]string{
+			"OPENFGA_PLAYGROUND_ENABLED": "true",
+			"OPENFGA_PLAYGROUND_ADDR":    "0.0.0.0:3000",
+		}),
+		testcontainers.WithAdditionalWaitStrategy(
+			wait.ForHTTP("/playground").WithPort("3000/tcp").WithStatusCodeMatcher(func(status int) bool {
+				return status == http.StatusOK
+			})),
+	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(openfgaContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -80,7 +92,7 @@ func ExampleRun_connectToPlayground() {
 }
 
 func ExampleRun_connectWithSDKClient() {
-	openfgaContainer, err := openfga.Run(context.Background(), "openfga/openfga:v1.5.0")
+	openfgaContainer, err := openfga.Run(context.Background(), "openfga/openfga:v1.18.0")
 	defer func() {
 		if err := testcontainers.TerminateContainer(openfgaContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -143,7 +155,7 @@ func ExampleRun_writeModel() {
 	secret := "openfga-secret"
 	openfgaContainer, err := openfga.Run(
 		context.Background(),
-		"openfga/openfga:v1.5.0",
+		"openfga/openfga:v1.18.0",
 		testcontainers.WithEnv(map[string]string{
 			"OPENFGA_LOG_LEVEL":            "warn",
 			"OPENFGA_AUTHN_METHOD":         "preshared",

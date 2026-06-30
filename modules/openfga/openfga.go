@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net/http"
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -61,9 +60,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				}
 
 				return (strings.Contains(string(bs), "SERVING"))
-			}),
-			wait.ForHTTP("/playground").WithPort("3000/tcp").WithStatusCodeMatcher(func(status int) bool {
-				return status == http.StatusOK
 			}),
 		),
 	)
