@@ -14,7 +14,7 @@ require (
 	github.com/moby/moby/api v1.55.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.43.0
-	golang.org/x/mod v0.33.0
+	golang.org/x/mod v0.37.0
 )
 
 require (
