@@ -1,0 +1,83 @@
+# For core module (empty folder), we want:
+# - tag: v1.0.0
+# - name: v1.0.0
+# For other modules (modulegen, modules/mssql), we want:
+# - tag: modulegen/v1.0.0 or modules/mssql/v1.0.0
+# - name: modulegen - v1.0.0 or modules/mssql - v1.0.0
+name-template: '{{FOLDER}}{{FOLDER_SEP}}v$RESOLVED_VERSION'
+tag-template: '{{FOLDER}}{{FOLDER_SLASH}}v$RESOLVED_VERSION'
+tag-prefix: '{{FOLDER}}{{FOLDER_SLASH}}v'
+include-paths:
+  - {{FOLDER_PATH}}
+categories:
+  - title: ⚠️ Breaking Changes
+    labels:
+      - 'breaking change'
+  - title: 🔒 Security
+    labels:
+      - 'security'
+  - title: 🚀 Features
+    labels:
+      - 'enhancement'
+      - 'feature'
+  - title: 🐛 Bug Fixes
+    labels:
+      - 'bug'
+  - title: 📖 Documentation
+    labels:
+      - 'documentation'
+  - title: 🧹 Housekeeping
+    labels:
+      - 'chore'
+      - 'test flakiness'
+  - title: 📦 Dependency updates
+    label: 'dependencies'
+change-template: '- $TITLE (#$NUMBER)'
+change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
+exclude-contributors:
+    - dependabot
+    - dependabot[bot]
+version-resolver:
+    major:
+        labels:
+            - 'breaking change'
+    minor:
+        labels:
+            - 'feature'
+            - 'security'
+    patch:
+        labels:
+            - 'bug'
+            - 'chore'
+            - 'documentation'
+            - 'dependencies'
+    default: patch
+template: |
+    # What's Changed
+    $CHANGES
+
+    **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...{{FOLDER}}/v$RESOLVED_VERSION
+
+    Thank you $CONTRIBUTORS for making this update possible.
+autolabeler:
+  - label: 'breaking change'
+    title:
+      - '/^[a-z]+(\(.+\))?!\:/'
+  - label: 'security'
+    title:
+      - '/^security(\(.+\))?!?\:/'
+  - label: 'feature'
+    title:
+      - '/^feat(\(.+\))?!?\:/'
+  - label: 'bug'
+    title:
+      - '/^(fix)(\(.+\))?!?\:/'
+  - label: 'documentation'
+    title:
+      - '/^docs(\(.+\))?!?\:/'
+  - label: 'chore'
+    title:
+      - '/^chore(\(.+\))?!?\:/'
+  - label: 'dependencies'
+    title:
+      - '/^deps(\(.+\))?!?\:/'
