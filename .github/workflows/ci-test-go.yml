@@ -145,7 +145,7 @@ jobs:
 
       - name: SonarQube Scan
         if: ${{ env.SHOULD_RUN_SONAR == 'true' }}
-        uses: SonarSource/sonarqube-scan-action@aa494459d7c39c106cc77b166de8b4250a32bb97 # v5.1.0
+        uses: SonarSource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e # v8.2.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
