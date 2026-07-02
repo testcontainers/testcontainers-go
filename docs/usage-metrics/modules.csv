@@ -104,6 +104,7 @@ date,module,count
 2026-07-02,mssql,34
 2026-07-02,mysql,324
 2026-07-02,nats,94
+2026-07-02,nebulagraph,0
 2026-07-02,neo4j,14
 2026-07-02,ollama,11
 2026-07-02,openfga,12
