@@ -107,6 +107,37 @@ func TestDockerComposeAPIWithRunServices(t *testing.T) {
 	assert.Contains(t, serviceNames, "api-nginx")
 }
 
+func TestDockerComposeAPIWithRunServicesAndServiceBuildContext(t *testing.T) {
+	// "app" builds with a `service:build-dep` additional build context, so the
+	// build needs build-dep to remain in the project even though RunServices
+	// selects only "app" and build-dep is never started as a container.
+	//
+	// Regression test: Up used to shrink d.project down to the selected
+	// services, which dropped the build-only build-dep service and made the
+	// build fail with "service ... declares unknown service ... as additional
+	// contexts" — even though `docker compose up app` on the same project works.
+	path := filepath.Join(testdataPackage, "docker-compose-service-build-context.yml")
+	compose, err := NewDockerCompose(path)
+	require.NoError(t, err, "NewDockerCompose()")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	err = compose.
+		WaitForService("app", wait.ForHTTP("/env").WithPort("8080/tcp")).
+		Up(ctx, Wait(true), RunServices("app"))
+	cleanup(t, compose)
+	require.NoError(t, err, "compose.Up()")
+
+	// Only the selected runtime service is started; the build-only context is not.
+	serviceNames := compose.Services()
+	require.Len(t, serviceNames, 1)
+	assert.Contains(t, serviceNames, "app")
+
+	_, err = compose.ServiceContainer(context.Background(), "build-dep")
+	require.Error(t, err, "build-dep is a build-only context and must not be started")
+}
+
 func TestDockerComposeAPIWithProfiles(t *testing.T) {
 	path := RenderComposeProfiles(t)
 
