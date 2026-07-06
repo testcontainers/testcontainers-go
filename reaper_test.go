@@ -539,7 +539,7 @@ func reaperConnect(t *testing.T, reaper *Reaper) {
 	defer cancel()
 	var d net.Dialer
 	conn, err := d.DialContext(ctx, "tcp", reaper.Endpoint)
-	require.NoError(t, err, "dial reaper %s: %w", reaper.Endpoint, err)
+	require.NoError(t, err, "dial reaper %s: %v", reaper.Endpoint, err)
 	defer conn.Close()
 	err = reaper.handshake(conn)
 	require.NoError(t, err, "Reaper handshake should be successful")
