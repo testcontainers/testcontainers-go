@@ -188,6 +188,10 @@
             "path": "../modules/mongodb"
         },
         {
+            "name": "module / mosquitto",
+            "path": "../modules/mosquitto"
+        },
+        {
             "name": "module / mssql",
             "path": "../modules/mssql"
         },

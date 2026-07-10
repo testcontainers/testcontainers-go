@@ -119,6 +119,7 @@ nav:
         - modules/mockserver.md
         - modules/mongodb-atlaslocal.md
         - modules/mongodb.md
+        - modules/mosquitto.md
         - modules/mssql.md
         - modules/mysql.md
         - modules/nats.md
