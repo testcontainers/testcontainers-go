@@ -212,6 +212,10 @@
             "path": "../modules/neo4j"
         },
         {
+            "name": "module / nginx",
+            "path": "../modules/nginx"
+        },
+        {
             "name": "module / ollama",
             "path": "../modules/ollama"
         },
