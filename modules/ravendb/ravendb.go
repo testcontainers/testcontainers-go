@@ -28,12 +28,13 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"RAVEN_Logs_Mode":                       "None",
 		}),
 		testcontainers.WithWaitStrategy(
-			wait.ForHTTP("/health/server").
-				WithPort(defaultPort).
-				WithStatusCodeMatcher(func(status int) bool {
-					return status == 200
-				}).
-				WithStartupTimeout(120*time.Second),
+			wait.ForAll(
+				wait.ForHTTP("/health/server").
+					WithPort(defaultPort).
+					WithStatusCodeMatcher(func(status int) bool {
+						return status == 200
+					}),
+			).WithDeadline(120*time.Second),
 		),
 	)
 
