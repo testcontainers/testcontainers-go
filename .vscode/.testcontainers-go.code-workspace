@@ -322,6 +322,10 @@
             "path": "../modules/toxiproxy"
         },
         {
+            "name": "module / trino",
+            "path": "../modules/trino"
+        },
+        {
             "name": "module / valkey",
             "path": "../modules/valkey"
         },

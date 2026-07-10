@@ -153,6 +153,7 @@ nav:
         - modules/tidb.md
         - modules/timeplus.md
         - modules/toxiproxy.md
+        - modules/trino.md
         - modules/valkey.md
         - modules/vault.md
         - modules/vearch.md

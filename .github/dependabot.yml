@@ -93,6 +93,7 @@ updates:
         - /modules/tidb
         - /modules/timeplus
         - /modules/toxiproxy
+        - /modules/trino
         - /modules/valkey
         - /modules/vault
         - /modules/vearch
