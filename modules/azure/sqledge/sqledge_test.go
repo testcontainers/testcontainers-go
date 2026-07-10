@@ -61,7 +61,7 @@ func TestAzureSQLEdgeWithConnectionStringParameters(t *testing.T) {
 	require.NoError(t, err)
 
 	// perform assertions — extra params are appended after the defaults
-	connectionString, err := ctr.ConnectionString(ctx, "database=master")
+	connectionString, err := ctr.ConnectionString(ctx, "app name=sqledge-test")
 	require.NoError(t, err)
 
 	db, err := sql.Open("sqlserver", connectionString)
