@@ -99,6 +99,7 @@ nav:
         - modules/elasticsearch.md
         - modules/etcd.md
         - modules/fakegcsserver.md
+        - modules/firebird.md
         - modules/forgejo.md
         - modules/gcloud.md
         - modules/grafana-lgtm.md
