@@ -13,7 +13,7 @@ import (
 func TestFirebird(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := firebird.Run(ctx, "ghcr.io/jacobalberty/firebird:v3.0")
+	ctr, err := firebird.Run(ctx, "jacobalberty/firebird:v3.0")
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -29,7 +29,7 @@ func TestFirebirdWithOptions(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := firebird.Run(ctx,
-		"ghcr.io/jacobalberty/firebird:v3.0",
+		"jacobalberty/firebird:v3.0",
 		firebird.WithDatabase("mydb.fdb"),
 		firebird.WithUsername("myuser"),
 		firebird.WithPassword("mypassword"),

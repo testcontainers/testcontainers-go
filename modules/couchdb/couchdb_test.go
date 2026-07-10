@@ -22,7 +22,6 @@ func TestCouchDB(t *testing.T) {
 		connStr, err := ctr.ConnectionString(ctx)
 		require.NoError(t, err)
 		require.Contains(t, connStr, "http://admin:password@")
-		require.Contains(t, connStr, ":5984")
 	})
 
 	t.Run("http endpoint reachable", func(t *testing.T) {

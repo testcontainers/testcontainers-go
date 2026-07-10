@@ -14,7 +14,7 @@ func ExampleRun() {
 	ctx := context.Background()
 
 	firebirdContainer, err := firebird.Run(ctx,
-		"ghcr.io/jacobalberty/firebird:v3.0",
+		"jacobalberty/firebird:v3.0",
 		firebird.WithDatabase("test.fdb"),
 		firebird.WithUsername("test"),
 		firebird.WithPassword("test"),
