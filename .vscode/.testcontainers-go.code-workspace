@@ -282,6 +282,10 @@
             "path": "../modules/registry"
         },
         {
+            "name": "module / s3mock",
+            "path": "../modules/s3mock"
+        },
+        {
             "name": "module / scylladb",
             "path": "../modules/scylladb"
         },
