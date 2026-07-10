@@ -66,6 +66,10 @@
             "path": "../modules/couchbase"
         },
         {
+            "name": "module / couchdb",
+            "path": "../modules/couchdb"
+        },
+        {
             "name": "module / databend",
             "path": "../modules/databend"
         },
