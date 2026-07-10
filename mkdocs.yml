@@ -148,6 +148,7 @@ nav:
         - modules/sftp.md
         - modules/socat.md
         - modules/solace.md
+        - modules/solr.md
         - modules/surrealdb.md
         - modules/tidb.md
         - modules/toxiproxy.md
