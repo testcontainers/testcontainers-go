@@ -154,6 +154,7 @@ nav:
         - modules/timeplus.md
         - modules/toxiproxy.md
         - modules/trino.md
+        - modules/typesense.md
         - modules/valkey.md
         - modules/vault.md
         - modules/vearch.md
