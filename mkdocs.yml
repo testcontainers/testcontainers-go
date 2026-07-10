@@ -131,6 +131,7 @@ nav:
         - modules/openldap.md
         - modules/opensearch.md
         - modules/orientdb.md
+        - modules/papercutsmtp.md
         - modules/pinecone.md
         - modules/postgres.md
         - modules/pulsar.md
