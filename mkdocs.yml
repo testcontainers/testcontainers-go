@@ -145,6 +145,7 @@ nav:
         - modules/registry.md
         - modules/s3mock.md
         - modules/scylladb.md
+        - modules/sftp.md
         - modules/socat.md
         - modules/solace.md
         - modules/surrealdb.md

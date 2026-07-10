@@ -290,6 +290,10 @@
             "path": "../modules/scylladb"
         },
         {
+            "name": "module / sftp",
+            "path": "../modules/sftp"
+        },
+        {
             "name": "module / socat",
             "path": "../modules/socat"
         },
