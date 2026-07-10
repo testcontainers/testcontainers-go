@@ -33,7 +33,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				WithStatusCodeMatcher(func(status int) bool {
 					return status == 200
 				}).
-				WithStartupTimeout(120 * time.Second),
+				WithStartupTimeout(120*time.Second),
 		),
 	)
 

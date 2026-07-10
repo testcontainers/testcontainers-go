@@ -67,7 +67,7 @@ func WithAdminCredentials(user, password string) testcontainers.CustomizeRequest
 			wait.ForListeningPort(defaultBrokerPort),
 			wait.ForHTTP("/api/jolokia/").
 				WithPort(defaultWebConsolePort).
-				WithStartupTimeout(120 * time.Second),
+				WithStartupTimeout(120*time.Second),
 		).WithDeadline(120 * time.Second)
 		return nil
 	}
@@ -87,7 +87,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			wait.ForListeningPort(defaultBrokerPort),
 			wait.ForHTTP("/api/jolokia/").
 				WithPort(defaultWebConsolePort).
-				WithStartupTimeout(120 * time.Second),
+				WithStartupTimeout(120*time.Second),
 		),
 	)
 	moduleOpts = append(moduleOpts, opts...)
