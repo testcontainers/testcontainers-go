@@ -13,7 +13,7 @@ func ExampleRun() {
 	// runQuestDBContainer {
 	ctx := context.Background()
 
-	questdbContainer, err := questdb.Run(ctx, "questdb/questdb:7.4")
+	questdbContainer, err := questdb.Run(ctx, "questdb/questdb:7.4.2")
 	defer func() {
 		if err := testcontainers.TerminateContainer(questdbContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -40,7 +40,7 @@ func ExampleRun() {
 func ExampleContainer_HTTPEndpoint() {
 	ctx := context.Background()
 
-	questdbContainer, err := questdb.Run(ctx, "questdb/questdb:7.4")
+	questdbContainer, err := questdb.Run(ctx, "questdb/questdb:7.4.2")
 	defer func() {
 		if err := testcontainers.TerminateContainer(questdbContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -68,7 +68,7 @@ func ExampleContainer_HTTPEndpoint() {
 func ExampleContainer_PGEndpoint() {
 	ctx := context.Background()
 
-	questdbContainer, err := questdb.Run(ctx, "questdb/questdb:7.4")
+	questdbContainer, err := questdb.Run(ctx, "questdb/questdb:7.4.2")
 	defer func() {
 		if err := testcontainers.TerminateContainer(questdbContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -96,7 +96,7 @@ func ExampleContainer_PGEndpoint() {
 func ExampleContainer_InfluxDBEndpoint() {
 	ctx := context.Background()
 
-	questdbContainer, err := questdb.Run(ctx, "questdb/questdb:7.4")
+	questdbContainer, err := questdb.Run(ctx, "questdb/questdb:7.4.2")
 	defer func() {
 		if err := testcontainers.TerminateContainer(questdbContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)

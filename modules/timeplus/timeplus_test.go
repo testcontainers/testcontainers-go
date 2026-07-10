@@ -14,7 +14,7 @@ import (
 func TestTimeplus(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := timeplus.Run(ctx, "timeplus/timeplusd:2.3")
+	ctr, err := timeplus.Run(ctx, "timeplus/timeplusd:2.3.37")
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 

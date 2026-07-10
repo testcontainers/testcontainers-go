@@ -14,7 +14,7 @@ import (
 func TestQuestDB(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := questdb.Run(ctx, "questdb/questdb:7.4")
+	ctr, err := questdb.Run(ctx, "questdb/questdb:7.4.2")
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 

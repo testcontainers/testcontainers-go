@@ -55,7 +55,7 @@ func newS3Client(ctx context.Context, ctr *s3mock.Container) (*s3.Client, error)
 func TestS3Mock(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := s3mock.Run(ctx, "adobe/s3mock:3.9")
+	ctr, err := s3mock.Run(ctx, "adobe/s3mock:3.9.1")
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -116,7 +116,7 @@ func TestS3MockWithInitialBuckets(t *testing.T) {
 	ctx := context.Background()
 
 	// withInitialBuckets {
-	ctr, err := s3mock.Run(ctx, "adobe/s3mock:3.9",
+	ctr, err := s3mock.Run(ctx, "adobe/s3mock:3.9.1",
 		s3mock.WithInitialBuckets("bucket1", "bucket2"),
 	)
 	// }
@@ -143,7 +143,7 @@ func TestS3MockWithInitialBucketsEmpty(t *testing.T) {
 	ctx := context.Background()
 
 	// WithInitialBuckets() with no arguments should be a no-op
-	ctr, err := s3mock.Run(ctx, "adobe/s3mock:3.9",
+	ctr, err := s3mock.Run(ctx, "adobe/s3mock:3.9.1",
 		s3mock.WithInitialBuckets(),
 	)
 	testcontainers.CleanupContainer(t, ctr)

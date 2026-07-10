@@ -11,10 +11,10 @@ import (
 
 const (
 	// smtpPort is the default SMTP port exposed by the Papercut SMTP container.
-	smtpPort = "25/tcp"
+	smtpPort = "2525/tcp"
 
 	// httpPort is the default HTTP port for the Papercut SMTP web UI.
-	httpPort = "37408/tcp"
+	httpPort = "8080/tcp"
 )
 
 // Container represents the PapercutSMTP container type used in the module
@@ -22,12 +22,12 @@ type Container struct {
 	testcontainers.Container
 }
 
-// SMTPEndpoint returns the host:port endpoint for the SMTP server (port 25).
+// SMTPEndpoint returns the host:port endpoint for the SMTP server (port 2525).
 func (c *Container) SMTPEndpoint(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, smtpPort, "")
 }
 
-// HTTPURL returns the URL for the Papercut SMTP web UI (port 37408).
+// HTTPURL returns the URL for the Papercut SMTP web UI (port 8080).
 func (c *Container) HTTPURL(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, httpPort, "http")
 }

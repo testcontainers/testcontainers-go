@@ -18,7 +18,7 @@ func ExampleRun() {
 	ctx := context.Background()
 
 	s3mockContainer, err := s3mock.Run(ctx,
-		"adobe/s3mock:3.9",
+		"adobe/s3mock:3.9.1",
 		s3mock.WithInitialBuckets("mybucket"),
 	)
 	defer func() {

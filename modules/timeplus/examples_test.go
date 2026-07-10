@@ -13,7 +13,7 @@ func ExampleRun() {
 	// runTimeplusContainer {
 	ctx := context.Background()
 
-	timeplusContainer, err := timeplus.Run(ctx, "timeplus/timeplusd:2.3")
+	timeplusContainer, err := timeplus.Run(ctx, "timeplus/timeplusd:2.3.37")
 	defer func() {
 		if err := testcontainers.TerminateContainer(timeplusContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -40,7 +40,7 @@ func ExampleRun() {
 func ExampleContainer_HTTPEndpoint() {
 	ctx := context.Background()
 
-	timeplusContainer, err := timeplus.Run(ctx, "timeplus/timeplusd:2.3")
+	timeplusContainer, err := timeplus.Run(ctx, "timeplus/timeplusd:2.3.37")
 	defer func() {
 		if err := testcontainers.TerminateContainer(timeplusContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
