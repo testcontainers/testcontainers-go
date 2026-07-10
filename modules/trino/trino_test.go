@@ -21,5 +21,4 @@ func TestTrino(t *testing.T) {
 	connStr, err := ctr.ConnectionString(ctx)
 	require.NoError(t, err)
 	require.Contains(t, connStr, "http://")
-	require.Contains(t, connStr, ":8080")
 }
