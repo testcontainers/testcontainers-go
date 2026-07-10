@@ -15,7 +15,7 @@ import (
 func TestAzureSQLEdge(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := sqledge.Run(ctx, "mcr.microsoft.com/azure-sql-edge:1.0.7")
+	ctr, err := sqledge.Run(ctx, "mcr.microsoft.com/azure-sql-edge:2.0.0")
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -35,7 +35,7 @@ func TestAzureSQLEdgeWithCustomPassword(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := sqledge.Run(ctx,
-		"mcr.microsoft.com/azure-sql-edge:1.0.7",
+		"mcr.microsoft.com/azure-sql-edge:2.0.0",
 		sqledge.WithPassword("Strong@Passw0rd"),
 	)
 	testcontainers.CleanupContainer(t, ctr)
@@ -56,12 +56,12 @@ func TestAzureSQLEdgeWithCustomPassword(t *testing.T) {
 func TestAzureSQLEdgeWithConnectionStringParameters(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := sqledge.Run(ctx, "mcr.microsoft.com/azure-sql-edge:1.0.7")
+	ctr, err := sqledge.Run(ctx, "mcr.microsoft.com/azure-sql-edge:2.0.0")
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	// perform assertions
-	connectionString, err := ctr.ConnectionString(ctx, "encrypt=false", "TrustServerCertificate=true")
+	// perform assertions — extra params are appended after the defaults
+	connectionString, err := ctr.ConnectionString(ctx, "database=master")
 	require.NoError(t, err)
 
 	db, err := sql.Open("sqlserver", connectionString)

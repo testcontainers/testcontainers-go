@@ -14,7 +14,7 @@ func ExampleRun() {
 	ctx := context.Background()
 
 	sqlEdgeContainer, err := sqledge.Run(ctx,
-		"mcr.microsoft.com/azure-sql-edge:1.0.7",
+		"mcr.microsoft.com/azure-sql-edge:2.0.0",
 		sqledge.WithPassword("Strong!Passw0rd"),
 	)
 	defer func() {

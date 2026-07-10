@@ -79,8 +79,11 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 }
 
 // ConnectionString returns the connection string for the Azure SQL Edge container,
-// using the default 1433 port. Additional query parameters may be appended via args.
-// Example: container.ConnectionString(ctx, "encrypt=false", "TrustServerCertificate=true")
+// using the default 1433 port. TLS is disabled by default because azure-sql-edge
+// ships a self-signed certificate with a negative serial number that Go 1.23+
+// rejects at parse time. Additional query parameters may be appended via args
+// and take precedence over the defaults.
+// Example: container.ConnectionString(ctx, "database=mydb")
 func (c *Container) ConnectionString(ctx context.Context, args ...string) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
@@ -92,10 +95,12 @@ func (c *Container) ConnectionString(ctx context.Context, args ...string) (strin
 		return "", fmt.Errorf("mapped port: %w", err)
 	}
 
-	connStr := fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=master", defaultUsername, c.password, host, port.Port())
-	if len(args) > 0 {
-		connStr += "&" + strings.Join(args, "&")
-	}
+	// Disable TLS by default: azure-sql-edge uses a self-signed certificate
+	// with a negative serial number, rejected by Go 1.23+ x509 validation.
+	params := []string{"encrypt=disable", "TrustServerCertificate=true"}
+	params = append(params, args...)
+	connStr := fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=master&%s",
+		defaultUsername, c.password, host, port.Port(), strings.Join(params, "&"))
 
 	return connStr, nil
 }
