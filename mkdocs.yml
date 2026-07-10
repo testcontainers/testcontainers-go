@@ -139,6 +139,7 @@ nav:
         - modules/qdrant.md
         - modules/questdb.md
         - modules/rabbitmq.md
+        - modules/ravendb.md
         - modules/redis.md
         - modules/redpanda.md
         - modules/registry.md
