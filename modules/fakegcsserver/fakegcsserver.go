@@ -59,7 +59,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			wait.ForHTTP("/storage/v1/b").
 				WithPort(defaultPort).
 				WithStatusCodeMatcher(func(status int) bool {
-					return status == 200
+					return status >= 200 && status < 500
 				}),
 		),
 	)
