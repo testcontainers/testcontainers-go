@@ -75,6 +75,7 @@ nav:
         - features/tls.md
     - Modules:
         - modules/index.md
+        - modules/activemq.md
         - modules/aerospike.md
         - modules/arangodb.md
         - modules/artemis.md
