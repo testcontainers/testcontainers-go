@@ -70,6 +70,10 @@
             "path": "../modules/couchdb"
         },
         {
+            "name": "module / cratedb",
+            "path": "../modules/cratedb"
+        },
+        {
             "name": "module / databend",
             "path": "../modules/databend"
         },
