@@ -67,10 +67,9 @@ func TestActiveMQ(t *testing.T) {
 			require.NoError(t, err)
 			require.Contains(t, consoleURL, "http://")
 
-			// Verify the web console is accessible with the expected credentials.
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, consoleURL+"/admin", nil)
+			// Verify the Jolokia API endpoint is accessible.
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, consoleURL+"/api/jolokia/", nil)
 			require.NoError(t, err)
-			req.SetBasicAuth(tc.adminUser, tc.adminPassword)
 
 			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err)

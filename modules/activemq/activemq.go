@@ -65,9 +65,8 @@ func WithAdminCredentials(user, password string) testcontainers.CustomizeRequest
 		req.Env["ACTIVEMQ_WEB_ADMIN_PASSWORD"] = password
 		req.WaitingFor = wait.ForAll(
 			wait.ForListeningPort(defaultBrokerPort),
-			wait.ForHTTP("/admin").
-				WithPort(defaultWebConsolePort).
-				WithBasicAuth(user, password),
+			wait.ForHTTP("/api/jolokia/").
+				WithPort(defaultWebConsolePort),
 		).WithDeadline(60 * time.Second)
 		return nil
 	}
@@ -85,9 +84,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}),
 		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort(defaultBrokerPort),
-			wait.ForHTTP("/admin").
-				WithPort(defaultWebConsolePort).
-				WithBasicAuth(defaultAdminUser, defaultAdminPassword),
+			wait.ForHTTP("/api/jolokia/").
+				WithPort(defaultWebConsolePort),
 		),
 	)
 	moduleOpts = append(moduleOpts, opts...)
