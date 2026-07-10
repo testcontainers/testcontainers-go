@@ -110,6 +110,7 @@ nav:
         - modules/kafka.md
         - modules/kurrentdb.md
         - modules/localstack.md
+        - modules/mailpit.md
         - modules/mariadb.md
         - modules/meilisearch.md
         - modules/memcached.md
