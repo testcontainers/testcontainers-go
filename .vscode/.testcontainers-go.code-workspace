@@ -110,6 +110,10 @@
             "path": "../modules/etcd"
         },
         {
+            "name": "module / fakegcsserver",
+            "path": "../modules/fakegcsserver"
+        },
+        {
             "name": "module / forgejo",
             "path": "../modules/forgejo"
         },
