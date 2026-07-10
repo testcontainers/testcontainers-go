@@ -3,6 +3,7 @@ package ravendb
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -31,7 +32,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				WithPort(defaultPort).
 				WithStatusCodeMatcher(func(status int) bool {
 					return status == 200
-				}),
+				}).
+				WithStartupTimeout(120 * time.Second),
 		),
 	)
 
