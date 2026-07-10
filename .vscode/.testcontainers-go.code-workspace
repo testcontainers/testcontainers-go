@@ -246,6 +246,10 @@
             "path": "../modules/postgres"
         },
         {
+            "name": "module / presto",
+            "path": "../modules/presto"
+        },
+        {
             "name": "module / pulsar",
             "path": "../modules/pulsar"
         },
