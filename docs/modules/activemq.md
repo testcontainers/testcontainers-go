@@ -45,8 +45,6 @@ In example: `Run(context.Background(), "apache/activemq-classic:5.18")`.
 
 When starting the ActiveMQ container, you can pass options in a variadic way to configure it.
 
-{% include "../features/common_functional_options_list.md" %}
-
 #### WithAdminCredentials
 
 - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
@@ -60,6 +58,8 @@ The default credentials are `admin`/`admin`.
 <!--codeinclude-->
 [With admin credentials](../../modules/activemq/activemq_test.go) inside_block:withAdminCredentials
 <!--/codeinclude-->
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 
@@ -106,3 +106,4 @@ with the format `http://<host>:<port>`, using the mapped `8161/tcp` port.
 <!--codeinclude-->
 [Get web console URL](../../modules/activemq/activemq_test.go) inside_block:webConsoleURL
 <!--/codeinclude-->
+

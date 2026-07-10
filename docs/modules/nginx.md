@@ -45,8 +45,6 @@ In example: `Run(context.Background(), "nginx:1.25")`.
 
 When starting the Nginx container, you can pass options in a variadic way to configure it.
 
-{% include "../features/common_functional_options_list.md" %}
-
 #### WithConfigFile
 
 - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
@@ -69,6 +67,8 @@ The `hostPath` argument must be an absolute path to the configuration file on th
 ```golang
 nginx.Run(ctx, "nginx:1.25", nginx.WithCustomConfig("/path/to/default.conf"))
 ```
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 
@@ -93,3 +93,4 @@ The Nginx container exposes the following methods:
 ```golang
 httpsEndpoint, err := nginxContainer.HTTPSEndpoint(ctx)
 ```
+

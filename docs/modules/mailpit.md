@@ -47,8 +47,6 @@ In example: `Run(context.Background(), "axllent/mailpit:v1.20")`.
 
 When starting the Mailpit container, you can pass options in a variadic way to configure it.
 
-{% include "../features/common_functional_options_list.md" %}
-
 #### WithSMTPAuth
 
 - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
@@ -68,6 +66,8 @@ When starting the Mailpit container, you can pass options in a variadic way to c
 <!--codeinclude-->
 [WithMessageLimit](../../modules/mailpit/mailpit_test.go) inside_block:withMessageLimit
 <!--/codeinclude-->
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 
@@ -92,3 +92,4 @@ The Mailpit container exposes the following methods:
 <!--codeinclude-->
 [Get HTTP URL](../../modules/mailpit/mailpit_test.go) inside_block:httpURL
 <!--/codeinclude-->
+

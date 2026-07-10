@@ -55,8 +55,6 @@ In example: `Run(context.Background(), "fsouza/fake-gcs-server:1.47")`.
 
 When starting the FakeGCSServer container, you can pass options in a variadic way to configure it.
 
-{% include "../features/common_functional_options_list.md" %}
-
 #### WithScheme
 
 - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
@@ -68,6 +66,8 @@ fakegcsserver.Run(ctx, "fsouza/fake-gcs-server:1.47",
     fakegcsserver.WithScheme("https"),
 )
 ```
+
+{% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
 
@@ -82,3 +82,4 @@ Returns the GCS-compatible storage URL for the container. The URL format is `<sc
 ```golang
 storageURL, err := ctr.StorageURL(ctx)
 ```
+
