@@ -41,7 +41,7 @@ func TestActiveMQ(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			ctr, err := activemq.Run(ctx, "apache/activemq-classic:5.18", tc.opts...)
+			ctr, err := activemq.Run(ctx, "apache/activemq-classic:5.18.7", tc.opts...)
 			testcontainers.CleanupContainer(t, ctr)
 			require.NoError(t, err)
 

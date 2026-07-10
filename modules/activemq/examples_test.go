@@ -14,7 +14,7 @@ func ExampleRun() {
 	ctx := context.Background()
 
 	activemqContainer, err := activemq.Run(ctx,
-		"apache/activemq-classic:5.18",
+		"apache/activemq-classic:5.18.7",
 		activemq.WithAdminCredentials("test", "test"),
 	)
 	defer func() {
