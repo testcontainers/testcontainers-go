@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/azurite
 
-go 1.25.0
+go 1.25.7
 
 toolchain go1.25.9
 
