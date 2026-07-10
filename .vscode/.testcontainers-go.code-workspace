@@ -232,6 +232,10 @@
             "path": "../modules/opensearch"
         },
         {
+            "name": "module / orientdb",
+            "path": "../modules/orientdb"
+        },
+        {
             "name": "module / pinecone",
             "path": "../modules/pinecone"
         },
