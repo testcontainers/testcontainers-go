@@ -2,6 +2,7 @@ package sftp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -27,7 +28,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	if len(settings.users) == 0 {
-		return nil, fmt.Errorf("run sftp: at least one user is required")
+		return nil, errors.New("run sftp: at least one user is required")
 	}
 
 	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
