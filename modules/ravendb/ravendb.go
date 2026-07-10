@@ -27,14 +27,13 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"RAVEN_Security_UnsecuredAccessAllowed": "PublicNetwork",
 			"RAVEN_Logs_Mode":                       "None",
 		}),
-		testcontainers.WithWaitStrategy(
-			wait.ForAll(
-				wait.ForHTTP("/health/server").
-					WithPort(defaultPort).
-					WithStatusCodeMatcher(func(status int) bool {
-						return status == 200
-					}),
-			).WithDeadline(120*time.Second),
+		testcontainers.WithWaitStrategyAndDeadline(
+			120*time.Second,
+			wait.ForHTTP("/health/server").
+				WithPort(defaultPort).
+				WithStatusCodeMatcher(func(status int) bool {
+					return status == 200
+				}),
 		),
 	)
 
