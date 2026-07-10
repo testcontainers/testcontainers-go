@@ -25,6 +25,7 @@ The Azure module exposes the following Go packages:
     Due to licensing restrictions you are required to explicitly accept an End User License Agreement (EULA) for the EventHubs container image. This is facilitated through the `WithAcceptEULA` function.
 - [CosmosDB](#cosmosdb): `github.com/testcontainers/testcontainers-go/modules/azure/cosmosdb`.
 - [Lowkey Vault](#lowkey-vault): `github.com/testcontainers/testcontainers-go/modules/azure/lowkeyvault`.
+- [Azure SQL Edge](#azure-sql-edge): `github.com/testcontainers/testcontainers-go/modules/azure/sqledge`.
 <!--codeinclude-->
 [Creating a Azurite container](../../modules/azure/azurite/examples_test.go) inside_block:runAzuriteContainer
 <!--/codeinclude-->
@@ -532,4 +533,62 @@ container which will be used to connect to the Key Vault API of the Lowkey Vault
 [Run Lowkey Vault Container in Network mode](../../modules/azure/lowkeyvault/examples_test.go) inside_block:createContainerWithNetwork
 [Get the endpoint details in Network mode](../../modules/azure/lowkeyvault/examples_test.go) inside_block:obtainEndpointUrls
 [Configure the client container](../../modules/azure/lowkeyvault/examples_test.go) inside_block:configureClient
+<!--/codeinclude-->
+## Azure SQL Edge
+
+### Run function
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The Azure SQL Edge module exposes one entrypoint function to create the Azure SQL Edge container, and this function receives three parameters:
+
+```golang
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)
+```
+
+- `context.Context`, the Go context.
+- `string`, the Docker image to use.
+- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+
+Azure SQL Edge is an ARM64-compatible SQL Server variant for IoT and edge scenarios. It uses the same `sqlserver://` wire protocol as SQL Server on port 1433.
+
+#### Image
+
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "mcr.microsoft.com/azure-sql-edge:1.0.7")`.
+
+### Container Options
+
+When starting the Azure SQL Edge container, you can pass options in a variadic way to configure it.
+
+#### WithPassword
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to set a different SA password, you can use `sqledge.WithPassword` with a valid password. E.g. `sqledge.WithPassword("Strong@Passw0rd")`.
+
+!!!info
+    The password must adhere to the [SQL Server Password Policy](https://learn.microsoft.com/en-us/sql/relational-databases/security/password-policy): at least 8 characters containing uppercase letters, lowercase letters, digits, and special characters. The default `Strong!Passw0rd` already meets this requirement.
+
+{% include "../features/common_functional_options_list.md" %}
+
+### Container Methods
+
+The Azure SQL Edge container exposes the following methods:
+
+#### ConnectionString
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This method returns the connection string to connect to the Azure SQL Edge container, using the default `1433` port and the `master` database.
+It is possible to pass extra parameters to the connection string, e.g. `encrypt=false` or `TrustServerCertificate=true`, in a variadic way.
+
+```golang
+connectionString, err := container.ConnectionString(ctx, "encrypt=false", "TrustServerCertificate=true")
+```
+
+### Examples
+
+<!--codeinclude-->
+[Creating an Azure SQL Edge container](../../modules/azure/sqledge/examples_test.go) inside_block:runSQLEdgeContainer
 <!--/codeinclude-->

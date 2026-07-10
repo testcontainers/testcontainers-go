@@ -30,6 +30,10 @@
             "path": "../modules/azure"
         },
         {
+            "name": "module / azuresqledge",
+            "path": "../modules/azuresqledge"
+        },
+        {
             "name": "module / azurite",
             "path": "../modules/azurite"
         },
