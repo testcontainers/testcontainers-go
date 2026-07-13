@@ -23,7 +23,7 @@ func TestTimeplus(t *testing.T) {
 		require.NoError(t, err)
 		require.NotEmpty(t, endpoint)
 
-		resp, err := http.Get(endpoint + "/ping") //nolint:noctx
+		resp, err := http.Get(endpoint + "/timeplusd/ping") //nolint:noctx
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
