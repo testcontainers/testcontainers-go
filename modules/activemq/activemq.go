@@ -3,9 +3,7 @@ package activemq
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strings"
-	"time"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -85,12 +83,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"ACTIVEMQ_WEB_PASSWORD": defaultAdminPassword,
 		}),
 		testcontainers.WithWaitStrategy(
-			wait.ForListeningPort(defaultBrokerPort),
-			wait.ForHTTP("/api/jolokia/version").
-				WithPort(defaultWebConsolePort).
-				WithBasicAuth(defaultAdminUser, defaultAdminPassword).
-				WithStatusCodeMatcher(func(status int) bool { return status == http.StatusOK }).
-				WithStartupTimeout(60*time.Second),
+			wait.ForAll(
+				wait.ForLog(".*Apache ActiveMQ.*started.*").AsRegexp(),
+				wait.ForListeningPort(defaultBrokerPort),
+			),
 		),
 	)
 	moduleOpts = append(moduleOpts, opts...)
