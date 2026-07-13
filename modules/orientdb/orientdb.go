@@ -54,6 +54,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return c, fmt.Errorf("run orientdb: %w", err)
 	}
 
+	if ctr == nil {
+		return c, fmt.Errorf("run orientdb: nil container")
+	}
+
 	// Extract the actual root password from the container environment so that
 	// it reflects any password set via WithRootPassword.
 	inspect, err := ctr.Inspect(ctx)

@@ -3,6 +3,7 @@ package sqledge
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -113,7 +114,7 @@ func (c *Container) ConnectionString(ctx context.Context, args ...string) (strin
 		parts = append(parts, k+"="+v)
 	}
 	connStr := fmt.Sprintf("sqlserver://%s:%s@%s:%s?%s",
-		defaultUsername, c.password, host, port.Port(), strings.Join(parts, "&"))
+		url.PathEscape(defaultUsername), url.PathEscape(c.password), host, port.Port(), strings.Join(parts, "&"))
 
 	return connStr, nil
 }

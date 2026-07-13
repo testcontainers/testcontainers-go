@@ -10,6 +10,7 @@ import (
 )
 
 func ExampleRun() {
+	// runOrientDB {
 	ctx := context.Background()
 
 	orientdbContainer, err := orientdb.Run(ctx, "orientdb:3.2",

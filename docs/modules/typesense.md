@@ -64,7 +64,7 @@ typesense.WithAPIKey("my-api-key")
 Sets the data directory inside the container where Typesense stores its data. If not set, the default value `/tmp` is used.
 
 ```golang
-testcontainers.WithDataDir("/data")
+typesense.WithDataDir("/data")
 ```
 
 {% include "../features/common_functional_options_list.md" %}

@@ -57,7 +57,7 @@ func TestActiveMQ(t *testing.T) {
 			// Verify the broker port (OpenWire) is reachable.
 			u, err := url.Parse(brokerURL)
 			require.NoError(t, err)
-			conn, err := net.Dial("tcp", u.Host)
+			conn, err := net.DialTimeout("tcp", u.Host, 5*time.Second)
 			require.NoError(t, err)
 			conn.Close()
 

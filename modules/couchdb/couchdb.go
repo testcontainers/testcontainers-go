@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -74,6 +75,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // WithAdminCredentials sets the admin username and password for the CouchDB container.
 func WithAdminCredentials(user, password string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
+		if req.Env == nil {
+			req.Env = map[string]string{}
+		}
 		req.Env["COUCHDB_USER"] = user
 		req.Env["COUCHDB_PASSWORD"] = password
 		return nil
@@ -93,5 +97,5 @@ func (c *Container) ConnectionString(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("mapped port: %w", err)
 	}
 
-	return fmt.Sprintf("http://%s:%s@%s:%s", c.user, c.password, host, port.Port()), nil
+	return fmt.Sprintf("http://%s:%s@%s:%s", url.PathEscape(c.user), url.PathEscape(c.password), host, port.Port()), nil
 }

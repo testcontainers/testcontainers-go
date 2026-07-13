@@ -12,7 +12,7 @@ The Testcontainers module for Trino.
 
 Please run the following command to add the Trino module to your Go dependencies:
 
-```
+```bash
 go get github.com/testcontainers/testcontainers-go/modules/trino
 ```
 

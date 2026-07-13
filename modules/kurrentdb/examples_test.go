@@ -13,7 +13,7 @@ func ExampleRun() {
 	// runKurrentDBContainer {
 	ctx := context.Background()
 
-	kurrentdbContainer, err := kurrentdb.Run(ctx, "kurrentplatform/kurrentdb:latest")
+	kurrentdbContainer, err := kurrentdb.Run(ctx, "kurrentplatform/kurrentdb:26.1.1")
 	defer func() {
 		if err := testcontainers.TerminateContainer(kurrentdbContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -42,7 +42,7 @@ func ExampleRun_withInsecure() {
 
 	// withInsecure {
 	kurrentdbContainer, err := kurrentdb.Run(ctx,
-		"kurrentplatform/kurrentdb:latest",
+		"kurrentplatform/kurrentdb:26.1.1",
 		kurrentdb.WithInsecure(),
 	)
 	// }

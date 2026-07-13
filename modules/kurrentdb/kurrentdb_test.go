@@ -13,7 +13,7 @@ import (
 func TestKurrentDB(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := kurrentdb.Run(ctx, "kurrentplatform/kurrentdb:latest")
+	ctr, err := kurrentdb.Run(ctx, "kurrentplatform/kurrentdb:26.1.1")
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -31,7 +31,7 @@ func TestKurrentDB(t *testing.T) {
 func TestKurrentDBWithInsecure(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := kurrentdb.Run(ctx, "kurrentplatform/kurrentdb:latest",
+	ctr, err := kurrentdb.Run(ctx, "kurrentplatform/kurrentdb:26.1.1",
 		kurrentdb.WithInsecure(),
 	)
 	testcontainers.CleanupContainer(t, ctr)

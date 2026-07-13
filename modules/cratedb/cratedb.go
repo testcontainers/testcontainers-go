@@ -65,17 +65,11 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 // HTTPEndpoint returns the HTTP endpoint of the CrateDB container, for the
 // Admin UI and REST API on port 4200.
 func (c *Container) HTTPEndpoint(ctx context.Context) (string, error) {
-	host, err := c.Host(ctx)
+	endpoint, err := c.PortEndpoint(ctx, httpPort, "http")
 	if err != nil {
-		return "", fmt.Errorf("host: %w", err)
+		return "", fmt.Errorf("http endpoint: %w", err)
 	}
-
-	port, err := c.MappedPort(ctx, httpPort)
-	if err != nil {
-		return "", fmt.Errorf("mapped port: %w", err)
-	}
-
-	return fmt.Sprintf("http://%s:%s", host, port.Port()), nil
+	return endpoint, nil
 }
 
 // PGConnectionString returns the PostgreSQL wire-protocol connection string for

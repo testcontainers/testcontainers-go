@@ -10,7 +10,7 @@ The Testcontainers module for [KurrentDB](https://www.kurrent.io/kurrentdb), an 
 
 Please run the following command to add the KurrentDB module to your Go dependencies:
 
-```
+```bash
 go get github.com/testcontainers/testcontainers-go/modules/kurrentdb
 ```
 

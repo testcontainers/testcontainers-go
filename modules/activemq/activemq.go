@@ -54,17 +54,17 @@ func (c *Container) WebConsoleURL(ctx context.Context) (string, error) {
 }
 
 // WithAdminCredentials sets the username and password for the ActiveMQ web console.
-// The credentials are passed via the ACTIVEMQ_WEB_ADMIN_NAME and
-// ACTIVEMQ_WEB_ADMIN_PASSWORD environment variables.
-// Note: the Jolokia REST API always requires the built-in admin/admin credentials
-// regardless of these environment variables, so the wait strategy is not overridden.
+// The credentials are passed via the ACTIVEMQ_WEB_USER and ACTIVEMQ_WEB_PASSWORD
+// environment variables, which the image processes in its entrypoint.
+// Note: the Jolokia REST API is authenticated via jetty-realm.properties (hardcoded
+// admin/admin in the image), so the wait strategy always uses the built-in credentials.
 func WithAdminCredentials(user, password string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		if req.Env == nil {
 			req.Env = map[string]string{}
 		}
-		req.Env["ACTIVEMQ_WEB_ADMIN_NAME"] = user
-		req.Env["ACTIVEMQ_WEB_ADMIN_PASSWORD"] = password
+		req.Env["ACTIVEMQ_WEB_USER"] = user
+		req.Env["ACTIVEMQ_WEB_PASSWORD"] = password
 		return nil
 	}
 }
@@ -75,9 +75,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultBrokerPort, defaultWebConsolePort),
 		testcontainers.WithEnv(map[string]string{
-			"ACTIVEMQ_BROKER_NAME":        "localhost",
-			"ACTIVEMQ_WEB_ADMIN_NAME":     defaultAdminUser,
-			"ACTIVEMQ_WEB_ADMIN_PASSWORD": defaultAdminPassword,
+			"ACTIVEMQ_BROKER_NAME":  "localhost",
+			"ACTIVEMQ_WEB_USER":     defaultAdminUser,
+			"ACTIVEMQ_WEB_PASSWORD": defaultAdminPassword,
 		}),
 		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort(defaultBrokerPort),
@@ -110,9 +110,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 	foundUser, foundPass := false, false
 	for _, env := range inspect.Config.Env {
-		if v, ok := strings.CutPrefix(env, "ACTIVEMQ_WEB_ADMIN_NAME="); ok {
+		if v, ok := strings.CutPrefix(env, "ACTIVEMQ_WEB_USER="); ok {
 			c.adminUser, foundUser = v, true
-		} else if v, ok := strings.CutPrefix(env, "ACTIVEMQ_WEB_ADMIN_PASSWORD="); ok {
+		} else if v, ok := strings.CutPrefix(env, "ACTIVEMQ_WEB_PASSWORD="); ok {
 			c.adminPassword, foundPass = v, true
 		}
 		if foundUser && foundPass {

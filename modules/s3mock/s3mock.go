@@ -25,6 +25,9 @@ func WithInitialBuckets(buckets ...string) testcontainers.CustomizeRequestOption
 		if len(buckets) == 0 {
 			return nil
 		}
+		if req.Env == nil {
+			req.Env = map[string]string{}
+		}
 		req.Env["initialBuckets"] = strings.Join(buckets, ",")
 		return nil
 	}

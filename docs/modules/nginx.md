@@ -10,7 +10,7 @@ The Testcontainers module for [Nginx](https://nginx.org/), a high-performance we
 
 Please run the following command to add the Nginx module to your Go dependencies:
 
-```
+```bash
 go get github.com/testcontainers/testcontainers-go/modules/nginx
 ```
 
