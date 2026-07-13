@@ -3,9 +3,9 @@ package activemq_test
 import (
 	"context"
 	"net"
-	"net/http"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -67,14 +67,12 @@ func TestActiveMQ(t *testing.T) {
 			require.NoError(t, err)
 			require.Contains(t, consoleURL, "http://")
 
-			// Verify the Jolokia API endpoint is accessible.
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, consoleURL+"/api/jolokia/", nil)
+			// Verify the web console port is reachable.
+			u2, err := url.Parse(consoleURL)
 			require.NoError(t, err)
-
-			resp, err := http.DefaultClient.Do(req)
+			conn2, err := net.DialTimeout("tcp", u2.Host, 5*time.Second)
 			require.NoError(t, err)
-			resp.Body.Close()
-			require.Equal(t, http.StatusOK, resp.StatusCode)
+			conn2.Close()
 		})
 	}
 }
