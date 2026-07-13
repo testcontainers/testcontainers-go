@@ -13,7 +13,6 @@ updates:
     - package-ecosystem: gomod
       directories:
         - /
-        - /examples/nginx
         - /modulegen
         - /modules/activemq
         - /modules/aerospike

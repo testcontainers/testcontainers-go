@@ -162,7 +162,6 @@ nav:
         - modules/yugabytedb.md
     - Examples:
         - examples/index.md
-        - examples/nginx.md
     - System Requirements:
         - system_requirements/index.md
         - system_requirements/docker.md
