@@ -2,6 +2,7 @@ package orientdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -55,7 +56,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	if ctr == nil {
-		return c, fmt.Errorf("run orientdb: nil container")
+		return c, errors.New("run orientdb: nil container")
 	}
 
 	// Extract the actual root password from the container environment so that
