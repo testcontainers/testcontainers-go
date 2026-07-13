@@ -53,11 +53,16 @@ func (c *Container) WebConsoleURL(ctx context.Context) (string, error) {
 	return "http://" + hostPort, nil
 }
 
-// WithAdminCredentials sets the username and password for the ActiveMQ web console.
-// The credentials are passed via the ACTIVEMQ_WEB_USER and ACTIVEMQ_WEB_PASSWORD
-// environment variables, which the image processes in its entrypoint.
-// Note: the Jolokia REST API is authenticated via jetty-realm.properties (hardcoded
-// admin/admin in the image), so the wait strategy always uses the built-in credentials.
+// WithAdminCredentials sets ACTIVEMQ_WEB_USER and ACTIVEMQ_WEB_PASSWORD, which the
+// image entrypoint uses to update conf/users.properties (the JAAS PropertiesLoginModule
+// used for broker connection/messaging security when connection-level auth is enabled).
+//
+// NOTE: these variables do NOT affect Jolokia or web-console authentication.
+// The web console and /api/jolokia/* endpoints are protected by Jetty's
+// HashLoginService reading conf/jetty-realm.properties, which is hardcoded to
+// "admin: admin, admin" and is not configurable via environment variables.
+// The wait strategy therefore always uses the built-in admin/admin credentials
+// regardless of what is passed here.
 func WithAdminCredentials(user, password string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		if req.Env == nil {
