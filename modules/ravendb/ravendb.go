@@ -29,7 +29,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}),
 		testcontainers.WithWaitStrategyAndDeadline(
 			120*time.Second,
-			wait.ForHTTP("/health/server").
+			wait.ForHTTP("/build/version").
 				WithPort(defaultPort).
 				WithStatusCodeMatcher(func(status int) bool {
 					return status == 200
