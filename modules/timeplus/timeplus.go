@@ -27,13 +27,13 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(httpPort, nativePort),
 		testcontainers.WithWaitStrategyAndDeadline(
-			120*time.Second,
+			300*time.Second,
 			wait.ForHTTP("/ping").
 				WithPort(httpPort).
 				WithStatusCodeMatcher(func(status int) bool {
 					return status == 200
 				}).
-				WithStartupTimeout(120*time.Second),
+				WithStartupTimeout(300*time.Second),
 		),
 	)
 
