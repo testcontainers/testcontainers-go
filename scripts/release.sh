@@ -21,7 +21,7 @@ readonly MKDOCS_FILE="${ROOT_DIR}/mkdocs.yml"
 readonly VERSION_FILE="${ROOT_DIR}/internal/version.go"
 
 readonly REPOSITORY="github.com/testcontainers/testcontainers-go"
-readonly DIRECTORIES=(examples modules)
+readonly DIRECTORIES=(modules)
 
 function main() {
   local version="$(extractCurrentVersion)"
@@ -117,7 +117,7 @@ function gitFn() {
   git "${args[@]}"
 }
 
-# This function is used to commit the version.go file, mkdocs, examples and modules.
+# This function is used to commit the version.go file, mkdocs and modules.
 function gitCommitVersion() {
   local version="${1}" 
 
@@ -126,9 +126,8 @@ function gitCommitVersion() {
   gitFn add "${VERSION_FILE}"
   gitFn add "${MKDOCS_FILE}"
   gitFn add "docs/**/*.md"
-  gitFn add "examples/**/go.*"
   gitFn add "modules/**/go.*"
-  gitFn commit -m "chore: use new version (${version}) in modules and examples"
+  gitFn commit -m "chore: use new version (${version}) in modules"
 }
 
 # This function is used to commit the version.go file.
