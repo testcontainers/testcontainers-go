@@ -55,13 +55,17 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"-port", "4443",
 			"-backend", "memory",
 		),
-		testcontainers.WithWaitStrategy(
-			wait.ForHTTP("/storage/v1/b").
+		testcontainers.WithWaitStrategy(func() *wait.HTTPStrategy {
+			w := wait.ForHTTP("/storage/v1/b").
 				WithPort(defaultPort).
 				WithStatusCodeMatcher(func(status int) bool {
 					return status >= 200 && status < 500
-				}),
-		),
+				})
+			if settings.Scheme == "https" {
+				w = w.WithTLS(true).WithAllowInsecure(true)
+			}
+			return w
+		}()),
 	)
 	moduleOpts = append(moduleOpts, opts...)
 

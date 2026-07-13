@@ -32,10 +32,13 @@ func (c *Container) HTTPURL(ctx context.Context) (string, error) {
 }
 
 // WithSMTPAuth configures SMTP authentication credentials.
+// It sets MP_SMTP_AUTH to "user:password" and enables insecure (plaintext)
+// authentication via MP_SMTP_AUTH_ALLOW_INSECURE so that credentials are
+// accepted over an unencrypted connection.
 func WithSMTPAuth(user, password string) testcontainers.CustomizeRequestOption {
 	return testcontainers.WithEnv(map[string]string{
-		"MP_SMTP_AUTH_USERNAME": user,
-		"MP_SMTP_AUTH_PASSWORD": password,
+		"MP_SMTP_AUTH":                user + ":" + password,
+		"MP_SMTP_AUTH_ALLOW_INSECURE": "true",
 	})
 }
 

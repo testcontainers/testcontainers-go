@@ -94,8 +94,8 @@ func (c *Container) ConnectionString(ctx context.Context) (string, error) {
 	}
 
 	if c.insecure {
-		return fmt.Sprintf("kurrent://%s:%s?tls=false", host, port.Port()), nil
+		return fmt.Sprintf("kurrentdb://%s:%s?tls=false", host, port.Port()), nil
 	}
 
-	return fmt.Sprintf("kurrent://%s:%s", host, port.Port()), nil
+	return fmt.Sprintf("kurrentdb://%s:%s", host, port.Port()), nil
 }

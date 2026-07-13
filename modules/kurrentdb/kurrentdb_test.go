@@ -24,7 +24,7 @@ func TestKurrentDB(t *testing.T) {
 	require.NotEmpty(t, connStr)
 
 	// Default mode is insecure, so TLS is disabled.
-	require.Contains(t, connStr, "kurrent://")
+	require.Contains(t, connStr, "kurrentdb://")
 	require.Contains(t, connStr, "?tls=false")
 }
 

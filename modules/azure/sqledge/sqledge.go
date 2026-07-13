@@ -97,11 +97,23 @@ func (c *Container) ConnectionString(ctx context.Context, args ...string) (strin
 
 	// Disable TLS by default: azure-sql-edge uses a self-signed certificate
 	// with a negative serial number, rejected by Go 1.23+ x509 validation.
-	params := make([]string, 0, 2+len(args))
-	params = append(params, "encrypt=disable", "TrustServerCertificate=true")
-	params = append(params, args...)
-	connStr := fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=master&%s",
-		defaultUsername, c.password, host, port.Port(), strings.Join(params, "&"))
+	// Caller-supplied args take precedence over the defaults below.
+	params := map[string]string{
+		"database":               "master",
+		"encrypt":                "disable",
+		"TrustServerCertificate": "true",
+	}
+	for _, arg := range args {
+		k, v, _ := strings.Cut(arg, "=")
+		params[k] = v
+	}
+
+	parts := make([]string, 0, len(params))
+	for k, v := range params {
+		parts = append(parts, k+"="+v)
+	}
+	connStr := fmt.Sprintf("sqlserver://%s:%s@%s:%s?%s",
+		defaultUsername, c.password, host, port.Port(), strings.Join(parts, "&"))
 
 	return connStr, nil
 }

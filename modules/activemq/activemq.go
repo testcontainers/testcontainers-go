@@ -3,6 +3,7 @@ package activemq
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -54,8 +55,9 @@ func (c *Container) WebConsoleURL(ctx context.Context) (string, error) {
 
 // WithAdminCredentials sets the username and password for the ActiveMQ web console.
 // The credentials are passed via the ACTIVEMQ_WEB_ADMIN_NAME and
-// ACTIVEMQ_WEB_ADMIN_PASSWORD environment variables, and the wait strategy is
-// updated to authenticate with the new credentials.
+// ACTIVEMQ_WEB_ADMIN_PASSWORD environment variables.
+// Note: the Jolokia REST API always requires the built-in admin/admin credentials
+// regardless of these environment variables, so the wait strategy is not overridden.
 func WithAdminCredentials(user, password string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		if req.Env == nil {
@@ -63,11 +65,7 @@ func WithAdminCredentials(user, password string) testcontainers.CustomizeRequest
 		}
 		req.Env["ACTIVEMQ_WEB_ADMIN_NAME"] = user
 		req.Env["ACTIVEMQ_WEB_ADMIN_PASSWORD"] = password
-		return testcontainers.WithWaitStrategyAndDeadline(
-			120*time.Second,
-			wait.ForListeningPort(defaultBrokerPort).WithStartupTimeout(120*time.Second),
-			wait.ForLog("ActiveMQ Jolokia REST API available").WithStartupTimeout(120*time.Second),
-		)(req)
+		return nil
 	}
 }
 
@@ -81,10 +79,13 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"ACTIVEMQ_WEB_ADMIN_NAME":     defaultAdminUser,
 			"ACTIVEMQ_WEB_ADMIN_PASSWORD": defaultAdminPassword,
 		}),
-		testcontainers.WithWaitStrategyAndDeadline(
-			120*time.Second,
-			wait.ForListeningPort(defaultBrokerPort).WithStartupTimeout(120*time.Second),
-			wait.ForLog("ActiveMQ Jolokia REST API available").WithStartupTimeout(120*time.Second),
+		testcontainers.WithWaitStrategy(
+			wait.ForListeningPort(defaultBrokerPort),
+			wait.ForHTTP("/api/jolokia/version").
+				WithPort(defaultWebConsolePort).
+				WithBasicAuth(defaultAdminUser, defaultAdminPassword).
+				WithStatusCodeMatcher(func(status int) bool { return status == http.StatusOK }).
+				WithStartupTimeout(60*time.Second),
 		),
 	)
 	moduleOpts = append(moduleOpts, opts...)
