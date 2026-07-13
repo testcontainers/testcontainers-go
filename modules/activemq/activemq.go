@@ -66,10 +66,7 @@ func WithAdminCredentials(user, password string) testcontainers.CustomizeRequest
 		return testcontainers.WithWaitStrategyAndDeadline(
 			120*time.Second,
 			wait.ForListeningPort(defaultBrokerPort).WithStartupTimeout(120*time.Second),
-			wait.ForHTTP("/api/jolokia/").
-				WithPort(defaultWebConsolePort).
-				WithBasicAuth(user, password).
-				WithStartupTimeout(120*time.Second),
+			wait.ForLog("ActiveMQ Jolokia REST API available").WithStartupTimeout(120*time.Second),
 		)(req)
 	}
 }
@@ -87,9 +84,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithWaitStrategyAndDeadline(
 			120*time.Second,
 			wait.ForListeningPort(defaultBrokerPort).WithStartupTimeout(120*time.Second),
-			wait.ForHTTP("/api/jolokia/").
-				WithPort(defaultWebConsolePort).
-				WithStartupTimeout(120*time.Second),
+			wait.ForLog("ActiveMQ Jolokia REST API available").WithStartupTimeout(120*time.Second),
 		),
 	)
 	moduleOpts = append(moduleOpts, opts...)
