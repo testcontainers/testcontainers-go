@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -23,7 +22,6 @@ const (
 // Container represents the OrientDB container type used in the module.
 type Container struct {
 	testcontainers.Container
-	rootPassword string
 }
 
 // Run creates an instance of the OrientDB container type.
@@ -48,7 +46,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
 	if ctr != nil {
-		c = &Container{Container: ctr, rootPassword: defaultRootPassword}
+		c = &Container{Container: ctr}
 	}
 
 	if err != nil {
@@ -57,20 +55,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	if ctr == nil {
 		return c, errors.New("run orientdb: nil container")
-	}
-
-	// Extract the actual root password from the container environment so that
-	// it reflects any password set via WithRootPassword.
-	inspect, err := ctr.Inspect(ctx)
-	if err != nil {
-		return c, fmt.Errorf("inspect orientdb: %w", err)
-	}
-
-	for _, env := range inspect.Config.Env {
-		if value, ok := strings.CutPrefix(env, "ORIENTDB_ROOT_PASSWORD="); ok {
-			c.rootPassword = value
-			break
-		}
 	}
 
 	return c, nil
