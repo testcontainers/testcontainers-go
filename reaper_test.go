@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"sync"
@@ -514,6 +515,8 @@ func TestReaper_ReuseRunning(t *testing.T) {
 			cleanupReaper(t, reaper, spawner)
 			require.NoError(t, err)
 
+			reaperConnect(t, reaper)
+
 			obtainedReaperContainerIDs[i] = reaper.container.GetContainerID()
 		}(i)
 	}
@@ -524,6 +527,22 @@ func TestReaper_ReuseRunning(t *testing.T) {
 	for i, containerID := range obtainedReaperContainerIDs {
 		require.Equal(t, firstContainerID, containerID, "call %d should have returned same container id", i)
 	}
+}
+
+// reaperConnect copies the logic from Reaper.connect() but with better error handling.
+// Reaper.connect() neither returns the error from the handshake, nor the connection,
+// making the testing of the handshake flow impossible.
+func reaperConnect(t *testing.T, reaper *Reaper) {
+	t.Helper()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	var d net.Dialer
+	conn, err := d.DialContext(ctx, "tcp", reaper.Endpoint)
+	require.NoError(t, err, "dial reaper %s: %v", reaper.Endpoint, err)
+	defer conn.Close()
+	err = reaper.handshake(conn)
+	require.NoError(t, err, "Reaper handshake should be successful")
 }
 
 func TestSpawnerBackoff(t *testing.T) {
