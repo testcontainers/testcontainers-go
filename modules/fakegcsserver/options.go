@@ -8,10 +8,11 @@ import (
 
 // options holds the configuration for the FakeGCSServer container.
 type options struct {
-	// Scheme is the HTTP scheme to use. Valid values are "http", "https", and "both".
+	// Scheme is the HTTP scheme to use. Valid values are "http" and "https".
 	Scheme string
 }
 
+// defaultOptions returns an options struct with the default configuration.
 func defaultOptions() options {
 	return options{
 		Scheme: "http",
@@ -31,14 +32,17 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 }
 
 // WithScheme sets the scheme used by the fake-gcs-server.
-// Valid values are "http", "https", and "both". Default is "http".
+// Valid values are "http" (default) and "https".
+//
+// Note: "-scheme both" is not supported because it requires a second port (default 8000)
+// for HTTP in addition to the HTTPS port (4443) and this module only exposes 4443/tcp.
 func WithScheme(scheme string) Option {
 	return func(o *options) error {
 		switch scheme {
-		case "http", "https", "both":
+		case "http", "https":
 			o.Scheme = scheme
 		default:
-			return fmt.Errorf("invalid scheme %q: must be one of http, https, both", scheme)
+			return fmt.Errorf("invalid scheme %q: must be one of http, https", scheme)
 		}
 
 		return nil

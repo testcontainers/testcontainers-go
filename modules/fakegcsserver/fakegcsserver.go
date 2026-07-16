@@ -21,6 +21,7 @@ type Container struct {
 
 // StorageURL returns the GCS-compatible storage URL for the container.
 // The URL is in the form: <scheme>://<host>:<port>/storage/v1
+// where scheme matches the value passed to [WithScheme] (default "http").
 func (c *Container) StorageURL(ctx context.Context) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
@@ -46,26 +47,29 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
+	// Build the HTTP wait strategy; enable TLS for "https" because port 4443
+	// performs a TLS handshake in that mode.
+	waitStrategy := wait.ForHTTP("/storage/v1/b").
+		WithPort(defaultPort).
+		WithStatusCodeMatcher(func(status int) bool {
+			return status >= 200 && status < 500
+		})
+	if settings.Scheme == "https" {
+		waitStrategy = waitStrategy.WithTLS(true).WithAllowInsecure(true)
+	}
+
+	// The image ENTRYPOINT is ["/bin/fake-gcs-server", "-data", "/data"].
+	// WithCmd sets Docker CMD, which is appended after the entrypoint, so only
+	// flags should be passed here — not the binary path.
 	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
 	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultPort),
 		testcontainers.WithCmd(
-			"/bin/fake-gcs-server",
 			"-scheme", settings.Scheme,
 			"-port", "4443",
 			"-backend", "memory",
 		),
-		testcontainers.WithWaitStrategy(func() *wait.HTTPStrategy {
-			w := wait.ForHTTP("/storage/v1/b").
-				WithPort(defaultPort).
-				WithStatusCodeMatcher(func(status int) bool {
-					return status >= 200 && status < 500
-				})
-			if settings.Scheme == "https" {
-				w = w.WithTLS(true).WithAllowInsecure(true)
-			}
-			return w
-		}()),
+		testcontainers.WithWaitStrategy(waitStrategy),
 	)
 	moduleOpts = append(moduleOpts, opts...)
 

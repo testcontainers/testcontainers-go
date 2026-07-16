@@ -59,7 +59,7 @@ When starting the FakeGCSServer container, you can pass options in a variadic wa
 
 - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-Sets the HTTP scheme used by the fake-gcs-server. Valid values are `"http"` (default), `"https"`, and `"both"`.
+Sets the HTTP scheme used by the fake-gcs-server. Valid values are `"http"` (default) and `"https"`.
 
 ```golang
 fakegcsserver.Run(ctx, "fsouza/fake-gcs-server:1.47",
