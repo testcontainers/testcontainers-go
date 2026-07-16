@@ -1,3 +1,4 @@
+// Package fakegcsserver_test — see package documentation in examples_test.go.
 package fakegcsserver_test
 
 import (

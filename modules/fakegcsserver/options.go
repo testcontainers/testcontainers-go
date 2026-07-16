@@ -1,3 +1,4 @@
+// Package fakegcsserver — see package documentation in fakegcsserver.go.
 package fakegcsserver
 
 import (

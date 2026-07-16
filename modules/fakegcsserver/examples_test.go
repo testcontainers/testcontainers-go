@@ -1,3 +1,5 @@
+// Package fakegcsserver_test provides integration tests and usage examples
+// for the fakegcsserver Testcontainers module.
 package fakegcsserver_test
 
 import (
@@ -9,6 +11,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/fakegcsserver"
 )
 
+// ExampleRun demonstrates how to start a FakeGCSServer container and
+// retrieve its GCS-compatible storage URL.
 func ExampleRun() {
 	// runFakeGCSServerContainer {
 	ctx := context.Background()

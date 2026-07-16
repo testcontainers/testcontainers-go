@@ -1,3 +1,7 @@
+// Package fakegcsserver provides a Testcontainers module for the
+// Fake GCS Server (https://github.com/fsouza/fake-gcs-server), a
+// Google Cloud Storage API emulator for local development and testing.
+// It exposes the GCS JSON API on port 4443 with an in-memory storage backend.
 package fakegcsserver
 
 import (
