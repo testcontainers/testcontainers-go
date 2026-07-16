@@ -11,7 +11,7 @@ It runs [fsouza/fake-gcs-server](https://github.com/fsouza/fake-gcs-server) and 
 
 Please run the following command to add the FakeGCSServer module to your Go dependencies:
 
-```
+```bash
 go get github.com/testcontainers/testcontainers-go/modules/fakegcsserver
 ```
 
