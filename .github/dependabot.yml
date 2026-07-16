@@ -85,6 +85,7 @@ updates:
         - /modules/solr
         - /modules/surrealdb
         - /modules/tidb
+        - /modules/timeplus
         - /modules/toxiproxy
         - /modules/trino
         - /modules/valkey

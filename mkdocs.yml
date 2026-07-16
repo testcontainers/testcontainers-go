@@ -145,6 +145,7 @@ nav:
         - modules/solr.md
         - modules/surrealdb.md
         - modules/tidb.md
+        - modules/timeplus.md
         - modules/toxiproxy.md
         - modules/trino.md
         - modules/valkey.md
