@@ -72,6 +72,7 @@ updates:
         - /modules/presto
         - /modules/pulsar
         - /modules/qdrant
+        - /modules/questdb
         - /modules/rabbitmq
         - /modules/redis
         - /modules/redpanda
