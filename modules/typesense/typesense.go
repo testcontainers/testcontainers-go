@@ -104,7 +104,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	for _, env := range inspect.Config.Env {
 		if v, ok := strings.CutPrefix(env, apiKeyEnvVar+"="); ok {
 			c.apiKey = v
-			break
 		}
 	}
 

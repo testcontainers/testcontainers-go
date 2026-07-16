@@ -307,7 +307,8 @@
         },
         {
             "name": "module / typesense",
-            "path": "../modules/typesense"        },
+            "path": "../modules/typesense"
+        },
         {
             "name": "module / valkey",
             "path": "../modules/valkey"
