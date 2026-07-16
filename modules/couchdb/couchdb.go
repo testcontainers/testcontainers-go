@@ -1,8 +1,10 @@
+// Package couchdb provides a Testcontainers module for Apache CouchDB.
 package couchdb
 
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -17,14 +19,14 @@ const (
 	defaultPassword = "password"
 )
 
-// Container represents the CouchDB container type used in the module
+// Container represents the CouchDB container type used in the module.
 type Container struct {
 	testcontainers.Container
 	user     string
 	password string
 }
 
-// Run creates an instance of the CouchDB container type
+// Run creates an instance of the CouchDB container type.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
 	moduleOpts = append(moduleOpts,
@@ -54,7 +56,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return c, fmt.Errorf("run couchdb: %w", err)
 	}
 
-	// Inspect the container to get the actual credentials from environment
+	// Inspect the container to read back the actual credentials in case they
+	// were overridden by a WithAdminCredentials option.
 	inspect, err := ctr.Inspect(ctx)
 	if err != nil {
 		return c, fmt.Errorf("inspect couchdb: %w", err)
@@ -72,20 +75,19 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
-// WithAdminCredentials sets the admin username and password for the CouchDB container.
+// WithAdminCredentials sets the admin username and password for the CouchDB
+// container via the COUCHDB_USER and COUCHDB_PASSWORD environment variables.
 func WithAdminCredentials(user, password string) testcontainers.CustomizeRequestOption {
-	return func(req *testcontainers.GenericContainerRequest) error {
-		if req.Env == nil {
-			req.Env = map[string]string{}
-		}
-		req.Env["COUCHDB_USER"] = user
-		req.Env["COUCHDB_PASSWORD"] = password
-		return nil
-	}
+	return testcontainers.WithEnv(map[string]string{
+		"COUCHDB_USER":     user,
+		"COUCHDB_PASSWORD": password,
+	})
 }
 
-// ConnectionString returns the connection string for the CouchDB container,
-// using the format: http://user:password@host:5984
+// ConnectionString returns the HTTP connection string for the CouchDB container
+// in the form http://user:password@host:5984. IPv6 hosts are bracketed
+// correctly via net.JoinHostPort, and credentials containing special characters
+// are percent-encoded via url.UserPassword.
 func (c *Container) ConnectionString(ctx context.Context) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
@@ -97,5 +99,11 @@ func (c *Container) ConnectionString(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("mapped port: %w", err)
 	}
 
-	return fmt.Sprintf("http://%s:%s@%s:%s", url.PathEscape(c.user), url.PathEscape(c.password), host, port.Port()), nil
+	u := url.URL{
+		Scheme: "http",
+		User:   url.UserPassword(c.user, c.password),
+		Host:   net.JoinHostPort(host, port.Port()),
+	}
+
+	return u.String(), nil
 }
