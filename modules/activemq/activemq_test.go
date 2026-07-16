@@ -17,15 +17,11 @@ func TestActiveMQ(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name          string
-		opts          []testcontainers.ContainerCustomizer
-		adminUser     string
-		adminPassword string
+		name string
+		opts []testcontainers.ContainerCustomizer
 	}{
 		{
-			name:          "Default",
-			adminUser:     "admin",
-			adminPassword: "admin",
+			name: "Default",
 		},
 		{
 			name: "WithAdminCredentials",
@@ -34,8 +30,6 @@ func TestActiveMQ(t *testing.T) {
 				activemq.WithAdminCredentials("testuser", "testpass"),
 				// }
 			},
-			adminUser:     "testuser",
-			adminPassword: "testpass",
 		},
 	}
 
@@ -45,8 +39,10 @@ func TestActiveMQ(t *testing.T) {
 			testcontainers.CleanupContainer(t, ctr)
 			require.NoError(t, err)
 
-			require.Equal(t, tc.adminUser, ctr.AdminUser())
-			require.Equal(t, tc.adminPassword, ctr.AdminPassword())
+			// The web console always uses the built-in Jetty-realm credentials
+			// regardless of any WithAdminCredentials option.
+			require.Equal(t, "admin", ctr.AdminUser())
+			require.Equal(t, "admin", ctr.AdminPassword())
 
 			// brokerURL {
 			brokerURL, err := ctr.BrokerURL(ctx)

@@ -1,9 +1,9 @@
+// Package activemq provides a testcontainers module for Apache ActiveMQ Classic.
 package activemq
 
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -23,12 +23,20 @@ type Container struct {
 	adminPassword string
 }
 
-// AdminUser returns the administrator username for the ActiveMQ web console.
+// AdminUser returns the web-console username.
+// The ActiveMQ Classic image protects the web console with Jetty's
+// HashLoginService (conf/jetty-realm.properties), which is hardcoded to
+// "admin: admin, admin" and cannot be overridden via environment variables.
+// This method therefore always returns "admin".
 func (c *Container) AdminUser() string {
 	return c.adminUser
 }
 
-// AdminPassword returns the administrator password for the ActiveMQ web console.
+// AdminPassword returns the web-console password.
+// The ActiveMQ Classic image protects the web console with Jetty's
+// HashLoginService (conf/jetty-realm.properties), which is hardcoded to
+// "admin: admin, admin" and cannot be overridden via environment variables.
+// This method therefore always returns "admin".
 func (c *Container) AdminPassword() string {
 	return c.adminPassword
 }
@@ -51,16 +59,16 @@ func (c *Container) WebConsoleURL(ctx context.Context) (string, error) {
 	return "http://" + hostPort, nil
 }
 
-// WithAdminCredentials sets ACTIVEMQ_WEB_USER and ACTIVEMQ_WEB_PASSWORD, which the
-// image entrypoint uses to update conf/users.properties (the JAAS PropertiesLoginModule
-// used for broker connection/messaging security when connection-level auth is enabled).
+// WithAdminCredentials sets ACTIVEMQ_WEB_USER and ACTIVEMQ_WEB_PASSWORD.
+// The image entrypoint uses these to update conf/users.properties, which
+// configures the JAAS PropertiesLoginModule used for broker connection/messaging
+// security when connection-level authentication is enabled.
 //
-// NOTE: these variables do NOT affect Jolokia or web-console authentication.
+// NOTE: these variables do NOT affect web-console or Jolokia authentication.
 // The web console and /api/jolokia/* endpoints are protected by Jetty's
 // HashLoginService reading conf/jetty-realm.properties, which is hardcoded to
 // "admin: admin, admin" and is not configurable via environment variables.
-// The wait strategy therefore always uses the built-in admin/admin credentials
-// regardless of what is passed here.
+// AdminUser() and AdminPassword() always return those built-in values.
 func WithAdminCredentials(user, password string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		if req.Env == nil {
@@ -94,6 +102,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	var c *Container
 	if ctr != nil {
+		// adminUser and adminPassword are always the Jetty-realm values; they
+		// cannot be changed via environment variables in this image.
 		c = &Container{
 			Container:     ctr,
 			adminUser:     defaultAdminUser,
@@ -102,23 +112,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 	if err != nil {
 		return c, fmt.Errorf("run activemq: %w", err)
-	}
-
-	// Refresh credentials from the running container's environment.
-	inspect, err := ctr.Inspect(ctx)
-	if err != nil {
-		return c, fmt.Errorf("inspect activemq: %w", err)
-	}
-	foundUser, foundPass := false, false
-	for _, env := range inspect.Config.Env {
-		if v, ok := strings.CutPrefix(env, "ACTIVEMQ_WEB_USER="); ok {
-			c.adminUser, foundUser = v, true
-		} else if v, ok := strings.CutPrefix(env, "ACTIVEMQ_WEB_PASSWORD="); ok {
-			c.adminPassword, foundPass = v, true
-		}
-		if foundUser && foundPass {
-			break
-		}
 	}
 
 	return c, nil
