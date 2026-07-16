@@ -1,3 +1,4 @@
+// Package firebird provides a Testcontainers module for running Firebird database containers.
 package firebird
 
 import (
