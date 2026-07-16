@@ -33,9 +33,11 @@ func TestMailpit(t *testing.T) {
 func TestMailpitWithSMTPAuth(t *testing.T) {
 	ctx := context.Background()
 
+	// withSMTPAuth {
 	ctr, err := mailpit.Run(ctx, "axllent/mailpit:v1.20",
 		mailpit.WithSMTPAuth("user", "password"),
 	)
+	// }
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -47,9 +49,11 @@ func TestMailpitWithSMTPAuth(t *testing.T) {
 func TestMailpitWithMessageLimit(t *testing.T) {
 	ctx := context.Background()
 
+	// withMessageLimit {
 	ctr, err := mailpit.Run(ctx, "axllent/mailpit:v1.20",
 		mailpit.WithMessageLimit(100),
 	)
+	// }
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 

@@ -12,7 +12,7 @@ The Testcontainers module for Mailpit.
 
 Please run the following command to add the Mailpit module to your Go dependencies:
 
-```
+```bash
 go get github.com/testcontainers/testcontainers-go/modules/mailpit
 ```
 
@@ -51,7 +51,7 @@ When starting the Mailpit container, you can pass options in a variadic way to c
 
 - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-`WithSMTPAuth` sets the SMTP authentication credentials for the Mailpit container, using the `MP_SMTP_AUTH_USERNAME` and `MP_SMTP_AUTH_PASSWORD` environment variables.
+`WithSMTPAuth` sets the SMTP authentication credentials for the Mailpit container via the `MP_SMTP_AUTH` environment variable (in `user:password` format), and enables plaintext authentication via `MP_SMTP_AUTH_ALLOW_INSECURE`.
 
 <!--codeinclude-->
 [WithSMTPAuth](../../modules/mailpit/mailpit_test.go) inside_block:withSMTPAuth

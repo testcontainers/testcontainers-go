@@ -1,3 +1,5 @@
+// Package mailpit provides a Testcontainers module for Mailpit, a fast
+// multi-platform email testing tool with an SMTP server, web UI, and REST API.
 package mailpit
 
 import (
@@ -56,7 +58,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(smtpPort, httpPort),
 		testcontainers.WithWaitStrategy(
-			wait.ForHTTP("/api/v1/info").
+			wait.ForHTTP("/readyz").
 				WithPort(httpPort).
 				WithStatusCodeMatcher(func(status int) bool {
 					return status == 200
