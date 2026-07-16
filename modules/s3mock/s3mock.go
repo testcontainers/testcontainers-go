@@ -1,3 +1,6 @@
+// Package s3mock provides a testcontainers module for Adobe S3Mock, a lightweight
+// server that implements the AWS S3 API. Use it in tests to interact with S3
+// buckets and objects without real AWS credentials or network access.
 package s3mock
 
 import (

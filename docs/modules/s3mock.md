@@ -10,7 +10,7 @@ The Testcontainers module for [S3Mock](https://github.com/adobe/S3Mock) — a po
 
 Please run the following command to add the S3Mock module to your Go dependencies:
 
-```
+```bash
 go get github.com/testcontainers/testcontainers-go/modules/s3mock
 ```
 

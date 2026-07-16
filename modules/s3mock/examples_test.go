@@ -22,8 +22,10 @@ func ExampleRun() {
 		s3mock.WithInitialBuckets("mybucket"),
 	)
 	defer func() {
-		if err := testcontainers.TerminateContainer(s3mockContainer); err != nil {
-			log.Printf("failed to terminate container: %s", err)
+		if s3mockContainer != nil {
+			if err := testcontainers.TerminateContainer(s3mockContainer); err != nil {
+				log.Printf("failed to terminate container: %s", err)
+			}
 		}
 	}()
 	if err != nil {
