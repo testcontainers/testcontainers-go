@@ -1,3 +1,4 @@
+// Package cratedb provides a Testcontainers module for CrateDB.
 package cratedb
 
 import (
@@ -32,9 +33,13 @@ func WithHeapSize(size string) testcontainers.CustomizeRequestOption {
 }
 
 // Run creates an instance of the CrateDB container type.
+// By default, the container is started in single-node discovery mode
+// (-Cdiscovery.type=single-node) so it starts reliably without requiring
+// a cluster bootstrap quorum.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 4+len(opts))
 	moduleOpts = append(moduleOpts,
+		testcontainers.WithCmd("crate", "-Cdiscovery.type=single-node"),
 		testcontainers.WithExposedPorts(httpPort, pgPort),
 		testcontainers.WithEnv(map[string]string{
 			"CRATE_HEAP_SIZE": defaultHeapSize,
@@ -69,6 +74,7 @@ func (c *Container) HTTPEndpoint(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("http endpoint: %w", err)
 	}
+
 	return endpoint, nil
 }
 

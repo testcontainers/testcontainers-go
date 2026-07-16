@@ -49,7 +49,7 @@ Here you can find the list with the default ports used by the CrateDB container.
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "crate:5.7")`.
+For example: `Run(context.Background(), "crate:5.7")`.
 
 ### Container Options
 

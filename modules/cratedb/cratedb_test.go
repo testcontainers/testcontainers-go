@@ -56,13 +56,5 @@ func TestCrateDB_WithHeapSize(t *testing.T) {
 	// Verify the heap size env var was applied to the running container
 	inspect, err := ctr.Inspect(ctx)
 	require.NoError(t, err)
-
-	found := false
-	for _, env := range inspect.Config.Env {
-		if env == "CRATE_HEAP_SIZE=256m" {
-			found = true
-			break
-		}
-	}
-	require.True(t, found, "expected CRATE_HEAP_SIZE=256m to be set in container environment")
+	require.Contains(t, inspect.Config.Env, "CRATE_HEAP_SIZE=256m", "expected CRATE_HEAP_SIZE=256m to be set in container environment")
 }
