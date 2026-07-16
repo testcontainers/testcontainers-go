@@ -69,6 +69,7 @@ updates:
         - /modules/orientdb
         - /modules/pinecone
         - /modules/postgres
+        - /modules/presto
         - /modules/pulsar
         - /modules/qdrant
         - /modules/rabbitmq
