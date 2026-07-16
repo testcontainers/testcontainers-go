@@ -3,7 +3,6 @@ package nginx
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -51,13 +50,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 2+len(opts))
 	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(httpPort, httpsPort),
-		testcontainers.WithWaitStrategy(
-			wait.ForHTTP("/").
-				WithPort(httpPort).
-				WithStatusCodeMatcher(func(status int) bool {
-					return status == http.StatusOK
-				}),
-		),
+		testcontainers.WithWaitStrategy(wait.ForListeningPort(httpPort)),
 	)
 
 	moduleOpts = append(moduleOpts, opts...)
