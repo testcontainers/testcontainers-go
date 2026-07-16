@@ -9,6 +9,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/activemq"
 )
 
+// ExampleRun demonstrates how to start an Apache ActiveMQ Classic container
+// and retrieve the broker URL and web-console credentials.
 func ExampleRun() {
 	// runActiveMQContainer {
 	ctx := context.Background()
@@ -47,5 +49,5 @@ func ExampleRun() {
 
 	// Output:
 	// true
-	// test:test
+	// admin:admin
 }

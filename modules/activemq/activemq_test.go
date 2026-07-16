@@ -13,6 +13,9 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/activemq"
 )
 
+// TestActiveMQ exercises the ActiveMQ module against the
+// apache/activemq-classic image, covering the default configuration
+// and the WithAdminCredentials option.
 func TestActiveMQ(t *testing.T) {
 	ctx := context.Background()
 
