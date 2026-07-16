@@ -47,3 +47,22 @@ func TestTypesense_WithAPIKey(t *testing.T) {
 
 	require.Equal(t, "custom-key", ctr.APIKey())
 }
+
+// TestTypesense_WithEnvOverride verifies that APIKey() reflects the effective
+// env var even when the caller overrides TYPESENSE_API_KEY directly via
+// testcontainers.WithEnv (bypassing WithAPIKey).
+func TestTypesense_WithEnvOverride(t *testing.T) {
+	ctx := context.Background()
+
+	ctr, err := typesense.Run(
+		ctx,
+		"typesense/typesense:26.0",
+		testcontainers.WithEnv(map[string]string{
+			"TYPESENSE_API_KEY": "env-override-key",
+		}),
+	)
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	require.Equal(t, "env-override-key", ctr.APIKey())
+}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -92,6 +93,19 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	if err != nil {
 		return c, fmt.Errorf("run typesense: %w", err)
+	}
+
+	// Inspect the container to get the effective API key, which may have been
+	// overridden by the caller via testcontainers.WithEnv after module defaults.
+	inspect, err := ctr.Inspect(ctx)
+	if err != nil {
+		return c, fmt.Errorf("inspect typesense: %w", err)
+	}
+	for _, env := range inspect.Config.Env {
+		if v, ok := strings.CutPrefix(env, apiKeyEnvVar+"="); ok {
+			c.apiKey = v
+			break
+		}
 	}
 
 	return c, nil
