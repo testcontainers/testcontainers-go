@@ -123,6 +123,7 @@ nav:
         - modules/opensearch.md
         - modules/pinecone.md
         - modules/postgres.md
+        - modules/presto.md
         - modules/pulsar.md
         - modules/qdrant.md
         - modules/rabbitmq.md

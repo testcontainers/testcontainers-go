@@ -63,6 +63,7 @@ updates:
         - /modules/opensearch
         - /modules/pinecone
         - /modules/postgres
+        - /modules/presto
         - /modules/pulsar
         - /modules/qdrant
         - /modules/rabbitmq
