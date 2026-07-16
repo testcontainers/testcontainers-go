@@ -72,6 +72,7 @@ updates:
         - /modules/scylladb
         - /modules/socat
         - /modules/solace
+        - /modules/solr
         - /modules/surrealdb
         - /modules/tidb
         - /modules/toxiproxy
