@@ -89,7 +89,7 @@ updates:
         - /modules/timeplus
         - /modules/toxiproxy
         - /modules/trino
-        - /modules/valkey
+        - /modules/typesense        - /modules/valkey
         - /modules/vault
         - /modules/vearch
         - /modules/weaviate

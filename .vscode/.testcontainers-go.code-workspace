@@ -306,6 +306,9 @@
             "path": "../modules/trino"
         },
         {
+            "name": "module / typesense",
+            "path": "../modules/typesense"        },
+        {
             "name": "module / valkey",
             "path": "../modules/valkey"
         },
