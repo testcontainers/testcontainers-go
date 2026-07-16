@@ -66,6 +66,7 @@ updates:
         - /modules/openfga
         - /modules/openldap
         - /modules/opensearch
+        - /modules/orientdb
         - /modules/pinecone
         - /modules/postgres
         - /modules/pulsar
