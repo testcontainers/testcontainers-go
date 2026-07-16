@@ -130,6 +130,7 @@ nav:
         - modules/redpanda.md
         - modules/registry.md
         - modules/scylladb.md
+        - modules/sftp.md
         - modules/socat.md
         - modules/solace.md
         - modules/surrealdb.md
