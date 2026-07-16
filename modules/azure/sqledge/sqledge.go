@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -112,10 +113,15 @@ func (c *Container) ConnectionString(ctx context.Context, args ...string) (strin
 		return "", fmt.Errorf("mapped port: %w", err)
 	}
 
-	connStr := fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=master", defaultUsername, c.password, host, port.Port())
+	u := url.URL{
+		Scheme:   "sqlserver",
+		User:     url.UserPassword(defaultUsername, c.password),
+		Host:     fmt.Sprintf("%s:%s", host, port.Port()),
+		RawQuery: "database=master",
+	}
 	if len(args) > 0 {
-		connStr += "&" + strings.Join(args, "&")
+		u.RawQuery += "&" + strings.Join(args, "&")
 	}
 
-	return connStr, nil
+	return u.String(), nil
 }
