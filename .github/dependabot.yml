@@ -67,6 +67,7 @@ updates:
         - /modules/openldap
         - /modules/opensearch
         - /modules/orientdb
+        - /modules/papercutsmtp
         - /modules/pinecone
         - /modules/postgres
         - /modules/presto

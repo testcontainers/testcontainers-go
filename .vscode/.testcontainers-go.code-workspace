@@ -218,6 +218,10 @@
             "path": "../modules/orientdb"
         },
         {
+            "name": "module / papercutsmtp",
+            "path": "../modules/papercutsmtp"
+        },
+        {
             "name": "module / pinecone",
             "path": "../modules/pinecone"
         },
