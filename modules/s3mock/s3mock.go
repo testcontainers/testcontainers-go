@@ -20,15 +20,18 @@ type Container struct {
 }
 
 // WithInitialBuckets configures S3Mock to pre-create the given buckets on startup.
+// Both the 3.x/4.x env var (domain prefix) and the 5.x+ env var (store prefix) are
+// set so that the option works across all supported S3Mock versions.
 func WithInitialBuckets(buckets ...string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		if len(buckets) == 0 {
 			return nil
 		}
-		if req.Env == nil {
-			req.Env = map[string]string{}
-		}
-		req.Env["COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS"] = strings.Join(buckets, ",")
+		joined := strings.Join(buckets, ",")
+		// 3.x / 4.x: com.adobe.testing.s3mock.domain.initialBuckets
+		req.Env["COM_ADOBE_TESTING_S3MOCK_DOMAIN_INITIAL_BUCKETS"] = joined
+		// 5.x+: com.adobe.testing.s3mock.store.initialBuckets
+		req.Env["COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS"] = joined
 		return nil
 	}
 }
