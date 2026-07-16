@@ -79,6 +79,7 @@ updates:
         - /modules/redpanda
         - /modules/registry
         - /modules/scylladb
+        - /modules/sftp
         - /modules/socat
         - /modules/solace
         - /modules/surrealdb
