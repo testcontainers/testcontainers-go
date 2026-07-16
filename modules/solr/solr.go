@@ -3,6 +3,7 @@ package solr
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -47,10 +48,26 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 }
 
 // WithCollection returns a [testcontainers.CustomizeRequestOption] that creates
-// a named Solr collection after the container is ready.
+// a named Solr collection after the container is ready. It returns an error if
+// the collection creation command exits with a non-zero status, so callers can
+// be sure the collection exists once [Run] returns without error.
 func WithCollection(name string) testcontainers.CustomizeRequestOption {
-	return testcontainers.WithAfterReadyCommand(
-		testcontainers.NewRawCommand([]string{"solr", "create", "-c", name}),
+	return testcontainers.WithAdditionalLifecycleHooks(
+		testcontainers.ContainerLifecycleHooks{
+			PostReadies: []testcontainers.ContainerHook{
+				func(ctx context.Context, c testcontainers.Container) error {
+					exitCode, output, err := c.Exec(ctx, []string{"solr", "create", "-c", name})
+					if err != nil {
+						return fmt.Errorf("create solr collection %q: %w", name, err)
+					}
+					if exitCode != 0 {
+						data, _ := io.ReadAll(output)
+						return fmt.Errorf("create solr collection %q: exit code %d: %s", name, exitCode, string(data))
+					}
+					return nil
+				},
+			},
+		},
 	)
 }
 
