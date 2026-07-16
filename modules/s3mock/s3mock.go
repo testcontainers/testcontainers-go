@@ -18,13 +18,16 @@ const (
 )
 
 // Container represents the S3Mock container type used in the module.
+// It wraps the generic testcontainers.Container and exposes S3Mock-specific
+// helper methods for retrieving the HTTP and HTTPS endpoint URLs.
 type Container struct {
 	testcontainers.Container
 }
 
-// WithInitialBuckets configures S3Mock to pre-create the given buckets on startup.
-// Both the 3.x/4.x env var (domain prefix) and the 5.x+ env var (store prefix) are
-// set so that the option works across all supported S3Mock versions.
+// WithInitialBuckets returns an option that configures S3Mock to pre-create
+// the given buckets on startup. Calling it with no arguments is a no-op.
+// Both the 3.x/4.x env var (domain prefix) and the 5.x+ env var (store prefix)
+// are set so that the option works across all supported S3Mock versions.
 func WithInitialBuckets(buckets ...string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		if len(buckets) == 0 {
@@ -39,17 +42,21 @@ func WithInitialBuckets(buckets ...string) testcontainers.CustomizeRequestOption
 	}
 }
 
-// EndpointURL returns the HTTP endpoint URL for the S3Mock container (mapped from container port 9090).
+// EndpointURL returns the HTTP endpoint URL for the S3Mock container,
+// using the dynamically mapped host port for container port 9090.
 func (c *Container) EndpointURL(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, httpPort, "http")
 }
 
-// HTTPSEndpointURL returns the HTTPS endpoint URL for the S3Mock container (mapped from container port 9191).
+// HTTPSEndpointURL returns the HTTPS endpoint URL for the S3Mock container,
+// using the dynamically mapped host port for container port 9191.
 func (c *Container) HTTPSEndpointURL(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, httpsPort, "https")
 }
 
-// Run creates an instance of the S3Mock container type.
+// Run creates and starts an S3Mock container using the given image and options.
+// The container exposes HTTP on port 9090 and HTTPS on port 9191, and waits
+// until the /favicon.ico health path returns HTTP 200 before returning.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
 	moduleOpts = append(moduleOpts,

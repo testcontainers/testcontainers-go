@@ -13,6 +13,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/s3mock"
 )
 
+// ExampleRun demonstrates how to start an S3Mock container with a pre-created
+// bucket and configure the AWS SDK v2 client to point at the container endpoint.
 func ExampleRun() {
 	// runS3MockContainer {
 	ctx := context.Background()

@@ -52,6 +52,8 @@ func newS3Client(ctx context.Context, ctr *s3mock.Container) (*s3.Client, error)
 	return client, nil
 }
 
+// TestS3Mock verifies that an S3Mock container starts correctly and that
+// EndpointURL, HTTPSEndpointURL, and basic S3 operations all work as expected.
 func TestS3Mock(t *testing.T) {
 	ctx := context.Background()
 
@@ -112,6 +114,8 @@ func TestS3Mock(t *testing.T) {
 	})
 }
 
+// TestS3MockWithInitialBuckets verifies that WithInitialBuckets pre-creates
+// the specified buckets so they are available immediately after startup.
 func TestS3MockWithInitialBuckets(t *testing.T) {
 	ctx := context.Background()
 
@@ -139,6 +143,8 @@ func TestS3MockWithInitialBuckets(t *testing.T) {
 	require.Contains(t, bucketNames, "bucket2")
 }
 
+// TestS3MockWithInitialBucketsEmpty verifies that calling WithInitialBuckets
+// with no arguments is a no-op and does not create any buckets.
 func TestS3MockWithInitialBucketsEmpty(t *testing.T) {
 	ctx := context.Background()
 
