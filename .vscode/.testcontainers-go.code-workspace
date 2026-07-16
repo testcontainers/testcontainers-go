@@ -98,6 +98,10 @@
             "path": "../modules/etcd"
         },
         {
+            "name": "module / firebird",
+            "path": "../modules/firebird"
+        },
+        {
             "name": "module / forgejo",
             "path": "../modules/forgejo"
         },
