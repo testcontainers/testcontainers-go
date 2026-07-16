@@ -134,6 +134,10 @@
             "path": "../modules/kafka"
         },
         {
+            "name": "module / kurrentdb",
+            "path": "../modules/kurrentdb"
+        },
+        {
             "name": "module / localstack",
             "path": "../modules/localstack"
         },
