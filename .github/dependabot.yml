@@ -65,6 +65,7 @@ updates:
         - /modules/postgres
         - /modules/pulsar
         - /modules/qdrant
+        - /modules/questdb
         - /modules/rabbitmq
         - /modules/redis
         - /modules/redpanda

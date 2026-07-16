@@ -210,6 +210,10 @@
             "path": "../modules/qdrant"
         },
         {
+            "name": "module / questdb",
+            "path": "../modules/questdb"
+        },
+        {
             "name": "module / rabbitmq",
             "path": "../modules/rabbitmq"
         },

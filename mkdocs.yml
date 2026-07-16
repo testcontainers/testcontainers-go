@@ -125,6 +125,7 @@ nav:
         - modules/postgres.md
         - modules/pulsar.md
         - modules/qdrant.md
+        - modules/questdb.md
         - modules/rabbitmq.md
         - modules/redis.md
         - modules/redpanda.md
