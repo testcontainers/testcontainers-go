@@ -9,8 +9,8 @@ import (
 // options holds the configuration for the SFTP container.
 type options struct {
 	// users holds the list of user configuration strings passed as CMD args.
-	// Each entry is in the form "username:password:::" (empty dir field;
-	// atmoz/sftp defaults to /home/<username>/upload).
+	// Each entry is in the form "username:password:::upload";
+	// atmoz/sftp creates /home/<username>/upload as a writable directory.
 	users []string
 }
 
@@ -35,6 +35,6 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 // Multiple calls to WithUser will accumulate users.
 func WithUser(username, password string) Option {
 	return func(o *options) {
-		o.users = append(o.users, fmt.Sprintf("%s:%s:::", username, password))
+		o.users = append(o.users, fmt.Sprintf("%s:%s:::upload", username, password))
 	}
 }

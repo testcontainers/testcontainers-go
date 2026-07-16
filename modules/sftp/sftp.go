@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -66,5 +67,5 @@ func (c *Container) Address(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("sftp port: %w", err)
 	}
 
-	return fmt.Sprintf("%s:%s", host, port.Port()), nil
+	return net.JoinHostPort(host, port.Port()), nil
 }
