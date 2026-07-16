@@ -10,7 +10,7 @@ The Testcontainers module for RavenDB, an open-source NoSQL document database wi
 
 Please run the following command to add the RavenDB module to your Go dependencies:
 
-```
+```sh
 go get github.com/testcontainers/testcontainers-go/modules/ravendb
 ```
 

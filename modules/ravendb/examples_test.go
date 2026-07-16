@@ -9,6 +9,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/ravendb"
 )
 
+// ExampleRun demonstrates how to create and start a RavenDB container.
 func ExampleRun() {
 	// runRavenDBContainer {
 	ctx := context.Background()
@@ -37,6 +38,7 @@ func ExampleRun() {
 	// true
 }
 
+// ExampleRun_managementURL demonstrates how to retrieve the RavenDB management URL.
 func ExampleRun_managementURL() {
 	ctx := context.Background()
 
