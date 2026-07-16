@@ -39,7 +39,7 @@ updates:
         - /modules/dynamodb
         - /modules/elasticsearch
         - /modules/etcd
-- /modules/fakegcsserver
+        - /modules/fakegcsserver
         - /modules/firebird
         - /modules/forgejo
         - /modules/gcloud
