@@ -23,6 +23,7 @@ type s3EndpointResolver struct {
 	endpointURL string
 }
 
+// ResolveEndpoint routes the S3 API call to the S3Mock container endpoint URL.
 func (r *s3EndpointResolver) ResolveEndpoint(ctx context.Context, params s3.EndpointParameters) (smithyendpoints.Endpoint, error) {
 	params.Endpoint = aws.String(r.endpointURL)
 	return s3.NewDefaultEndpointResolverV2().ResolveEndpoint(ctx, params)
