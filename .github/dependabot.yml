@@ -28,6 +28,7 @@ updates:
         - /modules/compose
         - /modules/consul
         - /modules/couchbase
+        - /modules/couchdb
         - /modules/cratedb
         - /modules/databend
         - /modules/dex
