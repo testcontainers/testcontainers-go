@@ -88,6 +88,7 @@ nav:
         - modules/consul.md
         - modules/couchbase.md
         - modules/couchdb.md
+        - modules/cratedb.md
         - modules/databend.md
         - modules/dex.md
         - modules/dind.md
