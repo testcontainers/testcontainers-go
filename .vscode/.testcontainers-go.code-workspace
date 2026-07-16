@@ -62,6 +62,10 @@
             "path": "../modules/couchbase"
         },
         {
+            "name": "module / cratedb",
+            "path": "../modules/cratedb"
+        },
+        {
             "name": "module / databend",
             "path": "../modules/databend"
         },
