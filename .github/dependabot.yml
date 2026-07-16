@@ -54,6 +54,7 @@ updates:
         - /modules/minio
         - /modules/mockserver
         - /modules/mongodb
+        - /modules/mosquitto
         - /modules/mssql
         - /modules/mysql
         - /modules/nats
