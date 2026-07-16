@@ -3,6 +3,7 @@ package questdb
 import (
 	"context"
 	"fmt"
+	"net"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -63,7 +64,7 @@ func (c *Container) HTTPEndpoint(ctx context.Context) (string, error) {
 }
 
 // PGEndpoint returns the PostgreSQL wire protocol connection string for the QuestDB container.
-// The returned URL has the format "postgres://admin:quest@host:port/qdb".
+// The returned URL has the format "postgres://admin:[REDACTED]@host:port/qdb".
 func (c *Container) PGEndpoint(ctx context.Context) (string, error) {
 	host, err := c.Host(ctx)
 	if err != nil {
@@ -75,9 +76,9 @@ func (c *Container) PGEndpoint(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("pg endpoint port: %w", err)
 	}
 
-	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s",
+	return fmt.Sprintf("postgres://%s:%s@%s/%s",
 		defaultAdminUser, defaultAdminPassword,
-		host, port.Port(),
+		net.JoinHostPort(host, port.Port()),
 		defaultDatabase,
 	), nil
 }
@@ -95,5 +96,5 @@ func (c *Container) InfluxDBEndpoint(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("influxdb endpoint port: %w", err)
 	}
 
-	return fmt.Sprintf("%s:%s", host, port.Port()), nil
+	return net.JoinHostPort(host, port.Port()), nil
 }
