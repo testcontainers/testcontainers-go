@@ -28,7 +28,7 @@ func WithInitialBuckets(buckets ...string) testcontainers.CustomizeRequestOption
 		if req.Env == nil {
 			req.Env = map[string]string{}
 		}
-		req.Env["initialBuckets"] = strings.Join(buckets, ",")
+		req.Env["COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS"] = strings.Join(buckets, ",")
 		return nil
 	}
 }
