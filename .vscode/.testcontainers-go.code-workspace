@@ -278,6 +278,10 @@
             "path": "../modules/solace"
         },
         {
+            "name": "module / solr",
+            "path": "../modules/solr"
+        },
+        {
             "name": "module / surrealdb",
             "path": "../modules/surrealdb"
         },
