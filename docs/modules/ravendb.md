@@ -70,3 +70,10 @@ It can be used to configure a RavenDB client or to access the Studio UI in a bro
 <!--codeinclude-->
 [Using ManagementURL](../../modules/ravendb/examples_test.go) inside_block:ExampleRun_managementURL
 <!--/codeinclude-->
+
+#### TCPEndpoint
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The `TCPEndpoint` method returns the `host:port` endpoint for RavenDB's TCP port (`38888`),
+used for subscriptions and cluster/replication communication.

@@ -23,4 +23,10 @@ func TestRavenDB(t *testing.T) {
 		require.NotEmpty(t, url)
 		require.Contains(t, url, "http://")
 	})
+
+	t.Run("TCPEndpoint", func(t *testing.T) {
+		endpoint, err := ctr.TCPEndpoint(ctx)
+		require.NoError(t, err)
+		require.NotEmpty(t, endpoint)
+	})
 }
