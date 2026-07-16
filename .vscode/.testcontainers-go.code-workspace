@@ -142,6 +142,10 @@
             "path": "../modules/localstack"
         },
         {
+            "name": "module / mailpit",
+            "path": "../modules/mailpit"
+        },
+        {
             "name": "module / mariadb",
             "path": "../modules/mariadb"
         },

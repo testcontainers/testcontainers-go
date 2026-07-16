@@ -48,6 +48,7 @@ updates:
         - /modules/kafka
         - /modules/kurrentdb
         - /modules/localstack
+        - /modules/mailpit
         - /modules/mariadb
         - /modules/meilisearch
         - /modules/memcached
