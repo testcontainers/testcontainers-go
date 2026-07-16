@@ -1,0 +1,125 @@
+package activemq
+
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
+)
+
+const (
+	defaultBrokerPort     = "61616/tcp"
+	defaultWebConsolePort = "8161/tcp"
+	defaultAdminUser      = "admin"
+	defaultAdminPassword  = "admin"
+)
+
+// Container represents the ActiveMQ container type used in the module.
+type Container struct {
+	testcontainers.Container
+	adminUser     string
+	adminPassword string
+}
+
+// AdminUser returns the administrator username for the ActiveMQ web console.
+func (c *Container) AdminUser() string {
+	return c.adminUser
+}
+
+// AdminPassword returns the administrator password for the ActiveMQ web console.
+func (c *Container) AdminPassword() string {
+	return c.adminPassword
+}
+
+// BrokerURL returns the OpenWire broker URL for the mapped 61616/tcp port.
+func (c *Container) BrokerURL(ctx context.Context) (string, error) {
+	hostPort, err := c.PortEndpoint(ctx, defaultBrokerPort, "")
+	if err != nil {
+		return "", err
+	}
+	return "tcp://" + hostPort, nil
+}
+
+// WebConsoleURL returns the HTTP URL of the ActiveMQ web console for the mapped 8161/tcp port.
+func (c *Container) WebConsoleURL(ctx context.Context) (string, error) {
+	hostPort, err := c.PortEndpoint(ctx, defaultWebConsolePort, "")
+	if err != nil {
+		return "", err
+	}
+	return "http://" + hostPort, nil
+}
+
+// WithAdminCredentials sets ACTIVEMQ_WEB_USER and ACTIVEMQ_WEB_PASSWORD, which the
+// image entrypoint uses to update conf/users.properties (the JAAS PropertiesLoginModule
+// used for broker connection/messaging security when connection-level auth is enabled).
+//
+// NOTE: these variables do NOT affect Jolokia or web-console authentication.
+// The web console and /api/jolokia/* endpoints are protected by Jetty's
+// HashLoginService reading conf/jetty-realm.properties, which is hardcoded to
+// "admin: admin, admin" and is not configurable via environment variables.
+// The wait strategy therefore always uses the built-in admin/admin credentials
+// regardless of what is passed here.
+func WithAdminCredentials(user, password string) testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		if req.Env == nil {
+			req.Env = map[string]string{}
+		}
+		req.Env["ACTIVEMQ_WEB_USER"] = user
+		req.Env["ACTIVEMQ_WEB_PASSWORD"] = password
+		return nil
+	}
+}
+
+// Run creates an instance of the ActiveMQ container type with a given image.
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
+		testcontainers.WithExposedPorts(defaultBrokerPort, defaultWebConsolePort),
+		testcontainers.WithEnv(map[string]string{
+			"ACTIVEMQ_BROKER_NAME":  "localhost",
+			"ACTIVEMQ_WEB_USER":     defaultAdminUser,
+			"ACTIVEMQ_WEB_PASSWORD": defaultAdminPassword,
+		}),
+		testcontainers.WithWaitStrategy(
+			wait.ForAll(
+				wait.ForLog(".*Apache ActiveMQ.*started.*").AsRegexp(),
+				wait.ForListeningPort(defaultBrokerPort),
+			),
+		),
+	)
+	moduleOpts = append(moduleOpts, opts...)
+
+	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
+	var c *Container
+	if ctr != nil {
+		c = &Container{
+			Container:     ctr,
+			adminUser:     defaultAdminUser,
+			adminPassword: defaultAdminPassword,
+		}
+	}
+	if err != nil {
+		return c, fmt.Errorf("run activemq: %w", err)
+	}
+
+	// Refresh credentials from the running container's environment.
+	inspect, err := ctr.Inspect(ctx)
+	if err != nil {
+		return c, fmt.Errorf("inspect activemq: %w", err)
+	}
+	foundUser, foundPass := false, false
+	for _, env := range inspect.Config.Env {
+		if v, ok := strings.CutPrefix(env, "ACTIVEMQ_WEB_USER="); ok {
+			c.adminUser, foundUser = v, true
+		} else if v, ok := strings.CutPrefix(env, "ACTIVEMQ_WEB_PASSWORD="); ok {
+			c.adminPassword, foundPass = v, true
+		}
+		if foundUser && foundPass {
+			break
+		}
+	}
+
+	return c, nil
+}

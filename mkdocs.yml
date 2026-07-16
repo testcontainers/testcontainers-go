@@ -74,6 +74,7 @@ nav:
         - features/docker_compose.md
         - features/tls.md
     - Modules:
+        - modules/activemq.md
         - modules/index.md
         - modules/aerospike.md
         - modules/arangodb.md
