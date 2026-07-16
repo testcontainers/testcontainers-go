@@ -7,7 +7,7 @@ toolchain go1.25.9
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.21.1
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1
-	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos v1.4.1
+	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos v1.5.0
 	github.com/Azure/azure-sdk-for-go/sdk/data/aztables v1.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs v1.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/messaging/azservicebus v1.8.0
@@ -27,12 +27,11 @@ require (
 
 require (
 	dario.cat/mergo v1.0.2 // indirect
-	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.12.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/internal v1.2.0 // indirect
 	github.com/Azure/go-amqp v1.3.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
-	github.com/AzureAD/microsoft-authentication-library-for-go v1.6.0 // indirect
+	github.com/AzureAD/microsoft-authentication-library-for-go v1.7.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
