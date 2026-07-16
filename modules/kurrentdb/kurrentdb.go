@@ -28,7 +28,7 @@ func WithInsecure() testcontainers.CustomizeRequestOption {
 		if req.Env == nil {
 			req.Env = map[string]string{}
 		}
-		req.Env["KURRENTDB__INSECURE"] = "true"
+		req.Env["KURRENTDB_INSECURE"] = "true"
 		return nil
 	}
 }
@@ -39,7 +39,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultPort),
 		testcontainers.WithEnv(map[string]string{
-			"KURRENTDB__INSECURE": "true",
+			"KURRENTDB_INSECURE": "true",
 		}),
 		testcontainers.WithWaitStrategy(
 			wait.ForHTTP("/health/live").
@@ -60,7 +60,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		inspect, inspErr := ctr.Inspect(ctx)
 		if inspErr == nil {
 			for _, env := range inspect.Config.Env {
-				if v, ok := strings.CutPrefix(env, "KURRENTDB__INSECURE="); ok {
+				if v, ok := strings.CutPrefix(env, "KURRENTDB_INSECURE="); ok {
 					insecure = v == "true"
 					break
 				}
