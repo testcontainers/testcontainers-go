@@ -1,3 +1,6 @@
+// Package papercutsmtp provides a testcontainers-go module for Papercut SMTP,
+// a lightweight SMTP server with a built-in web UI for capturing and inspecting
+// outbound emails in tests. No messages are relayed to real recipients.
 package papercutsmtp
 
 import (

@@ -10,7 +10,7 @@ The Testcontainers module for [Papercut SMTP](https://github.com/ChangemakerStud
 
 Please run the following command to add the PapercutSMTP module to your Go dependencies:
 
-```
+```shell
 go get github.com/testcontainers/testcontainers-go/modules/papercutsmtp
 ```
 
@@ -55,7 +55,7 @@ The PapercutSMTP container exposes the following methods:
 
 - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-This method returns the `host:port` endpoint to connect to the SMTP server on port `25`.
+This method returns the `host:port` endpoint to connect to the SMTP server on port `2525`.
 
 <!--codeinclude-->
 [Get SMTP endpoint](../../modules/papercutsmtp/papercutsmtp_test.go) inside_block:smtpEndpoint
@@ -65,7 +65,7 @@ This method returns the `host:port` endpoint to connect to the SMTP server on po
 
 - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-This method returns the URL for the Papercut SMTP web UI on port `37408`, where captured emails can be inspected.
+This method returns the URL for the Papercut SMTP web UI on port `8080`, where captured emails can be inspected.
 
 <!--codeinclude-->
 [Get HTTP URL](../../modules/papercutsmtp/papercutsmtp_test.go) inside_block:httpURL
