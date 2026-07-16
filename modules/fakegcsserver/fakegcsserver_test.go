@@ -82,7 +82,7 @@ func TestFakeGCSServerWithBothSchemeRejected(t *testing.T) {
 		fakegcsserver.WithScheme("both"),
 	)
 	testcontainers.CleanupContainer(t, ctr)
-	require.Error(t, err)
+	require.ErrorContains(t, err, "invalid scheme")
 	require.Nil(t, ctr)
 }
 
@@ -95,6 +95,6 @@ func TestFakeGCSServerWithInvalidScheme(t *testing.T) {
 		fakegcsserver.WithScheme("ftp"),
 	)
 	testcontainers.CleanupContainer(t, ctr)
-	require.Error(t, err)
+	require.ErrorContains(t, err, "invalid scheme")
 	require.Nil(t, ctr)
 }
