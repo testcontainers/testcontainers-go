@@ -45,6 +45,7 @@ updates:
         - /modules/k6
         - /modules/kafka
         - /modules/localstack
+        - /modules/mailpit
         - /modules/mariadb
         - /modules/meilisearch
         - /modules/memcached

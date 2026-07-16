@@ -104,6 +104,7 @@ nav:
         - modules/k6.md
         - modules/kafka.md
         - modules/localstack.md
+        - modules/mailpit.md
         - modules/mariadb.md
         - modules/meilisearch.md
         - modules/memcached.md
