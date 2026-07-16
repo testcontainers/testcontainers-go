@@ -134,6 +134,7 @@ nav:
         - modules/solace.md
         - modules/surrealdb.md
         - modules/tidb.md
+        - modules/timeplus.md
         - modules/toxiproxy.md
         - modules/valkey.md
         - modules/vault.md

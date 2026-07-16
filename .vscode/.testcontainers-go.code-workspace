@@ -246,6 +246,10 @@
             "path": "../modules/tidb"
         },
         {
+            "name": "module / timeplus",
+            "path": "../modules/timeplus"
+        },
+        {
             "name": "module / toxiproxy",
             "path": "../modules/toxiproxy"
         },
