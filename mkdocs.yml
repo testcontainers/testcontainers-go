@@ -135,6 +135,7 @@ nav:
         - modules/surrealdb.md
         - modules/tidb.md
         - modules/toxiproxy.md
+        - modules/trino.md
         - modules/valkey.md
         - modules/vault.md
         - modules/vearch.md
