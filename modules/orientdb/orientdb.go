@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -73,7 +74,7 @@ func (c *Container) ServerURL(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("orientdb server url: %w", err)
 	}
 
-	return fmt.Sprintf("remote:%s:%s", host, port.Port()), nil
+	return "remote:" + net.JoinHostPort(host, port.Port()), nil
 }
 
 // StudioURL returns the OrientDB Studio web UI URL, in the format "http://<host>:<port>".
