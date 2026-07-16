@@ -31,7 +31,7 @@ type Container struct {
 }
 
 // Run creates an instance of the Firebird container type.
-// The default image is ghcr.io/jacobalberty/firebird:v3.0.
+// The default image is jacobalberty/firebird:v3.0.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
 	moduleOpts = append(moduleOpts,
