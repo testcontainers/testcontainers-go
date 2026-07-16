@@ -74,8 +74,8 @@ nav:
         - features/docker_compose.md
         - features/tls.md
     - Modules:
-        - modules/activemq.md
         - modules/index.md
+        - modules/activemq.md
         - modules/aerospike.md
         - modules/arangodb.md
         - modules/artemis.md
@@ -116,6 +116,7 @@ nav:
         - modules/mockserver.md
         - modules/mongodb-atlaslocal.md
         - modules/mongodb.md
+        - modules/mosquitto.md
         - modules/mssql.md
         - modules/mysql.md
         - modules/nats.md
