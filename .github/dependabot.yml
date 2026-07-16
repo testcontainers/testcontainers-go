@@ -78,6 +78,7 @@ updates:
         - /modules/surrealdb
         - /modules/tidb
         - /modules/toxiproxy
+        - /modules/trino
         - /modules/valkey
         - /modules/vault
         - /modules/vearch
