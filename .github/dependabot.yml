@@ -57,6 +57,7 @@ updates:
         - /modules/nats
         - /modules/nebulagraph
         - /modules/neo4j
+        - /modules/nginx
         - /modules/ollama
         - /modules/openfga
         - /modules/openldap

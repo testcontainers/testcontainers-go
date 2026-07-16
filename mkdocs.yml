@@ -117,6 +117,7 @@ nav:
         - modules/nats.md
         - modules/nebulagraph.md
         - modules/neo4j.md
+        - modules/nginx.md
         - modules/ollama.md
         - modules/openfga.md
         - modules/openldap.md
