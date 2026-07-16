@@ -74,6 +74,7 @@ updates:
         - /modules/qdrant
         - /modules/questdb
         - /modules/rabbitmq
+        - /modules/ravendb
         - /modules/redis
         - /modules/redpanda
         - /modules/registry

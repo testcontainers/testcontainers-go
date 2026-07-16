@@ -246,6 +246,10 @@
             "path": "../modules/rabbitmq"
         },
         {
+            "name": "module / ravendb",
+            "path": "../modules/ravendb"
+        },
+        {
             "name": "module / redis",
             "path": "../modules/redis"
         },
