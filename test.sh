@@ -113,12 +113,12 @@ index 0000000..b6e9ff2
 +}
 diff --git a/test.sh b/test.sh
 new file mode 100755
-index 0000000..f57cb3f
+index 0000000..2fb53a5
 --- /dev/null
 +++ b/test.sh
-@@ -0,0 +1,59 @@
+@@ -0,0 +1,53 @@
 +#!/usr/bin/env bash
-+set -euo pipefail
++set -uo pipefail
 +
 +OUTPUT_PATH=""
 +MODE=""
@@ -154,18 +154,12 @@ index 0000000..f57cb3f
 +
 +case "$MODE" in
 +    base)
-+        # Regression check: existing tests covering the postgres module's wait-strategy
-+        # path and basic container startup. Excludes the new reuse test so this mode
-+        # is independent of the solution patch.
 +        go test -v -count=1 -timeout 10m \
 +            -run "^(TestContainerWithWaitForSQL|TestWithConfigFile|TestWithInitScript|TestWithOrderedInitScript)$" \
 +            ./... 2>&1 \
 +            | go-junit-report -set-exit-code > "$OUTPUT_PATH"
 +        ;;
 +    new)
-+        # Regression test for false-positive ready signal on reused containers.
-+        # Fails on the base commit (log wait satisfied by stale logs before crash
-+        # recovery completes); passes once BasicWaitStrategies adds a live-state probe.
 +        go test -v -count=1 -timeout 10m \
 +            -run "^TestBasicWaitStrategies_reusedContainer$" \
 +            ./... 2>&1 \
