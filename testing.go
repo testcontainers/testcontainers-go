@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/containerd/errdefs"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,7 +21,7 @@ var errAlreadyInProgress = regexp.MustCompile(`removal of container .* is alread
 // SkipIfProviderIsNotHealthy is a utility function capable of skipping tests
 // if the provider is not healthy, or running at all.
 // This is a function designed to be used in your test, when Docker is not mandatory for CI/CD.
-// In this way tests that depend on Testcontainers won't run if the provider is provisioned correctly.
+// In this way tests that depend on Testcontainers won't run if the provider is not provisioned correctly.
 func SkipIfProviderIsNotHealthy(t *testing.T) {
 	t.Helper()
 	defer func() {
@@ -39,16 +42,25 @@ func SkipIfProviderIsNotHealthy(t *testing.T) {
 }
 
 // SkipIfDockerDesktop is a utility function capable of skipping tests
-// if tests are run using Docker Desktop.
+// if tests are run using Docker Desktop or another VM-based Docker
+// environment (e.g. colima) where host network access is not available.
 func SkipIfDockerDesktop(t *testing.T, ctx context.Context) {
 	t.Helper()
+
+	// Colima runs Docker inside a Linux VM, so host networking doesn't work
+	// the same way as native Docker on Linux. Detect it via DOCKER_HOST which
+	// typically contains the colima socket path.
+	if strings.Contains(os.Getenv("DOCKER_HOST"), "colima") {
+		t.Skip("Skipping test that requires host network access when running in colima")
+	}
+
 	cli, err := NewDockerClientWithOpts(ctx)
 	require.NoErrorf(t, err, "failed to create docker client: %s", err)
 
-	info, err := cli.Info(ctx)
+	res, err := cli.Info(ctx, client.InfoOptions{})
 	require.NoErrorf(t, err, "failed to get docker info: %s", err)
 
-	if info.OperatingSystem == "Docker Desktop" {
+	if res.Info.OperatingSystem == "Docker Desktop" {
 		t.Skip("Skipping test that requires host network access when running in Docker Desktop")
 	}
 }
@@ -60,10 +72,10 @@ func SkipIfNotDockerDesktop(t *testing.T, ctx context.Context) {
 	cli, err := NewDockerClientWithOpts(ctx)
 	require.NoErrorf(t, err, "failed to create docker client: %s", err)
 
-	info, err := cli.Info(ctx)
+	res, err := cli.Info(ctx, client.InfoOptions{})
 	require.NoErrorf(t, err, "failed to get docker info: %s", err)
 
-	if info.OperatingSystem != "Docker Desktop" {
+	if res.Info.OperatingSystem != "Docker Desktop" {
 		t.Skip("Skipping test that needs Docker Desktop")
 	}
 }

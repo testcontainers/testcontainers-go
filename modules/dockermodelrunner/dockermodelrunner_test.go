@@ -98,7 +98,7 @@ func TestRun_client(t *testing.T) {
 			require.NoError(t, err)
 			require.NotEmpty(t, models)
 
-			allTags := []string{}
+			allTags := make([]string, 0, len(models))
 			for _, model := range models {
 				allTags = append(allTags, model.Tags...)
 			}

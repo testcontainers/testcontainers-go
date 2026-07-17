@@ -1,0 +1,118 @@
+name: Update Usage Metrics
+
+on:
+  schedule:
+    # Run monthly on the 1st at 9 AM UTC
+    - cron: '0 9 1 * *'
+  workflow_dispatch:
+    inputs:
+      versions:
+        description: 'Comma-separated versions to query (leave empty for all versions)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  collect-metrics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Go
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version-file: 'usage-metrics/go.mod'
+
+      - name: Query versions
+        id: query
+        working-directory: usage-metrics
+        run: |
+          # Get versions to query
+          VERSIONS="${{ github.event.inputs.versions }}"
+          if [ -z "$VERSIONS" ]; then
+            # Get all versions from v0.13.0 to latest from the main repository
+            VERSIONS=$(git ls-remote --tags https://github.com/testcontainers/testcontainers-go.git | \
+              grep -E 'refs/tags/v0\.[0-9]+\.[0-9]+$' | \
+              sed 's|.*refs/tags/||' | \
+              sort -V | \
+              awk '/v0.13.0/,0' | \
+              tr '\n' ',' | \
+              sed 's/,$//')
+          fi
+
+          echo "Querying versions: $VERSIONS"
+
+          # Build version flags
+          VERSION_FLAGS=""
+          IFS=',' read -ra VERSION_ARRAY <<< "$VERSIONS"
+          for version in "${VERSION_ARRAY[@]}"; do
+            version=$(echo "$version" | xargs) # trim whitespace
+            if [ -z "$version" ]; then
+              continue
+            fi
+            VERSION_FLAGS="$VERSION_FLAGS -version $version"
+          done
+
+          # Query all versions in a single command
+          go run collect.go versions $VERSION_FLAGS -csv "../docs/usage-metrics/core.csv"
+
+      - name: Create or update Pull Request
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Check for changes without staging (avoids conflicts on branch checkout)
+          if git diff --quiet docs/usage-metrics/core.csv; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          DATE=$(date +%Y-%m-%d)
+          MONTH=$(date +%Y-%m)
+          BRANCH_NAME="chore/update-usage-metrics-$MONTH"
+
+          # Preserve the newly collected metrics before any branch switching
+          cp docs/usage-metrics/core.csv /tmp/usage-metrics.csv
+
+          # Check if the branch already exists on the remote
+          if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
+            echo "Branch $BRANCH_NAME already exists, pushing new commit to it"
+            # Reset the working tree so checkout succeeds
+            git checkout -- docs/usage-metrics/core.csv
+            git fetch origin "$BRANCH_NAME"
+            git checkout "$BRANCH_NAME"
+          else
+            echo "Creating new branch $BRANCH_NAME"
+            git checkout -b "$BRANCH_NAME"
+          fi
+
+          # Restore the newly collected metrics and stage them
+          cp /tmp/usage-metrics.csv docs/usage-metrics/core.csv
+          git add docs/usage-metrics/core.csv
+
+          if git diff --staged --quiet; then
+            echo "No changes to commit (branch already has identical data)"
+            exit 0
+          fi
+
+          git commit -m "chore(metrics): update usage metrics ($DATE)"
+          git push -u origin "$BRANCH_NAME"
+
+          # Create a PR only if one doesn't already exist for this branch
+          EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --state open --json number --jq '.[0].number')
+          if [ -n "$EXISTING_PR" ]; then
+            echo "PR #$EXISTING_PR already exists for branch $BRANCH_NAME, updated with new commit"
+          else
+            gh pr create \
+              --title "chore: update usage metrics ($MONTH)" \
+              --body "Automated update of usage metrics data. This PR updates the usage metrics CSV file with the latest GitHub usage data for testcontainers-go versions." \
+              --base main
+          fi

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -14,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -266,7 +267,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	}
 	require.NoErrorf(t, err, "get endpoint")
 
-	opts := []client.Opt{client.WithHost(remoteDocker), client.WithAPIVersionNegotiation()}
+	opts := []client.Opt{client.WithHost(remoteDocker)}
 
 	dockerClient, err := NewDockerClientWithOpts(ctx, opts...)
 	require.NoError(t, err)
@@ -308,7 +309,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	existingLogs := len(consumer.Msgs())
 
 	hitNginx := func() {
-		i, _, err := dind.Exec(ctx, []string{"wget", "--spider", "localhost:" + port.Port()})
+		i, _, err := dind.Exec(ctx, []string{"wget", "--spider", net.JoinHostPort("localhost", port.Port())})
 		require.NoError(t, err, "Can't make request to nginx container from dind container")
 		require.Zerof(t, i, "Can't make request to nginx container from dind container")
 	}
@@ -683,4 +684,69 @@ func TestRestartContainerWithLogConsumer(t *testing.T) {
 	// First message is from the first start.
 	logConsumer.AssertRead()
 	logConsumer.AssertRead()
+}
+
+// countingLogConsumer counts all log lines received.
+type countingLogConsumer struct {
+	mu    sync.Mutex
+	count int
+}
+
+func (c *countingLogConsumer) Accept(_ Log) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.count++
+}
+
+func (c *countingLogConsumer) Count() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.count
+}
+
+// TestContainerLogDrainOnTerminate verifies that no log lines are dropped when
+// Terminate() is called on a container that has already exited after emitting a
+// burst of logs. This is a regression test for the data-loss race described in
+// https://github.com/testcontainers/testcontainers-go/issues/2887, where
+// stopLogProduction() returned immediately after cancelling the context, leaving
+// the logProducer goroutine mid-read with buffered data that was never delivered.
+func TestContainerLogDrainOnTerminate(t *testing.T) {
+	const (
+		lineCount = 1000
+		runs      = 5
+	)
+
+	for run := range runs {
+		t.Run(fmt.Sprintf("run-%d", run), func(t *testing.T) {
+			t.Parallel()
+
+			consumer := &countingLogConsumer{}
+
+			ctx := context.Background()
+			ctr, err := Run(
+				ctx,
+				"alpine:latest",
+				// Emit lineCount lines then exit.
+				WithCmd("sh", "-c", fmt.Sprintf(
+					"for i in $(seq 1 %d); do echo line-$i; done", lineCount,
+				)),
+				WithLogConsumerConfig(&LogConsumerConfig{
+					Consumers: []LogConsumer{consumer},
+				}),
+				WithWaitStrategy(wait.ForExit()),
+			)
+			require.NoError(t, err)
+			CleanupContainer(t, ctr)
+
+			// Terminate after the container has already exited so the race
+			// window is as narrow as possible.
+			require.NoError(t, TerminateContainer(ctr))
+
+			got := consumer.Count()
+			require.Equalf(t, lineCount, got,
+				"run %d: expected %d log lines, got %d (%d dropped)",
+				run, lineCount, got, lineCount-got,
+			)
+		})
+	}
 }

@@ -89,7 +89,7 @@ func WithDatabase(dbName string) testcontainers.ContainerCustomizer {
 // These init scripts will be executed in sorted name order as defined by the container's current locale, which defaults to en_US.utf8.
 // If you need to run your scripts in a specific order, consider using `WithOrderedInitScripts` instead.
 func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
-	containerFiles := []testcontainers.ContainerFile{}
+	containerFiles := make([]testcontainers.ContainerFile, 0, len(scripts))
 	for _, script := range scripts {
 		initScript := testcontainers.ContainerFile{
 			HostFilePath:      script,
@@ -105,7 +105,7 @@ func WithInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
 // WithOrderedInitScripts sets the init scripts to be run when the container starts.
 // The scripts will be run in the order that they are provided in this function.
 func WithOrderedInitScripts(scripts ...string) testcontainers.CustomizeRequestOption {
-	containerFiles := []testcontainers.ContainerFile{}
+	containerFiles := make([]testcontainers.ContainerFile, 0, len(scripts))
 	for idx, script := range scripts {
 		initScript := testcontainers.ContainerFile{
 			HostFilePath:      script,
@@ -152,7 +152,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithEnv(map[string]string{
 			"POSTGRES_USER":     defaultUser,
 			"POSTGRES_PASSWORD": defaultPassword,
@@ -160,7 +161,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}),
 		testcontainers.WithExposedPorts("5432/tcp"),
 		testcontainers.WithCmd("postgres", "-c", "fsync=off"),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 

@@ -5,6 +5,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 )
 
@@ -14,7 +15,7 @@ func TestGetDockerInfo(t *testing.T) {
 		c, err := NewDockerClientWithOpts(ctx)
 		require.NoError(t, err)
 
-		info, err := c.Info(ctx)
+		info, err := c.Info(ctx, client.InfoOptions{})
 		require.NoError(t, err)
 		require.NotNil(t, info)
 	})
@@ -31,7 +32,7 @@ func TestGetDockerInfo(t *testing.T) {
 		for range count {
 			go func() {
 				defer wg.Done()
-				info, err := c.Info(ctx)
+				info, err := c.Info(ctx, client.InfoOptions{})
 				require.NoError(t, err)
 				require.NotNil(t, info)
 			}()

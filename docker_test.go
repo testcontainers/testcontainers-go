@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -18,11 +19,10 @@ import (
 	"time"
 
 	"github.com/containerd/errdefs"
-	"github.com/docker/docker/api/types/build"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/strslice"
-	"github.com/docker/docker/client"
+	"github.com/containerd/platforms"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
+	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
@@ -38,7 +38,6 @@ const (
 	alpineImage       = "alpine"
 	nginxDefaultPort  = "80/tcp"
 	nginxHighPort     = "8080/tcp"
-	golangImage       = "golang"
 	daemonMaxVersion  = "1.41"
 )
 
@@ -287,9 +286,9 @@ func TestContainerTerminationRemovesDockerImage(t *testing.T) {
 		CleanupContainer(t, ctr)
 		require.NoError(t, err)
 		containerID := ctr.GetContainerID()
-		resp, err := dockerClient.ContainerInspect(ctx, containerID)
+		resp, err := dockerClient.ContainerInspect(ctx, containerID, client.ContainerInspectOptions{})
 		require.NoError(t, err)
-		imageID := resp.Config.Image
+		imageID := resp.Container.Config.Image
 
 		err = ctr.Terminate(ctx)
 		require.NoError(t, err)
@@ -397,12 +396,12 @@ func TestContainerCreationWithName(t *testing.T) {
 	networks, err := nginxC.Networks(ctx)
 	require.NoError(t, err)
 	require.Lenf(t, networks, 1, "Expected networks 1. Got '%d'.", len(networks))
-	network := networks[0]
+	nw := networks[0]
 	switch providerType {
-	case ProviderDocker:
-		require.Equalf(t, Bridge, network, "Expected network name '%s'. Got '%s'.", Bridge, network)
+	case ProviderDocker, ProviderDefault:
+		require.Equalf(t, Bridge, nw, "Expected network name '%s'. Got '%s'.", Bridge, nw)
 	case ProviderPodman:
-		require.Equalf(t, Podman, network, "Expected network name '%s'. Got '%s'.", Podman, network)
+		require.Equalf(t, Podman, nw, "Expected network name '%s'. Got '%s'.", Podman, nw)
 	}
 
 	endpoint, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
@@ -844,7 +843,7 @@ func ExampleContainer_MappedPort() {
 	// buildingAddresses {
 	ip, _ := nginxC.Host(ctx)
 	port, _ := nginxC.MappedPort(ctx, "80")
-	_, _ = http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()))
+	_, _ = http.Get("http://" + net.JoinHostPort(ip, port.Port()))
 	// }
 
 	state, err := nginxC.State(ctx)
@@ -1016,10 +1015,10 @@ func TestContainerCustomPlatformImage(t *testing.T) {
 		require.NoError(t, err)
 		defer dockerCli.Close()
 
-		ctr, err := dockerCli.ContainerInspect(ctx, c.GetContainerID())
+		res, err := dockerCli.ContainerInspect(ctx, c.GetContainerID(), client.ContainerInspectOptions{})
 		require.NoError(t, err)
 
-		img, err := dockerCli.ImageInspect(ctx, ctr.Image)
+		img, err := dockerCli.ImageInspect(ctx, res.Container.Image)
 		require.NoError(t, err)
 		require.Equal(t, "linux", img.Os)
 		require.Equal(t, "amd64", img.Architecture)
@@ -1063,10 +1062,10 @@ func readHostname(tb testing.TB, containerID string) string {
 	require.NoErrorf(tb, err, "Failed to create Docker client")
 	defer containerClient.Close()
 
-	containerDetails, err := containerClient.ContainerInspect(context.Background(), containerID)
+	res, err := containerClient.ContainerInspect(context.Background(), containerID, client.ContainerInspectOptions{})
 	require.NoErrorf(tb, err, "Failed to inspect container")
 
-	return containerDetails.Config.Hostname
+	return res.Container.Config.Hostname
 }
 
 func TestDockerContainerCopyFileToContainer(t *testing.T) {
@@ -1390,10 +1389,10 @@ func TestDockerContainerResources(t *testing.T) {
 
 	containerID := nginxC.GetContainerID()
 
-	resp, err := c.ContainerInspect(ctx, containerID)
+	resp, err := c.ContainerInspect(ctx, containerID, client.ContainerInspectOptions{})
 	require.NoError(t, err)
 
-	require.Equal(t, expected, resp.HostConfig.Ulimits)
+	require.Equal(t, expected, resp.Container.HostConfig.Ulimits)
 }
 
 func TestContainerCapAdd(t *testing.T) {
@@ -1420,10 +1419,10 @@ func TestContainerCapAdd(t *testing.T) {
 	defer dockerClient.Close()
 
 	containerID := nginx.GetContainerID()
-	resp, err := dockerClient.ContainerInspect(ctx, containerID)
+	resp, err := dockerClient.ContainerInspect(ctx, containerID, client.ContainerInspectOptions{})
 	require.NoError(t, err)
 
-	require.Equal(t, strslice.StrSlice{expected}, resp.HostConfig.CapAdd)
+	require.Equal(t, []string{expected}, resp.Container.HostConfig.CapAdd)
 }
 
 func TestContainerRunningCheckingStatusCode(t *testing.T) {
@@ -1626,11 +1625,11 @@ func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 			require.NoError(t, err, "container inspect should not fail")
 
 			containerName := containerInspect.Name
-			containerDetails, err := cli.ContainerInspect(ctx, containerName)
+			res, err := cli.ContainerInspect(ctx, containerName, client.ContainerInspectOptions{})
 			require.NoError(t, err, "inspect container should not fail")
-			containerImage := containerDetails.Image
+			containerImage := res.Container.Image
 			t.Cleanup(func() {
-				_, _ = cli.ImageRemove(ctx, containerImage, image.RemoveOptions{
+				_, _ = cli.ImageRemove(ctx, containerImage, client.ImageRemoveOptions{
 					Force:         true,
 					PruneChildren: true,
 				})
@@ -1657,21 +1656,31 @@ type errMockCli struct {
 	imageBuildCount    int
 	containerListCount int
 	imagePullCount     int
+	imagePullOpts      []client.ImagePullOptions
 }
 
-func (f *errMockCli) ImageBuild(_ context.Context, _ io.Reader, _ build.ImageBuildOptions) (build.ImageBuildResponse, error) {
+type fakeStreamResult struct {
+	io.ReadCloser
+	client.ImagePushResponse // same interface as [client.ImagePushResponse]
+}
+
+func (e fakeStreamResult) Read(p []byte) (int, error) { return e.ReadCloser.Read(p) }
+func (e fakeStreamResult) Close() error               { return e.ReadCloser.Close() }
+
+func (f *errMockCli) ImageBuild(_ context.Context, _ io.Reader, _ client.ImageBuildOptions) (client.ImageBuildResult, error) {
 	f.imageBuildCount++
-	return build.ImageBuildResponse{Body: io.NopCloser(&bytes.Buffer{})}, f.err
+	return client.ImageBuildResult{Body: io.NopCloser(&bytes.Buffer{})}, f.err
 }
 
-func (f *errMockCli) ContainerList(_ context.Context, _ container.ListOptions) ([]container.Summary, error) {
+func (f *errMockCli) ContainerList(_ context.Context, _ client.ContainerListOptions) (client.ContainerListResult, error) {
 	f.containerListCount++
-	return []container.Summary{{}}, f.err
+	return client.ContainerListResult{Items: []container.Summary{{}}}, f.err
 }
 
-func (f *errMockCli) ImagePull(_ context.Context, _ string, _ image.PullOptions) (io.ReadCloser, error) {
+func (f *errMockCli) ImagePull(_ context.Context, _ string, opts client.ImagePullOptions) (client.ImagePullResponse, error) {
 	f.imagePullCount++
-	return io.NopCloser(&bytes.Buffer{}), f.err
+	f.imagePullOpts = append(f.imagePullOpts, opts)
+	return fakeStreamResult{ReadCloser: io.NopCloser(&bytes.Buffer{})}, f.err
 }
 
 func (f *errMockCli) Close() error {
@@ -1857,12 +1866,66 @@ func TestDockerProvider_attemptToPullImage_retries(t *testing.T) {
 			// give a chance to retry
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
-			_ = p.attemptToPullImage(ctx, "someTag", image.PullOptions{})
+			_ = p.attemptToPullImage(ctx, "someTag", client.ImagePullOptions{})
 
 			require.Positive(t, m.imagePullCount)
 			require.Equal(t, tt.shouldRetry, m.imagePullCount > 1)
 		})
 	}
+}
+
+func TestPullDockerImageWithPlatform(t *testing.T) {
+	t.Run("single platform", func(t *testing.T) {
+		platform, err := platforms.Parse("linux/amd64")
+		require.NoError(t, err)
+
+		opts := pullImageOptions{}
+		err = PullDockerImageWithPlatform(platform)(&opts)
+		require.NoError(t, err)
+		require.Equal(t, []specs.Platform{platform}, opts.dockerPullOpts.Platforms)
+	})
+
+	t.Run("multiple platforms via separate options", func(t *testing.T) {
+		amd64, err := platforms.Parse("linux/amd64")
+		require.NoError(t, err)
+		arm64, err := platforms.Parse("linux/arm64")
+		require.NoError(t, err)
+
+		opts := pullImageOptions{}
+		require.NoError(t, PullDockerImageWithPlatform(amd64)(&opts))
+		require.NoError(t, PullDockerImageWithPlatform(arm64)(&opts))
+		require.Equal(t, []specs.Platform{amd64, arm64}, opts.dockerPullOpts.Platforms)
+	})
+
+	t.Run("invalid platform", func(t *testing.T) {
+		_, err := platforms.Parse("not-a-valid-platform")
+		require.Error(t, err)
+	})
+}
+
+func TestDockerProvider_PullImageWithOpts_separatePullsWithDifferentPlatforms(t *testing.T) {
+	amd64, err := platforms.Parse("linux/amd64")
+	require.NoError(t, err)
+	arm64, err := platforms.Parse("linux/arm64")
+	require.NoError(t, err)
+
+	mock := &errMockCli{}
+	p := &DockerProvider{
+		DockerProviderOptions: &DockerProviderOptions{
+			GenericProviderOptions: &GenericProviderOptions{
+				Logger: log.Default(),
+			},
+		},
+		client: mock,
+	}
+
+	ctx := context.Background()
+	require.NoError(t, p.PullImageWithOpts(ctx, "nginx:mainline", PullDockerImageWithPlatform(amd64)))
+	require.NoError(t, p.PullImageWithOpts(ctx, "nginx:mainline", PullDockerImageWithPlatform(arm64)))
+
+	require.Equal(t, 2, mock.imagePullCount)
+	require.Equal(t, []specs.Platform{amd64}, mock.imagePullOpts[0].Platforms)
+	require.Equal(t, []specs.Platform{arm64}, mock.imagePullOpts[1].Platforms)
 }
 
 func TestCustomPrefixTrailingSlashIsProperlyRemovedIfPresent(t *testing.T) {
@@ -1911,4 +1974,22 @@ func Test_Provider_DaemonHost_Issue2897(t *testing.T) {
 	case err := <-errCh:
 		require.NoError(t, err)
 	}
+}
+
+// TestMappedPortEmptyString verifies that MappedPort with an empty string
+// returns a not-found error instead of panicking. The old nat.Port type
+// accepted empty strings (SplitProtoPort returns ("","") for ""), causing
+// the port loop to match nothing. The new code must preserve this behavior.
+// See https://github.com/docker/go-connections/blob/v0.6.0/nat/nat.go#L101-L110
+func TestMappedPortEmptyString(t *testing.T) {
+	ctx := context.Background()
+	ctr, err := Run(ctx, nginxAlpineImage, WithExposedPorts("80/tcp"))
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, ctr.Terminate(ctx))
+	})
+
+	port, err := ctr.MappedPort(ctx, "")
+	require.True(t, port.IsZero(), "expected zero port for empty string input")
+	require.ErrorIs(t, err, errdefs.ErrNotFound)
 }

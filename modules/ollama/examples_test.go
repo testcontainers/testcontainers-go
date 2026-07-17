@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/moby/moby/client"
+	"github.com/moby/moby/client/pkg/versions"
 	"github.com/tmc/langchaingo/llms"
 	langchainollama "github.com/tmc/langchaingo/llms/ollama"
 
@@ -246,25 +248,25 @@ func ExampleRun_withLocal() {
 }
 
 func ExampleRun_withImageMount() {
-	cli, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	ctx := context.Background()
+
+	cli, err := testcontainers.NewDockerClientWithOpts(ctx)
 	if err != nil {
 		log.Printf("failed to create docker client: %s", err)
 		return
 	}
 
-	info, err := cli.Info(context.Background())
+	_, err = cli.Ping(ctx, client.PingOptions{NegotiateAPIVersion: true})
 	if err != nil {
 		log.Printf("failed to get docker info: %s", err)
 		return
 	}
 
 	// skip if the major version of the server is not v28 or greater
-	if info.ServerVersion < "28.0.0" {
-		log.Printf("skipping test because the server version is not v28 or greater")
+	if versions.LessThan(cli.ClientVersion(), "1.48") {
+		log.Printf("skipping test because the server version is not v28 or greater (API v1.48)")
 		return
 	}
-
-	ctx := context.Background()
 
 	ollamaContainer, err := tcollama.Run(ctx, "ollama/ollama:0.5.12")
 	if err != nil {

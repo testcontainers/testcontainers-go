@@ -43,13 +43,14 @@ func (c *Container) HTTPEndpoint(ctx context.Context) (string, error) {
 
 // Run creates an instance of the ArangoDB container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts)+1)
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultPort),
 		testcontainers.WithEnv(map[string]string{
 			"ARANGO_ROOT_PASSWORD": defaultPassword,
 		}),
 		testcontainers.WithWaitStrategy(wait.ForListeningPort(defaultPort)),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 

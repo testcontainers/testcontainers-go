@@ -87,6 +87,8 @@ func TestIsLegacyVersion(t *testing.T) {
 		want    bool
 	}{
 		{"foo", true},
+		{"community-archive", false},
+		{"community-archive-amd64", false},
 		{"latest", false},
 		{"latest-amd64", false},
 		{"s3-latest", false},
@@ -124,6 +126,8 @@ func TestIsMinimumVersion2(t *testing.T) {
 		want    bool
 	}{
 		{"foo", false},
+		{"community-archive", true},
+		{"community-archive-amd64", true},
 		{"latest", true},
 		{"latest-amd64", true},
 		{"s3-latest", true},

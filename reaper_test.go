@@ -3,21 +3,23 @@ package testcontainers
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/containerd/errdefs"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // testSessionID the tests need to create a reaper in a different session, so that it does not interfere with other tests
@@ -76,7 +78,7 @@ func expectedReaperRequest(customize ...func(*ContainerRequest)) ContainerReques
 			hostConfig.Binds = []string{core.MustExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
 			hostConfig.Privileged = true
 		},
-		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),
+		WaitingFor: defaultRyukWaitStrategy("8080/tcp"),
 		Env: map[string]string{
 			"RYUK_CONNECTION_TIMEOUT":   "1m0s",
 			"RYUK_RECONNECTION_TIMEOUT": "10s",
@@ -177,7 +179,7 @@ func testContainerStop(t *testing.T) {
 	state, err = nginxA.State(ctx)
 	require.NoError(t, err)
 	require.False(t, state.Running)
-	require.Equal(t, "exited", state.Status)
+	require.Equal(t, container.StateExited, state.Status)
 }
 
 // testContainerTerminate tests terminating a container.
@@ -513,6 +515,8 @@ func TestReaper_ReuseRunning(t *testing.T) {
 			cleanupReaper(t, reaper, spawner)
 			require.NoError(t, err)
 
+			reaperConnect(t, reaper)
+
 			obtainedReaperContainerIDs[i] = reaper.container.GetContainerID()
 		}(i)
 	}
@@ -525,10 +529,130 @@ func TestReaper_ReuseRunning(t *testing.T) {
 	}
 }
 
+// reaperConnect copies the logic from Reaper.connect() but with better error handling.
+// Reaper.connect() neither returns the error from the handshake, nor the connection,
+// making the testing of the handshake flow impossible.
+func reaperConnect(t *testing.T, reaper *Reaper) {
+	t.Helper()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	var d net.Dialer
+	conn, err := d.DialContext(ctx, "tcp", reaper.Endpoint)
+	require.NoError(t, err, "dial reaper %s: %v", reaper.Endpoint, err)
+	defer conn.Close()
+	err = reaper.handshake(conn)
+	require.NoError(t, err, "Reaper handshake should be successful")
+}
+
 func TestSpawnerBackoff(t *testing.T) {
 	b := spawner.backoff()
 	for range 100 {
 		require.LessOrEqual(t, b.NextBackOff(), time.Millisecond*250, "backoff should not exceed max interval")
+	}
+}
+
+type timeoutErr struct{}
+
+func (timeoutErr) Error() string {
+	return "timeout"
+}
+
+func (timeoutErr) Timeout() bool {
+	return true
+}
+
+func TestSpawnerRetryError(t *testing.T) {
+	t.Run("nil error", func(t *testing.T) {
+		err := spawner.retryError(nil)
+		require.NoError(t, err, "should return nil")
+	})
+
+	tests := []struct {
+		name      string
+		err       error
+		permanent bool
+	}{
+		{
+			name:      "docker conflict error",
+			err:       errors.New("Conflict. The container name \"foo\" is already in use by container \"01234\"."),
+			permanent: false,
+		},
+		{
+			name:      "podman conflict error",
+			err:       errors.New("creating container storage: the container name \"foo\" is already in use by 01234."),
+			permanent: false,
+		},
+		{
+			name:      "errdefs.ErrNotFound",
+			err:       fmt.Errorf("foo: %w", errdefs.ErrNotFound),
+			permanent: false,
+		},
+		{
+			name:      "errdefs.Conflict",
+			err:       fmt.Errorf("foo: %w", errdefs.ErrConflict),
+			permanent: true,
+		},
+		{
+			name:      "syscall.ECONNREFUSED",
+			err:       fmt.Errorf("foo: %w", syscall.ECONNREFUSED),
+			permanent: false,
+		},
+		{
+			name:      "syscall.ECONNRESET",
+			err:       fmt.Errorf("foo: %w", syscall.ECONNRESET),
+			permanent: false,
+		},
+		{
+			name:      "syscall.ECONNABORTED",
+			err:       fmt.Errorf("foo: %w", syscall.ECONNABORTED),
+			permanent: false,
+		},
+		{
+			name:      "syscall.ETIMEDOUT",
+			err:       fmt.Errorf("foo: %w", syscall.ETIMEDOUT),
+			permanent: false,
+		},
+		{
+			name:      "os.ErrDeadlineExceeded",
+			err:       fmt.Errorf("foo: %w", os.ErrDeadlineExceeded),
+			permanent: false,
+		},
+		{
+			name:      "context.DeadlineExceeded",
+			err:       fmt.Errorf("foo: %w", context.DeadlineExceeded),
+			permanent: false,
+		},
+		{
+			name:      "timeout error",
+			err:       fmt.Errorf("foo: %w", timeoutErr{}),
+			permanent: false,
+		},
+		{
+			name:      "context.Canceled",
+			err:       fmt.Errorf("foo: %w", context.Canceled),
+			permanent: false,
+		},
+		{
+			name:      "random error",
+			err:       errors.New("some random error"),
+			permanent: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotErr := spawner.retryError(tt.err)
+			require.Error(t, gotErr, "should not return nil")
+
+			permanentError := &backoff.PermanentError{}
+			isPermanent := errors.As(gotErr, &permanentError)
+			if tt.permanent {
+				require.True(t, isPermanent, "the error should be a PermanentError")
+			} else {
+				require.False(t, isPermanent, "the error should not be a PermanentError")
+			}
+		})
 	}
 }
 

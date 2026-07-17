@@ -3,15 +3,16 @@ package wait
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"net"
-	"strconv"
+	"net/netip"
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/exec"
@@ -24,7 +25,7 @@ func TestWaitForListeningPortSucceeds(t *testing.T) {
 	defer listener.Close()
 
 	rawPort := listener.Addr().(*net.TCPAddr).Port
-	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
+	port, err := network.ParsePort(fmt.Sprintf("%d/tcp", rawPort))
 	require.NoError(t, err)
 
 	var mappedPortCount, execCount int
@@ -32,10 +33,10 @@ func TestWaitForListeningPortSucceeds(t *testing.T) {
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
 			defer func() { mappedPortCount++ }()
 			if mappedPortCount == 0 {
-				return "", ErrPortNotFound
+				return network.Port{}, ErrPortNotFound
 			}
 			return port, nil
 		},
@@ -62,10 +63,10 @@ func TestWaitForListeningPortSucceeds(t *testing.T) {
 }
 
 func TestWaitForListeningPortInternallySucceeds(t *testing.T) {
-	localPort, err := nat.NewPort("tcp", "80")
+	localPort, err := network.ParsePort("80/tcp")
 	require.NoError(t, err)
 
-	mappedPort, err := nat.NewPort("tcp", "8080")
+	mappedPort, err := network.ParsePort("8080/tcp")
 	require.NoError(t, err)
 
 	var mappedPortCount, execCount int
@@ -73,13 +74,17 @@ func TestWaitForListeningPortInternallySucceeds(t *testing.T) {
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, p nat.Port) (nat.Port, error) {
-			if p.Int() != localPort.Int() {
-				return "", ErrPortNotFound
+		MappedPortImpl: func(_ context.Context, port string) (network.Port, error) {
+			p, err := network.ParsePort(port)
+			if err != nil {
+				return network.Port{}, err
+			}
+			if p.Num() != localPort.Num() {
+				return network.Port{}, ErrPortNotFound
 			}
 			defer func() { mappedPortCount++ }()
 			if mappedPortCount <= 2 {
-				return "", ErrPortNotFound
+				return network.Port{}, ErrPortNotFound
 			}
 			return mappedPort, nil
 		},
@@ -97,7 +102,7 @@ func TestWaitForListeningPortInternallySucceeds(t *testing.T) {
 		},
 	}
 
-	wg := ForListeningPort(localPort).
+	wg := ForListeningPort(localPort.String()).
 		SkipExternalCheck().
 		WithStartupTimeout(5 * time.Second).
 		WithPollInterval(100 * time.Millisecond)
@@ -107,10 +112,10 @@ func TestWaitForListeningPortInternallySucceeds(t *testing.T) {
 }
 
 func TestWaitForMappedPortSucceeds(t *testing.T) {
-	localPort, err := nat.NewPort("tcp", "80")
+	localPort, err := network.ParsePort("80/tcp")
 	require.NoError(t, err)
 
-	mappedPort, err := nat.NewPort("tcp", "8080")
+	mappedPort, err := network.ParsePort("8080/tcp")
 	require.NoError(t, err)
 
 	var mappedPortCount int
@@ -118,13 +123,17 @@ func TestWaitForMappedPortSucceeds(t *testing.T) {
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, p nat.Port) (nat.Port, error) {
-			if p.Int() != localPort.Int() {
-				return "", ErrPortNotFound
+		MappedPortImpl: func(_ context.Context, port string) (network.Port, error) {
+			p, err := network.ParsePort(port)
+			if err != nil {
+				return network.Port{}, err
+			}
+			if p.Num() != localPort.Num() {
+				return network.Port{}, ErrPortNotFound
 			}
 			defer func() { mappedPortCount++ }()
 			if mappedPortCount <= 2 {
-				return "", ErrPortNotFound
+				return network.Port{}, ErrPortNotFound
 			}
 			return mappedPort, nil
 		},
@@ -135,7 +144,7 @@ func TestWaitForMappedPortSucceeds(t *testing.T) {
 		},
 	}
 
-	wg := ForMappedPort(localPort).
+	wg := ForMappedPort(localPort.String()).
 		WithStartupTimeout(5 * time.Second).
 		WithPollInterval(100 * time.Millisecond)
 
@@ -149,7 +158,7 @@ func TestWaitForExposedPortSkipChecksSucceeds(t *testing.T) {
 	defer listener.Close()
 
 	rawPort := listener.Addr().(*net.TCPAddr).Port
-	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
+	port, err := network.ParsePort(fmt.Sprintf("%d/tcp", rawPort))
 	require.NoError(t, err)
 
 	var inspectCount, mappedPortCount, execCount int
@@ -163,32 +172,28 @@ func TestWaitForExposedPortSkipChecksSucceeds(t *testing.T) {
 				// Simulate a container that hasn't bound any ports yet.
 				return &container.InspectResponse{
 					NetworkSettings: &container.NetworkSettings{
-						NetworkSettingsBase: container.NetworkSettingsBase{
-							Ports: nat.PortMap{},
-						},
+						Ports: network.PortMap{},
 					},
 				}, nil
 			}
 
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
-					NetworkSettingsBase: container.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"80": []nat.PortBinding{
-								{
-									HostIP:   "0.0.0.0",
-									HostPort: port.Port(),
-								},
+					Ports: network.PortMap{
+						network.MustParsePort("80"): []network.PortBinding{
+							{
+								HostIP:   netip.MustParseAddr("0.0.0.0"),
+								HostPort: port.Port(),
 							},
 						},
 					},
 				},
 			}, nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
 			defer func() { mappedPortCount++ }()
 			if mappedPortCount == 0 {
-				return "", ErrPortNotFound
+				return network.Port{}, ErrPortNotFound
 			}
 			return port, nil
 		},
@@ -220,12 +225,12 @@ func TestHostPortStrategyFailsWhileGettingPortDueToOOMKilledContainer(t *testing
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
 			defer func() { mappedPortCount++ }()
 			if mappedPortCount == 0 {
-				return "", ErrPortNotFound
+				return network.Port{}, ErrPortNotFound
 			}
-			return "49152", nil
+			return network.MustParsePort("49152"), nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
@@ -250,16 +255,16 @@ func TestHostPortStrategyFailsWhileGettingPortDueToExitedContainer(t *testing.T)
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
 			defer func() { mappedPortCount++ }()
 			if mappedPortCount == 0 {
-				return "", ErrPortNotFound
+				return network.Port{}, ErrPortNotFound
 			}
-			return "49152", nil
+			return network.MustParsePort("49152"), nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
-				Status:   "exited",
+				Status:   container.StateExited,
 				ExitCode: 1,
 			}, nil
 		},
@@ -281,16 +286,16 @@ func TestHostPortStrategyFailsWhileGettingPortDueToUnexpectedContainerStatus(t *
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
 			defer func() { mappedPortCount++ }()
 			if mappedPortCount == 0 {
-				return "", ErrPortNotFound
+				return network.Port{}, ErrPortNotFound
 			}
-			return "49152", nil
+			return network.MustParsePort("49152"), nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
-				Status: "dead",
+				Status: container.StateDead,
 			}, nil
 		},
 	}
@@ -310,8 +315,8 @@ func TestHostPortStrategyFailsWhileExternalCheckingDueToOOMKilledContainer(t *te
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			return "49152", nil
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
+			return network.MustParsePort("49152"), nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
@@ -335,12 +340,12 @@ func TestHostPortStrategyFailsWhileExternalCheckingDueToExitedContainer(t *testi
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			return "49152", nil
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
+			return network.MustParsePort("49152"), nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
-				Status:   "exited",
+				Status:   container.StateExited,
 				ExitCode: 1,
 			}, nil
 		},
@@ -361,12 +366,12 @@ func TestHostPortStrategyFailsWhileExternalCheckingDueToUnexpectedContainerStatu
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
-			return "49152", nil
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
+			return network.MustParsePort("49152"), nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
-				Status: "dead",
+				Status: container.StateDead,
 			}, nil
 		},
 	}
@@ -387,7 +392,7 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToOOMKilledContainer(t *te
 	defer listener.Close()
 
 	rawPort := listener.Addr().(*net.TCPAddr).Port
-	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
+	port, err := network.ParsePort(fmt.Sprintf("%d/tcp", rawPort))
 	require.NoError(t, err)
 
 	var stateCount int
@@ -395,7 +400,7 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToOOMKilledContainer(t *te
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
 			return port, nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
@@ -427,7 +432,7 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToExitedContainer(t *testi
 	defer listener.Close()
 
 	rawPort := listener.Addr().(*net.TCPAddr).Port
-	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
+	port, err := network.ParsePort(fmt.Sprintf("%d/tcp", rawPort))
 	require.NoError(t, err)
 
 	var stateCount int
@@ -435,7 +440,7 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToExitedContainer(t *testi
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
 			return port, nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
@@ -446,7 +451,7 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToExitedContainer(t *testi
 				}, nil
 			}
 			return &container.State{
-				Status:   "exited",
+				Status:   container.StateExited,
 				ExitCode: 1,
 			}, nil
 		},
@@ -468,7 +473,7 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToUnexpectedContainerStatu
 	defer listener.Close()
 
 	rawPort := listener.Addr().(*net.TCPAddr).Port
-	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
+	port, err := network.ParsePort(fmt.Sprintf("%d/tcp", rawPort))
 	require.NoError(t, err)
 
 	var stateCount int
@@ -476,7 +481,7 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToUnexpectedContainerStatu
 		HostImpl: func(_ context.Context) (string, error) {
 			return "localhost", nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
 			return port, nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
@@ -487,7 +492,7 @@ func TestHostPortStrategyFailsWhileInternalCheckingDueToUnexpectedContainerStatu
 				}, nil
 			}
 			return &container.State{
-				Status: "dead",
+				Status: container.StateDead,
 			}, nil
 		},
 	}
@@ -508,7 +513,7 @@ func TestHostPortStrategySucceedsGivenShellIsNotInstalled(t *testing.T) {
 	defer listener.Close()
 
 	rawPort := listener.Addr().(*net.TCPAddr).Port
-	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
+	port, err := network.ParsePort(fmt.Sprintf("%d/tcp", rawPort))
 	require.NoError(t, err)
 
 	target := &MockStrategyTarget{
@@ -518,20 +523,18 @@ func TestHostPortStrategySucceedsGivenShellIsNotInstalled(t *testing.T) {
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
-					NetworkSettingsBase: container.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"80": []nat.PortBinding{
-								{
-									HostIP:   "0.0.0.0",
-									HostPort: port.Port(),
-								},
+					Ports: network.PortMap{
+						network.MustParsePort("80"): []network.PortBinding{
+							{
+								HostIP:   netip.MustParseAddr("0.0.0.0"),
+								HostPort: port.Port(),
 							},
 						},
 					},
 				},
 			}, nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
 			return port, nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
@@ -571,7 +574,7 @@ func TestHostPortStrategySucceedsGivenShellIsNotFound(t *testing.T) {
 	defer listener.Close()
 
 	rawPort := listener.Addr().(*net.TCPAddr).Port
-	port, err := nat.NewPort("tcp", strconv.Itoa(rawPort))
+	port, err := network.ParsePort(fmt.Sprintf("%d/tcp", rawPort))
 	require.NoError(t, err)
 
 	target := &MockStrategyTarget{
@@ -581,20 +584,18 @@ func TestHostPortStrategySucceedsGivenShellIsNotFound(t *testing.T) {
 		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
 			return &container.InspectResponse{
 				NetworkSettings: &container.NetworkSettings{
-					NetworkSettingsBase: container.NetworkSettingsBase{
-						Ports: nat.PortMap{
-							"80": []nat.PortBinding{
-								{
-									HostIP:   "0.0.0.0",
-									HostPort: port.Port(),
-								},
+					Ports: network.PortMap{
+						network.MustParsePort("80"): []network.PortBinding{
+							{
+								HostIP:   netip.MustParseAddr("0.0.0.0"),
+								HostPort: port.Port(),
 							},
 						},
 					},
 				},
 			}, nil
 		},
-		MappedPortImpl: func(_ context.Context, _ nat.Port) (nat.Port, error) {
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
 			return port, nil
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {

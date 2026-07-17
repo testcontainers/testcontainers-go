@@ -59,13 +59,14 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Consul container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ConsulContainer, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 2+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultHTTPAPIPort+"/tcp", defaultBrokerPort+"/tcp", defaultBrokerPort+"/udp"),
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("Consul agent running!"),
 			wait.ForListeningPort(defaultHTTPAPIPort+"/tcp"),
 		),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 

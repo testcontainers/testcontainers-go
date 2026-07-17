@@ -23,7 +23,9 @@ The Azure module exposes the following Go packages:
 - [ServiceBus](#servicebus): `github.com/testcontainers/testcontainers-go/modules/azure/servicebus`.
 !!! warning "EULA Acceptance"
     Due to licensing restrictions you are required to explicitly accept an End User License Agreement (EULA) for the EventHubs container image. This is facilitated through the `WithAcceptEULA` function.
-
+- [CosmosDB](#cosmosdb): `github.com/testcontainers/testcontainers-go/modules/azure/cosmosdb`.
+- [Lowkey Vault](#lowkey-vault): `github.com/testcontainers/testcontainers-go/modules/azure/lowkeyvault`.
+- [Azure SQL Edge](#azure-sql-edge): `github.com/testcontainers/testcontainers-go/modules/azure/sqledge`.
 <!--codeinclude-->
 [Creating a Azurite container](../../modules/azure/azurite/examples_test.go) inside_block:runAzuriteContainer
 <!--/codeinclude-->
@@ -63,7 +65,7 @@ When starting the Azurite container, you can pass options in a variadic way to c
 
 #### WithEnabledServices
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.40.0"><span class="tc-version">:material-tag: v0.40.0</span></a>
 
 The default Azurite container entrypoint runs all three storage services: blob, queue, and table. Use this option to specify the required services for fewer exposed ports and slightly reduced container resources. E.g. `azurite.WithEnabledServices(azurite.BlobService)`.
 
@@ -164,8 +166,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
-The EventHubs container needs an Azurite container to be running, for that reason _Testcontainers for Go_ **automatically creates a Docker network and an Azurite container** for EventHubs to work.
+The EventHubs container needs an Azurite container to be running. By default, _Testcontainers for Go_ **automatically creates a Docker network and an Azurite container** for EventHubs to work.
 When terminating the EventHubs container, the Azurite container and the Docker network are also terminated.
+If you want to manage the Azurite container and network yourself, use the [`WithAzuriteContainer`](#withazuritecontainer) option instead.
 
 #### Image
 
@@ -182,11 +185,29 @@ When starting the EventHubs container, you can pass options in a variadic way to
 
 This option allows you to set a different Azurite Docker image, instead of the default one, and also pass options to the Azurite container, in the form of a variadic argument of `testcontainers.ContainerCustomizer`.
 
+!!! warning
+    `WithAzurite` and [`WithAzuriteContainer`](#withazuritecontainer) are mutually exclusive. Passing both to `Run` returns an error. If you already have a running Azurite container, use `WithAzuriteContainer` instead — the image and options set here will not apply.
+
 #### WithAcceptEULA
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.36.0"><span class="tc-version">:material-tag: v0.36.0</span></a>
 
 This option allows you to accept the EULA for the EventHubs container.
+
+#### WithAzuriteContainer
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
+
+This option allows you to supply a pre-existing Azurite container and Docker network instead of letting the module create them automatically. When this option is used, calling `Terminate()` on the EventHubs container will **not** stop or remove the Azurite container or the network — the caller is responsible for their lifecycle.
+
+!!! warning
+    `WithAzuriteContainer` and [`WithAzurite`](#withazurite) are mutually exclusive. Passing both to `Run` returns an error. Any Azurite image or options set via `WithAzurite` are ignored when `WithAzuriteContainer` is supplied.
+
+<!--codeinclude-->
+[Create Network](../../modules/azure/eventhubs/examples_test.go) inside_block:withAzuriteContainer_network
+[Start Azurite](../../modules/azure/eventhubs/examples_test.go) inside_block:withAzuriteContainer_azurite
+[Run EventHubs with external Azurite](../../modules/azure/eventhubs/examples_test.go) inside_block:withAzuriteContainer_eventhubs
+<!--/codeinclude-->
 
 #### WithConfig
 
@@ -198,6 +219,24 @@ The config file must be a valid EventHubs config file, and it must be a valid JS
 
 <!--codeinclude-->
 [EventHubs JSON Config](../../modules/azure/eventhubs/testdata/eventhubs_config.json)
+<!--/codeinclude-->
+
+#### WithConfigObject
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
+
+This option is the statically-typed counterpart to `WithConfig`. It accepts a `*Config` value built with the functional-options API (`NewConfig`, `WithNamespace`, `WithEntity`, `WithConsumerGroup`, `WithLoggingType`) and marshals it to JSON at container start time.
+
+The emulator enforces the following hard limits, which `NewConfig` validates before the container starts:
+
+- Exactly **1 namespace**, whose name must be `eventhubs.EmulatorNamespaceName` (`"emulatorns1"`, case-insensitive).
+- At most **10 entities** per namespace.
+- Partition count **1–32** per entity.
+- At most **20 consumer groups** per entity.
+
+<!--codeinclude-->
+[Build Config](../../modules/azure/eventhubs/examples_test.go) inside_block:withConfigObject_buildConfig
+[Run EventHubs with Config Object](../../modules/azure/eventhubs/examples_test.go) inside_block:withConfigObject_run
 <!--/codeinclude-->
 
 {% include "../features/common_functional_options_list.md" %}
@@ -225,6 +264,14 @@ In the following example, inspired by the [Azure Event Hubs Go SDK](https://lear
 [Create Sample Events](../../modules/azure/eventhubs/examples_test.go) inside_block:createSampleEvents
 [Create Batch](../../modules/azure/eventhubs/examples_test.go) inside_block:createBatch
 [Send Event Data Batch to the EventHub](../../modules/azure/eventhubs/examples_test.go) inside_block:sendEventDataBatch
+<!--/codeinclude-->
+
+#### Build a typed config with NewConfig
+
+The `NewConfig` function provides a statically-typed, validated alternative to writing the JSON config by hand.
+
+<!--codeinclude-->
+[Build Config](../../modules/azure/eventhubs/examples_test.go) inside_block:ExampleNewConfig_build
 <!--/codeinclude-->
 
 ## ServiceBus
@@ -307,4 +354,250 @@ In the following example, inspired by the [Azure Event Hubs Go SDK](https://lear
 [Create Client](../../modules/azure/servicebus/examples_test.go) inside_block:createClient
 [Send messages to a Queue](../../modules/azure/servicebus/examples_test.go) inside_block:sendMessages
 [Receive messages from a Queue](../../modules/azure/servicebus/examples_test.go) inside_block:receiveMessages
+<!--/codeinclude-->
+
+## CosmosDB
+
+### Run function
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.40.0"><span class="tc-version">:material-tag: v0.40.0</span></a>
+
+The CosmosDB module exposes one entrypoint function to create the CosmosDB container, and this function receives three parameters:
+
+```golang
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)
+```
+
+- `context.Context`, the Go context.
+- `string`, the Docker image to use.
+- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+
+#### Image
+
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview")`.
+
+### Container Options
+
+When starting the CosmosDB container, you can pass options in a variadic way to configure it.
+
+{% include "../features/common_functional_options_list.md" %}
+
+### Container Methods
+
+The CosmosDB container exposes the following methods:
+
+#### ConnectionString
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.40.0"><span class="tc-version">:material-tag: v0.40.0</span></a>
+
+Returns the connection string to connect to the CosmosDB container and an error, passing the Go context as parameter.
+
+### Examples
+
+#### Connect and Create database
+
+<!--codeinclude-->
+[Connect_CreateDatabase](../../modules/azure/cosmosdb/examples_test.go) inside_block:ExampleRun_connect
+<!--/codeinclude-->
+
+## Lowkey Vault
+
+### Run function
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
+
+The Lowkey Vault module exposes one entrypoint function to create the Lowkey Vault container, and this function receives three parameters:
+
+```golang
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)
+```
+
+- `context.Context`, the Go context.
+- `string`, the Docker image to use.
+- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+
+
+#### Image
+
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "nagyesta/lowkey-vault:7.0.9-ubi10-minimal")`.
+
+### Container Options
+
+The Lowkey Vault container exposes two ports, one for the Key Vault API and one for the metadata endpoints such as the token endpoint.
+Since the Key Vault API supports multiple vaults and selects the active vault based on the host authority of the request URL, the 
+container can be configured in two ways:
+
+#### Local mode
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
+
+The default mode is to run the Key Vault container on localhost, meaning that both the Key Vault API and the metadata endpoints are 
+exposed using random host ports, and the container is accessible only from the host machine. The default vault is automatically created 
+and is made available using the host address. 
+
+#### Network mode
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
+
+To prepare the container for running in a network and making it accessible from other containers in the network, you can use the 
+`WithNetworkAlias` option. For example:
+```golang
+Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal",
+    lowkeyvault.WithNetworkAlias("lowkey-vault", aNetwork),
+)
+```
+
+### Container Methods
+
+The Lowkey Vault container exposes the following methods:
+
+#### ConnectionURL
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
+
+Returns the connection URL to connect to the Key Vault API of the Lowkey Vault container and an error, passing the Go context and an 
+`accessMode` as parameters. The access mode can be either `lowkeyvault.Local` or `lowkeyvault.Network` depending on the mode you wish
+to use to connect to the Key Vault API.
+
+#### IdentityEndpoint
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
+
+Returns the URL pointing to the token endpoint of the Lowkey Vault container and an error, passing the Go context and an `accessMode` 
+as parameters. The access mode can be either `lowkeyvault.Local` or `lowkeyvault.Network` depending on the mode you wish to use to 
+access the token endpoint. This can be set as the value of the `IDENTITY_ENDPOINT` environment variable without modification on the  
+machine which will connect to the Lowkey Vault container. When using the Azure Key Vault SDK for Go, this will let you authenticate 
+with managed identities by using the `azidentity.NewDefaultAzureCredential(nil)` as a credential.
+
+#### IdentityHeader
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
+
+Can return the string which must be set as the value of the `IDENTITY_HEADER` environment variable without modification on the  
+machine which will connect to the Lowkey Vault container. When using the Azure Key Vault SDK for Go, this will let you authenticate
+with managed identities by using the `azidentity.NewDefaultAzureCredential(nil)` as a credential.
+
+#### Client
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.41.0"><span class="tc-version">:material-tag: v0.41.0</span></a>
+
+Returns a `http.Client` and requires the Go context as parameter. This method can be used to prepare a `http.Client` for connecting 
+to the Key Vault API of the Lowkey Vault container using a self-signed certificate. This is necessary since the Lowkey Vault container
+uses a self-signed certificate by default.
+
+### Examples
+
+#### Use the Secrets API in Local mode
+
+In the following example, we are starting the Lowkey Vault container in Local mode, set a secret and retrieve it using the Key Vault Secrets API.
+
+<!--codeinclude-->
+[Run Lowkey Vault Container in Local mode](../../modules/azure/lowkeyvault/examples_test.go) inside_block:createContainerWithLocalMode
+[Create Client](../../modules/azure/lowkeyvault/examples_test.go) inside_block:prepareTheSecretClient
+[Set and get a secret](../../modules/azure/lowkeyvault/examples_test.go) inside_block:setAndFetchTheSecret
+<!--/codeinclude-->
+
+#### Use the Keys API in Local mode
+
+In the following example, we are starting the Lowkey Vault container in Local mode, create a key and encrypt and decrypt a message with it.
+
+<!--codeinclude-->
+[Run Lowkey Vault Container in Local mode](../../modules/azure/lowkeyvault/examples_test.go) inside_block:createContainerWithLocalMode
+[Create Client](../../modules/azure/lowkeyvault/examples_test.go) inside_block:prepareTheKeyClient
+[Create a key](../../modules/azure/lowkeyvault/examples_test.go) inside_block:createKey
+[Encrypt a message with the key](../../modules/azure/lowkeyvault/examples_test.go) inside_block:encryptMessage
+[Decrypt cipher text with the key](../../modules/azure/lowkeyvault/examples_test.go) inside_block:decryptCipherText
+<!--/codeinclude-->
+
+#### Use the Certificates API in Local mode
+
+In the following example, we are starting the Lowkey Vault container in Local mode, create a certificate using the Key Vault Certificates
+API, and fetch the content of the certificate as a PKCS12 store using the Key Vault Secrets API.
+
+<!--codeinclude-->
+[Run Lowkey Vault Container in Local mode](../../modules/azure/lowkeyvault/examples_test.go) inside_block:createContainerWithLocalMode
+[Create Certificate Client](../../modules/azure/lowkeyvault/examples_test.go) inside_block:prepareTheCertClient
+[Create a certificate](../../modules/azure/lowkeyvault/examples_test.go) inside_block:createCertificate
+[Create Secret Client](../../modules/azure/lowkeyvault/examples_test.go) inside_block:prepareTheSecretClient
+[Fetch the certificate details](../../modules/azure/lowkeyvault/examples_test.go) inside_block:fetchCertDetails
+<!--/codeinclude-->
+
+#### Use the Secrets API in Network mode
+
+In the following example, we are starting the Lowkey Vault container in Network mode and setting the parameters of a Go client
+container which will be used to connect to the Key Vault API of the Lowkey Vault container in Network mode.
+
+<!--codeinclude-->
+[Run Lowkey Vault Container in Network mode](../../modules/azure/lowkeyvault/examples_test.go) inside_block:createContainerWithNetwork
+[Get the endpoint details in Network mode](../../modules/azure/lowkeyvault/examples_test.go) inside_block:obtainEndpointUrls
+[Configure the client container](../../modules/azure/lowkeyvault/examples_test.go) inside_block:configureClient
+<!--/codeinclude-->
+## Azure SQL Edge
+
+### Run function
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The Azure SQL Edge module exposes one entrypoint function to create the Azure SQL Edge container, and this function receives three parameters:
+
+```golang
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error)
+```
+
+- `context.Context`, the Go context.
+- `string`, the Docker image to use.
+- `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
+
+Azure SQL Edge is an ARM64-compatible SQL Server variant for IoT and edge scenarios. It uses the same `sqlserver://` wire protocol as SQL Server on port 1433.
+
+#### Image
+
+Use the second argument in the `Run` function to set a valid Docker image.
+In example: `Run(context.Background(), "mcr.microsoft.com/azure-sql-edge:1.0.7")`.
+
+!!! warning "EULA Acceptance"
+    Due to licensing restrictions you are required to explicitly accept an End User License Agreement (EULA) for the Azure SQL Edge container image. This is facilitated through the `WithAcceptEULA` option. `Run` returns an error if it is not provided.
+
+### Container Options
+
+When starting the Azure SQL Edge container, you can pass options in a variadic way to configure it.
+
+#### WithAcceptEULA
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+Accepts the Microsoft Azure SQL Edge End-User License Agreement. This option is **required**; `Run` returns an error if it is not provided.
+
+#### WithPassword
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to set a different SA password, you can use `sqledge.WithPassword` with a valid password. E.g. `sqledge.WithPassword("Strong@Passw0rd")`.
+
+!!!info
+    The password must adhere to the [SQL Server Password Policy](https://learn.microsoft.com/en-us/sql/relational-databases/security/password-policy): at least 8 characters containing uppercase letters, lowercase letters, digits, and special characters. The default `Strong!Passw0rd` already meets this requirement.
+
+{% include "../features/common_functional_options_list.md" %}
+
+### Container Methods
+
+The Azure SQL Edge container exposes the following methods:
+
+#### ConnectionString
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+This method returns the connection string to connect to the Azure SQL Edge container, using the default `1433` port and the `master` database.
+It is possible to pass extra parameters to the connection string, e.g. `encrypt=false` or `TrustServerCertificate=true`, in a variadic way.
+
+```golang
+connectionString, err := container.ConnectionString(ctx, "encrypt=false", "TrustServerCertificate=true")
+```
+
+### Examples
+
+<!--codeinclude-->
+[Creating an Azure SQL Edge container](../../modules/azure/sqledge/examples_test.go) inside_block:runSQLEdgeContainer
 <!--/codeinclude-->

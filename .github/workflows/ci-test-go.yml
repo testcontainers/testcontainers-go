@@ -55,18 +55,18 @@ jobs:
     steps:
       - name: Setup rootless Docker
         if: ${{ inputs.rootless-docker }}
-        uses: docker/setup-docker-action@b60f85385d03ac8acfca6d9996982511d8620a19 # v4
+        uses: docker/setup-docker-action@b2189fbf2a6592b51fee7cdd93ee2bfaeba733db # v5.1.0
         with:
           rootless: true
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           # Disabling shallow clone is recommended for improving relevancy of reporting
           fetch-depth: 0
 
       - name: Set up Go
-        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
             go-version: '${{ inputs.go-version }}'
             cache-dependency-path: '${{ inputs.project-directory }}/go.sum'
@@ -89,7 +89,7 @@ jobs:
       # Setup Testcontainers Cloud Client right before your Testcontainers tests
       - name: Setup Testcontainers Cloud Client
         if: ${{ inputs.testcontainers-cloud }}
-        uses: atomicjar/testcontainers-cloud-setup-action@c335bdbb570ec7c48f72c7d450c077f0a002293e # v1.3
+        uses: atomicjar/testcontainers-cloud-setup-action@7d1bab3fdfe0027c91936deca6b924d8a8a7a04d # v1.3
         with:
           token: ${{ secrets.TCC_TOKEN }}
 
@@ -105,7 +105,7 @@ jobs:
       # (Optionally) When you don't need Testcontainers Cloud anymore, you could terminate sessions eagerly
       - name: Terminate Testcontainers Cloud Client active sessions
         if: ${{ inputs.testcontainers-cloud }}
-        uses: atomicjar/testcontainers-cloud-setup-action@c335bdbb570ec7c48f72c7d450c077f0a002293e # v1.3
+        uses: atomicjar/testcontainers-cloud-setup-action@7d1bab3fdfe0027c91936deca6b924d8a8a7a04d # v1.3
         with:
           action: terminate
 
@@ -118,7 +118,7 @@ jobs:
       - name: Decide if Sonar must be run
         if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: |
-          if [[ "1.24.x" == "${{ inputs.go-version }}" ]] && \
+          if [[ "1.25.x" == "${{ inputs.go-version }}" ]] && \
              [[ "true" != "${{ inputs.rootless-docker }}" ]] && \
              [[ "true" != "${{ inputs.testcontainers-cloud }}" ]] && \
              [[ "true" != "${{ inputs.ryuk-disabled }}" ]] && \
@@ -145,7 +145,7 @@ jobs:
 
       - name: SonarQube Scan
         if: ${{ env.SHOULD_RUN_SONAR == 'true' }}
-        uses: SonarSource/sonarqube-scan-action@aa494459d7c39c106cc77b166de8b4250a32bb97 # v5.1.0
+        uses: SonarSource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e # v8.2.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:

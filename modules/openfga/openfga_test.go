@@ -13,7 +13,7 @@ import (
 func TestOpenFGA(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := openfga.Run(ctx, "openfga/openfga:v1.5.0")
+	ctr, err := openfga.Run(ctx, "openfga/openfga:v1.18.0")
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
