@@ -37,6 +37,7 @@ func (n DefaultNetwork) ApplyDockerTo(opts *DockerProviderOptions) {
 // NetworkRequest represents the parameters used to get a network
 type NetworkRequest struct {
 	Driver         string
+	DriverOptions  map[string]string
 	CheckDuplicate bool // Deprecated: CheckDuplicate is deprecated since API v1.44, but it defaults to true when sent by the client package to older daemons.
 	Internal       bool
 	EnableIPv6     *bool
