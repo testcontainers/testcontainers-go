@@ -74,8 +74,8 @@ nav:
         - features/docker_compose.md
         - features/tls.md
     - Modules:
-        - modules/fakegcsserver.md
         - modules/index.md
+        - modules/fakegcsserver.md
         - modules/activemq.md
         - modules/aerospike.md
         - modules/arangodb.md
