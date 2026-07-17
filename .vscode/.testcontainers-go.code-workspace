@@ -106,12 +106,12 @@
             "path": "../modules/etcd"
         },
         {
-"name": "module / firebird",
-            "path": "../modules/firebird"
+            "name": "module / fakegcsserver",
+            "path": "../modules/fakegcsserver"
         },
         {
-"name": "module / fakegcsserver",
-            "path": "../modules/fakegcsserver"
+            "name": "module / firebird",
+            "path": "../modules/firebird"
         },
         {
             "name": "module / forgejo",
