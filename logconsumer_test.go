@@ -8,7 +8,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -21,6 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -257,8 +257,31 @@ func requireNewMsgs(t *testing.T, c *TestLogConsumer, existing, want int, hint s
 	return count
 }
 
+func isRootlessDockerHost(host string) bool {
+	return strings.HasPrefix(host, "unix:///run/user/")
+}
+
+func TestIsRootlessDockerHost(t *testing.T) {
+	tests := []struct {
+		name string
+		host string
+		want bool
+	}{
+		{name: "rootful socket", host: "unix:///var/run/docker.sock"},
+		{name: "rootless socket", host: "unix:///run/user/1000/docker.sock", want: true},
+		{name: "remote Docker host", host: "tcp://localhost:2375"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, isRootlessDockerHost(tt.host))
+		})
+	}
+}
+
 func TestContainerLogWithErrClosed(t *testing.T) {
-	if os.Getenv("XDG_RUNTIME_DIR") != "" {
+	ctx := context.Background()
+	if dockerHost, err := core.ExtractDockerHost(ctx); err == nil && isRootlessDockerHost(dockerHost) {
 		t.Skip("Docker-in-Docker does not work with rootless Docker")
 	}
 
@@ -272,8 +295,6 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	// First spin up a docker-in-docker container, then spin up an inner container within that dind container
 	// Logs are being read from the inner container via the dind container's tcp port, which can be briefly
 	// closed to test behaviour in connection-closed situations.
-	ctx := context.Background()
-
 	dind, err := Run(
 		ctx, "docker:dind",
 		WithExposedPorts("2375/tcp"),
