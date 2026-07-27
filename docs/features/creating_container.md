@@ -25,7 +25,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 The following test creates an NGINX container on both the `bridge` (docker default
 network) and the `foo` network and validates that it returns 200 for the status code.
 
-It also demonstrates how to use `CleanupContainer`, that ensures that nginx container
+It also demonstrates how to use `CleanupContainer`, that ensures that the nginx container
 is removed when the test ends even if the underlying container errored,
 as well as the `CleanupNetwork` which does the same for networks.
 
@@ -51,7 +51,7 @@ and `Network.Remove` which can be seen in the examples.
 The following test creates an NGINX container on both the `bridge` (docker default
 network) and the `foo` network and validates that it returns 200 for the status code.
 
-It also demonstrates how to use `CleanupContainer`, that ensures that nginx container
+It also demonstrates how to use `CleanupContainer`, that ensures that the nginx container
 is removed when the test ends even if the underlying `GenericContainer` errored,
 as well as the `CleanupNetwork` which does the same for networks.
 
