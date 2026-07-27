@@ -51,8 +51,8 @@ and `Network.Remove` which can be seen in the examples.
 The following test creates an NGINX container on both the `bridge` (docker default
 network) and the `foo` network and validates that it returns 200 for the status code.
 
-It also demonstrates how to use `CleanupContainer` ensures that nginx container
-is removed when the test ends even if the underlying `GenericContainer` errored
+It also demonstrates how to use `CleanupContainer`, that ensures that nginx container
+is removed when the test ends even if the underlying `GenericContainer` errored,
 as well as the `CleanupNetwork` which does the same for networks.
 
 The alternatives for these outside of tests as a `defer` are `TerminateContainer`

@@ -94,12 +94,8 @@ func (lc *StdoutLogConsumer) Accept(l Log) {
 
 // CleanupContainer is a helper function that schedules the container
 // to be stopped / terminated when the test ends.
-//
-// This should be called as a defer directly after (before any error check)
-// of [GenericContainer](...) or a modules Run(...) in a test to ensure the
-// container is stopped when the function ends.
-//
-// before any error check. If container is nil, it's a no-op.
+// This should be the first call after [GenericContainer](...) or a modules
+// Run(...) in a test before any error check. If container is nil, it's a no-op.
 func CleanupContainer(tb testing.TB, ctr Container, options ...TerminateOption) {
 	tb.Helper()
 
