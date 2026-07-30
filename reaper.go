@@ -542,12 +542,14 @@ func (r *Reaper) connect(ctx context.Context) (chan bool, error) {
 		return nil, fmt.Errorf("dial reaper %s: %w", r.Endpoint, err)
 	}
 
+	if err := r.handshake(conn); err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("handshake reaper %s: %w", r.Endpoint, err)
+	}
+
 	terminationSignal := make(chan bool)
 	go func() {
 		defer conn.Close()
-		if err := r.handshake(conn); err != nil {
-			log.Printf("Reaper handshake failed: %s", err)
-		}
 		<-terminationSignal
 	}()
 	return terminationSignal, nil
