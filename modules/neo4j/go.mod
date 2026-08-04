@@ -1,8 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/neo4j
 
-go 1.25.0
-
-toolchain go1.25.9
+go 1.26
 
 require (
 	github.com/moby/moby/api v1.55.0

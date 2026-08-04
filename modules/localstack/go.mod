@@ -1,8 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/localstack
 
-go 1.25.0
-
-toolchain go1.25.9
+go 1.26
 
 require (
 	github.com/aws/aws-sdk-go v1.50.31
