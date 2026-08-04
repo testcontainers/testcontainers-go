@@ -28,6 +28,7 @@ updates:
         - /modules/compose
         - /modules/consul
         - /modules/couchbase
+        - /modules/couchdb
         - /modules/cratedb
         - /modules/databend
         - /modules/dex
@@ -38,6 +39,8 @@ updates:
         - /modules/dynamodb
         - /modules/elasticsearch
         - /modules/etcd
+        - /modules/fakegcsserver
+        - /modules/firebird
         - /modules/forgejo
         - /modules/gcloud
         - /modules/grafana-lgtm
@@ -80,6 +83,7 @@ updates:
         - /modules/redis
         - /modules/redpanda
         - /modules/registry
+        - /modules/s3mock
         - /modules/scylladb
         - /modules/sftp
         - /modules/socat
@@ -90,6 +94,7 @@ updates:
         - /modules/timeplus
         - /modules/toxiproxy
         - /modules/trino
+        - /modules/typesense
         - /modules/valkey
         - /modules/vault
         - /modules/vearch

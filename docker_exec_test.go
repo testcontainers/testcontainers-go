@@ -71,6 +71,29 @@ func TestExecWithOptions(t *testing.T) {
 	}
 }
 
+func TestExecReturnsNonZeroExitCodeAndOutput(t *testing.T) {
+	// Regression for exit codes read before the output stream drained: a
+	// created-but-not-yet-started exec reports {Running:false, ExitCode:null},
+	// which the SDK flattens to 0, so an inspect landing in the pre-start window
+	// returned 0 for a command that ultimately failed. Draining the stream to EOF
+	// first makes the subsequent inspect a real terminal state. The race needs
+	// daemon load to reproduce (~1 hit per few thousand concurrent execs); this
+	// asserts the correct code and full output for a short-lived failing command.
+	ctx := context.Background()
+
+	ctr, err := Run(ctx, nginxAlpineImage)
+	CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	code, reader, err := ctr.Exec(ctx, []string{"sh", "-c", "echo MARKER; exit 7"}, tcexec.Multiplexed())
+	require.NoError(t, err)
+	require.Equal(t, 7, code)
+
+	b, err := io.ReadAll(reader)
+	require.NoError(t, err)
+	require.Contains(t, string(b), "MARKER")
+}
+
 func TestExecWithMultiplexedResponse(t *testing.T) {
 	ctx := context.Background()
 

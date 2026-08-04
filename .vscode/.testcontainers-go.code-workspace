@@ -62,6 +62,10 @@
             "path": "../modules/couchbase"
         },
         {
+            "name": "module / couchdb",
+            "path": "../modules/couchdb"
+        },
+        {
             "name": "module / cratedb",
             "path": "../modules/cratedb"
         },
@@ -100,6 +104,14 @@
         {
             "name": "module / etcd",
             "path": "../modules/etcd"
+        },
+        {
+            "name": "module / fakegcsserver",
+            "path": "../modules/fakegcsserver"
+        },
+        {
+            "name": "module / firebird",
+            "path": "../modules/firebird"
         },
         {
             "name": "module / forgejo",
@@ -270,6 +282,10 @@
             "path": "../modules/registry"
         },
         {
+            "name": "module / s3mock",
+            "path": "../modules/s3mock"
+        },
+        {
             "name": "module / scylladb",
             "path": "../modules/scylladb"
         },
@@ -308,6 +324,10 @@
         {
             "name": "module / trino",
             "path": "../modules/trino"
+        },
+        {
+            "name": "module / typesense",
+            "path": "../modules/typesense"
         },
         {
             "name": "module / valkey",

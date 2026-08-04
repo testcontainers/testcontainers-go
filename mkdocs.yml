@@ -75,6 +75,7 @@ nav:
         - features/tls.md
     - Modules:
         - modules/index.md
+        - modules/fakegcsserver.md
         - modules/activemq.md
         - modules/aerospike.md
         - modules/arangodb.md
@@ -87,6 +88,7 @@ nav:
         - modules/cockroachdb.md
         - modules/consul.md
         - modules/couchbase.md
+        - modules/couchdb.md
         - modules/cratedb.md
         - modules/databend.md
         - modules/dex.md
@@ -97,6 +99,7 @@ nav:
         - modules/dynamodb.md
         - modules/elasticsearch.md
         - modules/etcd.md
+        - modules/firebird.md
         - modules/forgejo.md
         - modules/gcloud.md
         - modules/grafana-lgtm.md
@@ -140,6 +143,7 @@ nav:
         - modules/redis.md
         - modules/redpanda.md
         - modules/registry.md
+        - modules/s3mock.md
         - modules/scylladb.md
         - modules/sftp.md
         - modules/socat.md
@@ -150,6 +154,7 @@ nav:
         - modules/timeplus.md
         - modules/toxiproxy.md
         - modules/trino.md
+        - modules/typesense.md
         - modules/valkey.md
         - modules/vault.md
         - modules/vearch.md
