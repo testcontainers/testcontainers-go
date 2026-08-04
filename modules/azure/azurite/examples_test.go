@@ -55,7 +55,7 @@ func ExampleRun_blobOperations() {
 
 	azuriteContainer, err := azurite.Run(
 		ctx,
-		"mcr.microsoft.com/azure-storage/azurite:3.33.0",
+		"mcr.microsoft.com/azure-storage/azurite:3.36.0",
 		azurite.WithInMemoryPersistence(64),
 		azurite.WithEnabledServices(azurite.BlobService),
 	)
