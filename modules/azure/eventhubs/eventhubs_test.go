@@ -22,7 +22,7 @@ var eventhubsConfig string
 func TestEventHubs_topology(t *testing.T) {
 	ctx := context.Background()
 
-	const azuriteImage = "mcr.microsoft.com/azure-storage/azurite:3.33.0"
+	const azuriteImage = "mcr.microsoft.com/azure-storage/azurite:3.36.0"
 
 	ctr, err := eventhubs.Run(
 		ctx,
@@ -55,7 +55,7 @@ func TestEventHubs_topology(t *testing.T) {
 func TestEventHubs_withConfig(t *testing.T) {
 	ctx := context.Background()
 
-	const azuriteImage = "mcr.microsoft.com/azure-storage/azurite:3.33.0"
+	const azuriteImage = "mcr.microsoft.com/azure-storage/azurite:3.36.0"
 
 	ctr, err := eventhubs.Run(
 		ctx,
@@ -97,7 +97,7 @@ func TestEventHubs_withAzuriteContainer(t *testing.T) {
 
 	azuriteCtr, err := azurite.Run(
 		ctx,
-		"mcr.microsoft.com/azure-storage/azurite:3.33.0",
+		"mcr.microsoft.com/azure-storage/azurite:3.36.0",
 		network.WithNetwork([]string{"azurite"}, nw),
 	)
 	testcontainers.CleanupContainer(t, azuriteCtr)
@@ -143,7 +143,7 @@ func TestEventHubs_withAzuriteContainer_nilGuards(t *testing.T) {
 	testcontainers.CleanupNetwork(t, nw)
 	require.NoError(t, err)
 
-	azuriteCtr, err := azurite.Run(ctx, "mcr.microsoft.com/azure-storage/azurite:3.33.0",
+	azuriteCtr, err := azurite.Run(ctx, "mcr.microsoft.com/azure-storage/azurite:3.36.0",
 		network.WithNetwork([]string{"azurite"}, nw),
 	)
 	testcontainers.CleanupContainer(t, azuriteCtr)
@@ -181,7 +181,7 @@ func TestEventHubs_withAzuriteContainer_conflict(t *testing.T) {
 	testcontainers.CleanupNetwork(t, nw)
 	require.NoError(t, err)
 
-	azuriteCtr, err := azurite.Run(ctx, "mcr.microsoft.com/azure-storage/azurite:3.33.0",
+	azuriteCtr, err := azurite.Run(ctx, "mcr.microsoft.com/azure-storage/azurite:3.36.0",
 		network.WithNetwork([]string{"azurite"}, nw),
 	)
 	testcontainers.CleanupContainer(t, azuriteCtr)
@@ -192,7 +192,7 @@ func TestEventHubs_withAzuriteContainer_conflict(t *testing.T) {
 			ctx,
 			"mcr.microsoft.com/azure-messaging/eventhubs-emulator:2.1.0",
 			eventhubs.WithAcceptEULA(),
-			eventhubs.WithAzurite("mcr.microsoft.com/azure-storage/azurite:3.33.0"),
+			eventhubs.WithAzurite("mcr.microsoft.com/azure-storage/azurite:3.36.0"),
 			eventhubs.WithAzuriteContainer(azuriteCtr, nw, "azurite"),
 		)
 		require.Error(t, err)
@@ -205,7 +205,7 @@ func TestEventHubs_withAzuriteContainer_conflict(t *testing.T) {
 			"mcr.microsoft.com/azure-messaging/eventhubs-emulator:2.1.0",
 			eventhubs.WithAcceptEULA(),
 			eventhubs.WithAzuriteContainer(azuriteCtr, nw, "azurite"),
-			eventhubs.WithAzurite("mcr.microsoft.com/azure-storage/azurite:3.33.0"),
+			eventhubs.WithAzurite("mcr.microsoft.com/azure-storage/azurite:3.36.0"),
 		)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "mutually exclusive")
