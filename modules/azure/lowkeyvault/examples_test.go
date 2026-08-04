@@ -28,7 +28,7 @@ import (
 func ExampleRun() {
 	ctx := context.Background()
 
-	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal")
+	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.3.48-ubi10-minimal")
 	defer func() {
 		if err := testcontainers.TerminateContainer(lowkeyVaultContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -68,7 +68,7 @@ func ExampleRun_secretOperationsNetwork() {
 	}
 
 	// createContainerWithNetwork {
-	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal",
+	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.3.48-ubi10-minimal",
 		lowkeyvault.WithNetworkAlias("lowkey-vault", aNetwork),
 	)
 	defer func() {
@@ -140,7 +140,7 @@ func ExampleRun_secretOperations() {
 	ctx := context.Background()
 
 	// createContainerWithLocalMode {
-	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal")
+	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.3.48-ubi10-minimal")
 	defer func() {
 		if err := testcontainers.TerminateContainer(lowkeyVaultContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -232,7 +232,7 @@ func ExampleRun_secretOperations() {
 func ExampleRun_keyOperations() {
 	ctx := context.Background()
 
-	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal")
+	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.3.48-ubi10-minimal")
 	defer func() {
 		if err := testcontainers.TerminateContainer(lowkeyVaultContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -352,7 +352,7 @@ func ExampleRun_keyOperations() {
 func ExampleRun_certificateOperations() {
 	ctx := context.Background()
 
-	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal")
+	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.3.48-ubi10-minimal")
 	defer func() {
 		if err := testcontainers.TerminateContainer(lowkeyVaultContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
