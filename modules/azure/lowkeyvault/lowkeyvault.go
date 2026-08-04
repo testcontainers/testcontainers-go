@@ -11,7 +11,7 @@ import (
 	"net/http"
 
 	dockernetwork "github.com/moby/moby/api/types/network"
-	"golang.org/x/crypto/pkcs12"
+	"software.sslmate.com/src/go-pkcs12"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/network"

@@ -421,7 +421,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "nagyesta/lowkey-vault:7.0.9-ubi10-minimal")`.
+In example: `Run(context.Background(), "nagyesta/lowkey-vault:7.3.48-ubi10-minimal")`.
 
 ### Container Options
 
@@ -444,7 +444,7 @@ and is made available using the host address.
 To prepare the container for running in a network and making it accessible from other containers in the network, you can use the 
 `WithNetworkAlias` option. For example:
 ```golang
-Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal",
+Run(ctx, "nagyesta/lowkey-vault:7.3.48-ubi10-minimal",
     lowkeyvault.WithNetworkAlias("lowkey-vault", aNetwork),
 )
 ```
