@@ -58,6 +58,7 @@ func ExampleRun_blobOperations() {
 		"mcr.microsoft.com/azure-storage/azurite:3.36.0",
 		azurite.WithInMemoryPersistence(64),
 		azurite.WithEnabledServices(azurite.BlobService),
+		testcontainers.WithCmdArgs("--skipApiVersionCheck"),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(azuriteContainer); err != nil {
