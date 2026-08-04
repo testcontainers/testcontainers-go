@@ -1,4 +1,3 @@
 module httptest
 
 go 1.26
-
