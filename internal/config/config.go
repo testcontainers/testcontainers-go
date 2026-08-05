@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/magiconair/properties"
+
 	"github.com/testcontainers/testcontainers-go/internal/core/bootstrap"
 )
 
