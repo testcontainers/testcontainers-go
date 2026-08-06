@@ -536,8 +536,13 @@ func (r *Reaper) useTermSignal() chan bool {
 // It returns a channel that can be sent true to terminate the connection.
 // Returns an error if config.RyukDisabled is true.
 func (r *Reaper) connect(ctx context.Context) (chan bool, error) {
+	// Bound the dial: with dropped SYNs it would sit in the kernel's ~2min
+	// connect timeout and eat the spawner's 20s backoff budget in one attempt.
+	dialCtx, cancel := context.WithTimeout(ctx, time.Second*5)
+	defer cancel()
+
 	var d net.Dialer
-	conn, err := d.DialContext(ctx, "tcp", r.Endpoint)
+	conn, err := d.DialContext(dialCtx, "tcp", r.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("dial reaper %s: %w", r.Endpoint, err)
 	}
