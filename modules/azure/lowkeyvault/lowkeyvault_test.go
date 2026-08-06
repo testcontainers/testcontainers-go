@@ -27,7 +27,7 @@ import (
 func TestRun(t *testing.T) {
 	ctx := context.Background()
 
-	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal")
+	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.3.48-ubi10-minimal")
 	testcontainers.CleanupContainer(t, lowkeyVaultContainer)
 	require.NoError(t, err)
 
@@ -44,7 +44,7 @@ func TestRun_secretOperationsNetwork(t *testing.T) {
 	testcontainers.CleanupNetwork(t, aNetwork)
 	require.NoError(t, err)
 
-	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal",
+	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.3.48-ubi10-minimal",
 		lowkeyvault.WithNetworkAlias("lowkey-vault", aNetwork),
 	)
 	testcontainers.CleanupContainer(t, lowkeyVaultContainer)
@@ -87,7 +87,7 @@ func TestRun_secretOperationsNetwork(t *testing.T) {
 func TestRun_secretOperations(t *testing.T) {
 	ctx := context.Background()
 
-	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal")
+	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.3.48-ubi10-minimal")
 	testcontainers.CleanupContainer(t, lowkeyVaultContainer)
 	require.NoError(t, err)
 
@@ -138,7 +138,7 @@ func TestRun_secretOperations(t *testing.T) {
 func TestRun_keyOperations(t *testing.T) {
 	ctx := context.Background()
 
-	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal")
+	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.3.48-ubi10-minimal")
 	testcontainers.CleanupContainer(t, lowkeyVaultContainer)
 	require.NoError(t, err)
 
@@ -212,7 +212,7 @@ func TestRun_keyOperations(t *testing.T) {
 func TestRun_certificateOperations(t *testing.T) {
 	ctx := context.Background()
 
-	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.0.9-ubi10-minimal")
+	lowkeyVaultContainer, err := lowkeyvault.Run(ctx, "nagyesta/lowkey-vault:7.3.48-ubi10-minimal")
 	testcontainers.CleanupContainer(t, lowkeyVaultContainer)
 	require.NoError(t, err)
 

@@ -33,7 +33,7 @@ type options struct {
 
 func defaultOptions() options {
 	return options{
-		azuriteImage: "mcr.microsoft.com/azure-storage/azurite:3.33.0",
+		azuriteImage: "mcr.microsoft.com/azure-storage/azurite:3.36.0",
 		azuriteOwned: true,
 	}
 }
@@ -52,7 +52,7 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 
 // WithAzurite sets the image and options for the Azurite container that the
 // module will create automatically.
-// By default, the image is "mcr.microsoft.com/azure-storage/azurite:3.33.0".
+// By default, the image is "mcr.microsoft.com/azure-storage/azurite:3.36.0".
 // It is mutually exclusive with WithAzuriteContainer: passing both options to
 // Run returns an error. If you already have a running Azurite container, use
 // WithAzuriteContainer instead — the image and options set here will not apply.

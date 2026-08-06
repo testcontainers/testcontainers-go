@@ -1594,6 +1594,25 @@ func TestDockerProviderFindContainerByName(t *testing.T) {
 	require.Contains(t, c.Names, c1Name)
 }
 
+func TestDockerProviderFindContainerByNameEscapesRegex(t *testing.T) {
+	ctx := context.Background()
+	provider, err := NewDockerProvider(WithLogger(log.TestLogger(t)))
+	require.NoError(t, err)
+	defer provider.Close()
+
+	ctr, err := Run(ctx, nginxAlpineImage,
+		WithName("testX1"),
+		WithWaitStrategy(wait.ForExposedPort()),
+	)
+	CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	// The dot must be matched literally, so it must not match the X in testX1.
+	c, err := provider.findContainerByName(ctx, "test.1")
+	require.NoError(t, err)
+	require.Nil(t, c)
+}
+
 func TestImageBuiltFromDockerfile_KeepBuiltImage(t *testing.T) {
 	tests := []struct {
 		keepBuiltImage bool
