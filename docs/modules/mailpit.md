@@ -1,6 +1,6 @@
 # Mailpit
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 ## Introduction
 
@@ -26,7 +26,7 @@ go get github.com/testcontainers/testcontainers-go/modules/mailpit
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The Mailpit module exposes one entrypoint function to create the Mailpit container, and this function receives three parameters:
 
@@ -49,7 +49,7 @@ When starting the Mailpit container, you can pass options in a variadic way to c
 
 #### WithSMTPAuth
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 `WithSMTPAuth` sets the SMTP authentication credentials for the Mailpit container via the `MP_SMTP_AUTH` environment variable (in `user:password` format), and enables plaintext authentication via `MP_SMTP_AUTH_ALLOW_INSECURE`.
 
@@ -59,7 +59,7 @@ When starting the Mailpit container, you can pass options in a variadic way to c
 
 #### WithMessageLimit
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 `WithMessageLimit` sets the maximum number of messages to store in Mailpit, using the `MP_MAX_MESSAGES` environment variable. When the limit is reached the oldest messages are automatically deleted.
 
@@ -75,7 +75,7 @@ The Mailpit container exposes the following methods:
 
 #### SMTPEndpoint
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 `SMTPEndpoint` returns the `host:port` connection string for the Mailpit SMTP server, using the `1025` port.
 
@@ -85,7 +85,7 @@ The Mailpit container exposes the following methods:
 
 #### HTTPURL
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 `HTTPURL` returns the URL for the Mailpit web interface and REST API, using the `8025` port. The REST API is available at `/api/v1/messages` and other endpoints under `/api/v1/`.
 

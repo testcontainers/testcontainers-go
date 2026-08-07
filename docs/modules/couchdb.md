@@ -1,6 +1,6 @@
 # CouchDB
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/couchdb
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The CouchDB module exposes one entrypoint function to create the CouchDB container, and this function receives three parameters:
 
@@ -47,7 +47,7 @@ When starting the CouchDB container, you can pass options in a variadic way to c
 
 #### WithAdminCredentials
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Sets the admin username and password for the CouchDB container.
 These credentials are used to authenticate against the CouchDB HTTP API and are reflected in the connection string returned by `ConnectionString`.
@@ -64,7 +64,7 @@ The CouchDB container exposes the following methods:
 
 #### ConnectionString
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The `ConnectionString` method returns the connection string to connect to the CouchDB container.
 It returns a string with the format `http://user:password@host:5984`.

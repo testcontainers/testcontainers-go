@@ -1,6 +1,6 @@
 # Mosquitto
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/mosquitto
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The Mosquitto module exposes one entrypoint function to create the Mosquitto container, and this function receives three parameters:
 
@@ -50,7 +50,7 @@ When starting the Mosquitto container, you can pass options in a variadic way to
 
 #### WithConfigFile
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Mounts a custom `mosquitto.conf` file, replacing the module's default embedded configuration. The provided file must contain at least a `listener 1883` directive.
 
@@ -68,7 +68,7 @@ The Mosquitto container exposes the following methods:
 
 #### BrokerURL
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Returns the MQTT broker URL (`mqtt://host:port`) for connecting MQTT clients to the broker.
 

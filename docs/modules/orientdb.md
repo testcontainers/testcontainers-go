@@ -1,6 +1,6 @@
 # OrientDB
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/orientdb
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The OrientDB module exposes one entrypoint function to create the OrientDB container, and this function receives three parameters:
 
@@ -47,7 +47,7 @@ When starting the OrientDB container, you can pass options in a variadic way to 
 
 #### WithRootPassword
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Sets the root password for the OrientDB instance by setting the `ORIENTDB_ROOT_PASSWORD` environment variable. The default password is `rootpwd`.
 
@@ -63,7 +63,7 @@ The OrientDB container exposes the following methods:
 
 #### ServerURL
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The `ServerURL` method returns the connection string for Java/JDBC clients using the OrientDB binary remote protocol, in the format `remote:<host>:<port>`.
 
@@ -74,7 +74,7 @@ serverURL, err := orientdbContainer.ServerURL(ctx)
 
 #### StudioURL
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The `StudioURL` method returns the URL for the OrientDB Studio web UI, in the format `http://<host>:<port>`.
 

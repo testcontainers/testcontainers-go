@@ -1,6 +1,6 @@
 # KurrentDB
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/kurrentdb
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The KurrentDB module exposes one entrypoint function to create the KurrentDB container, and this function receives three parameters:
 
@@ -47,7 +47,7 @@ When starting the KurrentDB container, you can pass options in a variadic way to
 
 #### WithInsecure
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 By default, KurrentDB runs in insecure mode (no TLS), which is suitable for local development and testing. The `WithInsecure` option makes this explicit:
 
@@ -63,7 +63,7 @@ The KurrentDB container exposes the following methods:
 
 #### ConnectionString
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The `ConnectionString(ctx)` method returns the connection string to connect to the KurrentDB container using the `kurrent://` scheme.
 When the container runs in insecure mode, `?tls=false` is appended.

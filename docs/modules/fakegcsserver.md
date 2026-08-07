@@ -1,6 +1,6 @@
 # FakeGCSServer
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 ## Introduction
 
@@ -34,7 +34,7 @@ t.Setenv("STORAGE_EMULATOR_HOST", storageURL)
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The FakeGCSServer module exposes one entrypoint function to create the FakeGCSServer container, and this function receives three parameters:
 
@@ -57,7 +57,7 @@ When starting the FakeGCSServer container, you can pass options in a variadic wa
 
 #### WithScheme
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Sets the HTTP scheme used by the fake-gcs-server. Valid values are `"http"` (default) and `"https"`.
 
@@ -75,7 +75,7 @@ The FakeGCSServer container exposes the following methods:
 
 #### StorageURL
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Returns the GCS-compatible storage URL for the container. The URL format is `<scheme>://<host>:<port>/storage/v1`, where `scheme` matches the value passed to `WithScheme` (default `"http"`).
 

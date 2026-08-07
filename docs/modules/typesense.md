@@ -1,6 +1,6 @@
 # Typesense
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 ## Introduction
 
@@ -26,7 +26,7 @@ go get github.com/testcontainers/testcontainers-go/modules/typesense
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The Typesense module exposes one entrypoint function to create the Typesense container, and this function receives three parameters:
 
@@ -49,7 +49,7 @@ When starting the Typesense container, you can pass options in a variadic way to
 
 #### WithAPIKey
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Sets the API key used to authenticate requests to the Typesense container. The API key is required for all Typesense API calls. If not set, the default value `test-api-key` is used.
 
@@ -59,7 +59,7 @@ typesense.WithAPIKey("my-api-key")
 
 #### WithDataDir
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Sets the data directory inside the container where Typesense stores its data. If not set, the default value `/tmp` is used.
 
@@ -75,12 +75,12 @@ The Typesense container exposes the following methods:
 
 #### Address
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The `Address` method retrieves the HTTP address of the Typesense container (e.g. `http://localhost:8108`).
 
 #### APIKey
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The `APIKey` method returns the API key configured for the Typesense container. The API key is required to authenticate all requests to the Typesense API.

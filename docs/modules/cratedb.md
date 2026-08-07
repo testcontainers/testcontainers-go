@@ -1,6 +1,6 @@
 # CrateDB
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 ## Introduction
 
@@ -26,7 +26,7 @@ go get github.com/testcontainers/testcontainers-go/modules/cratedb
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The CrateDB module exposes one entrypoint function to create the CrateDB container, and this function receives three parameters:
 
@@ -57,7 +57,7 @@ When starting the CrateDB container, you can pass options in a variadic way to c
 
 #### WithHeapSize
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Sets the JVM heap size for the CrateDB process via the `CRATE_HEAP_SIZE` environment variable.
 The default value is `512m`.
@@ -74,7 +74,7 @@ The CrateDB container exposes the following methods:
 
 #### HTTPEndpoint
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Returns the HTTP endpoint (Admin UI and REST API) of the CrateDB container on port `4200/tcp`.
 
@@ -85,7 +85,7 @@ endpoint, err := cratedbContainer.HTTPEndpoint(ctx)
 
 #### PGConnectionString
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Returns the PostgreSQL wire-protocol connection string for the CrateDB container on port `5432/tcp`.
 CrateDB's built-in superuser is `crate` with no password, and the default schema is `doc`.
