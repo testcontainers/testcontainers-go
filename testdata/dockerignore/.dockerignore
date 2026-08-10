@@ -1,5 +1,0 @@
-# .dockerignore
-# https://docs.docker.com/build/building/context/#dockerignore-files
-vendor
-foo
-bar

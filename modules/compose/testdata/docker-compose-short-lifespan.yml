@@ -1,7 +1,0 @@
-services:
-  tzatziki:
-    image: alpine:latest
-    command: "sleep 5"
-  falafel:
-    image: alpine:latest
-    command: "echo 'World is your canvas'"

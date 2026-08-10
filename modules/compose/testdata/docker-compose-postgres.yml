@@ -1,7 +1,0 @@
-services:
-  {{ .ServiceType }}-postgres:
-    image: postgres:14
-    environment:
-      POSTGRES_PASSWORD: s3cr3t
-    ports:
-     - "{{ .Port_0 }}:5432"

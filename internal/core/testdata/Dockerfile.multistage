@@ -1,4 +1,0 @@
-FROM nginx:a as builderA
-FROM nginx:b as builderB
-FROM nginx:c as builderC
-FROM scratch

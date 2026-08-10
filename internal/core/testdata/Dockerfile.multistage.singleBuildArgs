@@ -1,5 +1,0 @@
-ARG BASE_IMAGE=scratch
-FROM nginx:a as builderA
-FROM nginx:b as builderB
-FROM nginx:c as builderC
-FROM ${BASE_IMAGE}

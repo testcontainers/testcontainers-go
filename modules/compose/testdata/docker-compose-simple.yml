@@ -1,8 +1,0 @@
-services:
-  {{ .ServiceType }}-nginx:
-    image: nginx:stable-alpine
-    environment:
-      bar: ${bar}
-      foo: ${foo}
-    ports:
-     - "{{ .Port_0 }}:80"
