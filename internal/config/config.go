@@ -94,6 +94,12 @@ type Config struct {
 	//
 	// Environment variable: TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE
 	TestcontainersHost string `properties:"tc.host,default="`
+
+	// StartupTimeout is the default maximum time a wait strategy waits for a container to become ready.
+	// It is not applied to wait strategies that set their own timeout.
+	//
+	// Environment variable: TESTCONTAINERS_STARTUP_TIMEOUT
+	StartupTimeout time.Duration `properties:"startup.timeout,default=1m"`
 }
 
 // }
@@ -155,6 +161,11 @@ func read() Config {
 		ryukConnectionTimeoutEnv := readTestcontainersEnv("RYUK_CONNECTION_TIMEOUT")
 		if timeout, err := time.ParseDuration(ryukConnectionTimeoutEnv); err == nil {
 			config.RyukConnectionTimeout = timeout
+		}
+
+		startupTimeoutEnv := os.Getenv("TESTCONTAINERS_STARTUP_TIMEOUT")
+		if timeout, err := time.ParseDuration(startupTimeoutEnv); err == nil {
+			config.StartupTimeout = timeout
 		}
 
 		return config
