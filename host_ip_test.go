@@ -50,7 +50,9 @@ func TestPreCreateContainerHookAppliesHostIP(t *testing.T) {
 			HostIP:       "127.0.0.1",
 			HostConfigModifier: func(hc *container.HostConfig) {
 				hc.PortBindings = network.PortMap{
-					network.MustParsePort("443/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "8443"}},
+					// Use a different address than req.HostIP so the test proves
+					// that req.HostIP overrides the modifier-provided HostIP.
+					network.MustParsePort("443/tcp"): {{HostIP: netip.MustParseAddr("0.0.0.0"), HostPort: "8443"}},
 				}
 			},
 		}
