@@ -1,6 +1,6 @@
 # SFTP
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/sftp
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 !!!info
     The `Run` function requires at least one user to be configured via `WithUser`, otherwise it returns an error.
@@ -50,7 +50,7 @@ When starting the SFTP container, you can pass options in a variadic way to conf
 
 #### WithUser
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 `WithUser(username, password string)` adds an SFTP user. At least one user is required. Multiple calls accumulate users.
 
@@ -69,7 +69,7 @@ The SFTP container exposes the following methods:
 
 #### Address
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 `Address(ctx context.Context) (string, error)` returns the `host:port` address of the SFTP server. Use this value directly with an SSH or SFTP client dial call.
 

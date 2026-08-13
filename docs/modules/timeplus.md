@@ -1,6 +1,6 @@
 # Timeplus
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 ## Introduction
 
@@ -26,7 +26,7 @@ go get github.com/testcontainers/testcontainers-go/modules/timeplus
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The Timeplus module exposes one entrypoint function to create the Timeplus container, and this function receives three parameters:
 
@@ -63,7 +63,7 @@ The Timeplus container exposes the following methods:
 
 #### HTTPEndpoint
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 This method returns the HTTP endpoint of the Timeplus container for the ClickHouse-compatible HTTP API (port 8123), in the form `http://host:port`.
 

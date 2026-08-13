@@ -1,6 +1,6 @@
 # PapercutSMTP
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/papercutsmtp
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The PapercutSMTP module exposes one entrypoint function to create the PapercutSMTP container, and this function receives three parameters:
 
@@ -53,7 +53,7 @@ The PapercutSMTP container exposes the following methods:
 
 #### SMTPEndpoint
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 This method returns the `host:port` endpoint to connect to the SMTP server on port `2525`.
 
@@ -63,7 +63,7 @@ This method returns the `host:port` endpoint to connect to the SMTP server on po
 
 #### HTTPURL
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 This method returns the URL for the Papercut SMTP web UI on port `8080`, where captured emails can be inspected.
 

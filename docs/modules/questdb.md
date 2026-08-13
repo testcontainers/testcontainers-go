@@ -1,6 +1,6 @@
 # QuestDB
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/questdb
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The QuestDB module exposes one entrypoint function to create the QuestDB container, and this function receives three parameters:
 
@@ -53,7 +53,7 @@ The QuestDB container exposes the following methods:
 
 #### HTTPEndpoint
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Returns the URL of the QuestDB HTTP web console and REST API, using the `9000/tcp` port.
 
@@ -65,7 +65,7 @@ The returned URL has the format `http://host:port`.
 
 #### PGEndpoint
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Returns the PostgreSQL wire protocol connection string for the QuestDB container, using the `8812/tcp` port and the built-in default credentials (`admin`/`quest`).
 
@@ -77,7 +77,7 @@ The returned URL has the format `postgres://admin:[REDACTED]@host:port/qdb`.
 
 #### InfluxDBEndpoint
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Returns the InfluxDB line protocol endpoint address of the QuestDB container, using the `9009/tcp` port. This endpoint is used for high-throughput time-series data ingestion.
 
