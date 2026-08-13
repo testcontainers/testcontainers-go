@@ -542,6 +542,14 @@ func (r *Reaper) connect(ctx context.Context) (chan bool, error) {
 		return nil, fmt.Errorf("dial reaper %s: %w", r.Endpoint, err)
 	}
 
+	if deadline, ok := ctx.Deadline(); ok {
+		if err := conn.SetDeadline(deadline); err != nil {
+			conn.Close()
+			return nil, fmt.Errorf("set handshake deadline for reaper %s: %w", r.Endpoint, err)
+		}
+		defer conn.SetDeadline(time.Time{})
+	}
+
 	if err := r.handshake(conn); err != nil {
 		conn.Close()
 		return nil, fmt.Errorf("handshake reaper %s: %w", r.Endpoint, err)
