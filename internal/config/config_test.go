@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -598,5 +599,101 @@ func TestReadTCConfig(t *testing.T) {
 				assert.Equal(t, tt.expected, config, "Configuration doesn't not match")
 			})
 		}
+	})
+}
+
+func TestValidateSessionID(t *testing.T) {
+	t.Run("valid", func(t *testing.T) {
+		tests := []struct {
+			name      string
+			sessionID string
+		}{
+			{"generated", bootstrap.SessionID()},
+			{"alphanumeric", "session42"},
+			{"with-hyphens", "ci-pipeline-42"},
+			{"with-underscores", "ci_pipeline_42"},
+			{"with-dots", "ci.pipeline.42"},
+			{"uuid", "9e0f4a1a-9c1e-4b7f-9d6a-2f1c3b4d5e6f"},
+			{"single-char", "a"},
+			{"max-length", strings.Repeat("a", maxSessionIDLen)},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				require.NoError(t, validateSessionID(tt.sessionID))
+			})
+		}
+	})
+
+	t.Run("invalid", func(t *testing.T) {
+		tests := []struct {
+			name      string
+			sessionID string
+		}{
+			{"empty", ""},
+			{"slash", "team/ci"},
+			{"space", "team ci"},
+			{"colon", "team:ci"},
+			{"leading-hyphen", "-session"},
+			{"leading-dot", ".session"},
+			{"leading-underscore", "_session"},
+			{"too-long", strings.Repeat("a", maxSessionIDLen+1)},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				require.Error(t, validateSessionID(tt.sessionID))
+			})
+		}
+	})
+}
+
+func TestReadConfigSessionIDValidation(t *testing.T) {
+	resetTestEnv(t)
+
+	t.Run("env/invalid/panics", func(t *testing.T) {
+		t.Cleanup(Reset)
+
+		t.Setenv("HOME", "")
+		t.Setenv("USERPROFILE", "") // Windows support
+		t.Setenv("TESTCONTAINERS_SESSION_ID", "team/ci")
+
+		require.PanicsWithValue(t,
+			`invalid TESTCONTAINERS_SESSION_ID value "team/ci": must start with an alphanumeric character and contain only alphanumeric characters, dots, hyphens and underscores`,
+			func() { read() },
+		)
+	})
+
+	t.Run("env/valid/is-used", func(t *testing.T) {
+		t.Cleanup(Reset)
+
+		t.Setenv("HOME", "")
+		t.Setenv("USERPROFILE", "") // Windows support
+		t.Setenv("TESTCONTAINERS_SESSION_ID", "ci-pipeline-42")
+
+		require.Equal(t, "ci-pipeline-42", read().SessionID)
+	})
+
+	t.Run("properties/invalid/panics", func(t *testing.T) {
+		t.Cleanup(Reset)
+
+		tmpDir := t.TempDir()
+		t.Setenv("HOME", tmpDir)
+		t.Setenv("USERPROFILE", tmpDir) // Windows support
+
+		err := os.WriteFile(filepath.Join(tmpDir, ".testcontainers.properties"), []byte("session.id=team/ci"), 0o600)
+		require.NoError(t, err)
+
+		require.PanicsWithValue(t,
+			`invalid session.id property value "team/ci": must start with an alphanumeric character and contain only alphanumeric characters, dots, hyphens and underscores`,
+			func() { read() },
+		)
+	})
+
+	t.Run("not-set/falls-back-to-generated", func(t *testing.T) {
+		t.Cleanup(Reset)
+
+		t.Setenv("HOME", "")
+		t.Setenv("USERPROFILE", "") // Windows support
+
+		require.Equal(t, bootstrap.SessionID(), read().SessionID)
 	})
 }
