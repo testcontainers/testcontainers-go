@@ -48,9 +48,9 @@ instead of being derived, so every process configured with the same value takes 
     settings past its creation will be ignored.
 
 The session ID is used to build the name of the reaper container (`reaper_<sessionID>`), so a configured
-value must be usable as part of a container name. It must:
+value must produce a name the container runtime accepts. It must:
 
-- start with an alphanumeric character;
+- not be empty;
 - contain only alphanumeric characters, dots (`.`), hyphens (`-`) and underscores (`_`);
 - be at most 121 characters long, so that the resulting container name stays within the 128 character
   limit imposed by the container runtime.

@@ -615,7 +615,12 @@ func TestValidateSessionID(t *testing.T) {
 			{"with-dots", "ci.pipeline.42"},
 			{"uuid", "9e0f4a1a-9c1e-4b7f-9d6a-2f1c3b4d5e6f"},
 			{"single-char", "a"},
-			{"max-length", strings.Repeat("a", maxSessionIDLen)},
+			{"max-length", strings.Repeat("a", maxContainerNameLen-len(reaperNamePrefix))},
+			// the resulting container name is prefixed, so a session ID starting with
+			// punctuation still produces a valid name, e.g. "reaper__session".
+			{"leading-hyphen", "-session"},
+			{"leading-dot", ".session"},
+			{"leading-underscore", "_session"},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -633,10 +638,7 @@ func TestValidateSessionID(t *testing.T) {
 			{"slash", "team/ci"},
 			{"space", "team ci"},
 			{"colon", "team:ci"},
-			{"leading-hyphen", "-session"},
-			{"leading-dot", ".session"},
-			{"leading-underscore", "_session"},
-			{"too-long", strings.Repeat("a", maxSessionIDLen+1)},
+			{"too-long", strings.Repeat("a", maxContainerNameLen-len(reaperNamePrefix)+1)},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -657,7 +659,7 @@ func TestReadConfigSessionIDValidation(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_SESSION_ID", "team/ci")
 
 		require.PanicsWithValue(t,
-			`invalid TESTCONTAINERS_SESSION_ID value "team/ci": must start with an alphanumeric character and contain only alphanumeric characters, dots, hyphens and underscores`,
+			`invalid TESTCONTAINERS_SESSION_ID value "team/ci": must contain only alphanumeric characters, dots, hyphens and underscores`,
 			func() { read() },
 		)
 	})
@@ -683,7 +685,7 @@ func TestReadConfigSessionIDValidation(t *testing.T) {
 		require.NoError(t, err)
 
 		require.PanicsWithValue(t,
-			`invalid session.id property value "team/ci": must start with an alphanumeric character and contain only alphanumeric characters, dots, hyphens and underscores`,
+			`invalid session.id property value "team/ci": must contain only alphanumeric characters, dots, hyphens and underscores`,
 			func() { read() },
 		)
 	})
