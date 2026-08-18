@@ -909,6 +909,32 @@ func TestWithProvider(t *testing.T) {
 	})
 }
 
+func TestWithHostIP(t *testing.T) {
+	t.Run("valid IP", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{}
+
+		opt := testcontainers.WithHostIP("127.0.0.1")
+		require.NoError(t, opt.Customize(&req))
+		require.Equal(t, "127.0.0.1", req.HostIP)
+	})
+
+	t.Run("valid IPv6", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{}
+
+		opt := testcontainers.WithHostIP("::1")
+		require.NoError(t, opt.Customize(&req))
+		require.Equal(t, "::1", req.HostIP)
+	})
+
+	t.Run("invalid IP", func(t *testing.T) {
+		req := testcontainers.GenericContainerRequest{}
+
+		opt := testcontainers.WithHostIP("not-an-ip")
+		require.Error(t, opt.Customize(&req))
+		require.Empty(t, req.HostIP)
+	})
+}
+
 func TestWithHostConfigModifier(t *testing.T) {
 	t.Run("simple", func(t *testing.T) {
 		c, err := testcontainers.Run(
