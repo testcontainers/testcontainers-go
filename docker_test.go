@@ -435,11 +435,14 @@ func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
 }
 
 func TestContainerCreationTimesOut(t *testing.T) {
-	ctx := context.Background()
+
+	ctx, cancelfn := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancelfn()
+
 	// delayed-nginx will wait 2s before opening port
 	nginxC, err := Run(ctx, nginxDelayedImage,
 		WithExposedPorts(nginxDefaultPort),
-		WithWaitStrategy(wait.ForListeningPort(nginxDefaultPort).WithStartupTimeout(1*time.Second)),
+		WithWaitStrategy(wait.ForListeningPort(nginxDefaultPort)),
 	)
 	CleanupContainer(t, nginxC)
 
