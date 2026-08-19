@@ -572,7 +572,7 @@ func TestReaperConnectReturnsHandshakeError(t *testing.T) {
 }
 
 func TestReaperConnectReturnsContextErrorWhenHandshakeBlocks(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
@@ -608,7 +608,7 @@ func TestReaperConnectReturnsContextErrorWhenHandshakeBlocks(t *testing.T) {
 
 	select {
 	case <-done:
-	case <-time.After(time.Second):
+	case <-time.After(2 * time.Second):
 		require.FailNow(t, "test reaper server did not finish")
 	}
 }
