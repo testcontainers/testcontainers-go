@@ -1,6 +1,7 @@
 package testcontainers
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -529,20 +530,97 @@ func TestReaper_ReuseRunning(t *testing.T) {
 	}
 }
 
-// reaperConnect copies the logic from Reaper.connect() but with better error handling.
-// Reaper.connect() neither returns the error from the handshake, nor the connection,
-// making the testing of the handshake flow impossible.
+func TestReaperConnectReturnsHandshakeError(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, listener.Close())
+	})
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+
+		conn, err := listener.Accept()
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+
+		_, _ = bufio.NewReader(conn).ReadString('\n')
+		_, _ = conn.Write([]byte("NOPE"))
+	}()
+
+	reaper := &Reaper{
+		SessionID: testSessionID,
+		Endpoint:  listener.Addr().String(),
+	}
+
+	termSignal, err := reaper.connect(ctx)
+	require.Nil(t, termSignal)
+	require.ErrorContains(t, err, "handshake reaper")
+	require.ErrorContains(t, err, "unexpected reaper response: NOPE")
+
+	select {
+	case <-done:
+	case <-ctx.Done():
+		require.FailNow(t, "test reaper server did not finish")
+	}
+}
+
+func TestReaperConnectReturnsContextErrorWhenHandshakeBlocks(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, listener.Close())
+	})
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+
+		conn, err := listener.Accept()
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+
+		_, _ = bufio.NewReader(conn).ReadString('\n')
+		buf := make([]byte, 1)
+		_, _ = conn.Read(buf)
+	}()
+
+	reaper := &Reaper{
+		SessionID: testSessionID,
+		Endpoint:  listener.Addr().String(),
+	}
+
+	termSignal, err := reaper.connect(ctx)
+	require.Nil(t, termSignal)
+	require.ErrorContains(t, err, "handshake reaper")
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		require.FailNow(t, "test reaper server did not finish")
+	}
+}
+
 func reaperConnect(t *testing.T, reaper *Reaper) {
 	t.Helper()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-	var d net.Dialer
-	conn, err := d.DialContext(ctx, "tcp", reaper.Endpoint)
-	require.NoError(t, err, "dial reaper %s: %v", reaper.Endpoint, err)
-	defer conn.Close()
-	err = reaper.handshake(conn)
+	termSignal, err := reaper.Connect()
 	require.NoError(t, err, "Reaper handshake should be successful")
+	if termSignal != nil {
+		termSignal <- true
+	}
 }
 
 func TestSpawnerBackoff(t *testing.T) {
