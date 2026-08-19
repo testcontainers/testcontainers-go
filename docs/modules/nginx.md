@@ -1,6 +1,6 @@
 # Nginx
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/nginx
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The Nginx module exposes one entrypoint function to create the Nginx container, and this function receives three parameters:
 
@@ -47,7 +47,7 @@ When starting the Nginx container, you can pass options in a variadic way to con
 
 #### WithConfigFile
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 `WithConfigFile` mounts a custom `nginx.conf` file at `/etc/nginx/nginx.conf` in the container, replacing the default Nginx main configuration.
 The `hostPath` argument must be an absolute path to the configuration file on the host.
@@ -58,7 +58,7 @@ nginx.Run(ctx, "nginx:1.25", nginx.WithConfigFile("/path/to/nginx.conf"))
 
 #### WithCustomConfig
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 `WithCustomConfig` mounts a configuration snippet at `/etc/nginx/conf.d/default.conf` in the container.
 Use this option to customise the default virtual-host behaviour (locations, upstreams, proxy settings, etc.) without replacing the entire main configuration.
@@ -76,7 +76,7 @@ The Nginx container exposes the following methods:
 
 #### HTTPEndpoint
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 `HTTPEndpoint` returns the HTTP endpoint of the running Nginx container in the form `http://host:mappedPort`, using the container's mapped port 80.
 
@@ -86,7 +86,7 @@ The Nginx container exposes the following methods:
 
 #### HTTPSEndpoint
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 `HTTPSEndpoint` returns the HTTPS endpoint of the running Nginx container in the form `https://host:mappedPort`, using the container's mapped port 443.
 

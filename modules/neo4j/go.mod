@@ -8,7 +8,7 @@ require (
 	github.com/moby/moby/api v1.55.0
 	github.com/neo4j/neo4j-go-driver/v5 v5.18.0
 	github.com/stretchr/testify v1.11.1
-	github.com/testcontainers/testcontainers-go v0.43.0
+	github.com/testcontainers/testcontainers-go v0.44.0
 )
 
 require (

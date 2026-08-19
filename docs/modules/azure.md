@@ -538,7 +538,7 @@ container which will be used to connect to the Key Vault API of the Lowkey Vault
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The Azure SQL Edge module exposes one entrypoint function to create the Azure SQL Edge container, and this function receives three parameters:
 
@@ -566,13 +566,13 @@ When starting the Azure SQL Edge container, you can pass options in a variadic w
 
 #### WithAcceptEULA
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Accepts the Microsoft Azure SQL Edge End-User License Agreement. This option is **required**; `Run` returns an error if it is not provided.
 
 #### WithPassword
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 If you need to set a different SA password, you can use `sqledge.WithPassword` with a valid password. E.g. `sqledge.WithPassword("Strong@Passw0rd")`.
 
@@ -587,7 +587,7 @@ The Azure SQL Edge container exposes the following methods:
 
 #### ConnectionString
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 This method returns the connection string to connect to the Azure SQL Edge container, using the default `1433` port and the `master` database.
 It is possible to pass extra parameters to the connection string, e.g. `encrypt=false` or `TrustServerCertificate=true`, in a variadic way.

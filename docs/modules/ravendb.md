@@ -1,6 +1,6 @@
 # RavenDB
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/ravendb
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The RavenDB module exposes one entrypoint function to create the RavenDB container, and this function receives three parameters:
 
@@ -60,7 +60,7 @@ The RavenDB container exposes the following methods:
 
 #### ManagementURL
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The `ManagementURL` method returns the URL of the RavenDB management interface (Studio UI and REST API).
 It returns a string with the format `http://<host>:<port>`.
@@ -73,7 +73,7 @@ It can be used to configure a RavenDB client or to access the Studio UI in a bro
 
 #### TCPEndpoint
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The `TCPEndpoint` method returns the `host:port` endpoint for RavenDB's TCP port (`38888`),
 used for subscriptions and cluster/replication communication.

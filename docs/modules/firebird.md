@@ -1,6 +1,6 @@
 # Firebird
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 ## Introduction
 
@@ -25,7 +25,7 @@ go get github.com/testcontainers/testcontainers-go/modules/firebird
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The Firebird module exposes one entrypoint function to create the Firebird container, and this function receives three parameters:
 
@@ -51,7 +51,7 @@ When starting the Firebird container, you can pass options in a variadic way to 
 
 #### WithDatabase
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Sets the `FIREBIRD_DATABASE` environment variable. The default database name is `test.fdb`.
 
@@ -61,7 +61,7 @@ firebird.WithDatabase("mydb.fdb")
 
 #### WithUsername
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Sets the `FIREBIRD_USER` environment variable. The default username is `test`.
 
@@ -71,7 +71,7 @@ firebird.WithUsername("myuser")
 
 #### WithPassword
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Sets the `FIREBIRD_PASSWORD` environment variable. The default password is `test`.
 
@@ -81,7 +81,7 @@ firebird.WithPassword("mypassword")
 
 #### WithSYSDBAPassword
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Sets the `ISC_PASSWORD` environment variable, which is the SYSDBA master password. The default is `masterkey`.
 
@@ -95,7 +95,7 @@ firebird.WithSYSDBAPassword("mysysdbapassword")
 
 #### ConnectionString
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 This method returns the connection string to connect to the Firebird container, using the `firebird://` scheme on the default port `3050`.
 

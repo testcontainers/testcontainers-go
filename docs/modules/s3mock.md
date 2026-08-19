@@ -1,6 +1,6 @@
 # S3Mock
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 ## Introduction
 
@@ -40,7 +40,7 @@ Then create the S3 client:
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The S3Mock module exposes one entrypoint function to create the S3Mock container, and this function receives three parameters:
 
@@ -63,7 +63,7 @@ When starting the S3Mock container, you can pass options in a variadic way to co
 
 #### WithInitialBuckets
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Use `WithInitialBuckets` to pre-create one or more S3 buckets when the container starts:
 
@@ -77,7 +77,7 @@ Use `WithInitialBuckets` to pre-create one or more S3 buckets when the container
 
 #### EndpointURL
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Returns the HTTP endpoint URL for the S3Mock container (mapped from container port 9090). Use this URL as the base endpoint when configuring the AWS SDK.
 
@@ -87,7 +87,7 @@ Returns the HTTP endpoint URL for the S3Mock container (mapped from container po
 
 #### HTTPSEndpointURL
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Returns the HTTPS endpoint URL for the S3Mock container (mapped from container port 9191).
 

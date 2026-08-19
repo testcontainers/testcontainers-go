@@ -1,6 +1,6 @@
 # Solr
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/solr
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The Solr module exposes one entrypoint function to create the Solr container, and this function receives three parameters:
 
@@ -47,7 +47,7 @@ When starting the Solr container, you can pass options in a variadic way to conf
 
 #### WithCollection
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 `WithCollection` creates a named Solr collection after the container is ready.
 The collection is created using the `solr create -c <name>` command and is
@@ -67,7 +67,7 @@ The Solr container exposes the following methods:
 
 #### Address
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 `Address` returns the HTTP base URL of the Solr container in the form `http://<host>:<port>/solr`.
 
@@ -77,7 +77,7 @@ addr, err := solrContainer.Address(ctx)
 
 #### CollectionURL
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 `CollectionURL` returns the HTTP URL for a specific Solr collection in the form `http://<host>:<port>/solr/<collection>`.
 

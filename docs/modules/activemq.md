@@ -1,6 +1,6 @@
 # ActiveMQ
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 ## Introduction
 
@@ -24,7 +24,7 @@ go get github.com/testcontainers/testcontainers-go/modules/activemq
 
 ### Run function
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The ActiveMQ module exposes one entrypoint function to create the ActiveMQ container, and this function receives three parameters:
 
@@ -47,7 +47,7 @@ When starting the ActiveMQ container, you can pass options in a variadic way to 
 
 #### WithAdminCredentials
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 Sets the username and password for the ActiveMQ web console administrator. The credentials are
 propagated via the `ACTIVEMQ_WEB_ADMIN_NAME` and `ACTIVEMQ_WEB_ADMIN_PASSWORD` environment
@@ -67,7 +67,7 @@ The ActiveMQ container exposes the following methods:
 
 #### AdminUser
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The `AdminUser()` method returns the administrator username used to access the web console.
 
@@ -77,7 +77,7 @@ The `AdminUser()` method returns the administrator username used to access the w
 
 #### AdminPassword
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The `AdminPassword()` method returns the administrator password used to access the web console.
 
@@ -87,7 +87,7 @@ The `AdminPassword()` method returns the administrator password used to access t
 
 #### BrokerURL
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The `BrokerURL(ctx)` method returns the OpenWire broker URL as a string with the
 format `tcp://<host>:<port>`, using the mapped `61616/tcp` port.
@@ -98,7 +98,7 @@ format `tcp://<host>:<port>`, using the mapped `61616/tcp` port.
 
 #### WebConsoleURL
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.44.0"><span class="tc-version">:material-tag: v0.44.0</span></a>
 
 The `WebConsoleURL(ctx)` method returns the HTTP URL of the ActiveMQ web console as a string
 with the format `http://<host>:<port>`, using the mapped `8161/tcp` port.
