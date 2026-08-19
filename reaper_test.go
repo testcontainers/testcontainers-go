@@ -571,6 +571,48 @@ func TestReaperConnectReturnsHandshakeError(t *testing.T) {
 	}
 }
 
+func TestReaperConnectReturnsContextErrorWhenHandshakeBlocks(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, listener.Close())
+	})
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+
+		conn, err := listener.Accept()
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+
+		_, _ = bufio.NewReader(conn).ReadString('\n')
+		buf := make([]byte, 1)
+		_, _ = conn.Read(buf)
+	}()
+
+	reaper := &Reaper{
+		SessionID: testSessionID,
+		Endpoint:  listener.Addr().String(),
+	}
+
+	termSignal, err := reaper.connect(ctx)
+	require.Nil(t, termSignal)
+	require.ErrorContains(t, err, "handshake reaper")
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		require.FailNow(t, "test reaper server did not finish")
+	}
+}
+
 func reaperConnect(t *testing.T, reaper *Reaper) {
 	t.Helper()
 
