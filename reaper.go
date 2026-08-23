@@ -542,21 +542,17 @@ func (r *Reaper) connect(ctx context.Context) (chan bool, error) {
 		return nil, fmt.Errorf("dial reaper %s: %w", r.Endpoint, err)
 	}
 
-	handshakeDone := make(chan error, 1)
-	go func() {
-		handshakeDone <- r.handshake(conn)
-	}()
-
-	select {
-	case err := <-handshakeDone:
-		if err != nil {
+	if deadline, ok := ctx.Deadline(); ok {
+		if err := conn.SetDeadline(deadline); err != nil {
 			conn.Close()
-			return nil, fmt.Errorf("handshake reaper %s: %w", r.Endpoint, err)
+			return nil, fmt.Errorf("set handshake deadline for reaper %s: %w", r.Endpoint, err)
 		}
-	case <-ctx.Done():
+		defer conn.SetDeadline(time.Time{})
+	}
+
+	if err := r.handshake(conn); err != nil {
 		conn.Close()
-		<-handshakeDone
-		return nil, fmt.Errorf("handshake reaper %s: %w", r.Endpoint, ctx.Err())
+		return nil, fmt.Errorf("handshake reaper %s: %w", r.Endpoint, err)
 	}
 
 	terminationSignal := make(chan bool)

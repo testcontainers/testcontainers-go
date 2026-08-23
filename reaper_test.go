@@ -571,7 +571,7 @@ func TestReaperConnectReturnsHandshakeError(t *testing.T) {
 	}
 }
 
-func TestReaperConnectReturnsContextErrorWhenHandshakeBlocks(t *testing.T) {
+func TestReaperConnectCancelsHungHandshake(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
@@ -604,7 +604,8 @@ func TestReaperConnectReturnsContextErrorWhenHandshakeBlocks(t *testing.T) {
 	termSignal, err := reaper.connect(ctx)
 	require.Nil(t, termSignal)
 	require.ErrorContains(t, err, "handshake reaper")
-	require.ErrorIs(t, err, context.DeadlineExceeded)
+	require.ErrorContains(t, err, "read ack")
+	require.ErrorIs(t, err, os.ErrDeadlineExceeded)
 
 	select {
 	case <-done:
