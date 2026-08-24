@@ -1,9 +1,11 @@
 package testcontainers
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"strconv"
@@ -20,6 +22,8 @@ import (
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
+	tclog "github.com/testcontainers/testcontainers-go/log"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // testSessionID the tests need to create a reaper in a different session, so that it does not interfere with other tests
@@ -527,6 +531,55 @@ func TestReaper_ReuseRunning(t *testing.T) {
 	for i, containerID := range obtainedReaperContainerIDs {
 		require.Equal(t, firstContainerID, containerID, "call %d should have returned same container id", i)
 	}
+}
+
+func TestDefaultRyukWaitStrategy_SkipsIneffectiveInternalCheck(t *testing.T) {
+	req := ContainerRequest{
+		Image:        config.ReaperDefaultImage,
+		ExposedPorts: []string{"8080/tcp"},
+		Labels:       core.DefaultLabels(testSessionID),
+		HostConfigModifier: func(hostConfig *container.HostConfig) {
+			hostConfig.Binds = []string{core.MustExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
+		},
+	}
+	provider, err := ProviderDocker.GetProvider()
+	require.NoError(t, err)
+
+	c, err := provider.CreateContainer(t.Context(), req)
+	CleanupContainer(t, c)
+	require.NoError(t, err)
+
+	err = c.Start(t.Context())
+	require.NoError(t, err)
+
+	var buf bytes.Buffer
+	origLogger := tclog.Default()
+	tclog.SetDefault(log.New(&buf, "", log.LstdFlags))
+	t.Cleanup(func() {
+		tclog.SetDefault(origLogger)
+	})
+
+	t.Run("internal check is ineffective", func(t *testing.T) {
+		buf.Reset()
+
+		err := wait.ForAll(
+			wait.ForLog("Started"),
+			wait.ForListeningPort("8080/tcp"),
+		).WaitUntilReady(t.Context(), c)
+		require.NoError(t, err)
+
+		// If this assertion fails, the internal check may have become effective.
+		// In that case, reevaluate whether SkipInternalCheck() is still necessary.
+		require.Contains(t, buf.String(), "Shell not")
+	})
+
+	t.Run("Ryuk strategy skips ineffective internal check", func(t *testing.T) {
+		buf.Reset()
+
+		err := defaultRyukWaitStrategy("8080/tcp").WaitUntilReady(t.Context(), c)
+		require.NoError(t, err)
+		require.NotContains(t, buf.String(), "Shell not")
+	})
 }
 
 // reaperConnect copies the logic from Reaper.connect() but with better error handling.
