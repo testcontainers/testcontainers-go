@@ -16,6 +16,7 @@ import (
 	"github.com/containerd/errdefs"
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
@@ -436,6 +437,73 @@ func Test_RecreateReaperIfTerminated(t *testing.T) {
 
 	recreatedTermSignal, err := recreatedReaper.Connect()
 	cleanupTermSignal(t, recreatedTermSignal)
+	require.NoError(t, err, "connecting to Reaper should be successful")
+}
+
+// Test_RecreateReaperIfStopped tests that a reaper container which still exists
+// but is no longer running, e.g. it shut down after its reconnection timeout
+// with no clients but was not removed yet, is replaced instead of being waited
+// on until the startup timeout expires.
+func Test_RecreateReaperIfStopped(t *testing.T) {
+	reaperDisable(t, false)
+
+	SkipIfProviderIsNotHealthy(t)
+
+	ctx := context.Background()
+
+	provider, err := NewDockerProvider()
+	require.NoError(t, err)
+
+	// Create a stopped container that the lookup identifies as the session's
+	// reaper: same name and labels, but exited and not auto-removed.
+	require.NoError(t, provider.PullImage(ctx, alpineImage))
+
+	labels := core.DefaultLabels(testSessionID)
+	labels[core.LabelReaper] = "true"
+	labels[core.LabelRyuk] = "true"
+	delete(labels, core.LabelReap)
+
+	cli := provider.Client()
+	created, err := cli.ContainerCreate(ctx, client.ContainerCreateOptions{
+		Config: &container.Config{
+			Image:  alpineImage,
+			Cmd:    []string{"true"},
+			Labels: labels,
+		},
+		Name: reaperContainerNameFromSessionID(testSessionID),
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		if _, err := cli.ContainerRemove(context.Background(), created.ID, client.ContainerRemoveOptions{Force: true}); err != nil && !errdefs.IsNotFound(err) {
+			require.NoError(t, err)
+		}
+	})
+
+	_, err = cli.ContainerStart(ctx, created.ID, client.ContainerStartOptions{})
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		inspect, err := cli.ContainerInspect(ctx, created.ID, client.ContainerInspectOptions{})
+		return err == nil && !inspect.Container.State.Running
+	}, time.Second*10, time.Millisecond*100, "stopped reaper container should have exited")
+
+	// The stopped container must be replaced by a fresh reaper well within
+	// the startup timeout that waiting on it for readiness would burn.
+	timeout, cancel := context.WithTimeout(ctx, time.Second*30)
+	defer cancel()
+
+	spawner := &reaperSpawner{}
+	reaper, err := spawner.reaper(context.WithValue(timeout, core.DockerHostContextKey, provider.host), testSessionID, provider)
+	cleanupReaper(t, reaper, spawner)
+	require.NoError(t, err, "creating the Reaper should not error")
+	require.NotEqual(t, created.ID, reaper.container.GetContainerID(), "expected a new reaper container")
+
+	// The stopped container was removed to free up the reaper name.
+	_, err = cli.ContainerInspect(ctx, created.ID, client.ContainerInspectOptions{})
+	require.True(t, errdefs.IsNotFound(err), "stopped reaper container should have been removed, got: %v", err)
+
+	termSignal, err := reaper.Connect()
+	cleanupTermSignal(t, termSignal)
 	require.NoError(t, err, "connecting to Reaper should be successful")
 }
 
