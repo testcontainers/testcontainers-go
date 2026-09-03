@@ -10,7 +10,7 @@ import (
 // Deprecated: use [datastore.Run] instead
 // RunDatastoreContainer creates an instance of the GCloud container type for Datastore.
 func RunDatastoreContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
-	return RunDatastore(ctx, "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators", opts...)
+	return RunDatastore(ctx, "gcr.io/google.com/cloudsdktool/cloud-sdk:emulators", opts...)
 }
 
 // Deprecated: use [datastore.Run] instead

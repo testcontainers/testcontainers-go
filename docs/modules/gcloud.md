@@ -25,7 +25,7 @@ The Google Cloud module exposes the following Go packages:
 - [Pubsub](#pubsub): `github.com/testcontainers/testcontainers-go/modules/gcloud/pubsub`.
 - [Spanner](#spanner): `github.com/testcontainers/testcontainers-go/modules/gcloud/spanner`.
 !!!info
-    By default, the all the emulators use `gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators` as the default Docker image, except for the BigQuery emulator, which uses `ghcr.io/goccy/bigquery-emulator:0.6.1`, and Spanner, which uses `gcr.io/cloud-spanner-emulator/emulator:1.4.0`.
+    By default, the all the emulators use `gcr.io/google.com/cloudsdktool/cloud-sdk:emulators` as the default Docker image, except for the BigQuery emulator, which uses `ghcr.io/goccy/bigquery-emulator:0.6.1`, and Spanner, which uses `gcr.io/cloud-spanner-emulator/emulator:1.4.0`.
 
 ## BigQuery
 
@@ -97,7 +97,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators")`.
+In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:emulators")`.
 
 ### Container Options
 
@@ -136,7 +136,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators")`.
+In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:emulators")`.
 
 ### Container Options
 
@@ -174,7 +174,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators")`.
+In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:emulators")`.
 
 ### Container Options
 
@@ -220,7 +220,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators")`.
+In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:emulators")`.
 
 ### Container Options
 
@@ -258,7 +258,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators")`.
+In example: `Run(context.Background(), "gcr.io/cloud-spanner-emulator/emulator:1.4.0")`.
 
 ### Container Options
 
