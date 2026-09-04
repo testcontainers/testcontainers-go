@@ -20,7 +20,7 @@ func ExampleRun() {
 
 	pubsubContainer, err := tcpubsub.Run(
 		ctx,
-		"gcr.io/google.com/cloudsdktool/cloud-sdk:emulators",
+		"gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
 		tcpubsub.WithProjectID("pubsub-project"),
 	)
 	defer func() {
