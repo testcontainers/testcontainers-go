@@ -231,8 +231,8 @@ github.com/mattn/go-shellwords v1.0.13 h1:DC0OMEpGjm6LfNFU4ckYcvbQKyp2vE8atyFGXN
 github.com/mattn/go-shellwords v1.0.13/go.mod h1:EZzvwXDESEeg03EKmM+RmDnNOPKG4lLtQsUlTZDWQ8Y=
 github.com/mitchellh/hashstructure/v2 v2.0.2 h1:vGKWl0YJqUNxE8d+h8f6NJLcCJrgbhC4NcD46KavDd4=
 github.com/mitchellh/hashstructure/v2 v2.0.2/go.mod h1:MG3aRVU/N29oo/V/IhBX8GR/zz4kQkprJgF2EVszyDE=
-github.com/moby/buildkit v0.31.0 h1:hMUAbQGgjtzJDDOZ6o7MQk5XBZkBTyzLWEvnjguHHQI=
-github.com/moby/buildkit v0.31.0/go.mod h1:YM5iNEbNCc6L1Zt3YWFB/aXNLufvf4Rcu0DPlc9HwQg=
+github.com/moby/buildkit v0.31.1 h1:j3p55abBl4kiXXPZgYX+6zWgB2aefqHXoPown12fIzU=
+github.com/moby/buildkit v0.31.1/go.mod h1:YM5iNEbNCc6L1Zt3YWFB/aXNLufvf4Rcu0DPlc9HwQg=
 github.com/moby/docker-image-spec v1.3.1 h1:jMKff3w6PgbfSa69GfNg+zN/XLhfXJGnEx3Nl2EsFP0=
 github.com/moby/docker-image-spec v1.3.1/go.mod h1:eKmb5VW8vQEh/BAr2yvVNvuiJuY6UIocYsFu/DxxRpo=
 github.com/moby/go-archive v0.2.0 h1:zg5QDUM2mi0JIM9fdQZWC7U8+2ZfixfTYoHL7rWUcP8=
@@ -449,8 +449,8 @@ google.golang.org/genproto/googleapis/api v0.0.0-20260622175928-b703f567277d h1:
 google.golang.org/genproto/googleapis/api v0.0.0-20260622175928-b703f567277d/go.mod h1:O0ZOWSrfWfJ+Z5HbwZ+wNtHsg/vk1k2C/w67eww8PfQ=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20260622175928-b703f567277d h1:mpAgMyM9vQHxycBlDq50y1VHpfSfVwzXvrQKtYbXuUY=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20260622175928-b703f567277d/go.mod h1:4Hqkh8ycfw05ld/3BWL7rJOSfebL2Q+DVDeRgYgxUU8=
-google.golang.org/grpc v1.82.1 h1:NnAxzGRA0677vCa4BUkOAnO5+FfQqVl9iUXeD0IqcGE=
-google.golang.org/grpc v1.82.1/go.mod h1:yzTZ1TB1Z3SG+LIYaI+WiE8D5+PZ3ArnrSp8zF3+/ZA=
+google.golang.org/grpc v1.83.1 h1:HIO0+BEtBP6soyqvqC8sNUjZ7bTs+0hFQuFF+RAy++Y=
+google.golang.org/grpc v1.83.1/go.mod h1:kDyl6SKsiHKt0uylY5gtn5cEjkrIOhQOGDgIc4JGwzQ=
 google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af h1:+5/Sw3GsDNlEmu7TfklWKPdQ0Ykja5VEmq2i817+jbI=
 google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af/go.mod h1:HTf+CrKn2C3g5S8VImy6tdcUvCska2kB7j23XfzDpco=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=

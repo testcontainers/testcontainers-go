@@ -21,7 +21,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.44.0
 	github.com/testcontainers/testcontainers-go/modules/mssql v0.44.0
-	software.sslmate.com/src/go-pkcs12 v0.7.0
+	software.sslmate.com/src/go-pkcs12 v0.7.2
 )
 
 require (

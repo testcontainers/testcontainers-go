@@ -20,7 +20,7 @@ func ExampleRun() {
 
 	bigTableContainer, err := tcbigtable.Run(
 		ctx,
-		"gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
+		"gcr.io/google.com/cloudsdktool/cloud-sdk:emulators",
 		tcbigtable.WithProjectID("bigtable-project"),
 	)
 	defer func() {

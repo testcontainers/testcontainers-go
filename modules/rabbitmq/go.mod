@@ -5,7 +5,7 @@ go 1.25.0
 toolchain go1.25.9
 
 require (
-	github.com/rabbitmq/amqp091-go v1.9.0
+	github.com/rabbitmq/amqp091-go v1.13.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.44.0
 )
