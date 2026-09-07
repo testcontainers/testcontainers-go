@@ -136,6 +136,50 @@ func TestDockerImageAuth(t *testing.T) {
 		require.Equal(t, base64, cfg.Auth)
 	})
 
+	t.Run("retrieve auth from the credentials store", func(t *testing.T) {
+		// A config with only credsStore serves every registry through the store,
+		// so it has no auths or credHelpers entries to enumerate.
+		t.Setenv("DOCKER_AUTH_CONFIG", `{"credsStore":"desktop"}`)
+		creds.reset()
+
+		old := getRegistryCredentials
+		t.Cleanup(func() {
+			getRegistryCredentials = old
+			creds.reset()
+		})
+		getRegistryCredentials = func(hostname string) (string, string, error) {
+			if hostname == exampleAuth {
+				return "gopher", "secret", nil
+			}
+			return "", "", nil
+		}
+
+		reg, cfg, err := DockerImageAuth(context.Background(), exampleAuth+"/my/image:latest")
+		require.NoError(t, err)
+		require.Equal(t, exampleAuth, reg)
+		require.Equal(t, "gopher", cfg.Username)
+		require.Equal(t, "secret", cfg.Password)
+	})
+
+	t.Run("credentials store without an entry for the registry", func(t *testing.T) {
+		t.Setenv("DOCKER_AUTH_CONFIG", `{"credsStore":"desktop"}`)
+		creds.reset()
+
+		old := getRegistryCredentials
+		t.Cleanup(func() {
+			getRegistryCredentials = old
+			creds.reset()
+		})
+		// A store reports an unknown registry as empty credentials, not an error.
+		getRegistryCredentials = func(string) (string, string, error) {
+			return "", "", nil
+		}
+
+		_, cfg, err := DockerImageAuth(context.Background(), exampleAuth+"/my/image:latest")
+		require.ErrorIs(t, err, dockercfg.ErrCredentialsNotFound)
+		require.Empty(t, cfg)
+	})
+
 	t.Run("fail to match registry authentication due to invalid host", func(t *testing.T) {
 		imageReg := "example-auth.com"
 		imagePath := "/my/image:latest"

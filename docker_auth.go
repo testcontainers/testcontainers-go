@@ -55,7 +55,41 @@ func dockerImageAuth(ctx context.Context, image string, configs map[string]regis
 		return reg, cfg, nil
 	}
 
+	if cfg, ok := credentialsStoreAuth(reg); ok {
+		return reg, cfg, nil
+	}
+
 	return reg, registry.AuthConfig{}, dockercfg.ErrCredentialsNotFound
+}
+
+// credentialsStoreAuth returns the auth config the credentials store holds for reg,
+// if one is configured and it has an entry for that registry.
+//
+// A credentials store serves every registry, so unlike auths and credHelpers it has
+// no entries to enumerate up front: it can only be asked once the registry is known.
+// See https://docs.docker.com/reference/cli/docker/login/#credential-stores
+func credentialsStoreAuth(reg string) (registry.AuthConfig, bool) {
+	cfg, err := getDockerConfig()
+	if err != nil || cfg.CredentialsStore == "" {
+		return registry.AuthConfig{}, false
+	}
+
+	key, err := configKey(cfg)
+	if err != nil {
+		return registry.AuthConfig{}, false
+	}
+
+	var ac registry.AuthConfig
+	if err := creds.AuthConfig(reg, key, &ac); err != nil {
+		return registry.AuthConfig{}, false
+	}
+
+	// The store reports an unknown registry as empty credentials rather than an error.
+	if ac.Username == "" && ac.Password == "" && ac.IdentityToken == "" {
+		return registry.AuthConfig{}, false
+	}
+
+	return ac, true
 }
 
 func getRegistryAuth(reg string, cfgs map[string]registry.AuthConfig) (registry.AuthConfig, bool) {
