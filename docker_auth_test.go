@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -147,7 +148,7 @@ func TestDockerImageAuth(t *testing.T) {
 			getRegistryCredentials = old
 			creds.reset()
 		})
-		getRegistryCredentials = func(hostname string) (string, string, error) {
+		getRegistryCredentials = func(_ *dockercfg.Config, hostname string) (string, string, error) {
 			if hostname == exampleAuth {
 				return "gopher", "secret", nil
 			}
@@ -161,6 +162,48 @@ func TestDockerImageAuth(t *testing.T) {
 		require.Equal(t, "secret", cfg.Password)
 	})
 
+	t.Run("retrieve auth from the credentials store for a scheme-less registry", func(t *testing.T) {
+		// Registries in image references carry no scheme, and that is the host the
+		// store is asked for, as the docker CLI does.
+		t.Setenv("DOCKER_AUTH_CONFIG", `{"credsStore":"desktop"}`)
+		creds.reset()
+
+		old := getRegistryCredentials
+		t.Cleanup(func() {
+			getRegistryCredentials = old
+			creds.reset()
+		})
+		getRegistryCredentials = func(_ *dockercfg.Config, hostname string) (string, string, error) {
+			if hostname == "example-auth.com" {
+				return "gopher", "secret", nil
+			}
+			return "", "", nil
+		}
+
+		reg, cfg, err := DockerImageAuth(context.Background(), "example-auth.com/my/image:latest")
+		require.NoError(t, err)
+		require.Equal(t, "example-auth.com", reg)
+		require.Equal(t, "gopher", cfg.Username)
+		require.Equal(t, "secret", cfg.Password)
+	})
+
+	t.Run("credentials store errors are reported", func(t *testing.T) {
+		t.Setenv("DOCKER_AUTH_CONFIG", `{"credsStore":"desktop"}`)
+		creds.reset()
+
+		old := getRegistryCredentials
+		t.Cleanup(func() {
+			getRegistryCredentials = old
+			creds.reset()
+		})
+		getRegistryCredentials = func(*dockercfg.Config, string) (string, string, error) {
+			return "", "", errors.New("helper exploded")
+		}
+
+		_, _, err := DockerImageAuth(context.Background(), exampleAuth+"/my/image:latest")
+		require.ErrorContains(t, err, "helper exploded")
+	})
+
 	t.Run("credentials store without an entry for the registry", func(t *testing.T) {
 		t.Setenv("DOCKER_AUTH_CONFIG", `{"credsStore":"desktop"}`)
 		creds.reset()
@@ -171,7 +214,7 @@ func TestDockerImageAuth(t *testing.T) {
 			creds.reset()
 		})
 		// A store reports an unknown registry as empty credentials, not an error.
-		getRegistryCredentials = func(string) (string, string, error) {
+		getRegistryCredentials = func(*dockercfg.Config, string) (string, string, error) {
 			return "", "", nil
 		}
 
@@ -467,7 +510,7 @@ func Test_getDockerAuthConfigs(t *testing.T) {
 			getRegistryCredentials = old
 			creds.reset() // Ensure our mocked results aren't cached.
 		})
-		getRegistryCredentials = func(hostname string) (string, string, error) {
+		getRegistryCredentials = func(_ *dockercfg.Config, hostname string) (string, string, error) {
 			switch hostname {
 			case core.IndexDockerIO:
 				return "", "identity-token", nil
