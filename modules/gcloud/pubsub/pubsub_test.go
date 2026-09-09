@@ -2,10 +2,12 @@ package pubsub_test
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"testing"
 
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
+	pubsubpb "cloud.google.com/go/pubsub/v2/apiv1/pubsubpb"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
@@ -39,20 +41,27 @@ func TestRun(t *testing.T) {
 	require.NoError(t, err)
 	defer client.Close()
 
-	topic, err := client.CreateTopic(ctx, "greetings")
+	topicProto, err := client.TopicAdminClient.CreateTopic(ctx, &pubsubpb.Topic{
+		Name: fmt.Sprintf("projects/%s/topics/%s", projectID, "greetings"),
+	})
 	require.NoError(t, err)
 
-	subscription, err := client.CreateSubscription(ctx, "subscription",
-		pubsub.SubscriptionConfig{Topic: topic})
+	subProto, err := client.SubscriptionAdminClient.CreateSubscription(ctx, &pubsubpb.Subscription{
+		Name:  fmt.Sprintf("projects/%s/subscriptions/%s", projectID, "subscription"),
+		Topic: topicProto.GetName(),
+	})
 	require.NoError(t, err)
 
-	result := topic.Publish(ctx, &pubsub.Message{Data: []byte("Hello World")})
+	publisher := client.Publisher(topicProto.GetName())
+	defer publisher.Stop()
+	result := publisher.Publish(ctx, &pubsub.Message{Data: []byte("Hello World")})
 	_, err = result.Get(ctx)
 	require.NoError(t, err)
 
+	sub := client.Subscriber(subProto.GetName())
 	var data []byte
 	cctx, cancel := context.WithCancel(ctx)
-	err = subscription.Receive(cctx, func(_ context.Context, m *pubsub.Message) {
+	err = sub.Receive(cctx, func(_ context.Context, m *pubsub.Message) {
 		data = m.Data
 		m.Ack()
 		defer cancel()
