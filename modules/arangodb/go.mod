@@ -1,8 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/arangodb
 
-go 1.25.0
-
-toolchain go1.25.9
+go 1.26
 
 require (
 	github.com/arangodb/go-driver/v2 v2.3.1

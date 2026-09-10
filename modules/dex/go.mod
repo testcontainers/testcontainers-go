@@ -1,8 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/dex
 
-go 1.25.0
-
-toolchain go1.25.9
+go 1.26
 
 require (
 	github.com/coreos/go-oidc/v3 v3.18.0
