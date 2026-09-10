@@ -1,6 +1,7 @@
 package wait
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/internal/config"
 )
 
 // Strategy defines the basic interface for a Wait Strategy
@@ -57,7 +59,7 @@ func checkState(state *container.State) error {
 }
 
 func defaultStartupTimeout() time.Duration {
-	return 60 * time.Second
+	return cmp.Or(config.Read().StartupTimeout, 60*time.Second)
 }
 
 func defaultPollInterval() time.Duration {

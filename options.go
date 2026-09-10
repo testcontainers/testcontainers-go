@@ -1,6 +1,7 @@
 package testcontainers
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"github.com/moby/moby/api/types/network"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -391,14 +393,16 @@ func WithAfterReadyCommand(execs ...Executable) CustomizeRequestOption {
 	}
 }
 
-// WithWaitStrategy replaces the wait strategy for a container, using 60 seconds as deadline
+// WithWaitStrategy replaces the wait strategy for a container, using the configured
+// startup timeout as deadline, 60 seconds by default.
 func WithWaitStrategy(strategies ...wait.Strategy) CustomizeRequestOption {
-	return WithWaitStrategyAndDeadline(60*time.Second, strategies...)
+	return WithWaitStrategyAndDeadline(cmp.Or(config.Read().StartupTimeout, 60*time.Second), strategies...)
 }
 
-// WithAdditionalWaitStrategy appends the wait strategy for a container, using 60 seconds as deadline
+// WithAdditionalWaitStrategy appends the wait strategy for a container, using the
+// configured startup timeout as deadline, 60 seconds by default.
 func WithAdditionalWaitStrategy(strategies ...wait.Strategy) CustomizeRequestOption {
-	return WithAdditionalWaitStrategyAndDeadline(60*time.Second, strategies...)
+	return WithAdditionalWaitStrategyAndDeadline(cmp.Or(config.Read().StartupTimeout, 60*time.Second), strategies...)
 }
 
 // WithWaitStrategyAndDeadline replaces the wait strategy for a container, including deadline
