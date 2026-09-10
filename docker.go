@@ -1672,6 +1672,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 
 	nc := client.NetworkCreateOptions{
 		Driver:     req.Driver,
+		Options:    req.DriverOptions,
 		Internal:   req.Internal,
 		EnableIPv6: req.EnableIPv6,
 		Attachable: req.Attachable,
