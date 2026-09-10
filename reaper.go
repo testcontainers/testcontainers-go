@@ -154,7 +154,9 @@ func (r *reaperSpawner) cleanupLocked() error {
 // lookupContainer returns a DockerContainer type with the reaper container in the case
 // it's found in the running state, and including the labels for sessionID, reaper, and ryuk.
 // It will perform a retry with exponential backoff to allow for the container to be started and
-// avoid potential false negatives.
+// avoid potential false negatives. A container found in a stopped state is removed and
+// reported as errReaperNotFound, so the caller creates a new reaper instead of waiting
+// on a container that will never become ready.
 func (r *reaperSpawner) lookupContainer(ctx context.Context, sessionID string) (*DockerContainer, error) {
 	dockerClient, err := NewDockerClientWithOpts(ctx)
 	if err != nil {
@@ -192,6 +194,25 @@ func (r *reaperSpawner) lookupContainer(ctx context.Context, sessionID string) (
 
 			if len(resp.Items) > 1 {
 				return nil, fmt.Errorf("found %d reaper containers for session ID %q", len(resp.Items), sessionID)
+			}
+
+			switch state := resp.Items[0].State; state {
+			case container.StateRunning:
+				// Continue below and return the container for reuse.
+			case container.StateCreated, container.StateRestarting:
+				// The container is on its way up, retry until it is running.
+				return nil, fmt.Errorf("container not running: state %s", state)
+			default:
+				// Exited, dead, paused or removing: the reaper shuts itself down
+				// once it has had no clients for its reconnection timeout, so a
+				// stopped container will never become ready again. Remove what is
+				// left of it so a new reaper can be created under the same name.
+				// Auto-removed containers may already be gone, which is fine.
+				if _, err := dockerClient.ContainerRemove(ctx, resp.Items[0].ID, client.ContainerRemoveOptions{Force: true}); err != nil && !errdefs.IsNotFound(err) {
+					return nil, fmt.Errorf("remove stopped container: %w", err)
+				}
+
+				return nil, backoff.Permanent(errReaperNotFound)
 			}
 
 			r, err := provider.ContainerFromType(ctx, resp.Items[0])
@@ -316,7 +337,7 @@ func (r *reaperSpawner) reuseOrCreate(ctx context.Context, sessionID string, pro
 
 	// Look for an existing reaper created in the same test session but in a
 	// different test process execution e.g. when running tests in parallel.
-	container, err := r.lookupContainer(context.Background(), sessionID)
+	container, err := r.lookupContainer(ctx, sessionID)
 	if err != nil {
 		if !errors.Is(err, errReaperNotFound) {
 			return nil, fmt.Errorf("look up container: %w", err)
@@ -343,6 +364,14 @@ func (r *reaperSpawner) reuseOrCreate(ctx context.Context, sessionID string, pro
 // fromContainer constructs a Reaper from an already running reaper DockerContainer.
 func (r *reaperSpawner) fromContainer(ctx context.Context, sessionID string, provider ReaperProvider, dockerContainer *DockerContainer) (*Reaper, error) {
 	log.Printf("⏳ Waiting for Reaper %q to be ready", dockerContainer.ID[:8])
+
+	// The reaper might have terminated between being looked up and now, e.g.
+	// because it reached its reconnection timeout with no clients. Waiting on
+	// a stopped container would take the full startup timeout, so check first
+	// and report not-found, which triggers a retry that recreates the reaper.
+	if err := r.isRunning(ctx, dockerContainer); err != nil {
+		return nil, err
+	}
 
 	// Reusing an existing container so we determine the port from the container's exposed ports.
 	if err := wait.ForAll(
