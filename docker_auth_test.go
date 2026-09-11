@@ -4,11 +4,12 @@ import (
 	"context"
 	_ "embed"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strconv"
 	"testing"
 
 	"github.com/containerd/errdefs"
@@ -137,92 +138,6 @@ func TestDockerImageAuth(t *testing.T) {
 		require.Equal(t, base64, cfg.Auth)
 	})
 
-	t.Run("retrieve auth from the credentials store", func(t *testing.T) {
-		// A config with only credsStore serves every registry through the store,
-		// so it has no auths or credHelpers entries to enumerate.
-		t.Setenv("DOCKER_AUTH_CONFIG", `{"credsStore":"desktop"}`)
-		creds.reset()
-
-		old := getRegistryCredentials
-		t.Cleanup(func() {
-			getRegistryCredentials = old
-			creds.reset()
-		})
-		getRegistryCredentials = func(_ *dockercfg.Config, hostname string) (string, string, error) {
-			if hostname == exampleAuth {
-				return "gopher", "secret", nil
-			}
-			return "", "", nil
-		}
-
-		reg, cfg, err := DockerImageAuth(context.Background(), exampleAuth+"/my/image:latest")
-		require.NoError(t, err)
-		require.Equal(t, exampleAuth, reg)
-		require.Equal(t, "gopher", cfg.Username)
-		require.Equal(t, "secret", cfg.Password)
-	})
-
-	t.Run("retrieve auth from the credentials store for a scheme-less registry", func(t *testing.T) {
-		// Registries in image references carry no scheme, and that is the host the
-		// store is asked for, as the docker CLI does.
-		t.Setenv("DOCKER_AUTH_CONFIG", `{"credsStore":"desktop"}`)
-		creds.reset()
-
-		old := getRegistryCredentials
-		t.Cleanup(func() {
-			getRegistryCredentials = old
-			creds.reset()
-		})
-		getRegistryCredentials = func(_ *dockercfg.Config, hostname string) (string, string, error) {
-			if hostname == "example-auth.com" {
-				return "gopher", "secret", nil
-			}
-			return "", "", nil
-		}
-
-		reg, cfg, err := DockerImageAuth(context.Background(), "example-auth.com/my/image:latest")
-		require.NoError(t, err)
-		require.Equal(t, "example-auth.com", reg)
-		require.Equal(t, "gopher", cfg.Username)
-		require.Equal(t, "secret", cfg.Password)
-	})
-
-	t.Run("credentials store errors are reported", func(t *testing.T) {
-		t.Setenv("DOCKER_AUTH_CONFIG", `{"credsStore":"desktop"}`)
-		creds.reset()
-
-		old := getRegistryCredentials
-		t.Cleanup(func() {
-			getRegistryCredentials = old
-			creds.reset()
-		})
-		getRegistryCredentials = func(*dockercfg.Config, string) (string, string, error) {
-			return "", "", errors.New("helper exploded")
-		}
-
-		_, _, err := DockerImageAuth(context.Background(), exampleAuth+"/my/image:latest")
-		require.ErrorContains(t, err, "helper exploded")
-	})
-
-	t.Run("credentials store without an entry for the registry", func(t *testing.T) {
-		t.Setenv("DOCKER_AUTH_CONFIG", `{"credsStore":"desktop"}`)
-		creds.reset()
-
-		old := getRegistryCredentials
-		t.Cleanup(func() {
-			getRegistryCredentials = old
-			creds.reset()
-		})
-		// A store reports an unknown registry as empty credentials, not an error.
-		getRegistryCredentials = func(*dockercfg.Config, string) (string, string, error) {
-			return "", "", nil
-		}
-
-		_, cfg, err := DockerImageAuth(context.Background(), exampleAuth+"/my/image:latest")
-		require.ErrorIs(t, err, dockercfg.ErrCredentialsNotFound)
-		require.Empty(t, cfg)
-	})
-
 	t.Run("fail to match registry authentication due to invalid host", func(t *testing.T) {
 		imageReg := "example-auth.com"
 		imagePath := "/my/image:latest"
@@ -255,6 +170,103 @@ func TestDockerImageAuth(t *testing.T) {
 		require.Empty(t, cfg)
 		require.Equal(t, imageReg, registry)
 	})
+}
+
+func TestDockerImageAuthCredentialsStore(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("credential helper fixtures use shell scripts")
+	}
+
+	oldDefaultRegistry := defaultRegistryFn
+	defaultRegistryFn = func(context.Context) string { return core.IndexDockerIO }
+	t.Cleanup(func() { defaultRegistryFn = oldDefaultRegistry })
+
+	for _, tt := range []struct {
+		name     string
+		response string
+		exitCode int
+		want     registry.AuthConfig
+		wantErr  string
+	}{
+		{
+			name:     "username and password",
+			response: `{"Username":"gopher","Secret":"secret"}`,
+			want:     registry.AuthConfig{Username: "gopher", Password: "secret"},
+		},
+		{
+			name:     "identity token",
+			response: `{"Username":"<token>","Secret":"identity-token"}`,
+			want:     registry.AuthConfig{IdentityToken: "identity-token"},
+		},
+		{
+			name:     "empty store does not use the platform helper",
+			response: `{"Username":"","Secret":""}`,
+			wantErr:  dockercfg.ErrCredentialsNotFound.Error(),
+		},
+		{
+			name:     "missing entry does not use the platform helper",
+			response: dockercfg.ErrCredentialsNotFound.Error(),
+			exitCode: 1,
+			wantErr:  dockercfg.ErrCredentialsNotFound.Error(),
+		},
+		{
+			name:     "helper errors are propagated",
+			response: "helper exploded",
+			exitCode: 1,
+			wantErr:  "helper exploded",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			creds.reset()
+			t.Cleanup(creds.reset)
+			dir := t.TempDir()
+			t.Setenv("PATH", dir)
+			t.Setenv("DOCKER_AUTH_CONFIG", `{"credsStore":"test-store"}`)
+			t.Setenv("TEST_HELPER_CALLS", filepath.Join(dir, "calls"))
+			t.Setenv("TEST_HELPER_RESPONSE", tt.response)
+			t.Setenv("TEST_HELPER_EXIT", strconv.Itoa(tt.exitCode))
+
+			// Use the real dockercfg lookup. Any fallback to a platform helper
+			// returns unrelated credentials and is recorded in the call log.
+			helper := `#!/bin/sh
+host=
+read -r host
+printf '%s %s %s\n' "${0##*/}" "$1" "$host" >> "$TEST_HELPER_CALLS"
+case "$0" in
+  */docker-credential-test-store)
+    printf '%s\n' "$TEST_HELPER_RESPONSE"
+    exit "$TEST_HELPER_EXIT"
+    ;;
+  *) printf '%s\n' '{"Username":"unrelated","Secret":"wrong-store"}' ;;
+esac
+`
+			// dockercfg v0.3.2 shadows its default helper name and looks for
+			// docker-credential- instead. Trap that fallback as well.
+			for _, name := range []string{"test-store", "", "osxkeychain", "pass", "secretservice", "wincred"} {
+				require.NoError(t, os.WriteFile(filepath.Join(dir, "docker-credential-"+name), []byte(helper), 0o700))
+			}
+
+			for range 2 {
+				reg, ac, err := DockerImageAuth(context.Background(), "example-auth.com/my/image:latest")
+				require.Equal(t, "example-auth.com", reg)
+				if tt.wantErr != "" {
+					require.ErrorContains(t, err, tt.wantErr)
+				} else {
+					require.NoError(t, err)
+				}
+				require.Equal(t, tt.want, ac)
+			}
+
+			calls, err := os.ReadFile(filepath.Join(dir, "calls"))
+			require.NoError(t, err)
+			wantCalls := "docker-credential-test-store get example-auth.com\n"
+			if tt.wantErr == "helper exploded" {
+				// Failures must be retried; successful and empty results are cached.
+				wantCalls += wantCalls
+			}
+			require.Equal(t, wantCalls, string(calls))
+		})
+	}
 }
 
 func TestBuildContainerFromDockerfile(t *testing.T) {
@@ -417,8 +429,7 @@ func setAuthConfig(t *testing.T, host, username, password string) string {
 			"password": %q,
 			"auth": %q
 		}
-	},
-	"credsStore": "desktop"
+	}
 }`,
 		host,
 		username,
