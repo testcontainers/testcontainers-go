@@ -128,7 +128,7 @@ func (t ProviderType) GetProvider(opts ...GenericProviderOption) (GenericProvide
 	return nil, errors.New("unknown provider")
 }
 
-// NewDockerProvider creates a Docker provider with the EnvClient
+// NewDockerProvider creates a Docker provider using the Docker host and client from the environment.
 func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error) {
 	o := &DockerProviderOptions{
 		GenericProviderOptions: &GenericProviderOptions{
