@@ -22,7 +22,7 @@ type FileStrategy struct {
 	matcher      func(io.Reader) error
 }
 
-// NewFileStrategy constructs an FileStrategy strategy.
+// NewFileStrategy constructs a file wait strategy for the given path in the container.
 func NewFileStrategy(file string) *FileStrategy {
 	return &FileStrategy{
 		file:         file,
