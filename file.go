@@ -177,7 +177,7 @@ func extractTar(dstPath string, r io.Reader) error {
 				}
 			}
 
-			f, err := root.OpenFile(name, os.O_CREATE|os.O_RDWR, os.FileMode(hdr.Mode))
+			f, err := root.OpenFile(name, os.O_CREATE|os.O_RDWR|os.O_TRUNC, os.FileMode(hdr.Mode))
 			if err != nil {
 				return err
 			}
