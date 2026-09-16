@@ -163,6 +163,10 @@ func extractTar(dstPath string, r io.Reader) error {
 			return err
 		}
 
+		if filepath.IsAbs(hdr.Name) {
+			return fmt.Errorf("tar entry has absolute path: %q", hdr.Name)
+		}
+
 		name := filepath.Clean(hdr.Name)
 		switch hdr.Typeflag {
 		case tar.TypeDir:
