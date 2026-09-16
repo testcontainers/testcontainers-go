@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -140,4 +141,58 @@ func tarFile(basePath string, fileContent func(tw io.Writer) error, fileContentS
 	}
 
 	return buffer, nil
+}
+
+func extractTar(dstPath string, r io.Reader) error {
+	// os.Root confines all operations to dst, mitigating path traversal and symlinks pointing outside the dir cannot be followed
+	root, err := os.OpenRoot(dstPath)
+	if err != nil {
+		return err
+	}
+	defer root.Close()
+
+	tr := tar.NewReader(r)
+	for {
+		var hdr *tar.Header
+		hdr, err = tr.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+
+		if err != nil {
+			return err
+		}
+
+		name := filepath.Clean(hdr.Name)
+		switch hdr.Typeflag {
+		case tar.TypeDir:
+			if err = root.MkdirAll(name, 0o755); err != nil {
+				return err
+			}
+
+		case tar.TypeReg:
+			if dir := filepath.Dir(name); dir != "." {
+				if err = os.MkdirAll(name, 0o755); err != nil {
+					return err
+				}
+			}
+
+			f, err := root.OpenFile(name, os.O_CREATE|os.O_RDWR, os.FileMode(hdr.Mode))
+			if err != nil {
+				return err
+			}
+
+			_, err = io.Copy(f, tr)
+			if err != nil {
+				_ = f.Close()
+				return err
+			}
+
+			if err = f.Close(); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }

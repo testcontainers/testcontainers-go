@@ -103,6 +103,58 @@ func Test_TarDir(t *testing.T) {
 	}
 }
 
+func Test_ExtractTar(t *testing.T) {
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+
+	entries := []struct {
+		hdr     *tar.Header
+		content string
+	}{
+		{hdr: &tar.Header{Name: "testdata/", Typeflag: tar.TypeDir, Mode: 0o755}},
+		{hdr: &tar.Header{Name: "testdata/test.txt", Typeflag: tar.TypeReg, Size: 6, Mode: 0o644}, content: "docker"},
+		{hdr: &tar.Header{Name: "testdata/test2.txt", Typeflag: tar.TypeReg, Size: 7, Mode: 0o644}, content: "docker2"},
+	}
+
+	for _, entry := range entries {
+		err := tw.WriteHeader(entry.hdr)
+		require.NoError(t, err)
+
+		_, err = tw.Write([]byte(entry.content))
+		require.NoError(t, err)
+	}
+
+	_ = tw.Close()
+
+	dstDir := t.TempDir()
+	err := extractTar(dstDir, &buf)
+	require.NoError(t, err)
+
+	fInfo, err := os.Stat(filepath.Join(dstDir, "testdata"))
+	require.NoError(t, err)
+
+	if !fInfo.IsDir() {
+		t.Fatalf("expected a directory")
+	}
+
+	cases := []struct {
+		name    string
+		content string
+	}{
+		{name: "testdata/test.txt", content: "docker"},
+		{name: "testdata/test2.txt", content: "docker2"},
+	}
+
+	for _, c := range cases {
+		data, err := os.ReadFile(filepath.Join(dstDir, c.name))
+		require.NoError(t, err)
+
+		if string(data) != c.content {
+			t.Fatalf("expected=%s, got=%s", c.content, string(data))
+		}
+	}
+}
+
 func Test_TarFile(t *testing.T) {
 	b, err := os.ReadFile(filepath.Join(".", "testdata", "Dockerfile"))
 	require.NoError(t, err)
