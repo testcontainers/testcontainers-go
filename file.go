@@ -172,7 +172,7 @@ func extractTar(dstPath string, r io.Reader) error {
 
 		case tar.TypeReg:
 			if dir := filepath.Dir(name); dir != "." {
-				if err = os.MkdirAll(name, 0o755); err != nil {
+				if err = root.MkdirAll(dir, 0o755); err != nil {
 					return err
 				}
 			}
