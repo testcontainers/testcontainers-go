@@ -207,8 +207,9 @@ func (r *reaperSpawner) lookupContainer(ctx context.Context, sessionID string) (
 				// once it has had no clients for its reconnection timeout, so a
 				// stopped container will never become ready again. Remove what is
 				// left of it so a new reaper can be created under the same name.
-				// Auto-removed containers may already be gone, which is fine.
-				if _, err := dockerClient.ContainerRemove(ctx, resp.Items[0].ID, client.ContainerRemoveOptions{Force: true}); err != nil && !errdefs.IsNotFound(err) {
+				// Auto-removed containers may already be gone or being removed,
+				// which is fine: creating the new reaper retries on a name conflict.
+				if _, err := dockerClient.ContainerRemove(ctx, resp.Items[0].ID, client.ContainerRemoveOptions{Force: true}); !isCleanupSafe(err) {
 					return nil, fmt.Errorf("remove stopped container: %w", err)
 				}
 
