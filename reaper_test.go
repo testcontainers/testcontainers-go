@@ -702,6 +702,11 @@ func TestSpawnerRetryError(t *testing.T) {
 			permanent: false,
 		},
 		{
+			name:      "wait failure on a stopped container",
+			err:       fmt.Errorf("foo: %w", errors.Join(errors.New("container exited with code 0"), errdefs.ErrNotFound.WithMessage("container state: exited"))),
+			permanent: false,
+		},
+		{
 			name:      "random error",
 			err:       errors.New("some random error"),
 			permanent: true,

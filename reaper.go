@@ -380,6 +380,13 @@ func (r *reaperSpawner) fromContainer(ctx context.Context, sessionID string, pro
 			WithPollInterval(100*time.Millisecond).
 			SkipInternalCheck(),
 	).WaitUntilReady(ctx, dockerContainer); err != nil {
+		// The reaper can also terminate while we wait for it. Include the
+		// not-running error, if any, so the retry recreates the reaper
+		// instead of treating the wait failure as permanent.
+		if stateErr := r.isRunning(ctx, dockerContainer); stateErr != nil {
+			err = errors.Join(err, stateErr)
+		}
+
 		return nil, fmt.Errorf("wait for reaper %s: %w", dockerContainer.ID[:8], err)
 	}
 
