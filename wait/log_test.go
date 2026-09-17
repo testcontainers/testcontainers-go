@@ -2,10 +2,12 @@ package wait_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
 	"testing"
+	"testing/iotest"
 	"time"
 
 	"github.com/moby/moby/api/types/container"
@@ -268,6 +270,62 @@ func TestWaitForLogFailsDueToUnexpectedContainerStatus(t *testing.T) {
 		expected := "unexpected container status \"dead\""
 		require.EqualError(t, err, expected)
 	})
+}
+
+func TestWaitForLogFailsWhenLogsUnavailableOnStoppedContainer(t *testing.T) {
+	errLogs := errors.New("can not get logs from container which is dead or marked for removal")
+
+	t.Run("logs error", func(t *testing.T) {
+		target := &wait.MockStrategyTarget{
+			LogsImpl: func(_ context.Context) (io.ReadCloser, error) {
+				return nil, errLogs
+			},
+			StateImpl: func(_ context.Context) (*container.State, error) {
+				return &container.State{Status: container.StateDead}, nil
+			},
+		}
+
+		err := wait.ForLog("docker").WithStartupTimeout(time.Minute).WaitUntilReady(context.Background(), target)
+		require.ErrorIs(t, err, errLogs)
+		require.ErrorContains(t, err, "unexpected container status \"dead\"")
+		require.NotErrorIs(t, err, context.DeadlineExceeded)
+	})
+
+	t.Run("read error", func(t *testing.T) {
+		target := &wait.MockStrategyTarget{
+			LogsImpl: func(_ context.Context) (io.ReadCloser, error) {
+				return io.NopCloser(iotest.ErrReader(errLogs)), nil
+			},
+			StateImpl: func(_ context.Context) (*container.State, error) {
+				return &container.State{Status: container.StateExited, ExitCode: 1}, nil
+			},
+		}
+
+		err := wait.ForLog("docker").WithStartupTimeout(time.Minute).WaitUntilReady(context.Background(), target)
+		require.ErrorIs(t, err, errLogs)
+		require.ErrorContains(t, err, "container exited with code 1")
+		require.NotErrorIs(t, err, context.DeadlineExceeded)
+	})
+}
+
+func TestWaitForLogRetriesLogsErrorOnRunningContainer(t *testing.T) {
+	var calls int
+	target := &wait.MockStrategyTarget{
+		LogsImpl: func(_ context.Context) (io.ReadCloser, error) {
+			calls++
+			if calls == 1 {
+				return nil, errors.New("logs not available yet")
+			}
+			return readCloser("docker"), nil
+		},
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{Running: true}, nil
+		},
+	}
+
+	err := wait.ForLog("docker").WithStartupTimeout(logTimeout).WithPollInterval(time.Millisecond).WaitUntilReady(context.Background(), target)
+	require.NoError(t, err)
+	require.Equal(t, 2, calls)
 }
 
 // readCloser returns an io.ReadCloser that reads from s.
