@@ -1706,6 +1706,46 @@ func (f *errMockCli) Close() error {
 	return nil
 }
 
+type buildContextClient struct {
+	client.APIClient
+}
+
+func (*buildContextClient) ImageBuild(_ context.Context, buildContext io.Reader, _ client.ImageBuildOptions) (client.ImageBuildResult, error) {
+	// Read the context after returning, leaving its cleanup to BuildImage.
+	return client.ImageBuildResult{Body: io.NopCloser(buildContext)}, nil
+}
+
+func (*buildContextClient) Close() error {
+	return nil
+}
+
+type buildContextImage struct {
+	ContainerRequest
+	context io.Reader
+}
+
+func (i *buildContextImage) BuildOptions() (client.ImageBuildOptions, error) {
+	return client.ImageBuildOptions{Context: i.context, Tags: []string{"test-image"}}, nil
+}
+
+func TestDockerProvider_BuildImage_ContextLifetime(t *testing.T) {
+	// A file makes premature closure observable as a read error.
+	contextPath := filepath.Join(t.TempDir(), "context")
+	require.NoError(t, os.WriteFile(contextPath, []byte(`{"stream":"building\n"}`), 0o600))
+	buildContext, err := os.Open(contextPath)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = buildContext.Close() })
+
+	p := &DockerProvider{client: &buildContextClient{}}
+	// The old retry callback closes the file before the response is read.
+	_, err = p.BuildImage(context.Background(), &buildContextImage{context: buildContext})
+	require.NoError(t, err, "context must remain open while reading the build response")
+
+	// Deferring cleanup must still close the context when the build finishes.
+	_, err = buildContext.Read(make([]byte, 1))
+	require.ErrorIs(t, err, os.ErrClosed, "context must be closed when BuildImage returns")
+}
+
 func TestDockerProvider_BuildImage_Retries(t *testing.T) {
 	tests := []struct {
 		name        string
