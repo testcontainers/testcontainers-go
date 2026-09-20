@@ -50,3 +50,32 @@ func TestRestoreCommands(t *testing.T) {
 	}
 	require.Less(t, terminateTargetIdx, dropIdx, "expected target database connections to be terminated before it is dropped")
 }
+
+// A database name containing an apostrophe (a valid, if unusual, Postgres
+// identifier when created via a quoted CREATE DATABASE "o'brien_db") must
+// not break out of the single-quoted datname string literal used by the
+// pg_terminate_backend calls.
+func TestRestoreCommandsQuotesApostropheInLiteral(t *testing.T) {
+	c := &PostgresContainer{dbName: "o'brien_db", user: "myuser"}
+
+	cmds := c.restoreCommands("snap'shot")
+	require.Len(t, cmds, 4)
+
+	require.Contains(t, cmds[0], "datname = 'snap''shot'")
+	require.Contains(t, cmds[1], "datname = 'o''brien_db'")
+}
+
+// A database name containing a backslash must round-trip as a single literal
+// backslash regardless of the server's standard_conforming_strings setting.
+// Doubling only the quote (and leaving the string as a plain '...' literal)
+// is unsafe when standard_conforming_strings=off, since a trailing backslash
+// then escapes the closing quote instead of terminating the string -- see
+// https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-STRINGS-ESCAPE.
+func TestRestoreCommandsQuotesBackslashInLiteral(t *testing.T) {
+	c := &PostgresContainer{dbName: `evil\`, user: "myuser"}
+
+	cmds := c.restoreCommands("snap1")
+
+	require.Contains(t, cmds[1], `E'evil\\'`)
+	require.NotContains(t, cmds[1], `datname = 'evil\'`)
+}
