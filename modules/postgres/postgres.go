@@ -310,7 +310,7 @@ func (c *PostgresContainer) restoreCommands(snapshotName string) []string {
 	return []string{
 		// Terminate all connections to the template database explicitly as the forced drop below will sometimes
 		// not terminate them and then fail to drop the database.
-		fmt.Sprintf(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '%s' AND pid <> pg_backend_pid()`, snapshotName),
+		fmt.Sprintf(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = %s AND pid <> pg_backend_pid()`, quoteLiteral(snapshotName)),
 		// Also terminate connections to the target database itself, ahead of the DROP below. DROP DATABASE ...
 		// WITH (FORCE) already does this via the same pg_terminate_backend mechanism internally, against the
 		// same target, with the same exceptions (prepared transactions, active logical replication slots or
@@ -319,12 +319,28 @@ func (c *PostgresContainer) restoreCommands(snapshotName string) []string {
 		// Issuing it here, as its own round trip before DROP, buys those backends additional wall-clock time to
 		// fully exit before FORCE's own connection check runs immediately afterward. This empirically narrows,
 		// but does not eliminate, the "database already exists" race reported in #3233.
-		fmt.Sprintf(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '%s' AND pid <> pg_backend_pid()`, c.dbName),
+		fmt.Sprintf(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = %s AND pid <> pg_backend_pid()`, quoteLiteral(c.dbName)),
 		// Drop the database if it exists
 		fmt.Sprintf(`DROP DATABASE IF EXISTS "%s" with (FORCE)`, c.dbName),
 		// Then restore the previous snapshot
 		fmt.Sprintf(`CREATE DATABASE "%s" WITH TEMPLATE "%s" OWNER "%s"`, c.dbName, snapshotName, c.user),
 	}
+}
+
+// quoteLiteral returns s as a safely-quoted SQL string literal (as opposed
+// to a double-quoted identifier, which restoreCommands quotes separately),
+// including the surrounding quotes. It mirrors Postgres's own
+// quote_literal(): single quotes are doubled, and if s contains a
+// backslash the literal is escaped with the E prefix and backslashes are
+// doubled too, so the value round-trips correctly whether or not the
+// server has standard_conforming_strings enabled -- see
+// https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-STRINGS-ESCAPE.
+func quoteLiteral(s string) string {
+	s = strings.ReplaceAll(s, `'`, `''`)
+	if strings.Contains(s, `\`) {
+		return `E'` + strings.ReplaceAll(s, `\`, `\\`) + `'`
+	}
+	return `'` + s + `'`
 }
 
 func (c *PostgresContainer) checkSnapshotConfig(opts []SnapshotOption) (string, error) {
