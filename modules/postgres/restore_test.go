@@ -79,3 +79,80 @@ func TestRestoreCommandsQuotesBackslashInLiteral(t *testing.T) {
 	require.Contains(t, cmds[1], `E'evil\\'`)
 	require.NotContains(t, cmds[1], `datname = 'evil\'`)
 }
+
+// Dedicated unit tests for quoteLiteral itself, requested in review
+// (https://github.com/testcontainers/testcontainers-go/pull/3907) as full
+// coverage in addition to the exercising already done indirectly via
+// TestRestoreCommandsQuotesApostropheInLiteral/Backslash above.
+func TestQuoteLiteral(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "empty string",
+			input: "",
+			want:  `''`,
+		},
+		{
+			name:  "plain identifier, no special characters",
+			input: "mydb",
+			want:  `'mydb'`,
+		},
+		{
+			name:  "single apostrophe",
+			input: "o'brien",
+			want:  `'o''brien'`,
+		},
+		{
+			name:  "multiple apostrophes",
+			input: "a'b'c",
+			want:  `'a''b''c'`,
+		},
+		{
+			name:  "leading and trailing apostrophes",
+			input: "'wrapped'",
+			want:  `'''wrapped'''`,
+		},
+		{
+			name:  "single backslash",
+			input: `evil\`,
+			want:  `E'evil\\'`,
+		},
+		{
+			name:  "multiple backslashes",
+			input: `a\b\c`,
+			want:  `E'a\\b\\c'`,
+		},
+		{
+			name:  "backslash and apostrophe together",
+			input: `o'brien\`,
+			// The apostrophe is doubled regardless of the backslash branch,
+			// since the doubling happens unconditionally before the
+			// backslash check.
+			want: `E'o''brien\\'`,
+		},
+		{
+			name: "backslash immediately followed by apostrophe",
+			// A naive doubled-quote-only implementation would let this
+			// backslash escape the following quote instead of the literal's
+			// closing quote, under standard_conforming_strings=off.
+			input: `\'`,
+			want:  `E'\\'''`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := quoteLiteral(tt.input)
+			require.Equal(t, tt.want, got)
+
+			// The literal must always be wrapped in a matching pair of
+			// single quotes (optionally E-prefixed), never leave one
+			// dangling open.
+			require.True(t, strings.HasPrefix(got, "'") || strings.HasPrefix(got, "E'"))
+			require.True(t, strings.HasSuffix(got, "'"))
+		})
+	}
+}
