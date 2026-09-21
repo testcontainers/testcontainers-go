@@ -1,0 +1,16 @@
+services:
+  # build-only dependency: never started, only used as a build context by "app".
+  build-dep:
+    build:
+      context: .
+      dockerfile: service-build-context-dep.Dockerfile
+    image: testcontainers/compose-service-build-dep:latest
+  app:
+    build:
+      context: .
+      dockerfile: service-build-context-app.Dockerfile
+      additional_contexts:
+        build-dep: service:build-dep
+    image: testcontainers/compose-service-build-app:latest
+    ports:
+      - "8080/tcp"
