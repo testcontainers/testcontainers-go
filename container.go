@@ -137,6 +137,7 @@ type ContainerRequest struct {
 	Entrypoint               []string
 	Env                      map[string]string
 	ExposedPorts             []string // allow specifying protocol info
+	HostIP                   string   // bind the exposed ports to this IP address on the host. Defaults to all interfaces (0.0.0.0)
 	Cmd                      []string
 	Labels                   map[string]string
 	Mounts                   ContainerMounts
