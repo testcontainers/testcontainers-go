@@ -376,6 +376,12 @@ func (c *localProcess) CopyFileFromContainer(_ context.Context, _ string) (io.Re
 	return nil, errors.ErrUnsupported
 }
 
+// CopyDirFromContainer implements testcontainers.Container interface for the local Ollama binary.
+// Returns [errors.ErrUnsupported].
+func (c *localProcess) CopyDirFromContainer(_ context.Context, _, _ string) error {
+	return errors.ErrUnsupported
+}
+
 // GetLogProductionErrorChannel implements testcontainers.Container interface for the local Ollama binary.
 // It returns a nil channel because the local Ollama binary doesn't have a production error channel.
 func (c *localProcess) GetLogProductionErrorChannel() <-chan error {
