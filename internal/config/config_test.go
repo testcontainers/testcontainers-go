@@ -30,6 +30,7 @@ func resetTestEnv(t *testing.T) {
 	t.Setenv("RYUK_VERBOSE", "")
 	t.Setenv("RYUK_RECONNECTION_TIMEOUT", "")
 	t.Setenv("RYUK_CONNECTION_TIMEOUT", "")
+	t.Setenv("TESTCONTAINERS_STARTUP_TIMEOUT", "")
 }
 
 func TestReadConfig(t *testing.T) {
@@ -87,6 +88,7 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 		t.Setenv("RYUK_RECONNECTION_TIMEOUT", "13s")
 		t.Setenv("RYUK_CONNECTION_TIMEOUT", "12s")
+		t.Setenv("TESTCONTAINERS_STARTUP_TIMEOUT", "3m")
 
 		config := read()
 
@@ -98,6 +100,7 @@ func TestReadTCConfig(t *testing.T) {
 			Host:                    "", // docker socket is empty at the properties file
 			RyukReconnectionTimeout: 13 * time.Second,
 			RyukConnectionTimeout:   12 * time.Second,
+			StartupTimeout:          3 * time.Minute,
 		}
 
 		assert.Equal(t, expected, config)
@@ -161,10 +164,12 @@ func TestReadTCConfig(t *testing.T) {
 	t.Run("HOME contains TC properties file", func(t *testing.T) {
 		defaultRyukConnectionTimeout := 60 * time.Second
 		defaultRyukReconnectionTimeout := 10 * time.Second
+		defaultStartupTimeout := time.Minute
 		defaultConfig := Config{
 			SessionID:               bootstrap.SessionID(),
 			RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 			RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+			StartupTimeout:          defaultStartupTimeout,
 		}
 
 		tests := []struct {
@@ -182,6 +187,7 @@ func TestReadTCConfig(t *testing.T) {
 					Host:                    tcpDockerHost33293,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -195,6 +201,7 @@ func TestReadTCConfig(t *testing.T) {
 					Host:                    tcpDockerHost4711,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -211,6 +218,7 @@ func TestReadTCConfig(t *testing.T) {
 					TLSVerify:               1,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -221,6 +229,7 @@ func TestReadTCConfig(t *testing.T) {
 					SessionID:               bootstrap.SessionID(),
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -234,6 +243,7 @@ func TestReadTCConfig(t *testing.T) {
 					Host:                    tcpDockerHost1234,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -245,6 +255,7 @@ func TestReadTCConfig(t *testing.T) {
 					Host:                    tcpDockerHost33293,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -266,6 +277,7 @@ func TestReadTCConfig(t *testing.T) {
 					CertPath:                "/tmp/certs",
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -277,6 +289,7 @@ func TestReadTCConfig(t *testing.T) {
 					RyukDisabled:            true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -288,6 +301,7 @@ func TestReadTCConfig(t *testing.T) {
 					RyukPrivileged:          true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -299,6 +313,7 @@ func TestReadTCConfig(t *testing.T) {
 					SessionID:               bootstrap.SessionID(),
 					RyukReconnectionTimeout: 13 * time.Second,
 					RyukConnectionTimeout:   12 * time.Second,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -312,6 +327,31 @@ func TestReadTCConfig(t *testing.T) {
 					SessionID:               bootstrap.SessionID(),
 					RyukReconnectionTimeout: 13 * time.Second,
 					RyukConnectionTimeout:   12 * time.Second,
+					StartupTimeout:          defaultStartupTimeout,
+				},
+			},
+			{
+				"With startup timeout configured using properties",
+				`startup.timeout=2m`,
+				map[string]string{},
+				Config{
+					SessionID:               bootstrap.SessionID(),
+					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
+					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          2 * time.Minute,
+				},
+			},
+			{
+				"With startup timeout configured using env var and properties. Env var wins",
+				`startup.timeout=2m`,
+				map[string]string{
+					"TESTCONTAINERS_STARTUP_TIMEOUT": "3m",
+				},
+				Config{
+					SessionID:               bootstrap.SessionID(),
+					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
+					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          3 * time.Minute,
 				},
 			},
 			{
@@ -326,6 +366,7 @@ func TestReadTCConfig(t *testing.T) {
 					SessionID:               bootstrap.SessionID(),
 					RyukReconnectionTimeout: 13 * time.Second,
 					RyukConnectionTimeout:   12 * time.Second,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -337,6 +378,7 @@ func TestReadTCConfig(t *testing.T) {
 					RyukVerbose:             true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -350,6 +392,7 @@ func TestReadTCConfig(t *testing.T) {
 					RyukDisabled:            true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -363,6 +406,7 @@ func TestReadTCConfig(t *testing.T) {
 					RyukPrivileged:          true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -376,6 +420,7 @@ func TestReadTCConfig(t *testing.T) {
 					RyukDisabled:            true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -389,6 +434,7 @@ func TestReadTCConfig(t *testing.T) {
 					RyukDisabled:            true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -418,6 +464,7 @@ func TestReadTCConfig(t *testing.T) {
 					RyukVerbose:             true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -431,6 +478,7 @@ func TestReadTCConfig(t *testing.T) {
 					RyukVerbose:             true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -460,6 +508,7 @@ func TestReadTCConfig(t *testing.T) {
 					RyukPrivileged:          true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -473,6 +522,7 @@ func TestReadTCConfig(t *testing.T) {
 					RyukPrivileged:          true,
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -530,6 +580,7 @@ func TestReadTCConfig(t *testing.T) {
 					HubImageNamePrefix:      defaultHubPrefix + "/props/",
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -543,6 +594,7 @@ func TestReadTCConfig(t *testing.T) {
 					HubImageNamePrefix:      defaultHubPrefix + "/env/",
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -556,6 +608,7 @@ func TestReadTCConfig(t *testing.T) {
 					HubImageNamePrefix:      defaultHubPrefix + "/env/",
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			//
@@ -567,6 +620,7 @@ func TestReadTCConfig(t *testing.T) {
 					SessionID:               "foo",
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 			{
@@ -579,6 +633,7 @@ func TestReadTCConfig(t *testing.T) {
 					SessionID:               "foo",
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
+					StartupTimeout:          defaultStartupTimeout,
 				},
 			},
 		}

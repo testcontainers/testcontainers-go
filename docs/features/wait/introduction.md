@@ -24,6 +24,8 @@ When defining a wait strategy, it should define a way to set the startup timeout
 
 If the default 60s timeout is not sufficient, it can be updated with the `WithStartupTimeout(startupTimeout time.Duration)` function.
 
+To change that default for every wait strategy at once, set the `TESTCONTAINERS_STARTUP_TIMEOUT` environment variable, or the `startup.timeout` property, as described in [Custom configuration](../configuration.md). It is not applied to strategies that set their own timeout with `WithStartupTimeout`.
+
 Besides that, it's possible to define a poll interval, which will actually stop 100 milliseconds the test execution.
 
 If the default 100 milliseconds poll interval is not sufficient, it can be updated with the `WithPollInterval(pollInterval time.Duration)` function.
