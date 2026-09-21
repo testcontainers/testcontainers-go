@@ -5,11 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
 func TestGenericContainer_stop_start_withReuse(t *testing.T) {
@@ -49,12 +47,7 @@ func TestGenericContainer_pause_start_withReuse(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, ctr)
 
-	// Pause the container is not supported by our API, but we can do it manually
-	// by using the Docker client.
-	cli, err := core.NewClient(context.Background())
-	require.NoError(t, err)
-
-	_, err = cli.ContainerPause(context.Background(), ctr.GetContainerID(), client.ContainerPauseOptions{})
+	err = ctr.Pause(context.Background())
 	require.NoError(t, err)
 
 	// Because the container is paused, it should not be possible to start it again.

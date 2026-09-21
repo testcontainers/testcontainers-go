@@ -639,6 +639,18 @@ func (c *localProcess) cleanup() error {
 	return errors.Join(errs...)
 }
 
+// Pause implements testcontainers.Container interface for the local Ollama binary.
+// It returns errors.ErrUnsupported because pausing a local host process is not supported.
+func (c *localProcess) Pause(ctx context.Context) error {
+	return errors.ErrUnsupported
+}
+
+// Unpause implements testcontainers.Container interface for the local Ollama binary.
+// It returns errors.ErrUnsupported because unpausing a local host process is not supported.
+func (c *localProcess) Unpause(ctx context.Context) error {
+	return errors.ErrUnsupported
+}
+
 // Endpoint implements testcontainers.Container interface for the local Ollama binary.
 // It returns proto://host:port string for the Ollama port.
 // It returns just host:port if proto is blank.

@@ -51,6 +51,8 @@ type Container interface {
 	IsRunning() bool                                                             // IsRunning returns true if the container is running, false otherwise.
 	Start(context.Context) error                                                 // start the container
 	Stop(context.Context, *time.Duration) error                                  // stop the container
+	Pause(context.Context) error                                                 // pause the container
+	Unpause(context.Context) error                                               // unpause the container
 
 	// Terminate stops and removes the container and its image if it was built and not flagged as kept.
 	Terminate(ctx context.Context, opts ...TerminateOption) error
