@@ -38,7 +38,7 @@ func (c *Client) PullModel(ctx context.Context, fullyQualifiedModelName string) 
 	scanner := bufio.NewScanner(resp.Body)
 	// TODO: use a progressbar instead of multiple line output.
 	for scanner.Scan() {
-		logger.Printf(scanner.Text())
+		logger.Printf("%s", scanner.Text())
 	}
 
 	if err := scanner.Err(); err != nil {
