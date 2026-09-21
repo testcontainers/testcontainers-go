@@ -2013,6 +2013,7 @@ func TestMappedPortEmptyString(t *testing.T) {
 	require.ErrorIs(t, err, errdefs.ErrNotFound)
 }
 
+// TestContainerPauseUnpause verifies that a running container can be paused and unpaused.
 func TestContainerPauseUnpause(t *testing.T) {
 	ctx := context.Background()
 	ctr, err := Run(ctx, nginxAlpineImage, WithExposedPorts("80/tcp"))
