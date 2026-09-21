@@ -1097,10 +1097,10 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 			if err != nil {
 				return client.ImageBuildResult{}, backoff.Permanent(fmt.Errorf("build options: %w", err))
 			}
-			defer tryClose(buildOptions.Context) // release resources in any case
 
 			resp, err := p.client.ImageBuild(ctx, buildOptions.Context, buildOptions)
 			if err != nil {
+				tryClose(buildOptions.Context)
 				if isPermanentClientError(err) {
 					return client.ImageBuildResult{}, backoff.Permanent(fmt.Errorf("build image: %w", err))
 				}
@@ -1118,6 +1118,8 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 	if err != nil {
 		return "", err // Error is already wrapped.
 	}
+	// BuildKit may still be reading the context after returning response headers.
+	defer tryClose(buildOptions.Context)
 	defer resp.Body.Close()
 
 	// Always process the output, even if it is not printed
