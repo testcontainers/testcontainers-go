@@ -171,14 +171,22 @@ func (ws *LogStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget
 
 			reader, err := target.Logs(ctx)
 			if err != nil {
-				// TODO: fix as this will wait for timeout if the logs are not available.
+				if checkErr != nil {
+					// The container is not usable either, so polling would only run out the timeout.
+					return errors.Join(checkErr, fmt.Errorf("get logs: %w", err))
+				}
+
 				time.Sleep(ws.PollInterval)
 				continue
 			}
 
 			b, err := io.ReadAll(reader)
 			if err != nil {
-				// TODO: fix as this will wait for timeout if the logs are not readable.
+				if checkErr != nil {
+					// The container is not usable either, so polling would only run out the timeout.
+					return errors.Join(checkErr, fmt.Errorf("read logs: %w", err))
+				}
+
 				time.Sleep(ws.PollInterval)
 				continue
 			}
