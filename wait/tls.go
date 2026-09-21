@@ -155,7 +155,7 @@ func (ws *TLSStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget
 			ForFile(ws.certFiles.certPEMFile).WithMatcher(func(r io.Reader) error {
 				var err error
 				if certPEMBlock, err = io.ReadAll(r); err != nil {
-					return fmt.Errorf("read certificate cert %q: %w", ws.certFiles.certPEMFile, err)
+					return fmt.Errorf("read certificate %q: %w", ws.certFiles.certPEMFile, err)
 				}
 
 				return nil
