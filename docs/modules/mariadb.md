@@ -42,7 +42,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "mariadb:11.0.3")`.
+In example: `Run(context.Background(), "mariadb:12.3.2")`.
 
 !!!info
     From MariaDB [docs](https://github.com/docker-library/docs/tree/master/mariadb#environment-variables):

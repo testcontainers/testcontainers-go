@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"sync"
@@ -13,14 +14,12 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/containerd/errdefs"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // testSessionID the tests need to create a reaper in a different session, so that it does not interfere with other tests
@@ -79,7 +78,7 @@ func expectedReaperRequest(customize ...func(*ContainerRequest)) ContainerReques
 			hostConfig.Binds = []string{core.MustExtractDockerSocket(context.Background()) + ":/var/run/docker.sock"}
 			hostConfig.Privileged = true
 		},
-		WaitingFor: wait.ForListeningPort(nat.Port("8080/tcp")),
+		WaitingFor: defaultRyukWaitStrategy("8080/tcp"),
 		Env: map[string]string{
 			"RYUK_CONNECTION_TIMEOUT":   "1m0s",
 			"RYUK_RECONNECTION_TIMEOUT": "10s",
@@ -120,7 +119,7 @@ func testReaperRunning(t *testing.T) {
 	t.Helper()
 
 	ctx := context.Background()
-	sessionID := core.SessionID()
+	sessionID := config.Read().SessionID
 	reaperContainer, err := spawner.lookupContainer(ctx, sessionID)
 	require.NoError(t, err)
 	require.NotNil(t, reaperContainer)
@@ -180,7 +179,7 @@ func testContainerStop(t *testing.T) {
 	state, err = nginxA.State(ctx)
 	require.NoError(t, err)
 	require.False(t, state.Running)
-	require.Equal(t, "exited", state.Status)
+	require.Equal(t, container.StateExited, state.Status)
 }
 
 // testContainerTerminate tests terminating a container.
@@ -516,6 +515,8 @@ func TestReaper_ReuseRunning(t *testing.T) {
 			cleanupReaper(t, reaper, spawner)
 			require.NoError(t, err)
 
+			reaperConnect(t, reaper)
+
 			obtainedReaperContainerIDs[i] = reaper.container.GetContainerID()
 		}(i)
 	}
@@ -526,6 +527,22 @@ func TestReaper_ReuseRunning(t *testing.T) {
 	for i, containerID := range obtainedReaperContainerIDs {
 		require.Equal(t, firstContainerID, containerID, "call %d should have returned same container id", i)
 	}
+}
+
+// reaperConnect copies the logic from Reaper.connect() but with better error handling.
+// Reaper.connect() neither returns the error from the handshake, nor the connection,
+// making the testing of the handshake flow impossible.
+func reaperConnect(t *testing.T, reaper *Reaper) {
+	t.Helper()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	var d net.Dialer
+	conn, err := d.DialContext(ctx, "tcp", reaper.Endpoint)
+	require.NoError(t, err, "dial reaper %s: %v", reaper.Endpoint, err)
+	defer conn.Close()
+	err = reaper.handshake(conn)
+	require.NoError(t, err, "Reaper handshake should be successful")
 }
 
 func TestSpawnerBackoff(t *testing.T) {

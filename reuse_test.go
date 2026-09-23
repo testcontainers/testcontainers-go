@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -53,7 +54,7 @@ func TestGenericContainer_pause_start_withReuse(t *testing.T) {
 	cli, err := core.NewClient(context.Background())
 	require.NoError(t, err)
 
-	err = cli.ContainerPause(context.Background(), ctr.GetContainerID())
+	_, err = cli.ContainerPause(context.Background(), ctr.GetContainerID(), client.ContainerPauseOptions{})
 	require.NoError(t, err)
 
 	// Because the container is paused, it should not be possible to start it again.

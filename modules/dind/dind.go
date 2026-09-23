@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/mount"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/mount"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -80,6 +80,11 @@ func (c *Container) LoadImage(ctx context.Context, image string) (err error) {
 	imagesTar, err := os.CreateTemp(os.TempDir(), "image*.tar")
 	if err != nil {
 		return fmt.Errorf("create temporary images file: %w", err)
+	}
+	// Close the file handle immediately: SaveImages and CopyFileToContainer
+	// open the file by name.
+	if err = imagesTar.Close(); err != nil {
+		return fmt.Errorf("close temporary images file: %w", err)
 	}
 	defer func() {
 		err = errors.Join(err, os.Remove(imagesTar.Name()))

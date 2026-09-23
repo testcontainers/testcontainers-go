@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/network"
@@ -119,8 +121,19 @@ func terminateContainersAndRemoveNetwork(ctx context.Context, netRes *testcontai
 		}
 	}
 
-	if err := netRes.Remove(ctx); err != nil {
+	// Retry network removal: after container termination, Docker may not
+	// have fully disconnected endpoints yet, causing "has active endpoints".
+	for range 3 {
+		err := netRes.Remove(ctx)
+		if err == nil {
+			break
+		}
+		if strings.Contains(err.Error(), "has active endpoints") {
+			time.Sleep(500 * time.Millisecond)
+			continue
+		}
 		errs = append(errs, fmt.Errorf("network remove: %w", err))
+		break
 	}
 
 	return errs

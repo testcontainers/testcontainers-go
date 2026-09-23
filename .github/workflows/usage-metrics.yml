@@ -24,10 +24,10 @@ jobs:
     timeout-minutes: 120
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Go
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: 'usage-metrics/go.mod'
 
@@ -62,29 +62,57 @@ jobs:
           done
 
           # Query all versions in a single command
-          go run collect-metrics.go $VERSION_FLAGS -csv "../docs/usage-metrics.csv"
+          go run collect.go versions $VERSION_FLAGS -csv "../docs/usage-metrics/core.csv"
 
-      - name: Create Pull Request
+      - name: Create or update Pull Request
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/usage-metrics.csv
 
-          if git diff --staged --quiet; then
+          # Check for changes without staging (avoids conflicts on branch checkout)
+          if git diff --quiet docs/usage-metrics/core.csv; then
             echo "No changes to commit"
             exit 0
           fi
 
-          # Create a new branch for the PR
           DATE=$(date +%Y-%m-%d)
-          BRANCH_NAME="chore/update-usage-metrics-$DATE"
-          git checkout -b "$BRANCH_NAME"
+          MONTH=$(date +%Y-%m)
+          BRANCH_NAME="chore/update-usage-metrics-$MONTH"
+
+          # Preserve the newly collected metrics before any branch switching
+          cp docs/usage-metrics/core.csv /tmp/usage-metrics.csv
+
+          # Check if the branch already exists on the remote
+          if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
+            echo "Branch $BRANCH_NAME already exists, pushing new commit to it"
+            # Reset the working tree so checkout succeeds
+            git checkout -- docs/usage-metrics/core.csv
+            git fetch origin "$BRANCH_NAME"
+            git checkout "$BRANCH_NAME"
+          else
+            echo "Creating new branch $BRANCH_NAME"
+            git checkout -b "$BRANCH_NAME"
+          fi
+
+          # Restore the newly collected metrics and stage them
+          cp /tmp/usage-metrics.csv docs/usage-metrics/core.csv
+          git add docs/usage-metrics/core.csv
+
+          if git diff --staged --quiet; then
+            echo "No changes to commit (branch already has identical data)"
+            exit 0
+          fi
 
           git commit -m "chore(metrics): update usage metrics ($DATE)"
           git push -u origin "$BRANCH_NAME"
 
-          # Create PR using gh CLI
-          gh pr create \
-            --title "chore: update usage metrics ($DATE)" \
-            --body "Automated update of usage metrics data. This PR updates the usage metrics CSV file with the latest GitHub usage data for testcontainers-go versions." \
-            --base main
+          # Create a PR only if one doesn't already exist for this branch
+          EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --state open --json number --jq '.[0].number')
+          if [ -n "$EXISTING_PR" ]; then
+            echo "PR #$EXISTING_PR already exists for branch $BRANCH_NAME, updated with new commit"
+          else
+            gh pr create \
+              --title "chore: update usage metrics ($MONTH)" \
+              --body "Automated update of usage metrics data. This PR updates the usage metrics CSV file with the latest GitHub usage data for testcontainers-go versions." \
+              --base main
+          fi

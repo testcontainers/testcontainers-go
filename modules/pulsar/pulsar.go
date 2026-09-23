@@ -7,8 +7,6 @@ import (
 	"net"
 	"strings"
 
-	"github.com/docker/go-connections/nat"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -43,7 +41,7 @@ func (c *Container) HTTPServiceURL(ctx context.Context) (string, error) {
 	return c.resolveURL(ctx, defaultPulsarAdminPort)
 }
 
-func (c *Container) resolveURL(ctx context.Context, port nat.Port) (string, error) {
+func (c *Container) resolveURL(ctx context.Context, port string) (string, error) {
 	provider, err := testcontainers.NewDockerProvider()
 	if err != nil {
 		return "", err

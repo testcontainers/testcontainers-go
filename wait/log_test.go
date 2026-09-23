@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/container"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -218,7 +218,7 @@ func TestWaitForLogFailsDueToExitedContainer(t *testing.T) {
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
-				Status:   "exited",
+				Status:   container.StateExited,
 				ExitCode: 1,
 			}, nil
 		},
@@ -248,7 +248,7 @@ func TestWaitForLogFailsDueToUnexpectedContainerStatus(t *testing.T) {
 		},
 		StateImpl: func(_ context.Context) (*container.State, error) {
 			return &container.State{
-				Status: "dead",
+				Status: container.StateDead,
 			}, nil
 		},
 	}

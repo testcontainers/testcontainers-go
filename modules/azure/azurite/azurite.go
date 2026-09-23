@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -58,7 +58,7 @@ func (c *Container) TableServiceURL(ctx context.Context) (string, error) {
 	return c.ServiceURL(ctx, TableService)
 }
 
-func servicePort(srv Service) (nat.Port, error) {
+func servicePort(srv Service) (string, error) {
 	switch srv {
 	case BlobService:
 		return BlobPort, nil
@@ -101,8 +101,11 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			if err != nil {
 				return nil, err
 			}
-
-			cmd = append(cmd, fmt.Sprintf("--%sHost", srv), "0.0.0.0", fmt.Sprintf("--%sPort", srv), port.Port())
+			p, err := network.ParsePort(port)
+			if err != nil {
+				return nil, err
+			}
+			cmd = append(cmd, fmt.Sprintf("--%sHost", srv), "0.0.0.0", fmt.Sprintf("--%sPort", srv), p.Port())
 			exposedPorts = append(exposedPorts, string(port))
 			waitingFor = append(waitingFor, wait.ForListeningPort(port))
 		}

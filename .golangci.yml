@@ -8,6 +8,7 @@ formatters:
         - standard
         - default
         - prefix(github.com/testcontainers)
+
 linters:
   enable:
     - errorlint
@@ -24,6 +25,10 @@ linters:
     - usestdlibvars
   exclusions:
     rules:
+      - linters:
+          - misspell
+        path: "^modules/mosquitto"
+        text: "(?i)mosquitto"
       - linters:
           - revive
         path: "^exec/"
@@ -115,4 +120,5 @@ output:
       path: stdout
 run:
   relative-path-mode: gitroot
+
 version: "2"

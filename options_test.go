@@ -6,10 +6,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/mount"
+	net "github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client"
+	"github.com/moby/moby/client/pkg/versions"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -649,11 +655,11 @@ func TestWithImageMount(t *testing.T) {
 	cli, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	require.NoError(t, err)
 
-	info, err := cli.Info(context.Background())
+	_, err = cli.Ping(context.Background(), client.PingOptions{NegotiateAPIVersion: true})
 	require.NoError(t, err)
 
 	// skip if the major version of the server is not v28 or greater
-	if info.ServerVersion < "28.0.0" {
+	if versions.LessThan(cli.ClientVersion(), "1.48") {
 		t.Skipf("skipping test because the server version is not v28 or greater")
 	}
 
@@ -900,5 +906,154 @@ func TestWithProvider(t *testing.T) {
 		opt := testcontainers.WithProvider(testcontainers.ProviderPodman)
 		require.NoError(t, opt.Customize(&req))
 		require.Equal(t, testcontainers.ProviderPodman, req.ProviderType)
+	})
+}
+
+func TestWithHostConfigModifier(t *testing.T) {
+	t.Run("simple", func(t *testing.T) {
+		c, err := testcontainers.Run(
+			context.Background(), "alpine",
+			testcontainers.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
+				hostConfig.Mounts = append(hostConfig.Mounts, mount.Mount{
+					Type: mount.TypeTmpfs, Target: "/test/aaa",
+				})
+			}),
+			testcontainers.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
+				hostConfig.Mounts = append(hostConfig.Mounts, mount.Mount{
+					Type: mount.TypeTmpfs, Target: "/test/bbb",
+				})
+			}),
+			testcontainers.WithEntrypoint("tail", "-f", "/dev/null"),
+		)
+		testcontainers.CleanupContainer(t, c)
+		require.NoError(t, err)
+
+		_, reader, err := c.Exec(context.Background(), []string{"ls", "/test"}, exec.Multiplexed())
+		require.NoError(t, err)
+
+		content, err := io.ReadAll(reader)
+		require.NoError(t, err)
+		require.Equal(t, "aaa\nbbb\n", string(content))
+	})
+
+	t.Run("sequential", func(t *testing.T) {
+		c, err := testcontainers.Run(
+			context.Background(), "alpine",
+			testcontainers.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
+				hostConfig.IpcMode = container.IPCModeContainer
+			}),
+			testcontainers.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
+				hostConfig.IpcMode = container.IPCModeHost
+			}),
+			testcontainers.WithEntrypoint("tail", "-f", "/dev/null"),
+		)
+		testcontainers.CleanupContainer(t, c)
+		require.NoError(t, err)
+
+		ctrInspect, err := c.Inspect(t.Context())
+		require.NoError(t, err)
+		require.Equal(t, container.IPCModeHost, ctrInspect.HostConfig.IpcMode)
+	})
+}
+
+func TestWithConfigModifier(t *testing.T) {
+	t.Run("simple", func(t *testing.T) {
+		c, err := testcontainers.Run(
+			context.Background(), "alpine",
+			testcontainers.WithConfigModifier(func(config *container.Config) {
+				config.Labels["foo"] = "bar"
+			}),
+			testcontainers.WithConfigModifier(func(config *container.Config) {
+				config.Labels["hello"] = "world"
+			}),
+			testcontainers.WithEntrypoint("tail", "-f", "/dev/null"),
+		)
+		testcontainers.CleanupContainer(t, c)
+		require.NoError(t, err)
+
+		ctrInspect, err := c.Inspect(t.Context())
+		require.NoError(t, err)
+		require.Contains(t, ctrInspect.Config.Labels, "foo")
+		require.Contains(t, ctrInspect.Config.Labels, "hello")
+	})
+
+	t.Run("sequential", func(t *testing.T) {
+		c, err := testcontainers.Run(
+			context.Background(), "alpine",
+			testcontainers.WithConfigModifier(func(config *container.Config) {
+				config.Labels["foo"] = "bar"
+			}),
+			testcontainers.WithConfigModifier(func(config *container.Config) {
+				config.Labels["foo"] = "baz"
+			}),
+			testcontainers.WithEntrypoint("tail", "-f", "/dev/null"),
+		)
+		testcontainers.CleanupContainer(t, c)
+		require.NoError(t, err)
+
+		ctrInspect, err := c.Inspect(t.Context())
+		require.NoError(t, err)
+		require.Equal(t, "baz", ctrInspect.Config.Labels["foo"])
+	})
+}
+
+func TestWithEndpointSettingsModifier(t *testing.T) {
+	net1, err := network.New(t.Context())
+	require.NoError(t, err)
+	testcontainers.CleanupNetwork(t, net1)
+
+	net2, err := network.New(t.Context())
+	require.NoError(t, err)
+	testcontainers.CleanupNetwork(t, net2)
+
+	t.Run("simple", func(t *testing.T) {
+		c, err := testcontainers.Run(
+			context.Background(), "alpine",
+			testcontainers.WithEndpointSettingsModifier(func(settings map[string]*net.EndpointSettings) {
+				settings[net1.Name] = &net.EndpointSettings{
+					Aliases: []string{"web", "api"},
+				}
+			}),
+			testcontainers.WithEndpointSettingsModifier(func(settings map[string]*net.EndpointSettings) {
+				settings[net2.Name] = &net.EndpointSettings{
+					Aliases: []string{"web", "api"},
+				}
+			}),
+			testcontainers.WithEntrypoint("tail", "-f", "/dev/null"),
+		)
+		testcontainers.CleanupContainer(t, c)
+		require.NoError(t, err)
+
+		ctrInspect, err := c.Inspect(t.Context())
+		require.NoError(t, err)
+		require.Equal(t, []string{"web", "api"}, ctrInspect.NetworkSettings.Networks[net1.Name].Aliases)
+		require.Equal(t, []string{"web", "api"}, ctrInspect.NetworkSettings.Networks[net2.Name].Aliases)
+	})
+
+	t.Run("sequential", func(t *testing.T) {
+		net1, err := network.New(t.Context())
+		require.NoError(t, err)
+		testcontainers.CleanupNetwork(t, net1)
+
+		c, err := testcontainers.Run(
+			context.Background(), "alpine",
+			testcontainers.WithEndpointSettingsModifier(func(settings map[string]*net.EndpointSettings) {
+				settings[net1.Name] = &net.EndpointSettings{
+					Aliases: []string{"foo", "bar"},
+				}
+			}),
+			testcontainers.WithEndpointSettingsModifier(func(settings map[string]*net.EndpointSettings) {
+				settings[net1.Name] = &net.EndpointSettings{
+					Aliases: []string{"web", "api"},
+				}
+			}),
+			testcontainers.WithEntrypoint("tail", "-f", "/dev/null"),
+		)
+		testcontainers.CleanupContainer(t, c)
+		require.NoError(t, err)
+
+		ctrInspect, err := c.Inspect(t.Context())
+		require.NoError(t, err)
+		require.Equal(t, []string{"web", "api"}, ctrInspect.NetworkSettings.Networks[net1.Name].Aliases)
 	})
 }

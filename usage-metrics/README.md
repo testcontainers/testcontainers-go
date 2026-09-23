@@ -4,184 +4,205 @@ This directory contains the automation system for tracking testcontainers-go usa
 
 ## Overview
 
-The system automatically collects usage metrics by querying the GitHub Code Search API for references to testcontainers-go in `go.mod` files across public repositories. The data is visualized in an interactive dashboard integrated into the main MkDocs documentation site at https://golang.testcontainers.org/usage-metrics/
+The system automatically collects two types of usage metrics by querying the GitHub Code Search API for references to testcontainers-go in `go.mod` files across public repositories. The data is visualised in interactive dashboards integrated into the main MkDocs documentation site at https://golang.testcontainers.org/usage-metrics/
 
 ## Components
 
-### 📊 Data Collection (`scripts/`)
-- **collect-metrics.go**: Go program that queries GitHub's Code Search API
-- Searches for `"testcontainers/testcontainers-go {version}"` in go.mod files
-- Excludes forks and testcontainers organization repositories
-- Stores results in CSV format with timestamps
+### 📊 Data Collection (`collect.go`)
 
-### 💾 Data Storage (`docs/usage-metrics.csv`)
-- **usage-metrics.csv**: Historical usage data in CSV format
-- Format: `date,version,count`
-- Version-controlled for historical tracking
-- Integrated with MkDocs site
+A single Go program with two subcommands:
+
+| Subcommand | Searches for | Flag |
+|---|---|---|
+| `versions` | `"testcontainers/testcontainers-go {version}"` in go.mod | `-version` |
+| `modules` | `"testcontainers/testcontainers-go/modules/{module}"` in go.mod | `-module` |
+
+Both subcommands exclude forks and testcontainers organisation repositories, retry on rate-limit errors (up to 5 passes, with inter-request and cooldown waits), and write results to a CSV file.
+
+### 💾 Data Storage
+
+| File | Description | Format |
+|---|---|---|
+| `docs/usage-metrics/core.csv` | Historical adoption data by library version | `date,version,count` |
+| `docs/usage-metrics/modules.csv` | Historical import counts by module | `date,module,count` |
+
+Both files are version-controlled for historical tracking and served directly by the MkDocs site.
 
 ### 🌐 Website (integrated into `docs/`)
-- **docs/usage-metrics.md**: Markdown page for the dashboard
-- **docs/js/usage-metrics.js**: JavaScript for chart rendering
-- **docs/css/usage-metrics.css**: Styles for the dashboard
-- Uses Chart.js for visualizations
-- Shows trends, version comparisons, and statistics
-- Responsive design for mobile and desktop
 
-### 🤖 Automation (`.github/workflows/usage-metrics.yml`)
-- Runs monthly on the 1st at 9 AM UTC
-- Can be manually triggered with custom versions
-- Automatically queries all versions from v0.13.0 to latest
-- Creates pull requests for metrics updates (not direct commits)
-- Data is deployed via the main MkDocs site when PR is merged
+| File | Purpose |
+|---|---|
+| `docs/usage-metrics/index.md` | Core library dashboard (landing page for the section) |
+| `docs/usage-metrics/modules.md` | Modules dashboard |
+| `docs/js/usage-metrics.js` | Charts for the core library dashboard |
+| `docs/js/modules-usage-metrics.js` | Charts for the modules dashboard |
+| `docs/css/usage-metrics.css` | Shared styles for both dashboards |
 
-## Versions Tracked
+Both dashboards use Chart.js for visualisations and are responsive for mobile and desktop.
 
-The system tracks all versions (including patch versions) from **v0.13.0** to the **latest release** (currently v0.40.0). This includes versions like v0.34.1, v0.29.1, etc.
+### 🤖 Automation
+
+| Workflow | Schedule | Trigger input |
+|---|---|---|
+| `.github/workflows/usage-metrics.yml` | Monthly, 1st at 09:00 UTC | `versions` — comma-separated (empty = all from v0.13.0) |
+| `.github/workflows/usage-metrics-modules.yml` | Monthly, 1st at 10:00 UTC | `modules` — comma-separated (empty = all modules under `modules/`) |
+
+Both workflows create a pull request for the metrics update rather than committing directly to main.
+
+## Data Formats
+
+### Core library (`docs/usage-metrics/core.csv`)
+
+Tracks how many public repositories import each version of the core library.
+
+```csv
+date,version,count
+2024-01-15,v0.27.0,133
+2024-02-15,v0.27.0,145
+2024-02-15,v0.28.0,12
+```
+
+- **date**: Collection date in `YYYY-MM-DD` format
+- **version**: Version string (e.g. `v0.27.0`)
+- **count**: Number of repositories importing that version
+
+### Modules (`docs/usage-metrics/modules.csv`)
+
+Tracks how many public repositories import each individual module.
+
+```csv
+date,module,count
+2026-06-01,kafka,245
+2026-06-01,postgres,1748
+2026-06-01,redis,668
+```
+
+- **date**: Collection date in `YYYY-MM-DD` format
+- **module**: Module directory name (e.g. `kafka`, `postgres`)
+- **count**: Number of repositories importing that module
 
 ## Usage
 
 ### Manual Collection
 
-To manually collect metrics for specific versions (queries run sequentially with automatic retry and backoff):
-
 ```bash
 cd usage-metrics
-go run collect-metrics.go -version v0.37.0 -version v0.38.0 -version v0.39.0 -csv ../docs/usage-metrics.csv
+
+# Collect specific versions
+go run collect.go versions -version v0.37.0 -version v0.38.0 -csv ../docs/usage-metrics/core.csv
+
+# Collect specific modules
+go run collect.go modules -module kafka -module redis -csv ../docs/usage-metrics/modules.csv
 ```
 
-The collection script includes automatic retry with exponential backoff (5s, 10s, 20s, 40s, 60s) for rate limit resilience. For example, to test with a few recent versions:
-
-```bash
-cd usage-metrics
-go run collect-metrics.go -version v0.38.0 -version v0.39.0 -version v0.40.0 -csv ../docs/usage-metrics.csv
-```
+Flags can be repeated for multiple items. Both subcommands also accept a `-csv` flag to override the default output path.
 
 ### Running Locally
 
-To view the dashboard locally with the full MkDocs site:
-
 ```bash
-# Serve the docs
+# Serve the docs (from the repository root)
 make serve-docs
 
-# Open http://localhost:8000/usage-metrics/
+# Core library dashboard: http://localhost:8000/usage-metrics/
+# Modules dashboard:       http://localhost:8000/usage-metrics/modules/
 ```
 
 ### Manual Workflow Trigger
 
-You can manually trigger the collection workflow from GitHub:
-
+**Core library versions:**
 1. Go to Actions → "Update Usage Metrics"
 2. Click "Run workflow"
-3. Optionally specify versions (e.g., `v0.39.0,v0.38.0`) or leave empty for all versions
-4. Click "Run workflow"
+3. Optionally specify versions (e.g. `v0.39.0,v0.38.0`) or leave empty for all versions since v0.13.0
 
-## Data Format
-
-The CSV file has three columns:
-
-- **date**: Collection date in YYYY-MM-DD format
-- **version**: Version string (e.g., v0.27.0)
-- **count**: Number of repositories using this version
-
-Example:
-```csv
-date,version,count
-2024-01-15,v0.27.0,133
-2024-02-15,v0.27.0,145
-```
-
-## Viewing the Dashboard
-
-The dashboard is integrated into the main documentation site:
-- **Production**: https://golang.testcontainers.org/usage-metrics/
-- **Local**: http://localhost:8000/usage-metrics/ (when running `make serve-docs`)
-
-The dashboard displays:
-- Total repositories using testcontainers-go
-- Number of versions tracked
-- Latest version information
-- Usage trends over time (line chart)
-- Version comparison (bar chart)
-- Distribution by version (doughnut chart)
+**Modules:**
+1. Go to Actions → "Update Modules Usage Metrics"
+2. Click "Run workflow"
+3. Optionally specify modules (e.g. `kafka,redis`) or leave empty for all modules
 
 ## Rate Limiting
 
-GitHub API rate limits:
+GitHub Code Search API limits:
 - **Unauthenticated**: 10 requests/minute
 - **Authenticated**: 30 requests/minute
 
-The collection script queries versions sequentially with automatic retry and exponential backoff (5s, 10s, 20s, 40s, 60s) to handle rate limit errors gracefully. The script will automatically retry up to 5 times if it encounters rate limiting.
+The collection script queries items sequentially with:
+- A 7-second wait between consecutive requests within a pass
+- A 65-second cooldown after a rate-limit hit within a pass
+- A 120-second wait between passes (up to 5 passes total)
 
-## Customization
+The `gh` CLI is used under the hood, which automatically authenticates with the `GITHUB_TOKEN` available in the workflow environment.
+
+## Tests
+
+Unit tests cover all logic that does not depend on the `gh` CLI:
+
+```bash
+cd usage-metrics
+go test ./...
+```
+
+## Customisation
 
 ### Changing Collection Frequency
 
-Edit the cron schedule in the workflow:
+Edit the cron schedule in the relevant workflow file:
 
 ```yaml
 schedule:
   - cron: '0 9 1 * *'  # Monthly on the 1st at 9 AM UTC
 ```
 
-### Customizing Charts
+### Customising Charts
 
-Edit `docs/js/usage-metrics.js` to modify chart types, colors, or add new visualizations.
+- Core library: edit `docs/js/usage-metrics.js`
+- Modules: edit `docs/js/modules-usage-metrics.js`
 
-### Changing Version Range
+### Changing the Version Range
 
-By default, the workflow queries all versions from v0.13.0 onwards. To change this, modify the awk pattern in the workflow file.
+By default, `usage-metrics.yml` queries all tags matching `v0.X.Y` from v0.13.0 onwards. To change the starting point, modify the `awk` pattern in the workflow file.
+
+### Adding or Removing Modules
+
+The modules workflow auto-discovers all subdirectories under `modules/` that contain a `go.mod` file. No manual list maintenance is needed.
 
 ## Architecture Decisions
 
-### Why CSV?
-- Simple and human-readable
-- Version-controlled with Git
-- Easy to import/export
-- No database required
-- Suitable for the data volume
+### Why a single `collect.go` with subcommands?
 
-### Why Integrate with MkDocs?
-- Single documentation site for all content
-- Consistent look and feel
-- Same deployment pipeline
-- Easy maintenance
-- No separate hosting needed
+Both collection jobs share the same retry logic, CSV helpers, and GitHub API call pattern. A single binary with `versions` and `modules` subcommands eliminates the duplication while keeping the two data models cleanly separated.
+
+### Why CSV?
+
+- Simple and human-readable
+- Version-controlled with Git for free historical diffing
+- No database or external service required
+- Suitable for the data volume (one row per item per month)
 
 ### Why Go for Collection?
-- Native GitHub API support
-- Easy to integrate with existing Go project
-- Simple deployment
-- Good CSV handling
+
+- Native to the project — no extra runtime or dependency
+- Easy `gh` CLI invocation for authenticated GitHub API calls
+- Good standard-library CSV support
 
 ## Troubleshooting
 
 ### API Rate Limiting
-If you hit rate limits:
-1. The collection script includes automatic retry with exponential backoff (5s, 10s, 20s, 40s, 60s up to 5 attempts)
-2. Queries run sequentially to minimize rate limit issues
-3. The workflow uses the `gh` CLI which automatically uses GitHub's token for higher limits
+
+The collection script retries automatically (up to 5 passes). If it still fails:
+1. Check the workflow logs under the "Query versions" or "Query modules" step
+2. Re-run the workflow manually for the failed items only
 
 ### CSV Not Updating
-Check the workflow logs:
-1. Go to Actions → "Update Usage Metrics"
-2. Click on the latest run
-3. Review the "Query versions" step
+
+1. Go to Actions and open the relevant workflow run
+2. Review the query step output for any errors
+3. Verify that `GH_TOKEN` / `GITHUB_TOKEN` has Code Search access
 
 ### Charts Not Displaying
-1. Ensure CSV file is properly formatted
-2. Check browser console for JavaScript errors
-3. Verify the file paths are correct
-4. Make sure Chart.js and PapaParse CDN links are accessible
 
-## Contributing
-
-To add features or fix issues:
-
-1. Test changes locally with `mkdocs serve`
-2. Update this README if needed
-3. Submit a pull request
+1. Verify the CSV file is at `docs/usage-metrics/core.csv` or `docs/usage-metrics/modules.csv`
+2. Open the browser console and look for fetch or JavaScript errors
+3. Ensure Chart.js and PapaParse CDN links are accessible from your browser
 
 ## License
 

@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/moby/moby/client"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/network"
@@ -68,17 +70,18 @@ func ExampleRun() {
 	}
 	fmt.Println(state.Running)
 
-	cli, err := testcontainers.NewDockerClientWithOpts(ctx)
+	apiClient, err := testcontainers.NewDockerClientWithOpts(ctx)
 	if err != nil {
 		log.Printf("failed to create docker client: %s", err)
 		return
 	}
 
-	ctrResp, err := cli.ContainerInspect(ctx, ctr.GetContainerID())
+	resp, err := apiClient.ContainerInspect(ctx, ctr.GetContainerID(), client.ContainerInspectOptions{})
 	if err != nil {
 		log.Printf("failed to inspect container: %s", err)
 		return
 	}
+	ctrResp := resp.Container
 
 	// networks
 	respNw, ok := ctrResp.NetworkSettings.Networks[nw.Name]

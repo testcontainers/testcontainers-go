@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/containerd/errdefs"
-	"github.com/docker/docker/api/types/network"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -45,15 +45,15 @@ func TestTerminate(t *testing.T) {
 	require.NoError(t, err)
 	defer cli.Close()
 
-	_, err = cli.ContainerInspect(context.Background(), ctr.GetContainerID())
+	_, err = cli.ContainerInspect(context.Background(), ctr.GetContainerID(), client.ContainerInspectOptions{})
 	require.True(t, errdefs.IsNotFound(err))
 
 	for _, child := range ctr.childNodes {
-		_, err := cli.ContainerInspect(context.Background(), child.GetContainerID())
+		_, err := cli.ContainerInspect(context.Background(), child.GetContainerID(), client.ContainerInspectOptions{})
 		require.True(t, errdefs.IsNotFound(err))
 	}
 
-	_, err = cli.NetworkInspect(context.Background(), ctr.opts.clusterNetwork.ID, network.InspectOptions{})
+	_, err = cli.NetworkInspect(context.Background(), ctr.opts.clusterNetwork.ID, client.NetworkInspectOptions{})
 	require.True(t, errdefs.IsNotFound(err))
 }
 
@@ -73,7 +73,7 @@ func TestTerminate_partiallyInitialised(t *testing.T) {
 	require.NoError(t, err)
 	defer cli.Close()
 
-	_, err = cli.NetworkInspect(context.Background(), ctr.opts.clusterNetwork.ID, network.InspectOptions{})
+	_, err = cli.NetworkInspect(context.Background(), ctr.opts.clusterNetwork.ID, client.NetworkInspectOptions{})
 	require.True(t, errdefs.IsNotFound(err))
 }
 

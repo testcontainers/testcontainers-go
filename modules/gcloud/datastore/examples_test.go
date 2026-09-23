@@ -20,7 +20,7 @@ func ExampleRun() {
 
 	datastoreContainer, err := tcdatastore.Run(
 		ctx,
-		"gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
+		"gcr.io/google.com/cloudsdktool/cloud-sdk:emulators",
 		tcdatastore.WithProjectID("datastore-project"),
 	)
 	defer func() {

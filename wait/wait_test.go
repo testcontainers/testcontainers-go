@@ -5,8 +5,8 @@ import (
 	"errors"
 	"io"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 )
@@ -16,8 +16,8 @@ var ErrPortNotFound = errors.New("port not found")
 type MockStrategyTarget struct {
 	HostImpl                  func(context.Context) (string, error)
 	InspectImpl               func(context.Context) (*container.InspectResponse, error)
-	PortsImpl                 func(context.Context) (nat.PortMap, error)
-	MappedPortImpl            func(context.Context, nat.Port) (nat.Port, error)
+	PortsImpl                 func(context.Context) (network.PortMap, error)
+	MappedPortImpl            func(context.Context, string) (network.Port, error)
 	LogsImpl                  func(context.Context) (io.ReadCloser, error)
 	ExecImpl                  func(context.Context, []string, ...tcexec.ProcessOption) (int, io.Reader, error)
 	StateImpl                 func(context.Context) (*container.State, error)
@@ -33,7 +33,7 @@ func (st MockStrategyTarget) Inspect(ctx context.Context) (*container.InspectRes
 }
 
 // Deprecated: use Inspect instead
-func (st MockStrategyTarget) Ports(ctx context.Context) (nat.PortMap, error) {
+func (st MockStrategyTarget) Ports(ctx context.Context) (network.PortMap, error) {
 	inspect, err := st.InspectImpl(ctx)
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func (st MockStrategyTarget) Ports(ctx context.Context) (nat.PortMap, error) {
 	return inspect.NetworkSettings.Ports, nil
 }
 
-func (st MockStrategyTarget) MappedPort(ctx context.Context, port nat.Port) (nat.Port, error) {
+func (st MockStrategyTarget) MappedPort(ctx context.Context, port string) (network.Port, error) {
 	return st.MappedPortImpl(ctx, port)
 }
 

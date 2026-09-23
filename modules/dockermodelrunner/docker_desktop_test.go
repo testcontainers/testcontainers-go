@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -25,17 +26,17 @@ func skipIfDockerDesktopNotRunning(t *testing.T) {
 
 // isDockerDesktopRunning checks if Docker Desktop is running.
 func isDockerDesktopRunning(l log.Logger) (bool, error) {
-	cli, err := testcontainers.NewDockerClientWithOpts(context.Background())
+	apiClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	if err != nil {
 		return false, fmt.Errorf("failed to create docker client: %w", err)
 	}
 
-	info, err := cli.Info(context.Background())
+	res, err := apiClient.Info(context.Background(), client.InfoOptions{})
 	if err != nil {
 		return false, fmt.Errorf("failed to get docker info: %w", err)
 	}
 
-	if info.OperatingSystem == "Docker Desktop" {
+	if res.Info.OperatingSystem == "Docker Desktop" {
 		return true, nil
 	}
 

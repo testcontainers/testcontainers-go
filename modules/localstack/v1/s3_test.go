@@ -3,7 +3,7 @@ package v1_test
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"net"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -11,7 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -30,7 +29,7 @@ const (
 // awsSession returns a new AWS session for the given service. To retrieve the specific AWS service client, use the
 // session's client method, e.g. s3manager.NewUploader(session).
 func awsSession(ctx context.Context, l *localstack.LocalStackContainer) (*session.Session, error) {
-	mappedPort, err := l.MappedPort(ctx, nat.Port("4566/tcp"))
+	mappedPort, err := l.MappedPort(ctx, "4566/tcp")
 	if err != nil {
 		return &session.Session{}, err
 	}
@@ -51,7 +50,7 @@ func awsSession(ctx context.Context, l *localstack.LocalStackContainer) (*sessio
 		CredentialsChainVerboseErrors: aws.Bool(true),
 		Credentials:                   credentials.NewStaticCredentials(accesskey, secretkey, token),
 		S3ForcePathStyle:              aws.Bool(true),
-		Endpoint:                      aws.String(fmt.Sprintf("http://%s:%d", host, mappedPort.Int())),
+		Endpoint:                      aws.String("http://" + net.JoinHostPort(host, mappedPort.Port())),
 	}
 
 	return session.NewSession(awsConfig)
@@ -66,10 +65,10 @@ func TestS3(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	session, err := awsSession(ctx, ctr)
+	ses, err := awsSession(ctx, ctr)
 	require.NoError(t, err)
 
-	s3Uploader := s3manager.NewUploader(session)
+	s3Uploader := s3manager.NewUploader(ses)
 
 	t.Run("S3 operations", func(t *testing.T) {
 		bucketName := "localstack-bucket"

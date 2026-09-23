@@ -8,14 +8,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/docker/go-connections/nat"
 	"golang.org/x/mod/semver"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const publicPort = nat.Port("9093/tcp")
+const publicPort = "9093/tcp"
 const (
 	starterScript = "/usr/sbin/testcontainers_start.sh"
 

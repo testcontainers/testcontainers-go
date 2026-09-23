@@ -75,6 +75,7 @@ This method returns the gRPC endpoint to connect to the OpenFGA container, using
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
 
 In case you want to interact with the openfga playground, please use the `PlaygroundEndpoint` method, using the `3000` port.
+(Playground is disabled by default in newer OpenFGA versions, refer the example [How to enable playground](#running-openfga-with-playground-enabled) to run it with PlayGround enabled)
 
 <!--codeinclude-->
 [Get Playground endpoint](../../modules/openfga/examples_test.go) inside_block:playgroundEndpoint
@@ -87,5 +88,13 @@ In case you want to interact with the openfga playground, please use the `Playgr
 The following example shows how to write an OpenFGA model using the OpenFGA container.
 
 <!--codeinclude-->
-[Get Playground endpoint](../../modules/openfga/examples_test.go) inside_block:openFGAwriteModel
+[Write a Model](../../modules/openfga/examples_test.go) inside_block:openFGAwriteModel
+<!--/codeinclude-->
+
+### Running OpenFGA with Playground enabled
+
+The Playground is disabled by default in OpenFGA now. This following code snippet shows how to run OpenFGA with Playground enabled
+
+<!--codeinclude-->
+[Enable Playground](../../modules/openfga/examples_test.go) inside_block:enablePlayground
 <!--/codeinclude-->

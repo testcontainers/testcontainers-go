@@ -2,7 +2,7 @@ module lowkeyvault_network_test
 
 go 1.25.0
 
-toolchain go1.25.7
+toolchain go1.25.9
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.21.0

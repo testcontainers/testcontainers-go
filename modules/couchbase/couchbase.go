@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/docker/go-connections/nat"
 	"github.com/tidwall/gjson"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -598,7 +597,7 @@ func (c *CouchbaseContainer) doHTTPRequest(ctx context.Context, port, path, meth
 }
 
 func (c *CouchbaseContainer) getURL(ctx context.Context, port, path string) (string, error) {
-	endpoint, err := c.PortEndpoint(ctx, nat.Port(port), "http")
+	endpoint, err := c.PortEndpoint(ctx, port, "http")
 	if err != nil {
 		return "", err
 	}

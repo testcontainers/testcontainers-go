@@ -15,11 +15,9 @@ import (
 
 	"github.com/compose-spec/compose-go/v2/cli"
 	"github.com/compose-spec/compose-go/v2/types"
+	"github.com/docker/cli/cli/command"
 	"github.com/docker/compose/v5/pkg/api"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	dockernetwork "github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -183,6 +181,10 @@ type DockerCompose struct {
 	// used to synchronize operations
 	lock sync.RWMutex
 
+	// dockerCli is the Docker CLI instance used internally by the compose service.
+	// It is stored here so its HTTP transport connections can be closed after Down().
+	dockerCli *command.DockerCli
+
 	// name/identifier of the stack that will be started
 	// by default a UUID will be used
 	name string
@@ -268,6 +270,34 @@ func (d *DockerCompose) Down(ctx context.Context, opts ...StackDownOption) error
 	}()
 
 	return d.composeService.Down(ctx, d.name, options.DownOptions)
+}
+
+// Close releases the HTTP transport connections held by the internal Docker CLI
+// and the testcontainers Docker client, preventing net/http persistConn goroutine
+// leaks. Call Close after Down when the compose stack will no longer be used.
+func (d *DockerCompose) Close() error {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	var errs []error
+
+	if d.dockerCli != nil {
+		if cli := d.dockerCli.Client(); cli != nil {
+			if err := cli.Close(); err != nil {
+				errs = append(errs, fmt.Errorf("close docker cli client: %w", err))
+			}
+		}
+		d.dockerCli = nil
+	}
+
+	if d.dockerClient != nil {
+		if err := d.dockerClient.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("close docker client: %w", err))
+		}
+		d.dockerClient = nil
+	}
+
+	return errors.Join(errs...)
 }
 
 func (d *DockerCompose) Up(ctx context.Context, opts ...StackUpOption) (err error) {
@@ -475,22 +505,19 @@ func (d *DockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 		return c, nil
 	}
 
-	containers, err := d.dockerClient.ContainerList(ctx, container.ListOptions{
-		All: true,
-		Filters: filters.NewArgs(
-			filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)),
-			filters.Arg("label", fmt.Sprintf("%s=%s", api.ServiceLabel, svcName)),
-		),
+	res, err := d.dockerClient.ContainerList(ctx, client.ContainerListOptions{
+		All:     true,
+		Filters: make(client.Filters).Add("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)).Add("label", fmt.Sprintf("%s=%s", api.ServiceLabel, svcName)),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("container list: %w", err)
 	}
 
-	if len(containers) == 0 {
+	if len(res.Items) == 0 {
 		return nil, fmt.Errorf("no container found for service name %s", svcName)
 	}
 
-	ctr, err := d.provider.ContainerFromType(ctx, containers[0])
+	ctr, err := d.provider.ContainerFromType(ctx, res.Items[0])
 	if err != nil {
 		return nil, fmt.Errorf("container from type: %w", err)
 	}
@@ -506,16 +533,14 @@ func (d *DockerCompose) lookupContainer(ctx context.Context, svcName string) (*t
 //
 // Safe for concurrent calls.
 func (d *DockerCompose) lookupNetworks(ctx context.Context) error {
-	networks, err := d.dockerClient.NetworkList(ctx, dockernetwork.ListOptions{
-		Filters: filters.NewArgs(
-			filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)),
-		),
+	res, err := d.dockerClient.NetworkList(ctx, client.NetworkListOptions{
+		Filters: make(client.Filters).Add("label", fmt.Sprintf("%s=%s", api.ProjectLabel, d.name)),
 	})
 	if err != nil {
 		return fmt.Errorf("network list: %w", err)
 	}
 
-	for _, n := range networks {
+	for _, n := range res.Items {
 		dn := &testcontainers.DockerNetwork{
 			ID:     n.ID,
 			Name:   n.Name,

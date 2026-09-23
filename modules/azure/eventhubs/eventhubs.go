@@ -38,7 +38,10 @@ func (c *Container) AzuriteContainer() *azurite.Container {
 	return c.azuriteOptions.azuriteContainer
 }
 
-// Terminate terminates the eventhubs container, the azurite container, and the network to communicate between them.
+// Terminate terminates the eventhubs container, and conditionally the azurite
+// container and network (only when they were created by this module).
+// If WithAzuriteContainer was used to supply an external Azurite instance, that
+// container and its network are left untouched.
 func (c *Container) Terminate(ctx context.Context, opts ...testcontainers.TerminateOption) error {
 	var errs []error
 
@@ -49,17 +52,20 @@ func (c *Container) Terminate(ctx context.Context, opts ...testcontainers.Termin
 		}
 	}
 
-	// terminate the azurite container if it was created
-	if c.azuriteOptions.azuriteContainer != nil {
-		if err := c.azuriteOptions.azuriteContainer.Terminate(ctx, opts...); err != nil {
-			errs = append(errs, fmt.Errorf("terminate azurite container: %w", err))
+	// Only tear down azurite + network when this module owns them.
+	if c.azuriteOptions.azuriteOwned {
+		// terminate the azurite container if it was created
+		if c.azuriteOptions.azuriteContainer != nil {
+			if err := c.azuriteOptions.azuriteContainer.Terminate(ctx, opts...); err != nil {
+				errs = append(errs, fmt.Errorf("terminate azurite container: %w", err))
+			}
 		}
-	}
 
-	// remove the azurite network if it was created
-	if c.azuriteOptions.network != nil {
-		if err := c.azuriteOptions.network.Remove(ctx); err != nil {
-			errs = append(errs, fmt.Errorf("remove azurite network: %w", err))
+		// remove the azurite network if it was created
+		if c.azuriteOptions.network != nil {
+			if err := c.azuriteOptions.network.Remove(ctx); err != nil {
+				errs = append(errs, fmt.Errorf("remove azurite network: %w", err))
+			}
 		}
 	}
 
@@ -92,7 +98,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		),
 	}
 
-	if defaultOptions.azuriteContainer == nil {
+	switch defaultOptions.azuriteContainer {
+	case nil:
+		// Module-managed Azurite: create a new network, start Azurite, wire env vars.
 		azuriteNetwork, err := network.New(ctx)
 		if err != nil {
 			return c, fmt.Errorf("new azurite network: %w", err)
@@ -119,6 +127,19 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 		// apply the network to the eventhubs container
 		moduleOpts = append(moduleOpts, network.WithNetwork([]string{aliasEventhubs}, azuriteNetwork))
+
+	default:
+		// User-supplied Azurite: wire env vars using the caller-provided alias
+		// and attach the eventhubs container to the same network.
+		alias := defaultOptions.azuriteAlias
+		if alias == "" {
+			alias = aliasAzurite
+		}
+		moduleOpts = append(moduleOpts, testcontainers.WithEnv(map[string]string{
+			"BLOB_SERVER":     alias,
+			"METADATA_SERVER": alias,
+		}))
+		moduleOpts = append(moduleOpts, network.WithNetwork([]string{aliasEventhubs}, defaultOptions.network))
 	}
 
 	moduleOpts = append(moduleOpts, opts...)

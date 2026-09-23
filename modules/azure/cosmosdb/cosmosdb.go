@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/docker/go-connections/nat"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -34,7 +32,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithWaitStrategy(
 			wait.ForAll(
 				wait.ForLog("Started"),
-				wait.ForListeningPort(nat.Port(defaultPort)),
+				wait.ForListeningPort(defaultPort),
 			),
 		),
 	)

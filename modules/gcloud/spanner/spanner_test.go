@@ -26,7 +26,7 @@ func TestRun(t *testing.T) {
 
 	spannerContainer, err := tcspanner.Run(
 		ctx,
-		"gcr.io/cloud-spanner-emulator/emulator:1.4.0",
+		"gcr.io/cloud-spanner-emulator/emulator:1.5.40",
 		tcspanner.WithProjectID("spanner-project"),
 	)
 	testcontainers.CleanupContainer(t, spannerContainer)

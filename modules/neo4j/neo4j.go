@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/moby/moby/api/types/network"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -50,7 +52,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		testcontainers.WithWaitStrategy(
 			wait.NewLogStrategy("Bolt enabled on"),
 			&wait.HTTPStrategy{
-				Port:              defaultHTTPPort,
+				Port:              network.MustParsePort(defaultHTTPPort),
 				StatusCodeMatcher: isHTTPOk(),
 			},
 		),

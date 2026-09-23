@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
 	"github.com/google/uuid"
+	"github.com/moby/moby/api/types/container"
 	"golang.org/x/crypto/ssh"
 
 	"github.com/testcontainers/testcontainers-go/internal/core/network"
@@ -20,7 +20,7 @@ import (
 
 const (
 	// hubSshdImage {
-	sshdImage string = "testcontainers/sshd:1.3.0"
+	sshdImage string = "testcontainers/sshd:1.4.0"
 	// }
 
 	// HostInternal is the internal hostname used to reach the host from the container,
@@ -107,14 +107,12 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, ports ...int) (
 		return sshdConnectHook, fmt.Errorf("inspect sshd container: %w", err)
 	}
 
-	// TODO: remove once we have docker context support via #2810
-	//nolint:staticcheck // SA1019: IPAddress is deprecated, but we need it for compatibility until v29
-	sshdIP := inspect.NetworkSettings.IPAddress
-	if sshdIP == "" {
-		single := len(inspect.NetworkSettings.Networks) == 1
-		for name, network := range inspect.NetworkSettings.Networks {
-			if name == sshdFirstNetwork || single {
-				sshdIP = network.IPAddress
+	var sshdIP string
+	single := len(inspect.NetworkSettings.Networks) == 1
+	for name, nw := range inspect.NetworkSettings.Networks {
+		if name == sshdFirstNetwork || single {
+			if nw.IPAddress.IsValid() {
+				sshdIP = nw.IPAddress.String()
 				break
 			}
 		}
@@ -207,7 +205,7 @@ func newSshdContainer(ctx context.Context, opts ...ContainerCustomizer) (*sshdCo
 // It's an internal type that extends the DockerContainer type, to add the SSH tunnelling capabilities.
 type sshdContainer struct {
 	Container
-	port           string
+	addr           string
 	sshConfig      *ssh.ClientConfig
 	portForwarders []*portForwarder
 }
@@ -242,12 +240,17 @@ func (sshdC *sshdContainer) closePorts() error {
 
 // clientConfig sets up the SSHD client configuration.
 func (sshdC *sshdContainer) clientConfig(ctx context.Context) error {
+	host, err := sshdC.Host(ctx)
+	if err != nil {
+		return fmt.Errorf("host: %w", err)
+	}
+
 	mappedPort, err := sshdC.MappedPort(ctx, sshPort)
 	if err != nil {
 		return fmt.Errorf("mapped port: %w", err)
 	}
 
-	sshdC.port = mappedPort.Port()
+	sshdC.addr = net.JoinHostPort(host, mappedPort.Port())
 	sshdC.sshConfig = &ssh.ClientConfig{
 		User:            user,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
@@ -265,7 +268,7 @@ func (sshdC *sshdContainer) exposeHostPort(ctx context.Context, ports ...int) (e
 		}
 	}()
 	for _, port := range ports {
-		pf, err := newPortForwarder(ctx, "localhost:"+sshdC.port, sshdC.sshConfig, port)
+		pf, err := newPortForwarder(ctx, sshdC.addr, sshdC.sshConfig, port)
 		if err != nil {
 			return fmt.Errorf("new port forwarder: %w", err)
 		}
