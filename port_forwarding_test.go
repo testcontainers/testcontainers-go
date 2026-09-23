@@ -15,6 +15,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/network"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
@@ -22,12 +23,31 @@ const (
 )
 
 func TestExposeHostPorts(t *testing.T) {
-	hostPorts := make([]int, 3)
+	const numberOfPorts = 3
+
+	servers := make([]*httptest.Server, numberOfPorts)
+	hostPorts := make([]int, numberOfPorts)
+	waitStrategies := make([]wait.Strategy, numberOfPorts)
+
 	for i := range hostPorts {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			fmt.Fprint(w, expectedResponse)
 		}))
+
+		servers[i] = server
 		hostPorts[i] = server.Listener.Addr().(*net.TCPAddr).Port
+
+		waitStrategies[i] = wait.
+			ForExec([]string{"wget", "-q", "-O", "-", fmt.Sprintf("http://%s:%d", testcontainers.HostInternal, hostPorts[i])}).
+			WithExitCodeMatcher(func(code int) bool {
+				return code == 0
+			}).
+			WithResponseMatcher(func(body io.Reader) bool {
+				bs, err := io.ReadAll(body)
+				require.NoError(t, err)
+				return string(bs) == expectedResponse
+			})
+
 		t.Cleanup(server.Close)
 	}
 
