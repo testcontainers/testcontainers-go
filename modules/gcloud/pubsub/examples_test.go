@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
+	pubsubpb "cloud.google.com/go/pubsub/v2/apiv1/pubsubpb"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -52,27 +53,34 @@ func ExampleRun() {
 	defer client.Close()
 	// }
 
-	topic, err := client.CreateTopic(ctx, "greetings")
+	topicProto, err := client.TopicAdminClient.CreateTopic(ctx, &pubsubpb.Topic{
+		Name: fmt.Sprintf("projects/%s/topics/%s", projectID, "greetings"),
+	})
 	if err != nil {
 		log.Printf("failed to create topic: %v", err)
 		return
 	}
-	subscription, err := client.CreateSubscription(ctx, "subscription",
-		pubsub.SubscriptionConfig{Topic: topic})
+	subProto, err := client.SubscriptionAdminClient.CreateSubscription(ctx, &pubsubpb.Subscription{
+		Name:  fmt.Sprintf("projects/%s/subscriptions/%s", projectID, "subscription"),
+		Topic: topicProto.GetName(),
+	})
 	if err != nil {
 		log.Printf("failed to create subscription: %v", err)
 		return
 	}
-	result := topic.Publish(ctx, &pubsub.Message{Data: []byte("Hello World")})
+	publisher := client.Publisher(topicProto.GetName())
+	defer publisher.Stop()
+	result := publisher.Publish(ctx, &pubsub.Message{Data: []byte("Hello World")})
 	_, err = result.Get(ctx)
 	if err != nil {
 		log.Printf("failed to publish message: %v", err)
 		return
 	}
 
+	sub := client.Subscriber(subProto.GetName())
 	var data []byte
 	cctx, cancel := context.WithCancel(ctx)
-	err = subscription.Receive(cctx, func(_ context.Context, m *pubsub.Message) {
+	err = sub.Receive(cctx, func(_ context.Context, m *pubsub.Message) {
 		data = m.Data
 		m.Ack()
 		defer cancel()

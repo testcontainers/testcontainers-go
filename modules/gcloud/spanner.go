@@ -10,7 +10,7 @@ import (
 // Deprecated: use [spanner.Run] instead
 // RunSpannerContainer creates an instance of the GCloud container type for Spanner.
 func RunSpannerContainer(ctx context.Context, opts ...testcontainers.ContainerCustomizer) (*GCloudContainer, error) {
-	return RunSpanner(ctx, "gcr.io/cloud-spanner-emulator/emulator:1.4.0", opts...)
+	return RunSpanner(ctx, "gcr.io/cloud-spanner-emulator/emulator:1.5.40", opts...)
 }
 
 // Deprecated: use [spanner.Run] instead

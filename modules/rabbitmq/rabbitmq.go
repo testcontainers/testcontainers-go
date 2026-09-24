@@ -5,8 +5,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"os"
-	"path/filepath"
 	"text/template"
 	"time"
 
@@ -93,12 +91,6 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return nil, err
 	}
 
-	tmpConfigFile := filepath.Join(os.TempDir(), "rabbitmq-testcontainers.conf")
-	err = os.WriteFile(tmpConfigFile, nodeConfig, 0o600)
-	if err != nil {
-		return nil, err
-	}
-
 	moduleOpts := []testcontainers.ContainerCustomizer{
 		testcontainers.WithEnv(map[string]string{
 			"RABBITMQ_DEFAULT_USER": settings.AdminUsername,
@@ -111,7 +103,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			DefaultHTTPPort,
 		),
 		testcontainers.WithWaitStrategy(wait.ForLog(".*Server startup complete.*").AsRegexp().WithStartupTimeout(60 * time.Second)),
-		withConfig(tmpConfigFile),
+		withConfig(nodeConfig),
 	}
 
 	if settings.SSLSettings != nil {
@@ -137,14 +129,17 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return c, nil
 }
 
-func withConfig(hostPath string) testcontainers.CustomizeRequestOption {
+func withConfig(config []byte) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		if err := testcontainers.WithEnv(map[string]string{"RABBITMQ_CONFIG_FILE": defaultCustomConfPath})(req); err != nil {
 			return err
 		}
 
+		// Copied from memory rather than from a file on the host: a fixed path
+		// under the temporary directory is shared by every user on the machine,
+		// so the file left behind by one user makes the next one fail.
 		return testcontainers.WithFiles(testcontainers.ContainerFile{
-			HostFilePath:      hostPath,
+			Reader:            bytes.NewReader(config),
 			ContainerFilePath: defaultCustomConfPath,
 			FileMode:          0o644,
 		})(req)
