@@ -10,6 +10,8 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
+// TestCreateTLSCerts checks that the server certificate in the keystore is signed by the
+// CA trusted by the TLS config and is valid for localhost and the given docker host.
 func TestCreateTLSCerts(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -55,6 +57,7 @@ func TestCreateTLSCerts(t *testing.T) {
 	}
 }
 
+// TestEnsureTLSCerts checks that the TLS certificates are generated once and reused on restarts.
 func TestEnsureTLSCerts(t *testing.T) {
 	settings := &options{tlsEnabled: true}
 
@@ -68,6 +71,8 @@ func TestEnsureTLSCerts(t *testing.T) {
 	require.Same(t, certs, restartCerts)
 }
 
+// TestConfigureSSLListener checks that the SSL listener is added to the listeners and the
+// protocol map, and that a conflicting user-defined SSL listener is rejected.
 func TestConfigureSSLListener(t *testing.T) {
 	tests := []struct {
 		name                string

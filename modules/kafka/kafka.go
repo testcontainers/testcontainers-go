@@ -227,6 +227,7 @@ func copyTLSMaterial(ctx context.Context, c testcontainers.Container, settings *
 	return c.PortEndpoint(ctx, sslPort, "SSL")
 }
 
+// WithClusterID sets the CLUSTER_ID environment variable, used to format the KRaft storage.
 func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
 	return testcontainers.WithEnv(map[string]string{
 		"CLUSTER_ID": clusterID,

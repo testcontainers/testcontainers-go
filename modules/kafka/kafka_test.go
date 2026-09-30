@@ -72,6 +72,8 @@ func TestKafka(t *testing.T) {
 	require.Error(t, err)
 }
 
+// TestKafka_withTLS checks that a client produces and consumes messages over the SSL listener,
+// that a client not trusting the generated CA is rejected, and that PLAINTEXT keeps working.
 func TestKafka_withTLS(t *testing.T) {
 	topic := "some-tls-topic"
 
@@ -142,6 +144,8 @@ func TestKafka_withTLS(t *testing.T) {
 	require.NoError(t, plainClient.Close())
 }
 
+// TestKafka_withTLSInvalidListener checks that Run fails when the user defines
+// an SSL listener on a port other than the one exposed by the module.
 func TestKafka_withTLSInvalidListener(t *testing.T) {
 	ctx := context.Background()
 
