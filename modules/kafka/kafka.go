@@ -40,7 +40,7 @@ echo '' > /etc/confluent/docker/ensure
 type KafkaContainer struct {
 	testcontainers.Container
 	ClusterID string
-	settings  options
+	settings  *options
 }
 
 // Deprecated: use Run instead
@@ -55,11 +55,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return nil, err
 	}
 
-	// Process custom options to extract settings
-	var settings options
+	// Process custom options to extract settings. The settings are shared with
+	// the post-start hook, which refreshes the TLS config on every (re)start.
+	settings := &options{}
 	for _, opt := range opts {
 		if opt, ok := opt.(Option); ok {
-			if err := opt(&settings); err != nil {
+			if err := opt(settings); err != nil {
 				return nil, fmt.Errorf("apply option: %w", err)
 			}
 		}
@@ -96,7 +97,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				// if the starter script fails to copy.
 				func(ctx context.Context, c testcontainers.Container) error {
 					// 1. copy the SSL material and the starter script into the container
-					if err := copyStarterScript(ctx, c, &settings); err != nil {
+					if err := copyStarterScript(ctx, c, settings); err != nil {
 						return fmt.Errorf("copy starter script: %w", err)
 					}
 
@@ -110,10 +111,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	if settings.tlsEnabled {
 		moduleOpts = append(moduleOpts,
 			testcontainers.WithExposedPorts(sslPort),
+			// the Confluent image reads the files below from /etc/kafka/secrets
 			testcontainers.WithEnv(map[string]string{
-				"KAFKA_LISTENERS":                      "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094,SSL://0.0.0.0:9095",
-				"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP": "BROKER:PLAINTEXT,PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,SSL:SSL",
-				// the Confluent image reads the files below from /etc/kafka/secrets
 				"KAFKA_SSL_KEYSTORE_FILENAME":    keystoreFilename,
 				"KAFKA_SSL_KEYSTORE_CREDENTIALS": credentialsFilename,
 				"KAFKA_SSL_KEY_CREDENTIALS":      credentialsFilename,
@@ -126,6 +125,12 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	// configure the controller quorum voters after all the options have been applied
 	moduleOpts = append(moduleOpts, configureControllerQuorumVoters())
+
+	// add the SSL listener after all the options have been applied,
+	// so it is kept even if the listeners are overridden
+	if settings.tlsEnabled {
+		moduleOpts = append(moduleOpts, configureSSLListener())
+	}
 
 	var c *KafkaContainer
 	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
@@ -242,7 +247,7 @@ func (kc *KafkaContainer) Brokers(ctx context.Context) ([]string, error) {
 // BrokersTLS retrieves the broker connection strings for the SSL listener,
 // defined by the exposed SSL port. Returns an error if TLS is not enabled.
 func (kc *KafkaContainer) BrokersTLS(ctx context.Context) ([]string, error) {
-	if !kc.settings.tlsEnabled {
+	if kc.settings == nil || !kc.settings.tlsEnabled {
 		return nil, errors.New("TLS is not enabled on this container")
 	}
 
@@ -258,7 +263,7 @@ func (kc *KafkaContainer) BrokersTLS(ctx context.Context) ([]string, error) {
 // trusting the CA that signed the broker certificate.
 // Returns an error if TLS is not enabled on this container.
 func (kc *KafkaContainer) TLSConfig() (*tls.Config, error) {
-	if !kc.settings.tlsEnabled || kc.settings.tlsConfig == nil {
+	if kc.settings == nil || !kc.settings.tlsEnabled || kc.settings.tlsConfig == nil {
 		return nil, errors.New("TLS is not enabled on this container")
 	}
 
@@ -289,6 +294,37 @@ func configureControllerQuorumVoters() testcontainers.CustomizeRequestOption {
 		return nil
 	}
 	// }
+}
+
+// configureSSLListener returns an option that adds the SSL listener to the listeners
+// and to the listener security protocol map, unless they already define it.
+func configureSSLListener() testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		if req.Env == nil {
+			req.Env = map[string]string{}
+		}
+
+		req.Env["KAFKA_LISTENERS"] = appendListEntry(req.Env["KAFKA_LISTENERS"], "SSL://", "SSL://0.0.0.0:9095")
+		req.Env["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"] = appendListEntry(req.Env["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"], "SSL:", "SSL:SSL")
+
+		return nil
+	}
+}
+
+// appendListEntry appends the entry to the comma-separated list,
+// unless the list already contains an entry with the given prefix.
+func appendListEntry(list, prefix, entry string) string {
+	if list == "" {
+		return entry
+	}
+
+	for item := range strings.SplitSeq(list, ",") {
+		if strings.HasPrefix(strings.TrimSpace(item), prefix) {
+			return list
+		}
+	}
+
+	return list + "," + entry
 }
 
 // validateKRaftVersion validates if the image version is compatible with KRaft mode,

@@ -76,6 +76,7 @@ When starting the Kafka container, you can pass options in a variadic way to con
 If you need to test clients against a TLS-secured broker, you can use the `kafka.WithTLS()` option.
 
 When enabled, the container will:
+
 - Generate a self-signed CA and a server certificate signed by it, valid for the host the container is reachable at
 - Configure Kafka with a PKCS12 keystore holding the server certificate
 - Expose an additional SSL listener on port `9095`, keeping the PLAINTEXT one on port `9093`

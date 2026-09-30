@@ -31,6 +31,9 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 //   - Configure Kafka with a PKCS12 keystore holding the server certificate
 //   - Expose the SSL port (9095), while keeping the PLAINTEXT one
 //
+// The SSL listener is added to KAFKA_LISTENERS and KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+// after all the options have been applied, so it is kept even if they are overridden.
+//
 // Use BrokersTLS() to get the SSL endpoint and TLSConfig() to get the
 // *tls.Config for client connections.
 func WithTLS() Option {

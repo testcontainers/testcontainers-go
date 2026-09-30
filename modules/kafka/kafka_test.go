@@ -95,6 +95,7 @@ func TestKafka_withTLS(t *testing.T) {
 
 	client, err := sarama.NewConsumerGroup(brokers, "groupName", config)
 	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, client.Close()) })
 
 	consumer, ready, done, cancel := NewTestKafkaConsumer(t)
 	defer cancel()
@@ -111,6 +112,7 @@ func TestKafka_withTLS(t *testing.T) {
 
 	producer, err := sarama.NewSyncProducer(brokers, config)
 	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, producer.Close()) })
 
 	_, _, err = producer.SendMessage(&sarama.ProducerMessage{
 		Topic: topic,

@@ -52,3 +52,48 @@ func TestCreateTLSCerts(t *testing.T) {
 		})
 	}
 }
+
+func TestAppendListEntry(t *testing.T) {
+	tests := []struct {
+		name     string
+		list     string
+		prefix   string
+		entry    string
+		expected string
+	}{
+		{
+			name:     "empty list",
+			list:     "",
+			prefix:   "SSL://",
+			entry:    "SSL://0.0.0.0:9095",
+			expected: "SSL://0.0.0.0:9095",
+		},
+		{
+			name:     "listener appended",
+			list:     "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092",
+			prefix:   "SSL://",
+			entry:    "SSL://0.0.0.0:9095",
+			expected: "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,SSL://0.0.0.0:9095",
+		},
+		{
+			name:     "listener already defined",
+			list:     "PLAINTEXT://0.0.0.0:9093, SSL://0.0.0.0:9096",
+			prefix:   "SSL://",
+			entry:    "SSL://0.0.0.0:9095",
+			expected: "PLAINTEXT://0.0.0.0:9093, SSL://0.0.0.0:9096",
+		},
+		{
+			name:     "SASL_SSL is not SSL",
+			list:     "BROKER:PLAINTEXT,SASL_SSL:SASL_SSL",
+			prefix:   "SSL:",
+			entry:    "SSL:SSL",
+			expected: "BROKER:PLAINTEXT,SASL_SSL:SASL_SSL,SSL:SSL",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			require.Equal(t, test.expected, appendListEntry(test.list, test.prefix, test.entry))
+		})
+	}
+}
