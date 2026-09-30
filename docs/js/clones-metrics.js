@@ -1,6 +1,7 @@
 // GitHub Clones Dashboard JavaScript
 let clonesChartInstances = {};
 let isClonesInitialized = false;
+let clonesGranularity = 'day';
 const CLONES_COLOR = '#667eea';
 const UNIQUES_COLOR = '#764ba2';
 
@@ -40,6 +41,12 @@ function showClonesError(message) {
     }
 }
 
+function addDays(isoDate, days) {
+    const d = new Date(isoDate + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + days);
+    return d.toISOString().slice(0, 10);
+}
+
 function processClonesData(rows) {
     // Keep valid rows only, sorted ascending by date
     const daily = rows
@@ -47,36 +54,51 @@ function processClonesData(rows) {
         .map(r => ({ date: r.date, count: r.count, uniques: r.uniques }))
         .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
-    // 7-day trailing average (shorter window at the start)
-    const rolling = daily.map((item, i) => {
-        const window = daily.slice(Math.max(0, i - 6), i + 1);
-        const avgCount = window.reduce((sum, d) => sum + d.count, 0) / window.length;
-        const avgUniques = window.reduce((sum, d) => sum + (d.uniques || 0), 0) / window.length;
+    // 7 calendar-day trailing average, divided by the rows actually found
+    const byDate = new Map(daily.map(d => [d.date, d]));
+    const rolling = daily.map(item => {
+        let n = 0;
+        let sumCount = 0;
+        let sumUniques = 0;
+        for (let i = -6; i <= 0; i++) {
+            const row = byDate.get(addDays(item.date, i));
+            if (row) {
+                n += 1;
+                sumCount += row.count;
+                sumUniques += row.uniques || 0;
+            }
+        }
         return {
             date: item.date,
-            count: Math.round(avgCount * 10) / 10,
-            uniques: Math.round(avgUniques * 10) / 10
+            count: Math.round((sumCount / n) * 10) / 10,
+            uniques: Math.round((sumUniques / n) * 10) / 10
         };
     });
 
-    // Weekly buckets keyed by the Monday of the week (UTC)
-    const buckets = {};
-    daily.forEach(item => {
-        const d = new Date(item.date + 'T00:00:00Z');
-        const day = d.getUTCDay();
-        const offset = day === 0 ? 6 : day - 1;
-        d.setUTCDate(d.getUTCDate() - offset);
-        const weekStart = d.toISOString().slice(0, 10);
-        if (!buckets[weekStart]) {
-            buckets[weekStart] = { weekStart, count: 0, uniques: 0, days: 0 };
+    // Week / month / year buckets
+    const maps = { week: new Map(), month: new Map(), year: new Map() };
+    const add = (map, key, label, item) => {
+        if (!map.has(key)) {
+            map.set(key, { key, label, count: 0, uniques: 0, days: 0 });
         }
-        buckets[weekStart].count += item.count;
-        buckets[weekStart].uniques += item.uniques || 0;
-        buckets[weekStart].days += 1;
+        const b = map.get(key);
+        b.count += item.count;
+        b.uniques += item.uniques || 0;
+        b.days += 1;
+    };
+    daily.forEach(item => {
+        const dow = new Date(item.date + 'T00:00:00Z').getUTCDay();
+        const weekKey = addDays(item.date, dow === 0 ? -6 : 1 - dow);
+        add(maps.week, weekKey, 'Week of ' + weekKey, item);
+        const monthKey = item.date.slice(0, 7);
+        add(maps.month, monthKey, monthKey, item);
+        const yearKey = item.date.slice(0, 4);
+        add(maps.year, yearKey, yearKey, item);
     });
-    const weekly = Object.values(buckets).sort((a, b) => (a.weekStart < b.weekStart ? -1 : a.weekStart > b.weekStart ? 1 : 0));
+    const sorted = map => Array.from(map.values()).sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+    const buckets = { week: sorted(maps.week), month: sorted(maps.month), year: sorted(maps.year) };
 
-    return { daily, rolling, weekly };
+    return { daily, rolling, buckets };
 }
 
 function createClonesStats(processed) {
@@ -84,7 +106,9 @@ function createClonesStats(processed) {
 
     const totalClones = daily.reduce((sum, d) => sum + d.count, 0);
     const totalUniques = daily.reduce((sum, d) => sum + (d.uniques || 0), 0);
-    const last14 = daily.slice(-14).reduce((sum, d) => sum + d.count, 0);
+    const lastDate = daily.length ? daily[daily.length - 1].date : null;
+    const cutoff = lastDate ? addDays(lastDate, -14) : null;
+    const last14 = daily.filter(d => d.date > cutoff).reduce((sum, d) => sum + d.count, 0);
 
     const statsHtml = `
         <div class="stat-card">
@@ -111,17 +135,23 @@ function createClonesStats(processed) {
     }
 }
 
-function createClonesDailyChart(processed) {
-    const canvas = document.getElementById('clonesDailyChart');
+function renderClonesChart(processed) {
+    const canvas = document.getElementById('clonesChart');
     if (!canvas) return;
 
-    if (clonesChartInstances.daily) {
-        clonesChartInstances.daily.destroy();
+    if (clonesChartInstances.main) {
+        clonesChartInstances.main.destroy();
     }
 
-    clonesChartInstances.daily = new Chart(canvas.getContext('2d'), {
-        type: 'line',
-        data: {
+    const isDay = clonesGranularity === 'day';
+    const axisTitles = { week: 'Week starting (Monday)', month: 'Month', year: 'Year' };
+    const buckets = isDay ? [] : processed.buckets[clonesGranularity];
+
+    let data;
+    let xScale;
+    let tooltip;
+    if (isDay) {
+        data = {
             datasets: [
                 {
                     label: 'Clones',
@@ -140,20 +170,58 @@ function createClonesDailyChart(processed) {
                     tension: 0.3
                 }
             ]
-        },
+        };
+        xScale = {
+            type: 'time',
+            time: { unit: 'day', displayFormats: { day: 'MMM d' } },
+            title: { display: true, text: 'Date' }
+        };
+        tooltip = { mode: 'index', intersect: false };
+    } else {
+        data = {
+            labels: buckets.map(b => b.label),
+            datasets: [
+                {
+                    label: 'Clones',
+                    data: buckets.map(b => b.count),
+                    backgroundColor: CLONES_COLOR
+                },
+                {
+                    label: 'Unique cloners',
+                    data: buckets.map(b => b.uniques),
+                    backgroundColor: UNIQUES_COLOR
+                }
+            ]
+        };
+        xScale = {
+            type: 'category',
+            title: { display: true, text: axisTitles[clonesGranularity] }
+        };
+        tooltip = {
+            callbacks: {
+                label: function(context) {
+                    return `${context.dataset.label}: ${context.parsed.y.toLocaleString()}`;
+                },
+                footer: function(items) {
+                    const days = buckets[items[0].dataIndex].days;
+                    return `${days} day(s) of data`;
+                }
+            }
+        };
+    }
+
+    clonesChartInstances.main = new Chart(canvas.getContext('2d'), {
+        type: isDay ? 'line' : 'bar',
+        data,
         options: {
             responsive: true,
             maintainAspectRatio: true,
             plugins: {
                 legend: { position: 'top' },
-                tooltip: { mode: 'index', intersect: false }
+                tooltip
             },
             scales: {
-                x: {
-                    type: 'time',
-                    time: { unit: 'day', displayFormats: { day: 'MMM d' } },
-                    title: { display: true, text: 'Date' }
-                },
+                x: xScale,
                 y: {
                     beginAtZero: true,
                     title: { display: true, text: 'Clones' }
@@ -215,66 +283,24 @@ function createClonesRollingChart(processed) {
     });
 }
 
-function createClonesWeeklyChart(processed) {
-    const canvas = document.getElementById('clonesWeeklyChart');
-    if (!canvas) return;
+function bindClonesGranularity(processed) {
+    const container = document.getElementById('clones-granularity');
+    if (!container) return;
 
-    if (clonesChartInstances.weekly) {
-        clonesChartInstances.weekly.destroy();
-    }
+    container.addEventListener('click', event => {
+        const button = event.target.closest ? event.target.closest('.granularity-button') : null;
+        if (!button || !container.contains(button)) return;
 
-    const weekly = processed.weekly;
-
-    clonesChartInstances.weekly = new Chart(canvas.getContext('2d'), {
-        type: 'bar',
-        data: {
-            labels: weekly.map(w => w.weekStart),
-            datasets: [
-                {
-                    label: 'Clones',
-                    data: weekly.map(w => w.count),
-                    backgroundColor: CLONES_COLOR
-                },
-                {
-                    label: 'Unique cloners',
-                    data: weekly.map(w => w.uniques),
-                    backgroundColor: UNIQUES_COLOR
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: { position: 'top' },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return `${context.dataset.label}: ${context.parsed.y.toLocaleString()}`;
-                        },
-                        footer: function(items) {
-                            const days = weekly[items[0].dataIndex].days;
-                            return `${days} day(s) in this week`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    title: { display: true, text: 'Week starting (Monday)' }
-                },
-                y: {
-                    beginAtZero: true,
-                    title: { display: true, text: 'Clones' }
-                }
-            }
-        }
+        clonesGranularity = button.dataset.granularity;
+        container.querySelectorAll('.granularity-button').forEach(b => b.classList.remove('active'));
+        button.classList.add('active');
+        renderClonesChart(processed);
     });
 }
 
 async function initClones() {
     if (isClonesInitialized) return;
-    if (!document.getElementById('clonesDailyChart')) return;
+    if (!document.getElementById('clonesChart')) return;
     isClonesInitialized = true;
 
     try {
@@ -292,9 +318,9 @@ async function initClones() {
         if (contentEl) contentEl.style.display = 'block';
 
         createClonesStats(processed);
-        createClonesDailyChart(processed);
+        renderClonesChart(processed);
         createClonesRollingChart(processed);
-        createClonesWeeklyChart(processed);
+        bindClonesGranularity(processed);
 
         const updateEl = document.getElementById('clones-update-time');
         if (updateEl) {

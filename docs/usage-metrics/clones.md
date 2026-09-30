@@ -13,8 +13,16 @@ GitHub keeps only the last 14 days of clone traffic, so a scheduled workflow col
     </div>
 
     <div class="chart-container">
-        <h2 class="chart-title">Clones per Day</h2>
-        <canvas id="clonesDailyChart"></canvas>
+        <div class="chart-header">
+            <h2 class="chart-title">Clones</h2>
+            <div class="granularity-toggle" id="clones-granularity" role="group" aria-label="Group clones by">
+                <button type="button" class="granularity-button active" data-granularity="day">Day</button>
+                <button type="button" class="granularity-button" data-granularity="week">Week</button>
+                <button type="button" class="granularity-button" data-granularity="month">Month</button>
+                <button type="button" class="granularity-button" data-granularity="year">Year</button>
+            </div>
+        </div>
+        <canvas id="clonesChart"></canvas>
     </div>
 
     <div class="chart-container">
@@ -22,13 +30,8 @@ GitHub keeps only the last 14 days of clone traffic, so a scheduled workflow col
         <canvas id="clonesRollingChart"></canvas>
     </div>
 
-    <div class="chart-container">
-        <h2 class="chart-title">Clones per Week</h2>
-        <canvas id="clonesWeeklyChart"></canvas>
-    </div>
-
     <div class="metrics-info">
-        <p>Data collected daily from the <a href="https://docs.github.com/en/rest/metrics/traffic#get-repository-clones" target="_blank">GitHub Traffic API</a>. GitHub counts unique cloners per day, so summing them over a period overestimates the number of distinct cloners.</p>
+        <p>Data collected daily from the <a href="https://docs.github.com/en/rest/metrics/traffic#get-repository-clones" target="_blank">GitHub Traffic API</a>. GitHub counts unique cloners per day, so summing them over a week, month or year overestimates the number of distinct cloners.</p>
         <p>Last data point: <span id="clones-update-time"></span></p>
     </div>
 </div>

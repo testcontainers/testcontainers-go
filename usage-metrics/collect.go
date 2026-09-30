@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -101,11 +102,12 @@ func main() {
 		fs := flag.NewFlagSet("clones", flag.ExitOnError)
 		csvPath := fs.String("csv", filepath.Join("..", "docs", "usage-metrics", "clones.csv"), "Path to CSV file")
 		repo := fs.String("repo", "testcontainers/testcontainers-go", "GitHub repository in owner/name form")
+		until := fs.String("until", "", "Only record days up to and including this YYYY-MM-DD date (default: every day returned)")
 		if err := fs.Parse(args); err != nil {
 			log.Fatalf("Failed to parse flags: %v", err)
 		}
 
-		if err := collectClones(*repo, *csvPath); err != nil {
+		if err := collectClones(*repo, *csvPath, *until); err != nil {
 			log.Fatalf("Failed to collect clone metrics: %v", err)
 		}
 
@@ -227,12 +229,16 @@ func isRetryableError(err error) bool {
 }
 
 // isAuthError reports whether err means the token cannot access the endpoint at all.
-// The traffic endpoints need push access; retrying such an error never helps.
+// The traffic endpoints answer 403 for missing permissions far more often than for
+// rate limiting, so only a 403 that mentions a rate limit is worth retrying.
 func isAuthError(err error) bool {
 	msg := err.Error()
-	return strings.Contains(msg, "Must have push access") ||
+	if strings.Contains(msg, "Must have push access") ||
 		strings.Contains(msg, "Resource not accessible") ||
-		strings.Contains(msg, "401")
+		strings.Contains(msg, "401") {
+		return true
+	}
+	return strings.Contains(msg, "403") && !strings.Contains(strings.ToLower(msg), "rate limit")
 }
 
 // cloneEntry is one day of clone traffic as returned by the GitHub traffic API.
@@ -241,6 +247,9 @@ type cloneEntry struct {
 	Count   int
 	Uniques int
 }
+
+// clonesCSVHeader is the only header upsertClonesCSV accepts.
+var clonesCSVHeader = []string{"date", "count", "uniques"}
 
 type clonesResponse struct {
 	Clones []struct {
@@ -292,20 +301,18 @@ func upsertClonesCSV(csvPath string, entries []cloneEntry) error {
 		if err != nil {
 			return fmt.Errorf("read csv: %w", err)
 		}
-		for i, row := range records {
-			if i == 0 {
-				continue // header
-			}
-			if len(row) != 3 {
-				return fmt.Errorf("invalid csv row %d: expected 3 columns, got %d", i+1, len(row))
-			}
+		if len(records) == 0 || !slices.Equal(records[0], clonesCSVHeader) {
+			return fmt.Errorf("invalid csv header: expected %v", clonesCSVHeader)
+		}
+		for i, row := range records[1:] {
+			line := i + 2 // 1-based, after the header
 			count, err := strconv.Atoi(row[1])
 			if err != nil {
-				return fmt.Errorf("invalid count on row %d: %w", i+1, err)
+				return fmt.Errorf("invalid count on line %d: %w", line, err)
 			}
 			uniques, err := strconv.Atoi(row[2])
 			if err != nil {
-				return fmt.Errorf("invalid uniques on row %d: %w", i+1, err)
+				return fmt.Errorf("invalid uniques on line %d: %w", line, err)
 			}
 			byDate[row[0]] = cloneEntry{Date: row[0], Count: count, Uniques: uniques}
 		}
@@ -325,65 +332,110 @@ func upsertClonesCSV(csvPath string, entries []cloneEntry) error {
 	}
 	sort.Strings(dates)
 
-	out, err := os.Create(absPath)
+	tmpPath := absPath + ".tmp"
+	if err := writeClonesCSV(tmpPath, dates, byDate); err != nil {
+		os.Remove(tmpPath)
+		return err
+	}
+	if err := os.Rename(tmpPath, absPath); err != nil {
+		os.Remove(tmpPath)
+		return fmt.Errorf("replace file: %w", err)
+	}
+
+	return nil
+}
+
+// writeClonesCSV writes the header and the given dates' entries to path, failing on any
+// write or close error so a partial file is never mistaken for a complete one.
+func writeClonesCSV(path string, dates []string, byDate map[string]cloneEntry) error {
+	out, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("create file: %w", err)
 	}
-	defer out.Close()
 
 	writer := csv.NewWriter(out)
-	if err := writer.Write([]string{"date", "count", "uniques"}); err != nil {
+	if err := writer.Write(clonesCSVHeader); err != nil {
+		out.Close()
 		return fmt.Errorf("write header: %w", err)
 	}
 	for _, d := range dates {
 		e := byDate[d]
 		if err := writer.Write([]string{e.Date, strconv.Itoa(e.Count), strconv.Itoa(e.Uniques)}); err != nil {
+			out.Close()
 			return fmt.Errorf("write record: %w", err)
 		}
 	}
 	writer.Flush()
+	if err := writer.Error(); err != nil {
+		out.Close()
+		return fmt.Errorf("flush: %w", err)
+	}
+	if err := out.Close(); err != nil {
+		return fmt.Errorf("close file: %w", err)
+	}
 
-	return writer.Error()
+	return nil
 }
 
-// collectClonesWithTimings fetches the clone traffic, retrying retryable errors up to
-// t.maxPasses times with t.passCooldown between attempts, then upserts the result into csvPath.
-// Authentication errors are never retried. Unlike collectWithTimings, exhausting the retries
-// is an error: a skipped day of clone traffic cannot be recovered later.
-func collectClonesWithTimings(fetch func() ([]byte, error), csvPath string, t retryTimings) error {
-	var body []byte
-	var lastErr error
+// fetchWithRetry calls fetch up to t.maxPasses times, waiting t.passCooldown between attempts.
+// Only retryable, non-authentication errors are retried.
+func fetchWithRetry(fetch func() ([]byte, error), t retryTimings) ([]byte, error) {
+	if t.maxPasses < 1 {
+		return nil, errors.New("maxPasses must be at least 1")
+	}
 
+	var lastErr error
 	for pass := 0; pass < t.maxPasses; pass++ {
 		if pass > 0 {
 			log.Printf("Pass %d: waiting %v before retrying clones query...", pass+1, t.passCooldown)
 			time.Sleep(t.passCooldown)
 		}
 
-		b, err := fetch()
+		body, err := fetch()
 		if err == nil {
-			body = b
-			lastErr = nil
-			break
+			return body, nil
 		}
-
-		lastErr = err
 		if isAuthError(err) || !isRetryableError(err) {
-			return fmt.Errorf("query clones: %w", err)
+			return nil, fmt.Errorf("query clones: %w", err)
 		}
 		log.Printf("Pass %d: failed to query clones: %v", pass+1, err)
+		lastErr = err
 	}
 
-	if lastErr != nil {
-		return fmt.Errorf("query clones after %d passes: %w", t.maxPasses, lastErr)
+	return nil, fmt.Errorf("query clones after %d passes: %w", t.maxPasses, lastErr)
+}
+
+// collectClonesWithTimings fetches the clone traffic and upserts it into csvPath. When until
+// is non-empty (YYYY-MM-DD), only days up to and including that date are recorded; the
+// workflow uses it to skip the in-progress UTC day. Unlike collectWithTimings, exhausting
+// the retries is an error: a skipped day of clone traffic cannot be recovered later.
+func collectClonesWithTimings(fetch func() ([]byte, error), csvPath, until string, t retryTimings) error {
+	if until != "" {
+		if _, err := time.Parse("2006-01-02", until); err != nil {
+			return fmt.Errorf("invalid -until date %q: expected YYYY-MM-DD", until)
+		}
+	}
+
+	body, err := fetchWithRetry(fetch, t)
+	if err != nil {
+		return err
 	}
 
 	entries, err := parseClonesResponse(body)
 	if err != nil {
 		return err
 	}
+	if until != "" {
+		kept := entries[:0]
+		for _, e := range entries {
+			if e.Date <= until {
+				kept = append(kept, e)
+			}
+		}
+		entries = kept
+	}
 	if len(entries) == 0 {
-		log.Printf("Warning: the API returned no clone entries; nothing written")
+		log.Printf("Warning: no clone entries to record; nothing written")
 		return nil
 	}
 
@@ -398,12 +450,17 @@ func collectClonesWithTimings(fetch func() ([]byte, error), csvPath string, t re
 	return nil
 }
 
+// clonesEndpoint is the REST path for the daily clone traffic of an owner/name repository.
+func clonesEndpoint(repo string) string {
+	return fmt.Sprintf("/repos/%s/traffic/clones?per=day", repo)
+}
+
 // collectClones runs with production timings against the given owner/name repository.
-func collectClones(repo, csvPath string) error {
+func collectClones(repo, csvPath, until string) error {
 	fetch := func() ([]byte, error) {
-		return runGHAPI(fmt.Sprintf("/repos/%s/traffic/clones?per=day", repo))
+		return runGHAPI(clonesEndpoint(repo))
 	}
-	return collectClonesWithTimings(fetch, csvPath, productionTimings)
+	return collectClonesWithTimings(fetch, csvPath, until, productionTimings)
 }
 
 func runGHSearch(query string) (int, error) {

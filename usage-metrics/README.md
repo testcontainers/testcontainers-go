@@ -16,11 +16,11 @@ A single Go program with three subcommands:
 |---|---|---|
 | `versions` | Code Search: `"testcontainers/testcontainers-go {version}"` in go.mod | `-version` |
 | `modules` | Code Search: `"testcontainers/testcontainers-go/modules/{module}"` in go.mod | `-module` |
-| `clones` | Traffic API: `GET /repos/{repo}/traffic/clones?per=day` | `-repo` (default `testcontainers/testcontainers-go`) |
+| `clones` | Traffic API: `GET /repos/{repo}/traffic/clones?per=day` | `-repo` (default `testcontainers/testcontainers-go`), `-until` (optional `YYYY-MM-DD`, record days up to and including it) |
 
 The search subcommands exclude forks and testcontainers organisation repositories, retry on rate-limit errors (up to 5 passes, with inter-request and cooldown waits), and append results to a CSV file.
 
-The `clones` subcommand fetches the last 14 days of clone traffic (the maximum GitHub retains) in a single request, retries retryable errors up to 5 passes, and **upserts** one row per day into its CSV: rows with a date already present are replaced, because consecutive 14-day windows overlap and GitHub revises recent days. Authentication errors are not retried. The Traffic API requires push access to the repository, so this subcommand needs a token with the `Administration: read` repository permission.
+The `clones` subcommand fetches the last 14 days of clone traffic (the maximum GitHub retains) in a single request, retries retryable errors up to 5 passes, and **upserts** one row per day into its CSV: rows with a date already present are replaced, because consecutive 14-day windows overlap and GitHub revises recent days. The CSV header must be exactly `date,count,uniques` and the file is rewritten atomically through a temporary file. `-until` drops days after the given date; the workflow passes yesterday so the in-progress UTC day is never stored. Authentication errors, including any 403 that does not mention a rate limit, are not retried. The Traffic API requires push access to the repository, so this subcommand needs a token with the `Administration: read` repository permission.
 
 ### 💾 Data Storage
 
@@ -41,7 +41,7 @@ All files are version-controlled for historical tracking and served directly by 
 | `docs/usage-metrics/clones.md` | GitHub clones dashboard |
 | `docs/js/usage-metrics.js` | Charts for the core library dashboard |
 | `docs/js/modules-usage-metrics.js` | Charts for the modules dashboard |
-| `docs/js/clones-metrics.js` | Charts for the GitHub clones dashboard |
+| `docs/js/clones-metrics.js` | Charts for the GitHub clones dashboard, with a Day / Week / Month / Year toggle |
 | `docs/css/usage-metrics.css` | Shared styles for all dashboards |
 
 All dashboards use Chart.js for visualisations and are responsive for mobile and desktop.
@@ -56,7 +56,7 @@ All dashboards use Chart.js for visualisations and are responsive for mobile and
 
 The two search workflows create a pull request for the metrics update rather than committing directly to main.
 
-The clones workflow runs daily and pushes to a monthly data branch named `YYYY-MM-clones` (one commit per day). A new month's branch starts from the previous month's branch, so its CSV already contains the earlier rows, and each run merges `main` into the data branch (keeping the branch's files on conflict) so the branch stays mergeable. Once the month is over, the first run of the new month opens a pull request from the finished `YYYY-MM-clones` branch to `main`; merging it publishes the data on the docs site. The check is repeated on every run, so a skipped schedule cannot lose the pull request.
+The clones workflow runs daily and maintains a monthly data branch named `YYYY-MM-clones`. On every run the branch is rebuilt on top of `main`: the run checks out `main`, restores `clones.csv` from the branch's previous tip (or from the previous month's branch when a new month starts), upserts the latest days up to yesterday, and force-pushes a single commit with `--force-with-lease`. The branch therefore always has exactly one commit over `main` and never conflicts with it. On the first run after a month ends, the previous month's branch is rebuilt the same way with `-until` set to the month's last day, so its final days carry complete numbers, and a pull request from it to `main` is opened; merging it publishes the data on the docs site. The check is repeated on every run, so a skipped schedule cannot lose the pull request. A `concurrency` group prevents two runs from pushing at the same time.
 
 The clones workflow reads the Traffic API with the `TRAFFIC_TOKEN` repository secret: a fine-grained personal access token scoped to this repository with `Administration: read` and `Metadata: read`. Pushes and the pull request use the default `GITHUB_TOKEN`.
 
@@ -123,6 +123,9 @@ go run collect.go modules -module kafka -module redis -csv ../docs/usage-metrics
 
 # Collect the last 14 days of clone traffic (needs a token with push access, see below)
 GH_TOKEN=<token> go run collect.go clones -csv ../docs/usage-metrics/clones.csv
+
+# Same, but ignore the in-progress day
+GH_TOKEN=<token> go run collect.go clones -csv ../docs/usage-metrics/clones.csv -until "$(date -u -d yesterday +%Y-%m-%d)"
 ```
 
 Flags can be repeated for multiple items. All subcommands accept a `-csv` flag to override the default output path.
