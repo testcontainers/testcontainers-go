@@ -26,6 +26,7 @@ extra_javascript:
     - https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js
     - js/usage-metrics.js
     - js/modules-usage-metrics.js
+    - js/clones-metrics.js
 repo_name: testcontainers-go
 repo_url: https://github.com/testcontainers/testcontainers-go
 markdown_extensions:
@@ -182,6 +183,7 @@ nav:
     - Usage Metrics:
         - Core Library: usage-metrics/index.md
         - Modules: usage-metrics/modules.md
+        - GitHub Clones: usage-metrics/clones.md
     - Dependabot: dependabot.md
     - Contributing: contributing.md
     - Getting help: getting_help.md

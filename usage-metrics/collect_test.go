@@ -291,6 +291,238 @@ func TestCollect_WritesCSVSortedByDateAndItem(t *testing.T) {
 	}
 }
 
+// --- clones ---
+
+const twoDayClonesBody = `{"count":11465,"uniques":2939,"clones":[` +
+	`{"timestamp":"2026-09-16T00:00:00Z","count":5392,"uniques":1372},` +
+	`{"timestamp":"2026-09-17T00:00:00Z","count":6073,"uniques":1567}]}`
+
+const emptyClonesBody = `{"count":0,"uniques":0,"clones":[]}`
+
+func TestIsAuthError(t *testing.T) {
+	tests := []struct {
+		msg  string
+		want bool
+	}{
+		{"HTTP 403: Must have push access to view repository traffic", true},
+		{"Resource not accessible by integration", true},
+		{"401 Unauthorized", true},
+		{"429 Too Many Requests", false},
+		{"503 Service Unavailable", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.msg, func(t *testing.T) {
+			if got := isAuthError(errors.New(tt.msg)); got != tt.want {
+				t.Errorf("isAuthError(%q) = %v, want %v", tt.msg, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestParseClonesResponse_ParsesDays(t *testing.T) {
+	entries, err := parseClonesResponse([]byte(twoDayClonesBody))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := []cloneEntry{
+		{Date: "2026-09-16", Count: 5392, Uniques: 1372},
+		{Date: "2026-09-17", Count: 6073, Uniques: 1567},
+	}
+	if len(entries) != len(want) {
+		t.Fatalf("expected %d entries, got %d", len(want), len(entries))
+	}
+	for i := range want {
+		if entries[i] != want[i] {
+			t.Errorf("entry %d: got %+v, want %+v", i, entries[i], want[i])
+		}
+	}
+}
+
+func TestParseClonesResponse_EmptyClones(t *testing.T) {
+	entries, err := parseClonesResponse([]byte(emptyClonesBody))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(entries) != 0 {
+		t.Errorf("expected 0 entries, got %d", len(entries))
+	}
+}
+
+func TestParseClonesResponse_InvalidJSON(t *testing.T) {
+	if _, err := parseClonesResponse([]byte(`{not json`)); err == nil {
+		t.Fatal("expected error for invalid JSON, got nil")
+	}
+}
+
+func TestParseClonesResponse_InvalidTimestamp(t *testing.T) {
+	body := `{"clones":[{"timestamp":"yesterday","count":1,"uniques":1}]}`
+	if _, err := parseClonesResponse([]byte(body)); err == nil {
+		t.Fatal("expected error for invalid timestamp, got nil")
+	}
+}
+
+func TestUpsertClonesCSV_CreatesFileWithHeader(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "clones.csv")
+	entries := []cloneEntry{
+		{Date: "2026-09-17", Count: 6073, Uniques: 1567},
+		{Date: "2026-09-16", Count: 5392, Uniques: 1372},
+	}
+	if err := upsertClonesCSV(path, entries); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	rows := readCSV(t, path)
+	if len(rows) != 3 {
+		t.Fatalf("expected 3 rows, got %d: %v", len(rows), rows)
+	}
+	assertRow(t, rows[0], "date", "count", "uniques")
+	assertRow(t, rows[1], "2026-09-16", "5392", "1372")
+	assertRow(t, rows[2], "2026-09-17", "6073", "1567")
+}
+
+func TestUpsertClonesCSV_ReplacesExistingDate(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "clones.csv")
+	writeCSV(t, path, [][]string{
+		{"date", "count", "uniques"},
+		{"2026-09-16", "100", "10"},
+		{"2026-09-17", "5", "1"},
+	})
+	entries := []cloneEntry{
+		{Date: "2026-09-17", Count: 200, Uniques: 20},
+		{Date: "2026-09-18", Count: 7, Uniques: 2},
+	}
+	if err := upsertClonesCSV(path, entries); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	rows := readCSV(t, path)
+	if len(rows) != 4 {
+		t.Fatalf("expected 4 rows, got %d: %v", len(rows), rows)
+	}
+	assertRow(t, rows[0], "date", "count", "uniques")
+	assertRow(t, rows[1], "2026-09-16", "100", "10")
+	assertRow(t, rows[2], "2026-09-17", "200", "20")
+	assertRow(t, rows[3], "2026-09-18", "7", "2")
+}
+
+func TestUpsertClonesCSV_RejectsMalformedRow(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "clones.csv")
+	writeCSV(t, path, [][]string{
+		{"date", "count", "uniques"},
+		{"2026-09-16", "100"},
+	})
+	err := upsertClonesCSV(path, []cloneEntry{{Date: "2026-09-17", Count: 1, Uniques: 1}})
+	if err == nil {
+		t.Fatal("expected error for malformed row, got nil")
+	}
+}
+
+func TestUpsertClonesCSV_RejectsNonNumericCount(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "clones.csv")
+	writeCSV(t, path, [][]string{
+		{"date", "count", "uniques"},
+		{"2026-09-16", "many", "10"},
+	})
+	err := upsertClonesCSV(path, []cloneEntry{{Date: "2026-09-17", Count: 1, Uniques: 1}})
+	if err == nil {
+		t.Fatal("expected error for non-numeric count, got nil")
+	}
+}
+
+func TestCollectClones_Success(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "clones.csv")
+	fetch := func() ([]byte, error) { return []byte(twoDayClonesBody), nil }
+
+	if err := collectClonesWithTimings(fetch, path, zeroTimings); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	rows := readCSV(t, path)
+	if len(rows) != 3 {
+		t.Fatalf("expected 3 rows, got %d: %v", len(rows), rows)
+	}
+	assertRow(t, rows[1], "2026-09-16", "5392", "1372")
+}
+
+func TestCollectClones_RetryableErrorRetriesAndSucceeds(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "clones.csv")
+	calls := 0
+	fetch := func() ([]byte, error) {
+		calls++
+		if calls == 1 {
+			return nil, errors.New("429 Too Many Requests")
+		}
+		return []byte(twoDayClonesBody), nil
+	}
+
+	if err := collectClonesWithTimings(fetch, path, zeroTimings); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if calls != 2 {
+		t.Errorf("expected 2 fetch calls, got %d", calls)
+	}
+}
+
+func TestCollectClones_NonRetryableErrorAborts(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "clones.csv")
+	calls := 0
+	fetch := func() ([]byte, error) {
+		calls++
+		return nil, errors.New("404 Not Found")
+	}
+
+	if err := collectClonesWithTimings(fetch, path, zeroTimings); err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if calls != 1 {
+		t.Errorf("expected 1 fetch call, got %d", calls)
+	}
+}
+
+func TestCollectClones_AuthErrorAbortsWithoutRetry(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "clones.csv")
+	calls := 0
+	fetch := func() ([]byte, error) {
+		calls++
+		return nil, errors.New("gh api failed: HTTP 403: Must have push access to view repository traffic")
+	}
+
+	if err := collectClonesWithTimings(fetch, path, zeroTimings); err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if calls != 1 {
+		t.Errorf("expected 1 fetch call, got %d", calls)
+	}
+}
+
+func TestCollectClones_ExhaustsRetriesReturnsError(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "clones.csv")
+	calls := 0
+	fetch := func() ([]byte, error) {
+		calls++
+		return nil, errors.New("503 Service Unavailable")
+	}
+
+	if err := collectClonesWithTimings(fetch, path, zeroTimings); err == nil {
+		t.Fatal("expected error after exhausting retries, got nil")
+	}
+	if calls != zeroTimings.maxPasses {
+		t.Errorf("expected %d fetch calls, got %d", zeroTimings.maxPasses, calls)
+	}
+	if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("expected CSV not to exist, Stat err = %v", err)
+	}
+}
+
+func TestCollectClones_EmptyResponseWritesNothing(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "clones.csv")
+	fetch := func() ([]byte, error) { return []byte(emptyClonesBody), nil }
+
+	if err := collectClonesWithTimings(fetch, path, zeroTimings); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("expected CSV not to exist, Stat err = %v", err)
+	}
+}
+
 // --- helpers ---
 
 func readCSV(t *testing.T, path string) [][]string {

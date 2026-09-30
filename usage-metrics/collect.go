@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/csv"
 	"encoding/json"
@@ -48,7 +49,7 @@ var productionTimings = retryTimings{
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "Usage: collect <versions|modules> [flags]")
+		fmt.Fprintln(os.Stderr, "Usage: collect <versions|modules|clones> [flags]")
 		os.Exit(1)
 	}
 
@@ -96,8 +97,20 @@ func main() {
 			log.Fatalf("Failed to collect module metrics: %v", err)
 		}
 
+	case "clones":
+		fs := flag.NewFlagSet("clones", flag.ExitOnError)
+		csvPath := fs.String("csv", filepath.Join("..", "docs", "usage-metrics", "clones.csv"), "Path to CSV file")
+		repo := fs.String("repo", "testcontainers/testcontainers-go", "GitHub repository in owner/name form")
+		if err := fs.Parse(args); err != nil {
+			log.Fatalf("Failed to parse flags: %v", err)
+		}
+
+		if err := collectClones(*repo, *csvPath); err != nil {
+			log.Fatalf("Failed to collect clone metrics: %v", err)
+		}
+
 	default:
-		fmt.Fprintf(os.Stderr, "Unknown subcommand %q. Use 'versions' or 'modules'.\n", subcommand)
+		fmt.Fprintf(os.Stderr, "Unknown subcommand %q. Use 'versions', 'modules' or 'clones'.\n", subcommand)
 		os.Exit(1)
 	}
 }
@@ -213,11 +226,206 @@ func isRetryableError(err error) bool {
 		strings.Contains(err.Error(), "503")
 }
 
+// isAuthError reports whether err means the token cannot access the endpoint at all.
+// The traffic endpoints need push access; retrying such an error never helps.
+func isAuthError(err error) bool {
+	msg := err.Error()
+	return strings.Contains(msg, "Must have push access") ||
+		strings.Contains(msg, "Resource not accessible") ||
+		strings.Contains(msg, "401")
+}
+
+// cloneEntry is one day of clone traffic as returned by the GitHub traffic API.
+type cloneEntry struct {
+	Date    string // YYYY-MM-DD, UTC
+	Count   int
+	Uniques int
+}
+
+type clonesResponse struct {
+	Clones []struct {
+		Timestamp string `json:"timestamp"`
+		Count     int    `json:"count"`
+		Uniques   int    `json:"uniques"`
+	} `json:"clones"`
+}
+
+// parseClonesResponse converts the JSON body of GET /repos/{owner}/{repo}/traffic/clones?per=day
+// into one cloneEntry per day. Timestamps are RFC 3339; the date is their UTC YYYY-MM-DD.
+func parseClonesResponse(body []byte) ([]cloneEntry, error) {
+	var resp clonesResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("unmarshal: %w", err)
+	}
+
+	entries := make([]cloneEntry, 0, len(resp.Clones))
+	for _, c := range resp.Clones {
+		ts, err := time.Parse(time.RFC3339, c.Timestamp)
+		if err != nil {
+			return nil, fmt.Errorf("parse timestamp %q: %w", c.Timestamp, err)
+		}
+		entries = append(entries, cloneEntry{
+			Date:    ts.UTC().Format("2006-01-02"),
+			Count:   c.Count,
+			Uniques: c.Uniques,
+		})
+	}
+
+	return entries, nil
+}
+
+// upsertClonesCSV merges entries into the CSV at csvPath, replacing any existing row with the
+// same date, and rewrites the file sorted by date ascending with the header date,count,uniques.
+// The file is created if it does not exist.
+func upsertClonesCSV(csvPath string, entries []cloneEntry) error {
+	absPath, err := filepath.Abs(csvPath)
+	if err != nil {
+		return fmt.Errorf("resolve path: %w", err)
+	}
+
+	byDate := make(map[string]cloneEntry)
+
+	data, err := os.ReadFile(absPath)
+	switch {
+	case err == nil:
+		records, err := csv.NewReader(bytes.NewReader(data)).ReadAll()
+		if err != nil {
+			return fmt.Errorf("read csv: %w", err)
+		}
+		for i, row := range records {
+			if i == 0 {
+				continue // header
+			}
+			if len(row) != 3 {
+				return fmt.Errorf("invalid csv row %d: expected 3 columns, got %d", i+1, len(row))
+			}
+			count, err := strconv.Atoi(row[1])
+			if err != nil {
+				return fmt.Errorf("invalid count on row %d: %w", i+1, err)
+			}
+			uniques, err := strconv.Atoi(row[2])
+			if err != nil {
+				return fmt.Errorf("invalid uniques on row %d: %w", i+1, err)
+			}
+			byDate[row[0]] = cloneEntry{Date: row[0], Count: count, Uniques: uniques}
+		}
+	case errors.Is(err, os.ErrNotExist):
+		// first run: start from an empty set
+	default:
+		return fmt.Errorf("read file: %w", err)
+	}
+
+	for _, e := range entries {
+		byDate[e.Date] = e
+	}
+
+	dates := make([]string, 0, len(byDate))
+	for d := range byDate {
+		dates = append(dates, d)
+	}
+	sort.Strings(dates)
+
+	out, err := os.Create(absPath)
+	if err != nil {
+		return fmt.Errorf("create file: %w", err)
+	}
+	defer out.Close()
+
+	writer := csv.NewWriter(out)
+	if err := writer.Write([]string{"date", "count", "uniques"}); err != nil {
+		return fmt.Errorf("write header: %w", err)
+	}
+	for _, d := range dates {
+		e := byDate[d]
+		if err := writer.Write([]string{e.Date, strconv.Itoa(e.Count), strconv.Itoa(e.Uniques)}); err != nil {
+			return fmt.Errorf("write record: %w", err)
+		}
+	}
+	writer.Flush()
+
+	return writer.Error()
+}
+
+// collectClonesWithTimings fetches the clone traffic, retrying retryable errors up to
+// t.maxPasses times with t.passCooldown between attempts, then upserts the result into csvPath.
+// Authentication errors are never retried. Unlike collectWithTimings, exhausting the retries
+// is an error: a skipped day of clone traffic cannot be recovered later.
+func collectClonesWithTimings(fetch func() ([]byte, error), csvPath string, t retryTimings) error {
+	var body []byte
+	var lastErr error
+
+	for pass := 0; pass < t.maxPasses; pass++ {
+		if pass > 0 {
+			log.Printf("Pass %d: waiting %v before retrying clones query...", pass+1, t.passCooldown)
+			time.Sleep(t.passCooldown)
+		}
+
+		b, err := fetch()
+		if err == nil {
+			body = b
+			lastErr = nil
+			break
+		}
+
+		lastErr = err
+		if isAuthError(err) || !isRetryableError(err) {
+			return fmt.Errorf("query clones: %w", err)
+		}
+		log.Printf("Pass %d: failed to query clones: %v", pass+1, err)
+	}
+
+	if lastErr != nil {
+		return fmt.Errorf("query clones after %d passes: %w", t.maxPasses, lastErr)
+	}
+
+	entries, err := parseClonesResponse(body)
+	if err != nil {
+		return err
+	}
+	if len(entries) == 0 {
+		log.Printf("Warning: the API returned no clone entries; nothing written")
+		return nil
+	}
+
+	if err := upsertClonesCSV(csvPath, entries); err != nil {
+		return fmt.Errorf("write clones csv: %w", err)
+	}
+
+	for _, e := range entries {
+		fmt.Printf("Successfully recorded: %s has %d clones (%d unique)\n", e.Date, e.Count, e.Uniques)
+	}
+
+	return nil
+}
+
+// collectClones runs with production timings against the given owner/name repository.
+func collectClones(repo, csvPath string) error {
+	fetch := func() ([]byte, error) {
+		return runGHAPI(fmt.Sprintf("/repos/%s/traffic/clones?per=day", repo))
+	}
+	return collectClonesWithTimings(fetch, csvPath, productionTimings)
+}
+
 func runGHSearch(query string) (int, error) {
 	params := url.Values{}
 	params.Add("q", query)
-	endpoint := "/search/code?" + params.Encode()
 
+	output, err := runGHAPI("/search/code?" + params.Encode())
+	if err != nil {
+		return 0, err
+	}
+
+	var resp searchResponse
+	if err := json.Unmarshal(output, &resp); err != nil {
+		return 0, fmt.Errorf("unmarshal: %w", err)
+	}
+
+	return resp.TotalCount, nil
+}
+
+// runGHAPI calls a GitHub REST endpoint through the gh CLI and returns the raw response body.
+// gh authenticates with GH_TOKEN (or GITHUB_TOKEN) from the environment.
+func runGHAPI(endpoint string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -228,21 +436,16 @@ func runGHSearch(query string) (int, error) {
 	).Output()
 	if err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return 0, fmt.Errorf("gh api timeout after 30s: %w", ctx.Err())
+			return nil, fmt.Errorf("gh api timeout after 30s: %w", ctx.Err())
 		}
 		exitErr := &exec.ExitError{}
 		if errors.As(err, &exitErr) {
-			return 0, fmt.Errorf("gh api failed: %s", string(exitErr.Stderr))
+			return nil, fmt.Errorf("gh api failed: %s", string(exitErr.Stderr))
 		}
-		return 0, fmt.Errorf("gh api: %w", err)
+		return nil, fmt.Errorf("gh api: %w", err)
 	}
 
-	var resp searchResponse
-	if err := json.Unmarshal(output, &resp); err != nil {
-		return 0, fmt.Errorf("unmarshal: %w", err)
-	}
-
-	return resp.TotalCount, nil
+	return output, nil
 }
 
 func sortCSV(csvPath string) error {

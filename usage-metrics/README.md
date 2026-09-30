@@ -4,20 +4,23 @@ This directory contains the automation system for tracking testcontainers-go usa
 
 ## Overview
 
-The system automatically collects two types of usage metrics by querying the GitHub Code Search API for references to testcontainers-go in `go.mod` files across public repositories. The data is visualised in interactive dashboards integrated into the main MkDocs documentation site at https://golang.testcontainers.org/usage-metrics/
+The system automatically collects three datasets: two usage metrics obtained by querying the GitHub Code Search API for references to testcontainers-go in `go.mod` files across public repositories, and the daily clone traffic of this repository obtained from the GitHub Traffic API. The data is visualised in interactive dashboards integrated into the main MkDocs documentation site at https://golang.testcontainers.org/usage-metrics/
 
 ## Components
 
 ### 📊 Data Collection (`collect.go`)
 
-A single Go program with two subcommands:
+A single Go program with three subcommands:
 
-| Subcommand | Searches for | Flag |
+| Subcommand | Source | Flag |
 |---|---|---|
-| `versions` | `"testcontainers/testcontainers-go {version}"` in go.mod | `-version` |
-| `modules` | `"testcontainers/testcontainers-go/modules/{module}"` in go.mod | `-module` |
+| `versions` | Code Search: `"testcontainers/testcontainers-go {version}"` in go.mod | `-version` |
+| `modules` | Code Search: `"testcontainers/testcontainers-go/modules/{module}"` in go.mod | `-module` |
+| `clones` | Traffic API: `GET /repos/{repo}/traffic/clones?per=day` | `-repo` (default `testcontainers/testcontainers-go`) |
 
-Both subcommands exclude forks and testcontainers organisation repositories, retry on rate-limit errors (up to 5 passes, with inter-request and cooldown waits), and write results to a CSV file.
+The search subcommands exclude forks and testcontainers organisation repositories, retry on rate-limit errors (up to 5 passes, with inter-request and cooldown waits), and append results to a CSV file.
+
+The `clones` subcommand fetches the last 14 days of clone traffic (the maximum GitHub retains) in a single request, retries retryable errors up to 5 passes, and **upserts** one row per day into its CSV: rows with a date already present are replaced, because consecutive 14-day windows overlap and GitHub revises recent days. Authentication errors are not retried. The Traffic API requires push access to the repository, so this subcommand needs a token with the `Administration: read` repository permission.
 
 ### 💾 Data Storage
 
@@ -25,8 +28,9 @@ Both subcommands exclude forks and testcontainers organisation repositories, ret
 |---|---|---|
 | `docs/usage-metrics/core.csv` | Historical adoption data by library version | `date,version,count` |
 | `docs/usage-metrics/modules.csv` | Historical import counts by module | `date,module,count` |
+| `docs/usage-metrics/clones.csv` | Daily clone traffic of this repository | `date,count,uniques` |
 
-Both files are version-controlled for historical tracking and served directly by the MkDocs site.
+All files are version-controlled for historical tracking and served directly by the MkDocs site.
 
 ### 🌐 Website (integrated into `docs/`)
 
@@ -34,11 +38,13 @@ Both files are version-controlled for historical tracking and served directly by
 |---|---|
 | `docs/usage-metrics/index.md` | Core library dashboard (landing page for the section) |
 | `docs/usage-metrics/modules.md` | Modules dashboard |
+| `docs/usage-metrics/clones.md` | GitHub clones dashboard |
 | `docs/js/usage-metrics.js` | Charts for the core library dashboard |
 | `docs/js/modules-usage-metrics.js` | Charts for the modules dashboard |
-| `docs/css/usage-metrics.css` | Shared styles for both dashboards |
+| `docs/js/clones-metrics.js` | Charts for the GitHub clones dashboard |
+| `docs/css/usage-metrics.css` | Shared styles for all dashboards |
 
-Both dashboards use Chart.js for visualisations and are responsive for mobile and desktop.
+All dashboards use Chart.js for visualisations and are responsive for mobile and desktop.
 
 ### 🤖 Automation
 
@@ -46,8 +52,13 @@ Both dashboards use Chart.js for visualisations and are responsive for mobile an
 |---|---|---|
 | `.github/workflows/usage-metrics.yml` | Monthly, 1st at 09:00 UTC | `versions` — comma-separated (empty = all from v0.13.0) |
 | `.github/workflows/usage-metrics-modules.yml` | Monthly, 1st at 10:00 UTC | `modules` — comma-separated (empty = all modules under `modules/`) |
+| `.github/workflows/github-clones.yml` | Daily at 03:00 UTC | none |
 
-Both workflows create a pull request for the metrics update rather than committing directly to main.
+The two search workflows create a pull request for the metrics update rather than committing directly to main.
+
+The clones workflow runs daily and pushes to a monthly data branch named `YYYY-MM-clones` (one commit per day). A new month's branch starts from the previous month's branch, so its CSV already contains the earlier rows, and each run merges `main` into the data branch (keeping the branch's files on conflict) so the branch stays mergeable. Once the month is over, the first run of the new month opens a pull request from the finished `YYYY-MM-clones` branch to `main`; merging it publishes the data on the docs site. The check is repeated on every run, so a skipped schedule cannot lose the pull request.
+
+The clones workflow reads the Traffic API with the `TRAFFIC_TOKEN` repository secret: a fine-grained personal access token scoped to this repository with `Administration: read` and `Metadata: read`. Pushes and the pull request use the default `GITHUB_TOKEN`.
 
 ## Data Formats
 
@@ -81,6 +92,22 @@ date,module,count
 - **module**: Module directory name (e.g. `kafka`, `postgres`)
 - **count**: Number of repositories importing that module
 
+### GitHub clones (`docs/usage-metrics/clones.csv`)
+
+Tracks how many times the repository was cloned each day, as reported by GitHub.
+
+```csv
+date,count,uniques
+2026-09-16,5392,1372
+2026-09-17,6073,1567
+```
+
+- **date**: Day of the clones in `YYYY-MM-DD` format (UTC)
+- **count**: Total clones on that day
+- **uniques**: Unique cloners on that day, as counted by GitHub. Summing this column over several days overestimates the number of distinct cloners.
+
+History starts on 2026-09-16. GitHub discards traffic older than 14 days, so earlier data cannot be recovered.
+
 ## Usage
 
 ### Manual Collection
@@ -93,9 +120,12 @@ go run collect.go versions -version v0.37.0 -version v0.38.0 -csv ../docs/usage-
 
 # Collect specific modules
 go run collect.go modules -module kafka -module redis -csv ../docs/usage-metrics/modules.csv
+
+# Collect the last 14 days of clone traffic (needs a token with push access, see below)
+GH_TOKEN=<token> go run collect.go clones -csv ../docs/usage-metrics/clones.csv
 ```
 
-Flags can be repeated for multiple items. Both subcommands also accept a `-csv` flag to override the default output path.
+Flags can be repeated for multiple items. All subcommands accept a `-csv` flag to override the default output path.
 
 ### Running Locally
 
@@ -103,8 +133,9 @@ Flags can be repeated for multiple items. Both subcommands also accept a `-csv` 
 # Serve the docs (from the repository root)
 make serve-docs
 
-# Core library dashboard: http://localhost:8000/usage-metrics/
-# Modules dashboard:       http://localhost:8000/usage-metrics/modules/
+# Core library dashboard:  http://localhost:8000/usage-metrics/
+# Modules dashboard:        http://localhost:8000/usage-metrics/modules/
+# GitHub clones dashboard:  http://localhost:8000/usage-metrics/clones/
 ```
 
 ### Manual Workflow Trigger
@@ -118,6 +149,10 @@ make serve-docs
 1. Go to Actions → "Update Modules Usage Metrics"
 2. Click "Run workflow"
 3. Optionally specify modules (e.g. `kafka,redis`) or leave empty for all modules
+
+**GitHub clones:**
+1. Go to Actions → "Update GitHub Clones Metrics"
+2. Click "Run workflow"
 
 ## Rate Limiting
 
@@ -197,10 +232,11 @@ The collection script retries automatically (up to 5 passes). If it still fails:
 1. Go to Actions and open the relevant workflow run
 2. Review the query step output for any errors
 3. Verify that `GH_TOKEN` / `GITHUB_TOKEN` has Code Search access
+4. For clones, verify that the `TRAFFIC_TOKEN` secret exists, has not expired, and grants `Administration: read` on the repository. A `403 Must have push access` error in the "Collect clone traffic" step means the token lacks that permission.
 
 ### Charts Not Displaying
 
-1. Verify the CSV file is at `docs/usage-metrics/core.csv` or `docs/usage-metrics/modules.csv`
+1. Verify the CSV file is at `docs/usage-metrics/core.csv`, `docs/usage-metrics/modules.csv` or `docs/usage-metrics/clones.csv`
 2. Open the browser console and look for fetch or JavaScript errors
 3. Ensure Chart.js and PapaParse CDN links are accessible from your browser
 

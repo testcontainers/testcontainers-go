@@ -1,0 +1,109 @@
+name: Update GitHub Clones Metrics
+
+on:
+  schedule:
+    # Run daily at 3 AM UTC. GitHub keeps only 14 days of clone traffic,
+    # so a daily run leaves a wide margin before data is lost.
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  collect-clones:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history so the data branch can be merged with main below.
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: 'usage-metrics/go.mod'
+
+      - name: Resolve monthly branches
+        id: branches
+        run: |
+          MONTH=$(date -u +%Y-%m)
+          PREV=$(date -u -d "$(date -u +%Y-%m-01) -1 day" +%Y-%m)
+          {
+            echo "branch=$MONTH-clones"
+            echo "prev_branch=$PREV-clones"
+            echo "date=$(date -u +%Y-%m-%d)"
+          } >> "$GITHUB_OUTPUT"
+          echo "Data branch: $MONTH-clones (previous: $PREV-clones)"
+
+      - name: Check out the monthly data branch
+        env:
+          BRANCH: ${{ steps.branches.outputs.branch }}
+          PREV_BRANCH: ${{ steps.branches.outputs.prev_branch }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null; then
+            echo "Branch $BRANCH exists, continuing it"
+            git fetch origin "$BRANCH:refs/remotes/origin/$BRANCH"
+            git checkout -b "$BRANCH" "origin/$BRANCH"
+          elif git ls-remote --exit-code --heads origin "$PREV_BRANCH" > /dev/null; then
+            echo "Branch $BRANCH does not exist, starting it from $PREV_BRANCH so the CSV keeps last month's rows"
+            git fetch origin "$PREV_BRANCH:refs/remotes/origin/$PREV_BRANCH"
+            git checkout -b "$BRANCH" "origin/$PREV_BRANCH"
+          else
+            echo "Branch $BRANCH does not exist, starting it from main"
+            git checkout -b "$BRANCH"
+          fi
+
+          # Keep the data branch mergeable into main. On conflict keep the branch's
+          # files: the branch only ever changes docs/usage-metrics/clones.csv.
+          git merge --no-edit -X ours origin/main
+
+      - name: Collect clone traffic
+        working-directory: usage-metrics
+        env:
+          # Fine-grained PAT with "Administration: read" on this repository.
+          # The traffic API needs push access, which GITHUB_TOKEN cannot be granted.
+          GH_TOKEN: ${{ secrets.TRAFFIC_TOKEN }}
+        run: go run collect.go clones -csv "../docs/usage-metrics/clones.csv"
+
+      - name: Commit and push the monthly data branch
+        env:
+          BRANCH: ${{ steps.branches.outputs.branch }}
+          DATE: ${{ steps.branches.outputs.date }}
+        run: |
+          git add docs/usage-metrics/clones.csv
+          if git diff --staged --quiet; then
+            echo "No changes in clones.csv today"
+          else
+            git commit -m "chore(metrics): update GitHub clones ($DATE)"
+          fi
+          git push -u origin "$BRANCH"
+
+      - name: Open the pull request for the previous month
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PREV_BRANCH: ${{ steps.branches.outputs.prev_branch }}
+        run: |
+          if ! git ls-remote --exit-code --heads origin "$PREV_BRANCH" > /dev/null; then
+            echo "No branch $PREV_BRANCH on origin, nothing to open"
+            exit 0
+          fi
+
+          EXISTING_PR=$(gh pr list --head "$PREV_BRANCH" --state all --json number --jq '.[0].number')
+          if [ -n "$EXISTING_PR" ]; then
+            echo "PR #$EXISTING_PR already exists for $PREV_BRANCH"
+            exit 0
+          fi
+
+          PREV_MONTH="${PREV_BRANCH%-clones}"
+          gh pr create \
+            --head "$PREV_BRANCH" \
+            --base main \
+            --title "chore(metrics): GitHub clones for $PREV_MONTH" \
+            --body "Automated update of GitHub clone traffic for $PREV_MONTH. The workflow pushed one commit per day to this branch during the month. Merging it publishes the data at https://golang.testcontainers.org/usage-metrics/clones/."
