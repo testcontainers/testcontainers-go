@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net"
 	"strconv"
 	"strings"
 
@@ -16,8 +17,9 @@ import (
 )
 
 const (
-	publicPort = "9093/tcp"
-	sslPort    = "9095/tcp"
+	publicPort    = "9093/tcp"
+	sslPortNumber = "9095"
+	sslPort       = sslPortNumber + "/tcp"
 )
 
 const (
@@ -56,7 +58,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	// Process custom options to extract settings. The settings are shared with
-	// the post-start hook, which refreshes the TLS config on every (re)start.
+	// the post-start hook, which generates the TLS certificates on the first start.
 	settings := &options{}
 	for _, opt := range opts {
 		if opt, ok := opt.(Option); ok {
@@ -209,9 +211,9 @@ func copyTLSMaterial(ctx context.Context, c testcontainers.Container, settings *
 		return "", fmt.Errorf("host: %w", err)
 	}
 
-	certs, err := createTLSCerts(host)
+	certs, err := settings.ensureTLSCerts(host)
 	if err != nil {
-		return "", fmt.Errorf("create TLS certs: %w", err)
+		return "", err
 	}
 
 	if err := c.CopyToContainer(ctx, certs.KeystoreBytes, secretsDir+"/"+keystoreFilename, 0o644); err != nil {
@@ -221,8 +223,6 @@ func copyTLSMaterial(ctx context.Context, c testcontainers.Container, settings *
 	if err := c.CopyToContainer(ctx, []byte(keystorePassword), secretsDir+"/"+credentialsFilename, 0o644); err != nil {
 		return "", fmt.Errorf("copy keystore credentials: %w", err)
 	}
-
-	settings.tlsConfig = certs.TLSConfig
 
 	return c.PortEndpoint(ctx, sslPort, "SSL")
 }
@@ -263,11 +263,11 @@ func (kc *KafkaContainer) BrokersTLS(ctx context.Context) ([]string, error) {
 // trusting the CA that signed the broker certificate.
 // Returns an error if TLS is not enabled on this container.
 func (kc *KafkaContainer) TLSConfig() (*tls.Config, error) {
-	if kc.settings == nil || !kc.settings.tlsEnabled || kc.settings.tlsConfig == nil {
+	if kc.settings == nil || !kc.settings.tlsEnabled || kc.settings.tlsCerts == nil {
 		return nil, errors.New("TLS is not enabled on this container")
 	}
 
-	return kc.settings.tlsConfig.Clone(), nil
+	return kc.settings.tlsCerts.TLSConfig.Clone(), nil
 }
 
 // configureControllerQuorumVoters returns an option that sets the quorum voters for the controller.
@@ -297,31 +297,53 @@ func configureControllerQuorumVoters() testcontainers.CustomizeRequestOption {
 }
 
 // configureSSLListener returns an option that adds the SSL listener to the listeners
-// and to the listener security protocol map, unless they already define it.
+// and to the listener security protocol map. If they already define it, it must
+// listen on the SSL port and use the SSL protocol, as the module exposes and
+// advertises that port. Otherwise, an error is returned.
 func configureSSLListener() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		if req.Env == nil {
 			req.Env = map[string]string{}
 		}
 
-		req.Env["KAFKA_LISTENERS"] = appendListEntry(req.Env["KAFKA_LISTENERS"], "SSL://", "SSL://0.0.0.0:9095")
-		req.Env["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"] = appendListEntry(req.Env["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"], "SSL:", "SSL:SSL")
+		listeners := req.Env["KAFKA_LISTENERS"]
+		if listener, ok := findListEntry(listeners, "SSL://"); ok {
+			_, port, err := net.SplitHostPort(strings.TrimPrefix(listener, "SSL://"))
+			if err != nil || port != sslPortNumber {
+				return fmt.Errorf("KAFKA_LISTENERS defines the SSL listener %q, but WithTLS requires it to listen on port %s", listener, sslPortNumber)
+			}
+		} else {
+			req.Env["KAFKA_LISTENERS"] = appendListEntry(listeners, "SSL://0.0.0.0:"+sslPortNumber)
+		}
+
+		protocolMap := req.Env["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"]
+		if protocol, ok := findListEntry(protocolMap, "SSL:"); ok {
+			if protocol != "SSL:SSL" {
+				return fmt.Errorf("KAFKA_LISTENER_SECURITY_PROTOCOL_MAP maps the SSL listener as %q, but WithTLS requires %q", protocol, "SSL:SSL")
+			}
+		} else {
+			req.Env["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"] = appendListEntry(protocolMap, "SSL:SSL")
+		}
 
 		return nil
 	}
 }
 
-// appendListEntry appends the entry to the comma-separated list,
-// unless the list already contains an entry with the given prefix.
-func appendListEntry(list, prefix, entry string) string {
-	if list == "" {
-		return entry
+// findListEntry returns the first entry of the comma-separated list with the given prefix.
+func findListEntry(list, prefix string) (string, bool) {
+	for item := range strings.SplitSeq(list, ",") {
+		if item = strings.TrimSpace(item); strings.HasPrefix(item, prefix) {
+			return item, true
+		}
 	}
 
-	for item := range strings.SplitSeq(list, ",") {
-		if strings.HasPrefix(strings.TrimSpace(item), prefix) {
-			return list
-		}
+	return "", false
+}
+
+// appendListEntry appends the entry to the comma-separated list.
+func appendListEntry(list, entry string) string {
+	if list == "" {
+		return entry
 	}
 
 	return list + "," + entry

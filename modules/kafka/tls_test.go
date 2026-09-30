@@ -6,6 +6,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"software.sslmate.com/src/go-pkcs12"
+
+	"github.com/testcontainers/testcontainers-go"
 )
 
 func TestCreateTLSCerts(t *testing.T) {
@@ -53,47 +55,93 @@ func TestCreateTLSCerts(t *testing.T) {
 	}
 }
 
-func TestAppendListEntry(t *testing.T) {
+func TestEnsureTLSCerts(t *testing.T) {
+	settings := &options{tlsEnabled: true}
+
+	certs, err := settings.ensureTLSCerts("localhost")
+	require.NoError(t, err)
+
+	// a restart must reuse the certificates, so the keystore
+	// in the container keeps matching TLSConfig()
+	restartCerts, err := settings.ensureTLSCerts("localhost")
+	require.NoError(t, err)
+	require.Same(t, certs, restartCerts)
+}
+
+func TestConfigureSSLListener(t *testing.T) {
 	tests := []struct {
-		name     string
-		list     string
-		prefix   string
-		entry    string
-		expected string
+		name                string
+		env                 map[string]string
+		expectedListeners   string
+		expectedProtocolMap string
+		wantErr             bool
 	}{
 		{
-			name:     "empty list",
-			list:     "",
-			prefix:   "SSL://",
-			entry:    "SSL://0.0.0.0:9095",
-			expected: "SSL://0.0.0.0:9095",
+			name:                "no listeners",
+			env:                 nil,
+			expectedListeners:   "SSL://0.0.0.0:9095",
+			expectedProtocolMap: "SSL:SSL",
 		},
 		{
-			name:     "listener appended",
-			list:     "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092",
-			prefix:   "SSL://",
-			entry:    "SSL://0.0.0.0:9095",
-			expected: "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,SSL://0.0.0.0:9095",
+			name: "listener appended",
+			env: map[string]string{
+				"KAFKA_LISTENERS":                      "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092",
+				"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP": "BROKER:PLAINTEXT,PLAINTEXT:PLAINTEXT",
+			},
+			expectedListeners:   "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,SSL://0.0.0.0:9095",
+			expectedProtocolMap: "BROKER:PLAINTEXT,PLAINTEXT:PLAINTEXT,SSL:SSL",
 		},
 		{
-			name:     "listener already defined",
-			list:     "PLAINTEXT://0.0.0.0:9093, SSL://0.0.0.0:9096",
-			prefix:   "SSL://",
-			entry:    "SSL://0.0.0.0:9095",
-			expected: "PLAINTEXT://0.0.0.0:9093, SSL://0.0.0.0:9096",
+			name: "listener already defined on the SSL port",
+			env: map[string]string{
+				"KAFKA_LISTENERS":                      "PLAINTEXT://0.0.0.0:9093, SSL://:9095",
+				"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP": "PLAINTEXT:PLAINTEXT, SSL:SSL",
+			},
+			expectedListeners:   "PLAINTEXT://0.0.0.0:9093, SSL://:9095",
+			expectedProtocolMap: "PLAINTEXT:PLAINTEXT, SSL:SSL",
 		},
 		{
-			name:     "SASL_SSL is not SSL",
-			list:     "BROKER:PLAINTEXT,SASL_SSL:SASL_SSL",
-			prefix:   "SSL:",
-			entry:    "SSL:SSL",
-			expected: "BROKER:PLAINTEXT,SASL_SSL:SASL_SSL,SSL:SSL",
+			name: "SASL_SSL is not SSL",
+			env: map[string]string{
+				"KAFKA_LISTENERS":                      "SASL_SSL://0.0.0.0:9096",
+				"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP": "SASL_SSL:SASL_SSL",
+			},
+			expectedListeners:   "SASL_SSL://0.0.0.0:9096,SSL://0.0.0.0:9095",
+			expectedProtocolMap: "SASL_SSL:SASL_SSL,SSL:SSL",
+		},
+		{
+			name: "listener already defined on another port",
+			env: map[string]string{
+				"KAFKA_LISTENERS": "PLAINTEXT://0.0.0.0:9093,SSL://0.0.0.0:9096",
+			},
+			wantErr: true,
+		},
+		{
+			name: "SSL listener mapped to another protocol",
+			env: map[string]string{
+				"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP": "PLAINTEXT:PLAINTEXT,SSL:PLAINTEXT",
+			},
+			wantErr: true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			require.Equal(t, test.expected, appendListEntry(test.list, test.prefix, test.entry))
+			req := &testcontainers.GenericContainerRequest{
+				ContainerRequest: testcontainers.ContainerRequest{
+					Env: test.env,
+				},
+			}
+
+			err := configureSSLListener()(req)
+			if test.wantErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, test.expectedListeners, req.Env["KAFKA_LISTENERS"])
+			require.Equal(t, test.expectedProtocolMap, req.Env["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"])
 		})
 	}
 }

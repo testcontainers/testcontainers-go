@@ -81,6 +81,8 @@ When enabled, the container will:
 - Configure Kafka with a PKCS12 keystore holding the server certificate
 - Expose an additional SSL listener on port `9095`, keeping the PLAINTEXT one on port `9093`
 
+If you override `KAFKA_LISTENERS` or `KAFKA_LISTENER_SECURITY_PROTOCOL_MAP`, the SSL listener is still added. If you define it yourself, it must listen on port `9095` and use the `SSL` protocol, otherwise `Run` returns an error.
+
 Use the `BrokersTLS(ctx)` method to get the SSL endpoint and the `TLSConfig()` method to get the `*tls.Config` for client connections.
 
 {% include "../features/common_functional_options_list.md" %}

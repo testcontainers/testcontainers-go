@@ -1,15 +1,15 @@
 package kafka
 
 import (
-	"crypto/tls"
-
 	"github.com/testcontainers/testcontainers-go"
 )
 
 // options holds the configuration settings for the Kafka container.
 type options struct {
 	tlsEnabled bool
-	tlsConfig  *tls.Config
+	// tlsCerts is generated on the first start and reused on restarts,
+	// so the keystore in the container always matches TLSConfig()
+	tlsCerts *tlsCerts
 }
 
 // Compiler check to ensure that Option implements the testcontainers.ContainerCustomizer interface.
@@ -33,6 +33,8 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 //
 // The SSL listener is added to KAFKA_LISTENERS and KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
 // after all the options have been applied, so it is kept even if they are overridden.
+// If they already define an SSL listener, it must listen on port 9095 and use the
+// SSL protocol, otherwise the container fails to start with an error.
 //
 // Use BrokersTLS() to get the SSL endpoint and TLSConfig() to get the
 // *tls.Config for client connections.

@@ -29,6 +29,23 @@ type tlsCerts struct {
 	TLSConfig *tls.Config
 }
 
+// ensureTLSCerts generates the TLS certificates for the given host on the first call
+// and returns the same certificates on the next ones, e.g. when the container restarts.
+func (o *options) ensureTLSCerts(host string) (*tlsCerts, error) {
+	if o.tlsCerts != nil {
+		return o.tlsCerts, nil
+	}
+
+	certs, err := createTLSCerts(host)
+	if err != nil {
+		return nil, fmt.Errorf("create TLS certs: %w", err)
+	}
+
+	o.tlsCerts = certs
+
+	return certs, nil
+}
+
 // createTLSCerts generates a CA and a server certificate signed by it.
 // The server certificate is valid for localhost, 127.0.0.1 and the given host,
 // which is the host the container is reachable at (e.g. a remote docker host).

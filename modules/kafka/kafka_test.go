@@ -142,6 +142,19 @@ func TestKafka_withTLS(t *testing.T) {
 	require.NoError(t, plainClient.Close())
 }
 
+func TestKafka_withTLSInvalidListener(t *testing.T) {
+	ctx := context.Background()
+
+	ctr, err := kafka.Run(ctx, "confluentinc/confluent-local:7.5.0",
+		kafka.WithTLS(),
+		testcontainers.WithEnv(map[string]string{
+			"KAFKA_LISTENERS": "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094,SSL://0.0.0.0:9096",
+		}),
+	)
+	testcontainers.CleanupContainer(t, ctr)
+	require.ErrorContains(t, err, "requires it to listen on port 9095")
+}
+
 func TestKafka_invalidVersion(t *testing.T) {
 	ctx := context.Background()
 
