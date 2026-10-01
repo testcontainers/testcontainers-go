@@ -42,7 +42,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "minio/minio:RELEASE.2024-01-16T16-07-38Z")`.
+In example: `Run(context.Background(), "quay.io/minio/minio:RELEASE.2024-01-16T16-07-38Z")`.
 
 ### Container Options
 
