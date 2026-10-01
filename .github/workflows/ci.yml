@@ -63,6 +63,9 @@ jobs:
       matrix:
         go-version: [1.25.x, 1.26.x]
         module: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
+        exclude:
+          # The Quay MinIO image requires credentials not available in CI.
+          - module: modules/minio
     permissions:
       contents: read  # for actions/checkout to fetch code
       pull-requests: read  # for sonarsource/sonarcloud-github-action to determine which PR to decorate
