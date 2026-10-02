@@ -82,6 +82,8 @@ In order to use Testcontainers then either
         }
         ```
 
+As an alternative to declaring the provider in the tests themselves, you can instead set the `TESTCONTAINERS_PROVIDER` environment variable to `podman` to force all tests to execute with the Podman provider. This may also be set in the .testcontainers.properties file as `provider=podman` in your home directory.
+
 ## Fedora
 
 `DOCKER_HOST` environment variable must be set
