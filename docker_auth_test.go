@@ -8,6 +8,8 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strconv"
 	"testing"
 
 	"github.com/containerd/errdefs"
@@ -170,6 +172,103 @@ func TestDockerImageAuth(t *testing.T) {
 	})
 }
 
+func TestDockerImageAuthCredentialsStore(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("credential helper fixtures use shell scripts")
+	}
+
+	oldDefaultRegistry := defaultRegistryFn
+	defaultRegistryFn = func(context.Context) string { return core.IndexDockerIO }
+	t.Cleanup(func() { defaultRegistryFn = oldDefaultRegistry })
+
+	for _, tt := range []struct {
+		name     string
+		response string
+		exitCode int
+		want     registry.AuthConfig
+		wantErr  string
+	}{
+		{
+			name:     "username and password",
+			response: `{"Username":"gopher","Secret":"secret"}`,
+			want:     registry.AuthConfig{Username: "gopher", Password: "secret"},
+		},
+		{
+			name:     "identity token",
+			response: `{"Username":"<token>","Secret":"identity-token"}`,
+			want:     registry.AuthConfig{IdentityToken: "identity-token"},
+		},
+		{
+			name:     "empty store does not use the platform helper",
+			response: `{"Username":"","Secret":""}`,
+			wantErr:  dockercfg.ErrCredentialsNotFound.Error(),
+		},
+		{
+			name:     "missing entry does not use the platform helper",
+			response: dockercfg.ErrCredentialsNotFound.Error(),
+			exitCode: 1,
+			wantErr:  dockercfg.ErrCredentialsNotFound.Error(),
+		},
+		{
+			name:     "helper errors are propagated",
+			response: "helper exploded",
+			exitCode: 1,
+			wantErr:  "helper exploded",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			creds.reset()
+			t.Cleanup(creds.reset)
+			dir := t.TempDir()
+			t.Setenv("PATH", dir)
+			t.Setenv("DOCKER_AUTH_CONFIG", `{"credsStore":"test-store"}`)
+			t.Setenv("TEST_HELPER_CALLS", filepath.Join(dir, "calls"))
+			t.Setenv("TEST_HELPER_RESPONSE", tt.response)
+			t.Setenv("TEST_HELPER_EXIT", strconv.Itoa(tt.exitCode))
+
+			// Use the real dockercfg lookup. Any fallback to a platform helper
+			// returns unrelated credentials and is recorded in the call log.
+			helper := `#!/bin/sh
+host=
+read -r host
+printf '%s %s %s\n' "${0##*/}" "$1" "$host" >> "$TEST_HELPER_CALLS"
+case "$0" in
+  */docker-credential-test-store)
+    printf '%s\n' "$TEST_HELPER_RESPONSE"
+    exit "$TEST_HELPER_EXIT"
+    ;;
+  *) printf '%s\n' '{"Username":"unrelated","Secret":"wrong-store"}' ;;
+esac
+`
+			// dockercfg v0.3.2 shadows its default helper name and looks for
+			// docker-credential- instead. Trap that fallback as well.
+			for _, name := range []string{"test-store", "", "osxkeychain", "pass", "secretservice", "wincred"} {
+				require.NoError(t, os.WriteFile(filepath.Join(dir, "docker-credential-"+name), []byte(helper), 0o700))
+			}
+
+			for range 2 {
+				reg, ac, err := DockerImageAuth(context.Background(), "example-auth.com/my/image:latest")
+				require.Equal(t, "example-auth.com", reg)
+				if tt.wantErr != "" {
+					require.ErrorContains(t, err, tt.wantErr)
+				} else {
+					require.NoError(t, err)
+				}
+				require.Equal(t, tt.want, ac)
+			}
+
+			calls, err := os.ReadFile(filepath.Join(dir, "calls"))
+			require.NoError(t, err)
+			wantCalls := "docker-credential-test-store get example-auth.com\n"
+			if tt.wantErr == "helper exploded" {
+				// Failures must be retried; successful and empty results are cached.
+				wantCalls += wantCalls
+			}
+			require.Equal(t, wantCalls, string(calls))
+		})
+	}
+}
+
 func TestBuildContainerFromDockerfile(t *testing.T) {
 	ctx := context.Background()
 
@@ -330,8 +429,7 @@ func setAuthConfig(t *testing.T, host, username, password string) string {
 			"password": %q,
 			"auth": %q
 		}
-	},
-	"credsStore": "desktop"
+	}
 }`,
 		host,
 		username,
@@ -423,7 +521,7 @@ func Test_getDockerAuthConfigs(t *testing.T) {
 			getRegistryCredentials = old
 			creds.reset() // Ensure our mocked results aren't cached.
 		})
-		getRegistryCredentials = func(hostname string) (string, string, error) {
+		getRegistryCredentials = func(_ *dockercfg.Config, hostname string) (string, string, error) {
 			switch hostname {
 			case core.IndexDockerIO:
 				return "", "identity-token", nil
