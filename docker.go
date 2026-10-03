@@ -1501,9 +1501,9 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 		// TODO: we should unpause the container here.
 		return nil, fmt.Errorf("cannot start a paused container: %w", errors.ErrUnsupported)
 	default:
-		if err := dc.Start(ctx); err != nil {
-			return dc, fmt.Errorf("start container %s in state %s: %w", req.Name, c.State, err)
-		}
+		// Leave stopped/exited containers stopped. GenericContainer starts them
+		// when req.Started is true.
+		return dc, nil
 	}
 
 	err = dc.startedHook(ctx)
