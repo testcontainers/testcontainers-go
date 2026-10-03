@@ -1,8 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/clickhouse
 
-go 1.25.0
-
-toolchain go1.25.9
+go 1.26
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.34.0

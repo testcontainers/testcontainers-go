@@ -1,8 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/surrealdb
 
-go 1.25.0
-
-toolchain go1.25.9
+go 1.26
 
 require (
 	github.com/stretchr/testify v1.11.1

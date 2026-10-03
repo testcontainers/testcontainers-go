@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/compose
 
-go 1.25.9
+go 1.26
 
 replace github.com/testcontainers/testcontainers-go => ../..
 

@@ -1,8 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/databend
 
-go 1.25.0
-
-toolchain go1.25.9
+go 1.26
 
 require (
 	github.com/datafuselabs/databend-go v0.7.0
