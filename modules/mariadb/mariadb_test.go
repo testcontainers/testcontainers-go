@@ -17,7 +17,7 @@ import (
 func TestMariaDB(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := mariadb.Run(ctx, "mariadb:11.0.3")
+	ctr, err := mariadb.Run(ctx, "mariadb:12.3.2")
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -49,7 +49,7 @@ func TestMariaDBWithNonRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
 	_, err := mariadb.Run(ctx,
-		"mariadb:11.0.3",
+		"mariadb:12.3.2",
 		mariadb.WithDatabase("foo"),
 		mariadb.WithUsername("test"),
 		mariadb.WithPassword(""))
@@ -60,7 +60,7 @@ func TestMariaDBWithRootUserAndEmptyPassword(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := mariadb.Run(ctx,
-		"mariadb:11.0.3",
+		"mariadb:12.3.2",
 		mariadb.WithDatabase("foo"),
 		mariadb.WithUsername("root"),
 		mariadb.WithPassword(""))
@@ -99,7 +99,7 @@ func TestMariaDBWithMySQLEnvVars(t *testing.T) {
 func TestMariaDBWithConfigFile(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := mariadb.Run(ctx, "mariadb:11.0.3",
+	ctr, err := mariadb.Run(ctx, "mariadb:12.3.2",
 		mariadb.WithConfigFile(filepath.Join("testdata", "my.cnf")))
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
@@ -133,7 +133,7 @@ func TestMariaDBWithScripts(t *testing.T) {
 	ctx := context.Background()
 
 	ctr, err := mariadb.Run(ctx,
-		"mariadb:11.0.3",
+		"mariadb:12.3.2",
 		mariadb.WithScripts(filepath.Join("testdata", "schema.sql")))
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)

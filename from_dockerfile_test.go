@@ -9,8 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/build"
-	"github.com/docker/docker/api/types/image"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/log"
@@ -42,7 +41,7 @@ func TestBuildImageFromDockerfile(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		_, err := cli.ImageRemove(ctx, tag, image.RemoveOptions{
+		_, err := cli.ImageRemove(ctx, tag, client.ImageRemoveOptions{
 			Force:         true,
 			PruneChildren: true,
 		})
@@ -73,7 +72,7 @@ func TestBuildImageFromDockerfile_NoRepo(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		_, err := cli.ImageRemove(ctx, tag, image.RemoveOptions{
+		_, err := cli.ImageRemove(ctx, tag, client.ImageRemoveOptions{
 			Force:         true,
 			PruneChildren: true,
 		})
@@ -117,7 +116,7 @@ func TestBuildImageFromDockerfile_NoTag(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		_, err := cli.ImageRemove(ctx, tag, image.RemoveOptions{
+		_, err := cli.ImageRemove(ctx, tag, client.ImageRemoveOptions{
 			Force:         true,
 			PruneChildren: true,
 		})
@@ -134,7 +133,7 @@ func TestBuildImageFromDockerfile_Target(t *testing.T) {
 				Context:    "testdata",
 				Dockerfile: "target.Dockerfile",
 				KeepImage:  false,
-				BuildOptionsModifier: func(buildOptions *build.ImageBuildOptions) {
+				BuildOptionsModifier: func(buildOptions *client.ImageBuildOptions) {
 					buildOptions.Target = fmt.Sprintf("target%d", i)
 				},
 			}),
@@ -160,7 +159,7 @@ func ExampleGenericContainer_buildFromDockerfile() {
 			Context:    "testdata",
 			Dockerfile: "target.Dockerfile",
 			KeepImage:  false,
-			BuildOptionsModifier: func(buildOptions *build.ImageBuildOptions) {
+			BuildOptionsModifier: func(buildOptions *client.ImageBuildOptions) {
 				buildOptions.Target = "target2"
 			},
 		}),
@@ -203,7 +202,7 @@ func TestBuildImageFromDockerfile_TargetDoesNotExist(t *testing.T) {
 			Context:    "testdata",
 			Dockerfile: "target.Dockerfile",
 			KeepImage:  false,
-			BuildOptionsModifier: func(buildOptions *build.ImageBuildOptions) {
+			BuildOptionsModifier: func(buildOptions *client.ImageBuildOptions) {
 				buildOptions.Target = "target-foo"
 			},
 		}),

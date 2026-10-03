@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"maps"
 
-	"github.com/docker/docker/api/types/network"
 	"github.com/google/uuid"
+	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client"
 
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -20,7 +21,7 @@ import (
 // - Labels: the Testcontainers for Go generic labels, to be managed by Ryuk. Please see the GenericLabels() function
 // And those options can be modified by the user, using the CreateModifier function field.
 func New(ctx context.Context, opts ...NetworkCustomizer) (*testcontainers.DockerNetwork, error) {
-	nc := network.CreateOptions{
+	nc := client.NetworkCreateOptions{
 		Driver: "bridge",
 		Labels: testcontainers.GenericLabels(),
 	}
@@ -57,21 +58,21 @@ func New(ctx context.Context, opts ...NetworkCustomizer) (*testcontainers.Docker
 
 // NetworkCustomizer is an interface that can be used to configure the network create request.
 type NetworkCustomizer interface {
-	Customize(req *network.CreateOptions) error
+	Customize(req *client.NetworkCreateOptions) error
 }
 
 // CustomizeNetworkOption is a type that can be used to configure the network create request.
-type CustomizeNetworkOption func(req *network.CreateOptions) error
+type CustomizeNetworkOption func(req *client.NetworkCreateOptions) error
 
 // Customize implements the NetworkCustomizer interface,
 // applying the option to the network create request.
-func (opt CustomizeNetworkOption) Customize(req *network.CreateOptions) error {
+func (opt CustomizeNetworkOption) Customize(req *client.NetworkCreateOptions) error {
 	return opt(req)
 }
 
 // WithAttachable allows to set the network as attachable.
 func WithAttachable() CustomizeNetworkOption {
-	return func(original *network.CreateOptions) error {
+	return func(original *client.NetworkCreateOptions) error {
 		original.Attachable = true
 
 		return nil
@@ -82,14 +83,14 @@ func WithAttachable() CustomizeNetworkOption {
 //
 // Deprecated: CheckDuplicate is deprecated since API v1.44, but it defaults to true when sent by the client package to older daemons.
 func WithCheckDuplicate() CustomizeNetworkOption {
-	return func(_ *network.CreateOptions) error {
+	return func(_ *client.NetworkCreateOptions) error {
 		return nil
 	}
 }
 
 // WithDriver allows to override the default network driver, which is "bridge".
 func WithDriver(driver string) CustomizeNetworkOption {
-	return func(original *network.CreateOptions) error {
+	return func(original *client.NetworkCreateOptions) error {
 		original.Driver = driver
 
 		return nil
@@ -99,7 +100,7 @@ func WithDriver(driver string) CustomizeNetworkOption {
 // WithEnableIPv6 allows to set the network as IPv6 enabled.
 // Please use this option if and only if IPv6 is enabled on the Docker daemon.
 func WithEnableIPv6() CustomizeNetworkOption {
-	return func(original *network.CreateOptions) error {
+	return func(original *client.NetworkCreateOptions) error {
 		enableIPv6 := true
 		original.EnableIPv6 = &enableIPv6
 		return nil
@@ -108,7 +109,7 @@ func WithEnableIPv6() CustomizeNetworkOption {
 
 // WithInternal allows to set the network as internal.
 func WithInternal() CustomizeNetworkOption {
-	return func(original *network.CreateOptions) error {
+	return func(original *client.NetworkCreateOptions) error {
 		original.Internal = true
 
 		return nil
@@ -118,7 +119,7 @@ func WithInternal() CustomizeNetworkOption {
 // WithLabels allows to set the network labels, adding the new ones
 // to the default Testcontainers for Go labels.
 func WithLabels(labels map[string]string) CustomizeNetworkOption {
-	return func(original *network.CreateOptions) error {
+	return func(original *client.NetworkCreateOptions) error {
 		maps.Copy(original.Labels, labels)
 
 		return nil
@@ -127,7 +128,7 @@ func WithLabels(labels map[string]string) CustomizeNetworkOption {
 
 // WithIPAM allows to change the default IPAM configuration.
 func WithIPAM(ipam *network.IPAM) CustomizeNetworkOption {
-	return func(original *network.CreateOptions) error {
+	return func(original *client.NetworkCreateOptions) error {
 		original.IPAM = ipam
 
 		return nil

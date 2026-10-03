@@ -50,7 +50,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	// Build moduleOpts with defaults
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultPort),
 		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort(defaultPort),
@@ -61,7 +62,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"-c",
 			"gcloud beta emulators firestore start --host-port 0.0.0.0:"+defaultPortNumber+" "+gcloudParameters,
 		),
-	}
+	)
 
 	// Append user options
 	moduleOpts = append(moduleOpts, opts...)

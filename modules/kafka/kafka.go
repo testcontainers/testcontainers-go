@@ -2,20 +2,26 @@ package kafka
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"math"
+	"net"
 	"strconv"
 	"strings"
 
-	"github.com/docker/go-connections/nat"
 	"golang.org/x/mod/semver"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const publicPort = nat.Port("9093/tcp")
+const (
+	publicPort    = "9093/tcp"
+	sslPortNumber = "9095"
+	sslPort       = sslPortNumber + "/tcp"
+)
+
 const (
 	starterScript = "/usr/sbin/testcontainers_start.sh"
 
@@ -36,6 +42,7 @@ echo '' > /etc/confluent/docker/ensure
 type KafkaContainer struct {
 	testcontainers.Container
 	ClusterID string
+	settings  *options
 }
 
 // Deprecated: use Run instead
@@ -50,7 +57,19 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return nil, err
 	}
 
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	// Process custom options to extract settings. The settings are shared with
+	// the post-start hook, which generates the TLS certificates on the first start.
+	settings := &options{}
+	for _, opt := range opts {
+		if opt, ok := opt.(Option); ok {
+			if err := opt(settings); err != nil {
+				return nil, fmt.Errorf("apply option: %w", err)
+			}
+		}
+	}
+
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 5+len(opts)+1)
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(string(publicPort)),
 		testcontainers.WithEnv(map[string]string{
 			// envVars {
@@ -79,8 +98,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				// the Kafka server to be ready. This prevents the wait running
 				// if the starter script fails to copy.
 				func(ctx context.Context, c testcontainers.Container) error {
-					// 1. copy the starter script into the container
-					if err := copyStarterScript(ctx, c); err != nil {
+					// 1. copy the SSL material and the starter script into the container
+					if err := copyStarterScript(ctx, c, settings); err != nil {
 						return fmt.Errorf("copy starter script: %w", err)
 					}
 
@@ -89,6 +108,19 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				},
 			},
 		}),
+	)
+
+	if settings.tlsEnabled {
+		moduleOpts = append(moduleOpts,
+			testcontainers.WithExposedPorts(sslPort),
+			// the Confluent image reads the files below from /etc/kafka/secrets
+			testcontainers.WithEnv(map[string]string{
+				"KAFKA_SSL_KEYSTORE_FILENAME":    keystoreFilename,
+				"KAFKA_SSL_KEYSTORE_CREDENTIALS": credentialsFilename,
+				"KAFKA_SSL_KEY_CREDENTIALS":      credentialsFilename,
+				"KAFKA_SSL_KEYSTORE_TYPE":        "PKCS12",
+			}),
+		)
 	}
 
 	moduleOpts = append(moduleOpts, opts...)
@@ -96,10 +128,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	// configure the controller quorum voters after all the options have been applied
 	moduleOpts = append(moduleOpts, configureControllerQuorumVoters())
 
+	// add the SSL listener after all the options have been applied,
+	// so it is kept even if the listeners are overridden
+	if settings.tlsEnabled {
+		moduleOpts = append(moduleOpts, configureSSLListener())
+	}
+
 	var c *KafkaContainer
 	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	if ctr != nil {
-		c = &KafkaContainer{Container: ctr}
+		c = &KafkaContainer{Container: ctr, settings: settings}
 	}
 	if err != nil {
 		return c, fmt.Errorf("run kafka: %w", err)
@@ -122,7 +160,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 }
 
 // copyStarterScript copies the starter script into the container.
-func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
+// If TLS is enabled, it first generates the certificates for the host the
+// container is reachable at and copies the keystore into the container,
+// so they are in place before Kafka starts.
+func copyStarterScript(ctx context.Context, c testcontainers.Container, settings *options) error {
 	if err := wait.ForMappedPort(publicPort).
 		WaitUntilReady(ctx, c); err != nil {
 		return fmt.Errorf("wait for mapped port: %w", err)
@@ -131,6 +172,15 @@ func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
 	endpoint, err := c.PortEndpoint(ctx, publicPort, "PLAINTEXT")
 	if err != nil {
 		return fmt.Errorf("port endpoint: %w", err)
+	}
+
+	if settings.tlsEnabled {
+		sslEndpoint, err := copyTLSMaterial(ctx, c, settings)
+		if err != nil {
+			return fmt.Errorf("copy TLS material: %w", err)
+		}
+
+		endpoint += "," + sslEndpoint
 	}
 
 	inspect, err := c.Inspect(ctx)
@@ -149,6 +199,35 @@ func copyStarterScript(ctx context.Context, c testcontainers.Container) error {
 	return nil
 }
 
+// copyTLSMaterial generates the certificates, copies the keystore and its credentials
+// into the container and returns the advertised SSL listener.
+func copyTLSMaterial(ctx context.Context, c testcontainers.Container, settings *options) (string, error) {
+	if err := wait.ForMappedPort(sslPort).WaitUntilReady(ctx, c); err != nil {
+		return "", fmt.Errorf("wait for mapped SSL port: %w", err)
+	}
+
+	host, err := c.Host(ctx)
+	if err != nil {
+		return "", fmt.Errorf("host: %w", err)
+	}
+
+	certs, err := settings.ensureTLSCerts(host)
+	if err != nil {
+		return "", err
+	}
+
+	if err := c.CopyToContainer(ctx, certs.KeystoreBytes, secretsDir+"/"+keystoreFilename, 0o644); err != nil {
+		return "", fmt.Errorf("copy keystore: %w", err)
+	}
+
+	if err := c.CopyToContainer(ctx, []byte(keystorePassword), secretsDir+"/"+credentialsFilename, 0o644); err != nil {
+		return "", fmt.Errorf("copy keystore credentials: %w", err)
+	}
+
+	return c.PortEndpoint(ctx, sslPort, "SSL")
+}
+
+// WithClusterID sets the CLUSTER_ID environment variable, used to format the KRaft storage.
 func WithClusterID(clusterID string) testcontainers.CustomizeRequestOption {
 	return testcontainers.WithEnv(map[string]string{
 		"CLUSTER_ID": clusterID,
@@ -164,6 +243,32 @@ func (kc *KafkaContainer) Brokers(ctx context.Context) ([]string, error) {
 	}
 
 	return []string{endpoint}, nil
+}
+
+// BrokersTLS retrieves the broker connection strings for the SSL listener,
+// defined by the exposed SSL port. Returns an error if TLS is not enabled.
+func (kc *KafkaContainer) BrokersTLS(ctx context.Context) ([]string, error) {
+	if kc.settings == nil || !kc.settings.tlsEnabled {
+		return nil, errors.New("TLS is not enabled on this container")
+	}
+
+	endpoint, err := kc.PortEndpoint(ctx, sslPort, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return []string{endpoint}, nil
+}
+
+// TLSConfig returns the TLS configuration for secure client connections,
+// trusting the CA that signed the broker certificate.
+// Returns an error if TLS is not enabled on this container.
+func (kc *KafkaContainer) TLSConfig() (*tls.Config, error) {
+	if kc.settings == nil || !kc.settings.tlsEnabled || kc.settings.tlsCerts == nil {
+		return nil, errors.New("TLS is not enabled on this container")
+	}
+
+	return kc.settings.tlsCerts.TLSConfig.Clone(), nil
 }
 
 // configureControllerQuorumVoters returns an option that sets the quorum voters for the controller.
@@ -190,6 +295,59 @@ func configureControllerQuorumVoters() testcontainers.CustomizeRequestOption {
 		return nil
 	}
 	// }
+}
+
+// configureSSLListener returns an option that adds the SSL listener to the listeners
+// and to the listener security protocol map. If they already define it, it must
+// listen on the SSL port and use the SSL protocol, as the module exposes and
+// advertises that port. Otherwise, an error is returned.
+func configureSSLListener() testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		if req.Env == nil {
+			req.Env = map[string]string{}
+		}
+
+		listeners := req.Env["KAFKA_LISTENERS"]
+		if listener, ok := findListEntry(listeners, "SSL://"); ok {
+			_, port, err := net.SplitHostPort(strings.TrimPrefix(listener, "SSL://"))
+			if err != nil || port != sslPortNumber {
+				return fmt.Errorf("KAFKA_LISTENERS defines the SSL listener %q, but WithTLS requires it to listen on port %s", listener, sslPortNumber)
+			}
+		} else {
+			req.Env["KAFKA_LISTENERS"] = appendListEntry(listeners, "SSL://0.0.0.0:"+sslPortNumber)
+		}
+
+		protocolMap := req.Env["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"]
+		if protocol, ok := findListEntry(protocolMap, "SSL:"); ok {
+			if protocol != "SSL:SSL" {
+				return fmt.Errorf("KAFKA_LISTENER_SECURITY_PROTOCOL_MAP maps the SSL listener as %q, but WithTLS requires %q", protocol, "SSL:SSL")
+			}
+		} else {
+			req.Env["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"] = appendListEntry(protocolMap, "SSL:SSL")
+		}
+
+		return nil
+	}
+}
+
+// findListEntry returns the first entry of the comma-separated list with the given prefix.
+func findListEntry(list, prefix string) (string, bool) {
+	for item := range strings.SplitSeq(list, ",") {
+		if item = strings.TrimSpace(item); strings.HasPrefix(item, prefix) {
+			return item, true
+		}
+	}
+
+	return "", false
+}
+
+// appendListEntry appends the entry to the comma-separated list.
+func appendListEntry(list, entry string) string {
+	if list == "" {
+		return entry
+	}
+
+	return list + "," + entry
 }
 
 // validateKRaftVersion validates if the image version is compatible with KRaft mode,

@@ -13,7 +13,7 @@ func ExampleRun() {
 	// runMinioContainer {
 	ctx := context.Background()
 
-	minioContainer, err := minio.Run(ctx, "minio/minio:RELEASE.2024-01-16T16-07-38Z")
+	minioContainer, err := minio.Run(ctx, "quay.io/minio/minio:RELEASE.2024-01-16T16-07-38Z")
 	defer func() {
 		if err := testcontainers.TerminateContainer(minioContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)

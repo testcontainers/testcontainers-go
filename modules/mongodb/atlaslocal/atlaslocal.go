@@ -34,12 +34,13 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		return nil, fmt.Errorf("validate options: %w", err)
 	}
 
-	moduleOpts := []testcontainers.ContainerCustomizer{ // Set the defaults
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 4+len(opts))
+	moduleOpts = append(moduleOpts, // Set the defaults
 		testcontainers.WithExposedPorts(defaultPort),
 		testcontainers.WithWaitStrategy(wait.ForListeningPort(defaultPort), wait.ForHealthCheck()),
 		testcontainers.WithEnv(userOpts.env()),
 		testcontainers.WithFiles(userOpts.files...),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 

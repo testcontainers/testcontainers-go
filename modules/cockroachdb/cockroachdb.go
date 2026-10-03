@@ -10,9 +10,9 @@ import (
 	"net"
 	"net/url"
 
-	"github.com/docker/go-connections/nat"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -175,7 +175,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		},
 	}
 
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 5+len(opts)+1)
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithCmd(
 			"start-single-node",
 			memStorageFlag+defaultStoreSize,
@@ -198,7 +199,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				certsDir+"/client."+defaultUser+".crt",
 				certsDir+"/client."+defaultUser+".key",
 			).WithRootCAs(fileCACert).WithServerName("127.0.0.1"),
-			wait.ForSQL(defaultSQLPort, "pgx/v5", func(host string, port nat.Port) string {
+			wait.ForSQL(defaultSQLPort, "pgx/v5", func(host string, port network.Port) string {
 				connStr, err := ctr.connString(host, port)
 				if err != nil {
 					panic(err)
@@ -206,7 +207,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				return connStr
 			}),
 		),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 
@@ -224,7 +225,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 }
 
 // connString returns a connection string for the given host, port and options.
-func (c *CockroachDBContainer) connString(host string, port nat.Port) (string, error) {
+func (c *CockroachDBContainer) connString(host string, port network.Port) (string, error) {
 	cfg, err := c.connConfig(host, port)
 	if err != nil {
 		return "", fmt.Errorf("connection config: %w", err)
@@ -234,7 +235,7 @@ func (c *CockroachDBContainer) connString(host string, port nat.Port) (string, e
 }
 
 // connConfig returns a [pgx.ConnConfig] for the given host, port and options.
-func (c *CockroachDBContainer) connConfig(host string, port nat.Port) (*pgx.ConnConfig, error) {
+func (c *CockroachDBContainer) connConfig(host string, port network.Port) (*pgx.ConnConfig, error) {
 	var user *url.Userinfo
 	if c.password != "" {
 		user = url.UserPassword(c.user, c.password)

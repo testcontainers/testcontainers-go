@@ -9,10 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/volume"
 	"github.com/google/uuid"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -59,7 +57,7 @@ func TestLocalDockerComposeStrategyForInvalidService(t *testing.T) {
 	require.Error(t, err.Error, "Expected error to be thrown because service with wait strategy is not running")
 
 	require.Len(t, compose.Services, 1)
-	assert.Contains(t, compose.Services, "local-nginx")
+	require.Contains(t, compose.Services, "local-nginx")
 }
 
 func TestLocalDockerComposeWithWaitLogStrategy(t *testing.T) {
@@ -82,8 +80,8 @@ func TestLocalDockerComposeWithWaitLogStrategy(t *testing.T) {
 	checkIfError(t, err)
 
 	require.Len(t, compose.Services, 2)
-	assert.Contains(t, compose.Services, "local-nginx")
-	assert.Contains(t, compose.Services, "local-mysql")
+	require.Contains(t, compose.Services, "local-nginx")
+	require.Contains(t, compose.Services, "local-mysql")
 }
 
 func TestLocalDockerComposeWithWaitForService(t *testing.T) {
@@ -108,7 +106,7 @@ func TestLocalDockerComposeWithWaitForService(t *testing.T) {
 	checkIfError(t, err)
 
 	require.Len(t, compose.Services, 1)
-	assert.Contains(t, compose.Services, "local-nginx")
+	require.Contains(t, compose.Services, "local-nginx")
 }
 
 func TestLocalDockerComposeWithWaitForShortLifespanService(t *testing.T) {
@@ -132,8 +130,8 @@ func TestLocalDockerComposeWithWaitForShortLifespanService(t *testing.T) {
 	checkIfError(t, err)
 
 	require.Len(t, compose.Services, 2)
-	assert.Contains(t, compose.Services, "falafel")
-	assert.Contains(t, compose.Services, "tzatziki")
+	require.Contains(t, compose.Services, "falafel")
+	require.Contains(t, compose.Services, "tzatziki")
 }
 
 func TestLocalDockerComposeWithWaitHTTPStrategy(t *testing.T) {
@@ -158,7 +156,7 @@ func TestLocalDockerComposeWithWaitHTTPStrategy(t *testing.T) {
 	checkIfError(t, err)
 
 	require.Len(t, compose.Services, 1)
-	assert.Contains(t, compose.Services, "local-nginx")
+	require.Contains(t, compose.Services, "local-nginx")
 }
 
 func TestLocalDockerComposeWithContainerName(t *testing.T) {
@@ -183,7 +181,7 @@ func TestLocalDockerComposeWithContainerName(t *testing.T) {
 	checkIfError(t, err)
 
 	require.Len(t, compose.Services, 1)
-	assert.Contains(t, compose.Services, "local-nginx")
+	require.Contains(t, compose.Services, "local-nginx")
 }
 
 func TestLocalDockerComposeWithWaitStrategy_NoExposedPorts(t *testing.T) {
@@ -205,7 +203,7 @@ func TestLocalDockerComposeWithWaitStrategy_NoExposedPorts(t *testing.T) {
 	checkIfError(t, err)
 
 	require.Len(t, compose.Services, 1)
-	assert.Contains(t, compose.Services, "local-nginx")
+	require.Contains(t, compose.Services, "local-nginx")
 }
 
 func TestLocalDockerComposeWithMultipleWaitStrategies(t *testing.T) {
@@ -228,8 +226,8 @@ func TestLocalDockerComposeWithMultipleWaitStrategies(t *testing.T) {
 	checkIfError(t, err)
 
 	require.Len(t, compose.Services, 2)
-	assert.Contains(t, compose.Services, "local-nginx")
-	assert.Contains(t, compose.Services, "local-mysql")
+	require.Contains(t, compose.Services, "local-nginx")
+	require.Contains(t, compose.Services, "local-mysql")
 }
 
 func TestLocalDockerComposeWithFailedStrategy(t *testing.T) {
@@ -256,7 +254,7 @@ func TestLocalDockerComposeWithFailedStrategy(t *testing.T) {
 	require.Error(t, err.Error, "Expected error to be thrown because of a wrong supplied wait strategy")
 
 	require.Len(t, compose.Services, 1)
-	assert.Contains(t, compose.Services, "local-nginx")
+	require.Contains(t, compose.Services, "local-nginx")
 }
 
 func TestLocalDockerComposeComplex(t *testing.T) {
@@ -277,8 +275,8 @@ func TestLocalDockerComposeComplex(t *testing.T) {
 	checkIfError(t, err)
 
 	require.Len(t, compose.Services, 2)
-	assert.Contains(t, compose.Services, "local-nginx")
-	assert.Contains(t, compose.Services, "local-mysql")
+	require.Contains(t, compose.Services, "local-nginx")
+	require.Contains(t, compose.Services, "local-mysql")
 }
 
 func TestLocalDockerComposeWithEnvironment(t *testing.T) {
@@ -302,7 +300,7 @@ func TestLocalDockerComposeWithEnvironment(t *testing.T) {
 	checkIfError(t, err)
 
 	require.Len(t, compose.Services, 1)
-	assert.Contains(t, compose.Services, "local-nginx")
+	require.Contains(t, compose.Services, "local-nginx")
 
 	present := map[string]string{
 		"bar": "BAR",
@@ -338,9 +336,9 @@ func TestLocalDockerComposeWithMultipleComposeFiles(t *testing.T) {
 	checkIfError(t, err)
 
 	require.Len(t, compose.Services, 3)
-	assert.Contains(t, compose.Services, "local-nginx")
-	assert.Contains(t, compose.Services, "local-mysql")
-	assert.Contains(t, compose.Services, "local-postgres")
+	require.Contains(t, compose.Services, "local-nginx")
+	require.Contains(t, compose.Services, "local-mysql")
+	require.Contains(t, compose.Services, "local-postgres")
 
 	present := map[string]string{
 		"bar": "BAR",
@@ -374,14 +372,16 @@ func assertVolumeDoesNotExist(tb testing.TB, volumeName string) {
 	containerClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	require.NoErrorf(tb, err, "Failed to get provider")
 
-	volumeList, err := containerClient.VolumeList(context.Background(), volume.ListOptions{Filters: filters.NewArgs(filters.Arg("name", volumeName))})
+	volumeList, err := containerClient.VolumeList(context.Background(), client.VolumeListOptions{
+		Filters: make(client.Filters).Add("name", volumeName),
+	})
 	require.NoErrorf(tb, err, "Failed to list volumes")
 
 	if len(volumeList.Warnings) > 0 {
 		tb.Logf("Volume list warnings: %v", volumeList.Warnings)
 	}
 
-	require.Emptyf(tb, volumeList.Volumes, "Volume list is not empty")
+	require.Emptyf(tb, volumeList.Items, "Volume list is not empty")
 }
 
 func assertContainerEnvironmentVariables(
@@ -394,15 +394,15 @@ func assertContainerEnvironmentVariables(
 	containerClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	require.NoErrorf(tb, err, "Failed to get provider")
 
-	containers, err := containerClient.ContainerList(context.Background(), container.ListOptions{})
+	containers, err := containerClient.ContainerList(context.Background(), client.ContainerListOptions{})
 	require.NoErrorf(tb, err, "Failed to list containers")
 	require.NotEmptyf(tb, containers, "container list empty")
 
 	containerNameRegexp := regexp.MustCompile(fmt.Sprintf(`^\/?%s(_|-)%s(_|-)\d$`, composeIdentifier, serviceName))
 	var containerID string
 containerLoop:
-	for i := range containers {
-		c := containers[i]
+	for i := range containers.Items {
+		c := containers.Items[i]
 		for j := range c.Names {
 			if containerNameRegexp.MatchString(c.Names[j]) {
 				containerID = c.ID
@@ -411,17 +411,17 @@ containerLoop:
 		}
 	}
 
-	details, err := containerClient.ContainerInspect(context.Background(), containerID)
+	res, err := containerClient.ContainerInspect(context.Background(), containerID, client.ContainerInspectOptions{})
 	require.NoErrorf(tb, err, "Failed to inspect container")
 
 	for k, v := range present {
 		keyVal := k + "=" + v
-		assert.Contains(tb, details.Config.Env, keyVal)
+		assert.Contains(tb, res.Container.Config.Env, keyVal)
 	}
 
 	for k, v := range absent {
 		keyVal := k + "=" + v
-		assert.NotContains(tb, details.Config.Env, keyVal)
+		assert.NotContains(tb, res.Container.Config.Env, keyVal)
 	}
 }
 
@@ -433,6 +433,6 @@ func checkIfError(t *testing.T, err ExecError) {
 
 	require.NoErrorf(t, err.Stderr, "An error in Stderr happened when running %v", err.Command)
 
-	assert.NotNil(t, err.StdoutOutput)
-	assert.NotNil(t, err.StderrOutput)
+	require.NotNil(t, err.StdoutOutput)
+	require.NotNil(t, err.StderrOutput)
 }

@@ -87,6 +87,8 @@ readonly excluded_files=(
     ".github/workflows/scorecards.yml"
     ".github/workflows/sonar-*.yml"
     ".github/workflows/usage-metrics.yml"
+    ".github/workflows/usage-metrics-modules.yml"
+    ".github/workflows/github-clones.yml"
     "scripts/bump-*.sh"
     "scripts/check_environment.sh"
     "scripts/*release.sh"
@@ -99,7 +101,9 @@ readonly excluded_files=(
     "RELEASING.md"
     "requirements.txt"
     "runtime.txt"
-    "docs/usage-metrics.csv"
+    "docs/usage-metrics/core.csv"
+    "docs/usage-metrics/modules.csv"
+    "docs/usage-metrics/clones.csv"
 )
 
 # define an array of modules that won't be part of the build

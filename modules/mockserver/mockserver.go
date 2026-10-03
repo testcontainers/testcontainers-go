@@ -21,13 +21,14 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the MockServer container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MockServerContainer, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 2+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts("1080/tcp"),
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("started on port: 1080"),
 			wait.ForListeningPort("1080/tcp").SkipInternalCheck(),
 		),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 

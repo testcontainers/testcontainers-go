@@ -20,7 +20,7 @@ func TestRun(t *testing.T) {
 
 	firestoreContainer, err := tcfirestore.Run(
 		ctx,
-		"gcr.io/google.com/cloudsdktool/cloud-sdk:367.0.0-emulators",
+		"gcr.io/google.com/cloudsdktool/cloud-sdk:emulators",
 		tcfirestore.WithProjectID("firestore-project"),
 	)
 	testcontainers.CleanupContainer(t, firestoreContainer)
@@ -66,7 +66,7 @@ func TestRunWithDatastore(t *testing.T) {
 
 	firestoreContainer, err := tcfirestore.Run(
 		ctx,
-		"gcr.io/google.com/cloudsdktool/cloud-sdk:513.0.0-emulators",
+		"gcr.io/google.com/cloudsdktool/cloud-sdk:emulators",
 		tcfirestore.WithProjectID("firestore-project"),
 		tcfirestore.WithDatastoreMode(),
 	)

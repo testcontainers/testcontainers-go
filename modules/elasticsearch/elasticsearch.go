@@ -43,13 +43,14 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Elasticsearch container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*ElasticsearchContainer, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 2+len(opts)+3)
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultHTTPPort+"/tcp", defaultTCPPort+"/tcp"),
 		testcontainers.WithEnv(map[string]string{
 			"discovery.type": "single-node",
 			"cluster.routing.allocation.disk.threshold_enabled": "false",
 		}),
-	}
+	)
 
 	// Gather all config options (defaults and then apply provided options)
 	options := defaultOptions()

@@ -109,3 +109,34 @@ func TestSaveImagesWithOpts(t *testing.T) {
 
 	require.NotZerof(t, info.Size(), "output file is empty")
 }
+
+func TestResolveSaveImageOptions(t *testing.T) {
+	t.Run("no options", func(t *testing.T) {
+		platform, err := ResolveSaveImageOptions()
+		require.NoError(t, err)
+		require.Nil(t, platform)
+	})
+
+	t.Run("single platform", func(t *testing.T) {
+		p, err := platforms.Parse("linux/amd64")
+		require.NoError(t, err)
+
+		platform, err := ResolveSaveImageOptions(SaveDockerImageWithPlatforms(p))
+		require.NoError(t, err)
+		require.NotNil(t, platform)
+		require.Equal(t, p, *platform)
+	})
+
+	t.Run("multiple platforms", func(t *testing.T) {
+		amd64, err := platforms.Parse("linux/amd64")
+		require.NoError(t, err)
+		arm64, err := platforms.Parse("linux/arm64")
+		require.NoError(t, err)
+
+		_, err = ResolveSaveImageOptions(
+			SaveDockerImageWithPlatforms(amd64),
+			SaveDockerImageWithPlatforms(arm64),
+		)
+		require.Error(t, err)
+	})
+}

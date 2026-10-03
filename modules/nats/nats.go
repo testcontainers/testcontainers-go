@@ -46,7 +46,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts = append(moduleOpts, opts...)
 
 	// Include the command line arguments
-	cmdArgs := []string{}
+	cmdArgs := make([]string, 0, len(settings.CmdArgs)*2)
 	for k, v := range settings.CmdArgs {
 		// always prepend the dash because it was removed in the options
 		cmdArgs = append(cmdArgs, "--"+k, v)

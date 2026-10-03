@@ -6,10 +6,11 @@ import (
 	"net/http"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/cpuguy83/dockercfg"
-	"github.com/docker/docker/api/types/image"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
 
@@ -264,7 +265,10 @@ func TestRunContainer_wrongData(t *testing.T) {
 		testcontainers.WithWaitStrategy(wait.ForLog("Ready to accept connections")),
 	)
 	testcontainers.CleanupContainer(t, redisC)
-	require.ErrorContains(t, err, "manifest unknown")
+	require.Error(t, err)
+
+	msg := strings.ToLower(err.Error())
+	require.True(t, strings.Contains(msg, "manifest unknown") || strings.Contains(msg, "no such image"), "unexpected error: %v", err)
 }
 
 func TestPullImage_samePlatform(t *testing.T) {
@@ -286,7 +290,7 @@ func TestPullImage_samePlatform(t *testing.T) {
 	err = registryContainer.PullImage(ctx, img)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		_, err := dockerCli.ImageRemove(ctx, img, image.RemoveOptions{Force: true})
+		_, err := dockerCli.ImageRemove(ctx, img, client.ImageRemoveOptions{Force: true})
 		require.NoError(t, err)
 	})
 

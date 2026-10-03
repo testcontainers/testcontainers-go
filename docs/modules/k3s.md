@@ -92,8 +92,109 @@ to the Kubernetes Rest Client API using a Kubernetes client. It'll be returned i
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.25.0"><span class="tc-version">:material-tag: v0.25.0</span></a>
 
-The `LoadImages` method loads a list of images into the kubernetes cluster and makes them available to pods.
+The `LoadImages` method imports images from the local Docker daemon into the k3s cluster and makes them available to pods.
 
-This is useful for testing images generated locally without having to push them to a public docker registry or having to configure `k3s` to [use a private registry](https://docs.k3s.io/installation/private-registry).
+```golang
+func (c *K3sContainer) LoadImages(ctx context.Context, images ...string) error
+```
 
-The images must be already present in the node running the test. [DockerProvider](https://pkg.go.dev/github.com/testcontainers/testcontainers-go#DockerProvider) offers a method for pulling images, which can be used from the test code to ensure the image is present locally before loading them to the cluster.
+This is useful for testing images built locally without pushing them to a registry or configuring k3s to [use a private registry](https://docs.k3s.io/installation/private-registry).
+
+Images must already be present on the Docker host running the test. [DockerProvider.PullImage](https://pkg.go.dev/github.com/testcontainers/testcontainers-go#DockerProvider.PullImage) is enough for single-architecture image references. When you need a specific OCI platform, use [DockerProvider.PullImageWithOpts](https://pkg.go.dev/github.com/testcontainers/testcontainers-go#DockerProvider.PullImageWithOpts) with [PullDockerImageWithPlatform](https://pkg.go.dev/github.com/testcontainers/testcontainers-go#PullDockerImageWithPlatform).
+
+`LoadImages` delegates to `LoadImagesWithOpts` without save options. It works best with single-architecture image references (for example `amd64/nginx`). For multi-architecture images, use `LoadImagesWithPlatform` or `LoadImagesWithOpts`.
+
+When creating pods that use loaded images, set `imagePullPolicy: Never` so Kubernetes uses the imported image instead of pulling from a registry.
+
+Example:
+
+```golang
+provider, err := testcontainers.ProviderDocker.GetProvider()
+if err != nil {
+    // handle error
+}
+
+if err := provider.PullImage(ctx, "amd64/nginx"); err != nil {
+    // handle error
+}
+
+if err := k3sContainer.LoadImages(ctx, "amd64/nginx"); err != nil {
+    // handle error
+}
+```
+
+#### LoadImagesWithPlatform
+
+The `LoadImagesWithPlatform` method is a convenience wrapper around `LoadImagesWithOpts` that exports and imports an image for a specific OCI platform.
+
+```golang
+func (c *K3sContainer) LoadImagesWithPlatform(ctx context.Context, images []string, platform *v1.Platform) error
+```
+
+When `platform` is `nil`, behaviour matches `LoadImages`. When `platform` is set, the image is exported and imported for that OCI platform.
+
+Use this method on multi-architecture hosts or when loading multi-architecture image tags. Pull the same platform into Docker first, then load it into k3s:
+
+```golang
+hostPlatform := platforms.DefaultSpec()
+hostPlatform.OS = "linux"
+
+provider, err := testcontainers.ProviderDocker.GetProvider()
+if err != nil {
+    // handle error
+}
+
+if err := provider.PullImageWithOpts(
+    ctx,
+    "amd64/nginx",
+    testcontainers.PullDockerImageWithPlatform(hostPlatform),
+); err != nil {
+    // handle error
+}
+
+if err := k3sContainer.LoadImagesWithPlatform(ctx, []string{"amd64/nginx"}, &hostPlatform); err != nil {
+    // handle error
+}
+```
+
+#### LoadImagesWithOpts
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.25.0"><span class="tc-version">:material-tag: v0.25.0</span></a>
+
+The `LoadImagesWithOpts` method imports local images into the k3s cluster, passing [SaveImageOption](https://pkg.go.dev/github.com/testcontainers/testcontainers-go#SaveImageOption) values through to `docker save`.
+
+```golang
+func (c *K3sContainer) LoadImagesWithOpts(ctx context.Context, images []string, opts ...testcontainers.SaveImageOption) error
+```
+
+When [SaveDockerImageWithPlatforms](https://pkg.go.dev/github.com/testcontainers/testcontainers-go#SaveDockerImageWithPlatforms) is passed, containerd import uses the same platform. Without platform options, import does not use `--all-platforms`.
+
+For multiple images on different architectures, call `LoadImagesWithOpts` once per image and platform.
+
+Example with platform:
+
+```golang
+hostPlatform := platforms.DefaultSpec()
+hostPlatform.OS = "linux"
+
+provider, err := testcontainers.ProviderDocker.GetProvider()
+if err != nil {
+    // handle error
+}
+
+if err := provider.PullImageWithOpts(
+    ctx,
+    "amd64/nginx",
+    testcontainers.PullDockerImageWithPlatform(hostPlatform),
+); err != nil {
+    // handle error
+}
+
+if err := k3sContainer.LoadImagesWithOpts(
+    ctx,
+    []string{"amd64/nginx"},
+    testcontainers.SaveDockerImageWithPlatforms(hostPlatform),
+); err != nil {
+    // handle error
+}
+```

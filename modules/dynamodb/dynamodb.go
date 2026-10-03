@@ -20,12 +20,13 @@ type DynamoDBContainer struct {
 
 // Run creates an instance of the DynamoDB container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*DynamoDBContainer, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 4+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithEntrypoint("java", "-Djava.library.path=./DynamoDBLocal_lib"),
 		testcontainers.WithCmd("-jar", "DynamoDBLocal.jar"),
 		testcontainers.WithExposedPorts(port),
 		testcontainers.WithWaitStrategy(wait.ForListeningPort(port)),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 

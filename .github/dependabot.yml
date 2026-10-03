@@ -15,6 +15,7 @@ updates:
         - /
         - /examples/nginx
         - /modulegen
+        - /modules/activemq
         - /modules/aerospike
         - /modules/arangodb
         - /modules/artemis
@@ -27,7 +28,10 @@ updates:
         - /modules/compose
         - /modules/consul
         - /modules/couchbase
+        - /modules/couchdb
+        - /modules/cratedb
         - /modules/databend
+        - /modules/dex
         - /modules/dind
         - /modules/dockermcpgateway
         - /modules/dockermodelrunner
@@ -35,6 +39,9 @@ updates:
         - /modules/dynamodb
         - /modules/elasticsearch
         - /modules/etcd
+        - /modules/fakegcsserver
+        - /modules/firebird
+        - /modules/forgejo
         - /modules/gcloud
         - /modules/grafana-lgtm
         - /modules/inbucket
@@ -42,7 +49,9 @@ updates:
         - /modules/k3s
         - /modules/k6
         - /modules/kafka
+        - /modules/kurrentdb
         - /modules/localstack
+        - /modules/mailpit
         - /modules/mariadb
         - /modules/meilisearch
         - /modules/memcached
@@ -50,28 +59,42 @@ updates:
         - /modules/minio
         - /modules/mockserver
         - /modules/mongodb
+        - /modules/mosquitto
         - /modules/mssql
         - /modules/mysql
         - /modules/nats
         - /modules/nebulagraph
         - /modules/neo4j
+        - /modules/nginx
         - /modules/ollama
         - /modules/openfga
         - /modules/openldap
         - /modules/opensearch
+        - /modules/orientdb
+        - /modules/papercutsmtp
         - /modules/pinecone
         - /modules/postgres
+        - /modules/presto
         - /modules/pulsar
         - /modules/qdrant
+        - /modules/questdb
         - /modules/rabbitmq
+        - /modules/ravendb
         - /modules/redis
         - /modules/redpanda
         - /modules/registry
+        - /modules/s3mock
         - /modules/scylladb
+        - /modules/sftp
         - /modules/socat
         - /modules/solace
+        - /modules/solr
         - /modules/surrealdb
+        - /modules/tidb
+        - /modules/timeplus
         - /modules/toxiproxy
+        - /modules/trino
+        - /modules/typesense
         - /modules/valkey
         - /modules/vault
         - /modules/vearch

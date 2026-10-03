@@ -18,11 +18,11 @@ jobs:
       modules_count: ${{ steps.set-modified-modules-count.outputs.modules_count }}
     steps:
       - name: Check out code into the Go module directory
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - id: changed-files
         name: Get changed files
-        uses: tj-actions/changed-files@e0021407031f5be11a464abee9a0776171c79891 # v47.0.1
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
 
       - id: set-modified-modules
         name: Set all modified modules
@@ -61,8 +61,11 @@ jobs:
       # We don't want to fail the build the soonest but identify which modules passed and failed.
       fail-fast: false
       matrix:
-        go-version: [1.24.x, 1.25.x]
+        go-version: [1.25.x, 1.26.x]
         module: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
+        exclude:
+          # The Quay MinIO image requires credentials not available in CI.
+          - module: modules/minio
     permissions:
       contents: read  # for actions/checkout to fetch code
       pull-requests: read  # for sonarsource/sonarcloud-github-action to determine which PR to decorate
@@ -88,7 +91,7 @@ jobs:
       # We don't want to fail the build the soonest but identify which modules passed and failed.
       fail-fast: false
       matrix:
-        go-version: [1.24.x, 1.25.x]
+        go-version: [1.25.x, 1.26.x]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
@@ -109,7 +112,7 @@ jobs:
     name: "Test with reaper off"
     strategy:
       matrix:
-        go-version: [1.24.x, 1.25.x]
+        go-version: [1.25.x, 1.26.x]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
@@ -130,7 +133,7 @@ jobs:
     name: "Test with Rootless Docker"
     strategy:
       matrix:
-        go-version: [1.24.x, 1.25.x]
+        go-version: [1.25.x, 1.26.x]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}

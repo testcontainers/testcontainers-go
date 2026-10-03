@@ -34,13 +34,14 @@ func (c *Container) URI() string {
 // Run creates an instance of the Spanner GCloud container type.
 // The URI uses the empty string as the protocol.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 2+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultPort),
 		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort(defaultPort),
 			wait.ForLog("Cloud Spanner emulator running"),
 		),
-	}
+	)
 
 	settings := defaultOptions()
 	for _, opt := range opts {

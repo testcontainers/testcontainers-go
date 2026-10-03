@@ -6,16 +6,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/netip"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/api/types/strslice"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/mount"
+	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -74,10 +73,10 @@ func TestPreCreateModifierHook(t *testing.T) {
 				},
 			},
 			HostConfigModifier: func(hostConfig *container.HostConfig) {
-				hostConfig.PortBindings = nat.PortMap{
-					"80/tcp": []nat.PortBinding{
+				hostConfig.PortBindings = network.PortMap{
+					network.MustParsePort("80/tcp"): []network.PortBinding{
 						{
-							HostIP:   "1",
+							HostIP:   netip.MustParseAddr("127.0.0.1"),
 							HostPort: "2",
 						},
 					},
@@ -111,7 +110,7 @@ func TestPreCreateModifierHook(t *testing.T) {
 			"Docker config's env should be overwritten by the modifier",
 		)
 		assert.Equal(t,
-			nat.PortSet(nat.PortSet{"80/tcp": struct{}{}}),
+			network.PortSet{network.MustParsePort("80/tcp"): struct{}{}},
 			inputConfig.ExposedPorts,
 			"Docker config's exposed ports should be overwritten by the modifier",
 		)
@@ -131,15 +130,15 @@ func TestPreCreateModifierHook(t *testing.T) {
 			"Host config's mounts should be mapped to Docker types",
 		)
 
-		assert.Equal(t, nat.PortMap{
-			"80/tcp": []nat.PortBinding{
+		assert.Equal(t, network.PortMap{
+			network.MustParsePort("80/tcp"): []network.PortBinding{
 				{
-					HostIP:   "",
-					HostPort: "0",
+					HostIP:   netip.MustParseAddr("127.0.0.1"),
+					HostPort: "2",
 				},
 			},
 		}, inputHostConfig.PortBindings,
-			"Host config's port bindings should be overwritten by the modifier",
+			"Host config's port bindings should be preserved from the modifier",
 		)
 
 		assert.Equal(
@@ -160,10 +159,10 @@ func TestPreCreateModifierHook(t *testing.T) {
 		req := ContainerRequest{
 			Image: nginxAlpineImage, // alpine image does expose port 80
 			HostConfigModifier: func(hostConfig *container.HostConfig) {
-				hostConfig.PortBindings = nat.PortMap{
-					"80/tcp": []nat.PortBinding{
+				hostConfig.PortBindings = network.PortMap{
+					network.MustParsePort("80/tcp"): []network.PortBinding{
 						{
-							HostIP:   "1",
+							HostIP:   netip.MustParseAddr("127.0.0.1"),
 							HostPort: "2",
 						},
 					},
@@ -186,12 +185,12 @@ func TestPreCreateModifierHook(t *testing.T) {
 
 		assert.Equal(
 			t,
-			nat.PortSet(nat.PortSet{}),
+			network.PortSet{},
 			inputConfig.ExposedPorts,
 			"Docker config's exposed ports should be empty",
 		)
 		assert.Equal(t,
-			nat.PortMap{},
+			network.PortMap{},
 			inputHostConfig.PortBindings,
 			"Host config's portBinding should be empty",
 		)
@@ -226,8 +225,8 @@ func TestPreCreateModifierHook(t *testing.T) {
 		// assertions
 
 		assert.Equal(t, req.AutoRemove, inputHostConfig.AutoRemove, "Deprecated AutoRemove should come from the container request")
-		assert.Equal(t, strslice.StrSlice(req.CapAdd), inputHostConfig.CapAdd, "Deprecated CapAdd should come from the container request")
-		assert.Equal(t, strslice.StrSlice(req.CapDrop), inputHostConfig.CapDrop, "Deprecated CapDrop should come from the container request")
+		assert.Equal(t, req.CapAdd, inputHostConfig.CapAdd, "Deprecated CapAdd should come from the container request")
+		assert.Equal(t, req.CapDrop, inputHostConfig.CapDrop, "Deprecated CapDrop should come from the container request")
 		assert.Equal(t, req.Binds, inputHostConfig.Binds, "Deprecated Binds should come from the container request")
 		assert.Equal(t, req.ExtraHosts, inputHostConfig.ExtraHosts, "Deprecated ExtraHosts should come from the container request")
 		assert.Equal(t, req.Resources, inputHostConfig.Resources, "Deprecated Resources should come from the container request")
@@ -327,10 +326,10 @@ func TestPreCreateModifierHook(t *testing.T) {
 		req := ContainerRequest{
 			Image: nginxAlpineImage, // alpine image does expose port 80
 			HostConfigModifier: func(hostConfig *container.HostConfig) {
-				hostConfig.PortBindings = nat.PortMap{
-					"80/tcp": []nat.PortBinding{
+				hostConfig.PortBindings = network.PortMap{
+					network.MustParsePort("80/tcp"): []network.PortBinding{
 						{
-							HostIP:   "localhost",
+							HostIP:   netip.MustParseAddr("127.0.0.1"),
 							HostPort: "8080",
 						},
 					},
@@ -350,18 +349,18 @@ func TestPreCreateModifierHook(t *testing.T) {
 		require.NoError(t, err)
 
 		// assertions
-		assert.Equal(t, "localhost", inputHostConfig.PortBindings["80/tcp"][0].HostIP)
-		assert.Equal(t, "8080", inputHostConfig.PortBindings["80/tcp"][0].HostPort)
+		assert.Equal(t, "127.0.0.1", inputHostConfig.PortBindings[network.MustParsePort("80/tcp")][0].HostIP.String())
+		assert.Equal(t, "8080", inputHostConfig.PortBindings[network.MustParsePort("80/tcp")][0].HostPort)
 	})
 
 	t.Run("Request contains exposed port modifiers with protocol", func(t *testing.T) {
 		req := ContainerRequest{
 			Image: nginxAlpineImage, // alpine image does expose port 80
 			HostConfigModifier: func(hostConfig *container.HostConfig) {
-				hostConfig.PortBindings = nat.PortMap{
-					"80/tcp": []nat.PortBinding{
+				hostConfig.PortBindings = network.PortMap{
+					network.MustParsePort("80/tcp"): []network.PortBinding{
 						{
-							HostIP:   "localhost",
+							HostIP:   netip.MustParseAddr("127.0.0.1"),
 							HostPort: "8080",
 						},
 					},
@@ -381,95 +380,90 @@ func TestPreCreateModifierHook(t *testing.T) {
 		require.NoError(t, err)
 
 		// assertions
-		assert.Equal(t, "localhost", inputHostConfig.PortBindings["80/tcp"][0].HostIP)
-		assert.Equal(t, "8080", inputHostConfig.PortBindings["80/tcp"][0].HostPort)
+		assert.Equal(t, "127.0.0.1", inputHostConfig.PortBindings[network.MustParsePort("80/tcp")][0].HostIP.String())
+		assert.Equal(t, "8080", inputHostConfig.PortBindings[network.MustParsePort("80/tcp")][0].HostPort)
 	})
 }
 
 func TestMergePortBindings(t *testing.T) {
 	type arg struct {
-		configPortMap nat.PortMap
-		parsedPortMap nat.PortMap
-		exposedPorts  []string
+		configPortMap  network.PortMap
+		exposedPortSet network.PortSet
 	}
 	cases := []struct {
 		name     string
 		arg      arg
-		expected nat.PortMap
+		expected network.PortMap
 	}{
 		{
 			name: "empty ports",
 			arg: arg{
-				configPortMap: nil,
-				parsedPortMap: nil,
-				exposedPorts:  nil,
+				configPortMap:  nil,
+				exposedPortSet: nil,
 			},
-			expected: map[nat.Port][]nat.PortBinding{},
+			expected: network.PortMap{},
 		},
 		{
 			name: "config port map but not exposed",
 			arg: arg{
-				configPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "1", HostPort: "2"}},
+				configPortMap: network.PortMap{
+					network.MustParsePort("80/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "2"}},
 				},
-				parsedPortMap: nil,
-				exposedPorts:  nil,
+				exposedPortSet: nil,
 			},
-			expected: map[nat.Port][]nat.PortBinding{},
+			expected: network.PortMap{},
 		},
 		{
 			name: "parsed port map without config",
 			arg: arg{
 				configPortMap: nil,
-				parsedPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "", HostPort: "0"}},
+				exposedPortSet: network.PortSet{
+					network.MustParsePort("80/tcp"): struct{}{},
 				},
-				exposedPorts: nil,
 			},
-			expected: map[nat.Port][]nat.PortBinding{
-				"80/tcp": {{HostIP: "", HostPort: "0"}},
+			expected: network.PortMap{
+				network.MustParsePort("80/tcp"): {{HostPort: "0"}},
 			},
 		},
 		{
 			name: "parsed and configured but not exposed",
 			arg: arg{
-				configPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "1", HostPort: "2"}},
+				configPortMap: network.PortMap{
+					network.MustParsePort("80/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "2"}},
 				},
-				parsedPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "", HostPort: ""}},
+				exposedPortSet: network.PortSet{
+					network.MustParsePort("80/tcp"): struct{}{},
 				},
-				exposedPorts: nil,
 			},
-			expected: map[nat.Port][]nat.PortBinding{
-				"80/tcp": {{HostIP: "", HostPort: "0"}},
+			expected: network.PortMap{
+				network.MustParsePort("80/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "2"}},
 			},
 		},
 		{
 			name: "merge both parsed and config",
 			arg: arg{
-				configPortMap: map[nat.Port][]nat.PortBinding{
-					"60/tcp": {{HostIP: "1", HostPort: "2"}},
-					"70/tcp": {{HostIP: "1", HostPort: "2"}},
-					"80/tcp": {{HostIP: "1", HostPort: "2"}},
+				configPortMap: network.PortMap{
+					network.MustParsePort("60/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "2"}},
+					network.MustParsePort("70/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "2"}},
+					network.MustParsePort("80/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "2"}},
 				},
-				parsedPortMap: map[nat.Port][]nat.PortBinding{
-					"80/tcp": {{HostIP: "", HostPort: "0"}},
-					"90/tcp": {{HostIP: "", HostPort: "0"}},
+				exposedPortSet: network.PortSet{
+					network.MustParsePort("70/tcp"): struct{}{},
+					network.MustParsePort("80/tcp"): struct{}{},
+					network.MustParsePort("90/tcp"): struct{}{},
 				},
-				exposedPorts: []string{"70", "80/tcp"},
 			},
-			expected: map[nat.Port][]nat.PortBinding{
-				"70/tcp": {{HostIP: "1", HostPort: "2"}},
-				"80/tcp": {{HostIP: "1", HostPort: "2"}},
-				"90/tcp": {{HostIP: "", HostPort: "0"}},
+			expected: network.PortMap{
+				network.MustParsePort("70/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "2"}},
+				network.MustParsePort("80/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "2"}},
+				network.MustParsePort("90/tcp"): {{HostPort: "0"}},
 			},
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			res := mergePortBindings(c.arg.configPortMap, c.arg.parsedPortMap, c.arg.exposedPorts)
+			res := mergePortBindings(c.arg.configPortMap, c.arg.exposedPortSet)
 			assert.Equal(t, c.expected, res)
 		})
 	}

@@ -34,13 +34,14 @@ func (c *Container) URI() string {
 // Run creates an instance of the Datastore GCloud container type.
 // The URI uses the empty string as the protocol.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultPort),
 		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort(defaultPort),
 			wait.ForHTTP("/").WithPort(defaultPort),
 		),
-	}
+	)
 
 	settings := defaultOptions()
 	for _, opt := range opts {

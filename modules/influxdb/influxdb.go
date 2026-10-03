@@ -28,7 +28,8 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the InfluxDB container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*InfluxDbContainer, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts("8086/tcp", "8088/tcp"),
 		testcontainers.WithEnv(map[string]string{
 			"INFLUXDB_BIND_ADDRESS":          ":8088",
@@ -39,7 +40,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"INFLUXDB_HTTP_AUTH_ENABLED":     "false",
 		}),
 		testcontainers.WithWaitStrategy(waitForHTTPHealth()),
-	}
+	)
 	moduleOpts = append(moduleOpts, opts...)
 
 	container, err := testcontainers.Run(ctx, img, moduleOpts...)

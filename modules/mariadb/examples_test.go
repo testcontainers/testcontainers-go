@@ -15,7 +15,7 @@ func ExampleRun() {
 	ctx := context.Background()
 
 	mariadbContainer, err := mariadb.Run(ctx,
-		"mariadb:11.0.3",
+		"mariadb:12.3.2",
 		mariadb.WithConfigFile(filepath.Join("testdata", "my.cnf")),
 		mariadb.WithScripts(filepath.Join("testdata", "schema.sql")),
 		mariadb.WithDatabase("foo"),

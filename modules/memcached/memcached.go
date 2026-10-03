@@ -19,10 +19,11 @@ type Container struct {
 
 // Run creates an instance of the Memcached container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 2+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultPort),
 		testcontainers.WithWaitStrategy(wait.ForListeningPort(defaultPort)),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 

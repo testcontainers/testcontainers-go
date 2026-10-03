@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/docker/go-connections/nat"
-
 	"github.com/testcontainers/testcontainers-go"
 )
 
@@ -37,7 +35,7 @@ func newGCloudContainer(ctx context.Context, img string, port int, settings opti
 		return c, fmt.Errorf("run gcloud container: %w", err)
 	}
 
-	endpoint, err := c.PortEndpoint(ctx, nat.Port(fmt.Sprintf("%d/tcp", port)), proto)
+	endpoint, err := c.PortEndpoint(ctx, fmt.Sprintf("%d/tcp", port), proto)
 	if err != nil {
 		return c, fmt.Errorf("port endpoint: %w", err)
 	}

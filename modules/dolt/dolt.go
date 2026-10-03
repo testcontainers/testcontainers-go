@@ -54,7 +54,8 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Dolt container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*DoltContainer, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 3+len(opts)+1)
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts("3306/tcp", "33060/tcp"),
 		testcontainers.WithEnv(map[string]string{
 			"DOLT_USER":     defaultUser,
@@ -62,7 +63,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			"DOLT_DATABASE": defaultDatabaseName,
 		}),
 		testcontainers.WithWaitStrategy(wait.ForLog("Server ready. Accepting connections.")),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 	moduleOpts = append(moduleOpts, WithDefaultCredentials())
@@ -74,6 +75,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 	if err != nil {
 		return dc, fmt.Errorf("run dolt: %w", err)
+	}
+	if dc == nil {
+		return dc, errors.New("run dolt: dolthub container not found")
 	}
 
 	// refresh the credentials from the environment variables

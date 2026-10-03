@@ -36,14 +36,15 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Inbucket container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*InbucketContainer, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 2+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts("2500/tcp", "9000/tcp", "1100/tcp"),
 		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort("2500/tcp"),
 			wait.ForListeningPort("9000/tcp"),
 			wait.ForListeningPort("1100/tcp"),
 		),
-	}
+	)
 	moduleOpts = append(moduleOpts, opts...)
 
 	container, err := testcontainers.Run(ctx, img, moduleOpts...)

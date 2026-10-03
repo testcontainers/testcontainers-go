@@ -10,6 +10,10 @@
             "path": "../examples/nginx"
         },
         {
+            "name": "module / activemq",
+            "path": "../modules/activemq"
+        },
+        {
             "name": "module / aerospike",
             "path": "../modules/aerospike"
         },
@@ -58,8 +62,20 @@
             "path": "../modules/couchbase"
         },
         {
+            "name": "module / couchdb",
+            "path": "../modules/couchdb"
+        },
+        {
+            "name": "module / cratedb",
+            "path": "../modules/cratedb"
+        },
+        {
             "name": "module / databend",
             "path": "../modules/databend"
+        },
+        {
+            "name": "module / dex",
+            "path": "../modules/dex"
         },
         {
             "name": "module / dind",
@@ -90,6 +106,18 @@
             "path": "../modules/etcd"
         },
         {
+            "name": "module / fakegcsserver",
+            "path": "../modules/fakegcsserver"
+        },
+        {
+            "name": "module / firebird",
+            "path": "../modules/firebird"
+        },
+        {
+            "name": "module / forgejo",
+            "path": "../modules/forgejo"
+        },
+        {
             "name": "module / gcloud",
             "path": "../modules/gcloud"
         },
@@ -118,8 +146,16 @@
             "path": "../modules/kafka"
         },
         {
+            "name": "module / kurrentdb",
+            "path": "../modules/kurrentdb"
+        },
+        {
             "name": "module / localstack",
             "path": "../modules/localstack"
+        },
+        {
+            "name": "module / mailpit",
+            "path": "../modules/mailpit"
         },
         {
             "name": "module / mariadb",
@@ -150,6 +186,10 @@
             "path": "../modules/mongodb"
         },
         {
+            "name": "module / mosquitto",
+            "path": "../modules/mosquitto"
+        },
+        {
             "name": "module / mssql",
             "path": "../modules/mssql"
         },
@@ -170,6 +210,10 @@
             "path": "../modules/neo4j"
         },
         {
+            "name": "module / nginx",
+            "path": "../modules/nginx"
+        },
+        {
             "name": "module / ollama",
             "path": "../modules/ollama"
         },
@@ -186,12 +230,24 @@
             "path": "../modules/opensearch"
         },
         {
+            "name": "module / orientdb",
+            "path": "../modules/orientdb"
+        },
+        {
+            "name": "module / papercutsmtp",
+            "path": "../modules/papercutsmtp"
+        },
+        {
             "name": "module / pinecone",
             "path": "../modules/pinecone"
         },
         {
             "name": "module / postgres",
             "path": "../modules/postgres"
+        },
+        {
+            "name": "module / presto",
+            "path": "../modules/presto"
         },
         {
             "name": "module / pulsar",
@@ -202,8 +258,16 @@
             "path": "../modules/qdrant"
         },
         {
+            "name": "module / questdb",
+            "path": "../modules/questdb"
+        },
+        {
             "name": "module / rabbitmq",
             "path": "../modules/rabbitmq"
+        },
+        {
+            "name": "module / ravendb",
+            "path": "../modules/ravendb"
         },
         {
             "name": "module / redis",
@@ -218,8 +282,16 @@
             "path": "../modules/registry"
         },
         {
+            "name": "module / s3mock",
+            "path": "../modules/s3mock"
+        },
+        {
             "name": "module / scylladb",
             "path": "../modules/scylladb"
+        },
+        {
+            "name": "module / sftp",
+            "path": "../modules/sftp"
         },
         {
             "name": "module / socat",
@@ -230,12 +302,32 @@
             "path": "../modules/solace"
         },
         {
+            "name": "module / solr",
+            "path": "../modules/solr"
+        },
+        {
             "name": "module / surrealdb",
             "path": "../modules/surrealdb"
         },
         {
+            "name": "module / tidb",
+            "path": "../modules/tidb"
+        },
+        {
+            "name": "module / timeplus",
+            "path": "../modules/timeplus"
+        },
+        {
             "name": "module / toxiproxy",
             "path": "../modules/toxiproxy"
+        },
+        {
+            "name": "module / trino",
+            "path": "../modules/trino"
+        },
+        {
+            "name": "module / typesense",
+            "path": "../modules/typesense"
         },
         {
             "name": "module / valkey",

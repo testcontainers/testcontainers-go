@@ -22,13 +22,14 @@ func RunContainer(ctx context.Context, opts ...testcontainers.ContainerCustomize
 
 // Run creates an instance of the Qdrant container type
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*QdrantContainer, error) {
-	moduleOpts := []testcontainers.ContainerCustomizer{
+	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 2+len(opts))
+	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts("6333/tcp", "6334/tcp"),
 		testcontainers.WithWaitStrategy(
 			wait.ForListeningPort("6333/tcp").WithStartupTimeout(5*time.Second),
 			wait.ForListeningPort("6334/tcp").WithStartupTimeout(5*time.Second),
 		),
-	}
+	)
 
 	moduleOpts = append(moduleOpts, opts...)
 
