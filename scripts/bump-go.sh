@@ -148,6 +148,7 @@ function bumpGolangDockerImages() {
     "s/golang:${oldGoVersion}([^0-9.]|$)/golang:${newGoVersion}\1/g" \
     "s/golang: ${oldGoVersion}([^0-9.]|$)/golang: ${newGoVersion}\1/g" \
     "s/- \"${oldGoVersion}\"/- \"${newGoVersion}\"/g" \
+    "s/(minimal version of Go required to use this module is )\*\*[0-9]+\.[0-9]+\*\*/\1**${newGoVersion}**/g" \
     "s/\[\"${oldGoVersion}\.[0-9]+\", \"[0-9]+\.[0-9]+\.[0-9]+\"\]/[\"${goPatch}\", \"${goNextPatch}\"]/g"
 }
 
