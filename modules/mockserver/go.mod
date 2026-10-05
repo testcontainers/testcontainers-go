@@ -1,8 +1,8 @@
 module github.com/testcontainers/testcontainers-go/modules/mockserver
 
-go 1.25.0
+go 1.26.0
 
-toolchain go1.25.9
+toolchain go1.26.8
 
 require (
 	github.com/BraspagDevelopers/mock-server-client v0.2.2
