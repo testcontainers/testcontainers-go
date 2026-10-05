@@ -18,8 +18,8 @@ require (
 	github.com/docker/go-connections v0.7.0 // indirect
 	github.com/ebitengine/purego v0.10.1 // indirect
 	github.com/moby/go-archive v0.2.0 // indirect
-	github.com/moby/moby/api v1.55.0 // indirect
-	github.com/moby/moby/client v0.5.0 // indirect
+	github.com/moby/moby/api v1.56.0 // indirect
+	github.com/moby/moby/client v0.6.0 // indirect
 	github.com/moby/sys/userns v0.1.0 // indirect
 	github.com/moby/term v0.5.2 // indirect
 	github.com/shirou/gopsutil/v4 v4.26.6 // indirect
