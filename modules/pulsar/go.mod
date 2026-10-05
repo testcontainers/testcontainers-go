@@ -1,8 +1,8 @@
 module github.com/testcontainers/testcontainers-go/modules/pulsar
 
-go 1.25.0
+go 1.26.0
 
-toolchain go1.25.9
+toolchain go1.26.8
 
 require (
 	github.com/apache/pulsar-client-go v0.14.0

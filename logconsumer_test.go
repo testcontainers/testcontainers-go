@@ -62,7 +62,7 @@ func (g *TestLogConsumer) Msgs() []string {
 func devNullAcceptorChan() chan string {
 	c := make(chan string)
 	go func(c <-chan string) {
-		for range c { //nolint:revive // do nothing, just pull off channel
+		for range c {
 		}
 	}(c)
 	return c

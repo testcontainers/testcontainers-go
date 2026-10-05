@@ -1,6 +1,6 @@
 module github.com/testcontainers/testcontainers-go/modules/weaviate
 
-go 1.26
+go 1.26.0
 
 require (
 	github.com/stretchr/testify v1.11.1
