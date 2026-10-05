@@ -5,7 +5,7 @@ go 1.25.0
 toolchain go1.25.9
 
 require (
-	github.com/moby/moby/client v0.5.0
+	github.com/moby/moby/client v0.6.0
 	github.com/openai/openai-go v0.1.0-beta.9
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.44.0
@@ -40,7 +40,7 @@ require (
 	github.com/magiconair/properties v1.8.10 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/go-archive v0.2.0 // indirect
-	github.com/moby/moby/api v1.55.0 // indirect
+	github.com/moby/moby/api v1.56.0 // indirect
 	github.com/moby/patternmatcher v0.6.1 // indirect
 	github.com/moby/sys/sequential v0.7.0 // indirect
 	github.com/moby/sys/user v0.4.0 // indirect
