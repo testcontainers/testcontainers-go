@@ -2012,3 +2012,34 @@ func TestMappedPortEmptyString(t *testing.T) {
 	require.True(t, port.IsZero(), "expected zero port for empty string input")
 	require.ErrorIs(t, err, errdefs.ErrNotFound)
 }
+
+// TestContainerPauseUnpause verifies that a running container can be paused and unpaused.
+func TestContainerPauseUnpause(t *testing.T) {
+	ctx := context.Background()
+	ctr, err := Run(ctx, nginxAlpineImage, WithExposedPorts("80/tcp"))
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, ctr.Terminate(ctx))
+	})
+
+	// Initial state: running
+	inspect, err := ctr.Inspect(ctx)
+	require.NoError(t, err)
+	require.True(t, inspect.State.Running)
+	require.False(t, inspect.State.Paused)
+
+	// Pause
+	require.NoError(t, ctr.Pause(ctx))
+
+	inspect, err = ctr.Inspect(ctx)
+	require.NoError(t, err)
+	require.True(t, inspect.State.Paused)
+
+	// Unpause
+	require.NoError(t, ctr.Unpause(ctx))
+
+	inspect, err = ctr.Inspect(ctx)
+	require.NoError(t, err)
+	require.False(t, inspect.State.Paused)
+	require.True(t, inspect.State.Running)
+}

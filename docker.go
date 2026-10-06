@@ -316,6 +316,26 @@ func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) erro
 	return nil
 }
 
+// Pause pauses the container processes using the container runtime.
+func (c *DockerContainer) Pause(ctx context.Context) error {
+	if _, err := c.provider.client.ContainerPause(ctx, c.ID, client.ContainerPauseOptions{}); err != nil {
+		return fmt.Errorf("container pause: %w", err)
+	}
+	defer c.provider.Close()
+
+	return nil
+}
+
+// Unpause unpauses the container processes using the container runtime.
+func (c *DockerContainer) Unpause(ctx context.Context) error {
+	if _, err := c.provider.client.ContainerUnpause(ctx, c.ID, client.ContainerUnpauseOptions{}); err != nil {
+		return fmt.Errorf("container unpause: %w", err)
+	}
+	defer c.provider.Close()
+
+	return nil
+}
+
 // Terminate calls stops and then removes the container including its volumes.
 // If its image was built it and all child images are also removed unless
 // the [FromDockerfile.KeepImage] on the [ContainerRequest] was set to true.
