@@ -1,0 +1,8 @@
+# Netlify build configuration for the docs site (https://golang.testcontainers.org).
+# The Python dependencies live in docs-site, so that they are not part of the Go module.
+[build]
+  command = "pip install -r docs-site/requirements.txt && mkdocs build"
+  publish = "site"
+
+[build.environment]
+  PYTHON_VERSION = "3.13"

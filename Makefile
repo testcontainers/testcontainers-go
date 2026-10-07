@@ -36,7 +36,7 @@ serve-docs:
 	docker run --rm --name $(DOCS_CONTAINER) -it -p 8000:8000 \
 		-v $(PWD):/testcontainers-go \
 		-w /testcontainers-go \
-		$(DOCS_IMAGE) bash -c "pip install -Ur requirements.txt && mkdocs serve -f mkdocs.yml -a 0.0.0.0:8000"
+		$(DOCS_IMAGE) bash -c "pip install -Ur docs-site/requirements.txt && mkdocs serve -f mkdocs.yml -a 0.0.0.0:8000"
 
 ## --------------------------------------
 
