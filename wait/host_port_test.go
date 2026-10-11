@@ -628,3 +628,96 @@ func TestHostPortStrategySucceedsGivenShellIsNotFound(t *testing.T) {
 
 	require.Contains(t, buf.String(), "Shell not found in container")
 }
+
+// loggingStrategyTarget is a MockStrategyTarget that carries its own logger.
+type loggingStrategyTarget struct {
+	*MockStrategyTarget
+	logger tclog.Logger
+}
+
+func (t loggingStrategyTarget) Logger() tclog.Logger {
+	return t.logger
+}
+
+func TestHostPortStrategyUsesTargetLogger(t *testing.T) {
+	listener, err := net.Listen("tcp", "localhost:0")
+	require.NoError(t, err)
+	defer listener.Close()
+
+	rawPort := listener.Addr().(*net.TCPAddr).Port
+	port, err := network.ParsePort(fmt.Sprintf("%d/tcp", rawPort))
+	require.NoError(t, err)
+
+	mock := &MockStrategyTarget{
+		HostImpl: func(_ context.Context) (string, error) {
+			return "localhost", nil
+		},
+		InspectImpl: func(_ context.Context) (*container.InspectResponse, error) {
+			return &container.InspectResponse{
+				NetworkSettings: &container.NetworkSettings{
+					Ports: network.PortMap{
+						network.MustParsePort("80"): []network.PortBinding{
+							{
+								HostIP:   netip.MustParseAddr("0.0.0.0"),
+								HostPort: port.Port(),
+							},
+						},
+					},
+				},
+			}, nil
+		},
+		MappedPortImpl: func(_ context.Context, _ string) (network.Port, error) {
+			return port, nil
+		},
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{
+				Running: true,
+			}, nil
+		},
+		ExecImpl: func(_ context.Context, _ []string, _ ...exec.ProcessOption) (int, io.Reader, error) {
+			return exitEaccess, nil, nil
+		},
+	}
+
+	const msg = "Shell not executable in container, only external port validated"
+
+	tests := []struct {
+		name          string
+		withLogger    bool
+		wantTargetLog bool
+	}{
+		{name: "target-logger", withLogger: true, wantTargetLog: true},
+		{name: "nil-target-logger", withLogger: false, wantTargetLog: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var targetBuf, defaultBuf bytes.Buffer
+
+			target := loggingStrategyTarget{MockStrategyTarget: mock}
+			if tt.withLogger {
+				target.logger = log.New(&targetBuf, "", 0)
+			}
+
+			oldLogger := tclog.Default()
+			tclog.SetDefault(log.New(&defaultBuf, "", 0))
+			t.Cleanup(func() {
+				tclog.SetDefault(oldLogger)
+			})
+
+			wg := NewHostPortStrategy("80").
+				WithStartupTimeout(5 * time.Second).
+				WithPollInterval(100 * time.Millisecond)
+
+			err := wg.WaitUntilReady(context.Background(), target)
+			require.NoError(t, err)
+
+			if tt.wantTargetLog {
+				require.Contains(t, targetBuf.String(), msg)
+				require.Empty(t, defaultBuf.String())
+			} else {
+				require.Contains(t, defaultBuf.String(), msg)
+			}
+		})
+	}
+}

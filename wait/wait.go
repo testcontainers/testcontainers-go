@@ -11,11 +11,27 @@ import (
 	"github.com/moby/moby/api/types/network"
 
 	"github.com/testcontainers/testcontainers-go/exec"
+	"github.com/testcontainers/testcontainers-go/log"
 )
 
 // Strategy defines the basic interface for a Wait Strategy
 type Strategy interface {
 	WaitUntilReady(context.Context, StrategyTarget) error
+}
+
+// loggerProvider is implemented by targets that carry their own logger.
+type loggerProvider interface {
+	Logger() log.Logger
+}
+
+// targetLogger returns the target's logger, or the default logger if it has none.
+func targetLogger(target StrategyTarget) log.Logger {
+	if p, ok := target.(loggerProvider); ok {
+		if l := p.Logger(); l != nil {
+			return l
+		}
+	}
+	return log.Default()
 }
 
 // StrategyTimeout allows MultiStrategy to configure a Strategy's Timeout
