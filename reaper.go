@@ -54,6 +54,16 @@ var (
 
 	// reaperAck is the expected response from the reaper container.
 	reaperAck = []byte("ACK\n")
+
+	// reaperKeepAliveInterval is how often the client re-sends the label
+	// filter line to the reaper to keep the connection alive. Some runtimes
+	// (VM-backed port forwards, NATs) silently drop idle TCP connections,
+	// after which the reaper considers the session gone and reaps every
+	// container it tracks while the tests are still running. Re-sending the
+	// filter re-arms the reaper's reconnection timeout, so an interval below
+	// common idle-connection timeouts keeps the session (and its containers)
+	// alive for the whole run.
+	reaperKeepAliveInterval = 30 * time.Second
 )
 
 // ReaperProvider represents a provider for the reaper to run itself with
@@ -536,6 +546,13 @@ func (r *Reaper) useTermSignal() chan bool {
 // It returns a channel that can be sent true to terminate the connection.
 // Returns an error if config.RyukDisabled is true.
 func (r *Reaper) connect(ctx context.Context) (chan bool, error) {
+	return r.connectWithKeepAlive(ctx, reaperKeepAliveInterval)
+}
+
+// connectWithKeepAlive dials the reaper, sends the labels to it and then keeps
+// the connection alive by re-sending the labels at keepAliveInterval until the
+// returned channel is signalled.
+func (r *Reaper) connectWithKeepAlive(ctx context.Context, keepAliveInterval time.Duration) (chan bool, error) {
 	var d net.Dialer
 	conn, err := d.DialContext(ctx, "tcp", r.Endpoint)
 	if err != nil {
@@ -545,10 +562,26 @@ func (r *Reaper) connect(ctx context.Context) (chan bool, error) {
 	terminationSignal := make(chan bool)
 	go func() {
 		defer conn.Close()
+
 		if err := r.handshake(conn); err != nil {
 			log.Printf("Reaper handshake failed: %s", err)
 		}
-		<-terminationSignal
+
+		// Re-send the labels periodically so that the connection is not
+		// dropped by an idle timeout somewhere on the way to the reaper, which
+		// would make the reaper reap the containers of a still-running session.
+		ticker := time.NewTicker(keepAliveInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-terminationSignal:
+				return
+			case <-ticker.C:
+				if err := r.handshake(conn); err != nil {
+					log.Printf("Reaper keep-alive failed: %s", err)
+				}
+			}
+		}
 	}()
 	return terminationSignal, nil
 }

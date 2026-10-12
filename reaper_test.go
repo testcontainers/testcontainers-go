@@ -1,6 +1,7 @@
 package testcontainers
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -543,6 +544,54 @@ func reaperConnect(t *testing.T, reaper *Reaper) {
 	defer conn.Close()
 	err = reaper.handshake(conn)
 	require.NoError(t, err, "Reaper handshake should be successful")
+}
+
+// Test_Reaper_Connect_KeepsConnectionAlive asserts that the connection is kept
+// alive: after the initial handshake the client keeps re-sending the labels on
+// the same connection, which re-arms the reaper's reconnection timeout. Without
+// that, a runtime that silently drops idle TCP connections would let the reaper
+// reap the containers of a still-running session (see #3936).
+func Test_Reaper_Connect_KeepsConnectionAlive(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer listener.Close()
+
+	received := make(chan struct{}, 16)
+	go func() {
+		for {
+			conn, err := listener.Accept()
+			if err != nil {
+				return
+			}
+			go func(conn net.Conn) {
+				defer conn.Close()
+				scanner := bufio.NewScanner(conn)
+				for scanner.Scan() {
+					if _, err := conn.Write(reaperAck); err != nil {
+						return
+					}
+					received <- struct{}{}
+				}
+			}(conn)
+		}
+	}()
+
+	reaper := &Reaper{SessionID: "keep-alive", Endpoint: listener.Addr().String()}
+
+	terminationSignal, err := reaper.connectWithKeepAlive(context.Background(), 20*time.Millisecond)
+	require.NoError(t, err)
+
+	// The initial handshake plus at least one keep-alive message must reach the
+	// reaper, because it is that repeated message which re-arms the timeout.
+	for range 2 {
+		select {
+		case <-received:
+		case <-time.After(2 * time.Second):
+			t.Fatal("timed out waiting for a keep-alive message from the reaper client")
+		}
+	}
+
+	terminationSignal <- true
 }
 
 func TestSpawnerBackoff(t *testing.T) {
