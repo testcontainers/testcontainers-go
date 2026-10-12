@@ -64,6 +64,11 @@ var (
 	// common idle-connection timeouts keeps the session (and its containers)
 	// alive for the whole run.
 	reaperKeepAliveInterval = 30 * time.Second
+
+	// reaperHandshakeTimeout bounds a single handshake exchange with the
+	// reaper so a peer that accepts the filters but never sends the ACK cannot
+	// block the keep-alive loop, and therefore termination, indefinitely.
+	reaperHandshakeTimeout = 5 * time.Second
 )
 
 // ReaperProvider represents a provider for the reaper to run itself with
@@ -563,6 +568,16 @@ func (r *Reaper) connectWithKeepAlive(ctx context.Context, keepAliveInterval tim
 	go func() {
 		defer conn.Close()
 
+		// If termination is requested while a handshake is blocked waiting for
+		// the reaper, close the connection to unblock it so the loop can exit
+		// and termination never stalls cleanup.
+		connClosed := make(chan struct{})
+		go func() {
+			<-terminationSignal
+			_ = conn.SetDeadline(time.Now())
+			close(connClosed)
+		}()
+
 		if err := r.handshake(conn); err != nil {
 			log.Printf("Reaper handshake failed: %s", err)
 		}
@@ -574,7 +589,7 @@ func (r *Reaper) connectWithKeepAlive(ctx context.Context, keepAliveInterval tim
 		defer ticker.Stop()
 		for {
 			select {
-			case <-terminationSignal:
+			case <-connClosed:
 				return
 			case <-ticker.C:
 				if err := r.handshake(conn); err != nil {
@@ -588,6 +603,13 @@ func (r *Reaper) connectWithKeepAlive(ctx context.Context, keepAliveInterval tim
 
 // handshake sends the labels to the reaper container and reads the ACK.
 func (r *Reaper) handshake(conn net.Conn) error {
+	// Bound the exchange so a peer that stops responding cannot block the
+	// caller indefinitely. The deadline is cleared once the handshake is done.
+	if err := conn.SetDeadline(time.Now().Add(reaperHandshakeTimeout)); err != nil {
+		return fmt.Errorf("set handshake deadline: %w", err)
+	}
+	defer func() { _ = conn.SetDeadline(time.Time{}) }()
+
 	labels := core.DefaultLabels(r.SessionID)
 	labelFilters := make([]string, 0, len(labels))
 	for l, v := range labels {

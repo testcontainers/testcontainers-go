@@ -594,6 +594,67 @@ func Test_Reaper_Connect_KeepsConnectionAlive(t *testing.T) {
 	terminationSignal <- true
 }
 
+// Test_Reaper_Connect_TerminationUnblocksStalledHandshake asserts that
+// terminating the connection does not block when the reaper has stopped
+// acknowledging the periodic handshake. A peer that ACKs the initial handshake
+// but never acknowledges the keep-alive filters leaves the client blocked on
+// the ACK read; termination must still be able to unblock and stop the loop so
+// that cleanup cannot be stalled.
+func Test_Reaper_Connect_TerminationUnblocksStalledHandshake(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer listener.Close()
+
+	secondReceived := make(chan struct{})
+	go func() {
+		conn, err := listener.Accept()
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+		scanner := bufio.NewScanner(conn)
+		// ACK the initial handshake, then silently swallow any keep-alive
+		// filters without acknowledging them, leaving the client blocked on
+		// the ACK read.
+		for i := 0; scanner.Scan(); i++ {
+			if i == 0 {
+				if _, err := conn.Write(reaperAck); err != nil {
+					return
+				}
+				continue
+			}
+			select {
+			case secondReceived <- struct{}{}:
+			default:
+			}
+		}
+	}()
+
+	reaper := &Reaper{SessionID: "stalled-handshake", Endpoint: listener.Addr().String()}
+	terminationSignal, err := reaper.connectWithKeepAlive(context.Background(), 20*time.Millisecond)
+	require.NoError(t, err)
+
+	select {
+	case <-secondReceived:
+	case <-time.After(2 * time.Second):
+		t.Fatal("reaper client did not send a keep-alive filter")
+	}
+
+	// Termination must not block even though the client is waiting for an ACK
+	// that never arrives.
+	done := make(chan struct{})
+	go func() {
+		terminationSignal <- true
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("termination blocked on a stalled handshake")
+	}
+}
+
 func TestSpawnerBackoff(t *testing.T) {
 	b := spawner.backoff()
 	for range 100 {
