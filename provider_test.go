@@ -21,6 +21,36 @@ func TestProviderTypeGetUnderlyingProviderType(t *testing.T) {
 		expectedType   ProviderType
 	}{
 		{
+			name:         "ProviderDefault without configuration defaults to Docker",
+			providerType: ProviderDefault,
+			expectedType: ProviderDocker,
+		},
+		{
+			name:         "ProviderDefault detects Podman without contacting the socket",
+			providerType: ProviderDefault,
+			env:          map[string]string{"DOCKER_HOST": "unix:///nonexistent/podman.sock"},
+			expectedType: ProviderPodman,
+		},
+		{
+			name:         "ProviderDefault with unreachable Docker host defaults to Docker",
+			providerType: ProviderDefault,
+			env:          map[string]string{"DOCKER_HOST": "unix:///nonexistent/docker.sock"},
+			expectedType: ProviderDocker,
+		},
+		{
+			name:           "Configured Docker takes precedence over Podman auto-detection",
+			providerType:   ProviderDefault,
+			propertiesFile: "provider=DoCkEr",
+			env:            map[string]string{"DOCKER_HOST": "unix:///nonexistent/podman.sock"},
+			expectedType:   ProviderDocker,
+		},
+		{
+			name:         "Provider names in the environment are case insensitive",
+			providerType: ProviderDefault,
+			env:          map[string]string{"TESTCONTAINERS_PROVIDER": "PoDmAn"},
+			expectedType: ProviderPodman,
+		},
+		{
 			name:         "ProviderDocker always returns ProviderDocker",
 			providerType: ProviderDocker,
 			expectedType: ProviderDocker,
@@ -91,12 +121,14 @@ func TestProviderTypeGetUnderlyingProviderType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Reset config for each test to ensure clean state
 			config.Reset()
+			t.Cleanup(config.Reset)
 
 			// Create temp directory for HOME
 			tmpDir := t.TempDir()
 			t.Setenv("HOME", tmpDir)
 			t.Setenv("USERPROFILE", tmpDir)         // Windows support
 			t.Setenv("TESTCONTAINERS_PROVIDER", "") // Ensure env var is not set before test
+			t.Setenv("DOCKER_HOST", "")
 
 			// Set any additional environment variables
 			for k, v := range tt.env {
@@ -121,6 +153,12 @@ func TestProviderTypeGetUnderlyingProviderType(t *testing.T) {
 }
 
 func TestProviderTypeGetProviderAutodetect(t *testing.T) {
+	config.Reset()
+	t.Cleanup(config.Reset)
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
+	t.Setenv("TESTCONTAINERS_PROVIDER", "")
 	dockerHost := core.MustExtractDockerHost(context.Background())
 	const podmanSocket = "unix://$XDG_RUNTIME_DIR/podman/podman.sock"
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
@@ -93,6 +94,8 @@ type ContainerProvider interface {
 	Config() TestcontainersConfig
 }
 
+// UnderlyingProviderType resolves the provider using the explicit selection,
+// configuration, and DOCKER_HOST, in that order. It does not contact a daemon.
 func (t ProviderType) UnderlyingProviderType() ProviderType {
 	// Provider set within code has precedence over all others
 	if t != ProviderDefault {
@@ -108,8 +111,8 @@ func (t ProviderType) UnderlyingProviderType() ProviderType {
 		return ProviderPodman
 	}
 
-	// Attempt to auto-detect Podman from the the Docker configuration
-	if strings.Contains(core.MustExtractDockerHost(context.Background()), "podman.sock") {
+	// Preserve auto-detection from DOCKER_HOST without initializing host discovery.
+	if strings.Contains(os.Getenv("DOCKER_HOST"), "podman.sock") {
 		return ProviderPodman
 	}
 
@@ -128,7 +131,7 @@ func (t ProviderType) GetProvider(opts ...GenericProviderOption) (GenericProvide
 	}
 
 	switch t.UnderlyingProviderType() {
-	case ProviderDefault, ProviderDocker:
+	case ProviderDocker:
 		providerOptions := append(Generic2DockerOptions(opts...), WithDefaultBridgeNetwork(Bridge))
 		provider, err := NewDockerProvider(providerOptions...)
 		if err != nil {

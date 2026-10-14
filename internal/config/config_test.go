@@ -580,6 +580,7 @@ func TestReadTCConfig(t *testing.T) {
 				map[string]string{},
 				Config{
 					Provider:                "podman",
+					SessionID:               bootstrap.SessionID(),
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
 				},
@@ -604,6 +605,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 				Config{
 					Provider:                "podman",
+					SessionID:               bootstrap.SessionID(),
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
 				},
@@ -616,6 +618,7 @@ func TestReadTCConfig(t *testing.T) {
 				},
 				Config{
 					Provider:                "podman",
+					SessionID:               bootstrap.SessionID(),
 					RyukConnectionTimeout:   defaultRyukConnectionTimeout,
 					RyukReconnectionTimeout: defaultRyukReconnectionTimeout,
 				},
