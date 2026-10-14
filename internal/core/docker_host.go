@@ -95,6 +95,15 @@ func MustExtractDockerHost(ctx context.Context) string {
 
 func ExtractDockerHost(ctx context.Context) (string, error) {
 	dockerHostOnce.Do(func() {
+		runtime, err := Runtime(ctx)
+		if err != nil {
+			dockerHostErrCache = err
+			return
+		}
+		if runtime.DockerHost != "" {
+			dockerHostCache = runtime.DockerHost
+			return
+		}
 		dockerHostCache, dockerHostErrCache = extractDockerHost(ctx)
 	})
 	return dockerHostCache, dockerHostErrCache
@@ -115,6 +124,14 @@ func ExtractDockerHost(ctx context.Context) (string, error) {
 // It panics if a Docker client cannot be created, or the Docker host cannot be discovered.
 func MustExtractDockerSocket(ctx context.Context) string {
 	dockerSocketPathOnce.Do(func() {
+		runtime, err := Runtime(ctx)
+		if err != nil {
+			panic(err)
+		}
+		if runtime.DockerSocketPath != "" {
+			dockerSocketPathCache = runtime.DockerSocketPath
+			return
+		}
 		dockerSocketPathCache = extractDockerSocket(ctx)
 	})
 

@@ -1059,6 +1059,7 @@ func (n *DockerNetwork) SetTerminationSignal(signal chan bool) {
 // DockerProvider implements the ContainerProvider interface
 type DockerProvider struct {
 	*DockerProviderOptions
+	runtime   RuntimeConfig
 	client    client.APIClient
 	host      string
 	hostCache string
@@ -1069,6 +1070,12 @@ type DockerProvider struct {
 // Client gets the docker client used by the provider
 func (p *DockerProvider) Client() client.APIClient {
 	return p.client
+}
+
+// RuntimeConfig returns the selected runtime's connection settings. Modules that
+// construct additional Docker clients must use its endpoint when DockerHost is set.
+func (p *DockerProvider) RuntimeConfig() RuntimeConfig {
+	return p.runtime
 }
 
 // Close closes the docker client used by the provider
@@ -1612,6 +1619,9 @@ func (p *DockerProvider) DaemonHost(ctx context.Context) (string, error) {
 }
 
 func (p *DockerProvider) daemonHostLocked(ctx context.Context) (string, error) {
+	if p.runtime.PublishedHost != "" {
+		return p.runtime.PublishedHost, nil
+	}
 	if p.hostCache != "" {
 		return p.hostCache, nil
 	}
