@@ -1,12 +1,12 @@
 module github.com/testcontainers/testcontainers-go/modules/k6
 
-go 1.25.0
+go 1.26.0
 
-toolchain go1.25.9
+toolchain go1.26.8
 
 require (
-	github.com/moby/moby/api v1.55.0
-	github.com/moby/moby/client v0.5.0
+	github.com/moby/moby/api v1.56.0
+	github.com/moby/moby/client v0.6.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.44.0
 )
