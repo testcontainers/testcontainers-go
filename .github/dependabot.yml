@@ -73,6 +73,7 @@ updates:
         - /modules/orientdb
         - /modules/papercutsmtp
         - /modules/pinecone
+        - /modules/podman
         - /modules/postgres
         - /modules/presto
         - /modules/pulsar

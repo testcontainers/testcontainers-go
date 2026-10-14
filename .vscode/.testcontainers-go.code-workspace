@@ -242,6 +242,10 @@
             "path": "../modules/pinecone"
         },
         {
+            "name": "module / podman",
+            "path": "../modules/podman"
+        },
+        {
             "name": "module / postgres",
             "path": "../modules/postgres"
         },

@@ -76,7 +76,6 @@ nav:
         - features/tls.md
     - Modules:
         - modules/index.md
-        - modules/fakegcsserver.md
         - modules/activemq.md
         - modules/aerospike.md
         - modules/arangodb.md
@@ -100,6 +99,7 @@ nav:
         - modules/dynamodb.md
         - modules/elasticsearch.md
         - modules/etcd.md
+        - modules/fakegcsserver.md
         - modules/firebird.md
         - modules/forgejo.md
         - modules/gcloud.md
@@ -134,6 +134,7 @@ nav:
         - modules/orientdb.md
         - modules/papercutsmtp.md
         - modules/pinecone.md
+        - modules/podman.md
         - modules/postgres.md
         - modules/presto.md
         - modules/pulsar.md
