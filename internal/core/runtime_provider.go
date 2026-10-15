@@ -14,6 +14,8 @@ import (
 // RuntimeProvider prepares a Docker-compatible runtime before client discovery.
 // Initialize must not call testcontainers client or provider constructors, which
 // would recursively initialize the runtime. It is called at most once per process.
+// Its context preserves the first caller's values but not cancellation or deadlines;
+// implementations must bound startup with their own timeout when needed.
 type RuntimeProvider interface {
 	Initialize(context.Context) (RuntimeConfig, error)
 }
@@ -86,31 +88,33 @@ func (r *runtimeRegistry) resolve(ctx context.Context, name string) (RuntimeConf
 		return RuntimeConfig{}, err
 	}
 	r.mu.Lock()
-	if r.started {
-		ready := r.ready
-		r.mu.Unlock()
-		select {
-		case <-ctx.Done():
-			return RuntimeConfig{}, ctx.Err()
-		case <-ready:
-			return r.config, r.err
+	if !r.started {
+		if r.requested != "" {
+			name = r.requested
 		}
+		r.started = true
+		r.name = name
+		r.ready = make(chan struct{})
+		factory := r.factories[name]
+		// Startup is shared by the process. A caller may stop waiting without
+		// canceling initialization for every other caller or starting it twice.
+		go func() {
+			cfg, err := initializeRuntime(context.WithoutCancel(ctx), name, factory)
+			r.mu.Lock()
+			r.config, r.err = cfg, err
+			close(r.ready)
+			r.mu.Unlock()
+		}()
 	}
-	if r.requested != "" {
-		name = r.requested
-	}
-	r.started = true
-	r.name = name
-	r.ready = make(chan struct{})
-	factory := r.factories[name]
+	ready := r.ready
 	r.mu.Unlock()
 
-	cfg, err := initializeRuntime(ctx, name, factory)
-	r.mu.Lock()
-	r.config, r.err = cfg, err
-	close(r.ready)
-	r.mu.Unlock()
-	return cfg, err
+	select {
+	case <-ctx.Done():
+		return RuntimeConfig{}, ctx.Err()
+	case <-ready:
+		return r.config, r.err
+	}
 }
 
 func initializeRuntime(ctx context.Context, name string, factory ProviderFactory) (RuntimeConfig, error) {

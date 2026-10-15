@@ -5,6 +5,9 @@ import "github.com/testcontainers/testcontainers-go/internal/core"
 // RuntimeProvider prepares a Docker-compatible runtime before any Docker host,
 // socket, or client is discovered. Its Initialize method runs once per process.
 // Implementations must not call testcontainers constructors from Initialize.
+// The initialization context preserves the first caller's values but not its
+// cancellation or deadline. Implementations should set their own startup timeout.
+// Canceling an individual caller stops its wait without canceling shared startup.
 type RuntimeProvider = core.RuntimeProvider
 
 // RuntimeConfig supplies the client endpoint, daemon-side socket path, published

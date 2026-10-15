@@ -7,6 +7,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -72,6 +73,49 @@ func TestRuntimeRegistryInitializationFailure(t *testing.T) {
 		require.ErrorIs(t, err, want)
 	}
 	require.Equal(t, 1, calls)
+}
+
+func TestRuntimeRegistryCanceledInitialCaller(t *testing.T) {
+	r := newRuntimeRegistry()
+	var calls atomic.Int32
+	started := make(chan context.Context, 1)
+	release := make(chan struct{})
+	unblock := sync.OnceFunc(func() { close(release) })
+	defer unblock()
+	const endpoint = "tcp://127.0.0.1:12345"
+	require.NoError(t, r.register("sandbox", func() RuntimeProvider {
+		return runtimeProviderFunc(func(ctx context.Context) (RuntimeConfig, error) {
+			calls.Add(1)
+			started <- ctx
+			<-release
+			return RuntimeConfig{DockerHost: endpoint}, ctx.Err()
+		})
+	}))
+	type contextKey struct{}
+	ctx, cancel := context.WithTimeout(context.WithValue(t.Context(), contextKey{}, "caller value"), time.Hour)
+	defer cancel()
+	result := make(chan error, 1)
+	go func() {
+		_, err := r.resolve(ctx, "sandbox")
+		result <- err
+	}()
+	startupCtx := <-started
+	cancel()
+	select {
+	case err := <-result:
+		require.ErrorIs(t, err, context.Canceled)
+	case <-time.After(5 * time.Second):
+		t.Fatal("canceled caller did not stop waiting for runtime startup")
+	}
+	require.NoError(t, startupCtx.Err())
+	_, hasDeadline := startupCtx.Deadline()
+	require.False(t, hasDeadline)
+	require.Equal(t, "caller value", startupCtx.Value(contextKey{}))
+	unblock()
+	cfg, err := r.resolve(t.Context(), "sandbox")
+	require.NoError(t, err)
+	require.Equal(t, endpoint, cfg.DockerHost)
+	require.EqualValues(t, 1, calls.Load())
 }
 
 func TestRuntimeRegistrySelection(t *testing.T) {
@@ -169,10 +213,23 @@ func TestRuntimeBeforeEndpointDiscovery(t *testing.T) {
 			}
 			switch first {
 			case "host":
+				ctx, cancel := context.WithCancel(t.Context())
+				cancel()
+				_, err := ExtractDockerHost(ctx)
+				require.ErrorIs(t, err, context.Canceled)
 				checkHost()
 			case "socket":
+				ctx, cancel := context.WithCancel(t.Context())
+				cancel()
+				require.PanicsWithError(t, context.Canceled.Error(), func() {
+					MustExtractDockerSocket(ctx)
+				})
 				checkSocket()
 			case "client":
+				ctx, cancel := context.WithCancel(t.Context())
+				cancel()
+				_, err := NewClient(ctx)
+				require.ErrorIs(t, err, context.Canceled)
 				checkClient()
 			}
 			checkHost()
