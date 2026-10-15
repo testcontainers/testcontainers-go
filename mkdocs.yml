@@ -181,6 +181,7 @@ nav:
             - system_requirements/ci/travis.md
         - system_requirements/using_colima.md
         - system_requirements/using_podman.md
+        - system_requirements/using_sbx.md
         - system_requirements/rancher.md
     - Usage Metrics:
         - Core Library: usage-metrics/index.md
