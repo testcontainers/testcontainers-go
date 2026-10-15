@@ -1543,7 +1543,7 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 		}
 	}
 
-	var pull io.ReadCloser
+	var pull client.ImagePullResponse
 	err = backoff.RetryNotify(
 		func() error {
 			pull, err = p.client.ImagePull(ctx, tag, pullOpt)
@@ -1567,9 +1567,8 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 	}
 	defer pull.Close()
 
-	// download of docker image finishes at EOF of the pull request
-	_, err = io.Copy(io.Discard, pull)
-	return err
+	// Wait for completion and propagate errors reported in the JSON stream.
+	return pull.Wait(ctx)
 }
 
 // Health measure the healthiness of the provider. Right now we leverage the
