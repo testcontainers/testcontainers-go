@@ -26,7 +26,7 @@ TESTCONTAINERS_PROVIDER=sbx go test ./...
 
 You can instead set `provider=sbx` in `~/.testcontainers.properties`. The environment variable takes precedence over the properties file. Select sbx for the test process before any Testcontainers operation.
 
-The module creates the sandbox with `--kit sbx/docker-tcp:latest` and base image `docker.io/docker/sbx-kit-shell:1.0.0`. The `sbx` CLI pulls and loads the published Docker TCP kit.
+The module creates the sandbox with `--kit sbx/docker-tcp:latest` and base image `docker.io/docker/sbx-kit-shell:1.0.0`. The `sbx` CLI pulls and loads the published Docker TCP kit. After creation, the module runs `sbx run --detach --name <name>` to keep its owned sandbox running until explicit cleanup, then discovers the Docker endpoint.
 
 ## Cleanup in TestMain
 
@@ -92,7 +92,7 @@ From the repository root, with a supported `sbx` installation and local VM suppo
 
 For verbose test output, run `GOFLAGS=-v ./scripts/test-sbx.sh module`. The harness preserves `GOFLAGS` for its Go commands.
 
-`module` runs the sbx module suite, including a real nginx lifecycle, mapped port, exec, copy, logs, restart, and occupied port test. `core` compiles and registers sbx in every root-module test package, then runs a supported selection covering lifecycle, mapped ports and HTTP waits, named volumes, exec, copy, logs, networks, and image builds. `compose` runs runtime routing checks and a native Compose nginx smoke test. `all` runs those three modes in sequence. The harness selects sbx and calls `Cleanup` through `TestMain` for the core and Compose binaries; the module suite has its own `TestMain`. It uses a temporary Go workspace for registration and removes its temporary files when done.
+`module` runs the sbx module suite, including a real nginx lifecycle, mapped port, exec, copy, logs, restart, occupied port test, and an idle-lifetime regression that verifies the sandbox stays running for more than 30 seconds. `core` compiles and registers sbx in every root-module test package, then runs a supported selection covering lifecycle, mapped ports and HTTP waits, named volumes, exec, copy, logs, networks, and image builds. `compose` runs runtime routing checks and a native Compose nginx smoke test. `all` runs those three modes in sequence. The harness selects sbx and calls `Cleanup` through `TestMain` for the core and Compose binaries; the module suite has its own `TestMain`. It uses a temporary Go workspace for registration and removes its temporary files when done.
 
 The script accepts `TESTCONTAINERS_SBX_BINARY` for a custom CLI, `TESTCONTAINERS_SBX_TIMEOUT` for initialization, an optional `TESTCONTAINERS_SBX_APP_NAME` for CLI scoping, and `TESTCONTAINERS_SBX_GO_TEST_TIMEOUT` for the `go test` timeout (default `10m`). It sets `TESTCONTAINERS_SBX_WORKSPACE` to the repository root and enables the real integration tests. By default it uses the credentials from ordinary `sbx login`; unique sandbox names identify resources owned by each test process. If you explicitly set `TESTCONTAINERS_SBX_APP_NAME`, first sign in to that separate CLI namespace with `sbx --app-name <name> login`, then use the same name for the test command. The `--app-name` suffix accepts letters, digits, hyphens, and underscores, with a 20-character limit. For example:
 

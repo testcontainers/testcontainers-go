@@ -216,8 +216,106 @@ func TestAmbiguousCreateAttemptsCleanup(t *testing.T) {
 	if readErr != nil {
 		t.Fatal(readErr)
 	}
-	if !strings.Contains(string(data), "rm\n") {
-		t.Fatalf("ambiguous create was not cleaned up; commands: %q", data)
+	if string(data) != "create\nrm\n" {
+		t.Fatalf("ambiguous create must only create and clean up; commands: %q", data)
+	}
+}
+
+func TestDetachedPromotionFailureCleansUpOwnedSandbox(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		mode       string
+		timeout    string
+		cleanupErr bool
+	}{
+		{name: "CLI failure", mode: "fail", timeout: "2s"},
+		{name: "initialization timeout", mode: "timeout", timeout: "500ms"},
+		{name: "cleanup failure joins errors", mode: "fail", timeout: "2s", cleanupErr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			logPath := filepath.Join(dir, "calls")
+			namePath := filepath.Join(dir, "owned-name")
+			binary := filepath.Join(dir, "fake-sbx")
+			script := `#!/bin/sh
+printf '%s\n' "$1" >> "$TC_SBX_PROMOTION_CALLS"
+case "$1" in
+create)
+    [ "$2" = --name ] && [ -n "$3" ] || exit 1
+    printf '%s' "$3" > "$TC_SBX_PROMOTION_NAME"
+    ;;
+run)
+    owned="$(cat "$TC_SBX_PROMOTION_NAME")"
+    [ "$#" -eq 4 ] && [ "$2" = --detach ] && [ "$3" = --name ] && [ "$4" = "$owned" ] || exit 1
+    if [ "$TC_SBX_PROMOTION_MODE" = timeout ]; then exec sleep 5; fi
+    echo 'detached promotion denied' >&2
+    exit 1
+    ;;
+rm)
+    owned="$(cat "$TC_SBX_PROMOTION_NAME")"
+    [ "$#" -eq 3 ] && [ "$2" = --force ] && [ "$3" = "$owned" ] || exit 1
+    if [ "$TC_SBX_PROMOTION_CLEANUP_ERROR" = true ]; then
+        echo 'remove denied' >&2
+        exit 1
+    fi
+    ;;
+*) echo 'unexpected discovery or other command' >&2; exit 1 ;;
+esac
+`
+			if err := os.WriteFile(binary, []byte(script), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			t.Setenv("TESTCONTAINERS_SBX_BINARY", binary)
+			t.Setenv("TESTCONTAINERS_SBX_WORKSPACE", dir)
+			t.Setenv("TESTCONTAINERS_SBX_TIMEOUT", tc.timeout)
+			t.Setenv("TESTCONTAINERS_SBX_APP_NAME", "")
+			t.Setenv("TC_SBX_PROMOTION_CALLS", logPath)
+			t.Setenv("TC_SBX_PROMOTION_NAME", namePath)
+			t.Setenv("TC_SBX_PROMOTION_MODE", tc.mode)
+			t.Setenv("TC_SBX_PROMOTION_CLEANUP_ERROR", strconv.FormatBool(tc.cleanupErr))
+			factoryCalled := false
+			p := &Provider{}
+			p.proxyFactory = func(context.Context, sandboxRuntime) (proxyServer, error) {
+				factoryCalled = true
+				return nil, errors.New("unexpected proxy factory call")
+			}
+			start := time.Now()
+			_, err := p.Initialize(context.Background())
+			if err == nil || !strings.Contains(err.Error(), "sbx run") {
+				t.Fatalf("lost detached promotion error: %v", err)
+			}
+			if tc.mode == "timeout" {
+				if !errors.Is(err, context.DeadlineExceeded) {
+					t.Fatalf("expected initialization deadline, got %v", err)
+				}
+				if time.Since(start) > 3*time.Second {
+					t.Fatal("detached promotion ignored initialization timeout")
+				}
+			} else if !strings.Contains(err.Error(), "detached promotion denied") {
+				t.Fatalf("lost CLI diagnostic: %v", err)
+			}
+			if factoryCalled || p.proxy != nil {
+				t.Fatal("proxy setup proceeded after failed detached promotion")
+			}
+			calls, readErr := os.ReadFile(logPath)
+			if readErr != nil {
+				t.Fatal(readErr)
+			}
+			if string(calls) != "create\nrun\nrm\n" {
+				t.Fatalf("expected promotion then fresh-context cleanup without discovery; commands: %q", calls)
+			}
+			owned, readErr := os.ReadFile(namePath)
+			if readErr != nil {
+				t.Fatal(readErr)
+			}
+			if tc.cleanupErr {
+				if !strings.Contains(err.Error(), "remove denied") || p.name != string(owned) {
+					t.Fatalf("lost cleanup error or ownership: name=%q err=%v", p.name, err)
+				}
+			} else if p.name != "" {
+				t.Fatalf("owned sandbox was not removed: %q (%v)", p.name, err)
+			}
+		})
 	}
 }
 
@@ -230,6 +328,8 @@ func TestBootstrapPublishesNumericDockerAPIPort(t *testing.T) {
 printf '%s\n' "$1" >> "$TC_SBX_BOOTSTRAP_CALLS"
 case "$1" in
 create)
+    [ "$2" = --name ] && [ -n "$3" ] || exit 1
+    printf '%s' "$3" > "$TC_SBX_BOOTSTRAP_NAME"
     previous=""
     for argument in "$@"; do
         if [ "$previous" = --kit ]; then printf '%s' "$argument" > "$TC_SBX_BOOTSTRAP_KIT"; fi
@@ -259,7 +359,13 @@ create)
     fi
     printf '%s' "$spec" > "$TC_SBX_BOOTSTRAP_PUBLICATION"
     ;;
+run)
+    owned="$(cat "$TC_SBX_BOOTSTRAP_NAME")"
+    [ "$#" -eq 4 ] && [ "$2" = --detach ] && [ "$3" = --name ] && [ "$4" = "$owned" ] || exit 1
+    ;;
 ports)
+    owned="$(cat "$TC_SBX_BOOTSTRAP_NAME")"
+    [ "$#" -eq 4 ] && [ "$2" = "$owned" ] && [ "$3" = --format ] && [ "$4" = json ] || exit 1
     spec="$(cat "$TC_SBX_BOOTSTRAP_PUBLICATION")"
     port="${spec#127.0.0.1:}"
     port="${port%:2375/tcp}"
@@ -267,7 +373,10 @@ ports)
     if [ "$port" -eq "$kit_port" ]; then kit_port=43221; fi
     printf '[{"host_ip":"127.0.0.1","host_port":%s,"sandbox_port":2375,"protocol":"tcp"},{"host_ip":"::1","host_port":%s,"sandbox_port":2375,"protocol":"tcp"}]' "$kit_port" "$kit_port"
     ;;
-rm) ;;
+rm)
+    owned="$(cat "$TC_SBX_BOOTSTRAP_NAME")"
+    [ "$#" -eq 3 ] && [ "$2" = --force ] && [ "$3" = "$owned" ] || exit 1
+    ;;
 *) exit 1 ;;
 esac
 `
@@ -280,6 +389,7 @@ esac
 	t.Setenv("TESTCONTAINERS_SBX_APP_NAME", "")
 	t.Setenv("TC_SBX_BOOTSTRAP_CALLS", logPath)
 	t.Setenv("TC_SBX_BOOTSTRAP_PUBLICATION", publicationPath)
+	t.Setenv("TC_SBX_BOOTSTRAP_NAME", filepath.Join(dir, "owned-name"))
 	kitPath := filepath.Join(dir, "kit-reference")
 	t.Setenv("TC_SBX_BOOTSTRAP_KIT", kitPath)
 	factoryCalled := false
@@ -294,6 +404,9 @@ esac
 	}
 	if factoryCalled {
 		t.Fatal("proxy factory called without the owned Docker publication")
+	}
+	if p.name != "" {
+		t.Fatalf("discovery failure did not remove the owned sandbox: %q (%v)", p.name, initializeErr)
 	}
 	publication, err := os.ReadFile(publicationPath)
 	if err != nil {
@@ -318,7 +431,7 @@ esac
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(calls) != "create\nports\nrm\n" {
+	if string(calls) != "create\nrun\nports\nrm\n" {
 		t.Fatalf("unexpected bootstrap/cleanup calls: %q", calls)
 	}
 	kitReference, err := os.ReadFile(kitPath)

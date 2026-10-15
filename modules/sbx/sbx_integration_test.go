@@ -16,6 +16,46 @@ import (
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 )
 
+func TestRealSandboxSurvivesIdleSessionGracePeriod(t *testing.T) {
+	if os.Getenv("TESTCONTAINERS_SBX_INTEGRATION") != "1" {
+		t.Skip("real sandbox integration is opt-in")
+	}
+	if os.Getenv("TESTCONTAINERS_PROVIDER") != "sbx" {
+		t.Fatal("TESTCONTAINERS_PROVIDER must be sbx for real integration")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
+	defer cancel()
+	config, err := defaultProvider.Initialize(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("waiting 35 seconds without an sbx CLI session to exceed the 30-second auto-stop grace period")
+	timer := time.NewTimer(35 * time.Second)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		t.Fatal(ctx.Err())
+	case <-timer.C:
+	}
+	api := "http://" + strings.TrimPrefix(config.DockerHost, "tcp://")
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, api+"/_ping", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	transport := &http.Transport{Proxy: nil}
+	defer transport.CloseIdleConnections()
+	client := &http.Client{Transport: transport, Timeout: 5 * time.Second}
+	response, err := client.Do(request)
+	if err != nil {
+		t.Fatalf("Docker Engine unavailable after idle grace period: %v", err)
+	}
+	defer response.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(response.Body, 1024))
+	if err != nil || response.StatusCode != http.StatusOK || strings.TrimSpace(string(body)) != "OK" {
+		t.Fatalf("Docker Engine ping after idle grace period: HTTP %d body=%q err=%v", response.StatusCode, body, err)
+	}
+}
+
 // This test deliberately has no availability skip once opted in: missing sbx,
 // image pull failures, and provider regressions must fail the host/CI job.
 func TestRealSandboxContainerLifecycle(t *testing.T) {

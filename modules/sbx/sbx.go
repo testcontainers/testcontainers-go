@@ -123,6 +123,14 @@ func (p *Provider) initialize(parent context.Context) {
 		return
 	}
 
+	// Ending create's CLI session may arm auto-stop. Promote the owned sandbox
+	// to detached mode before exposing its endpoint.
+	_, err = run(ctx, "run", "--detach", "--name", name)
+	if err != nil {
+		err = errors.Join(err, p.cleanupAfterFailure())
+		return
+	}
+
 	dockerURL, discoverErr := discoverDockerURL(ctx, run, name, hostPort)
 	if discoverErr != nil {
 		err = errors.Join(discoverErr, p.cleanupAfterFailure())
