@@ -118,8 +118,22 @@ jobs:
   test-sbx:
     if: ${{ needs.detect-modules.outputs.sbx_changed == 'true' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) }}
     needs: detect-modules
-    name: "Test sbx (Ubuntu 24.04, Go 1.26.x)"
-    uses: ./.github/workflows/ci-sbx.yml
+    name: Test core using sbx
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: [1.26.x, 1.27.x]
+    uses: ./.github/workflows/ci-test-go.yml
+    with:
+      go-version: ${{ matrix.go-version }}
+      platforms: '["ubuntu-24.04"]'
+      project-directory: "."
+      runtime: sbx
+      dependency-project-directory: modules/sbx
+      cache-dependency-path: |
+        go.sum
+        modules/sbx/go.sum
+        modules/compose/go.sum
     secrets:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}

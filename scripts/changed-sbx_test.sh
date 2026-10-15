@@ -25,7 +25,13 @@ check 'modules/redis/old.go network/new.go' true
 check 'exec/old.go modules/redis/new.go' true
 check 'go.mod' true
 check 'scripts/test-sbx.sh' true
-check '.github/workflows/ci-sbx.yml' true
+check '.github/workflows/ci.yml' true
+check '.github/workflows/ci-test-go.yml' true
+check '.github/scripts/modules/sbx/install-dependencies.sh' true
+check '.github/scripts/setup-sbx.sh' true
+check '.github/scripts/sbx-test-main.go.tmpl' true
+check 'scripts/changed-sbx.sh' true
+check 'scripts/changed-sbx_test.sh' true
 check 'modules/redis/redis.go' false
 check 'modules/podman/podman.go' false
 check 'docs/modules/sbx.md README.md mkdocs.yml .devcontainer/config.json' false

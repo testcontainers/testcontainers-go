@@ -7,7 +7,7 @@ set -euo pipefail
 for file in ${ALL_CHANGED_FILES:-}; do
     case "$file" in
         modules/sbx/*|modules/compose/*|\
-        .github/workflows/ci.yml|.github/workflows/ci-sbx.yml|\
+        .github/workflows/ci.yml|\
         .github/workflows/ci-test-go.yml|.github/scripts/*|\
         scripts/changed-sbx.sh|scripts/changed-sbx_test.sh|\
         scripts/test-sbx.sh|.github/scripts/setup-sbx.sh)
