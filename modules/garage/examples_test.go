@@ -13,6 +13,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/garage"
 )
 
+// ExampleRun connects an AWS SDK client to the initial Garage bucket.
 func ExampleRun() {
 	ctx := context.Background()
 	garageContainer, err := garage.Run(ctx, "dxflrs/garage:v2.4.1")

@@ -17,6 +17,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/garage"
 )
 
+// TestGarage exercises bootstrap and authenticated S3 operations across supported versions and custom settings.
 func TestGarage(t *testing.T) {
 	for _, tt := range []struct {
 		name                                 string
@@ -81,6 +82,7 @@ func TestGarage(t *testing.T) {
 	}
 }
 
+// TestInvalidOptions verifies invalid settings fail before a container is created.
 func TestInvalidOptions(t *testing.T) {
 	for _, tt := range []struct {
 		name string

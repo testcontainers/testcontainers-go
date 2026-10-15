@@ -2,12 +2,14 @@
 package garage
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/pelletier/go-toml/v2"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -50,26 +52,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 			}
 		}
 	}
-	// JSON string escaping is also valid for TOML basic strings.
-	region, err := json.Marshal(settings.region)
+	config, err := garageConfig(settings.region)
 	if err != nil {
-		return nil, fmt.Errorf("encode region: %w", err)
+		return nil, fmt.Errorf("generate garage config: %w", err)
 	}
-	secret := make([]byte, 32)
-	if _, err := rand.Read(secret); err != nil {
-		return nil, fmt.Errorf("generate RPC secret: %w", err)
-	}
-	config := fmt.Sprintf(`metadata_dir = "/var/lib/garage/meta"
-data_dir = "/var/lib/garage/data"
-db_engine = "sqlite"
-replication_factor = 1
-rpc_bind_addr = "[::]:3901"
-rpc_public_addr = "127.0.0.1:3901"
-rpc_secret = "%s"
-[s3_api]
-s3_region = %s
-api_bind_addr = "[::]:3900"
-`, hex.EncodeToString(secret), region)
 	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 6+len(opts))
 	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts("3900/tcp"),
@@ -80,7 +66,7 @@ api_bind_addr = "[::]:3900"
 			"GARAGE_DEFAULT_BUCKET":     "testcontainers",
 		}),
 		testcontainers.WithFiles(testcontainers.ContainerFile{
-			Reader:            strings.NewReader(config),
+			Reader:            bytes.NewReader(config),
 			ContainerFilePath: "/etc/garage.toml",
 			FileMode:          0o600,
 		}),
@@ -113,4 +99,25 @@ api_bind_addr = "[::]:3900"
 		}
 	}
 	return c, nil
+}
+
+// garageConfig encodes the single-node configuration, keeping user values separate from TOML syntax.
+func garageConfig(region string) ([]byte, error) {
+	secret := make([]byte, 32)
+	if _, err := rand.Read(secret); err != nil {
+		return nil, fmt.Errorf("generate RPC secret: %w", err)
+	}
+	return toml.Marshal(map[string]any{
+		"metadata_dir":       "/var/lib/garage/meta",
+		"data_dir":           "/var/lib/garage/data",
+		"db_engine":          "sqlite",
+		"replication_factor": 1,
+		"rpc_bind_addr":      "[::]:3901",
+		"rpc_public_addr":    "127.0.0.1:3901",
+		"rpc_secret":         hex.EncodeToString(secret),
+		"s3_api": map[string]string{
+			"s3_region":     region,
+			"api_bind_addr": "[::]:3900",
+		},
+	})
 }

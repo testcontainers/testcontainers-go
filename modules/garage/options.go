@@ -41,6 +41,7 @@ func WithBucket(bucket string) testcontainers.CustomizeRequestOption {
 	return testcontainers.WithEnv(map[string]string{"GARAGE_DEFAULT_BUCKET": bucket})
 }
 
+// validateCredentials checks the final environment after all request options have been applied.
 func validateCredentials(req *testcontainers.GenericContainerRequest) error {
 	if len(req.Env["GARAGE_DEFAULT_ACCESS_KEY"]) < 8 {
 		return errors.New("access key must be at least 8 bytes")
