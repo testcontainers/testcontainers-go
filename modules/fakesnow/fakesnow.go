@@ -70,10 +70,13 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 2+len(opts))
 	moduleOpts = append(moduleOpts,
 		testcontainers.WithExposedPorts(defaultPort),
-		// fakesnow logs this once uvicorn is serving. Waiting for the port to
-		// accept connections is not enough, docker publishes it before the
-		// application binds.
-		testcontainers.WithWaitStrategy(wait.ForLog("Application startup complete")),
+		// The log line is what fakesnow prints once it is serving. The port on
+		// its own is not enough: docker publishes it before the application
+		// binds, so a connection can still be refused after it looks ready.
+		testcontainers.WithWaitStrategy(wait.ForAll(
+			wait.ForLog("Application startup complete"),
+			wait.ForListeningPort(defaultPort),
+		)),
 	)
 	moduleOpts = append(moduleOpts, opts...)
 
