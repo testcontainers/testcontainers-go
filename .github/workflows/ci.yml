@@ -121,7 +121,8 @@ jobs:
     name: "Test sbx (Ubuntu 24.04, Go 1.26.x)"
     uses: ./.github/workflows/ci-sbx.yml
     secrets:
-      DOCKERPUBLICBOT_WRITE_PAT: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   # The job below is a copy of the job above, but using Docker Cloud.
   test-testcontainers-cloud:

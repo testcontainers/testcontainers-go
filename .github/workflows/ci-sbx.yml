@@ -3,7 +3,10 @@ name: Test sbx integration
 on:
   workflow_call:
     secrets:
-      DOCKERPUBLICBOT_WRITE_PAT:
+      DOCKERHUB_USERNAME:
+        description: Docker Hub username accepted by sbx for the account
+        required: false
+      DOCKERHUB_TOKEN:
         description: Docker Hub access token accepted by sbx for the account
         required: false
   workflow_dispatch:
@@ -21,7 +24,7 @@ jobs:
     steps:
       - name: Verify sbx CI authentication configuration
         env:
-          SBX_LOGIN_CONFIGURED: ${{ vars.DOCKERPUBLICBOT_USERNAME != '' && secrets.DOCKERPUBLICBOT_WRITE_PAT != '' }}
+          SBX_LOGIN_CONFIGURED: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
           SBX_FORK_PULL_REQUEST: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
         run: |
           if [[ "$SBX_FORK_PULL_REQUEST" == true ]]; then
@@ -29,7 +32,7 @@ jobs:
             exit 1
           fi
           if [[ "$SBX_LOGIN_CONFIGURED" != true ]]; then
-            echo '::error::sbx integration requires the DOCKERPUBLICBOT_USERNAME repository variable and DOCKERPUBLICBOT_WRITE_PAT secret, with an account allowed to use sbx under applicable organization policy.'
+            echo '::error::sbx integration requires the DOCKERHUB_USERNAME and DOCKERHUB_TOKEN organization secrets, with an account allowed to use sbx under applicable organization policy.'
             exit 1
           fi
       - name: Check out code
@@ -47,13 +50,13 @@ jobs:
         run: ./.github/scripts/setup-sbx.sh
       - name: Sign in to Docker for sbx
         env:
-          DOCKERPUBLICBOT_USERNAME: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          DOCKERPUBLICBOT_WRITE_PAT: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
-          username=$(printf '%s' "$DOCKERPUBLICBOT_USERNAME" | tr -d '[:space:]')
-          token=$(printf '%s' "$DOCKERPUBLICBOT_WRITE_PAT" | tr -d '[:space:]')
+          username=$(printf '%s' "$DOCKERHUB_USERNAME" | tr -d '[:space:]')
+          token=$(printf '%s' "$DOCKERHUB_TOKEN" | tr -d '[:space:]')
           if [[ -z "$username" || -z "$token" ]]; then
-            echo '::error::DOCKERPUBLICBOT_USERNAME and DOCKERPUBLICBOT_WRITE_PAT must be nonempty after trimming whitespace.'
+            echo '::error::DOCKERHUB_USERNAME and DOCKERHUB_TOKEN organization secrets must be nonempty after trimming whitespace.'
             exit 1
           fi
           printf '%s\n' "$token" | sbx --app-name "$TESTCONTAINERS_SBX_APP_NAME" login --username "$username" --password-stdin
