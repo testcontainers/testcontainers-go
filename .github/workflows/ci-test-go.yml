@@ -44,7 +44,7 @@ permissions:
 
 jobs:
   test-go-project:
-    name: "test: ${{ inputs.project-directory }}/${{ inputs.go-version }} (${{ inputs.runtime }})"
+    name: "test: ${{ inputs.project-directory }}/${{ inputs.go-version }} (${{ inputs.runtime }}, ${{ matrix.platform }})"
     # Modulegen can run the tests on all platforms
     env:
       TESTCONTAINERS_RYUK_DISABLED: "${{ inputs.ryuk-disabled }}"
