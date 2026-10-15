@@ -6,7 +6,7 @@ toolchain go1.26.8
 
 require (
 	github.com/apache/pulsar-client-go v0.14.0
-	github.com/moby/moby/api v1.56.0
+	github.com/moby/moby/api v1.56.1
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.44.0
 )
