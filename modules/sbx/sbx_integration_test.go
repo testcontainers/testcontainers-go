@@ -13,6 +13,7 @@ import (
 	"time"
 
 	testcontainers "github.com/testcontainers/testcontainers-go"
+	tcexec "github.com/testcontainers/testcontainers-go/exec"
 )
 
 // This test deliberately has no availability skip once opted in: missing sbx,
@@ -74,23 +75,23 @@ func TestRealSandboxContainerLifecycle(t *testing.T) {
 		case <-time.After(250 * time.Millisecond):
 		}
 	}
-	code, output, err := container.Exec(ctx, []string{"sh", "-c", "printf sbx-exec"})
+	code, output, err := container.Exec(ctx, []string{"sh", "-c", "printf sbx-exec"}, tcexec.Multiplexed())
 	if err != nil || code != 0 {
 		t.Fatalf("exec: exit=%d err=%v", code, err)
 	}
 	data, err := io.ReadAll(output)
-	if err != nil || !strings.Contains(string(data), "sbx-exec") {
+	if err != nil || string(data) != "sbx-exec" {
 		t.Fatalf("exec output: %q err=%v", data, err)
 	}
 	if err := container.CopyToContainer(ctx, []byte("copied"), "/tmp/sbx-integration-copy", 0o644); err != nil {
 		t.Fatal(err)
 	}
-	code, output, err = container.Exec(ctx, []string{"cat", "/tmp/sbx-integration-copy"})
+	code, output, err = container.Exec(ctx, []string{"cat", "/tmp/sbx-integration-copy"}, tcexec.Multiplexed())
 	if err != nil || code != 0 {
 		t.Fatalf("copy exec: exit=%d err=%v", code, err)
 	}
 	data, err = io.ReadAll(output)
-	if err != nil || !strings.Contains(string(data), "copied") {
+	if err != nil || string(data) != "copied" {
 		t.Fatalf("copied content: %q err=%v", data, err)
 	}
 	logs, err := container.Logs(ctx)
@@ -206,7 +207,7 @@ func TestRealSandboxExternalSymlinkBind(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	code, output, err := container.Exec(ctx, []string{"cat", "/host-external/payload.txt"})
+	code, output, err := container.Exec(ctx, []string{"cat", "/host-external/payload.txt"}, tcexec.Multiplexed())
 	if err != nil || code != 0 {
 		t.Fatalf("read bind via original symlink alias: exit=%d error=%v", code, err)
 	}
