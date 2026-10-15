@@ -85,6 +85,7 @@ updates:
         - /modules/redpanda
         - /modules/registry
         - /modules/s3mock
+        - /modules/sbx
         - /modules/scylladb
         - /modules/sftp
         - /modules/socat
