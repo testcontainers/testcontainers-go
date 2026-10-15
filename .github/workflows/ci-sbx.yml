@@ -44,7 +44,7 @@ jobs:
             modules/compose/go.sum
       - name: Install sbx and verify VM prerequisites
         id: install-sbx
-        run: ./scripts/setup-sbx.sh
+        run: ./.github/scripts/setup-sbx.sh
       - name: Sign in to Docker for sbx
         env:
           DOCKERPUBLICBOT_USERNAME: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
