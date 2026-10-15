@@ -114,6 +114,8 @@ jobs:
       - name: Podman diagnostics
         if: ${{ failure() && inputs.runtime == 'podman' }}
         run: |
+          sudo systemctl status podman.service podman.socket --no-pager || true
+          namei -l /run/podman/podman.sock
           sudo podman info
           sudo podman ps -a
           sudo podman network ls

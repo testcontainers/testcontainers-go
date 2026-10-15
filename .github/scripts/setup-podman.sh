@@ -24,12 +24,28 @@ location = "localhost"
 insecure = true
 REGISTRIES
 
-sudo systemctl start podman.socket
-sudo chgrp "$(id -gn)" /run/podman/podman.sock
-sudo chmod 660 /run/podman/podman.sock
-
 test "$(sudo podman info --format '{{.Host.Security.Rootless}}')" = false
-curl --fail --silent --show-error --unix-socket /run/podman/podman.sock http://localhost/version |
+
+# Runner images can already have an idle socket-activated service. Restart it
+# after configuration, and keep it alive across compilation and test processes.
+sudo systemctl stop podman.service podman.socket
+sudo mkdir -p /etc/systemd/system/podman.service.d /etc/systemd/system/podman.socket.d
+sudo tee /etc/systemd/system/podman.service.d/testcontainers.conf > /dev/null <<'SERVICE'
+[Service]
+ExecStart=
+ExecStart=/usr/bin/podman system service --time=0
+SERVICE
+sudo tee /etc/systemd/system/podman.socket.d/testcontainers.conf > /dev/null <<SOCKET
+[Socket]
+SocketGroup=$(id -gn)
+SocketMode=0660
+DirectoryMode=0755
+SOCKET
+sudo systemctl daemon-reload
+sudo systemctl start podman.socket podman.service
+sudo chmod 755 /run/podman
+curl --fail --silent --show-error --retry 10 --retry-connrefused --retry-delay 1 \
+    --retry-max-time 30 --max-time 5 --unix-socket /run/podman/podman.sock http://localhost/version |
     jq -e '.Components | any(.Name == "Podman Engine")'
 
 cat >> "$GITHUB_ENV" <<'ENV'

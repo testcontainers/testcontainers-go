@@ -1808,11 +1808,13 @@ func (p *DockerProvider) ensureDefaultNetworkLocked(ctx context.Context) (string
 	// A compatible runtime may list the default network under an alias: Podman
 	// lists "bridge", but container creation requires its native name "podman".
 	// Inspect the configured name before choosing or creating a fallback.
-	if _, err := p.client.NetworkInspect(ctx, p.defaultBridgeNetworkName, client.NetworkInspectOptions{}); err == nil {
-		p.defaultNetwork = p.defaultBridgeNetworkName
-		return p.defaultNetwork, nil
-	} else if !errdefs.IsNotFound(err) {
-		return "", fmt.Errorf("inspect default network: %w", err)
+	if p.defaultBridgeNetworkName != Bridge {
+		if _, err := p.client.NetworkInspect(ctx, p.defaultBridgeNetworkName, client.NetworkInspectOptions{}); err == nil {
+			p.defaultNetwork = p.defaultBridgeNetworkName
+			return p.defaultNetwork, nil
+		} else if !errdefs.IsNotFound(err) {
+			return "", fmt.Errorf("inspect default network: %w", err)
+		}
 	}
 
 	if fallbackNetwork != "" {

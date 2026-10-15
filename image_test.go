@@ -4,9 +4,11 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/containerd/platforms"
+	"github.com/moby/moby/client/pkg/versions"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
@@ -38,7 +40,8 @@ func TestImageList(t *testing.T) {
 
 	// look if the list contains the container image
 	for _, img := range images {
-		if img.Name == req.Image {
+		// Podman reports fully qualified Docker Hub image names.
+		if strings.TrimPrefix(img.Name, "docker.io/library/") == req.Image {
 			return
 		}
 	}
@@ -80,6 +83,10 @@ func TestSaveImagesWithOpts(t *testing.T) {
 
 	provider, err := ProviderDefault.GetProvider()
 	require.NoErrorf(t, err, "failed to get provider")
+	if versions.LessThan(provider.(*DockerProvider).client.ClientVersion(), "1.48") {
+		_ = provider.Close()
+		t.Skip("exporting a specific image platform requires Docker API 1.48")
+	}
 
 	defer func() {
 		err = provider.Close()
