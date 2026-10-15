@@ -6,7 +6,7 @@ toolchain go1.26.8
 
 require (
 	github.com/docker/go-units v0.5.0
-	github.com/moby/moby/api v1.56.0
+	github.com/moby/moby/api v1.56.1
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.44.0
 	solace.dev/go/messaging v1.10.0
