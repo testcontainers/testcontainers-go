@@ -115,14 +115,16 @@ jobs:
         if: ${{ failure() && inputs.runtime == 'podman' }}
         run: |
           sudo systemctl status podman.service podman.socket --no-pager || true
-          namei -l /run/podman/podman.sock
-          sudo podman info
-          sudo podman ps -a
-          sudo podman network ls
-          sudo podman volume ls
-          sudo journalctl -u podman.service --no-pager -n 200
+          namei -l /run/podman/podman.sock || true
+          sudo podman info || true
+          sudo podman ps -a || true
+          sudo podman network ls || true
+          sudo podman volume ls || true
+          sudo journalctl -u podman.service --no-pager -n 200 || true
 
       - name: Run checker
+        # Modulegen tests templates without starting containers, including on macOS.
+        if: ${{ inputs.project-directory != 'modulegen' }}
         run: |
             ./scripts/check_environment.sh
 
