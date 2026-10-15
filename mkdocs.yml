@@ -146,6 +146,7 @@ nav:
         - modules/redpanda.md
         - modules/registry.md
         - modules/s3mock.md
+        - modules/sbx.md
         - modules/scylladb.md
         - modules/sftp.md
         - modules/socat.md

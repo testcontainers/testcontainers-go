@@ -16,6 +16,7 @@ jobs:
     outputs:
       modules: ${{ steps.set-modified-modules.outputs.modules }}
       modules_count: ${{ steps.set-modified-modules-count.outputs.modules_count }}
+      sbx_changed: ${{ steps.set-sbx-changed.outputs.sbx_changed }}
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -35,8 +36,17 @@ jobs:
           ALL_CHANGED_FILES: "${{ steps.changed-files.outputs.all_changed_and_modified_files }} ${{ steps.changed-files.outputs.all_old_new_renamed_files }}"
         run: echo "modules=$(./scripts/changed-modules.sh)" >> "$GITHUB_OUTPUT"
 
+      - id: set-sbx-changed
+        name: Detect sbx integration changes
+        env:
+          ALL_CHANGED_FILES: "${{ steps.changed-files.outputs.all_changed_and_modified_files }} ${{ steps.changed-files.outputs.all_old_new_renamed_files }}"
+        run: echo "sbx_changed=$(./scripts/changed-sbx.sh)" >> "$GITHUB_OUTPUT"
+
       - name: Test module detection
         run: ./scripts/changed-modules_test.sh
+
+      - name: Test sbx change detection
+        run: ./scripts/changed-sbx_test.sh
 
       - id: set-modified-modules-count
         name: Set all modified modules count
@@ -104,6 +114,14 @@ jobs:
       platforms: '["ubuntu-24.04"]'
       project-directory: "."
       runtime: podman
+
+  test-sbx:
+    if: ${{ needs.detect-modules.outputs.sbx_changed == 'true' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) }}
+    needs: detect-modules
+    name: "Test sbx (Ubuntu 24.04, Go 1.26.x)"
+    uses: ./.github/workflows/ci-sbx.yml
+    secrets:
+      DOCKERPUBLICBOT_WRITE_PAT: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
   # The job below is a copy of the job above, but using Docker Cloud.
   test-testcontainers-cloud:
@@ -177,6 +195,7 @@ jobs:
       - lint
       - test
       - test-core-podman
+      - test-sbx
       - test-testcontainers-cloud
       - test-reaper-off
       - test-rootless-docker
@@ -186,6 +205,7 @@ jobs:
         env:
           JOB_RESULTS: ${{ toJSON(needs) }}
           MODULES: ${{ needs.detect-modules.outputs.modules }}
+          SBX_REQUIRED: ${{ needs.detect-modules.outputs.sbx_changed == 'true' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) }}
         run: |
           jq -e 'all(.[]; .result == "success" or .result == "skipped")' <<< "$JOB_RESULTS"
           jq -e 'type == "array" and all(.[]; type == "string")' <<< "$MODULES"
@@ -201,6 +221,9 @@ jobs:
           fi
           if jq -e 'index("") != null or index("modules/podman") != null' <<< "$MODULES" > /dev/null; then
             required+=(test-core-podman)
+          fi
+          if [[ "$SBX_REQUIRED" == "true" ]]; then
+            required+=(test-sbx)
           fi
           for job in "${required[@]}"; do
             jq -e --arg job "$job" '.[$job].result == "success"' <<< "$JOB_RESULTS"

@@ -1,0 +1,56 @@
+# syntax=docker/sandbox-kit:3
+schemaVersion: "3"
+kind: mixin
+displayName: Docker over TCP
+description: Serve the sandbox's Docker Engine on TCP port 2375 and publish it on the host loopback.
+version: "0.1.0"
+
+provides: ["docker-tcp"]
+
+capabilities:
+  - type: com.docker.sandbox/port@1
+    config:
+      name: docker-api
+      container: 2375
+      transport: tcp
+
+  - type: com.docker.sandbox/lifecycle@1
+    config:
+      startup:
+        - description: Make dockerd listen on tcp://0.0.0.0:2375 as well as the unix socket.
+          user: root
+          command: |
+            set -eu
+            cfg=/etc/docker/daemon.json
+            tcp=tcp://0.0.0.0:2375
+            probe() { curl -sf --max-time 2 http://127.0.0.1:2375/_ping >/dev/null 2>&1; }
+
+            command -v dockerd >/dev/null || { echo "docker-tcp: dockerd is not installed in this sandbox" >&2; exit 1; }
+
+            mkdir -p /etc/docker
+            [ -s "$cfg" ] || echo '{}' > "$cfg"
+            jq --arg tcp "$tcp" '.hosts = (((.hosts // []) + ["unix:///var/run/docker.sock", $tcp]) | unique)' "$cfg" > "$cfg.tmp"
+            if cmp -s "$cfg" "$cfg.tmp"; then rm -f "$cfg.tmp"; else mv "$cfg.tmp" "$cfg"; fi
+
+            probe && exit 0
+
+            if pkill -x dockerd; then
+              n=0
+              while pgrep -x dockerd >/dev/null; do
+                n=$((n + 1))
+                [ "$n" -lt 150 ] || { echo "docker-tcp: dockerd did not stop" >&2; exit 1; }
+                sleep 0.2
+              done
+            fi
+            nohup sh -c 'echo $$ > /var/run/sandboxes-dockerd.pid; exec dockerd >> /var/log/dockerd.log 2>&1' </dev/null >/dev/null 2>&1 &
+
+            n=0
+            until probe; do
+              n=$((n + 1))
+              if [ "$n" -ge 60 ]; then
+                echo "docker-tcp: dockerd did not come up on $tcp" >&2
+                tail -n 30 /var/log/dockerd.log >&2
+                exit 1
+              fi
+              sleep 0.5
+            done
