@@ -51,6 +51,8 @@ GOFLAGS=-v ./scripts/test-sbx.sh core
 GOFLAGS=-v ./scripts/test-sbx.sh compose
 ```
 
-The `module` mode runs the sbx module suite. The `core` mode runs a supported selection of core tests. The `compose` mode runs runtime routing checks and a native Compose smoke test. Run `GOFLAGS=-v ./scripts/test-sbx.sh all` to run all three selections in sequence.
+The `core` mode runs the complete root Go-module `./...` suite. Optional nested Go modules are separate: `module` runs the supplemental sbx module suite, and `compose` runs runtime routing checks and a native Compose smoke test. Run `GOFLAGS=-v ./scripts/test-sbx.sh all` to run all three modes in sequence. The only sbx capability skips in core are host-network options, host networking, and `container:<id>` networking; sbx requires published ports for its managed forwarding and does not support those network modes.
 
-The harness selects sbx, registers it in the test binaries, and arranges explicit sandbox cleanup. It uses ordinary `sbx login` credentials by default. See [the host test reference](../modules/sbx.md#run-the-provider-tests-on-a-host) for timeout settings and further details.
+The harness selects sbx, registers it in the test binaries, and arranges explicit sandbox cleanup; cleanup errors fail the test binary. The core Ryuk orphan test separately checks resource removal on the shared inner daemon after a child process exits. The harness uses ordinary `sbx login` credentials by default. See [the host test reference](../modules/sbx.md#run-the-provider-tests-on-a-host) for timeout settings and further details.
+
+CI runs these tests on Ubuntu 24.04 with Go `1.26.x` and `1.27.x`, using the shared Go test workflow and its per-module dependency installation hook for `modules/sbx`. For relevant changes, live sbx runs only on pushes to `main` and same-repository pull requests, using `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`. Each run, attempt, and Go matrix leg gets a unique CLI namespace. Fork pull requests retain normal unit and lint checks without live sbx or its secrets.
