@@ -102,6 +102,7 @@ nav:
         - modules/etcd.md
         - modules/firebird.md
         - modules/forgejo.md
+        - modules/garage.md
         - modules/gcloud.md
         - modules/grafana-lgtm.md
         - modules/inbucket.md
