@@ -40,6 +40,7 @@ updates:
         - /modules/elasticsearch
         - /modules/etcd
         - /modules/fakegcsserver
+        - /modules/fakesnow
         - /modules/firebird
         - /modules/forgejo
         - /modules/gcloud
