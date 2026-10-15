@@ -7,7 +7,10 @@ import (
 	"time"
 )
 
-const baseImage = "docker.io/docker/sbx-kit-shell:1.0.0"
+const (
+	baseImage    = "docker.io/docker/sbx-kit-shell:1.0.0"
+	dockerTCPKit = "sbx/docker-tcp:latest"
+)
 
 type configuration struct {
 	binary    string

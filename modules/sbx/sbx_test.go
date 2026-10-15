@@ -158,17 +158,14 @@ func TestDockerReadinessHonorsDeadline(t *testing.T) {
 	}
 }
 
-func TestProviderCleanupRetainsKitUntilRemovalConfirmed(t *testing.T) {
-	dir := t.TempDir()
-	kit := filepath.Join(dir, "kit")
-	if err := os.Mkdir(kit, 0o700); err != nil {
-		t.Fatal(err)
-	}
+func TestProviderCleanupRetriesOwnedSandboxRemoval(t *testing.T) {
 	failed := true
-	p := &Provider{started: true, ready: make(chan struct{}), name: "owned", kitDir: kit, run: func(_ context.Context, args ...string) ([]byte, error) {
-		if len(args) < 1 || args[0] != "rm" {
+	attempts := 0
+	p := &Provider{started: true, ready: make(chan struct{}), name: "owned", run: func(_ context.Context, args ...string) ([]byte, error) {
+		if strings.Join(args, " ") != "rm --force owned" {
 			t.Fatalf("unexpected command: %v", args)
 		}
+		attempts++
 		if failed {
 			return nil, errors.New("remove denied")
 		}
@@ -178,18 +175,21 @@ func TestProviderCleanupRetainsKitUntilRemovalConfirmed(t *testing.T) {
 	if err := p.Cleanup(context.Background()); err == nil {
 		t.Fatal("expected remove failure")
 	}
-	if _, err := os.Stat(kit); err != nil {
-		t.Fatalf("kit removed before sandbox: %v", err)
+	if p.name != "owned" {
+		t.Fatalf("lost owned sandbox after removal failure: %q", p.name)
 	}
 	failed = false
 	if err := p.Cleanup(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat(kit); !os.IsNotExist(err) {
-		t.Fatalf("kit survived confirmed removal: %v", err)
+	if p.name != "" {
+		t.Fatalf("retained owned sandbox after confirmed removal: %q", p.name)
 	}
 	if err := p.Cleanup(context.Background()); err != nil {
 		t.Fatal(err)
+	}
+	if attempts != 2 {
+		t.Fatalf("expected one failed removal and one successful retry, got %d attempts", attempts)
 	}
 }
 
@@ -280,7 +280,7 @@ esac
 	t.Setenv("TESTCONTAINERS_SBX_APP_NAME", "")
 	t.Setenv("TC_SBX_BOOTSTRAP_CALLS", logPath)
 	t.Setenv("TC_SBX_BOOTSTRAP_PUBLICATION", publicationPath)
-	kitPath := filepath.Join(dir, "kit-path")
+	kitPath := filepath.Join(dir, "kit-reference")
 	t.Setenv("TC_SBX_BOOTSTRAP_KIT", kitPath)
 	factoryCalled := false
 	p := &Provider{}
@@ -321,15 +321,12 @@ esac
 	if string(calls) != "create\nports\nrm\n" {
 		t.Fatalf("unexpected bootstrap/cleanup calls: %q", calls)
 	}
-	kitDir, err := os.ReadFile(kitPath)
+	kitReference, err := os.ReadFile(kitPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(kitDir) == 0 {
-		t.Fatal("create did not receive the mandatory kit")
-	}
-	if _, err := os.Stat(string(kitDir)); !os.IsNotExist(err) {
-		t.Fatalf("kit survived failed endpoint discovery: %v", err)
+	if string(kitReference) != "sbx/docker-tcp:latest" {
+		t.Fatalf("unexpected create --kit reference: %q", kitReference)
 	}
 }
 

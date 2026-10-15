@@ -13,7 +13,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -31,7 +30,6 @@ type Provider struct {
 	err          error
 	run          commandRunner
 	name         string
-	kitDir       string
 	proxy        proxyServer
 	proxyFactory func(context.Context, sandboxRuntime) (proxyServer, error)
 }
@@ -96,15 +94,6 @@ func (p *Provider) initialize(parent context.Context) {
 		err = nameErr
 		return
 	}
-	kitDir, kitErr := materializeKit()
-	if kitErr != nil {
-		err = kitErr
-		return
-	}
-	p.mu.Lock()
-	p.kitDir = kitDir
-	p.mu.Unlock()
-
 	// Probe and release an IPv4 loopback port immediately before create. This
 	// is advisory: sbx's actual bind decides whether the port is still free.
 	hostPort, portErr := candidateHostPort(ctx, "tcp", nil, nil)
@@ -120,7 +109,7 @@ func (p *Provider) initialize(parent context.Context) {
 
 	// create rejects existing names, unlike run, and exits after creating a
 	// running sandbox. Its stdout is intentionally ignored.
-	_, err = run(ctx, "create", "--name", name, "--kit", kitDir,
+	_, err = run(ctx, "create", "--name", name, "--kit", dockerTCPKit,
 		"--publish", fmt.Sprintf("127.0.0.1:%d:2375/tcp", hostPort), baseImage, cfg.workspace)
 	if err != nil {
 		if isCreateCollision(err, name) {
@@ -211,13 +200,6 @@ func (p *Provider) cleanupResources(ctx context.Context) error {
 			errs = append(errs, fmt.Errorf("remove owned sbx sandbox %q: %w", p.name, err))
 		} else {
 			p.name = ""
-		}
-	}
-	if p.name == "" && p.kitDir != "" {
-		if err := os.RemoveAll(p.kitDir); err != nil {
-			errs = append(errs, fmt.Errorf("remove sbx kit directory: %w", err))
-		} else {
-			p.kitDir = ""
 		}
 	}
 	return errors.Join(errs...)

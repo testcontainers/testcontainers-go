@@ -26,7 +26,7 @@ TESTCONTAINERS_PROVIDER=sbx go test ./...
 
 You can instead set `provider=sbx` in `~/.testcontainers.properties`. The environment variable takes precedence over the properties file. Select sbx for the test process before any Testcontainers operation.
 
-The module includes the required `docker-tcp` kit and passes it to `sbx` when it creates the sandbox. `sbx` builds and caches the kit itself; there is no separate kit build step.
+The module creates the sandbox with `--kit sbx/docker-tcp:latest` and base image `docker.io/docker/sbx-kit-shell:1.0.0`. The `sbx` CLI pulls and loads the published Docker TCP kit.
 
 ## Cleanup in TestMain
 
@@ -89,6 +89,8 @@ From the repository root, with a supported `sbx` installation and local VM suppo
 ./scripts/test-sbx.sh compose
 ./scripts/test-sbx.sh all
 ```
+
+For verbose test output, run `GOFLAGS=-v ./scripts/test-sbx.sh module`. The harness preserves `GOFLAGS` for its Go commands.
 
 `module` runs the sbx module suite, including a real nginx lifecycle, mapped port, exec, copy, logs, restart, and occupied port test. `core` compiles and registers sbx in every root-module test package, then runs a supported selection covering lifecycle, mapped ports and HTTP waits, named volumes, exec, copy, logs, networks, and image builds. `compose` runs runtime routing checks and a native Compose nginx smoke test. `all` runs those three modes in sequence. The harness selects sbx and calls `Cleanup` through `TestMain` for the core and Compose binaries; the module suite has its own `TestMain`. It uses a temporary Go workspace for registration and removes its temporary files when done.
 
