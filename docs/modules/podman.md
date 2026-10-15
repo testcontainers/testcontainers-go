@@ -47,3 +47,19 @@ breaking release.
 To migrate, import this module and select Podman through configuration before any
 Testcontainers operation. Per-container provider options are then unnecessary
 for tests using that configured runtime.
+
+## Testing the provider
+
+The main CI pipeline runs the core Go module against native rootful Podman on
+Ubuntu 24.04, with Ryuk enabled, for changes to core or `modules/podman`.
+This job does not run the database modules or examples. It runs the core suite
+with the Podman module imported through a temporary Go workspace, and separate
+smoke tests without that import for automatic detection and `ProviderPodman`.
+An orphan-cleanup test verifies that Ryuk deletes stopped containers, networks
+and explicitly labelled volumes after the test process exits.
+
+To run the same tests locally, configure a rootful Podman socket and Ryuk as
+described in the system requirements, then run
+`./.github/scripts/test-core-podman.sh` from the repository root.
+The script temporarily adds provider imports to the core test binaries and
+removes them when it exits. It does not modify core's module dependencies.

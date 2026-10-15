@@ -359,8 +359,14 @@ func TestContainerCreation(t *testing.T) {
 	networkAliases, err := nginxC.NetworkAliases(ctx)
 	require.NoError(t, err)
 	require.Lenf(t, networkAliases, 1, "Expected number of connected networks %d. Got %d.", 0, len(networkAliases))
-	require.Contains(t, networkAliases, "bridge")
-	require.Emptyf(t, networkAliases["bridge"], "Expected number of aliases for 'bridge' network %d. Got %d.", 0, len(networkAliases["bridge"]))
+	bridge := testDefaultBridge(t)
+	require.Contains(t, networkAliases, bridge)
+	if core.ConfiguredProviderName() == "podman" {
+		// Podman includes the short container ID as an implicit DNS alias.
+		require.Contains(t, networkAliases[bridge], nginxC.GetContainerID()[:12])
+	} else {
+		require.Empty(t, networkAliases[bridge])
+	}
 }
 
 func TestContainerCreationWithName(t *testing.T) {
@@ -368,11 +374,12 @@ func TestContainerCreationWithName(t *testing.T) {
 
 	creationName := fmt.Sprintf("%s_%d", "test_container", time.Now().Unix())
 	expectedName := "/" + creationName // inspect adds '/' in the beginning
+	bridge := testDefaultBridge(t)
 
 	// avoid cyclic import with the network package by defining the anonymous function here
 	withBridgeNetwork := func() CustomizeRequestOption {
 		return func(req *GenericContainerRequest) error {
-			req.Networks = append(req.Networks, "bridge")
+			req.Networks = append(req.Networks, bridge)
 			return nil
 		}
 	}
@@ -396,13 +403,7 @@ func TestContainerCreationWithName(t *testing.T) {
 	networks, err := nginxC.Networks(ctx)
 	require.NoError(t, err)
 	require.Lenf(t, networks, 1, "Expected networks 1. Got '%d'.", len(networks))
-	nw := networks[0]
-	switch providerType {
-	case ProviderDocker, ProviderDefault:
-		require.Equalf(t, Bridge, nw, "Expected network name '%s'. Got '%s'.", Bridge, nw)
-	case ProviderPodman:
-		require.Equalf(t, Podman, nw, "Expected network name '%s'. Got '%s'.", Podman, nw)
-	}
+	require.Equal(t, bridge, networks[0])
 
 	endpoint, err := nginxC.PortEndpoint(ctx, nginxDefaultPort, "http")
 	require.NoError(t, err)
@@ -1349,12 +1350,7 @@ func TestDockerContainerCopyEmptyFileFromContainer(t *testing.T) {
 }
 
 func TestDockerContainerResources(t *testing.T) {
-	if providerType == ProviderPodman {
-		t.Skip("Rootless Podman does not support setting rlimit")
-	}
-	if os.Getenv("XDG_RUNTIME_DIR") != "" {
-		t.Skip("Rootless Docker does not support setting rlimit")
-	}
+	skipIfRootless(t)
 
 	ctx := context.Background()
 
@@ -1392,13 +1388,20 @@ func TestDockerContainerResources(t *testing.T) {
 	resp, err := c.ContainerInspect(ctx, containerID, client.ContainerInspectOptions{})
 	require.NoError(t, err)
 
-	require.Equal(t, expected, resp.Container.HostConfig.Ulimits)
+	// Podman reports RLIMIT_* names and can include additional default limits.
+	limits := make(map[string]*container.Ulimit)
+	for _, limit := range resp.Container.HostConfig.Ulimits {
+		limits[strings.ToLower(strings.TrimPrefix(limit.Name, "RLIMIT_"))] = limit
+	}
+	for _, limit := range expected {
+		require.Contains(t, limits, limit.Name)
+		require.Equal(t, limit.Hard, limits[limit.Name].Hard)
+		require.Equal(t, limit.Soft, limits[limit.Name].Soft)
+	}
 }
 
 func TestContainerCapAdd(t *testing.T) {
-	if providerType == ProviderPodman {
-		t.Skip("Rootless Podman does not support setting cap-add/cap-drop")
-	}
+	skipIfRootless(t)
 
 	ctx := context.Background()
 
@@ -1422,7 +1425,11 @@ func TestContainerCapAdd(t *testing.T) {
 	resp, err := dockerClient.ContainerInspect(ctx, containerID, client.ContainerInspectOptions{})
 	require.NoError(t, err)
 
-	require.Equal(t, []string{expected}, resp.Container.HostConfig.CapAdd)
+	capabilities := resp.Container.HostConfig.CapAdd
+	for i := range capabilities {
+		capabilities[i] = strings.TrimPrefix(capabilities[i], "CAP_")
+	}
+	require.Equal(t, []string{strings.TrimPrefix(expected, "CAP_")}, capabilities)
 }
 
 func TestContainerRunningCheckingStatusCode(t *testing.T) {
@@ -1486,7 +1493,7 @@ func TestContainerWithNoUserID(t *testing.T) {
 func TestGetGatewayIP(t *testing.T) {
 	// When using docker compose with DinD mode, and using host port or http wait strategy
 	// It's need to invoke GetGatewayIP for get the host
-	provider, err := providerType.GetProvider(WithLogger(log.TestLogger(t)))
+	provider, err := ProviderDefault.GetProvider(WithLogger(log.TestLogger(t)))
 	require.NoError(t, err)
 	defer provider.Close()
 

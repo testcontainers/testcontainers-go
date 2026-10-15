@@ -26,7 +26,7 @@ func TestRuntimeProviderClient(t *testing.T) {
 	if mode == "" {
 		binary, err := os.Executable()
 		require.NoError(t, err)
-		for _, mode := range []string{"healthy", "unavailable", "unregistered"} {
+		for _, mode := range []string{"healthy", "health-helper", "unavailable", "unregistered"} {
 			t.Run(mode, func(t *testing.T) {
 				cmd := exec.CommandContext(t.Context(), binary, "-test.run=^TestRuntimeProviderClient$")
 				cmd.Env = append(os.Environ(), "TCGO_RUNTIME_TEST="+mode)
@@ -67,6 +67,12 @@ func TestRuntimeProviderClient(t *testing.T) {
 	require.NoError(t, RegisterProvider("test-runtime", func() RuntimeProvider {
 		return testRuntimeProvider{configuration: want}
 	}))
+	if mode == "health-helper" {
+		t.Cleanup(func() {
+			require.False(t, t.Skipped(), "the health helper must check the configured provider")
+		})
+		SkipIfProviderIsNotHealthy(t)
+	}
 	p, err := NewDockerProvider()
 	if mode == "unavailable" {
 		require.ErrorContains(t, err, "selected runtime is unavailable")

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -161,6 +162,10 @@ func TestProviderTypeGetProviderAutodetect(t *testing.T) {
 	t.Setenv("TESTCONTAINERS_PROVIDER", "")
 	dockerHost := core.MustExtractDockerHost(context.Background())
 	const podmanSocket = "unix://$XDG_RUNTIME_DIR/podman/podman.sock"
+	detectedBridge := Bridge
+	if strings.Contains(dockerHost, "podman.sock") {
+		detectedBridge = Podman
+	}
 
 	tests := []struct {
 		name       string
@@ -169,10 +174,10 @@ func TestProviderTypeGetProviderAutodetect(t *testing.T) {
 		want       string
 	}{
 		{
-			name:       "default provider without podman.socket",
+			name:       "default provider with discovered socket",
 			tr:         ProviderDefault,
 			DockerHost: dockerHost,
-			want:       Bridge,
+			want:       detectedBridge,
 		},
 		{
 			name:       "default provider with podman.socket",

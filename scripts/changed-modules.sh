@@ -202,6 +202,11 @@ sorted_unique_modules=($(echo "${modified_modules[@]}" | tr ' ' '\n' | sort -u |
 # remove modules that won't be part of the build from the list
 filtered_modules=()
 for module in "${sorted_unique_modules[@]}"; do
+    # Deleted modules and the old side of a moved module have no build target.
+    module_path=${module//\"/}
+    if [[ ! -f "${ROOT_DIR}/${module_path}/go.mod" ]]; then
+        continue
+    fi
     skip=false
     for no_build_module in "${no_build_modules[@]}"; do
         if [[ ${module} == \"${no_build_module}\" ]]; then

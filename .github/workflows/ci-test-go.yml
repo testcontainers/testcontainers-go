@@ -11,12 +11,10 @@ on:
       platforms:
         required: true
         type: string
-        default: "ubuntu-latest"
         description: "The platforms in which the project will be run"
       project-directory:
         required: true
         type: string
-        default: "."
         description: "The directory where the Go project is located."
       testcontainers-cloud:
         required: false
@@ -33,6 +31,11 @@ on:
         type: boolean
         default: false
         description: "Disable the ryuk container for the test."
+      runtime:
+        required: false
+        type: string
+        default: docker
+        description: "Docker-compatible runtime: docker or podman (core only)."
 
 permissions:
   contents: read
@@ -41,7 +44,7 @@ permissions:
 
 jobs:
   test-go-project:
-    name: "test: ${{ inputs.project-directory }}/${{ inputs.go-version }}"
+    name: "test: ${{ inputs.project-directory }}/${{ inputs.go-version }} (${{ inputs.runtime }})"
     # Modulegen can run the tests on all platforms
     env:
       TESTCONTAINERS_RYUK_DISABLED: "${{ inputs.ryuk-disabled }}"
@@ -72,6 +75,10 @@ jobs:
             cache-dependency-path: '${{ inputs.project-directory }}/go.sum'
         id: go
 
+      - name: Set up native rootful Podman
+        if: ${{ inputs.runtime == 'podman' }}
+        run: ./.github/scripts/setup-podman.sh
+
       - name: ensure compilation
         working-directory: ./${{ inputs.project-directory }}
         run: go build ./...
@@ -94,9 +101,24 @@ jobs:
           token: ${{ secrets.TCC_TOKEN }}
 
       - name: go test
+        if: ${{ inputs.runtime == 'docker' }}
         working-directory: ./${{ inputs.project-directory }}
         timeout-minutes: 30
         run: make test-unit
+
+      - name: Test core with Podman and its compatibility path
+        if: ${{ inputs.runtime == 'podman' }}
+        timeout-minutes: 40
+        run: ./.github/scripts/test-core-podman.sh
+
+      - name: Podman diagnostics
+        if: ${{ failure() && inputs.runtime == 'podman' }}
+        run: |
+          sudo podman info
+          sudo podman ps -a
+          sudo podman network ls
+          sudo podman volume ls
+          sudo journalctl -u podman.service --no-pager -n 200
 
       - name: Run checker
         run: |
@@ -116,7 +138,7 @@ jobs:
         if: always()
 
       - name: Decide if Sonar must be run
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
+        if: ${{ matrix.platform == 'ubuntu-latest' && inputs.runtime == 'docker' }}
         run: |
           if [[ "1.26.x" == "${{ inputs.go-version }}" ]] && \
              [[ "true" != "${{ inputs.rootless-docker }}" ]] && \

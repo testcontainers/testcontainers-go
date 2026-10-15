@@ -1794,17 +1794,29 @@ func (p *DockerProvider) ensureDefaultNetworkLocked(ctx context.Context) (string
 	// TODO: remove once we have docker context support via #2810
 	// Prefer the default bridge network if it exists.
 	// This makes the results stable as network list order is not guaranteed.
+	var fallbackNetwork string
 	for _, nw := range networkResources.Items {
 		switch nw.Name {
 		case p.defaultBridgeNetworkName:
 			p.defaultNetwork = p.defaultBridgeNetworkName
 			return p.defaultNetwork, nil
 		case ReaperDefault:
-			p.defaultNetwork = ReaperDefault
+			fallbackNetwork = ReaperDefault
 		}
 	}
 
-	if p.defaultNetwork != "" {
+	// A compatible runtime may list the default network under an alias: Podman
+	// lists "bridge", but container creation requires its native name "podman".
+	// Inspect the configured name before choosing or creating a fallback.
+	if _, err := p.client.NetworkInspect(ctx, p.defaultBridgeNetworkName, client.NetworkInspectOptions{}); err == nil {
+		p.defaultNetwork = p.defaultBridgeNetworkName
+		return p.defaultNetwork, nil
+	} else if !errdefs.IsNotFound(err) {
+		return "", fmt.Errorf("inspect default network: %w", err)
+	}
+
+	if fallbackNetwork != "" {
+		p.defaultNetwork = fallbackNetwork
 		return p.defaultNetwork, nil
 	}
 
