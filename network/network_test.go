@@ -221,8 +221,8 @@ func TestNew_withOptions(t *testing.T) {
 		Driver: "default",
 		Config: []dockernetwork.IPAMConfig{
 			{
-				Subnet:  netip.MustParsePrefix("10.1.1.0/24"),
-				Gateway: netip.MustParseAddr("10.1.1.254"),
+				Subnet:  netip.MustParsePrefix("192.0.2.0/24"),
+				Gateway: netip.MustParseAddr("192.0.2.254"),
 			},
 		},
 		Options: map[string]string{

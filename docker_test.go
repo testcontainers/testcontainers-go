@@ -570,7 +570,7 @@ func Test_BuildContainerFromDockerfileWithBuildLog(t *testing.T) {
 
 	temp := strings.Split(string(out), "\n")
 	require.NotEmpty(t, temp)
-	require.Regexpf(t, `^Step\s*1/\d+\s*:\s*FROM alpine$`, temp[0], "Expected stdout first line to be %s. Got '%s'.", "Step 1/* : FROM alpine", temp[0])
+	require.Regexpf(t, `^(?i:Step)\s*1/\d+\s*:\s*FROM alpine$`, temp[0], "Expected stdout first line to be %s. Got '%s'.", "Step 1/* : FROM alpine", temp[0])
 }
 
 func Test_BuildContainerFromDockerfileWithBuildLogWriter(t *testing.T) {
@@ -592,7 +592,7 @@ func Test_BuildContainerFromDockerfileWithBuildLogWriter(t *testing.T) {
 	out := buffer.String()
 	temp := strings.Split(out, "\n")
 	require.NotEmpty(t, temp)
-	require.Regexpf(t, `^Step\s*1/\d+\s*:\s*FROM alpine$`, temp[0], "Expected stdout first line to be %s. Got '%s'.", "Step 1/* : FROM alpine", temp[0])
+	require.Regexpf(t, `^(?i:Step)\s*1/\d+\s*:\s*FROM alpine$`, temp[0], "Expected stdout first line to be %s. Got '%s'.", "Step 1/* : FROM alpine", temp[0])
 }
 
 func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
@@ -1233,7 +1233,7 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 			name: "container-dir-not-found/error",
 			dir: ContainerFile{
 				HostFilePath:      filepath.Join(".", hostDirName),
-				ContainerFilePath: "/parent-does-not-exist/testdata123", // does not exist
+				ContainerFilePath: "/parent-does-not-exist/" + hostDirName,
 				FileMode:          0o700,
 			},
 			hasError: true,
@@ -1250,7 +1250,12 @@ func TestDockerCreateContainerWithDirs(t *testing.T) {
 			)
 			CleanupContainer(t, nginxC)
 
-			require.Equal(t, (err != nil), tc.hasError)
+			wantError := tc.hasError
+			if tc.name == "container-dir-not-found/error" && core.ConfiguredProviderName() == "podman" {
+				// Podman's archive API creates missing parent directories.
+				wantError = false
+			}
+			require.Equal(t, wantError, err != nil)
 			if err == nil {
 				dir := tc.dir
 
