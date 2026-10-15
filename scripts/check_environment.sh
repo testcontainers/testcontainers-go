@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 i=0
 while [ $i -ne 30 ]
 do

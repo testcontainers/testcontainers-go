@@ -84,6 +84,25 @@ In order to use Testcontainers then either
 
 As an alternative to declaring the provider in the tests themselves, set the `TESTCONTAINERS_PROVIDER` environment variable to `podman` to select Podman for tests that do not explicitly choose a provider. You can also set `provider=podman` in the `.testcontainers.properties` file in your home directory. An explicit provider in code takes precedence over the environment variable, which takes precedence over the properties file.
 
+New integrations can register Podman through its Go module:
+
+```go
+import _ "github.com/testcontainers/testcontainers-go/modules/podman"
+```
+
+Select it with `TESTCONTAINERS_PROVIDER=podman` or `provider=podman`. The import
+registers the provider; it does not start or connect to Podman. Adding the dependency
+to `go.mod` without importing it does not register it.
+
+The built-in Podman path and `ProviderPodman` remain available during migration,
+so existing tests do not need to change immediately. Both paths retain the same
+Docker-compatible endpoint discovery and `podman` default bridge network.
+
+Provider modules initialize before Docker host or socket discovery, including when
+the first operation is direct client construction. Select the runtime before any
+Testcontainers operation; a process cannot switch to a different managed runtime
+after initialization. Selecting an unregistered provider returns an error.
+
 ## Fedora
 
 `DOCKER_HOST` environment variable must be set

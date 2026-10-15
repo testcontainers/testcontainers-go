@@ -16,6 +16,7 @@ import (
 const (
 	ProviderDefault ProviderType = iota // default will auto-detect provider from DOCKER_HOST environment variable
 	ProviderDocker
+	// Deprecated: import modules/podman and select provider=podman instead.
 	ProviderPodman
 )
 
@@ -104,7 +105,7 @@ func (t ProviderType) UnderlyingProviderType() ProviderType {
 
 	// Configuration of an explicit provider has the next priority
 	conf := config.Read()
-	switch strings.ToLower(conf.Provider) {
+	switch strings.ToLower(strings.TrimSpace(conf.Provider)) {
 	case "docker":
 		return ProviderDocker
 	case "podman":
@@ -128,6 +129,22 @@ func (t ProviderType) GetProvider(opts ...GenericProviderOption) (GenericProvide
 
 	for _, o := range opts {
 		o.ApplyGenericTo(opt)
+	}
+	if t != ProviderDefault {
+		var name string
+		switch t {
+		case ProviderDocker:
+			name = "docker"
+		case ProviderPodman:
+			name = "podman"
+		default:
+			return nil, errors.New("unknown provider")
+		}
+		if err := core.SelectRuntime(name); err != nil {
+			return nil, err
+		}
+	} else if name := core.ConfiguredProviderName(); core.HasRegisteredProvider(name) || (name != "docker" && name != "podman") {
+		return NewDockerProvider(Generic2DockerOptions(opts...)...)
 	}
 
 	switch t.UnderlyingProviderType() {
@@ -166,6 +183,13 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 	if err != nil {
 		return nil, err
 	}
+	runtime, err := core.Runtime(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if o.defaultBridgeNetworkName == "" {
+		o.defaultBridgeNetworkName = runtime.DefaultBridgeNetwork
+	}
 	c, err := NewDockerClientWithOpts(ctx)
 	if err != nil {
 		return nil, err
@@ -175,5 +199,6 @@ func NewDockerProvider(provOpts ...DockerProviderOption) (*DockerProvider, error
 		client:                c,
 		host:                  host,
 		config:                config.Read(),
+		runtime:               runtime,
 	}, nil
 }

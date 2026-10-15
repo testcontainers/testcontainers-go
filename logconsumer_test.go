@@ -592,6 +592,12 @@ func Test_MultiContainerLogConsumer_CancelledContext(t *testing.T) {
 	_, err = http.Get(ep2 + "/stdout?echo=there2")
 	require.NoError(t, err)
 
+	// A successful HTTP response does not mean the asynchronous log consumers
+	// have received the output. Observe both streams before cancelling them.
+	require.Eventually(t, func() bool {
+		return len(first.Msgs()) >= 2 && len(second.Msgs()) >= 2
+	}, 10*time.Second, 100*time.Millisecond)
+
 	// Deliberately calling context cancel
 	cancel()
 
