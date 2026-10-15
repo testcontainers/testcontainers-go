@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -1686,6 +1687,11 @@ type fakeStreamResult struct {
 func (e fakeStreamResult) Read(p []byte) (int, error) { return e.ReadCloser.Read(p) }
 func (e fakeStreamResult) Close() error               { return e.ReadCloser.Close() }
 
+func (e fakeStreamResult) Wait(context.Context) error {
+	_, err := io.Copy(io.Discard, e.ReadCloser)
+	return err
+}
+
 func (f *errMockCli) ImageBuild(_ context.Context, _ io.Reader, _ client.ImageBuildOptions) (client.ImageBuildResult, error) {
 	f.imageBuildCount++
 	return client.ImageBuildResult{Body: io.NopCloser(&bytes.Buffer{})}, f.err
@@ -1828,6 +1834,68 @@ func TestDockerProvider_waitContainerCreation_retries(t *testing.T) {
 
 			require.Positive(t, m.containerListCount)
 			require.Equal(t, tt.shouldRetry, m.containerListCount > 1)
+		})
+	}
+}
+
+func TestDockerProvider_PullImage_stream(t *testing.T) {
+	t.Setenv("DOCKER_AUTH_CONFIG", `{"auths":{}}`)
+	origDefaultRegistryFn := defaultRegistryFn
+	t.Cleanup(func() { defaultRegistryFn = origDefaultRegistryFn })
+	defaultRegistryFn = func(context.Context) string { return core.IndexDockerIO }
+
+	for _, tt := range []struct {
+		name    string
+		body    string
+		wantErr string
+	}{
+		{name: "success", body: `{"status":"Pull complete"}`},
+		{name: "error detail with code", body: `{"errorDetail":{"code":502,"message":"registry unavailable"}}`, wantErr: "registry unavailable"},
+		{name: "error detail without code", body: `{"errorDetail":{"message":"registry unavailable"}}`, wantErr: "registry unavailable"},
+		{name: "error detail and legacy error", body: `{"errorDetail":{"message":"registry unavailable"},"error":"registry unavailable"}`, wantErr: "registry unavailable"},
+		{name: "malformed response", body: `{"status":`, wantErr: "unexpected EOF"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			for _, withOpts := range []bool{false, true} {
+				name := "PullImage"
+				if withOpts {
+					name = "PullImageWithOpts"
+				}
+				t.Run(name, func(t *testing.T) {
+					pulls := 0
+					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						if r.Method != http.MethodPost || r.URL.Path != "/v1.54/images/create" {
+							http.Error(w, "unexpected request", http.StatusBadRequest)
+							return
+						}
+						pulls++
+						w.Header().Set("Content-Type", "application/json")
+						_, _ = fmt.Fprintln(w, `{"status":"Pulling manifest"}`)
+						_, _ = fmt.Fprintln(w, tt.body)
+					}))
+					t.Cleanup(server.Close)
+					cli, err := client.New(client.WithHost(server.URL), client.WithAPIVersion("1.54"))
+					require.NoError(t, err)
+					t.Cleanup(func() { require.NoError(t, cli.Close()) })
+					p := &DockerProvider{
+						DockerProviderOptions: &DockerProviderOptions{
+							GenericProviderOptions: &GenericProviderOptions{Logger: log.Default()},
+						},
+						client: cli,
+					}
+					if withOpts {
+						err = p.PullImageWithOpts(context.Background(), "nginx:mainline")
+					} else {
+						err = p.PullImage(context.Background(), "nginx:mainline")
+					}
+					if tt.wantErr == "" {
+						require.NoError(t, err)
+					} else {
+						require.ErrorContains(t, err, tt.wantErr)
+					}
+					require.Equal(t, 1, pulls)
+				})
+			}
 		})
 	}
 }
