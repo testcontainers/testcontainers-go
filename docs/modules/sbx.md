@@ -6,9 +6,7 @@ The sbx module runs Testcontainers for Go inside a [Docker Sandbox](https://docs
 
 ## Prerequisites and selection
 
-See [Using Docker Sandboxes](../system_requirements/using_sbx.md) for host setup and provider selection.
-
-Install a supported Docker `sbx` CLI on a host that can run sandboxes, sign in to Docker with `sbx login`, then check `sbx version`. Local sandbox creation requires this sign-in on Linux and macOS. The provider needs local IPv4 TCP and UDP port publishing. A Docker daemon on the host is not selected when sbx is configured.
+Install a supported Docker `sbx` CLI on a host that can run sandboxes with local IPv4 TCP and UDP port publishing. Authenticate the CLI with `sbx login` before running tests; the provider uses existing authentication and does not log in for you. See [Using Docker Sandboxes](../system_requirements/using_sbx.md) for host setup, CI login, and configured CLI namespaces.
 
 The module is on `main` and cannot be fetched as a released module until it is published. After release, add the module dependency and import it in a test package:
 

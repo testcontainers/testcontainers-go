@@ -1,5 +1,6 @@
 // Package sbx registers a Docker Sandbox runtime for Testcontainers.
-// Importing the package does not start a sandbox; initialization is lazy.
+// The sbx CLI must be installed and authenticated with sbx login before provider
+// initialization. Importing the package does not start a sandbox.
 package sbx
 
 import (
@@ -21,7 +22,8 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-// Provider owns one sandbox and its local Docker proxy.
+// Provider manages one Docker Sandbox.
+// Its zero value is ready for use.
 type Provider struct {
 	mu           sync.Mutex
 	started      bool
@@ -44,8 +46,9 @@ func init() {
 	}
 }
 
-// Initialize starts a unique sandbox once. Its result, including errors, is
-// shared by all callers of this Provider.
+// Initialize starts a sandbox and returns its runtime configuration.
+// The sbx CLI must already be authenticated with sbx login.
+// Initialization is attempted once per Provider.
 func (p *Provider) Initialize(ctx context.Context) (testcontainers.RuntimeConfig, error) {
 	if err := ctx.Err(); err != nil {
 		return testcontainers.RuntimeConfig{}, err
@@ -172,10 +175,12 @@ func isMissingSandbox(err error, name string) bool {
 	return strings.Contains(err.Error(), fmt.Sprintf("sandbox '%s' not found", name))
 }
 
-// Cleanup removes the default provider's owned sandbox if it was initialized.
+// Cleanup removes the sandbox managed by the default provider.
+// It does nothing if initialization has not started.
 func Cleanup(ctx context.Context) error { return defaultProvider.Cleanup(ctx) }
 
-// Cleanup is safe to retry if the sandbox removal fails.
+// Cleanup waits for any active initialization and removes this provider's sandbox.
+// It does nothing before initialization and can be retried after failure.
 func (p *Provider) Cleanup(ctx context.Context) error {
 	p.mu.Lock()
 	if !p.started {

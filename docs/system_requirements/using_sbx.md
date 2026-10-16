@@ -6,14 +6,21 @@ _Testcontainers for Go_ can use Docker Sandboxes through the optional `sbx` runt
 
 Install the Docker `sbx` CLI following the [Docker Sandboxes documentation](https://docs.docker.com/ai/sandboxes/). Run your tests on a host able to start Docker Sandboxes, with local IPv4 TCP and UDP port publishing available. On Linux, the repository test harness requires readable and writable `/dev/kvm`, EROFS filesystem support, and `mkfs.erofs`.
 
-Sign in using the ordinary CLI namespace and check the installation:
+Authenticate the CLI before running tests, on both Linux and macOS. The caller or CI runner must configure login; the provider uses existing authentication and does not log in for you. For the default CLI namespace:
 
 ```shell
 sbx login
 sbx version
 ```
 
-Local sandbox creation requires sign-in on Linux and macOS. The provider automatically applies the published `sbx/docker-tcp:latest` kit when it creates the sandbox.
+`TESTCONTAINERS_SBX_APP_NAME` selects the provider's CLI namespace by adding `--app-name` to its CLI calls. If you set it, authenticate that same namespace first:
+
+```shell
+export TESTCONTAINERS_SBX_APP_NAME=tc-tests
+sbx --app-name "$TESTCONTAINERS_SBX_APP_NAME" login
+```
+
+The provider automatically applies the published `sbx/docker-tcp:latest` kit when it creates the sandbox.
 
 ## Register and select the provider
 
@@ -55,4 +62,20 @@ The `core` mode runs the complete root Go-module `./...` suite. Optional nested 
 
 The harness selects sbx, registers it in the test binaries, and arranges explicit sandbox cleanup; cleanup errors fail the test binary. The core Ryuk orphan test separately checks resource removal on the shared inner daemon after a child process exits. The harness uses ordinary `sbx login` credentials by default. See [the host test reference](../modules/sbx.md#run-the-provider-tests-on-a-host) for timeout settings and further details.
 
-CI runs these tests on Ubuntu 24.04 with Go `1.26.x` and `1.27.x`, using the shared Go test workflow and its per-module dependency installation hook for `modules/sbx`. For relevant changes, live sbx runs only on pushes to `main` and same-repository pull requests, using `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`. Each run, attempt, and Go matrix leg gets a unique CLI namespace. Fork pull requests retain normal unit and lint checks without live sbx or its secrets.
+## CI authentication
+
+Authenticate sbx on the CI runner before running tests. With `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` supplied as CI secrets, use:
+
+```shell
+printf '%s\n' "$DOCKERHUB_TOKEN" | sbx login --username "$DOCKERHUB_USERNAME" --password-stdin
+```
+
+If `TESTCONTAINERS_SBX_APP_NAME` is configured, use the same namespace for login:
+
+```shell
+printf '%s\n' "$DOCKERHUB_TOKEN" | sbx --app-name "$TESTCONTAINERS_SBX_APP_NAME" login --username "$DOCKERHUB_USERNAME" --password-stdin
+```
+
+Repository CI authenticates each sbx job with these secrets before running tests and logs out afterward.
+
+For relevant changes, live sbx runs only on pushes to `main` and same-repository pull requests. Fork pull requests retain normal unit and lint checks without live sbx or its secrets.
