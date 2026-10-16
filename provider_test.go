@@ -2,16 +2,170 @@ package testcontainers
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/testcontainers/testcontainers-go/internal/config"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
+func TestProviderTypeGetUnderlyingProviderType(t *testing.T) {
+	tests := []struct {
+		name           string
+		providerType   ProviderType
+		propertiesFile string // content of .testcontainers.properties
+		env            map[string]string
+		expectedType   ProviderType
+	}{
+		{
+			name:         "ProviderDefault without configuration defaults to Docker",
+			providerType: ProviderDefault,
+			expectedType: ProviderDocker,
+		},
+		{
+			name:         "ProviderDefault detects Podman without contacting the socket",
+			providerType: ProviderDefault,
+			env:          map[string]string{"DOCKER_HOST": "unix:///nonexistent/podman.sock"},
+			expectedType: ProviderPodman,
+		},
+		{
+			name:         "ProviderDefault with unreachable Docker host defaults to Docker",
+			providerType: ProviderDefault,
+			env:          map[string]string{"DOCKER_HOST": "unix:///nonexistent/docker.sock"},
+			expectedType: ProviderDocker,
+		},
+		{
+			name:           "Configured Docker takes precedence over Podman auto-detection",
+			providerType:   ProviderDefault,
+			propertiesFile: "provider=DoCkEr",
+			env:            map[string]string{"DOCKER_HOST": "unix:///nonexistent/podman.sock"},
+			expectedType:   ProviderDocker,
+		},
+		{
+			name:         "Provider names in the environment are case insensitive",
+			providerType: ProviderDefault,
+			env:          map[string]string{"TESTCONTAINERS_PROVIDER": "PoDmAn"},
+			expectedType: ProviderPodman,
+		},
+		{
+			name:         "ProviderDocker always returns ProviderDocker",
+			providerType: ProviderDocker,
+			expectedType: ProviderDocker,
+		},
+		{
+			name:         "ProviderPodman always returns ProviderPodman",
+			providerType: ProviderPodman,
+			expectedType: ProviderPodman,
+		},
+		{
+			name:           "ProviderDefault with properties file set to docker",
+			providerType:   ProviderDefault,
+			propertiesFile: "provider=docker",
+			expectedType:   ProviderDocker,
+		},
+		{
+			name:           "ProviderDefault with properties file set to podman",
+			providerType:   ProviderDefault,
+			propertiesFile: "provider=podman",
+			expectedType:   ProviderPodman,
+		},
+		{
+			name:         "ProviderDefault with env var set to docker",
+			providerType: ProviderDefault,
+			env: map[string]string{
+				"TESTCONTAINERS_PROVIDER": "docker",
+			},
+			expectedType: ProviderDocker,
+		},
+		{
+			name:         "ProviderDefault with env var set to podman",
+			providerType: ProviderDefault,
+			env: map[string]string{
+				"TESTCONTAINERS_PROVIDER": "podman",
+			},
+			expectedType: ProviderPodman,
+		},
+		{
+			name:           "ProviderDefault with env var podman and properties docker - env wins",
+			providerType:   ProviderDefault,
+			propertiesFile: "provider=docker",
+			env: map[string]string{
+				"TESTCONTAINERS_PROVIDER": "podman",
+			},
+			expectedType: ProviderPodman,
+		},
+		{
+			name:           "ProviderDocker with env var podman and properties podman - explicit provider wins",
+			providerType:   ProviderDocker,
+			propertiesFile: "provider=podman",
+			env: map[string]string{
+				"TESTCONTAINERS_PROVIDER": "podman",
+			},
+			expectedType: ProviderDocker,
+		},
+		{
+			name:           "ProviderPodman with env var docker and properties docker - explicit provider wins",
+			providerType:   ProviderPodman,
+			propertiesFile: "provider=docker",
+			env: map[string]string{
+				"TESTCONTAINERS_PROVIDER": "docker",
+			},
+			expectedType: ProviderPodman,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reset config for each test to ensure clean state
+			config.Reset()
+			t.Cleanup(config.Reset)
+
+			// Create temp directory for HOME
+			tmpDir := t.TempDir()
+			t.Setenv("HOME", tmpDir)
+			t.Setenv("USERPROFILE", tmpDir)         // Windows support
+			t.Setenv("TESTCONTAINERS_PROVIDER", "") // Ensure env var is not set before test
+			t.Setenv("DOCKER_HOST", "")
+
+			// Set any additional environment variables
+			for k, v := range tt.env {
+				t.Setenv(k, v)
+			}
+
+			// Create properties file if content is provided
+			if tt.propertiesFile != "" {
+				err := os.WriteFile(
+					filepath.Join(tmpDir, ".testcontainers.properties"),
+					[]byte(tt.propertiesFile),
+					0o600,
+				)
+				require.NoError(t, err, "Failed to create properties file")
+			}
+
+			// Test UnderlyingProviderType
+			result := tt.providerType.UnderlyingProviderType()
+			require.Equal(t, tt.expectedType, result, "UnderlyingProviderType() returned unexpected type")
+		})
+	}
+}
+
 func TestProviderTypeGetProviderAutodetect(t *testing.T) {
+	config.Reset()
+	t.Cleanup(config.Reset)
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
+	t.Setenv("TESTCONTAINERS_PROVIDER", "")
 	dockerHost := core.MustExtractDockerHost(context.Background())
 	const podmanSocket = "unix://$XDG_RUNTIME_DIR/podman/podman.sock"
+	detectedBridge := Bridge
+	if strings.Contains(dockerHost, "podman.sock") {
+		detectedBridge = Podman
+	}
 
 	tests := []struct {
 		name       string
@@ -20,10 +174,10 @@ func TestProviderTypeGetProviderAutodetect(t *testing.T) {
 		want       string
 	}{
 		{
-			name:       "default provider without podman.socket",
+			name:       "default provider with discovered socket",
 			tr:         ProviderDefault,
 			DockerHost: dockerHost,
-			want:       Bridge,
+			want:       detectedBridge,
 		},
 		{
 			name:       "default provider with podman.socket",

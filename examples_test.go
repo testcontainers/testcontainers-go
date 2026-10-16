@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 	"time"
 
@@ -92,10 +93,10 @@ func ExampleRun() {
 		log.Printf("network not found")
 		return
 	}
-	fmt.Println(respNw.Aliases)
+	fmt.Println(slices.Contains(respNw.Aliases, "nginx-alias"))
 
 	// env
-	fmt.Println(ctrResp.Config.Env[0])
+	fmt.Println(slices.Contains(ctrResp.Config.Env, "TEST=true"))
 
 	// tmpfs
 	tmpfs, ok := ctrResp.HostConfig.Tmpfs["/tmp"]
@@ -103,7 +104,7 @@ func ExampleRun() {
 		log.Printf("tmpfs not found")
 		return
 	}
-	fmt.Println(tmpfs)
+	fmt.Println(slices.Contains(strings.Split(tmpfs, ","), "rw"))
 
 	// labels
 	fmt.Println(ctrResp.Config.Labels["testcontainers.label"])
@@ -126,9 +127,9 @@ func ExampleRun() {
 
 	// Output:
 	// true
-	// [nginx-alias]
-	// TEST=true
-	// rw
+	// true
+	// true
+	// true
 	// true
 	// Hello from file!
 }

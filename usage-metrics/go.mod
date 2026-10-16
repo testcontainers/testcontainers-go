@@ -1,5 +1,5 @@
 module github.com/testcontainers/testcontainers-go/usage-metrics
 
-go 1.25.0
+go 1.26.0
 
-toolchain go1.25.9
+toolchain go1.26.8

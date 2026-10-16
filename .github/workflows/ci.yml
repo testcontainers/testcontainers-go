@@ -23,16 +23,24 @@ jobs:
       - id: changed-files
         name: Get changed files
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          include_all_old_new_renamed_files: true
+          old_new_separator: " "
+          old_new_files_separator: " "
 
       - id: set-modified-modules
         name: Set all modified modules
         env:
-          ALL_CHANGED_FILES: "${{ steps.changed-files.outputs.all_changed_files }}"
-        run: echo "modules=$(./scripts/changed-modules.sh)" >> $GITHUB_OUTPUT
+          # Include deletions and both sides of renames across modules.
+          ALL_CHANGED_FILES: "${{ steps.changed-files.outputs.all_changed_and_modified_files }} ${{ steps.changed-files.outputs.all_old_new_renamed_files }}"
+        run: echo "modules=$(./scripts/changed-modules.sh)" >> "$GITHUB_OUTPUT"
+
+      - name: Test module detection
+        run: ./scripts/changed-modules_test.sh
 
       - id: set-modified-modules-count
         name: Set all modified modules count
-        run: echo "modules_count=$(echo ${{ toJSON(steps.set-modified-modules.outputs.modules) }} | jq '. | length')" >> $GITHUB_OUTPUT
+        run: echo "modules_count=$(echo ${{ toJSON(steps.set-modified-modules.outputs.modules) }} | jq '. | length')" >> "$GITHUB_OUTPUT"
 
       - name: Print out the modules to be used
         run: |
@@ -61,7 +69,7 @@ jobs:
       # We don't want to fail the build the soonest but identify which modules passed and failed.
       fail-fast: false
       matrix:
-        go-version: [1.25.x, 1.26.x]
+        go-version: [1.26.x, 1.27.x]
         module: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
         exclude:
           # The Quay MinIO image requires credentials not available in CI.
@@ -79,6 +87,24 @@ jobs:
       ryuk-disabled: false
     secrets: inherit
 
+  test-core-podman:
+    # A Podman-only change must test core without selecting every Docker module.
+    if: ${{ contains(fromJSON(needs.detect-modules.outputs.modules), '') || contains(fromJSON(needs.detect-modules.outputs.modules), 'modules/podman') }}
+    needs:
+      - detect-modules
+      - lint
+    name: Test core using Podman
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: [1.26.x, 1.27.x]
+    uses: ./.github/workflows/ci-test-go.yml
+    with:
+      go-version: ${{ matrix.go-version }}
+      platforms: '["ubuntu-24.04"]'
+      project-directory: "."
+      runtime: podman
+
   # The job below is a copy of the job above, but using Docker Cloud.
   test-testcontainers-cloud:
     # the core module is identified by the empty string (the root path)
@@ -91,7 +117,7 @@ jobs:
       # We don't want to fail the build the soonest but identify which modules passed and failed.
       fail-fast: false
       matrix:
-        go-version: [1.25.x, 1.26.x]
+        go-version: [1.26.x, 1.27.x]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
@@ -112,7 +138,7 @@ jobs:
     name: "Test with reaper off"
     strategy:
       matrix:
-        go-version: [1.25.x, 1.26.x]
+        go-version: [1.26.x, 1.27.x]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
@@ -133,7 +159,7 @@ jobs:
     name: "Test with Rootless Docker"
     strategy:
       matrix:
-        go-version: [1.25.x, 1.26.x]
+        go-version: [1.26.x, 1.27.x]
     uses: ./.github/workflows/ci-test-go.yml
     with:
       go-version: ${{ matrix.go-version }}
@@ -145,14 +171,38 @@ jobs:
 
   # This job serves as confirmation that all test jobs finished
   end:
-    if: ${{ needs.detect-modules.outputs.modules_count > 0 }}
+    if: ${{ always() }}
     needs:
       - detect-modules
+      - lint
       - test
+      - test-core-podman
+      - test-testcontainers-cloud
+      - test-reaper-off
+      - test-rootless-docker
     runs-on: ubuntu-latest
     steps:
-      - name: Check if any jobs failed
-        if: ${{ failure() || cancelled() }}
-        run: exit 1
-
-      - run: echo "All tests completed successfully!"
+      - name: Check all expected jobs completed successfully
+        env:
+          JOB_RESULTS: ${{ toJSON(needs) }}
+          MODULES: ${{ needs.detect-modules.outputs.modules }}
+        run: |
+          jq -e 'all(.[]; .result == "success" or .result == "skipped")' <<< "$JOB_RESULTS"
+          jq -e 'type == "array" and all(.[]; type == "string")' <<< "$MODULES"
+          required=(detect-modules)
+          if jq -e 'length > 0' <<< "$MODULES" > /dev/null; then
+            required+=(lint)
+          fi
+          if jq -e 'any(.[]; . != "modules/minio")' <<< "$MODULES" > /dev/null; then
+            required+=(test)
+          fi
+          if jq -e 'index("") != null' <<< "$MODULES" > /dev/null; then
+            required+=(test-testcontainers-cloud test-reaper-off test-rootless-docker)
+          fi
+          if jq -e 'index("") != null or index("modules/podman") != null' <<< "$MODULES" > /dev/null; then
+            required+=(test-core-podman)
+          fi
+          for job in "${required[@]}"; do
+            jq -e --arg job "$job" '.[$job].result == "success"' <<< "$JOB_RESULTS"
+          done
+          echo "All expected jobs completed successfully!"

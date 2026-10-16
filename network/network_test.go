@@ -58,7 +58,11 @@ func TestNew(t *testing.T) {
 	expectedLabels := testcontainers.GenericLabels()
 	expectedLabels["this-is-a-test"] = "true"
 
-	require.True(t, newNetwork.Attachable)
+	// Podman allows container attachment but does not report Docker's swarm
+	// "Attachable" flag through its compatibility API.
+	if core.ConfiguredProviderName() != "podman" {
+		require.True(t, newNetwork.Attachable)
+	}
 	require.False(t, newNetwork.Internal)
 	require.Equal(t, "value", newNetwork.Labels["this-is-a-test"])
 	require.NoError(t, testcontainers.TerminateContainer(nginxC))
@@ -217,8 +221,8 @@ func TestNew_withOptions(t *testing.T) {
 		Driver: "default",
 		Config: []dockernetwork.IPAMConfig{
 			{
-				Subnet:  netip.MustParsePrefix("10.1.1.0/24"),
-				Gateway: netip.MustParseAddr("10.1.1.254"),
+				Subnet:  netip.MustParsePrefix("192.0.2.0/24"),
+				Gateway: netip.MustParseAddr("192.0.2.254"),
 			},
 		},
 		Options: map[string]string{
@@ -243,7 +247,7 @@ func TestNew_withOptions(t *testing.T) {
 	testcontainers.CleanupContainer(t, nginx)
 	require.NoError(t, err)
 
-	provider, err := testcontainers.ProviderDocker.GetProvider()
+	provider, err := testcontainers.ProviderDefault.GetProvider()
 	require.NoError(t, err)
 	defer provider.Close()
 
@@ -406,7 +410,9 @@ func TestWithNewNetwork(t *testing.T) {
 	expectedLabels["this-is-a-test"] = "value"
 
 	require.Equal(t, networkName, newNetwork.Name)
-	require.True(t, newNetwork.Attachable)
+	if core.ConfiguredProviderName() != "podman" {
+		require.True(t, newNetwork.Attachable)
+	}
 	require.True(t, newNetwork.Internal)
 	require.Equal(t, expectedLabels, newNetwork.Labels)
 }

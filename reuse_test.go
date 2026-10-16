@@ -53,9 +53,16 @@ func TestGenericContainer_pause_start_withReuse(t *testing.T) {
 	// by using the Docker client.
 	cli, err := core.NewClient(context.Background())
 	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, cli.Close()) })
 
 	_, err = cli.ContainerPause(context.Background(), ctr.GetContainerID(), client.ContainerPauseOptions{})
 	require.NoError(t, err)
+	// Undo the manual pause before CleanupContainer stops the container. Podman
+	// rejects stopping a paused container through its Docker-compatible API.
+	defer func() {
+		_, err := cli.ContainerUnpause(context.Background(), ctr.GetContainerID(), client.ContainerUnpauseOptions{})
+		require.NoError(t, err)
+	}()
 
 	// Because the container is paused, it should not be possible to start it again.
 	ctr1, err := testcontainers.Run(context.Background(), nginxAlpineImage, opts...)
