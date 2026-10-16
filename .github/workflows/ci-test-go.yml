@@ -16,6 +16,16 @@ on:
         required: true
         type: string
         description: "The directory where the Go project is located."
+      dependency-project-directory:
+        required: false
+        type: string
+        default: ""
+        description: "Dependency hook directory; defaults to the Go project directory."
+      cache-dependency-path:
+        required: false
+        type: string
+        default: ""
+        description: "Optional multiline Go cache dependency paths."
       testcontainers-cloud:
         required: false
         type: boolean
@@ -35,7 +45,20 @@ on:
         required: false
         type: string
         default: docker
-        description: "Docker-compatible runtime: docker or podman (core only)."
+        description: "Docker-compatible runtime: docker, podman (core only), or sbx."
+    secrets:
+      DOCKERHUB_USERNAME:
+        required: false
+        description: "Docker Hub username accepted by sbx for the account."
+      DOCKERHUB_TOKEN:
+        required: false
+        description: "Docker Hub access token accepted by sbx for the account."
+      TCC_TOKEN:
+        required: false
+        description: "Optional Testcontainers Cloud token for existing Cloud jobs."
+      SONAR_TOKEN:
+        required: false
+        description: "Optional Sonar token for existing main-branch analysis."
 
 permissions:
   contents: read
@@ -55,7 +78,31 @@ jobs:
       matrix:
         platform: ${{ fromJSON(inputs.platforms) }}
     runs-on: ${{ matrix.platform }}
+    timeout-minutes: ${{ inputs.runtime == 'sbx' && 150 || 360 }}
     steps:
+      - name: Verify sbx CI authentication configuration
+        if: ${{ inputs.runtime == 'sbx' }}
+        env:
+          SBX_LOGIN_CONFIGURED: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+          SBX_TRUSTED_EVENT: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
+        run: |
+          if [[ "$SBX_TRUSTED_EVENT" != true ]]; then
+            echo '::error::sbx integration only accepts main pushes and same-repository pull requests.'
+            exit 1
+          fi
+          if [[ "$SBX_LOGIN_CONFIGURED" != true ]]; then
+            echo '::error::sbx integration requires the DOCKERHUB_USERNAME and DOCKERHUB_TOKEN organization secrets, with an account allowed to use sbx under applicable organization policy.'
+            exit 1
+          fi
+
+      - name: Select sbx CI namespace
+        if: ${{ inputs.runtime == 'sbx' }}
+        env:
+          GO_VERSION_INPUT: ${{ inputs.go-version }}
+        run: |
+          namespace_hash=$(printf '%s' "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT:$GO_VERSION_INPUT" | sha256sum)
+          echo "TESTCONTAINERS_SBX_APP_NAME=tc-sbx-${namespace_hash:0:12}" >> "$GITHUB_ENV"
+
       - name: Setup rootless Docker
         if: ${{ inputs.rootless-docker }}
         uses: docker/setup-docker-action@77e84dbf09b47d1e29270283c22f16145aa85ca1 # v5.4.0
@@ -72,7 +119,7 @@ jobs:
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
             go-version: '${{ inputs.go-version }}'
-            cache-dependency-path: '${{ inputs.project-directory }}/go.sum'
+            cache-dependency-path: ${{ inputs.cache-dependency-path || format('{0}/go.sum', inputs.project-directory) }}
         id: go
 
       - name: Set up native rootful Podman
@@ -84,14 +131,33 @@ jobs:
         run: go build ./...
 
       - name: Install dependencies
+        id: install-dependencies
         shell: bash
+        env:
+          DEPENDENCY_PROJECT_DIRECTORY: ${{ inputs.dependency-project-directory || inputs.project-directory }}
+          TESTCONTAINERS_CI_RUNTIME: ${{ inputs.runtime }}
         run: |
-          SCRIPT_PATH="./.github/scripts/${{ inputs.project-directory }}/install-dependencies.sh"
+          SCRIPT_PATH="./.github/scripts/$DEPENDENCY_PROJECT_DIRECTORY/install-dependencies.sh"
           if [ -f "$SCRIPT_PATH" ]; then
-            $SCRIPT_PATH
+            "$SCRIPT_PATH"
           else
             echo "No dependencies script found at $SCRIPT_PATH - skipping installation"
           fi
+
+      - name: Sign in to Docker for sbx
+        id: sbx-login
+        if: ${{ inputs.runtime == 'sbx' }}
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          username=$(printf '%s' "$DOCKERHUB_USERNAME" | tr -d '[:space:]')
+          token=$(printf '%s' "$DOCKERHUB_TOKEN" | tr -d '[:space:]')
+          if [[ -z "$username" || -z "$token" ]]; then
+            echo '::error::DOCKERHUB_USERNAME and DOCKERHUB_TOKEN organization secrets must be nonempty after trimming whitespace.'
+            exit 1
+          fi
+          printf '%s\n' "$token" | sbx --app-name "$TESTCONTAINERS_SBX_APP_NAME" login --username "$username" --password-stdin
 
       # Setup Testcontainers Cloud Client right before your Testcontainers tests
       - name: Setup Testcontainers Cloud Client
@@ -111,6 +177,28 @@ jobs:
         timeout-minutes: 40
         run: ./.github/scripts/test-core-podman.sh
 
+      - name: Test core, sbx module, and native Compose with sbx
+        id: sbx-tests
+        if: ${{ inputs.runtime == 'sbx' }}
+        timeout-minutes: 120
+        run: ./scripts/test-sbx.sh all
+
+      - name: sbx diagnostics
+        if: ${{ failure() && inputs.runtime == 'sbx' && steps.sbx-tests.outcome == 'failure' && steps.sbx-login.outcome == 'success' }}
+        run: |
+          if command -v sbx >/dev/null 2>&1; then
+            sbx --app-name "$TESTCONTAINERS_SBX_APP_NAME" version || true
+          fi
+
+      - name: Sign out of the sbx CI namespace
+        # Cleanup failures fail otherwise successful runs without hiding earlier errors.
+        continue-on-error: ${{ steps.sbx-login.outcome != 'success' || steps.sbx-tests.outcome != 'success' }}
+        if: ${{ always() && inputs.runtime == 'sbx' && steps.install-dependencies.outcome == 'success' && steps.sbx-login.outcome != 'skipped' && env.TESTCONTAINERS_SBX_APP_NAME != '' }}
+        run: |
+          if command -v sbx >/dev/null 2>&1; then
+            sbx --app-name "$TESTCONTAINERS_SBX_APP_NAME" logout --force
+          fi
+
       - name: Podman diagnostics
         if: ${{ failure() && inputs.runtime == 'podman' }}
         run: |
@@ -124,7 +212,7 @@ jobs:
 
       - name: Run checker
         # Modulegen tests templates without starting containers, including on macOS.
-        if: ${{ inputs.project-directory != 'modulegen' }}
+        if: ${{ inputs.project-directory != 'modulegen' && inputs.runtime != 'sbx' }}
         run: |
             ./scripts/check_environment.sh
 
@@ -138,8 +226,16 @@ jobs:
       - name: Test Summary
         uses: test-summary/action@37b508cfee6d4d080eedd00b5bb240a6a784a6a5 # v2.6
         with:
-            paths: "**/${{ inputs.project-directory }}/TEST-unit*.xml"
+            paths: ${{ inputs.runtime == 'sbx' && '**/TEST-unit*.xml' || format('**/{0}/TEST-unit*.xml', inputs.project-directory) }}
         if: always()
+
+      - name: Upload sbx test reports
+        if: ${{ always() && inputs.runtime == 'sbx' && steps.sbx-tests.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-reports-${{ inputs.runtime }}-${{ inputs.go-version }}-${{ matrix.platform }}
+          path: '**/TEST-unit*.xml'
+          if-no-files-found: warn
 
       - name: Decide if Sonar must be run
         if: ${{ matrix.platform == 'ubuntu-latest' && inputs.runtime == 'docker' }}

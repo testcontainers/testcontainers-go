@@ -15,8 +15,10 @@ import (
 	"github.com/docker/compose/v5/pkg/api"
 	"github.com/docker/compose/v5/pkg/compose"
 	"github.com/google/uuid"
+	mobyclient "github.com/moby/moby/client"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -145,24 +147,15 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*DockerCompose, error) {
 		return nil, ErrNoStackConfigured
 	}
 
-	// Create Docker CLI for compose service (uses moby/moby client internally)
-	dockerCli, err := command.NewDockerCli()
+	// Resolve the runtime before constructing either Docker client. A managed
+	// provider may need to start its endpoint before Docker discovery begins.
+	runtimeConfig, err := core.Runtime(context.Background())
 	if err != nil {
-		return nil, fmt.Errorf("new docker cli: %w", err)
+		return nil, fmt.Errorf("initialize compose runtime: %w", err)
 	}
 
-	if err = dockerCli.Initialize(&flags.ClientOptions{}); err != nil {
-		return nil, fmt.Errorf("initialize docker cli: %w", err)
-	}
-
-	composeService, err := compose.NewComposeService(dockerCli)
-	if err != nil {
-		return nil, fmt.Errorf("new compose service: %w", err)
-	}
-
-	// Create a separate testcontainers Docker client for provider and direct API calls.
-	// Compose v5 uses moby/moby/client internally, which is not type-compatible with
-	// docker/docker/client used by testcontainers, so we cannot share the CLI client.
+	// The provider client carries testcontainers runtime settings and headers.
+	// Compose gets its own CLI client below for Compose-specific operations.
 	provider, err := testcontainers.NewDockerProvider(testcontainers.WithLogger(composeOptions.Logger))
 	if err != nil {
 		return nil, fmt.Errorf("new docker provider: %w", err)
@@ -170,10 +163,43 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*DockerCompose, error) {
 
 	dockerClient, err := testcontainers.NewDockerClientWithOpts(context.Background())
 	if err != nil {
+		_ = provider.Close()
 		return nil, fmt.Errorf("new docker client: %w", err)
 	}
-
 	provider.SetClient(dockerClient)
+
+	// Create Docker CLI for compose service (uses moby/moby client internally)
+	clientOptions := &flags.ClientOptions{}
+	var cliOptions []command.CLIOption
+	if runtimeConfig.DockerHost != "" {
+		// Hosts selects the endpoint for CLI metadata and prevents DOCKER_CONTEXT
+		// from replacing it. Injecting the client also bypasses host TLS env vars.
+		clientOptions.Hosts = []string{runtimeConfig.DockerHost}
+		composeClient, clientErr := mobyclient.New(
+			mobyclient.WithHost(runtimeConfig.DockerHost),
+		)
+		if clientErr != nil {
+			_ = provider.Close()
+			return nil, fmt.Errorf("new managed compose client: %w", clientErr)
+		}
+		cliOptions = append(cliOptions, command.WithAPIClient(composeClient))
+	}
+	dockerCli, err := command.NewDockerCli(cliOptions...)
+	if err != nil {
+		_ = provider.Close()
+		return nil, fmt.Errorf("new docker cli: %w", err)
+	}
+
+	if err = dockerCli.Initialize(clientOptions); err != nil {
+		_ = provider.Close()
+		return nil, fmt.Errorf("initialize docker cli: %w", err)
+	}
+
+	composeService, err := compose.NewComposeService(dockerCli)
+	if err != nil {
+		_ = provider.Close()
+		return nil, fmt.Errorf("new compose service: %w", err)
+	}
 
 	composeAPI := &DockerCompose{
 		name:             composeOptions.Identifier,
@@ -222,6 +248,19 @@ func NewLocalDockerCompose(filePaths []string, identifier string, opts ...LocalD
 
 	dc.composeSubcommand = "compose"
 	dc.ComposeFilePaths = filePaths
+
+	// The shell-based API cannot safely forward a managed runtime's endpoint
+	// without allowing the subprocess to inherit conflicting Docker settings.
+	if core.ConfiguredProviderName() == "sbx" {
+		dc.runtimeErr = errors.New("local Docker Compose does not support the sbx runtime; use NewDockerCompose or NewDockerComposeWith")
+	} else {
+		runtimeConfig, runtimeErr := core.Runtime(context.Background())
+		if runtimeErr != nil {
+			dc.runtimeErr = fmt.Errorf("initialize local compose runtime: %w", runtimeErr)
+		} else if runtimeConfig.Name == "sbx" {
+			dc.runtimeErr = errors.New("local Docker Compose does not support the sbx runtime; use NewDockerCompose or NewDockerComposeWith")
+		}
+	}
 
 	dc.absComposeFilePaths = make([]string, len(filePaths))
 	for i, cfp := range dc.ComposeFilePaths {

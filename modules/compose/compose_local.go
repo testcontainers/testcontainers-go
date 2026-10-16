@@ -49,6 +49,7 @@ type LocalDockerCompose struct {
 	*LocalDockerComposeOptions
 	Executable           string
 	composeSubcommand    string
+	runtimeErr           error
 	ComposeFilePaths     []string
 	absComposeFilePaths  []string
 	Identifier           string
@@ -370,6 +371,9 @@ func execute(
 
 // Deprecated: it will be removed in the next major release
 func executeCompose(dc *LocalDockerCompose, args []string) ExecError {
+	if dc.runtimeErr != nil {
+		return ExecError{Error: dc.runtimeErr}
+	}
 	if which(dc.Executable) != nil {
 		return ExecError{
 			Command: []string{dc.Executable},

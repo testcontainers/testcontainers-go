@@ -3,6 +3,7 @@ package testcontainers
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -154,6 +155,21 @@ func TestProviderTypeGetUnderlyingProviderType(t *testing.T) {
 }
 
 func TestProviderTypeGetProviderAutodetect(t *testing.T) {
+	if core.ConfiguredProviderName() == "sbx" && os.Getenv("TCGO_PROVIDER_AUTODETECT_CHILD") != "1" {
+		binary, err := os.Executable()
+		require.NoError(t, err)
+		cmd := exec.CommandContext(t.Context(), binary, "-test.run=^TestProviderTypeGetProviderAutodetect$")
+		cmd.Env = sharedDaemonChildEnv(t,
+			"TCGO_PROVIDER_AUTODETECT_CHILD=1",
+			"TESTCONTAINERS_PROVIDER=",
+			"DOCKER_CERT_PATH=",
+			"DOCKER_TLS_VERIFY=",
+		)
+		output, err := cmd.CombinedOutput()
+		require.NoError(t, err, "provider autodetect child: %s", output)
+		return
+	}
+
 	config.Reset()
 	t.Cleanup(config.Reset)
 	tmpDir := t.TempDir()
