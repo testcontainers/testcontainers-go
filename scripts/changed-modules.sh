@@ -71,7 +71,7 @@ set -euxo pipefail
 readonly ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 # define an array of modules that won't be included in the list
-readonly excluded_modules=(".devcontainer" ".vscode" "docs")
+readonly excluded_modules=(".devcontainer" ".vscode" "docs" "docs-site")
 
 # define an array of files that won't be included in the list
 readonly excluded_files=(
@@ -96,11 +96,9 @@ readonly excluded_files=(
     "CONTRIBUTING.md"
     "LICENSE"
     "mkdocs.yml"
-    "Pipfile*"
+    "netlify.toml"
     "README.md"
     "RELEASING.md"
-    "requirements.txt"
-    "runtime.txt"
     "docs/usage-metrics/core.csv"
     "docs/usage-metrics/modules.csv"
     "docs/usage-metrics/clones.csv"
