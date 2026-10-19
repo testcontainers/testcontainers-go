@@ -42,6 +42,7 @@ updates:
         - /modules/fakegcsserver
         - /modules/firebird
         - /modules/forgejo
+        - /modules/garage
         - /modules/gcloud
         - /modules/grafana-lgtm
         - /modules/inbucket
