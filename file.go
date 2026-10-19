@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/testcontainers/testcontainers-go/log"
 )
@@ -112,16 +113,17 @@ func tarDir(src string, fileMode int64) (*bytes.Buffer, error) {
 }
 
 // tarFile compress a single file using tar + gzip algorithms
-func tarFile(basePath string, fileContent func(tw io.Writer) error, fileContentSize int64, fileMode int64) (*bytes.Buffer, error) {
+func tarFile(basePath string, fileContent func(tw io.Writer) error, fileContentSize int64, fileMode int64, modTime time.Time) (*bytes.Buffer, error) {
 	buffer := &bytes.Buffer{}
 
 	zr := gzip.NewWriter(buffer)
 	tw := tar.NewWriter(zr)
 
 	hdr := &tar.Header{
-		Name: basePath,
-		Mode: fileMode,
-		Size: fileContentSize,
+		Name:    basePath,
+		Mode:    fileMode,
+		Size:    fileContentSize,
+		ModTime: modTime,
 	}
 	if err := tw.WriteHeader(hdr); err != nil {
 		return buffer, err

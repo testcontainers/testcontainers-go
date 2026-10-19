@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -107,10 +108,11 @@ func Test_TarFile(t *testing.T) {
 	b, err := os.ReadFile(filepath.Join(".", "testdata", "Dockerfile"))
 	require.NoError(t, err)
 
+	modTime := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
 	buff, err := tarFile("Docker.file", func(tw io.Writer) error {
 		_, err := tw.Write(b)
 		return err
-	}, int64(len(b)), 0o755)
+	}, int64(len(b)), 0o755, modTime)
 	require.NoError(t, err)
 
 	tmpDir := t.TempDir()
@@ -120,6 +122,14 @@ func Test_TarFile(t *testing.T) {
 	untarBytes, err := os.ReadFile(filepath.Join(tmpDir, "Docker.file"))
 	require.NoError(t, err)
 	assert.Equal(t, b, untarBytes)
+
+	// the modification time must be preserved in the tar header
+	gzr, err := gzip.NewReader(bytes.NewReader(buff.Bytes()))
+	require.NoError(t, err)
+	defer gzr.Close()
+	hdr, err := tar.NewReader(gzr).Next()
+	require.NoError(t, err)
+	assert.True(t, modTime.Equal(hdr.ModTime), "got %s", hdr.ModTime)
 }
 
 // untar takes a destination path and a reader; a tar reader loops over the tarfile
