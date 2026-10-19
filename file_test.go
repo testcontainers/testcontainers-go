@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -109,6 +110,7 @@ func Test_TarFile(t *testing.T) {
 	b, err := os.ReadFile(filepath.Join(".", "testdata", "Dockerfile"))
 	require.NoError(t, err)
 
+	modTime := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
 	tests := []struct {
 		name     string
 		path     string
@@ -134,7 +136,7 @@ func Test_TarFile(t *testing.T) {
 			buff, err := tarFile(test.path, func(tw io.Writer) error {
 				_, err := tw.Write(b)
 				return err
-			}, int64(len(b)), 0o755)
+			}, int64(len(b)), 0o755, modTime)
 			if test.wantErr != "" {
 				require.ErrorContains(t, err, test.wantErr)
 				return
@@ -151,6 +153,7 @@ func Test_TarFile(t *testing.T) {
 			require.Equal(t, test.wantName, header.Name)
 			require.Equal(t, int64(len(b)), header.Size)
 			require.Equal(t, int64(0o755), header.Mode)
+			require.True(t, modTime.Equal(header.ModTime), "got %s", header.ModTime)
 			got, err := io.ReadAll(tr)
 			require.NoError(t, err)
 			require.Equal(t, b, got)
