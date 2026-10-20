@@ -25,7 +25,7 @@ updates:
       rebase-strategy: disabled
     - package-ecosystem: pip
       directories:
-        - /
+        - /docs-site
       schedule:
         interval: monthly
         day: sunday
