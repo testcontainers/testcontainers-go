@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"runtime"
 	"strings"
 	"sync"
@@ -148,6 +149,135 @@ func TestRestartPolicyRejectedBeforeCreateOrUpdateSideEffects(t *testing.T) {
 		if strings.Contains(request, "/create") && !strings.Contains(string(payload["HostConfig"]), `"FutureHostField":{"keep":true}`) {
 			t.Fatalf("accepted create lost unknown host field: %s", body)
 		}
+	}
+}
+
+func TestUnapprovedBindRejectedBeforeCreateAndPortSideEffects(t *testing.T) {
+	f := newFakeSandbox(t)
+	forwarded := make(chan struct{}, 1)
+	backend := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/containers/json":
+			_, _ = w.Write([]byte("[]"))
+		case "/events":
+			w.(http.Flusher).Flush()
+			<-r.Context().Done()
+		case "/v1.45/containers/create":
+			forwarded <- struct{}{}
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"Id":"unexpected-create"}`))
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	_, base := regressionProxy(t, f, backend)
+	unapprovedRoot, err := os.MkdirTemp("", "tc-sbx-unapproved-bind-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(unapprovedRoot) })
+	source := unapprovedRoot + "/data"
+	if err := os.WriteFile(source, []byte("data"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct {
+		name       string
+		hostConfig string
+	}{
+		{name: "legacy binds", hostConfig: fmt.Sprintf(`"Binds":[%q]`, source+":/data:ro")},
+		{name: "structured mounts", hostConfig: fmt.Sprintf(`"Mounts":[{"Type":"bind","Source":%q,"Target":"/data","ReadOnly":true}]`, source)},
+	}
+	client := &http.Client{Timeout: time.Second}
+	for _, test := range cases {
+		t.Run(test.name, func(t *testing.T) {
+			body := `{"Image":"nginx:alpine","HostConfig":{` + test.hostConfig + `,"PortBindings":{"80/tcp":[{"HostIp":"127.0.0.1","HostPort":"39207"}]}}}`
+			response, err := client.Post(base+"/v1.45/containers/create", "application/json", strings.NewReader(body))
+			if err != nil {
+				t.Fatal(err)
+			}
+			responseBody, _ := io.ReadAll(response.Body)
+			_ = response.Body.Close()
+			if response.StatusCode != http.StatusBadRequest || !strings.Contains(string(responseBody), "outside") {
+				t.Fatalf("unapproved bind response: HTTP %d %s", response.StatusCode, responseBody)
+			}
+			select {
+			case <-forwarded:
+				t.Fatal("unapproved bind reached inner Docker create")
+			default:
+			}
+			for _, step := range f.snapshot() {
+				if strings.Contains(step, "--publish") || strings.Contains(step, "mount ") {
+					t.Fatalf("unapproved bind caused side effects: %v", f.snapshot())
+				}
+			}
+		})
+	}
+}
+
+func TestParentPathComponentRejectedBeforeCreate(t *testing.T) {
+	f := newFakeSandbox(t)
+	forwarded := make(chan struct{}, 1)
+	backend := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/containers/json":
+			_, _ = w.Write([]byte("[]"))
+		case "/events":
+			w.(http.Flusher).Flush()
+			<-r.Context().Done()
+		case "/v1.45/containers/create":
+			forwarded <- struct{}{}
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"Id":"unexpected-create"}`))
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	proxy, base := regressionProxy(t, f, backend)
+	workspace := proxy.mounts.roots[0].canonical
+	deep := workspace + "/deep"
+	if err := os.MkdirAll(deep+"/nested", 0o700); err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{workspace + "/secret", deep + "/secret"} {
+		if err := os.WriteFile(path, []byte("data"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.Symlink("deep/nested", workspace+"/link"); err != nil {
+		t.Fatal(err)
+	}
+	source := workspace + "/link/../secret"
+	cases := []struct {
+		name       string
+		hostConfig string
+	}{
+		{name: "legacy binds", hostConfig: fmt.Sprintf(`"Binds":[%q]`, source+":/data")},
+		{name: "structured mounts", hostConfig: fmt.Sprintf(`"Mounts":[{"Type":"bind","Source":%q,"Target":"/data"}]`, source)},
+	}
+	client := &http.Client{Timeout: time.Second}
+	for _, test := range cases {
+		t.Run(test.name, func(t *testing.T) {
+			body := `{"Image":"nginx:alpine","HostConfig":{` + test.hostConfig + `,"PortBindings":{"80/tcp":[{"HostPort":"39207"}]}}}`
+			response, err := client.Post(base+"/v1.45/containers/create", "application/json", strings.NewReader(body))
+			if err != nil {
+				t.Fatal(err)
+			}
+			responseBody, _ := io.ReadAll(response.Body)
+			_ = response.Body.Close()
+			if response.StatusCode != http.StatusBadRequest || !strings.Contains(string(responseBody), "must not contain") {
+				t.Fatalf("parent path response: HTTP %d %s", response.StatusCode, responseBody)
+			}
+			select {
+			case <-forwarded:
+				t.Fatal("parent path reached inner Docker create")
+			default:
+			}
+			for _, step := range f.snapshot() {
+				if strings.Contains(step, "--publish") || strings.Contains(step, "mount ") {
+					t.Fatalf("parent path caused side effects: %v", f.snapshot())
+				}
+			}
+		})
 	}
 }
 

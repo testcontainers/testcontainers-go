@@ -200,7 +200,11 @@ func TestRealSandboxExternalSymlinkBind(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	outside, err := os.MkdirTemp("", "tc-sbx-bind-source-")
+	testRoot := os.Getenv("TESTCONTAINERS_SBX_TEST_BIND_ROOT")
+	if testRoot == "" {
+		t.Fatal("TESTCONTAINERS_SBX_TEST_BIND_ROOT must name the private bind root created by scripts/test-sbx.sh")
+	}
+	outside, err := os.MkdirTemp(testRoot, "tc-sbx-bind-source-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -212,22 +216,17 @@ func TestRealSandboxExternalSymlinkBind(t *testing.T) {
 	if pathWithin(configuration.workspace, outside) {
 		t.Fatalf("temporary bind source unexpectedly lies in workspace: %s", outside)
 	}
-	dataPath := filepath.Join(outside, "payload.txt")
+	target := filepath.Join(outside, "target")
+	if err := os.Mkdir(target, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	dataPath := filepath.Join(target, "payload.txt")
 	const content = "sbx-host-bind-content"
 	if err := os.WriteFile(dataPath, []byte(content), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	aliasRoot, err := os.MkdirTemp("", "tc-sbx-bind-alias-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		if err := os.RemoveAll(aliasRoot); err != nil {
-			t.Error(err)
-		}
-	})
-	alias := filepath.Join(aliasRoot, "original-alias")
-	if err := os.Symlink(outside, alias); err != nil {
+	alias := filepath.Join(outside, "original-alias")
+	if err := os.Symlink(filepath.Base(target), alias); err != nil {
 		t.Fatal(err)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)

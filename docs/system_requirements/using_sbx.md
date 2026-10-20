@@ -40,6 +40,19 @@ TESTCONTAINERS_PROVIDER=sbx go test ./...
 
 Alternatively, set `provider=sbx` in `~/.testcontainers.properties`. The environment variable takes precedence over the properties file. Runtime selection applies to the test process and cannot change after initialization.
 
+## Host bind mounts
+
+The workspace is allowed automatically. External bind sources, including temporary directories and Compose service bind mounts, require an allowed root in `TESTCONTAINERS_SBX_BIND_ROOTS`. Existing tests that bind paths outside the workspace must configure those roots before the provider initializes. For example, to allow fixtures in two existing directories on macOS or Linux:
+
+```shell
+export TESTCONTAINERS_SBX_BIND_ROOTS="/opt/test-fixtures:/srv/shared-fixtures"
+TESTCONTAINERS_PROVIDER=sbx go test ./...
+```
+
+Each root must be an existing absolute directory. See the [configuration reference](../modules/sbx.md#configuration-and-behavior) for validation rules. Only the requested bind source is mounted into the sandbox. A Compose file outside the workspace or an uploaded build context does not itself require a bind root; service bind sources do.
+
+Bind source paths must not contain `..` components. Relative symlinks below a root are allowed only when resolution stays within one containing allowed root. Absolute symlinks below a root are rejected, as are relative links that escape to a separate allowed root. With nested roots, a broader containing root can authorize a relative link that stays within it. Keep roots and source paths stable while mounts are prepared: a host path can still change between provider validation and the external `sbx` mount.
+
 ## Clean up the sandbox
 
 Call `sbx.Cleanup` after `m.Run()` with a fresh, bounded context to remove the owned sandbox. Follow the full [cleanup in TestMain example](../modules/sbx.md#cleanup-in-testmain), including reporting cleanup errors before exiting. A named `sbx` import used for `Cleanup` also registers the provider, so it replaces the blank import above.

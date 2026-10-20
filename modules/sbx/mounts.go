@@ -16,6 +16,7 @@ import (
 const (
 	dockerSocketPath = "/var/run/docker.sock"
 	mountTimeout     = 30 * time.Second
+	maxBindSymlinks  = 255
 )
 
 type requestedBind struct {
@@ -29,6 +30,19 @@ type mountedPath struct {
 	readOnly bool
 }
 
+type authorizedBindRoot struct {
+	configuredBindRoot
+	root *os.Root
+	info os.FileInfo
+}
+
+type resolvedBind struct {
+	hostPath         string
+	info             os.FileInfo
+	root             *authorizedBindRoot
+	visibleWorkspace bool
+}
+
 // bindMountManager serializes runtime mounts. Besides avoiding duplicate CLI
 // calls, the file identity in the cache makes a deleted and recreated temp
 // path mount again rather than continuing to refer to the old inode.
@@ -37,10 +51,28 @@ type bindMountManager struct {
 
 	mu      sync.Mutex
 	mounted map[string]mountedPath
+	roots   []authorizedBindRoot
+	closed  bool
 }
 
-func newBindMountManager(runtime sandboxRuntime) *bindMountManager {
-	return &bindMountManager{runtime: runtime, mounted: make(map[string]mountedPath)}
+func newBindMountManager(runtime sandboxRuntime) (*bindMountManager, error) {
+	m := &bindMountManager{runtime: runtime, mounted: make(map[string]mountedPath)}
+	for _, configured := range runtime.bindRoots {
+		root, err := os.OpenRoot(configured.canonical)
+		if err != nil {
+			return nil, errors.Join(fmt.Errorf("open sbx bind root %q: %w", configured.path, err), m.closeRoots())
+		}
+		info, err := root.Stat(".")
+		if err != nil {
+			_ = root.Close()
+			return nil, errors.Join(fmt.Errorf("inspect sbx bind root %q: %w", configured.path, err), m.closeRoots())
+		}
+		m.roots = append(m.roots, authorizedBindRoot{configuredBindRoot: configured, root: root, info: info})
+	}
+	if len(m.roots) == 0 {
+		return nil, errors.New("initialize sbx bind mounts: no authorized roots")
+	}
+	return m, nil
 }
 
 func (m *bindMountManager) prepare(ctx context.Context, host map[string]json.RawMessage) error {
@@ -52,14 +84,6 @@ func (m *bindMountManager) prepare(ctx context.Context, host map[string]json.Raw
 		return nil
 	}
 
-	workspace := ""
-	if m.runtime.workspace != "" {
-		workspace, err = filepath.Abs(m.runtime.workspace)
-		if err != nil {
-			return fmt.Errorf("resolve configured sbx workspace %q: %w", m.runtime.workspace, err)
-		}
-	}
-
 	sources := make([]string, 0, len(requests))
 	for source := range requests {
 		sources = append(sources, source)
@@ -68,16 +92,19 @@ func (m *bindMountManager) prepare(ctx context.Context, host map[string]json.Raw
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	if m.closed {
+		return errors.New("prepare sbx bind mounts: manager is closed")
+	}
 	for _, source := range sources {
 		request := requests[source]
-		if err := m.prepareOne(ctx, workspace, request); err != nil {
+		if err := m.prepareOne(ctx, request); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (m *bindMountManager) prepareOne(ctx context.Context, workspace string, request requestedBind) error {
+func (m *bindMountManager) prepareOne(ctx context.Context, request requestedBind) error {
 	source := filepath.Clean(request.source)
 	if source == dockerSocketPath {
 		// Ryuk and other Docker-aware containers must receive the sandbox's
@@ -88,30 +115,30 @@ func (m *bindMountManager) prepareOne(ctx context.Context, workspace string, req
 		return fmt.Errorf("sbx bind source %q must be an absolute host path", request.source)
 	}
 
-	info, err := os.Stat(source)
+	resolved, err := m.resolve(source)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return fmt.Errorf("sbx bind source %q does not exist on the host", source)
 		}
-		return fmt.Errorf("stat sbx bind source %q: %w", source, err)
+		return fmt.Errorf("authorize sbx bind source %q: %w", source, err)
 	}
+	info := resolved.info
 	if info.Mode()&os.ModeSocket != 0 {
 		return fmt.Errorf("sbx cannot expose host socket %q; only %s is supported and resolves to the sandbox Docker socket", source, dockerSocketPath)
 	}
 	if !info.IsDir() && !info.Mode().IsRegular() {
 		return fmt.Errorf("sbx bind source %q has unsupported file type %s", source, info.Mode().Type())
 	}
-
-	resolved, resolveErr := filepath.EvalSymlinks(source)
-	if resolveErr != nil {
-		return fmt.Errorf("resolve sbx bind source %q: %w", source, resolveErr)
+	if !resolved.visibleWorkspace {
+		if err := verifyBindRoot(resolved.root); err != nil {
+			return fmt.Errorf("verify sbx bind root for source %q: %w", source, err)
+		}
 	}
-	visibleInWorkspace := workspacePathVisible(workspace, source)
 
 	if mounted, ok := m.mounted[source]; ok {
-		sameFile := mounted.hostPath == resolved && os.SameFile(mounted.info, info)
+		sameFile := mounted.hostPath == resolved.hostPath && os.SameFile(mounted.info, info)
 		permissionsSuffice := !mounted.readOnly || request.readOnly
-		if !visibleInWorkspace && sameFile && permissionsSuffice {
+		if !resolved.visibleWorkspace && sameFile && permissionsSuffice {
 			return nil
 		}
 		unmountCtx, cancel := boundedContext(ctx, mountTimeout)
@@ -122,13 +149,14 @@ func (m *bindMountManager) prepareOne(ctx context.Context, workspace string, req
 		}
 		delete(m.mounted, source)
 	}
-	if visibleInWorkspace {
+	if resolved.visibleWorkspace {
 		return nil
 	}
 
-	// sbx canonicalizes HOST before deriving its default target. Docker still
-	// asks for source, so always pass that guest path explicitly.
-	spec := resolved + ":" + source
+	// The confined lookup cannot pass its descriptor through the sbx CLI. Use
+	// the canonical path it verified, while keeping Docker's guest path explicit.
+	// A later pathname replacement can still race the CLI's mount operation.
+	spec := resolved.hostPath + ":" + source
 	if request.readOnly {
 		spec += ":ro"
 	}
@@ -138,72 +166,178 @@ func (m *bindMountManager) prepareOne(ctx context.Context, workspace string, req
 	if err != nil {
 		return fmt.Errorf("make host bind source %q visible in sandbox %q: %w", source, m.runtime.name, err)
 	}
-	m.mounted[source] = mountedPath{hostPath: resolved, info: info, readOnly: request.readOnly}
+	m.mounted[source] = mountedPath{hostPath: resolved.hostPath, info: info, readOnly: request.readOnly}
 	return nil
 }
 
-// workspacePathVisible follows symlinks as the guest would under the
-// configured workspace target. A host path can resolve into the workspace
-// while its original Docker path is absent in the guest, and an inner symlink
-// can escape the mounted tree even when its final host target is inside it.
-func workspacePathVisible(workspace, source string) bool {
-	if !pathWithin(workspace, source) {
-		return false
+func (m *bindMountManager) resolve(source string) (resolvedBind, error) {
+	type candidate struct {
+		root             *authorizedBindRoot
+		relative         string
+		workspaceVisible bool
 	}
-	relative, err := filepath.Rel(workspace, source)
-	if err != nil {
-		return false
-	}
-	if relative == "." {
-		return true
-	}
-	parts := strings.Split(relative, string(filepath.Separator))
-	current := workspace
-	links := 0
-	for len(parts) > 0 {
-		component := parts[0]
-		parts = parts[1:]
-		current = filepath.Join(current, component)
-		info, err := os.Lstat(current)
-		if err != nil {
-			return false
+	var candidates []candidate
+	for i := range m.roots {
+		root := &m.roots[i]
+		aliases := []string{root.path}
+		if root.canonical != root.path {
+			aliases = append(aliases, root.canonical)
 		}
-		if info.Mode()&os.ModeSymlink == 0 {
+		for _, alias := range aliases {
+			relative, ok := relativeWithin(alias, source)
+			if !ok {
+				continue
+			}
+			candidates = append(candidates, candidate{
+				root:             root,
+				relative:         relative,
+				workspaceVisible: root.workspace && alias == root.canonical,
+			})
+		}
+	}
+	if len(candidates) == 0 {
+		return resolvedBind{}, errors.New("path is outside the configured workspace and TESTCONTAINERS_SBX_BIND_ROOTS")
+	}
+	slices.SortStableFunc(candidates, func(a, b candidate) int {
+		return len(b.root.canonical) - len(a.root.canonical)
+	})
+	var first resolvedBind
+	var firstErr error
+	for _, candidate := range candidates {
+		relative, info, err := resolveInRoot(candidate.root.root, candidate.relative)
+		if err != nil {
+			if firstErr == nil {
+				firstErr = err
+			}
 			continue
 		}
-		links++
-		if links > 255 {
-			return false
+		resolved := resolvedBind{
+			hostPath:         filepath.Join(candidate.root.canonical, relative),
+			info:             info,
+			root:             candidate.root,
+			visibleWorkspace: candidate.workspaceVisible,
 		}
-		target, err := os.Readlink(current)
-		if err != nil {
-			return false
+		if resolved.visibleWorkspace {
+			return resolved, nil
 		}
-		if !filepath.IsAbs(target) {
-			target = filepath.Join(filepath.Dir(current), target)
+		if first.info == nil {
+			first = resolved
 		}
-		target = filepath.Clean(target)
-		if !pathWithin(workspace, target) {
-			return false
-		}
-		remainder, err := filepath.Rel(workspace, target)
-		if err != nil {
-			return false
-		}
-		if remainder != "." {
-			parts = append(strings.Split(remainder, string(filepath.Separator)), parts...)
-		}
-		current = workspace
 	}
-	return true
+	if first.info != nil {
+		return first, nil
+	}
+	return resolvedBind{}, firstErr
+}
+
+func verifyBindRoot(root *authorizedBindRoot) error {
+	current, err := os.Stat(root.canonical)
+	if err != nil {
+		return err
+	}
+	if !os.SameFile(root.info, current) {
+		return errors.New("configured root path changed after initialization")
+	}
+	return nil
+}
+
+func relativeWithin(root, path string) (string, bool) {
+	if root == "" {
+		return "", false
+	}
+	relative, err := filepath.Rel(root, path)
+	return relative, err == nil && relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator))
 }
 
 func pathWithin(root, path string) bool {
-	if root == "" {
-		return false
+	_, ok := relativeWithin(root, path)
+	return ok
+}
+
+func resolveInRoot(root *os.Root, name string) (string, os.FileInfo, error) {
+	if filepath.IsAbs(name) {
+		return "", nil, errors.New("root-relative bind path is absolute")
 	}
-	relative, err := filepath.Rel(root, path)
-	return err == nil && relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator))
+	pending := pathComponents(filepath.Clean(name))
+	resolved := make([]string, 0, len(pending))
+	links := 0
+	for len(pending) > 0 {
+		component := pending[0]
+		pending = pending[1:]
+		switch component {
+		case ".", "":
+			continue
+		case "..":
+			if len(resolved) == 0 {
+				return "", nil, errors.New("relative symbolic link escapes its authorized root")
+			}
+			resolved = resolved[:len(resolved)-1]
+			continue
+		}
+
+		candidate := filepath.Join(append(slices.Clone(resolved), component)...)
+		info, err := root.Lstat(candidate)
+		if err != nil {
+			return "", nil, err
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			links++
+			if links > maxBindSymlinks {
+				return "", nil, errors.New("too many symbolic links in bind source")
+			}
+			target, err := root.Readlink(candidate)
+			if err != nil {
+				return "", nil, err
+			}
+			if filepath.IsAbs(target) {
+				return "", nil, errors.New("absolute symbolic links are not allowed in bind sources")
+			}
+			pending = append(pathComponents(target), pending...)
+			continue
+		}
+		if len(pending) > 0 && !info.IsDir() {
+			return "", nil, fmt.Errorf("bind source component %q is not a directory", candidate)
+		}
+		resolved = append(resolved, component)
+	}
+
+	relative := "."
+	if len(resolved) > 0 {
+		relative = filepath.Join(resolved...)
+	}
+	info, err := root.Stat(relative)
+	if err != nil {
+		return "", nil, err
+	}
+	return relative, info, nil
+}
+
+func pathComponents(path string) []string {
+	if path == "." || path == "" {
+		return nil
+	}
+	return strings.Split(path, string(filepath.Separator))
+}
+
+func (m *bindMountManager) close() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.closed {
+		return nil
+	}
+	m.closed = true
+	return m.closeRoots()
+}
+
+func (m *bindMountManager) closeRoots() error {
+	var errs []error
+	for i := range m.roots {
+		if err := m.roots[i].root.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("close sbx bind root %q: %w", m.roots[i].path, err))
+		}
+	}
+	m.roots = nil
+	return errors.Join(errs...)
 }
 
 func canonicalizeDockerMounts(host *dockerJSONObject) error {
@@ -251,6 +385,9 @@ func requestedBindMounts(host map[string]json.RawMessage) (map[string]requestedB
 				return nil, err
 			}
 			if filesystem {
+				if err := validateBindSourceSyntax(source); err != nil {
+					return nil, err
+				}
 				mergeRequestedBind(requests, source, readOnly)
 			}
 		}
@@ -271,10 +408,22 @@ func requestedBindMounts(host map[string]json.RawMessage) (map[string]requestedB
 			if mount.Source == "" {
 				return nil, errors.New("docker bind mount has an empty source")
 			}
+			if err := validateBindSourceSyntax(mount.Source); err != nil {
+				return nil, err
+			}
 			mergeRequestedBind(requests, mount.Source, mount.ReadOnly)
 		}
 	}
 	return requests, nil
+}
+
+func validateBindSourceSyntax(source string) error {
+	for _, component := range strings.Split(source, string(filepath.Separator)) {
+		if component == ".." {
+			return fmt.Errorf("sbx bind source %q must not contain '..' path components", source)
+		}
+	}
+	return nil
 }
 
 func parseDockerBind(spec string) (source string, readOnly, filesystem bool, err error) {

@@ -58,6 +58,57 @@ func TestConfigurationRejectsInvalidTimeout(t *testing.T) {
 	}
 }
 
+func TestConfigurationBindRoots(t *testing.T) {
+	workspace := t.TempDir()
+	first := t.TempDir()
+	parent := t.TempDir()
+	realSecond := filepath.Join(parent, "real")
+	if err := os.Mkdir(realSecond, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	second := filepath.Join(parent, "alias")
+	if err := os.Symlink(filepath.Base(realSecond), second); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("TESTCONTAINERS_SBX_WORKSPACE", workspace)
+	t.Setenv("TESTCONTAINERS_SBX_BIND_ROOTS", strings.Join([]string{first, second}, string(os.PathListSeparator)))
+	cfg, err := readConfiguration()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.bindRoots) != 3 {
+		t.Fatalf("configured roots: %+v", cfg.bindRoots)
+	}
+	if !cfg.bindRoots[0].workspace || cfg.bindRoots[0].path != workspace {
+		t.Fatalf("workspace root: %+v", cfg.bindRoots[0])
+	}
+	if cfg.bindRoots[2].path != second || cfg.bindRoots[2].canonical != realSecond {
+		t.Fatalf("symlinked root did not retain logical and canonical paths: %+v", cfg.bindRoots[2])
+	}
+}
+
+func TestConfigurationRejectsInvalidBindRoots(t *testing.T) {
+	workspace := t.TempDir()
+	file := filepath.Join(t.TempDir(), "file")
+	if err := os.WriteFile(file, []byte("data"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("TESTCONTAINERS_SBX_WORKSPACE", workspace)
+	for _, value := range []string{
+		"relative",
+		filepath.Join(t.TempDir(), "missing"),
+		file,
+		workspace + string(os.PathListSeparator),
+	} {
+		t.Run(value, func(t *testing.T) {
+			t.Setenv("TESTCONTAINERS_SBX_BIND_ROOTS", value)
+			if _, err := readConfiguration(); err == nil {
+				t.Fatalf("accepted invalid bind roots %q", value)
+			}
+		})
+	}
+}
+
 func TestDiscoverDockerURLOwnedEndpoint(t *testing.T) {
 	const owned = `{"host_ip":"127.0.0.1","host_port":43219,"sandbox_port":2375,"protocol":"tcp"}`
 	const owned4 = `{"host_ip":"127.0.0.1","host_port":43219,"sandbox_port":2375,"protocol":"tcp4"}`

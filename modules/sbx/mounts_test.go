@@ -4,9 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -16,15 +19,16 @@ func TestBindMountsRespectWorkspaceAndInnerSocket(t *testing.T) {
 	if err := os.WriteFile(inside, []byte("x"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	outside := filepath.Join(t.TempDir(), "outside")
+	outsideRoot := t.TempDir()
+	outside := filepath.Join(outsideRoot, "outside")
 	if err := os.WriteFile(outside, []byte("x"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	var calls []string
-	m := newBindMountManager(sandboxRuntime{name: "fake", workspace: workspace, run: func(_ context.Context, args ...string) ([]byte, error) {
+	m := newTestBindMountManager(t, sandboxRuntime{name: "fake", run: func(_ context.Context, args ...string) ([]byte, error) {
 		calls = append(calls, strings.Join(args, " "))
 		return nil, nil
-	}})
+	}}, workspace, outsideRoot)
 	host := map[string]json.RawMessage{"Binds": json.RawMessage(`[` + quoteJSON(inside+":/a") + `,` + quoteJSON(dockerSocketPath+":/var/run/docker.sock") + `]`)}
 	if err := m.prepare(context.Background(), host); err != nil {
 		t.Fatal(err)
@@ -45,20 +49,64 @@ func TestBindMountsRespectWorkspaceAndInnerSocket(t *testing.T) {
 	if len(calls) != 1 {
 		t.Fatalf("duplicate mount: %v", calls)
 	}
+	host = map[string]json.RawMessage{"Binds": json.RawMessage(`[` + quoteJSON(outside+":/b:rw") + `]`)}
+	if err := m.prepare(context.Background(), host); err != nil {
+		t.Fatal(err)
+	}
+	if len(calls) != 3 || calls[1] != "umount fake "+outside+":"+outside || calls[2] != "mount fake "+outside+":"+outside {
+		t.Fatalf("read-write bind did not refresh read-only outer mount: %v", calls)
+	}
 }
 
 func TestMissingOrDeniedBindFailsBeforeCreate(t *testing.T) {
 	var calls []string
-	m := newBindMountManager(sandboxRuntime{name: "fake", run: func(_ context.Context, args ...string) ([]byte, error) {
+	workspace := t.TempDir()
+	allowed := t.TempDir()
+	m := newTestBindMountManager(t, sandboxRuntime{name: "fake", run: func(_ context.Context, args ...string) ([]byte, error) {
 		calls = append(calls, strings.Join(args, " "))
 		return nil, errors.New("policy denied")
-	}})
-	missing := filepath.Join(t.TempDir(), "absent")
+	}}, workspace, allowed)
+	missing := filepath.Join(allowed, "absent")
 	host := map[string]json.RawMessage{"Binds": json.RawMessage(`[` + quoteJSON(missing+":/x") + `]`)}
 	if err := m.prepare(context.Background(), host); err == nil || !strings.Contains(err.Error(), "does not exist") {
 		t.Fatalf("missing bind error: %v", err)
 	}
-	existing := filepath.Join(t.TempDir(), "file")
+	unapproved := filepath.Join(t.TempDir(), "file")
+	if err := os.WriteFile(unapproved, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	host["Binds"] = json.RawMessage(`[` + quoteJSON(unapproved+":/x") + `]`)
+	if err := m.prepare(context.Background(), host); err == nil || !strings.Contains(err.Error(), "outside") {
+		t.Fatalf("unapproved bind error: %v", err)
+	}
+	sibling := allowed + "-sibling"
+	if err := os.Mkdir(sibling, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	siblingFile := filepath.Join(sibling, "file")
+	if err := os.WriteFile(siblingFile, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	tricks := []struct {
+		name   string
+		source string
+		want   string
+	}{
+		{name: "sibling prefix", source: siblingFile, want: "outside"},
+		{name: "dot-dot escape", source: allowed + string(filepath.Separator) + ".." + string(filepath.Separator) + filepath.Base(sibling) + string(filepath.Separator) + "file", want: "must not contain"},
+	}
+	for _, trick := range tricks {
+		t.Run(trick.name, func(t *testing.T) {
+			host["Binds"] = json.RawMessage(`[` + quoteJSON(trick.source+":/x") + `]`)
+			if err := m.prepare(context.Background(), host); err == nil || !strings.Contains(err.Error(), trick.want) {
+				t.Fatalf("path trick %q accepted: %v", trick.source, err)
+			}
+			if len(calls) != 0 {
+				t.Fatalf("path trick %q caused a mount side effect: %v", trick.source, calls)
+			}
+		})
+	}
+	existing := filepath.Join(allowed, "file")
 	if err := os.WriteFile(existing, []byte("x"), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -75,8 +123,9 @@ func quoteJSON(value string) string { raw, _ := json.Marshal(value); return stri
 
 func TestSymlinkBindMountsShareCanonicalHostAtOriginalGuestPath(t *testing.T) {
 	workspace := t.TempDir()
-	outsideA := filepath.Join(t.TempDir(), "outside-a")
-	outsideB := filepath.Join(t.TempDir(), "outside-b")
+	external := t.TempDir()
+	outsideA := filepath.Join(external, "outside-a")
+	outsideB := filepath.Join(external, "outside-b")
 	for _, path := range []string{outsideA, outsideB} {
 		if err := os.WriteFile(path, []byte("data"), 0o600); err != nil {
 			t.Fatal(err)
@@ -89,15 +138,15 @@ func TestSymlinkBindMountsShareCanonicalHostAtOriginalGuestPath(t *testing.T) {
 		}
 		return resolved
 	}
-	alias := filepath.Join(t.TempDir(), "alias")
-	if err := os.Symlink(outsideA, alias); err != nil {
+	alias := filepath.Join(external, "alias")
+	if err := os.Symlink(filepath.Base(outsideA), alias); err != nil {
 		t.Fatal(err)
 	}
 	var calls []string
-	m := newBindMountManager(sandboxRuntime{name: "fake", workspace: workspace, run: func(_ context.Context, args ...string) ([]byte, error) {
+	m := newTestBindMountManager(t, sandboxRuntime{name: "fake", run: func(_ context.Context, args ...string) ([]byte, error) {
 		calls = append(calls, strings.Join(args, " "))
 		return nil, nil
-	}})
+	}}, workspace, external)
 	bind := func(source string) map[string]json.RawMessage {
 		return map[string]json.RawMessage{"Binds": json.RawMessage(`[` + quoteJSON(source+":/guest:ro") + `]`)}
 	}
@@ -110,7 +159,7 @@ func TestSymlinkBindMountsShareCanonicalHostAtOriginalGuestPath(t *testing.T) {
 	if err := os.Remove(alias); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Symlink(outsideB, alias); err != nil {
+	if err := os.Symlink(filepath.Base(outsideB), alias); err != nil {
 		t.Fatal(err)
 	}
 	if err := m.prepare(context.Background(), bind(alias)); err != nil {
@@ -123,28 +172,8 @@ func TestSymlinkBindMountsShareCanonicalHostAtOriginalGuestPath(t *testing.T) {
 	if err := os.WriteFile(inside, []byte("workspace"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	intoWorkspace := filepath.Join(t.TempDir(), "into-workspace")
-	if err := os.Symlink(inside, intoWorkspace); err != nil {
-		t.Fatal(err)
-	}
-	if err := m.prepare(context.Background(), bind(intoWorkspace)); err != nil {
-		t.Fatal(err)
-	}
-	if got := calls[len(calls)-1]; got != "mount fake "+canonical(inside)+":"+intoWorkspace+":ro" {
-		t.Fatalf("external alias into workspace was skipped: %v", calls)
-	}
-	fromWorkspace := filepath.Join(workspace, "outward")
-	if err := os.Symlink(outsideA, fromWorkspace); err != nil {
-		t.Fatal(err)
-	}
-	if err := m.prepare(context.Background(), bind(fromWorkspace)); err != nil {
-		t.Fatal(err)
-	}
-	if got := calls[len(calls)-1]; got != "mount fake "+canonical(outsideA)+":"+fromWorkspace+":ro" {
-		t.Fatalf("workspace alias to external source was skipped: %v", calls)
-	}
 	internalAlias := filepath.Join(workspace, "internal")
-	if err := os.Symlink(inside, internalAlias); err != nil {
+	if err := os.Symlink(filepath.Base(inside), internalAlias); err != nil {
 		t.Fatal(err)
 	}
 	before := len(calls)
@@ -154,14 +183,69 @@ func TestSymlinkBindMountsShareCanonicalHostAtOriginalGuestPath(t *testing.T) {
 	if len(calls) != before {
 		t.Fatalf("internal workspace alias created unnecessary share: %v", calls)
 	}
+	deep := filepath.Join(external, "deep")
+	if err := os.MkdirAll(filepath.Join(deep, "nested"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	deepFile := filepath.Join(deep, "file")
+	if err := os.WriteFile(deepFile, []byte("data"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	nestedLink := filepath.Join(external, "nested-link")
+	if err := os.Symlink(filepath.Join("deep", "nested"), nestedLink); err != nil {
+		t.Fatal(err)
+	}
+	parentTarget := filepath.Join(external, "parent-target")
+	parentLinkTarget := "nested-link" + string(filepath.Separator) + ".." + string(filepath.Separator) + "file"
+	if err := os.Symlink(parentLinkTarget, parentTarget); err != nil {
+		t.Fatal(err)
+	}
+	before = len(calls)
+	if err := m.prepare(context.Background(), bind(parentTarget)); err != nil {
+		t.Fatalf("confined parent component in symlink target rejected: %v", err)
+	}
+	if len(calls) != before+1 || calls[before] != "mount fake "+deepFile+":"+parentTarget+":ro" {
+		t.Fatalf("symlink target was cleaned before filesystem resolution: %v", calls[before:])
+	}
+
+	absolute := filepath.Join(external, "absolute")
+	if err := os.Symlink(outsideA, absolute); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.prepare(context.Background(), bind(absolute)); err == nil || !strings.Contains(err.Error(), "absolute symbolic") {
+		t.Fatalf("absolute symlink accepted: %v", err)
+	}
+	escape := filepath.Join(external, "escape")
+	if err := os.Symlink(filepath.Join("..", filepath.Base(workspace), "inside"), escape); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.prepare(context.Background(), bind(escape)); err == nil || !strings.Contains(err.Error(), "escapes") {
+		t.Fatalf("relative symlink escape accepted: %v", err)
+	}
+	chainTarget := filepath.Base(outsideA)
+	for i := 8; i >= 0; i-- {
+		name := fmt.Sprintf("chain-%d", i)
+		if err := os.Symlink(chainTarget, filepath.Join(external, name)); err != nil {
+			t.Fatal(err)
+		}
+		chainTarget = name
+	}
+	chain := filepath.Join(external, chainTarget)
+	before = len(calls)
+	if err := m.prepare(context.Background(), bind(chain)); err != nil {
+		t.Fatalf("nine-link in-root chain rejected: %v", err)
+	}
+	if len(calls) != before+1 || calls[before] != "mount fake "+canonical(outsideA)+":"+chain+":ro" {
+		t.Fatalf("nine-link chain did not resolve to its in-root target: %v", calls[before:])
+	}
 }
 
 func TestWindowsBindPathsRejectBeforeMountAndNamedVolumeStillAllowed(t *testing.T) {
 	var calls []string
-	m := newBindMountManager(sandboxRuntime{name: "fake", run: func(_ context.Context, args ...string) ([]byte, error) {
+	m := newTestBindMountManager(t, sandboxRuntime{name: "fake", run: func(_ context.Context, args ...string) ([]byte, error) {
 		calls = append(calls, strings.Join(args, " "))
 		return nil, nil
-	}})
+	}}, t.TempDir())
 	for _, bind := range []string{`C:\data:/guest`, `C:/data:/guest`} {
 		t.Run(bind, func(t *testing.T) {
 			host := map[string]json.RawMessage{"Binds": json.RawMessage(`[` + quoteJSON(bind) + `]`)}
@@ -180,4 +264,192 @@ func TestWindowsBindPathsRejectBeforeMountAndNamedVolumeStillAllowed(t *testing.
 	if len(calls) != 0 {
 		t.Fatalf("named volume requested host mount: %v", calls)
 	}
+}
+
+func TestBindRootUnionAllowsSymlinkWithinBroaderRoot(t *testing.T) {
+	workspace := t.TempDir()
+	broad := t.TempDir()
+	narrow := filepath.Join(broad, "narrow")
+	sibling := filepath.Join(broad, "sibling")
+	if err := os.MkdirAll(narrow, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(sibling, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	target := filepath.Join(sibling, "data")
+	if err := os.WriteFile(target, []byte("data"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	alias := filepath.Join(narrow, "alias")
+	if err := os.Symlink(filepath.Join("..", "sibling", "data"), alias); err != nil {
+		t.Fatal(err)
+	}
+	var calls []string
+	m := newTestBindMountManager(t, sandboxRuntime{name: "fake", run: func(_ context.Context, args ...string) ([]byte, error) {
+		calls = append(calls, strings.Join(args, " "))
+		return nil, nil
+	}}, workspace, broad, narrow)
+	host := map[string]json.RawMessage{"Binds": json.RawMessage(`[` + quoteJSON(alias+":/data:ro") + `]`)}
+	if err := m.prepare(context.Background(), host); err != nil {
+		t.Fatal(err)
+	}
+	if len(calls) != 1 || calls[0] != "mount fake "+target+":"+alias+":ro" {
+		t.Fatalf("broader authorized root did not accept nested symlink: %v", calls)
+	}
+}
+
+func TestConfiguredRootAliasPreservesGuestPath(t *testing.T) {
+	parent := t.TempDir()
+	realWorkspace := filepath.Join(parent, "real-workspace")
+	if err := os.Mkdir(realWorkspace, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	logicalWorkspace := filepath.Join(parent, "logical-workspace")
+	if err := os.Symlink(filepath.Base(realWorkspace), logicalWorkspace); err != nil {
+		t.Fatal(err)
+	}
+	file := filepath.Join(realWorkspace, "data")
+	if err := os.WriteFile(file, []byte("data"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	configured, err := configureBindRoot(logicalWorkspace, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var calls []string
+	m, err := newBindMountManager(sandboxRuntime{
+		name:      "fake",
+		workspace: logicalWorkspace,
+		bindRoots: []configuredBindRoot{configured},
+		run: func(_ context.Context, args ...string) ([]byte, error) {
+			calls = append(calls, strings.Join(args, " "))
+			return nil, nil
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = m.close() })
+
+	logicalSource := filepath.Join(logicalWorkspace, "data")
+	host := map[string]json.RawMessage{"Binds": json.RawMessage(`[` + quoteJSON(logicalSource+":/data:ro") + `]`)}
+	if err := m.prepare(context.Background(), host); err != nil {
+		t.Fatal(err)
+	}
+	if len(calls) != 1 || calls[0] != "mount fake "+file+":"+logicalSource+":ro" {
+		t.Fatalf("logical workspace alias was not mounted at its requested guest path: %v", calls)
+	}
+	host["Binds"] = json.RawMessage(`[` + quoteJSON(file+":/canonical:ro") + `]`)
+	if err := m.prepare(context.Background(), host); err != nil {
+		t.Fatal(err)
+	}
+	if len(calls) != 1 {
+		t.Fatalf("canonical workspace path created an unnecessary mount: %v", calls)
+	}
+}
+
+func TestBindRootReplacementRejectedBeforeMount(t *testing.T) {
+	workspace := t.TempDir()
+	externalParent := t.TempDir()
+	external := filepath.Join(externalParent, "allowed")
+	if err := os.Mkdir(external, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	source := filepath.Join(external, "data")
+	if err := os.WriteFile(source, []byte("old"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var calls []string
+	m := newTestBindMountManager(t, sandboxRuntime{name: "fake", run: func(_ context.Context, args ...string) ([]byte, error) {
+		calls = append(calls, strings.Join(args, " "))
+		return nil, nil
+	}}, workspace, external)
+	if err := os.Rename(external, external+"-old"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(external, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(source, []byte("replacement"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	host := map[string]json.RawMessage{"Binds": json.RawMessage(`[` + quoteJSON(source+":/data") + `]`)}
+	if err := m.prepare(context.Background(), host); err == nil || !strings.Contains(err.Error(), "changed after initialization") {
+		t.Fatalf("replaced configured root accepted: %v", err)
+	}
+	if len(calls) != 0 {
+		t.Fatalf("replaced root caused a mount side effect: %v", calls)
+	}
+}
+
+func TestSpecialBindSourceAndConcurrentClose(t *testing.T) {
+	workspace := t.TempDir()
+	external := t.TempDir()
+	socket := filepath.Join(external, "service.sock")
+	listener, err := net.Listen("unix", socket)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = listener.Close() })
+
+	started := make(chan struct{})
+	release := make(chan struct{})
+	var once sync.Once
+	m := newTestBindMountManager(t, sandboxRuntime{name: "fake", run: func(_ context.Context, _ ...string) ([]byte, error) {
+		once.Do(func() { close(started) })
+		<-release
+		return nil, nil
+	}}, workspace, external)
+	socketHost := map[string]json.RawMessage{"Binds": json.RawMessage(`[` + quoteJSON(socket+":/socket") + `]`)}
+	if err := m.prepare(context.Background(), socketHost); err == nil || !strings.Contains(err.Error(), "host socket") {
+		t.Fatalf("host socket accepted: %v", err)
+	}
+
+	file := filepath.Join(external, "data")
+	if err := os.WriteFile(file, []byte("data"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	fileHost := map[string]json.RawMessage{"Binds": json.RawMessage(`[` + quoteJSON(file+":/data") + `]`)}
+	prepareDone := make(chan error, 1)
+	go func() { prepareDone <- m.prepare(context.Background(), fileHost) }()
+	<-started
+	closeDone := make(chan error, 1)
+	go func() { closeDone <- m.close() }()
+	close(release)
+	if err := <-prepareDone; err != nil {
+		t.Fatal(err)
+	}
+	if err := <-closeDone; err != nil {
+		t.Fatal(err)
+	}
+	if err := m.close(); err != nil {
+		t.Fatalf("second close: %v", err)
+	}
+	if err := m.prepare(context.Background(), fileHost); err == nil || !strings.Contains(err.Error(), "closed") {
+		t.Fatalf("closed manager accepted prepare: %v", err)
+	}
+}
+
+func newTestBindMountManager(t *testing.T, runtime sandboxRuntime, workspace string, external ...string) *bindMountManager {
+	t.Helper()
+	runtime.workspace = workspace
+	paths := append([]string{workspace}, external...)
+	for i, path := range paths {
+		root, err := configureBindRoot(path, i == 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		runtime.bindRoots = append(runtime.bindRoots, root)
+	}
+	m, err := newBindMountManager(runtime)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := m.close(); err != nil {
+			t.Error(err)
+		}
+	})
+	return m
 }

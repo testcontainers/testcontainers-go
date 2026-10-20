@@ -1,9 +1,11 @@
 package sbx
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -17,6 +19,7 @@ type configuration struct {
 	workspace string
 	timeout   time.Duration
 	appName   string
+	bindRoots []configuredBindRoot
 }
 
 func readConfiguration() (configuration, error) {
@@ -35,7 +38,24 @@ func readConfiguration() (configuration, error) {
 	if err != nil {
 		return cfg, fmt.Errorf("resolve sbx workspace: %w", err)
 	}
-	cfg.workspace = workspace
+	cfg.workspace = filepath.Clean(workspace)
+	workspaceRoot, err := configureBindRoot(cfg.workspace, true)
+	if err != nil {
+		return cfg, fmt.Errorf("configure sbx workspace: %w", err)
+	}
+	cfg.bindRoots = append(cfg.bindRoots, workspaceRoot)
+	if raw := os.Getenv("TESTCONTAINERS_SBX_BIND_ROOTS"); raw != "" {
+		for _, root := range strings.Split(raw, string(os.PathListSeparator)) {
+			if root == "" {
+				return cfg, errors.New("TESTCONTAINERS_SBX_BIND_ROOTS contains an empty path")
+			}
+			configured, configureErr := configureBindRoot(root, false)
+			if configureErr != nil {
+				return cfg, fmt.Errorf("configure TESTCONTAINERS_SBX_BIND_ROOTS path %q: %w", root, configureErr)
+			}
+			cfg.bindRoots = append(cfg.bindRoots, configured)
+		}
+	}
 	if raw := os.Getenv("TESTCONTAINERS_SBX_TIMEOUT"); raw != "" {
 		cfg.timeout, err = time.ParseDuration(raw)
 		if err != nil || cfg.timeout <= 0 {
@@ -43,4 +63,27 @@ func readConfiguration() (configuration, error) {
 		}
 	}
 	return cfg, nil
+}
+
+func configureBindRoot(path string, workspace bool) (configuredBindRoot, error) {
+	if !filepath.IsAbs(path) {
+		return configuredBindRoot{}, errors.New("path must be absolute")
+	}
+	logical := filepath.Clean(path)
+	canonical, err := filepath.EvalSymlinks(logical)
+	if err != nil {
+		return configuredBindRoot{}, fmt.Errorf("resolve path: %w", err)
+	}
+	canonical, err = filepath.Abs(canonical)
+	if err != nil {
+		return configuredBindRoot{}, fmt.Errorf("make resolved path absolute: %w", err)
+	}
+	root, err := os.OpenRoot(canonical)
+	if err != nil {
+		return configuredBindRoot{}, fmt.Errorf("open directory: %w", err)
+	}
+	if err := root.Close(); err != nil {
+		return configuredBindRoot{}, fmt.Errorf("close directory: %w", err)
+	}
+	return configuredBindRoot{path: logical, canonical: filepath.Clean(canonical), workspace: workspace}, nil
 }

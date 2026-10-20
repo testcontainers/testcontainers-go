@@ -56,15 +56,19 @@ func newDockerProxy(ctx context.Context, runtime sandboxRuntime) (proxyServer, e
 	if runtime.name == "" || runtime.run == nil || runtime.dockerURL == nil {
 		return nil, errors.New("initialize sbx Docker proxy: incomplete sandbox runtime")
 	}
-	transport, err := newDockerTransport(runtime.dockerURL)
+	mounts, err := newBindMountManager(runtime)
 	if err != nil {
 		return nil, err
+	}
+	transport, err := newDockerTransport(runtime.dockerURL)
+	if err != nil {
+		return nil, errors.Join(err, mounts.close())
 	}
 	client := &http.Client{Transport: transport}
 	ports, err := newPortManager(ctx, runtime, client)
 	if err != nil {
 		transport.CloseIdleConnections()
-		return nil, err
+		return nil, errors.Join(err, mounts.close())
 	}
 	listener, err := net.Listen("tcp4", "127.0.0.1:0")
 	if err != nil {
@@ -72,13 +76,13 @@ func newDockerProxy(ctx context.Context, runtime sandboxRuntime) (proxyServer, e
 		cleanupErr := ports.close(cleanupCtx)
 		cancel()
 		transport.CloseIdleConnections()
-		return nil, errors.Join(fmt.Errorf("listen for sbx Docker proxy: %w", err), cleanupErr)
+		return nil, errors.Join(fmt.Errorf("listen for sbx Docker proxy: %w", err), cleanupErr, mounts.close())
 	}
 
 	proxyCtx, cancel := context.WithCancel(context.Background())
 	p := &dockerProxyServer{
 		runtime: runtime, transport: transport, ports: ports,
-		mounts: newBindMountManager(runtime), host: "tcp://" + listener.Addr().String(),
+		mounts: mounts, host: "tcp://" + listener.Addr().String(),
 		cancel: cancel, connections: make(map[net.Conn]http.ConnState),
 		serveErr: make(chan error, 1), closed: make(chan struct{}),
 	}
@@ -361,6 +365,7 @@ func (p *dockerProxyServer) close() {
 	managerCtx, cancel := context.WithTimeout(context.Background(), proxyCloseTimeout)
 	errs = append(errs, p.ports.close(managerCtx))
 	cancel()
+	errs = append(errs, p.mounts.close())
 	p.transport.CloseIdleConnections()
 	if serveErr := <-p.serveErr; serveErr != nil {
 		errs = append(errs, serveErr)

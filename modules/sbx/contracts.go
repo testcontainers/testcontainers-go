@@ -13,6 +13,13 @@ type sandboxRuntime struct {
 	run       commandRunner
 	dockerURL *url.URL
 	workspace string
+	bindRoots []configuredBindRoot
+}
+
+type configuredBindRoot struct {
+	path      string
+	canonical string
+	workspace bool
 }
 
 type proxyServer interface {

@@ -68,12 +68,15 @@ func TestMain(m *testing.M) {
 | --- | --- | --- |
 | `TESTCONTAINERS_SBX_BINARY` | Path or name of the `sbx` executable | `sbx` on `PATH` |
 | `TESTCONTAINERS_SBX_WORKSPACE` | Workspace passed to the sandbox; paths inside it are visible to the sandbox | Current working directory |
+| `TESTCONTAINERS_SBX_BIND_ROOTS` | Additional allowed host bind directories, separated by the OS path-list separator (`:` on macOS/Linux); set before provider initialization | No additional roots; workspace allowed automatically |
 | `TESTCONTAINERS_SBX_TIMEOUT` | Sandbox initialization limit, as a positive Go duration such as `5m` | `5m` |
 | `TESTCONTAINERS_SBX_APP_NAME` | Optional `sbx --app-name` value for every CLI call | CLI default |
 
 The provider exposes container TCP and UDP ports on `127.0.0.1`. `Host()` and `MappedPort()` return the local endpoint. A requested host port remains the same while its container runs. Stopping a container releases its forwarding; restarting tries to reclaim that same port and returns an error if another process took it. A fixed port already in use fails when the container is created.
 
-Host bind sources must be existing absolute files or directories. The workspace is available through the sandbox; for a source outside it, the provider asks `sbx` to mount that path into the sandbox before container creation. A bind of `/var/run/docker.sock` uses the sandbox's Docker socket. Other host sockets are unsupported. Named volumes live in the sandbox.
+Host bind sources must be existing absolute files or directories within the workspace or a configured bind root. Additional roots must be existing absolute directories. An empty setting adds no roots; empty list entries, relative paths, missing paths, and nondirectories fail configuration. The provider resolves root symlinks at initialization and retains their configured aliases, including macOS `/var` paths that resolve under `/private/var`.
+
+For an authorized source outside the workspace, the provider asks `sbx` to mount only the requested source, preserving its configured path spelling and read-only setting. See [host bind mounts](../system_requirements/using_sbx.md#host-bind-mounts) for configuration and symlink restrictions. A bind of `/var/run/docker.sock` uses the sandbox's Docker socket, including for Ryuk. Other host sockets are unsupported. Named volumes live in the sandbox's Docker daemon.
 
 For Compose, use the native `NewDockerCompose` or `NewDockerComposeWith` API. Its Docker client uses the selected sbx endpoint. The legacy shell based `NewLocalDockerCompose` API rejects sbx.
 

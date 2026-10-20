@@ -48,6 +48,8 @@ func init() {
 
 // Initialize starts a sandbox and returns its runtime configuration.
 // The sbx CLI must already be authenticated with sbx login.
+// Host binds are limited to the workspace and absolute directories listed in
+// TESTCONTAINERS_SBX_BIND_ROOTS, separated by the OS path-list separator.
 // Initialization is attempted once per Provider.
 func (p *Provider) Initialize(ctx context.Context) (testcontainers.RuntimeConfig, error) {
 	if err := ctx.Err(); err != nil {
@@ -147,7 +149,7 @@ func (p *Provider) initialize(parent context.Context) {
 	if factory == nil {
 		factory = newDockerProxy
 	}
-	proxy, proxyErr := factory(ctx, sandboxRuntime{name: name, run: run, dockerURL: dockerURL, workspace: cfg.workspace})
+	proxy, proxyErr := factory(ctx, sandboxRuntime{name: name, run: run, dockerURL: dockerURL, workspace: cfg.workspace, bindRoots: cfg.bindRoots})
 	if proxyErr != nil {
 		err = errors.Join(fmt.Errorf("start sbx Docker proxy: %w", proxyErr), p.cleanupAfterFailure())
 		return

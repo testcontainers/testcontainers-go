@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -81,7 +82,16 @@ func (f *fakeSandbox) runtime(t *testing.T) sandboxRuntime {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return sandboxRuntime{name: "fake-sandbox", dockerURL: u, run: f.run}
+	workspace := t.TempDir()
+	root, err := configureBindRoot(workspace, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testRoot, err := configureBindRoot(filepath.Dir(workspace), false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return sandboxRuntime{name: "fake-sandbox", dockerURL: u, run: f.run, workspace: workspace, bindRoots: []configuredBindRoot{root, testRoot}}
 }
 
 func (f *fakeSandbox) run(ctx context.Context, args ...string) ([]byte, error) {

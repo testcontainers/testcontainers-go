@@ -44,6 +44,9 @@ test_timeout=${TESTCONTAINERS_SBX_GO_TEST_TIMEOUT:-30m}
 # Each stage has its own trap so independent stages can continue after failure.
 setup_stage() {
     work_dir=$(mktemp -d)
+    mkdir -p "$work_dir/bind-root"
+    export TESTCONTAINERS_SBX_TEST_BIND_ROOT="$work_dir/bind-root"
+    export TESTCONTAINERS_SBX_BIND_ROOTS="${TESTCONTAINERS_SBX_BIND_ROOTS:+$TESTCONTAINERS_SBX_BIND_ROOTS:}$work_dir/bind-root"
     bootstrap_files=()
     trap cleanup EXIT
     trap 'exit 130' INT
