@@ -209,6 +209,109 @@ func TestDockerReadinessHonorsDeadline(t *testing.T) {
 	}
 }
 
+type failedCleanupProxy struct {
+	err        error
+	closeCalls int
+}
+
+func (*failedCleanupProxy) Host() string { return "" }
+
+func (p *failedCleanupProxy) Close(context.Context) error {
+	p.closeCalls++
+	return p.err
+}
+
+func TestProviderCleanupReleasesFailedProxyAfterSandboxRemoval(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		rmErr error
+	}{
+		{name: "removed"},
+		{name: "already missing", rmErr: errors.New("sandbox 'owned' not found")},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			proxyErr := errors.New("proxy shutdown failed")
+			proxy := &failedCleanupProxy{err: proxyErr}
+			attempts := 0
+			p := &Provider{started: true, ready: make(chan struct{}), name: "owned", proxy: proxy, run: func(_ context.Context, args ...string) ([]byte, error) {
+				if strings.Join(args, " ") != "rm --force owned" {
+					t.Fatalf("unexpected command: %v", args)
+				}
+				attempts++
+				return nil, tc.rmErr
+			}}
+			close(p.ready)
+			if err := p.Cleanup(context.Background()); !errors.Is(err, proxyErr) {
+				t.Fatalf("expected original proxy shutdown error, got %v", err)
+			}
+			if p.name != "" || p.proxy != nil {
+				t.Fatalf("retained removed sandbox resources: name=%q proxy=%v", p.name, p.proxy)
+			}
+			if proxy.closeCalls != 1 || attempts != 1 {
+				t.Fatalf("expected one proxy close and removal, got close=%d rm=%d", proxy.closeCalls, attempts)
+			}
+			if err := p.Cleanup(context.Background()); err != nil {
+				t.Fatalf("cleanup after confirmed removal failed: %v", err)
+			}
+			if proxy.closeCalls != 1 || attempts != 1 {
+				t.Fatalf("cleanup repeated after confirmed removal: close=%d rm=%d", proxy.closeCalls, attempts)
+			}
+		})
+	}
+}
+
+func TestProviderCleanupRetainsFailedProxyUntilSandboxRemoval(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		rmErr error
+	}{
+		{name: "removed on retry"},
+		{name: "already missing on retry", rmErr: errors.New("sandbox 'owned' not found")},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			proxyErr := errors.New("proxy shutdown failed")
+			rmErr := errors.New("remove denied")
+			proxy := &failedCleanupProxy{err: proxyErr}
+			attempts := 0
+			p := &Provider{started: true, ready: make(chan struct{}), name: "owned", proxy: proxy, run: func(_ context.Context, args ...string) ([]byte, error) {
+				if strings.Join(args, " ") != "rm --force owned" {
+					t.Fatalf("unexpected command: %v", args)
+				}
+				attempts++
+				if attempts == 1 {
+					return nil, rmErr
+				}
+				return nil, tc.rmErr
+			}}
+			close(p.ready)
+			if err := p.Cleanup(context.Background()); !errors.Is(err, proxyErr) || !errors.Is(err, rmErr) {
+				t.Fatalf("expected proxy shutdown and removal errors, got %v", err)
+			}
+			if p.name != "owned" || p.proxy != proxy {
+				t.Fatalf("lost resources after removal failure: name=%q proxy=%v", p.name, p.proxy)
+			}
+			if proxy.closeCalls != 1 || attempts != 1 {
+				t.Fatalf("expected one proxy close and removal, got close=%d rm=%d", proxy.closeCalls, attempts)
+			}
+			if err := p.Cleanup(context.Background()); !errors.Is(err, proxyErr) || errors.Is(err, rmErr) {
+				t.Fatalf("expected only original proxy shutdown error after removal retry, got %v", err)
+			}
+			if p.name != "" || p.proxy != nil {
+				t.Fatalf("retained removed sandbox resources: name=%q proxy=%v", p.name, p.proxy)
+			}
+			if proxy.closeCalls != 2 || attempts != 2 {
+				t.Fatalf("expected retry of proxy close and removal, got close=%d rm=%d", proxy.closeCalls, attempts)
+			}
+			if err := p.Cleanup(context.Background()); err != nil {
+				t.Fatalf("cleanup after confirmed removal failed: %v", err)
+			}
+			if proxy.closeCalls != 2 || attempts != 2 {
+				t.Fatalf("cleanup repeated after confirmed removal: close=%d rm=%d", proxy.closeCalls, attempts)
+			}
+		})
+	}
+}
+
 func TestProviderCleanupRetriesOwnedSandboxRemoval(t *testing.T) {
 	failed := true
 	attempts := 0

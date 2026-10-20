@@ -215,6 +215,7 @@ func (p *Provider) cleanupResources(ctx context.Context) error {
 			errs = append(errs, fmt.Errorf("remove owned sbx sandbox %q: %w", p.name, err))
 		} else {
 			p.name = ""
+			p.proxy = nil
 		}
 	}
 	return errors.Join(errs...)
