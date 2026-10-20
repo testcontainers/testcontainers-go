@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -412,7 +414,7 @@ func TestOrphanAddedDuringPortListSurvivesReconciliation(t *testing.T) {
 	m.mu.Lock()
 	forbidden := m.forbiddenPortsLocked()
 	m.mu.Unlock()
-	if !forbidden[39204] {
+	if !forbidden[second.reservation()] {
 		t.Fatal("orphan appended after list snapshot was forgotten")
 	}
 }
@@ -471,7 +473,7 @@ func TestOrphanCleanupRetriesUntilRemovalIsConfirmed(t *testing.T) {
 	m.mu.Lock()
 	forbidden := m.forbiddenPortsLocked()
 	m.mu.Unlock()
-	if !forbidden[39209] {
+	if !forbidden[publication.reservation()] {
 		t.Fatal("failed orphan cleanup released ownership")
 	}
 	f.mu.Lock()
@@ -483,7 +485,315 @@ func TestOrphanCleanupRetriesUntilRemovalIsConfirmed(t *testing.T) {
 	m.mu.Lock()
 	forbidden = m.forbiddenPortsLocked()
 	m.mu.Unlock()
-	if forbidden[39209] {
+	if forbidden[publication.reservation()] {
 		t.Fatal("confirmed orphan removal kept reservation")
 	}
+}
+
+func TestPortReservationsIncludeProtocol(t *testing.T) {
+	f := newFakeSandbox(t)
+	m := testPortManager(t, f)
+
+	prepared, err := m.prepareCreate(context.Background(), portBindings{
+		"53/tcp": {{HostPort: "1053"}},
+		"53/udp": {{HostPort: "1053"}},
+	})
+	if err != nil {
+		t.Fatalf("reserve matching TCP and UDP host ports: %v", err)
+	}
+	if prepared.Bindings["53/tcp"][0].HostPort != "1053" || prepared.Bindings["53/udp"][0].HostPort != "1053" {
+		t.Fatalf("unexpected rewritten bindings: %+v", prepared.Bindings)
+	}
+	for _, spec := range []string{"127.0.0.1:1053:1053/tcp4", "127.0.0.1:1053:1053/udp4"} {
+		f.mu.Lock()
+		_, published := f.ports[spec]
+		f.mu.Unlock()
+		if !published {
+			t.Fatalf("missing protocol-specific publication %s", spec)
+		}
+	}
+
+	if err := m.bindCreate(prepared.Token, "container-both", "both"); err != nil {
+		t.Fatal(err)
+	}
+	tcp, err := m.prepareCreate(context.Background(), portBindings{"80/tcp": {{HostPort: "1054"}}})
+	if err != nil {
+		t.Fatalf("reserve active TCP lease: %v", err)
+	}
+	if err := m.bindCreate(tcp.Token, "container-tcp", "tcp"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.prepareCreate(context.Background(), portBindings{"80/udp": {{HostPort: "1054"}}}); err != nil {
+		t.Fatalf("cross-protocol active lease reuse: %v", err)
+	}
+	if _, err := m.prepareCreate(context.Background(), portBindings{"81/tcp": {{HostPort: "1054"}}}); err == nil {
+		t.Fatal("same-protocol active lease reuse was accepted")
+	}
+}
+
+func TestEnginePortReservationIsTCPOnly(t *testing.T) {
+	f := newFakeSandbox(t)
+	m := testPortManager(t, f)
+	if _, err := m.prepareCreate(context.Background(), portBindings{"80/udp": {{HostPort: "2375"}}}); err != nil {
+		t.Fatalf("UDP port 2375 should remain available: %v", err)
+	}
+	if _, err := m.prepareCreate(context.Background(), portBindings{"80/tcp": {{HostPort: "2375"}}}); err == nil {
+		t.Fatal("TCP port 2375 was not reserved for the inner Engine")
+	}
+}
+
+func TestDockerPortDiscoveryReservesOnlyPublicProtocolTuple(t *testing.T) {
+	f := newFakeSandbox(t)
+	f.list = []dockerContainer{{Ports: []dockerPort{
+		{PrivatePort: 8080, PublicPort: 40000, Type: "tcp"},
+		{PrivatePort: 9090, Type: "tcp"},
+	}}}
+	m := testPortManager(t, f)
+
+	if _, err := m.prepareCreate(context.Background(), portBindings{"80/tcp": {{HostPort: "8080"}}}); err != nil {
+		t.Fatalf("private container port incorrectly reserved on host: %v", err)
+	}
+	if _, err := m.prepareCreate(context.Background(), portBindings{"81/tcp": {{HostPort: "9090"}}}); err != nil {
+		t.Fatalf("private-only exposure incorrectly reserved on host: %v", err)
+	}
+	if _, err := m.prepareCreate(context.Background(), portBindings{"82/tcp": {{HostPort: "40000"}}}); err == nil {
+		t.Fatal("published TCP host port was not reserved")
+	}
+	if _, err := m.prepareCreate(context.Background(), portBindings{"82/udp": {{HostPort: "40000"}}}); err != nil {
+		t.Fatalf("published TCP host port incorrectly reserved UDP tuple: %v", err)
+	}
+}
+
+func TestFailedOrphanCleanupRetainsOnlyItsProtocol(t *testing.T) {
+	f := newFakeSandbox(t)
+	tcpPublication := portPublication{HostIP: "127.0.0.1", HostPort: 39210, SandboxPort: 39210, Protocol: "tcp4"}
+	f.mu.Lock()
+	f.ports[tcpPublication.spec()] = tcpPublication
+	f.unpublishErr = errors.New("temporary policy denial")
+	f.mu.Unlock()
+	m := &portManager{
+		runtime:    f.runtime(t),
+		engine:     newDockerEngine(mustParseURL(t, f.server.URL), &http.Client{}),
+		creations:  map[string]*containerLease{},
+		containers: map[string]*containerLease{},
+	}
+	m.retainOrphans(&containerLease{token: "lost-tcp", ports: []leasedPort{{desired: tcpPublication, live: true, exact: true}}})
+
+	udp, err := m.prepareCreate(context.Background(), portBindings{"80/udp": {{HostPort: "39210"}}})
+	if err != nil {
+		t.Fatalf("TCP orphan incorrectly reserved UDP tuple: %v", err)
+	}
+	if err := m.bindCreate(udp.Token, "udp-container", "udp"); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.reconcileOrphans(context.Background()); err == nil {
+		t.Fatal("failed orphan unpublish was treated as success")
+	}
+
+	m.mu.Lock()
+	forbidden := m.forbiddenPortsLocked()
+	orphanAmbiguous := len(m.orphans) == 1 && !m.orphans[0].port.exact
+	m.mu.Unlock()
+	if !forbidden[tcpPublication.reservation()] {
+		t.Fatal("failed TCP orphan cleanup released its reservation")
+	}
+	if !orphanAmbiguous {
+		t.Fatal("failed TCP orphan cleanup was not retained as ambiguous")
+	}
+	udpReservation := portReservation{protocol: "udp", port: 39210}
+	if !forbidden[udpReservation] {
+		t.Fatal("failed TCP orphan cleanup erased the UDP container lease")
+	}
+	f.mu.Lock()
+	_, udpPublished := f.ports["127.0.0.1:39210:39210/udp4"]
+	f.mu.Unlock()
+	if !udpPublished {
+		t.Fatal("failed TCP orphan cleanup unpublished the UDP tuple")
+	}
+}
+
+func TestConcurrentOrphanReconciliationCannotUnpublishReusedReservation(t *testing.T) {
+	f := newFakeSandbox(t)
+	publication := portPublication{HostIP: "127.0.0.1", HostPort: 39212, SandboxPort: 39212, Protocol: "tcp4"}
+	f.mu.Lock()
+	f.ports[publication.spec()] = publication
+	f.mu.Unlock()
+
+	firstListed := make(chan struct{})
+	releaseFirstList := make(chan struct{})
+	concurrentList := make(chan struct{})
+	staleUnpublish := make(chan struct{})
+	releaseStaleUnpublish := make(chan struct{})
+	var releaseFirstOnce sync.Once
+	var releaseStaleOnce sync.Once
+	var controlMu sync.Mutex
+	firstListSeen := false
+	firstListHeld := false
+	concurrentListSeen := false
+	unpublishCount := 0
+	runtime := f.runtime(t)
+	runtime.run = func(ctx context.Context, args ...string) ([]byte, error) {
+		if len(args) > 2 && args[2] == "--format" {
+			data, err := f.run(ctx, args...)
+			controlMu.Lock()
+			if !firstListSeen {
+				firstListSeen, firstListHeld = true, true
+				close(firstListed)
+				controlMu.Unlock()
+				select {
+				case <-releaseFirstList:
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				}
+				controlMu.Lock()
+				firstListHeld = false
+				controlMu.Unlock()
+				return data, err
+			}
+			if firstListHeld && !concurrentListSeen {
+				concurrentListSeen = true
+				close(concurrentList)
+			}
+			controlMu.Unlock()
+			return data, err
+		}
+		if len(args) > 2 && args[2] == "--unpublish" {
+			controlMu.Lock()
+			unpublishCount++
+			stale := unpublishCount == 2
+			if stale {
+				close(staleUnpublish)
+			}
+			controlMu.Unlock()
+			if stale {
+				select {
+				case <-releaseStaleUnpublish:
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				}
+			}
+		}
+		return f.run(ctx, args...)
+	}
+	m := &portManager{
+		runtime:    runtime,
+		engine:     newDockerEngine(runtime.dockerURL, &http.Client{}),
+		creations:  map[string]*containerLease{},
+		containers: map[string]*containerLease{},
+	}
+	m.retainOrphans(&containerLease{token: "old", ports: []leasedPort{{desired: publication, live: true, exact: true}}})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	done := make(chan error, 2)
+	go func() { done <- m.reconcileOrphans(ctx) }()
+	select {
+	case <-firstListed:
+	case <-ctx.Done():
+		t.Fatal("first orphan reconciliation did not reach its list barrier")
+	}
+	go func() { done <- m.reconcileOrphans(ctx) }()
+
+	concurrentSnapshot := false
+	select {
+	case <-concurrentList:
+		concurrentSnapshot = true
+	case <-time.After(200 * time.Millisecond):
+		// A serialized second pass cannot snapshot the orphan while the first
+		// pass is still holding the allocation boundary.
+	}
+
+	var errs []error
+	if concurrentSnapshot {
+		select {
+		case err := <-done:
+			errs = append(errs, err)
+		case <-ctx.Done():
+			errs = append(errs, errors.New("concurrent orphan pass did not finish"))
+		}
+	}
+	prepared, prepareErr := preparedCreate{}, error(nil)
+	if concurrentSnapshot {
+		prepared, prepareErr = m.prepareCreate(ctx, portBindings{"80/tcp": {{HostPort: "39212"}}})
+	}
+	releaseFirstOnce.Do(func() { close(releaseFirstList) })
+
+	if concurrentSnapshot {
+		select {
+		case <-staleUnpublish:
+		case <-ctx.Done():
+			errs = append(errs, errors.New("stale orphan pass did not reach unpublish"))
+		}
+		releaseStaleOnce.Do(func() { close(releaseStaleUnpublish) })
+		select {
+		case err := <-done:
+			errs = append(errs, err)
+		case <-ctx.Done():
+			errs = append(errs, errors.New("stale orphan pass did not finish"))
+		}
+	} else {
+		for range 2 {
+			select {
+			case err := <-done:
+				errs = append(errs, err)
+			case <-ctx.Done():
+				errs = append(errs, errors.New("serialized orphan pass did not finish"))
+			}
+		}
+		prepared, prepareErr = m.prepareCreate(ctx, portBindings{"80/tcp": {{HostPort: "39212"}}})
+	}
+	releaseStaleOnce.Do(func() { close(releaseStaleUnpublish) })
+
+	if err := errors.Join(errs...); err != nil {
+		t.Fatal(err)
+	}
+	if prepareErr != nil {
+		t.Fatalf("reuse reservation after orphan cleanup: %v", prepareErr)
+	}
+	if prepared.Bindings["80/tcp"][0].HostPort != "39212" {
+		t.Fatalf("unexpected reused binding: %+v", prepared.Bindings)
+	}
+	f.mu.Lock()
+	_, published := f.ports[publication.spec()]
+	f.mu.Unlock()
+	if !published {
+		t.Fatal("stale orphan pass unpublished the newly reused tuple")
+	}
+}
+
+func TestForbiddenPortEnumerationIgnoresMutableLeaseFlags(t *testing.T) {
+	desired := portPublication{HostIP: "127.0.0.1", HostPort: 39211, SandboxPort: 39211, Protocol: "tcp4"}
+	record := &containerLease{ports: []leasedPort{{desired: desired, live: true, exact: true}}}
+	m := &portManager{creations: map[string]*containerLease{"token": record}, containers: map[string]*containerLease{}}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 10000; i++ {
+			record.mu.Lock()
+			record.ports[0].live = i%2 == 0
+			record.ports[0].orphan = i%3 == 0
+			record.ports[0].exact = i%5 == 0
+			record.mu.Unlock()
+		}
+	}()
+	for i := 0; i < 10000; i++ {
+		m.mu.Lock()
+		forbidden := m.forbiddenPortsLocked()
+		m.mu.Unlock()
+		if !forbidden[desired.reservation()] {
+			t.Fatal("immutable desired reservation disappeared")
+		}
+	}
+	wg.Wait()
+}
+
+func mustParseURL(t *testing.T, raw string) *url.URL {
+	t.Helper()
+	u, err := url.Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return u
 }

@@ -75,7 +75,7 @@ func (e *dockerEngine) listByLease(ctx context.Context, token string) ([]dockerC
 	return containers, nil
 }
 
-func (e *dockerEngine) knownPorts(ctx context.Context) (map[int]bool, error) {
+func (e *dockerEngine) knownPorts(ctx context.Context) (map[portReservation]bool, error) {
 	query := url.Values{"all": {"1"}}
 	var rows []struct {
 		Ports []dockerPort `json:"Ports"`
@@ -87,14 +87,11 @@ func (e *dockerEngine) knownPorts(ctx context.Context) (map[int]bool, error) {
 	if status != http.StatusOK {
 		return nil, fmt.Errorf("docker list returned HTTP %d", status)
 	}
-	ports := map[int]bool{2375: true}
+	ports := map[portReservation]bool{{protocol: "tcp", port: 2375}: true}
 	for _, row := range rows {
 		for _, port := range row.Ports {
-			if port.PrivatePort > 0 {
-				ports[port.PrivatePort] = true
-			}
-			if port.PublicPort > 0 {
-				ports[port.PublicPort] = true
+			if port.PublicPort > 0 && (port.Type == "tcp" || port.Type == "udp") {
+				ports[portReservation{protocol: port.Type, port: port.PublicPort}] = true
 			}
 		}
 	}

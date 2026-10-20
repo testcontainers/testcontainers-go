@@ -105,8 +105,8 @@ func (m *portManager) prepareCreate(ctx context.Context, bindings portBindings) 
 		m.mu.Unlock()
 		return preparedCreate{}, errors.New("sbx port manager is closed")
 	}
-	for port := range m.forbiddenPortsLocked() {
-		known[port] = true
+	for reservation := range m.forbiddenPortsLocked() {
+		known[reservation] = true
 	}
 	m.mu.Unlock()
 
@@ -488,20 +488,20 @@ func (m *portManager) removeRecord(record *containerLease) {
 	m.retainOrphansLocked(record)
 }
 
-func (m *portManager) forbiddenPortsLocked() map[int]bool {
-	ports := map[int]bool{2375: true}
+func (m *portManager) forbiddenPortsLocked() map[portReservation]bool {
+	ports := map[portReservation]bool{{protocol: "tcp", port: 2375}: true}
 	for _, record := range m.creations {
-		for _, lease := range record.ports {
-			ports[lease.desired.HostPort] = true
+		for i := range record.ports {
+			ports[record.ports[i].desired.reservation()] = true
 		}
 	}
 	for _, record := range m.containers {
-		for _, lease := range record.ports {
-			ports[lease.desired.HostPort] = true
+		for i := range record.ports {
+			ports[record.ports[i].desired.reservation()] = true
 		}
 	}
 	for _, orphan := range m.orphans {
-		ports[orphan.port.desired.HostPort] = true
+		ports[orphan.port.desired.reservation()] = true
 	}
 	return ports
 }
@@ -576,6 +576,9 @@ func recordHasOrphanedPublication(record *containerLease) bool {
 }
 
 func (m *portManager) reconcileOrphans(ctx context.Context) error {
+	m.allocationMu.Lock()
+	defer m.allocationMu.Unlock()
+
 	m.mu.Lock()
 	if len(m.orphans) == 0 {
 		m.mu.Unlock()

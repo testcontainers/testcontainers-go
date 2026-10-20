@@ -39,6 +39,22 @@ type portPublication struct {
 	Protocol    string `json:"protocol"`
 }
 
+type portReservation struct {
+	protocol string
+	port     int
+}
+
+func (p portPublication) reservation() portReservation {
+	protocol := p.Protocol
+	switch protocol {
+	case "tcp4":
+		protocol = "tcp"
+	case "udp4":
+		protocol = "udp"
+	}
+	return portReservation{protocol: protocol, port: p.HostPort}
+}
+
 func (p portPublication) spec() string {
 	return net.JoinHostPort(p.HostIP, strconv.Itoa(p.HostPort)) + ":" + strconv.Itoa(p.SandboxPort) + "/" + p.Protocol
 }
@@ -49,7 +65,7 @@ type portPlan struct {
 	ephemeral     bool
 }
 
-func planBindings(ctx context.Context, bindings portBindings, forbidden map[int]bool) ([]portPlan, error) {
+func planBindings(ctx context.Context, bindings portBindings, forbidden map[portReservation]bool) ([]portPlan, error) {
 	keys := make([]string, 0, len(bindings))
 	for key := range bindings {
 		keys = append(keys, key)
@@ -57,7 +73,7 @@ func planBindings(ctx context.Context, bindings portBindings, forbidden map[int]
 	slices.Sort(keys)
 
 	plans := make([]portPlan, 0)
-	selected := make(map[int]bool)
+	selected := make(map[portReservation]bool)
 	for _, key := range keys {
 		_, protocol, ok := strings.Cut(key, "/")
 		containerPort, parseErr := parseContainerPort(key)
@@ -79,10 +95,11 @@ func planBindings(ctx context.Context, bindings portBindings, forbidden map[int]
 					return nil, fmt.Errorf("container port %s: choose host port: %w", key, err)
 				}
 			}
-			if hostPort == 2375 || forbidden[hostPort] || selected[hostPort] {
+			reservation := portReservation{protocol: protocol, port: hostPort}
+			if forbidden[reservation] || selected[reservation] {
 				return nil, fmt.Errorf("container port %s: host port %d is reserved or already owned", key, hostPort)
 			}
-			selected[hostPort] = true
+			selected[reservation] = true
 			plans = append(plans, portPlan{
 				containerPort: key,
 				ephemeral:     ephemeral,
@@ -134,7 +151,7 @@ func parseHostPort(raw string) (int, bool, error) {
 	return port, false, nil
 }
 
-func candidateHostPort(ctx context.Context, protocol string, forbidden, selected map[int]bool) (int, error) {
+func candidateHostPort(ctx context.Context, protocol string, forbidden, selected map[portReservation]bool) (int, error) {
 	for range portPublishTries * 2 {
 		if err := ctx.Err(); err != nil {
 			return 0, err
@@ -143,7 +160,8 @@ func candidateHostPort(ctx context.Context, protocol string, forbidden, selected
 		if err != nil {
 			return 0, err
 		}
-		if port != 2375 && !forbidden[port] && !selected[port] {
+		reservation := portReservation{protocol: protocol, port: port}
+		if !forbidden[reservation] && !selected[reservation] {
 			return port, nil
 		}
 	}
@@ -177,7 +195,7 @@ func newLeaseToken() (string, error) {
 
 func (m *portManager) publish(ctx context.Context, token string, plan portPlan) (portPublication, bool, error) {
 	want := plan.publication
-	tried := map[int]bool{want.HostPort: true}
+	tried := map[portReservation]bool{want.reservation(): true}
 	tries := 1
 	if plan.ephemeral {
 		tries = portPublishTries
@@ -192,7 +210,7 @@ func (m *portManager) publish(ctx context.Context, token string, plan portPlan) 
 				return portPublication{}, false, err
 			}
 			want.HostPort, want.SandboxPort = port, port
-			tried[port] = true
+			tried[want.reservation()] = true
 		}
 		commandCtx, cancel := boundedContext(ctx, portCommandTimeout)
 		output, err := m.runtime.run(commandCtx, "ports", m.runtime.name, "--publish", want.spec(), "--format", "json")
