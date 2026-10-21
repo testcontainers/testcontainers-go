@@ -92,7 +92,7 @@ type ContainerProvider interface {
 	ReuseOrCreateContainer(context.Context, ContainerRequest) (Container, error) // reuses a container if it exists or creates a container without starting
 	RunContainer(context.Context, ContainerRequest) (Container, error)           // create a container and start it
 	Health(context.Context) error
-	Config() TestcontainersConfig
+	Config() config.Config
 }
 
 // UnderlyingProviderType resolves the provider using the explicit selection,
