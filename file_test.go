@@ -110,7 +110,7 @@ func Test_TarFile(t *testing.T) {
 	b, err := os.ReadFile(filepath.Join(".", "testdata", "Dockerfile"))
 	require.NoError(t, err)
 
-	modTime := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
+	modTime := time.Date(2020, 1, 2, 3, 4, 5, 678901234, time.UTC)
 	tests := []struct {
 		name     string
 		path     string

@@ -136,6 +136,11 @@ func tarFile(basePath string, fileContent func(tw io.Writer) error, fileContentS
 		Size:    fileContentSize,
 		ModTime: modTime,
 	}
+	if !modTime.IsZero() {
+		// PAX keeps the sub-second part of the modification time,
+		// the default format rounds it to whole seconds.
+		hdr.Format = tar.FormatPAX
+	}
 	if err := tw.WriteHeader(hdr); err != nil {
 		return buffer, err
 	}
