@@ -495,6 +495,21 @@ func Test_getDockerAuthConfigs(t *testing.T) {
 		require.Contains(t, authConfigs, exampleRegistry)
 		require.NotContains(t, authConfigs, privateRegistry)
 	})
+
+	t.Run("getAuthConfigsFromDockerfile scratch image", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		err := os.WriteFile(filepath.Join(tmpDir, "Dockerfile"), []byte("FROM scratch\nCOPY foo /bar\n"), 0o600)
+		require.NoError(t, err)
+
+		req := &ContainerRequest{
+			FromDockerfile: FromDockerfile{
+				Context: tmpDir,
+			},
+		}
+		authConfigs, err := getAuthConfigsFromDockerfile(req)
+		require.NoError(t, err)
+		require.Empty(t, authConfigs)
+	})
 }
 
 // requireValidAuthConfig checks that the given authConfigs map contains the expected keys.
