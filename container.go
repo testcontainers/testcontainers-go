@@ -388,13 +388,7 @@ func getAuthConfigsFromDockerfile(c *ContainerRequest) (map[string]registry.Auth
 		if image == "scratch" {
 			continue
 		}
-		reg := core.ExtractRegistry(image, defaultRegistry)
-		if strings.EqualFold(reg, "docker.io") ||
-			strings.EqualFold(reg, "registry.hub.docker.com") ||
-			strings.EqualFold(reg, "registry-1.docker.io") {
-			reg = defaultRegistry
-		}
-		registries = append(registries, reg)
+		registries = append(registries, resolveAuthRegistry(image, defaultRegistry))
 	}
 
 	if len(registries) == 0 {

@@ -26,18 +26,24 @@ var defaultRegistryFn = defaultRegistry
 // getRegistryCredentials is a variable overwritten in tests to mock the dockercfg.GetRegistryCredentials function.
 var getRegistryCredentials = dockercfg.GetRegistryCredentials
 
+// resolveAuthRegistry extracts the registry for an image and normalizes Docker Hub aliases
+// to the default registry for authentication lookups.
+func resolveAuthRegistry(image, defaultRegistry string) string {
+	reg := core.ExtractRegistry(image, defaultRegistry)
+	norm := normalizeRegistryHost(reg)
+	if isDockerHubRegistry(norm) {
+		return defaultRegistry
+	}
+	return reg
+}
+
 // DockerImageAuth returns the auth config for the given Docker image, extracting first its Docker registry.
 // Finally, it will use the credential helpers to extract the information from the docker config file
 // for that registry, if it exists.
 func DockerImageAuth(ctx context.Context, image string) (string, registry.AuthConfig, error) {
 	defaultRegistry := defaultRegistryFn(ctx)
 	reg := core.ExtractRegistry(image, defaultRegistry)
-	lookupReg := reg
-	if strings.EqualFold(reg, "docker.io") ||
-		strings.EqualFold(reg, "registry.hub.docker.com") ||
-		strings.EqualFold(reg, "registry-1.docker.io") {
-		lookupReg = defaultRegistry
-	}
+	lookupReg := resolveAuthRegistry(image, defaultRegistry)
 
 	configs, err := getDockerAuthConfigs(lookupReg)
 	if err != nil {
@@ -50,14 +56,7 @@ func DockerImageAuth(ctx context.Context, image string) (string, registry.AuthCo
 // dockerImageAuth returns the auth config for the given Docker image.
 func dockerImageAuth(ctx context.Context, image string, configs map[string]registry.AuthConfig) (string, registry.AuthConfig, error) {
 	defaultRegistry := defaultRegistryFn(ctx)
-	reg := core.ExtractRegistry(image, defaultRegistry)
-
-	// Normalize Docker Hub aliases for credential lookup
-	if strings.EqualFold(reg, "docker.io") ||
-		strings.EqualFold(reg, "registry.hub.docker.com") ||
-		strings.EqualFold(reg, "registry-1.docker.io") {
-		reg = defaultRegistry // This is https://index.docker.io/v1/
-	}
+	reg := resolveAuthRegistry(image, defaultRegistry)
 
 	if cfg, ok := getRegistryAuth(reg, configs); ok {
 		return reg, cfg, nil
