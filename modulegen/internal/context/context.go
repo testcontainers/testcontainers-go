@@ -13,12 +13,6 @@ type Context struct {
 	RootDir string
 }
 
-// DependabotConfigFile returns, from the root directory, the relative path
-// to the dependabot config file, "/.github/dependabot.yml".
-func (ctx Context) DependabotConfigFile() string {
-	return filepath.Join(ctx.GithubDir(), "dependabot.yml")
-}
-
 // DocsDir returns, from the root directory, the relative path to the docs directory, "/docs".
 func (ctx Context) DocsDir() string {
 	return filepath.Join(ctx.RootDir, "docs")
