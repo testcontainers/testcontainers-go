@@ -385,6 +385,9 @@ func getAuthConfigsFromDockerfile(c *ContainerRequest) (map[string]registry.Auth
 	var registries []string
 	defaultRegistry := defaultRegistryFn(context.Background())
 	for _, image := range images {
+		if image == "scratch" {
+			continue
+		}
 		reg := core.ExtractRegistry(image, defaultRegistry)
 		if strings.EqualFold(reg, "docker.io") ||
 			strings.EqualFold(reg, "registry.hub.docker.com") ||
@@ -392,6 +395,10 @@ func getAuthConfigsFromDockerfile(c *ContainerRequest) (map[string]registry.Auth
 			reg = defaultRegistry
 		}
 		registries = append(registries, reg)
+	}
+
+	if len(registries) == 0 {
+		return map[string]registry.AuthConfig{}, nil
 	}
 
 	// Get the auth configs once for all relevant images as it can be a time-consuming operation.
@@ -402,6 +409,9 @@ func getAuthConfigsFromDockerfile(c *ContainerRequest) (map[string]registry.Auth
 
 	authConfigs := map[string]registry.AuthConfig{}
 	for _, image := range images {
+		if image == "scratch" {
+			continue
+		}
 		registry, authConfig, err := dockerImageAuth(context.Background(), image, configs)
 		if err != nil {
 			if !errors.Is(err, dockercfg.ErrCredentialsNotFound) {
