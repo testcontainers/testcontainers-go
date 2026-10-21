@@ -496,6 +496,73 @@ func Test_getDockerAuthConfigs(t *testing.T) {
 		require.NotContains(t, authConfigs, privateRegistry)
 	})
 
+	t.Run("filter-registries-mixed-case-scheme", func(t *testing.T) {
+		testDockerConfigHome(t, "testdata", "not-exist")
+		const mixedCaseConfig = `{
+			"auths": {
+				"HTTPS://example.com": {
+					"auth": "dXNlcjpwYXNz"
+				},
+				"http://unrelated.registry.net/v1/": {
+					"auth": "dXNlcjpwYXNz"
+				}
+			}
+		}`
+		t.Setenv("DOCKER_AUTH_CONFIG", mixedCaseConfig)
+
+		authConfigs, err := getDockerAuthConfigs("example.com")
+		require.NoError(t, err)
+		require.Contains(t, authConfigs, "HTTPS://example.com")
+		require.NotContains(t, authConfigs, "http://unrelated.registry.net/v1/")
+
+		// Verify getRegistryAuth resolves credentials using the shared normalized host
+		cfg, ok := getRegistryAuth("example.com", authConfigs)
+		require.True(t, ok)
+		require.Equal(t, "dXNlcjpwYXNz", cfg.Auth)
+	})
+
+	t.Run("filter-registries-credHelpers", func(t *testing.T) {
+		testDockerConfigHome(t, "testdata", "not-exist")
+
+		creds.reset()
+		old := getRegistryCredentials
+		t.Cleanup(func() {
+			getRegistryCredentials = old
+			creds.reset()
+		})
+
+		getRegistryCredentials = func(hostname string) (string, string, error) {
+			if hostname == "unrelated.registry.net" {
+				return "", "", errors.New("unrelated helper should never be called")
+			}
+			if hostname == "example.com" {
+				return "user", "pass", nil
+			}
+			return "", "", errors.New("unexpected helper called")
+		}
+
+		const credHelpersConfig = `{
+			"auths": {},
+			"credHelpers": {
+				"example.com": "target-helper",
+				"unrelated.registry.net": "failing-helper"
+			}
+		}`
+		t.Setenv("DOCKER_AUTH_CONFIG", credHelpersConfig)
+
+		// Unfiltered resolution executes all registered helpers and fails on unrelated helper
+		_, err := getDockerAuthConfigs()
+		require.ErrorContains(t, err, "unrelated helper should never be called")
+
+		// Scoped resolution only invokes the helper for example.com; unrelated helper is never called
+		authConfigs, err := getDockerAuthConfigs("example.com")
+		require.NoError(t, err)
+		require.Contains(t, authConfigs, "example.com")
+		require.Equal(t, "user", authConfigs["example.com"].Username)
+		require.Equal(t, "pass", authConfigs["example.com"].Password)
+		require.NotContains(t, authConfigs, "unrelated.registry.net")
+	})
+
 	t.Run("getAuthConfigsFromDockerfile scratch image", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		err := os.WriteFile(filepath.Join(tmpDir, "Dockerfile"), []byte("FROM scratch\nCOPY foo /bar\n"), 0o600)

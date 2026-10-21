@@ -66,25 +66,52 @@ func dockerImageAuth(ctx context.Context, image string, configs map[string]regis
 	return reg, registry.AuthConfig{}, dockercfg.ErrCredentialsNotFound
 }
 
+// normalizeRegistryHost extracts and normalizes the host portion of a registry key or URL for matching.
+func normalizeRegistryHost(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return ""
+	}
+
+	keyURL, err := url.Parse(s)
+	if err == nil && keyURL.Host != "" {
+		return strings.ToLower(keyURL.Host)
+	}
+
+	// Fallback when url.Parse treats the string as a relative path (e.g. without scheme)
+	host := s
+	if keyURL != nil && keyURL.Path != "" {
+		host = keyURL.Path
+	}
+
+	// Strip any scheme case-insensitively if url.Parse didn't populate Host
+	if idx := strings.Index(strings.ToLower(host), "://"); idx != -1 {
+		host = host[idx+3:]
+	}
+
+	if idx := strings.Index(host, "/"); idx != -1 {
+		host = host[:idx]
+	}
+
+	return strings.ToLower(host)
+}
+
+// isDockerHubRegistry checks if a normalized registry host is one of Docker Hub's known domains.
+func isDockerHubRegistry(s string) bool {
+	return s == "docker.io" || s == "index.docker.io" || s == "registry-1.docker.io" || s == "registry.hub.docker.com"
+}
+
 func getRegistryAuth(reg string, cfgs map[string]registry.AuthConfig) (registry.AuthConfig, bool) {
 	if cfg, ok := cfgs[reg]; ok {
 		return cfg, true
 	}
 
+	normReg := normalizeRegistryHost(reg)
+
 	// fallback match using authentication key host
 	for k, cfg := range cfgs {
-		keyURL, err := url.Parse(k)
-		if err != nil {
-			continue
-		}
-
-		host := keyURL.Host
-		if keyURL.Scheme == "" {
-			// url.Parse: The url may be relative (a path, without a host) [...]
-			host = keyURL.Path
-		}
-
-		if host == reg {
+		normK := normalizeRegistryHost(k)
+		if normK == normReg || (isDockerHubRegistry(normReg) && isDockerHubRegistry(normK)) {
 			return cfg, true
 		}
 	}
@@ -192,28 +219,14 @@ func matchesRegistry(key, target string) bool {
 		return true
 	}
 
-	normalize := func(s string) string {
-		s = strings.TrimPrefix(s, "https://")
-		s = strings.TrimPrefix(s, "http://")
-		s = strings.TrimSuffix(s, "/")
-		if idx := strings.Index(s, "/"); idx != -1 {
-			s = s[:idx]
-		}
-		return strings.ToLower(s)
-	}
-
-	normKey := normalize(key)
-	normTarget := normalize(target)
+	normKey := normalizeRegistryHost(key)
+	normTarget := normalizeRegistryHost(target)
 
 	if normKey != "" && normKey == normTarget {
 		return true
 	}
 
-	isHub := func(s string) bool {
-		return s == "docker.io" || s == "index.docker.io" || s == "registry-1.docker.io" || s == "registry.hub.docker.com"
-	}
-
-	if isHub(normKey) && isHub(normTarget) {
+	if isDockerHubRegistry(normKey) && isDockerHubRegistry(normTarget) {
 		return true
 	}
 
