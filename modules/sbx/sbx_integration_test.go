@@ -96,25 +96,38 @@ func TestRealSandboxContainerLifecycle(t *testing.T) {
 	}
 	endpoint := "http://" + net.JoinHostPort(host, port.Port())
 	client := &http.Client{Timeout: 3 * time.Second}
-	deadline := time.Now().Add(30 * time.Second)
-	for {
-		resp, requestErr := client.Get(endpoint)
-		if requestErr == nil {
-			body, _ := io.ReadAll(resp.Body)
-			_ = resp.Body.Close()
-			if resp.StatusCode == http.StatusOK && strings.Contains(string(body), "nginx") {
-				break
+	waitForNginx := func(phase string) {
+		t.Helper()
+		readinessCtx, readinessCancel := context.WithTimeout(ctx, 30*time.Second)
+		defer readinessCancel()
+		var lastErr error
+		for {
+			request, err := http.NewRequestWithContext(readinessCtx, http.MethodGet, endpoint, nil)
+			if err != nil {
+				t.Fatalf("nginx endpoint %s %s: %v", endpoint, phase, err)
+			}
+			resp, requestErr := client.Do(request)
+			lastErr = requestErr
+			if requestErr == nil {
+				body, readErr := io.ReadAll(io.LimitReader(resp.Body, 64*1024))
+				_ = resp.Body.Close()
+				if readErr == nil && resp.StatusCode == http.StatusOK && strings.Contains(string(body), "nginx") {
+					return
+				}
+				if readErr != nil {
+					lastErr = fmt.Errorf("read nginx response: %w", readErr)
+				} else {
+					lastErr = fmt.Errorf("HTTP %d body=%q", resp.StatusCode, body)
+				}
+			}
+			select {
+			case <-readinessCtx.Done():
+				t.Fatalf("nginx endpoint %s never became ready %s: %v (last response: %v)", endpoint, phase, readinessCtx.Err(), lastErr)
+			case <-time.After(250 * time.Millisecond):
 			}
 		}
-		if time.Now().After(deadline) {
-			t.Fatalf("nginx endpoint never became ready: %v", requestErr)
-		}
-		select {
-		case <-ctx.Done():
-			t.Fatal(ctx.Err())
-		case <-time.After(250 * time.Millisecond):
-		}
 	}
+	waitForNginx("before restart")
 	code, output, err := container.Exec(ctx, []string{"sh", "-c", "printf sbx-exec"}, tcexec.Multiplexed())
 	if err != nil || code != 0 {
 		t.Fatalf("exec: exit=%d err=%v", code, err)
@@ -158,6 +171,8 @@ func TestRealSandboxContainerLifecycle(t *testing.T) {
 	if container.GetContainerID() != stableID || restartedPort.Port() != stablePort {
 		t.Fatalf("restart changed ID/port: %s/%s -> %s/%s", stableID, stablePort, container.GetContainerID(), restartedPort.Port())
 	}
+	// Stable Docker metadata must also preserve forwarding at the original host endpoint.
+	waitForNginx("after restart")
 
 	// A physical host listener must make a fixed publication fail before the
 	// Docker create reaches the inner daemon.
