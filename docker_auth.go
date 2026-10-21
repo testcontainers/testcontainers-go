@@ -30,9 +30,17 @@ var getRegistryCredentials = dockercfg.GetRegistryCredentials
 // Finally, it will use the credential helpers to extract the information from the docker config file
 // for that registry, if it exists.
 func DockerImageAuth(ctx context.Context, image string) (string, registry.AuthConfig, error) {
-	configs, err := getDockerAuthConfigs()
+	defaultRegistry := defaultRegistryFn(ctx)
+	reg := core.ExtractRegistry(image, defaultRegistry)
+	lookupReg := reg
+	if strings.EqualFold(reg, "docker.io") ||
+		strings.EqualFold(reg, "registry.hub.docker.com") ||
+		strings.EqualFold(reg, "registry-1.docker.io") {
+		lookupReg = defaultRegistry
+	}
+
+	configs, err := getDockerAuthConfigs(lookupReg)
 	if err != nil {
-		reg := core.ExtractRegistry(image, defaultRegistryFn(ctx))
 		return reg, registry.AuthConfig{}, err
 	}
 
@@ -178,9 +186,57 @@ func configKey(cfg *dockercfg.Config) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
+// matchesRegistry checks if the given config key matches the target registry.
+func matchesRegistry(key, target string) bool {
+	if strings.EqualFold(key, target) {
+		return true
+	}
+
+	normalize := func(s string) string {
+		s = strings.TrimPrefix(s, "https://")
+		s = strings.TrimPrefix(s, "http://")
+		s = strings.TrimSuffix(s, "/")
+		if idx := strings.Index(s, "/"); idx != -1 {
+			s = s[:idx]
+		}
+		return strings.ToLower(s)
+	}
+
+	normKey := normalize(key)
+	normTarget := normalize(target)
+
+	if normKey != "" && normKey == normTarget {
+		return true
+	}
+
+	isHub := func(s string) bool {
+		return s == "docker.io" || s == "index.docker.io" || s == "registry-1.docker.io" || s == "registry.hub.docker.com"
+	}
+
+	if isHub(normKey) && isHub(normTarget) {
+		return true
+	}
+
+	return false
+}
+
+func matchesAnyRegistry(key string, targets []string) bool {
+	if len(targets) == 0 {
+		return true
+	}
+
+	for _, target := range targets {
+		if matchesRegistry(key, target) {
+			return true
+		}
+	}
+
+	return false
+}
+
 // getDockerAuthConfigs returns a map with the auth configs from the docker config file
-// using the registry as the key
-func getDockerAuthConfigs() (map[string]registry.AuthConfig, error) {
+// using the registry as the key. If registries are provided, only matching registries are resolved.
+func getDockerAuthConfigs(registries ...string) (map[string]registry.AuthConfig, error) {
 	cfg, err := getDockerConfig()
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -195,12 +251,30 @@ func getDockerAuthConfigs() (map[string]registry.AuthConfig, error) {
 		return nil, err
 	}
 
-	size := len(cfg.AuthConfigs) + len(cfg.CredentialHelpers)
+	authConfigsToProcess := make(map[string]dockercfg.AuthConfig)
+	for k, v := range cfg.AuthConfigs {
+		if matchesAnyRegistry(k, registries) {
+			authConfigsToProcess[k] = v
+		}
+	}
+
+	var credHelpersToProcess []string
+	for k := range cfg.CredentialHelpers {
+		if matchesAnyRegistry(k, registries) {
+			credHelpersToProcess = append(credHelpersToProcess, k)
+		}
+	}
+
+	size := len(authConfigsToProcess) + len(credHelpersToProcess)
 	cfgs := make(map[string]registry.AuthConfig, size)
+	if size == 0 {
+		return cfgs, nil
+	}
+
 	results := make(chan authConfigResult, size)
 	var wg sync.WaitGroup
 	wg.Add(size)
-	for k, v := range cfg.AuthConfigs {
+	for k, v := range authConfigsToProcess {
 		go func(k string, v dockercfg.AuthConfig) {
 			defer wg.Done()
 
@@ -231,7 +305,7 @@ func getDockerAuthConfigs() (map[string]registry.AuthConfig, error) {
 
 	// In the case where the auth field in the .docker/conf.json is empty, and the user has
 	// credential helpers registered the auth comes from there.
-	for k := range cfg.CredentialHelpers {
+	for _, k := range credHelpersToProcess {
 		go func(k string) {
 			defer wg.Done()
 

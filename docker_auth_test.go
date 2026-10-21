@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -464,6 +465,35 @@ func Test_getDockerAuthConfigs(t *testing.T) {
 		cfg, err := getDockerConfig()
 		require.ErrorContains(t, err, "json: cannot unmarshal array")
 		require.Nil(t, cfg)
+	})
+
+	t.Run("filter-registries-ignores-unused-failures", func(t *testing.T) {
+		testDockerConfigHome(t, "testdata", "not-exist")
+
+		creds.reset()
+		old := getRegistryCredentials
+		t.Cleanup(func() {
+			getRegistryCredentials = old
+			creds.reset()
+		})
+
+		getRegistryCredentials = func(hostname string) (string, string, error) {
+			if hostname == privateRegistry {
+				return "", "", errors.New("failing unused credential helper")
+			}
+			return "user", "pass", nil
+		}
+		t.Setenv("DOCKER_AUTH_CONFIG", dockerConfig)
+
+		// Without filter, error from privateRegistry fails getDockerAuthConfigs
+		_, err := getDockerAuthConfigs()
+		require.ErrorContains(t, err, "failing unused credential helper")
+
+		// With filter for exampleRegistry, privateRegistry is skipped and call succeeds
+		authConfigs, err := getDockerAuthConfigs(exampleRegistry)
+		require.NoError(t, err)
+		require.Contains(t, authConfigs, exampleRegistry)
+		require.NotContains(t, authConfigs, privateRegistry)
 	})
 }
 
