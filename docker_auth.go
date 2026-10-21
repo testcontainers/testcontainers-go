@@ -108,11 +108,19 @@ func getRegistryAuth(reg string, cfgs map[string]registry.AuthConfig) (registry.
 
 	normReg := normalizeRegistryHost(reg)
 
-	// fallback match using authentication key host
+	// First pass: fallback match using exact normalized host
 	for k, cfg := range cfgs {
-		normK := normalizeRegistryHost(k)
-		if normK == normReg || (isDockerHubRegistry(normReg) && isDockerHubRegistry(normK)) {
+		if normalizeRegistryHost(k) == normReg {
 			return cfg, true
+		}
+	}
+
+	// Second pass: if target is Docker Hub, fall back to any Docker Hub alias
+	if isDockerHubRegistry(normReg) {
+		for k, cfg := range cfgs {
+			if isDockerHubRegistry(normalizeRegistryHost(k)) {
+				return cfg, true
+			}
 		}
 	}
 

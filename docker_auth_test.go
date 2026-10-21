@@ -501,10 +501,14 @@ func Test_getDockerAuthConfigs(t *testing.T) {
 		const mixedCaseConfig = `{
 			"auths": {
 				"HTTPS://example.com": {
-					"auth": "dXNlcjpwYXNz"
+					"auth": "dXNlcjpwYXNz",
+					"username": "user",
+					"password": "pass"
 				},
 				"http://unrelated.registry.net/v1/": {
-					"auth": "dXNlcjpwYXNz"
+					"auth": "dXNlcjpwYXNz",
+					"username": "user",
+					"password": "pass"
 				}
 			}
 		}`
