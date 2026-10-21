@@ -379,7 +379,8 @@ func (r *reaperSpawner) fromContainer(ctx context.Context, sessionID string, pro
 func defaultRyukWaitStrategy(port string) wait.Strategy {
 	return wait.ForAll(
 		wait.ForLog("Started"),
-		wait.ForListeningPort(port),
+		// Skip the internal check because the Ryuk image has no shell.
+		wait.ForListeningPort(port).SkipInternalCheck(),
 	)
 }
 
