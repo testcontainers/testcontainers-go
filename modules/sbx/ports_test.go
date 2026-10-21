@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -96,6 +97,94 @@ func TestRandomTCPAndUDPBindingsArePublishedBeforeCreate(t *testing.T) {
 	f.mu.Unlock()
 	if count != 2 {
 		t.Fatalf("expected both physical host reservations before create; got %d", count)
+	}
+}
+
+func TestPlanBindingsPreservesRequestedFixedPorts(t *testing.T) {
+	plan := func(key, protocol string, port int, ephemeral bool) portPlan {
+		return portPlan{
+			containerPort: key, ephemeral: ephemeral,
+			publication: portPublication{HostIP: "127.0.0.1", HostPort: port, SandboxPort: port, Protocol: protocol + "4"},
+		}
+	}
+	cases := []struct {
+		name       string
+		bindings   portBindings
+		protocol   string
+		candidates []int
+		forbidden  map[portReservation]bool
+		want       []portPlan
+		wantErr    bool
+	}{
+		{
+			name:     "empty TCP before later key",
+			bindings: portBindings{"80/tcp": {{HostPort: ""}}, "81/tcp": {{HostPort: "40000"}}},
+			protocol: "tcp", candidates: []int{40000, 40001},
+			want: []portPlan{plan("80/tcp", "tcp", 40001, true), plan("81/tcp", "tcp", 40000, false)},
+		},
+		{
+			name:     "zero UDP before later key",
+			bindings: portBindings{"80/udp": {{HostPort: "0"}}, "81/udp": {{HostPort: "40000"}}},
+			protocol: "udp", candidates: []int{40000, 40001},
+			want: []portPlan{plan("80/udp", "udp", 40001, true), plan("81/udp", "udp", 40000, false)},
+		},
+		{
+			name:     "zero TCP before later binding",
+			bindings: portBindings{"80/tcp": {{HostPort: "0"}, {HostPort: "40000"}}},
+			protocol: "tcp", candidates: []int{40000, 40001},
+			want: []portPlan{plan("80/tcp", "tcp", 40001, true), plan("80/tcp", "tcp", 40000, false)},
+		},
+		{
+			name:     "fixed UDP allows same TCP port",
+			bindings: portBindings{"80/tcp": {{HostPort: ""}}, "81/udp": {{HostPort: "40000"}}},
+			protocol: "tcp", candidates: []int{40000},
+			want: []portPlan{plan("80/tcp", "tcp", 40000, true), plan("81/udp", "udp", 40000, false)},
+		},
+		{
+			name:      "external owner rejects fixed port",
+			bindings:  portBindings{"80/tcp": {{HostPort: "40000"}}},
+			forbidden: map[portReservation]bool{{protocol: "tcp", port: 40000}: true},
+			wantErr:   true,
+		},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			original := make(portBindings, len(tt.bindings))
+			for key, bindings := range tt.bindings {
+				original[key] = append([]portBinding(nil), bindings...)
+			}
+			var originalForbidden map[portReservation]bool
+			if tt.forbidden != nil {
+				originalForbidden = make(map[portReservation]bool, len(tt.forbidden))
+				for reservation, owned := range tt.forbidden {
+					originalForbidden[reservation] = owned
+				}
+			}
+			candidates := tt.candidates
+			got, err := planBindingsUsing(context.Background(), tt.bindings, tt.forbidden, func(protocol string) (int, error) {
+				if protocol != tt.protocol {
+					return 0, fmt.Errorf("unexpected candidate protocol %q", protocol)
+				}
+				if len(candidates) == 0 {
+					return 0, errors.New("candidate sequence exhausted")
+				}
+				port := candidates[0]
+				candidates = candidates[1:]
+				return port, nil
+			})
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("plan error = %v, want error %v", err, tt.wantErr)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Fatalf("plans = %+v, want %+v", got, tt.want)
+			}
+			if len(candidates) != 0 {
+				t.Fatalf("unused candidates: %v", candidates)
+			}
+			if !reflect.DeepEqual(tt.bindings, original) || !reflect.DeepEqual(tt.forbidden, originalForbidden) {
+				t.Fatalf("planner mutated caller inputs: bindings=%+v forbidden=%+v", tt.bindings, tt.forbidden)
+			}
+		})
 	}
 }
 

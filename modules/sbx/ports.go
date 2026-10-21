@@ -73,7 +73,10 @@ func planBindingsUsing(ctx context.Context, bindings portBindings, forbidden map
 	slices.Sort(keys)
 
 	plans := make([]portPlan, 0)
-	selected := make(map[portReservation]bool)
+	excluded := make(map[portReservation]bool, len(forbidden))
+	for reservation, owned := range forbidden {
+		excluded[reservation] = owned
+	}
 	for _, key := range keys {
 		_, protocol, ok := strings.Cut(key, "/")
 		containerPort, parseErr := parseContainerPort(key)
@@ -89,17 +92,6 @@ func planBindingsUsing(ctx context.Context, bindings portBindings, forbidden map
 			if err != nil {
 				return nil, fmt.Errorf("container port %s: %w", key, err)
 			}
-			if ephemeral {
-				hostPort, err = candidateHostPortUsing(ctx, protocol, forbidden, selected, candidate)
-				if err != nil {
-					return nil, fmt.Errorf("container port %s: choose host port: %w", key, err)
-				}
-			}
-			reservation := portReservation{protocol: protocol, port: hostPort}
-			if forbidden[reservation] || selected[reservation] {
-				return nil, fmt.Errorf("container port %s: host port %d is reserved or already owned", key, hostPort)
-			}
-			selected[reservation] = true
 			plans = append(plans, portPlan{
 				containerPort: key,
 				ephemeral:     ephemeral,
@@ -107,7 +99,27 @@ func planBindingsUsing(ctx context.Context, bindings portBindings, forbidden map
 					HostIP: "127.0.0.1", HostPort: hostPort, SandboxPort: hostPort, Protocol: protocol + "4",
 				},
 			})
+			if !ephemeral {
+				excluded[plans[len(plans)-1].publication.reservation()] = true
+			}
 		}
+	}
+	selected := make(map[portReservation]bool)
+	for i := range plans {
+		plan := &plans[i]
+		if plan.ephemeral {
+			protocol := plan.publication.reservation().protocol
+			hostPort, err := candidateHostPortUsing(ctx, protocol, excluded, selected, candidate)
+			if err != nil {
+				return nil, fmt.Errorf("container port %s: choose host port: %w", plan.containerPort, err)
+			}
+			plan.publication.HostPort, plan.publication.SandboxPort = hostPort, hostPort
+		}
+		reservation := plan.publication.reservation()
+		if forbidden[reservation] || selected[reservation] {
+			return nil, fmt.Errorf("container port %s: host port %d is reserved or already owned", plan.containerPort, plan.publication.HostPort)
+		}
+		selected[reservation] = true
 	}
 	return plans, nil
 }
