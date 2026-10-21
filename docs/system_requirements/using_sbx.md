@@ -22,6 +22,8 @@ sbx --app-name "$TESTCONTAINERS_SBX_APP_NAME" login
 
 The provider automatically applies the published `sbx/docker-tcp:latest` kit when it creates the sandbox.
 
+The kit exposes the sandbox's Docker API without authentication on a host loopback port. Other local users and processes can access it directly. Run only where all local users and processes are trusted.
+
 ## Register and select the provider
 
 The sbx module is on `main` and cannot be fetched as a released module until it is published. See the [module reference](../modules/sbx.md#prerequisites-and-selection) for dependency instructions. Import the module in your test package to register it:
@@ -51,7 +53,7 @@ TESTCONTAINERS_PROVIDER=sbx go test ./...
 
 Each root must be an existing absolute directory. See the [configuration reference](../modules/sbx.md#configuration-and-behavior) for validation rules. Only the requested bind source is mounted into the sandbox. A Compose file outside the workspace or an uploaded build context does not itself require a bind root; service bind sources do.
 
-Bind source paths must not contain `..` components. Relative symlinks below a root are allowed only when resolution stays within one containing allowed root. Absolute symlinks below a root are rejected, as are relative links that escape to a separate allowed root. With nested roots, a broader containing root can authorize a relative link that stays within it. Keep roots and source paths stable while mounts are prepared: a host path can still change between provider validation and the external `sbx` mount.
+Bind source paths must not contain `..` components. Relative symlinks below a root are allowed only when resolution stays within one containing allowed root. Absolute symlinks below a root are rejected, as are relative links that escape to a separate allowed root. With nested roots, a broader containing root can authorize a relative link that stays within it. Keep roots and source paths stable and writable only by trusted users and processes: a host path can still change between provider validation and the external `sbx` mount.
 
 ## Clean up the sandbox
 

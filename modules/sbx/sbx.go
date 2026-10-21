@@ -1,6 +1,8 @@
 // Package sbx registers a Docker Sandbox runtime for Testcontainers.
 // The sbx CLI must be installed and authenticated with sbx login before provider
 // initialization. Importing the package does not start a sandbox.
+// The sandbox's Docker API is unauthenticated on host loopback; use a host with
+// trusted local users and processes.
 package sbx
 
 import (
