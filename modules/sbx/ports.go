@@ -65,7 +65,7 @@ type portPlan struct {
 	ephemeral     bool
 }
 
-func planBindings(ctx context.Context, bindings portBindings, forbidden map[portReservation]bool) ([]portPlan, error) {
+func planBindingsUsing(ctx context.Context, bindings portBindings, forbidden map[portReservation]bool, candidate func(string) (int, error)) ([]portPlan, error) {
 	keys := make([]string, 0, len(bindings))
 	for key := range bindings {
 		keys = append(keys, key)
@@ -90,7 +90,7 @@ func planBindings(ctx context.Context, bindings portBindings, forbidden map[port
 				return nil, fmt.Errorf("container port %s: %w", key, err)
 			}
 			if ephemeral {
-				hostPort, err = candidateHostPort(ctx, protocol, forbidden, selected)
+				hostPort, err = candidateHostPortUsing(ctx, protocol, forbidden, selected, candidate)
 				if err != nil {
 					return nil, fmt.Errorf("container port %s: choose host port: %w", key, err)
 				}
@@ -152,11 +152,15 @@ func parseHostPort(raw string) (int, bool, error) {
 }
 
 func candidateHostPort(ctx context.Context, protocol string, forbidden, selected map[portReservation]bool) (int, error) {
+	return candidateHostPortUsing(ctx, protocol, forbidden, selected, availableHostPort)
+}
+
+func candidateHostPortUsing(ctx context.Context, protocol string, forbidden, selected map[portReservation]bool, candidate func(string) (int, error)) (int, error) {
 	for range portPublishTries * 2 {
 		if err := ctx.Err(); err != nil {
 			return 0, err
 		}
-		port, err := availableHostPort(protocol)
+		port, err := candidate(protocol)
 		if err != nil {
 			return 0, err
 		}
@@ -193,7 +197,7 @@ func newLeaseToken() (string, error) {
 	return hex.EncodeToString(raw[:]), nil
 }
 
-func (m *portManager) publish(ctx context.Context, token string, plan portPlan) (portPublication, bool, error) {
+func (m *portManager) publish(ctx context.Context, token string, plan portPlan, planned map[portReservation]bool) (portPublication, bool, error) {
 	want := plan.publication
 	tried := map[portReservation]bool{want.reservation(): true}
 	tries := 1
@@ -205,7 +209,14 @@ func (m *portManager) publish(ctx context.Context, token string, plan portPlan) 
 			m.mu.Lock()
 			forbidden := m.forbiddenPortsLocked()
 			m.mu.Unlock()
-			port, err := candidateHostPort(ctx, strings.TrimSuffix(want.Protocol, "4"), forbidden, tried)
+			for reservation := range planned {
+				forbidden[reservation] = true
+			}
+			candidate := availableHostPort
+			if m.portCandidate != nil {
+				candidate = m.portCandidate
+			}
+			port, err := candidateHostPortUsing(ctx, strings.TrimSuffix(want.Protocol, "4"), forbidden, tried, candidate)
 			if err != nil {
 				return portPublication{}, false, err
 			}

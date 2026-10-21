@@ -47,14 +47,15 @@ type portManager struct {
 	client  *http.Client
 	engine  *dockerEngine
 
-	allocationMu sync.Mutex
-	closeMu      sync.Mutex
-	mu           sync.Mutex
-	creations    map[string]*containerLease
-	containers   map[string]*containerLease
-	orphans      []orphanLease
-	nextOrphanID uint64
-	closed       bool
+	allocationMu  sync.Mutex
+	closeMu       sync.Mutex
+	mu            sync.Mutex
+	creations     map[string]*containerLease
+	containers    map[string]*containerLease
+	orphans       []orphanLease
+	nextOrphanID  uint64
+	closed        bool
+	portCandidate func(string) (int, error)
 
 	watchCtx    context.Context
 	watchCancel context.CancelFunc
@@ -110,13 +111,20 @@ func (m *portManager) prepareCreate(ctx context.Context, bindings portBindings) 
 	}
 	m.mu.Unlock()
 
-	plans, err := planBindings(ctx, bindings, known)
+	candidate := m.portCandidate
+	if candidate == nil {
+		candidate = availableHostPort
+	}
+	plans, err := planBindingsUsing(ctx, bindings, known, candidate)
 	if err != nil {
 		return preparedCreate{}, fmt.Errorf("sandbox %q creation %s: %w", m.runtime.name, token, err)
 	}
+	for _, plan := range plans {
+		known[plan.publication.reservation()] = true
+	}
 	record := &containerLease{token: token, ports: make([]leasedPort, 0, len(plans))}
 	for _, plan := range plans {
-		publication, exact, publishErr := m.publish(ctx, token, plan)
+		publication, exact, publishErr := m.publish(ctx, token, plan, known)
 		if publishErr != nil {
 			if publication.HostPort != 0 {
 				record.ports = append(record.ports, leasedPort{containerPort: plan.containerPort, desired: publication, live: true, orphan: true, exact: exact})
@@ -128,6 +136,7 @@ func (m *portManager) prepareCreate(ctx context.Context, bindings portBindings) 
 			return preparedCreate{}, errors.Join(publishErr, cleanupErr)
 		}
 		record.ports = append(record.ports, leasedPort{containerPort: plan.containerPort, desired: publication, live: true, exact: true})
+		known[publication.reservation()] = true
 	}
 
 	rewritten := cloneBindings(bindings)
@@ -185,14 +194,13 @@ func (m *portManager) bindCreate(token, containerID, containerName string) error
 }
 
 func (m *portManager) abortCreate(ctx context.Context, token string, ambiguous bool) error {
-	m.mu.Lock()
-	record := m.creations[token]
-	m.mu.Unlock()
-	if record == nil {
-		return nil
-	}
 	if ambiguous {
 		m.mu.Lock()
+		record := m.creations[token]
+		if record == nil {
+			m.mu.Unlock()
+			return nil
+		}
 		record.ambiguousCreate = true
 		m.mu.Unlock()
 		containers, err := m.engine.listByLease(ctx, token)
@@ -211,7 +219,17 @@ func (m *portManager) abortCreate(ctx context.Context, token string, ambiguous b
 			return fmt.Errorf("sandbox %q creation %s: ambiguous Docker create matched %d containers; reservations retained", m.runtime.name, token, len(containers))
 		}
 	}
+	m.allocationMu.Lock()
+	defer m.allocationMu.Unlock()
 	m.mu.Lock()
+	record := m.creations[token]
+	if record == nil {
+		m.mu.Unlock()
+		return nil
+	}
+	// Claim cleanup while creation ownership is authoritative. bindCreate and
+	// observed-container binding either transfer the record first or lose to
+	// this deletion; no stale abort may clean a subsequently bound owner.
 	delete(m.creations, token)
 	m.mu.Unlock()
 	record.mu.Lock()
@@ -255,7 +273,7 @@ func (m *portManager) beginStart(ctx context.Context, containerRef string) (func
 			// not leave this tuple behind. Retry the immutable desired port.
 			lease.live, lease.orphan = false, false
 		}
-		publication, exact, publishErr := m.publish(ctx, record.token, portPlan{containerPort: lease.containerPort, publication: lease.desired})
+		publication, exact, publishErr := m.publish(ctx, record.token, portPlan{containerPort: lease.containerPort, publication: lease.desired}, nil)
 		if publishErr != nil || publication != lease.desired {
 			if publication.HostPort != 0 && publication == lease.desired {
 				lease.live, lease.orphan, lease.exact = true, true, exact
@@ -548,6 +566,9 @@ func (m *portManager) reconcile(ctx context.Context) error {
 func (m *portManager) reconcileRecord(ctx context.Context, record *containerLease) error {
 	record.mu.Lock()
 	defer record.mu.Unlock()
+	if record.removed {
+		return nil
+	}
 	inspect, err := m.engine.inspect(ctx, record.id)
 	if err != nil {
 		return fmt.Errorf("sandbox %q container %q: reconcile inspect: %w", m.runtime.name, record.id, err)

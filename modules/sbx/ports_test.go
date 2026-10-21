@@ -761,6 +761,316 @@ func TestConcurrentOrphanReconciliationCannotUnpublishReusedReservation(t *testi
 	}
 }
 
+func TestAbortCleanupExcludesReuseThroughOrphanTransfer(t *testing.T) {
+	for _, releaseFails := range []bool{false, true} {
+		t.Run(fmt.Sprintf("release-fails-%t", releaseFails), func(t *testing.T) {
+			f := newFakeSandbox(t)
+			unpublishEntered := make(chan struct{})
+			releaseUnpublish := make(chan struct{})
+			var releaseOnce sync.Once
+			release := func() { releaseOnce.Do(func() { close(releaseUnpublish) }) }
+			defer release()
+			var interceptMu sync.Mutex
+			intercept := true
+			runtime := f.runtime(t)
+			runtime.run = func(ctx context.Context, args ...string) ([]byte, error) {
+				if len(args) > 2 && args[2] == "--unpublish" {
+					interceptMu.Lock()
+					hold := intercept
+					intercept = false
+					interceptMu.Unlock()
+					if hold {
+						data, err := f.run(ctx, args...)
+						close(unpublishEntered)
+						select {
+						case <-releaseUnpublish:
+						case <-ctx.Done():
+							return nil, ctx.Err()
+						}
+						if releaseFails {
+							return nil, errors.New("unpublish response lost")
+						}
+						return data, err
+					}
+				}
+				return f.run(ctx, args...)
+			}
+			m := &portManager{
+				runtime:    runtime,
+				engine:     newDockerEngine(runtime.dockerURL, &http.Client{}),
+				creations:  map[string]*containerLease{},
+				containers: map[string]*containerLease{},
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+			prepared, err := m.prepareCreate(ctx, portBindings{"80/tcp": {{HostPort: "39213"}}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			abortDone := make(chan error, 1)
+			go func() { abortDone <- m.abortCreate(ctx, prepared.Token, false) }()
+			select {
+			case <-unpublishEntered:
+			case <-ctx.Done():
+				release()
+				select {
+				case <-abortDone:
+				case <-time.After(time.Second):
+				}
+				t.Fatal("abort did not reach controlled unpublish")
+			}
+
+			prepareDone := make(chan error, 1)
+			go func() {
+				_, prepareErr := m.prepareCreate(ctx, portBindings{"81/tcp": {{HostPort: "39213"}}})
+				prepareDone <- prepareErr
+			}()
+			select {
+			case err := <-prepareDone:
+				release()
+				abortErr := waitPortTestError(t, ctx, abortDone, "abort after premature prepare")
+				t.Fatalf("fresh creation passed abort cleanup boundary: prepare=%v abort=%v", err, abortErr)
+			case <-time.After(100 * time.Millisecond):
+			}
+			release()
+			abortErr := waitPortTestError(t, ctx, abortDone, "abort cleanup")
+			prepareErr := waitPortTestError(t, ctx, prepareDone, "concurrent prepare")
+			if releaseFails {
+				if abortErr == nil {
+					t.Fatal("lost unpublish response was treated as confirmed release")
+				}
+				if prepareErr == nil {
+					t.Fatal("fresh creation reused a tuple transferred to orphan ownership")
+				}
+				if err := m.reconcileOrphans(ctx); err != nil {
+					t.Fatalf("reconcile absent orphan: %v", err)
+				}
+			} else {
+				if abortErr != nil {
+					t.Fatalf("abort cleanup: %v", abortErr)
+				}
+				if prepareErr != nil {
+					t.Fatalf("reuse after confirmed abort cleanup: %v", prepareErr)
+				}
+				// The concurrent prepare already installed the later owner.
+				if err := m.abortCreate(ctx, prepared.Token, false); err != nil {
+					t.Fatalf("duplicate abort: %v", err)
+				}
+			}
+			if releaseFails {
+				if _, err := m.prepareCreate(ctx, portBindings{"81/tcp": {{HostPort: "39213"}}}); err != nil {
+					t.Fatalf("reuse after orphan absence was proven: %v", err)
+				}
+			}
+			f.mu.Lock()
+			_, published := f.ports["127.0.0.1:39213:39213/tcp4"]
+			f.mu.Unlock()
+			if !published {
+				t.Fatal("stale or duplicate abort removed the later owner's forwarding")
+			}
+		})
+	}
+}
+
+func TestAbortLosesToBoundCreateWithoutStaleCleanup(t *testing.T) {
+	f := newFakeSandbox(t)
+	m := testPortManager(t, f)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	prepared, err := m.prepareCreate(ctx, portBindings{"80/tcp": {{HostPort: "39214"}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.mu.Lock()
+	record := m.creations[prepared.Token]
+	m.mu.Unlock()
+	record.mu.Lock()
+	m.allocationMu.Lock()
+	recordLocked, allocationLocked := true, true
+	defer func() {
+		if recordLocked {
+			record.mu.Unlock()
+		}
+		if allocationLocked {
+			m.allocationMu.Unlock()
+		}
+	}()
+	abortDone := make(chan error, 1)
+	go func() { abortDone <- m.abortCreate(ctx, prepared.Token, false) }()
+
+	// A pre-fix abort deletes creation ownership before waiting on record.mu.
+	// The fixed abort cannot take its authoritative snapshot while allocation is held.
+	oldDeletion := false
+	deadline := time.Now().Add(100 * time.Millisecond)
+	for time.Now().Before(deadline) {
+		m.mu.Lock()
+		oldDeletion = m.creations[prepared.Token] == nil
+		m.mu.Unlock()
+		if oldDeletion {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
+	if oldDeletion {
+		record.mu.Unlock()
+		recordLocked = false
+		m.allocationMu.Unlock()
+		allocationLocked = false
+		_ = waitPortTestError(t, ctx, abortDone, "pre-bound abort")
+		t.Fatal("abort claimed creation before entering allocation boundary")
+	}
+	if err := m.bindCreate(prepared.Token, "bound-container", "bound"); err != nil {
+		record.mu.Unlock()
+		recordLocked = false
+		m.allocationMu.Unlock()
+		allocationLocked = false
+		_ = waitPortTestError(t, ctx, abortDone, "abort after bind failure")
+		t.Fatal(err)
+	}
+	record.mu.Unlock()
+	recordLocked = false
+	m.allocationMu.Unlock()
+	allocationLocked = false
+	if err := waitPortTestError(t, ctx, abortDone, "losing abort"); err != nil {
+		t.Fatal(err)
+	}
+	f.mu.Lock()
+	_, published := f.ports["127.0.0.1:39214:39214/tcp4"]
+	f.mu.Unlock()
+	if !published {
+		t.Fatal("losing abort unpublished the bound container's forwarding")
+	}
+}
+
+func TestRemovedRecordReconciliationCannotUnpublishReusedTuple(t *testing.T) {
+	f := newFakeSandbox(t)
+	runtime := f.runtime(t)
+	publication := portPublication{HostIP: "127.0.0.1", HostPort: 39215, SandboxPort: 39215, Protocol: "tcp4"}
+	f.mu.Lock()
+	f.ports[publication.spec()] = publication
+	f.mu.Unlock()
+	record := &containerLease{
+		token: "removed-owner", id: "removed-container",
+		ports: []leasedPort{{containerPort: "80/tcp", desired: publication, live: true, exact: true}},
+	}
+	m := &portManager{
+		runtime: runtime, engine: newDockerEngine(runtime.dockerURL, &http.Client{}),
+		creations: map[string]*containerLease{}, containers: map[string]*containerLease{"removed-container": record},
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	record.mu.Lock()
+	recordLocked := true
+	defer func() {
+		if recordLocked {
+			record.mu.Unlock()
+		}
+	}()
+	reconcileStarted := make(chan struct{})
+	reconcileDone := make(chan error, 1)
+	go func() {
+		close(reconcileStarted)
+		reconcileDone <- m.reconcileRecord(ctx, record)
+	}()
+	select {
+	case <-reconcileStarted:
+	case <-ctx.Done():
+		record.mu.Unlock()
+		recordLocked = false
+		select {
+		case <-reconcileDone:
+		case <-time.After(time.Second):
+		}
+		t.Fatal("stale reconciliation did not start")
+	}
+	m.removeRecord(record)
+	if err := m.reconcileOrphans(ctx); err != nil {
+		record.mu.Unlock()
+		recordLocked = false
+		_ = waitPortTestError(t, ctx, reconcileDone, "stale reconciliation after orphan failure")
+		t.Fatalf("reclaim removed owner's orphan: %v", err)
+	}
+	prepared, err := m.prepareCreate(ctx, portBindings{"81/tcp": {{HostPort: "39215"}}})
+	if err != nil {
+		record.mu.Unlock()
+		recordLocked = false
+		_ = waitPortTestError(t, ctx, reconcileDone, "stale reconciliation after prepare failure")
+		t.Fatalf("reuse reclaimed tuple: %v", err)
+	}
+	if err := m.bindCreate(prepared.Token, "new-container", "new"); err != nil {
+		record.mu.Unlock()
+		recordLocked = false
+		_ = waitPortTestError(t, ctx, reconcileDone, "stale reconciliation after bind failure")
+		t.Fatal(err)
+	}
+	record.mu.Unlock()
+	recordLocked = false
+	if err := waitPortTestError(t, ctx, reconcileDone, "stale reconciliation"); err != nil {
+		t.Fatal(err)
+	}
+	f.mu.Lock()
+	_, published := f.ports[publication.spec()]
+	f.mu.Unlock()
+	if !published {
+		t.Fatal("stale removed-record reconciliation unpublished the new owner's tuple")
+	}
+}
+
+func TestEphemeralRetryPreservesCreateAndEngineReservations(t *testing.T) {
+	f := newFakeSandbox(t)
+	f.list = []dockerContainer{{Ports: []dockerPort{{PrivatePort: 80, PublicPort: 40000, Type: "tcp"}}}}
+	runtime := f.runtime(t)
+	publishCalls := 0
+	runtime.run = func(ctx context.Context, args ...string) ([]byte, error) {
+		if len(args) > 2 && args[2] == "--publish" {
+			publishCalls++
+			if publishCalls == 2 || publishCalls == 5 || publishCalls == 6 {
+				return nil, errors.New("address already in use")
+			}
+		}
+		return f.run(ctx, args...)
+	}
+	m := &portManager{
+		runtime: runtime, engine: newDockerEngine(runtime.dockerURL, &http.Client{}),
+		creations: map[string]*containerLease{}, containers: map[string]*containerLease{},
+	}
+	// Planning consumes the first two candidates before either publication retries.
+	candidates := []int{39990, 39991, 40000, 40001, 40003, 40004, 40004, 40005, 40005, 40002}
+	m.portCandidate = func(protocol string) (int, error) {
+		if protocol != "tcp" {
+			return 0, fmt.Errorf("unexpected candidate protocol %q", protocol)
+		}
+		if len(candidates) == 0 {
+			return 0, errors.New("candidate sequence exhausted")
+		}
+		port := candidates[0]
+		candidates = candidates[1:]
+		return port, nil
+	}
+	prepared, err := m.prepareCreate(context.Background(), portBindings{
+		"53/udp": {{HostPort: "40002"}},
+		"79/tcp": {{HostPort: "0"}},
+		"80/tcp": {{HostPort: "40001"}},
+		"81/tcp": {{HostPort: "0"}},
+		"82/tcp": {{HostPort: "40003"}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := prepared.Bindings["79/tcp"][0].HostPort; got != "40004" {
+		t.Fatalf("first retry did not use expected replacement tuple: got %s, want 40004", got)
+	}
+	if got := prepared.Bindings["81/tcp"][0].HostPort; got != "40002" {
+		t.Fatalf("retry did not preserve protocol-aware exclusions: got %s, want 40002", got)
+	}
+	if len(candidates) != 0 {
+		t.Fatalf("retry accepted an Engine or same-create TCP reservation; unused candidates: %v", candidates)
+	}
+	if publishCalls != 8 {
+		t.Fatalf("unexpected publish attempts: got %d, want 8", publishCalls)
+	}
+}
+
 func TestForbiddenPortEnumerationIgnoresMutableLeaseFlags(t *testing.T) {
 	desired := portPublication{HostIP: "127.0.0.1", HostPort: 39211, SandboxPort: 39211, Protocol: "tcp4"}
 	record := &containerLease{ports: []leasedPort{{desired: desired, live: true, exact: true}}}
@@ -796,4 +1106,15 @@ func mustParseURL(t *testing.T, raw string) *url.URL {
 		t.Fatal(err)
 	}
 	return u
+}
+
+func waitPortTestError(t *testing.T, ctx context.Context, result <-chan error, operation string) error {
+	t.Helper()
+	select {
+	case err := <-result:
+		return err
+	case <-ctx.Done():
+		t.Fatalf("%s did not finish: %v", operation, ctx.Err())
+		return ctx.Err()
+	}
 }
