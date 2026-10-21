@@ -583,6 +583,54 @@ func Test_getDockerAuthConfigs(t *testing.T) {
 	})
 }
 
+func Test_resolveAuthRegistry(t *testing.T) {
+	const defaultReg = "https://index.docker.io/v1/"
+
+	tests := []struct {
+		name     string
+		image    string
+		expected string
+	}{
+		{
+			name:     "docker hub library image",
+			image:    "nginx:latest",
+			expected: defaultReg,
+		},
+		{
+			name:     "docker.io image",
+			image:    "docker.io/library/nginx:latest",
+			expected: defaultReg,
+		},
+		{
+			name:     "registry.hub.docker.com image",
+			image:    "registry.hub.docker.com/library/nginx:latest",
+			expected: defaultReg,
+		},
+		{
+			name:     "registry-1.docker.io image",
+			image:    "registry-1.docker.io/library/nginx:latest",
+			expected: defaultReg,
+		},
+		{
+			name:     "custom registry",
+			image:    "my.private.registry/my-image:latest",
+			expected: "my.private.registry",
+		},
+		{
+			name:     "custom registry with port",
+			image:    "localhost:5000/my-image:latest",
+			expected: "localhost:5000",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := resolveAuthRegistry(tt.image, defaultReg)
+			require.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
 // requireValidAuthConfig checks that the given authConfigs map contains the expected keys.
 func requireValidAuthConfig(t *testing.T) {
 	t.Helper()
