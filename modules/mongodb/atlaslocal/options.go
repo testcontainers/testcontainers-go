@@ -24,7 +24,7 @@ const (
 )
 
 // Compiler check to ensure that Option implements the testcontainers.ContainerCustomizer interface.
-var _ testcontainers.ContainerCustomizer = (Option)(nil)
+var _ testcontainers.ContainerCustomizer = Option(nil)
 
 type options struct {
 	username          string

@@ -16,6 +16,7 @@ import (
 	"github.com/containerd/errdefs"
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
@@ -360,7 +361,7 @@ func Test_ReaperReusedIfHealthy(t *testing.T) {
 		})
 	}
 
-	provider, err := ProviderDocker.GetProvider()
+	provider, err := ProviderDefault.GetProvider()
 	require.NoError(t, err)
 
 	reaper, err := spawner.reaper(context.WithValue(ctx, core.DockerHostContextKey, provider.(*DockerProvider).host), testSessionID, provider)
@@ -388,7 +389,7 @@ func Test_RecreateReaperIfTerminated(t *testing.T) {
 
 	SkipIfProviderIsNotHealthy(t)
 
-	provider, err := ProviderDocker.GetProvider()
+	provider, err := ProviderDefault.GetProvider()
 	require.NoError(t, err)
 
 	ctx := context.Background()
@@ -408,15 +409,14 @@ func Test_RecreateReaperIfTerminated(t *testing.T) {
 		timeout.Stop()
 	})
 	for {
-		state, err := reaper.container.State(ctx)
-		if err != nil {
-			if errdefs.IsNotFound(err) {
-				break
-			}
-			require.NoError(t, err)
-		}
-
-		if !state.Running {
+		// Listing also handles auto-removal without racing an inspect against
+		// Podman's deletion of the container's state from its database.
+		containers, err := provider.(*DockerProvider).client.ContainerList(ctx, client.ContainerListOptions{
+			All:     true,
+			Filters: make(client.Filters).Add("id", reaper.container.GetContainerID()),
+		})
+		require.NoError(t, err)
+		if len(containers.Items) == 0 || containers.Items[0].State != container.StateRunning {
 			break
 		}
 
@@ -457,7 +457,7 @@ func TestReaper_reuseItFromOtherTestProgramUsingDocker(t *testing.T) {
 		})
 	}
 
-	provider, err := ProviderDocker.GetProvider()
+	provider, err := ProviderDefault.GetProvider()
 	require.NoError(t, err)
 
 	reaper, err := spawner.reaper(context.WithValue(ctx, core.DockerHostContextKey, provider.(*DockerProvider).host), testSessionID, provider)

@@ -59,7 +59,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 					return false
 				}
 
-				return (strings.Contains(string(bs), "SERVING"))
+				return strings.Contains(string(bs), "SERVING")
 			}),
 		),
 	)

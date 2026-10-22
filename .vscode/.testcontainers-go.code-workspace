@@ -118,6 +118,10 @@
             "path": "../modules/forgejo"
         },
         {
+            "name": "module / garage",
+            "path": "../modules/garage"
+        },
+        {
             "name": "module / gcloud",
             "path": "../modules/gcloud"
         },
@@ -240,6 +244,10 @@
         {
             "name": "module / pinecone",
             "path": "../modules/pinecone"
+        },
+        {
+            "name": "module / podman",
+            "path": "../modules/podman"
         },
         {
             "name": "module / postgres",

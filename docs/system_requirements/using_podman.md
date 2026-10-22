@@ -2,85 +2,111 @@
 
 _Testcontainers for Go_ supports the use of Podman (rootless or rootful) instead of Docker.
 
-In most scenarios no special setup is required in _Testcontainers for Go_.
-_Testcontainers for Go_ will automatically discover the socket based on the `DOCKER_HOST` environment variables.
-Alternatively you can configure the host with a `.testcontainers.properties` file.
-The discovered Docker host is taken into account when starting a reaper container.
-The discovered socket is used to detect the use of Podman.
+## Using the Podman module
 
-By default _Testcontainers for Go_ takes advantage of the default network settings both Docker and Podman are applying to newly created containers.
-It only intervenes in scenarios where a `ContainerRequest` specifies networks and does not include the default network of the current container provider.
-Unfortunately the default network for Docker is called _bridge_ where the default network in Podman is called _podman_.
+Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-In complex container network scenarios it may be required to explicitly make use of the `ProviderPodman` like so:
+Use the [Podman module](../modules/podman.md) to register Podman as a runtime provider.
+Podman must already be installed and running; the module does not install or start it.
+
+Add the module to your project dependencies:
+
+```shell
+go get github.com/testcontainers/testcontainers-go/modules/podman
+```
+
+Import the module in each test package that uses Podman:
 
 ```go
-
 package some_test
 
 import (
     "testing"
+
     tc "github.com/testcontainers/testcontainers-go"
+    _ "github.com/testcontainers/testcontainers-go/modules/podman"
 )
 
 func TestSomething(t *testing.T) {
-    req := tc.GenericContainerRequest{
-        ProviderType: tc.ProviderPodman,
-        ContainerRequest: tc.ContainerRequest{
-            Image: "nginx:alpine"
-        },
+    ctr, err := tc.Run(t.Context(), "docker.io/nginx:alpine")
+    tc.CleanupContainer(t, ctr)
+    if err != nil {
+        t.Fatal(err)
     }
 
     // ...
 }
 ```
 
-The `ProviderPodman` configures the `DockerProvider` with the correct default network for Podman to ensure complex network scenarios are working as with Docker.
+The import registers the provider without connecting to Podman. Adding the dependency
+to `go.mod` without importing it does not register it.
+
+Select Podman before running your tests:
+
+```shell
+TESTCONTAINERS_PROVIDER=podman go test ./...
+```
+
+Alternatively, set `provider=podman` in `~/.testcontainers.properties`.
+An explicit provider in code takes precedence over the environment variable,
+which takes precedence over the properties file.
+
+Select the runtime before any Testcontainers operation, including direct client
+construction. Provider modules initialize before Docker host or socket discovery.
+
+## Host and network configuration
+
+Selecting the provider does not configure the Podman endpoint. The module retains
+standard [Docker host detection](../features/configuration.md#docker-host-detection),
+including `DOCKER_HOST` and the `docker.host` property in `~/.testcontainers.properties`.
+The discovered host and socket are also used when starting Ryuk, the resource reaper.
+See the platform-specific setup below for socket activation and Ryuk requirements.
+
+By default _Testcontainers for Go_ takes advantage of the default network settings both Docker and Podman apply to newly created containers.
+It only intervenes when a `ContainerRequest` specifies networks and does not include the default network of the current container provider.
+The Podman module configures the default bridge network as `podman`, so per-container `ProviderPodman` options are unnecessary when Podman is selected through configuration.
+
+## Migrating existing tests
+
+Existing `ProviderPodman` calls, including `WithProvider(ProviderPodman)`, and automatic
+Podman detection continue to work through the built-in compatibility path without
+importing the module. `ProviderPodman` is deprecated, with removal deferred to a future
+breaking release.
+
+To migrate, import the Podman module and select it through configuration as shown
+above, then remove per-container `ProviderPodman` options. Both paths use the same
+Docker-compatible endpoint discovery and `podman` default bridge network.
 
 ## Podman socket activation
 
-The reaper container needs to connect to the docker daemon to reap containers, so the podman socket service must be started:
+On Linux, the reaper container needs access to Podman's Docker-compatible API to reap containers, so the Podman socket service must be started:
+
 ```shell
-> systemctl --user start podman.socket
+systemctl --user start podman.socket
 ```
 
-## MacOS
+## macOS
 
-Currently, in MacOS the autodetection of podman does not work as intended, which leads to Ryuk failing at boot-up.
-In order to use Testcontainers then either
-1. Disable Ryuk (not recommended): see [here](../features/garbage_collector.md#ryuk)
-2. If you want to use Ryuk then you need
-   1. Run podman in rootful mode by running the following commands
-      ```bash
-        podman machine stop
-        podman machine set --rootful
-        podman machine start 
-      ```
-   2. Add 
-         ```
-         ryuk.container.privileged=true
-         ``` 
-      to `~/.testcontainers.properties`
-   3. Use the `WithProvider` option when running your containers
-        ```go
-        package some_test
-        
-        import (
-            "testing"
-        
-            tc "github.com/testcontainers/testcontainers-go"
-        )
-        
-        func TestSomething(t *testing.T) {
-            ctx := t.Context()
-            ctr, err := tc.Run(ctx,
-                "docker.io/myservice:1.2.3",
-                tc.WithProvider(tc.ProviderPodman),
-            )
-        
-            // ...
-        }
-        ```
+On macOS, automatic Podman detection may fail and prevent Ryuk from starting.
+Import the Podman module and explicitly select Podman as described above.
+To use Ryuk:
+
+1. Run Podman in rootful mode:
+
+    ```shell
+    podman machine stop
+    podman machine set --rootful
+    podman machine start
+    ```
+
+2. Add the following to `~/.testcontainers.properties`:
+
+    ```properties
+    ryuk.container.privileged=true
+    ```
+
+If you cannot use Ryuk, you can [disable it](../features/garbage_collector.md#ryuk),
+but this is not recommended.
 
 ## Fedora
 

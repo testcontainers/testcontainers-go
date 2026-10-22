@@ -71,7 +71,7 @@ set -euxo pipefail
 readonly ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 # define an array of modules that won't be included in the list
-readonly excluded_modules=(".devcontainer" ".vscode" "docs")
+readonly excluded_modules=(".devcontainer" ".vscode" "docs" "docs-site")
 
 # define an array of files that won't be included in the list
 readonly excluded_files=(
@@ -88,6 +88,7 @@ readonly excluded_files=(
     ".github/workflows/sonar-*.yml"
     ".github/workflows/usage-metrics.yml"
     ".github/workflows/usage-metrics-modules.yml"
+    ".github/workflows/github-clones.yml"
     "scripts/bump-*.sh"
     "scripts/check_environment.sh"
     "scripts/*release.sh"
@@ -95,13 +96,12 @@ readonly excluded_files=(
     "CONTRIBUTING.md"
     "LICENSE"
     "mkdocs.yml"
-    "Pipfile*"
+    "netlify.toml"
     "README.md"
     "RELEASING.md"
-    "requirements.txt"
-    "runtime.txt"
     "docs/usage-metrics/core.csv"
     "docs/usage-metrics/modules.csv"
+    "docs/usage-metrics/clones.csv"
 )
 
 # define an array of modules that won't be part of the build
@@ -200,6 +200,11 @@ sorted_unique_modules=($(echo "${modified_modules[@]}" | tr ' ' '\n' | sort -u |
 # remove modules that won't be part of the build from the list
 filtered_modules=()
 for module in "${sorted_unique_modules[@]}"; do
+    # Deleted modules and the old side of a moved module have no build target.
+    module_path=${module//\"/}
+    if [[ ! -f "${ROOT_DIR}/${module_path}/go.mod" ]]; then
+        continue
+    fi
     skip=false
     for no_build_module in "${no_build_modules[@]}"; do
         if [[ ${module} == \"${no_build_module}\" ]]; then

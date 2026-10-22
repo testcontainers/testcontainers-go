@@ -20,7 +20,7 @@ func defaultOptions() options {
 }
 
 // Compiler check to ensure that Option implements the testcontainers.ContainerCustomizer interface.
-var _ testcontainers.ContainerCustomizer = (Option)(nil)
+var _ testcontainers.ContainerCustomizer = Option(nil)
 
 // Option is an option for the Socat container.
 type Option func(*options) error
