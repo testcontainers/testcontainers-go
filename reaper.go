@@ -155,20 +155,7 @@ func (r *reaperSpawner) cleanupLocked() error {
 // it's found in the running state, and including the labels for sessionID, reaper, and ryuk.
 // It will perform a retry with exponential backoff to allow for the container to be started and
 // avoid potential false negatives.
-func (r *reaperSpawner) lookupContainer(ctx context.Context, sessionID string) (*DockerContainer, error) {
-	dockerClient, err := NewDockerClientWithOpts(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("new client: %w", err)
-	}
-	defer dockerClient.Close()
-
-	provider, err := NewDockerProvider()
-	if err != nil {
-		return nil, fmt.Errorf("new provider: %w", err)
-	}
-
-	provider.SetClient(dockerClient)
-
+func (r *reaperSpawner) lookupContainer(ctx context.Context, sessionID string, provider *DockerProvider) (*DockerContainer, error) {
 	opts := client.ContainerListOptions{
 		All: true,
 		Filters: make(client.Filters).
@@ -180,7 +167,7 @@ func (r *reaperSpawner) lookupContainer(ctx context.Context, sessionID string) (
 
 	return backoff.RetryWithData(
 		func() (*DockerContainer, error) {
-			resp, err := dockerClient.ContainerList(ctx, opts)
+			resp, err := provider.client.ContainerList(ctx, opts)
 			if err != nil {
 				return nil, fmt.Errorf("container list: %w", err)
 			}
@@ -316,12 +303,16 @@ func (r *reaperSpawner) reuseOrCreate(ctx context.Context, sessionID string, pro
 
 	// Look for an existing reaper created in the same test session but in a
 	// different test process execution e.g. when running tests in parallel.
-	container, err := r.lookupContainer(context.Background(), sessionID)
-	if err != nil {
-		if !errors.Is(err, errReaperNotFound) {
+	var container *DockerContainer
+	var err error
+	if dockerProvider, ok := provider.(*DockerProvider); ok {
+		container, err = r.lookupContainer(context.Background(), sessionID, dockerProvider)
+		if err != nil && !errors.Is(err, errReaperNotFound) {
 			return nil, fmt.Errorf("look up container: %w", err)
 		}
+	}
 
+	if container == nil {
 		// The reaper container was not found, continue to create a new one.
 		reaper, err := r.newReaper(ctx, sessionID, provider)
 		if err != nil {

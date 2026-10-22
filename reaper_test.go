@@ -5,7 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"strings"
 	"strconv"
 	"sync"
 	"syscall"
@@ -121,7 +124,11 @@ func testReaperRunning(t *testing.T) {
 
 	ctx := context.Background()
 	sessionID := config.Read().SessionID
-	reaperContainer, err := spawner.lookupContainer(ctx, sessionID)
+	provider, err := ProviderDefault.GetProvider()
+	require.NoError(t, err)
+	dockerProvider, ok := provider.(*DockerProvider)
+	require.True(t, ok)
+	reaperContainer, err := spawner.lookupContainer(ctx, sessionID, dockerProvider)
 	require.NoError(t, err)
 	require.NotNil(t, reaperContainer)
 }
@@ -543,6 +550,52 @@ func reaperConnect(t *testing.T, reaper *Reaper) {
 	defer conn.Close()
 	err = reaper.handshake(conn)
 	require.NoError(t, err, "Reaper handshake should be successful")
+}
+
+// TestReaperLookupContainerUsesProviderBridgeNetwork verifies that reaper reuse
+// resolves the Docker host through the caller provider's bridge network, matching
+// the network used when the reaper was first created via GetProvider.
+func TestReaperLookupContainerUsesProviderBridgeNetwork(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/networks"):
+			_, _ = w.Write([]byte(`[{"Name":"bridge"},{"Name":"reaper_default"}]`))
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/networks/podman"):
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"message":"network not found"}`))
+		default:
+			t.Errorf("unexpected network request: %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusBadRequest)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	cli, err := client.New(client.WithHost(server.URL), client.WithAPIVersion("1.41"))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = cli.Close() })
+
+	callerProvider := &DockerProvider{
+		DockerProviderOptions: &DockerProviderOptions{
+			GenericProviderOptions:   &GenericProviderOptions{},
+			defaultBridgeNetworkName: Bridge,
+		},
+		client: &DockerClient{Client: cli},
+	}
+	network, err := callerProvider.ensureDefaultNetwork(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, Bridge, network, "caller provider should resolve bridge when both bridge and reaper_default exist")
+
+	lookupProvider := &DockerProvider{
+		DockerProviderOptions: &DockerProviderOptions{
+			GenericProviderOptions:   &GenericProviderOptions{},
+			defaultBridgeNetworkName: Podman,
+		},
+		client: &DockerClient{Client: cli},
+	}
+	network, err = lookupProvider.ensureDefaultNetwork(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, ReaperDefault, network, "a fresh provider without bridge configured falls back to reaper_default")
 }
 
 func TestSpawnerBackoff(t *testing.T) {
