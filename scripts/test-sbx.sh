@@ -113,9 +113,9 @@ run_core() (
     setup_stage
     export TESTCONTAINERS_PROVIDER=sbx GOWORK=off
     # Capture all root-module packages before adding optional provider imports.
-    go list -f '{{.Dir}} {{.Name}}' ./... > "$work_dir/core-packages"
+    go list -f '{{.Dir}}{{"\t"}}{{.Name}}' ./... > "$work_dir/core-packages"
     make_workspace core
-    while read -r directory package; do
+    while IFS=$'\t' read -r directory package; do
         add_bootstrap "$directory" "$package"
     done < "$work_dir/core-packages"
     if [[ "$compile_only" == 1 ]]; then
