@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"testing"
@@ -70,6 +70,28 @@ func (m *mockReaperProvider) RunContainer(_ context.Context, req ContainerReques
 
 func (m *mockReaperProvider) Config() TestcontainersConfig {
 	return m.config
+}
+
+func (m *mockReaperProvider) ReaperDockerProvider() *DockerProvider {
+	return nil
+}
+
+type wrappingReaperProvider struct {
+	inner     *DockerProvider
+	runCalled bool
+}
+
+func (w *wrappingReaperProvider) RunContainer(ctx context.Context, req ContainerRequest) (Container, error) {
+	w.runCalled = true
+	return w.inner.RunContainer(ctx, req)
+}
+
+func (w *wrappingReaperProvider) Config() TestcontainersConfig {
+	return w.inner.Config()
+}
+
+func (w *wrappingReaperProvider) ReaperDockerProvider() *DockerProvider {
+	return w.inner
 }
 
 // expectedReaperRequest creates the expected reaper container request with the given customizations.
@@ -552,20 +574,64 @@ func reaperConnect(t *testing.T, reaper *Reaper) {
 	require.NoError(t, err, "Reaper handshake should be successful")
 }
 
-// TestReaperLookupContainerUsesProviderBridgeNetwork verifies that reaper reuse
-// resolves the Docker host through the caller provider's bridge network, matching
-// the network used when the reaper was first created via GetProvider.
-func TestReaperLookupContainerUsesProviderBridgeNetwork(t *testing.T) {
+func TestDockerProviderForReaperLookup(t *testing.T) {
+	t.Run("direct docker provider", func(t *testing.T) {
+		caller := &DockerProvider{}
+		dp, lookup, err := dockerProviderForReaperLookup(t.Context(), caller)
+		require.NoError(t, err)
+		require.True(t, lookup)
+		require.Same(t, caller, dp)
+	})
+
+	t.Run("wrapper exposes backing provider", func(t *testing.T) {
+		inner := &DockerProvider{
+			DockerProviderOptions: &DockerProviderOptions{
+				defaultBridgeNetworkName: Bridge,
+			},
+		}
+		wrapper := &wrappingReaperProvider{inner: inner}
+		dp, lookup, err := dockerProviderForReaperLookup(t.Context(), wrapper)
+		require.NoError(t, err)
+		require.True(t, lookup)
+		require.Same(t, inner, dp)
+	})
+
+	t.Run("mock provider skips lookup", func(t *testing.T) {
+		mock := newMockReaperProvider(config.Config{})
+		_, lookup, err := dockerProviderForReaperLookup(t.Context(), mock)
+		require.NoError(t, err)
+		require.False(t, lookup)
+	})
+}
+
+func TestReaperLookupContainerUsesCallerProvider(t *testing.T) {
+	reaperDisable(t, false)
+
+	const containerID = "abc123deadbeef"
+	listBody := fmt.Sprintf(`[{"Id":"%s","Image":"%s","State":"running","Labels":{"%s":"%s","%s":"true","%s":"true"},"Ports":[{"PrivatePort":8080,"PublicPort":49152,"Type":"tcp"}],"Names":["/reaper_%s"]}]`,
+		containerID,
+		config.ReaperDefaultImage,
+		core.LabelSessionID,
+		testSessionID,
+		core.LabelReaper,
+		core.LabelRyuk,
+		testSessionID,
+	)
+	inspectBody := fmt.Sprintf(`{"Id":"%s","State":{"Status":"running"},"NetworkSettings":{"Ports":{"8080/tcp":[{"HostIp":"0.0.0.0","HostPort":"49152"}]}}}`,
+		containerID,
+	)
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/containers/json"):
+			_, _ = w.Write([]byte(listBody))
+		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/containers/") && strings.HasSuffix(r.URL.Path, "/json"):
+			_, _ = w.Write([]byte(inspectBody))
 		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/networks"):
 			_, _ = w.Write([]byte(`[{"Name":"bridge"},{"Name":"reaper_default"}]`))
-		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/networks/podman"):
-			w.WriteHeader(http.StatusNotFound)
-			_, _ = w.Write([]byte(`{"message":"network not found"}`))
 		default:
-			t.Errorf("unexpected network request: %s %s", r.Method, r.URL.Path)
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
 			w.WriteHeader(http.StatusBadRequest)
 		}
 	}))
@@ -581,21 +647,72 @@ func TestReaperLookupContainerUsesProviderBridgeNetwork(t *testing.T) {
 			defaultBridgeNetworkName: Bridge,
 		},
 		client: &DockerClient{Client: cli},
+		config: config.Config{RyukDisabled: true},
 	}
-	network, err := callerProvider.ensureDefaultNetwork(t.Context())
-	require.NoError(t, err)
-	require.Equal(t, Bridge, network, "caller provider should resolve bridge when both bridge and reaper_default exist")
 
-	lookupProvider := &DockerProvider{
+	found, err := spawner.lookupContainer(t.Context(), testSessionID, callerProvider)
+	require.NoError(t, err)
+	require.Same(t, callerProvider, found.provider, "lookupContainer must reuse the caller provider for host resolution")
+
+	network, err := found.provider.ensureDefaultNetwork(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, Bridge, network)
+}
+
+func TestReuseOrCreateLookupViaWrappedProvider(t *testing.T) {
+	reaperDisable(t, false)
+
+	const containerID = "feedfacecafebabe"
+	listBody := fmt.Sprintf(`[{"Id":"%s","Image":"%s","State":"running","Labels":{"%s":"%s","%s":"true","%s":"true"},"Ports":[{"PrivatePort":8080,"PublicPort":49152,"Type":"tcp"}],"Names":["/reaper_%s"]}]`,
+		containerID,
+		config.ReaperDefaultImage,
+		core.LabelSessionID,
+		testSessionID,
+		core.LabelReaper,
+		core.LabelRyuk,
+		testSessionID,
+	)
+	inspectBody := fmt.Sprintf(`{"Id":"%s","State":{"Status":"running"},"NetworkSettings":{"Ports":{"8080/tcp":[{"HostIp":"0.0.0.0","HostPort":"49152"}]}}}`,
+		containerID,
+	)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/containers/json"):
+			_, _ = w.Write([]byte(listBody))
+		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/containers/") && strings.HasSuffix(r.URL.Path, "/json"):
+			_, _ = w.Write([]byte(inspectBody))
+		default:
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusBadRequest)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	cli, err := client.New(client.WithHost(server.URL), client.WithAPIVersion("1.41"))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = cli.Close() })
+
+	inner := &DockerProvider{
 		DockerProviderOptions: &DockerProviderOptions{
 			GenericProviderOptions:   &GenericProviderOptions{},
-			defaultBridgeNetworkName: Podman,
+			defaultBridgeNetworkName: Bridge,
 		},
 		client: &DockerClient{Client: cli},
+		config: config.Config{RyukDisabled: true},
 	}
-	network, err = lookupProvider.ensureDefaultNetwork(t.Context())
+	wrapper := &wrappingReaperProvider{inner: inner}
+
+	lookupProvider, lookup, err := dockerProviderForReaperLookup(t.Context(), wrapper)
 	require.NoError(t, err)
-	require.Equal(t, ReaperDefault, network, "a fresh provider without bridge configured falls back to reaper_default")
+	require.True(t, lookup)
+	require.Same(t, inner, lookupProvider)
+
+	container, err := spawner.lookupContainer(t.Context(), testSessionID, lookupProvider)
+	require.NoError(t, err)
+	require.NotNil(t, container)
+	require.False(t, wrapper.runCalled, "reuse lookup must not delegate to RunContainer on the wrapper")
 }
 
 func TestSpawnerBackoff(t *testing.T) {

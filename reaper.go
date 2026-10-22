@@ -63,6 +63,12 @@ type ReaperProvider interface {
 	Config() TestcontainersConfig
 }
 
+// ReaperDockerProviderSource is implemented by ReaperProvider wrappers that delegate
+// container creation to a DockerProvider so an existing reaper can be discovered.
+type ReaperDockerProviderSource interface {
+	ReaperDockerProvider() *DockerProvider
+}
+
 // Deprecated: it's not possible to create a reaper any more. Compose module uses this method
 // to create a reaper for the compose stack.
 //
@@ -151,10 +157,31 @@ func (r *reaperSpawner) cleanupLocked() error {
 	return err
 }
 
+// dockerProviderForReaperLookup returns the DockerProvider used to discover an existing
+// reaper. When the boolean is false, the caller does not support Docker-backed lookup.
+func dockerProviderForReaperLookup(_ context.Context, provider ReaperProvider) (*DockerProvider, bool, error) {
+	if dp, ok := provider.(*DockerProvider); ok {
+		return dp, true, nil
+	}
+	if src, ok := provider.(ReaperDockerProviderSource); ok {
+		if dp := src.ReaperDockerProvider(); dp != nil {
+			return dp, true, nil
+		}
+		return nil, false, nil
+	}
+
+	dp, err := NewDockerProvider()
+	if err != nil {
+		return nil, false, fmt.Errorf("new provider: %w", err)
+	}
+	return dp, true, nil
+}
+
 // lookupContainer returns a DockerContainer type with the reaper container in the case
 // it's found in the running state, and including the labels for sessionID, reaper, and ryuk.
 // It will perform a retry with exponential backoff to allow for the container to be started and
-// avoid potential false negatives.
+// avoid potential false negatives. The provider must match the caller's bridge network
+// configuration so reused reapers resolve the Docker host consistently.
 func (r *reaperSpawner) lookupContainer(ctx context.Context, sessionID string, provider *DockerProvider) (*DockerContainer, error) {
 	opts := client.ContainerListOptions{
 		All: true,
@@ -295,6 +322,8 @@ func (r *reaperSpawner) retryLocked(ctx context.Context, sessionID string, provi
 }
 
 // reuseOrCreate returns an existing Reaper instance if it exists, otherwise a new Reaper instance.
+// When the provider (or an exposed backing DockerProvider) can reach Docker, an existing
+// reaper container is discovered before attempting creation.
 func (r *reaperSpawner) reuseOrCreate(ctx context.Context, sessionID string, provider ReaperProvider) (*Reaper, error) {
 	if r.instance != nil {
 		// We already have an associated reaper.
@@ -304,9 +333,12 @@ func (r *reaperSpawner) reuseOrCreate(ctx context.Context, sessionID string, pro
 	// Look for an existing reaper created in the same test session but in a
 	// different test process execution e.g. when running tests in parallel.
 	var container *DockerContainer
-	var err error
-	if dockerProvider, ok := provider.(*DockerProvider); ok {
-		container, err = r.lookupContainer(context.Background(), sessionID, dockerProvider)
+	lookupProvider, lookup, err := dockerProviderForReaperLookup(ctx, provider)
+	if err != nil {
+		return nil, fmt.Errorf("look up container: %w", err)
+	}
+	if lookup {
+		container, err = r.lookupContainer(context.Background(), sessionID, lookupProvider)
 		if err != nil && !errors.Is(err, errReaperNotFound) {
 			return nil, fmt.Errorf("look up container: %w", err)
 		}
