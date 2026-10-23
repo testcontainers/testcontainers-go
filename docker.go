@@ -1104,7 +1104,15 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 			if err != nil {
 				return client.ImageBuildResult{}, backoff.Permanent(fmt.Errorf("build options: %w", err))
 			}
-			defer tryClose(buildOptions.Context) // release resources in any case
+
+			// BuildKit can continue reading the context after ImageBuild returns its response
+			// headers, so keep it open until the response stream has been consumed below.
+			contextTransferred := false
+			defer func() {
+				if !contextTransferred {
+					tryClose(buildOptions.Context)
+				}
+			}()
 
 			resp, err := p.client.ImageBuild(ctx, buildOptions.Context, buildOptions)
 			if err != nil {
@@ -1113,7 +1121,10 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 				}
 				return client.ImageBuildResult{}, err
 			}
-			defer p.Close()
+
+			// Ownership passes to the response handling below, which closes the context after
+			// draining resp.Body.
+			contextTransferred = true
 
 			return resp, nil
 		},
@@ -1125,6 +1136,9 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 	if err != nil {
 		return "", err // Error is already wrapped.
 	}
+	// Keep the Docker client and build context alive while the daemon streams its build output.
+	defer p.Close()
+	defer tryClose(buildOptions.Context)
 	defer resp.Body.Close()
 
 	// Always process the output, even if it is not printed
