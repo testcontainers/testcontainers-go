@@ -76,6 +76,12 @@ func (m *mockReaperProvider) ReaperDockerProvider() *DockerProvider {
 	return nil
 }
 
+type noCloseDockerClient struct {
+	client.APIClient
+}
+
+func (noCloseDockerClient) Close() error { return nil }
+
 type wrappingReaperProvider struct {
 	inner     *DockerProvider
 	runCalled bool
@@ -672,7 +678,7 @@ func TestReuseOrCreateLookupViaWrappedProvider(t *testing.T) {
 		core.LabelRyuk,
 		testSessionID,
 	)
-	inspectBody := fmt.Sprintf(`{"Id":"%s","State":{"Status":"running"},"NetworkSettings":{"Ports":{"8080/tcp":[{"HostIp":"0.0.0.0","HostPort":"49152"}]}}}`,
+	inspectBody := fmt.Sprintf(`{"Id":"%s","State":{"Status":"running","Running":true},"Config":{"Tty":true},"HostConfig":{"NetworkMode":"bridge"},"NetworkSettings":{"Ports":{"8080/tcp":[{"HostIp":"0.0.0.0","HostPort":"49152"}]}}}`,
 		containerID,
 	)
 
@@ -683,6 +689,9 @@ func TestReuseOrCreateLookupViaWrappedProvider(t *testing.T) {
 			_, _ = w.Write([]byte(listBody))
 		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/containers/") && strings.HasSuffix(r.URL.Path, "/json"):
 			_, _ = w.Write([]byte(inspectBody))
+		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/containers/") && strings.HasSuffix(r.URL.Path, "/logs"):
+			w.Header().Set("Content-Type", "text/plain")
+			_, _ = w.Write([]byte("Started\n"))
 		default:
 			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
 			w.WriteHeader(http.StatusBadRequest)
@@ -699,20 +708,31 @@ func TestReuseOrCreateLookupViaWrappedProvider(t *testing.T) {
 			GenericProviderOptions:   &GenericProviderOptions{},
 			defaultBridgeNetworkName: Bridge,
 		},
-		client: &DockerClient{Client: cli},
+		client: noCloseDockerClient{APIClient: cli},
 		config: config.Config{RyukDisabled: true},
 	}
 	wrapper := &wrappingReaperProvider{inner: inner}
 
-	lookupProvider, lookup, err := dockerProviderForReaperLookup(t.Context(), wrapper)
+	ln, err := net.Listen("tcp", "127.0.0.1:49152")
 	require.NoError(t, err)
-	require.True(t, lookup)
-	require.Same(t, inner, lookupProvider)
+	t.Cleanup(func() { _ = ln.Close() })
+	go func() {
+		for {
+			conn, acceptErr := ln.Accept()
+			if acceptErr != nil {
+				return
+			}
+			_ = conn.Close()
+		}
+	}()
 
-	container, err := spawner.lookupContainer(t.Context(), testSessionID, lookupProvider)
+	localSpawner := &reaperSpawner{}
+	reaper, err := localSpawner.reuseOrCreate(t.Context(), testSessionID, wrapper)
 	require.NoError(t, err)
-	require.NotNil(t, container)
-	require.False(t, wrapper.runCalled, "reuse lookup must not delegate to RunContainer on the wrapper")
+	require.NotNil(t, reaper)
+	require.False(t, wrapper.runCalled, "reuseOrCreate must discover the existing reaper without calling RunContainer on the wrapper")
+	require.Equal(t, containerID, reaper.container.GetContainerID())
+	require.NotEmpty(t, reaper.Endpoint)
 }
 
 func TestSpawnerBackoff(t *testing.T) {
