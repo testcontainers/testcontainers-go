@@ -584,3 +584,45 @@ func TestSnapshotWithDockerExecFallback(t *testing.T) {
 	})
 	// }
 }
+
+func TestSnapshotQuotedNames(t *testing.T) {
+	for _, driver := range []string{"pgx", "DoesNotExist"} {
+		for _, setting := range []string{"on", "off"} {
+			t.Run(driver+"/standard_conforming_strings="+setting, func(t *testing.T) {
+				ctx := context.Background()
+				database := `db"name'`
+				username := "postgres"
+				ctr, err := postgres.Run(ctx, "postgres:16-alpine",
+					postgres.WithDatabase(database),
+					postgres.WithUsername(username),
+					postgres.WithPassword(password),
+					postgres.WithSQLDriver(driver),
+					postgres.BasicWaitStrategies(),
+					testcontainers.WithCmdArgs("-c", "standard_conforming_strings="+setting),
+				)
+				testcontainers.CleanupContainer(t, ctr)
+				require.NoError(t, err)
+
+				execSQL := func(query string) string {
+					t.Helper()
+					code, reader, err := ctr.Exec(ctx,
+						[]string{"psql", "-v", "ON_ERROR_STOP=1", "-U", username, "-d", database, "-Atc", query}, tcexec.Multiplexed())
+					require.NoError(t, err)
+					output, err := io.ReadAll(reader)
+					require.NoError(t, err)
+					require.Zero(t, code, string(output))
+					return string(output)
+				}
+				execSQL("CREATE TABLE snapshot_data (value INTEGER)")
+				execSQL("INSERT INTO snapshot_data VALUES (1)")
+				opts := []postgres.SnapshotOption{postgres.WithSnapshotName(`snapshot"name'\`)}
+				require.NoError(t, ctr.Snapshot(ctx, opts...))
+				// Replacing an existing snapshot exercises removal of its template flag.
+				require.NoError(t, ctr.Snapshot(ctx, opts...))
+				execSQL("INSERT INTO snapshot_data VALUES (2)")
+				require.NoError(t, ctr.Restore(ctx))
+				require.Equal(t, "1", strings.TrimSpace(execSQL("SELECT count(*) FROM snapshot_data")))
+			})
+		}
+	}
+}
