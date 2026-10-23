@@ -11,10 +11,13 @@ func ExampleForAny() {
 	// The following are run in parallel. Any that fail will fail the entire
 	// ForAny. Any that succeed will succeed the ForAny. Either case cancels the
 	// remaining waiting strategies.
+	//
+	// Note that a strategy hitting its own timeout is a failure, so unlike
+	// ForAll the shortest per-strategy timeout bounds the whole wait.
 	strategy := wait.ForAny(
-		wait.ForLog("port: 3306  MySQL Community Server - GPL"),              // Timeout: 120s
-		wait.ForExposedPort().WithStartupTimeout(180*time.Second),            // Timeout: 180s
-		wait.ForListeningPort("3306/tcp").WithStartupTimeout(10*time.Second), // Timeout: 10s
+		wait.ForLog("port: 3306  MySQL Community Server - GPL"),               // Timeout: 120s
+		wait.ForExposedPort().WithStartupTimeout(180*time.Second),             // Timeout: 180s
+		wait.ForListeningPort("3306/tcp").WithStartupTimeout(110*time.Second), // Timeout: 110s
 	)
 
 	// You can apply a default StartupTimeout for any inner strategy that didn't define it.
