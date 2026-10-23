@@ -294,6 +294,10 @@
             "path": "../modules/s3mock"
         },
         {
+            "name": "module / sbx",
+            "path": "../modules/sbx"
+        },
+        {
             "name": "module / scylladb",
             "path": "../modules/scylladb"
         },
