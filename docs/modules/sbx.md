@@ -18,7 +18,11 @@ go get github.com/testcontainers/testcontainers-go/modules/sbx
 import _ "github.com/testcontainers/testcontainers-go/modules/sbx"
 ```
 
-The import registers `sbx`; adding the dependency alone does not. Registration does not start a sandbox. Select the provider before any Testcontainers operation:
+The import registers `sbx`; adding the dependency alone does not. Registration does not start a sandbox.
+
+`go test ./...` runs a separate test binary for each package. Every binary that uses Testcontainers with sbx must import the module, directly or through a shared test helper, or use a harness that registers it in that binary.
+
+Select the provider before any Testcontainers operation:
 
 ```shell
 TESTCONTAINERS_PROVIDER=sbx go test ./...
