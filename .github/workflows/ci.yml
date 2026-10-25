@@ -116,7 +116,8 @@ jobs:
       runtime: podman
 
   test-sbx:
-    if: ${{ needs.detect-modules.outputs.sbx_changed == 'true' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) }}
+    # Dependabot pull requests do not receive the Actions secrets for sbx login.
+    if: ${{ needs.detect-modules.outputs.sbx_changed == 'true' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')) }}
     needs: detect-modules
     name: Test core using sbx
     strategy:
@@ -220,7 +221,7 @@ jobs:
         env:
           JOB_RESULTS: ${{ toJSON(needs) }}
           MODULES: ${{ needs.detect-modules.outputs.modules }}
-          SBX_REQUIRED: ${{ needs.detect-modules.outputs.sbx_changed == 'true' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) }}
+          SBX_REQUIRED: ${{ needs.detect-modules.outputs.sbx_changed == 'true' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')) }}
         run: |
           jq -e 'all(.[]; .result == "success" or .result == "skipped")' <<< "$JOB_RESULTS"
           jq -e 'type == "array" and all(.[]; type == "string")' <<< "$MODULES"
