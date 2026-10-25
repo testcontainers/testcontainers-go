@@ -27,6 +27,115 @@ func testPortManager(t *testing.T, f *fakeSandbox) *portManager {
 	return m
 }
 
+func TestPortManagerCloseWaitsForCreateRollback(t *testing.T) {
+	f := newFakeSandbox(t)
+	runtime := f.runtime(t)
+	publishEntered := make(chan struct{})
+	releasePublish := make(chan struct{})
+	unpublishEntered := make(chan struct{})
+	releaseUnpublish := make(chan struct{})
+	var publishOnce, unpublishOnce sync.Once
+	resumePublish := func() { publishOnce.Do(func() { close(releasePublish) }) }
+	resumeUnpublish := func() { unpublishOnce.Do(func() { close(releaseUnpublish) }) }
+	var workers sync.WaitGroup
+	defer func() {
+		resumePublish()
+		resumeUnpublish()
+		workers.Wait()
+	}()
+	runtime.run = func(ctx context.Context, args ...string) ([]byte, error) {
+		if len(args) > 2 {
+			var release <-chan struct{}
+			switch args[2] {
+			case "--publish":
+				close(publishEntered)
+				release = releasePublish
+			case "--unpublish":
+				close(unpublishEntered)
+				release = releaseUnpublish
+			}
+			if release != nil {
+				select {
+				case <-release:
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				}
+			}
+		}
+		return f.run(ctx, args...)
+	}
+	closing := make(chan struct{})
+	m := &portManager{
+		runtime: runtime, engine: newDockerEngine(runtime.dockerURL, &http.Client{}),
+		creations: map[string]*containerLease{}, containers: map[string]*containerLease{},
+		watchCancel: func() { close(closing) },
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	prepareDone := make(chan error, 1)
+	workers.Go(func() {
+		_, err := m.prepareCreate(ctx, portBindings{"80/tcp": {{HostPort: "39216"}}})
+		prepareDone <- err
+	})
+	select {
+	case <-publishEntered:
+	case <-ctx.Done():
+		t.Fatal("create did not reach controlled publication")
+	}
+	closeDone := make(chan error, 1)
+	workers.Go(func() { closeDone <- m.close(ctx) })
+	select {
+	case <-closing:
+	case <-ctx.Done():
+		t.Fatal("close did not start")
+	}
+	assertClosing := func(phase string) {
+		t.Helper()
+		select {
+		case err := <-closeDone:
+			t.Fatalf("close returned during %s: %v", phase, err)
+		case <-time.After(100 * time.Millisecond):
+		}
+	}
+	assertClosing("publication")
+	resumePublish()
+	select {
+	case <-unpublishEntered:
+	case <-ctx.Done():
+		t.Fatal("create did not roll back its publication")
+	}
+	assertClosing("rollback")
+	resumeUnpublish()
+	if err := waitPortTestError(t, ctx, prepareDone, "create rollback"); err == nil || !strings.Contains(err.Error(), "closed") {
+		t.Fatalf("create during close: %v", err)
+	}
+	if err := waitPortTestError(t, ctx, closeDone, "close after rollback"); err != nil {
+		t.Fatal(err)
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if len(f.ports) != 0 {
+		t.Fatalf("close left published ports: %v", f.ports)
+	}
+}
+
+func TestPortManagerCloseDrainsReconcilingWatcher(t *testing.T) {
+	f := newFakeSandbox(t)
+	watchCtx, watchCancel := context.WithCancel(context.Background())
+	defer watchCancel()
+	m := &portManager{runtime: f.runtime(t), watchCancel: watchCancel}
+	m.watchWG.Go(func() {
+		<-watchCtx.Done()
+		_ = m.reconcileOrphans(watchCtx)
+	})
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	if err := m.close(ctx); err != nil {
+		t.Fatalf("close blocked the reconciling watcher: %v", err)
+	}
+	m.watchWG.Wait()
+}
+
 func TestPortReservationPrecedesCreateAndUsesExactTuple(t *testing.T) {
 	f := newFakeSandbox(t)
 	m := testPortManager(t, f)

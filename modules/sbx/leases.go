@@ -703,6 +703,11 @@ func (m *portManager) close(ctx context.Context) error {
 	case <-done:
 	}
 
+	// Watchers may need allocationMu to finish orphan reconciliation.
+	// Drain them before waiting for in-flight allocations and their rollbacks.
+	m.allocationMu.Lock()
+	defer m.allocationMu.Unlock()
+
 	m.mu.Lock()
 	records := make([]*containerLease, 0, len(m.creations)+len(m.containers))
 	for _, record := range m.creations {
