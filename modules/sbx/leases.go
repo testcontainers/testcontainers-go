@@ -17,6 +17,8 @@ const (
 	portReconcilePeriod  = 10 * time.Second
 )
 
+var errUnmanagedContainer = errors.New("container has no managed port lease")
+
 type leasedPort struct {
 	containerPort string
 	desired       portPublication
@@ -252,6 +254,9 @@ func (m *portManager) beginStart(ctx context.Context, containerRef string) (func
 	}
 
 	record, err := m.lockContainer(containerRef)
+	if errors.Is(err, errUnmanagedContainer) {
+		return func(context.Context, bool) error { return nil }, nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -323,6 +328,9 @@ func (m *portManager) startFinish(record *containerLease) func(context.Context, 
 
 func (m *portManager) beginStop(containerRef string) func(context.Context, bool) error {
 	record, err := m.lockContainer(containerRef)
+	if errors.Is(err, errUnmanagedContainer) {
+		return func(context.Context, bool) error { return nil }
+	}
 	if err != nil {
 		return func(context.Context, bool) error { return err }
 	}
@@ -342,6 +350,9 @@ func (m *portManager) beginStop(containerRef string) func(context.Context, bool)
 
 func (m *portManager) beginDestroy(containerRef string) func(context.Context, bool) error {
 	record, err := m.lockContainer(containerRef)
+	if errors.Is(err, errUnmanagedContainer) {
+		return func(context.Context, bool) error { return nil }
+	}
 	if err != nil {
 		return func(context.Context, bool) error { return err }
 	}
@@ -408,13 +419,13 @@ func (m *portManager) lockContainer(ref string) (*containerLease, error) {
 			m.mu.Unlock()
 		}
 		if record == nil {
-			return nil, fmt.Errorf("sandbox %q container %q has no managed port lease", m.runtime.name, ref)
+			return nil, fmt.Errorf("sandbox %q container %q: %w", m.runtime.name, ref, errUnmanagedContainer)
 		}
 	}
 	record.mu.Lock()
 	if record.removed {
 		record.mu.Unlock()
-		return nil, fmt.Errorf("sandbox %q container %q has already been removed", m.runtime.name, ref)
+		return nil, fmt.Errorf("sandbox %q container %q has already been removed: %w", m.runtime.name, ref, errUnmanagedContainer)
 	}
 	return record, nil
 }
