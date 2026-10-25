@@ -217,16 +217,22 @@ func TestUnapprovedBindRejectedBeforeCreateAndPortSideEffects(t *testing.T) {
 }
 
 func TestCreatePreparationDoesNotLeakMountsOrPorts(t *testing.T) {
-	for _, mode := range []string{"port-conflict", "publish-failure", "mount-failure", "unapproved-second-bind"} {
+	for _, mode := range []string{"port-conflict", "publish-failure", "mount-failure", "second-mount-failure", "unapproved-second-bind"} {
 		t.Run(mode, func(t *testing.T) {
 			f := newFakeSandbox(t)
 			runtime := f.runtime(t)
+			mountCalls := 0
 			runtime.run = func(ctx context.Context, args ...string) ([]byte, error) {
 				if args[0] == "mount" {
+					mountCalls++
 					f.record("sbx " + strings.Join(args, " "))
-					if mode == "mount-failure" {
+					if mode == "mount-failure" || (mode == "second-mount-failure" && mountCalls == 2) {
 						return nil, errors.New("mount denied")
 					}
+					return nil, nil
+				}
+				if args[0] == "umount" {
+					f.record("sbx " + strings.Join(args, " "))
 					return nil, nil
 				}
 				return f.run(ctx, args...)
@@ -256,6 +262,12 @@ func TestCreatePreparationDoesNotLeakMountsOrPorts(t *testing.T) {
 				t.Fatal(err)
 			}
 			binds := []string{source + ":/data:ro"}
+			if mode == "second-mount-failure" {
+				if err := os.WriteFile(source+"-second", []byte("data"), 0o600); err != nil {
+					t.Fatal(err)
+				}
+				binds = append(binds, source+"-second:/second:ro")
+			}
 			if mode == "unapproved-second-bind" {
 				binds = append(binds, "/zz-tcgo-unapproved:/denied:ro")
 			}
@@ -273,14 +285,14 @@ func TestCreatePreparationDoesNotLeakMountsOrPorts(t *testing.T) {
 			if err == nil || operation != nil {
 				t.Fatalf("invalid create prepared: operation=%v err=%v", operation, err)
 			}
-			want := map[string]string{"port-conflict": "reserved", "publish-failure": "publish denied", "mount-failure": "mount denied", "unapproved-second-bind": "outside"}[mode]
+			want := map[string]string{"port-conflict": "reserved", "publish-failure": "publish denied", "mount-failure": "mount denied", "second-mount-failure": "mount denied", "unapproved-second-bind": "outside"}[mode]
 			if !strings.Contains(err.Error(), want) {
 				t.Fatalf("create failed for the wrong reason: %v", err)
 			}
 			if len(proxy.mounts.mounted) != 0 {
 				t.Fatalf("failed preparation retained mounts: %v", proxy.mounts.mounted)
 			}
-			if mode != "mount-failure" {
+			if mode != "mount-failure" && mode != "second-mount-failure" {
 				for _, step := range f.snapshot() {
 					if strings.Contains(step, "mount ") {
 						t.Fatalf("failed preparation mounted a host path: %v", f.snapshot())

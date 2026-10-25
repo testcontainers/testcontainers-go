@@ -30,6 +30,11 @@ type mountedPath struct {
 	readOnly bool
 }
 
+type mountRollback struct {
+	source   string
+	previous *mountedPath
+}
+
 type authorizedBindRoot struct {
 	configuredBindRoot
 	root *os.Root
@@ -53,6 +58,7 @@ type bindMountManager struct {
 	mounted map[string]mountedPath
 	roots   []authorizedBindRoot
 	closed  bool
+	pending []mountRollback
 }
 
 func newBindMountManager(runtime sandboxRuntime) (*bindMountManager, error) {
@@ -80,10 +86,6 @@ func (m *bindMountManager) prepare(ctx context.Context, host map[string]json.Raw
 	if err != nil {
 		return err
 	}
-	if len(requests) == 0 {
-		return nil
-	}
-
 	sources := make([]string, 0, len(requests))
 	for source := range requests {
 		sources = append(sources, source)
@@ -95,13 +97,66 @@ func (m *bindMountManager) prepare(ctx context.Context, host map[string]json.Raw
 	if m.closed {
 		return errors.New("prepare sbx bind mounts: manager is closed")
 	}
+	if err := m.reconcileRollbacks(); err != nil {
+		return err
+	}
+	var changes []mountRollback
 	for _, source := range sources {
 		request := requests[source]
-		if err := m.prepareOne(ctx, request); err != nil {
-			return err
+		change, err := m.prepareOne(ctx, request)
+		if change != nil {
+			changes = append(changes, *change)
+		}
+		if err != nil {
+			m.pending = changes
+			return errors.Join(err, m.reconcileRollbacks())
 		}
 	}
 	return nil
+}
+
+// Failed batches retain their undo records until cleanup succeeds. Retry them
+// before preparing another batch so a leftover mount cannot be reused as if
+// its create had succeeded. The caller holds m.mu throughout both operations.
+func (m *bindMountManager) reconcileRollbacks() error {
+	if len(m.pending) == 0 {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), mountTimeout)
+	defer cancel()
+	var pending []mountRollback
+	var errs []error
+	for i := len(m.pending) - 1; i >= 0; i-- {
+		change := m.pending[i]
+		if err := m.rollbackMount(ctx, change); err != nil {
+			pending = append(pending, change)
+			errs = append(errs, fmt.Errorf("rollback sbx bind source %q: %w", change.source, err))
+		}
+	}
+	slices.Reverse(pending)
+	m.pending = pending
+	return errors.Join(errs...)
+}
+
+func (m *bindMountManager) rollbackMount(ctx context.Context, change mountRollback) error {
+	if current, ok := m.mounted[change.source]; ok {
+		if _, err := m.runtime.run(ctx, "umount", m.runtime.name, current.hostPath+":"+change.source); err != nil {
+			return err
+		}
+		delete(m.mounted, change.source)
+	}
+	if change.previous == nil {
+		return nil
+	}
+	previous := *change.previous
+	resolved, err := m.authorize(requestedBind{source: previous.hostPath, readOnly: previous.readOnly})
+	if err != nil {
+		return err
+	}
+	if !os.SameFile(previous.info, resolved.info) {
+		return errors.New("previous mount source changed before restoration")
+	}
+	return m.mount(ctx, change.source, previous)
 }
 
 func (m *bindMountManager) validate(host map[string]json.RawMessage) error {
@@ -147,57 +202,72 @@ func (m *bindMountManager) authorize(request requestedBind) (resolvedBind, error
 	if !info.IsDir() && !info.Mode().IsRegular() {
 		return resolvedBind{}, fmt.Errorf("sbx bind source %q has unsupported file type %s", source, info.Mode().Type())
 	}
-	if !resolved.visibleWorkspace {
-		if err := verifyBindRoot(resolved.root); err != nil {
-			return resolvedBind{}, fmt.Errorf("verify sbx bind root for source %q: %w", source, err)
-		}
+	if err := verifyBindRoot(resolved.root); err != nil {
+		return resolvedBind{}, fmt.Errorf("verify sbx bind root for source %q: %w", source, err)
 	}
 	return resolved, nil
 }
 
-func (m *bindMountManager) prepareOne(ctx context.Context, request requestedBind) error {
+func (m *bindMountManager) prepareOne(ctx context.Context, request requestedBind) (*mountRollback, error) {
 	resolved, err := m.authorize(request)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	source := filepath.Clean(request.source)
 	if source == dockerSocketPath {
-		return nil
+		return nil, nil
 	}
 	info := resolved.info
 
+	var change *mountRollback
 	if mounted, ok := m.mounted[source]; ok {
 		sameFile := mounted.hostPath == resolved.hostPath && os.SameFile(mounted.info, info)
 		permissionsSuffice := !mounted.readOnly || request.readOnly
 		if !resolved.visibleWorkspace && sameFile && permissionsSuffice {
-			return nil
+			return nil, nil
 		}
 		unmountCtx, cancel := boundedContext(ctx, mountTimeout)
 		_, unmountErr := m.runtime.run(unmountCtx, "umount", m.runtime.name, mounted.hostPath+":"+source)
 		cancel()
 		if unmountErr != nil {
-			return fmt.Errorf("refresh sbx bind source %q: %w", source, unmountErr)
+			return nil, fmt.Errorf("refresh sbx bind source %q: %w", source, unmountErr)
 		}
 		delete(m.mounted, source)
+		change = &mountRollback{source: source}
+		// Permission upgrades can be undone. A stale inode or retargeted
+		// alias cannot reliably be restored through its old pathname.
+		if sameFile {
+			change.previous = &mounted
+		}
 	}
 	if resolved.visibleWorkspace {
-		return nil
+		return change, nil
 	}
 
 	// The confined lookup cannot pass its descriptor through the sbx CLI. Use
 	// the canonical path it verified, while keeping Docker's guest path explicit.
 	// A later pathname replacement can still race the CLI's mount operation.
-	spec := resolved.hostPath + ":" + source
-	if request.readOnly {
+	if err := m.mount(ctx, source, mountedPath{hostPath: resolved.hostPath, info: info, readOnly: request.readOnly}); err != nil {
+		return change, err
+	}
+	if change == nil {
+		change = &mountRollback{source: source}
+	}
+	return change, nil
+}
+
+func (m *bindMountManager) mount(ctx context.Context, source string, mounted mountedPath) error {
+	spec := mounted.hostPath + ":" + source
+	if mounted.readOnly {
 		spec += ":ro"
 	}
 	mountCtx, cancel := boundedContext(ctx, mountTimeout)
-	_, err = m.runtime.run(mountCtx, "mount", m.runtime.name, spec)
+	_, err := m.runtime.run(mountCtx, "mount", m.runtime.name, spec)
 	cancel()
 	if err != nil {
 		return fmt.Errorf("make host bind source %q visible in sandbox %q: %w", source, m.runtime.name, err)
 	}
-	m.mounted[source] = mountedPath{hostPath: resolved.hostPath, info: info, readOnly: request.readOnly}
+	m.mounted[source] = mounted
 	return nil
 }
 
@@ -222,7 +292,7 @@ func (m *bindMountManager) resolve(source string) (resolvedBind, error) {
 			candidates = append(candidates, candidate{
 				root:             root,
 				relative:         relative,
-				workspaceVisible: root.workspace && alias == root.canonical,
+				workspaceVisible: root.workspace && alias == root.path,
 			})
 		}
 	}
@@ -357,7 +427,7 @@ func (m *bindMountManager) close() error {
 		return nil
 	}
 	m.closed = true
-	return m.closeRoots()
+	return errors.Join(m.reconcileRollbacks(), m.closeRoots())
 }
 
 func (m *bindMountManager) closeRoots() error {

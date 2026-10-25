@@ -337,16 +337,157 @@ func TestConfiguredRootAliasPreservesGuestPath(t *testing.T) {
 	if err := m.prepare(context.Background(), host); err != nil {
 		t.Fatal(err)
 	}
-	if len(calls) != 1 || calls[0] != "mount fake "+file+":"+logicalSource+":ro" {
-		t.Fatalf("logical workspace alias was not mounted at its requested guest path: %v", calls)
+	if len(calls) != 0 {
+		t.Fatalf("logical workspace path created an unnecessary mount: %v", calls)
 	}
 	host["Binds"] = json.RawMessage(`[` + quoteJSON(file+":/canonical:ro") + `]`)
 	if err := m.prepare(context.Background(), host); err != nil {
 		t.Fatal(err)
 	}
-	if len(calls) != 1 {
-		t.Fatalf("canonical workspace path created an unnecessary mount: %v", calls)
+	if len(calls) != 1 || calls[0] != "mount fake "+file+":"+file+":ro" {
+		t.Fatalf("canonical workspace alias was not mounted at its requested guest path: %v", calls)
 	}
+}
+
+func TestWorkspaceReplacementRejectedBeforeCreate(t *testing.T) {
+	for _, alias := range []bool{false, true} {
+		t.Run(fmt.Sprintf("symlink-%t", alias), func(t *testing.T) {
+			parent := canonicalTempDir(t)
+			workspace := filepath.Join(parent, "workspace")
+			if err := os.Mkdir(workspace, 0o700); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(workspace, "data"), []byte("old"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			logical := workspace
+			if alias {
+				logical = filepath.Join(parent, "alias")
+				if err := os.Symlink(filepath.Base(workspace), logical); err != nil {
+					t.Fatal(err)
+				}
+			}
+			m := newTestBindMountManager(t, sandboxRuntime{name: "fake", run: func(_ context.Context, args ...string) ([]byte, error) {
+				t.Errorf("replaced workspace caused a mount side effect: %v", args)
+				return nil, nil
+			}}, logical)
+			if err := os.Rename(workspace, workspace+"-old"); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Mkdir(workspace, 0o700); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(workspace, "data"), []byte("replacement"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			host := bindRequestForTest(filepath.Join(logical, "data") + ":/data")
+			for _, check := range []func() error{
+				func() error { return m.validate(host) },
+				func() error { return m.prepare(context.Background(), host) },
+			} {
+				if err := check(); err == nil || !strings.Contains(err.Error(), "changed after initialization") {
+					t.Fatalf("replaced workspace accepted: %v", err)
+				}
+			}
+		})
+	}
+}
+
+func TestBindPreparationRollsBackBatch(t *testing.T) {
+	for _, mode := range []string{"rollback", "cancelled", "cleanup-retry", "restore-read-only", "restore-after-mount-failure", "replaced-source"} {
+		t.Run(mode, func(t *testing.T) {
+			external := canonicalTempDir(t)
+			existing := filepath.Join(external, "a-existing")
+			first := filepath.Join(external, "b-first")
+			last := filepath.Join(external, "c-last")
+			for _, path := range []string{existing, first, last} {
+				if err := os.WriteFile(path, []byte("data"), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			mountErr := errors.New("mount denied")
+			cleanupErr := errors.New("umount unavailable")
+			active := make(map[string]string)
+			var calls []string
+			cleanupFailed := false
+			m := newTestBindMountManager(t, sandboxRuntime{name: "fake", run: func(ctx context.Context, args ...string) ([]byte, error) {
+				calls = append(calls, strings.Join(args, " "))
+				if err := ctx.Err(); err != nil {
+					return nil, err
+				}
+				spec := args[2]
+				key := strings.TrimSuffix(spec, ":ro")
+				if args[0] == "umount" {
+					if mode == "cleanup-retry" && strings.HasPrefix(spec, first+":") && !cleanupFailed {
+						cleanupFailed = true
+						return nil, cleanupErr
+					}
+					delete(active, key)
+					return nil, nil
+				}
+				if strings.HasPrefix(spec, last+":") || (mode == "restore-after-mount-failure" && spec == first+":"+first) {
+					if mode == "cancelled" {
+						cancel()
+					}
+					return nil, mountErr
+				}
+				active[key] = spec
+				return nil, nil
+			}}, canonicalTempDir(t), external)
+			if err := m.prepare(ctx, bindRequestForTest(existing+":/existing:ro")); err != nil {
+				t.Fatal(err)
+			}
+			restore := strings.HasPrefix(mode, "restore-")
+			if restore || mode == "replaced-source" {
+				if err := m.prepare(ctx, bindRequestForTest(first+":/first:ro")); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if mode == "replaced-source" {
+				if err := os.Rename(first, first+"-old"); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(first, []byte("replacement"), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			err := m.prepare(ctx, bindRequestForTest(existing+":/existing:ro", first+":/first", last+":/last"))
+			if !errors.Is(err, mountErr) {
+				t.Fatalf("lost preparation error: %v", err)
+			}
+			if mode == "cleanup-retry" {
+				if !errors.Is(err, cleanupErr) || active[first+":"+first] == "" {
+					t.Fatalf("lost failed cleanup: active=%v err=%v", active, err)
+				}
+				// Even a create without binds must reconcile a failed rollback.
+				if err := m.prepare(context.Background(), nil); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if active[existing+":"+existing] != existing+":"+existing+":ro" {
+				t.Fatalf("rollback removed a shared mount: %v", active)
+			}
+			if restore {
+				if len(active) != 2 || active[first+":"+first] != first+":"+first+":ro" {
+					t.Fatalf("rollback did not restore previous permissions: %v; calls=%v", active, calls)
+				}
+			} else if len(active) != 1 || len(m.mounted) != 1 {
+				t.Fatalf("failed batch retained mounts: active=%v cache=%v calls=%v", active, m.mounted, calls)
+			}
+			if mode == "replaced-source" {
+				if err := m.prepare(context.Background(), bindRequestForTest(first+":/first")); err != nil {
+					t.Fatalf("stale mount prevented a fresh request: %v", err)
+				}
+			}
+		})
+	}
+}
+
+func bindRequestForTest(binds ...string) map[string]json.RawMessage {
+	raw, _ := json.Marshal(binds)
+	return map[string]json.RawMessage{"Binds": raw}
 }
 
 func TestBindRootReplacementRejectedBeforeMount(t *testing.T) {
