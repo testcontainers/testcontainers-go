@@ -13,6 +13,15 @@ import (
 	"testing"
 )
 
+func canonicalTempDir(t *testing.T) string {
+	t.Helper()
+	dir, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return dir
+}
+
 // fakeSandbox records the externally visible order of CLI and Docker calls.
 type fakeSandbox struct {
 	mu           sync.Mutex

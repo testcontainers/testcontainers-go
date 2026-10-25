@@ -59,9 +59,9 @@ func TestConfigurationRejectsInvalidTimeout(t *testing.T) {
 }
 
 func TestConfigurationBindRoots(t *testing.T) {
-	workspace := t.TempDir()
-	first := t.TempDir()
-	parent := t.TempDir()
+	workspace := canonicalTempDir(t)
+	first := canonicalTempDir(t)
+	parent := canonicalTempDir(t)
 	realSecond := filepath.Join(parent, "real")
 	if err := os.Mkdir(realSecond, 0o700); err != nil {
 		t.Fatal(err)

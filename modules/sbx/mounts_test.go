@@ -14,12 +14,12 @@ import (
 )
 
 func TestBindMountsRespectWorkspaceAndInnerSocket(t *testing.T) {
-	workspace := t.TempDir()
+	workspace := canonicalTempDir(t)
 	inside := filepath.Join(workspace, "inside")
 	if err := os.WriteFile(inside, []byte("x"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	outsideRoot := t.TempDir()
+	outsideRoot := canonicalTempDir(t)
 	outside := filepath.Join(outsideRoot, "outside")
 	if err := os.WriteFile(outside, []byte("x"), 0o600); err != nil {
 		t.Fatal(err)
@@ -122,8 +122,8 @@ func TestMissingOrDeniedBindFailsBeforeCreate(t *testing.T) {
 func quoteJSON(value string) string { raw, _ := json.Marshal(value); return string(raw) }
 
 func TestSymlinkBindMountsShareCanonicalHostAtOriginalGuestPath(t *testing.T) {
-	workspace := t.TempDir()
-	external := t.TempDir()
+	workspace := canonicalTempDir(t)
+	external := canonicalTempDir(t)
 	outsideA := filepath.Join(external, "outside-a")
 	outsideB := filepath.Join(external, "outside-b")
 	for _, path := range []string{outsideA, outsideB} {
@@ -267,8 +267,8 @@ func TestWindowsBindPathsRejectBeforeMountAndNamedVolumeStillAllowed(t *testing.
 }
 
 func TestBindRootUnionAllowsSymlinkWithinBroaderRoot(t *testing.T) {
-	workspace := t.TempDir()
-	broad := t.TempDir()
+	workspace := canonicalTempDir(t)
+	broad := canonicalTempDir(t)
 	narrow := filepath.Join(broad, "narrow")
 	sibling := filepath.Join(broad, "sibling")
 	if err := os.MkdirAll(narrow, 0o700); err != nil {
@@ -300,7 +300,7 @@ func TestBindRootUnionAllowsSymlinkWithinBroaderRoot(t *testing.T) {
 }
 
 func TestConfiguredRootAliasPreservesGuestPath(t *testing.T) {
-	parent := t.TempDir()
+	parent := canonicalTempDir(t)
 	realWorkspace := filepath.Join(parent, "real-workspace")
 	if err := os.Mkdir(realWorkspace, 0o700); err != nil {
 		t.Fatal(err)
