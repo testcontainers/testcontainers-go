@@ -239,7 +239,7 @@ func (p *dockerProxyServer) prepareCreate(request *http.Request, apiPrefix strin
 	if err := rejectLeaseLabelCollision(payload); err != nil {
 		return nil, err
 	}
-	if err := p.mounts.prepare(request.Context(), host.values()); err != nil {
+	if err := p.mounts.validate(host.values()); err != nil {
 		return nil, err
 	}
 
@@ -253,6 +253,9 @@ func (p *dockerProxyServer) prepareCreate(request *http.Request, apiPrefix strin
 		cleanupErr := p.ports.abortCreate(cleanupCtx, prepared.Token, false)
 		cancel()
 		return nil, errors.Join(cause, cleanupErr)
+	}
+	if err := p.mounts.prepare(request.Context(), host.values()); err != nil {
+		return abort(err)
 	}
 
 	if hadBindings || publishAll || len(prepared.Bindings) > 0 {

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -11,6 +12,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -209,6 +211,95 @@ func TestUnapprovedBindRejectedBeforeCreateAndPortSideEffects(t *testing.T) {
 				if strings.Contains(step, "--publish") || strings.Contains(step, "mount ") {
 					t.Fatalf("unapproved bind caused side effects: %v", f.snapshot())
 				}
+			}
+		})
+	}
+}
+
+func TestCreatePreparationDoesNotLeakMountsOrPorts(t *testing.T) {
+	for _, mode := range []string{"port-conflict", "publish-failure", "mount-failure", "unapproved-second-bind"} {
+		t.Run(mode, func(t *testing.T) {
+			f := newFakeSandbox(t)
+			runtime := f.runtime(t)
+			runtime.run = func(ctx context.Context, args ...string) ([]byte, error) {
+				if args[0] == "mount" {
+					f.record("sbx " + strings.Join(args, " "))
+					if mode == "mount-failure" {
+						return nil, errors.New("mount denied")
+					}
+					return nil, nil
+				}
+				return f.run(ctx, args...)
+			}
+			server, err := newDockerProxy(context.Background(), runtime)
+			if err != nil {
+				t.Fatal(err)
+			}
+			proxy := server.(*dockerProxyServer)
+			t.Cleanup(func() {
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				defer cancel()
+				if err := proxy.Close(ctx); err != nil {
+					t.Error(err)
+				}
+			})
+			switch mode {
+			case "port-conflict":
+				if _, err := proxy.ports.prepareCreate(context.Background(), portBindings{"81/tcp": {{HostPort: "39219"}}}); err != nil {
+					t.Fatal(err)
+				}
+			case "publish-failure":
+				f.publishErr = errors.New("publish denied")
+			}
+			source := filepath.Join(canonicalTempDir(t), "data")
+			if err := os.WriteFile(source, []byte("data"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			binds := []string{source + ":/data:ro"}
+			if mode == "unapproved-second-bind" {
+				binds = append(binds, "/zz-tcgo-unapproved:/denied:ro")
+			}
+			raw, err := json.Marshal(map[string]any{
+				"Image": "nginx:alpine",
+				"HostConfig": map[string]any{
+					"Binds": binds, "PortBindings": portBindings{"80/tcp": {{HostPort: "39219"}}},
+				},
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			request := httptest.NewRequest(http.MethodPost, "/containers/create", strings.NewReader(string(raw)))
+			operation, err := proxy.prepareCreate(request, "")
+			if err == nil || operation != nil {
+				t.Fatalf("invalid create prepared: operation=%v err=%v", operation, err)
+			}
+			want := map[string]string{"port-conflict": "reserved", "publish-failure": "publish denied", "mount-failure": "mount denied", "unapproved-second-bind": "outside"}[mode]
+			if !strings.Contains(err.Error(), want) {
+				t.Fatalf("create failed for the wrong reason: %v", err)
+			}
+			if len(proxy.mounts.mounted) != 0 {
+				t.Fatalf("failed preparation retained mounts: %v", proxy.mounts.mounted)
+			}
+			if mode != "mount-failure" {
+				for _, step := range f.snapshot() {
+					if strings.Contains(step, "mount ") {
+						t.Fatalf("failed preparation mounted a host path: %v", f.snapshot())
+					}
+				}
+			}
+			wantPorts := 0
+			if mode == "port-conflict" {
+				wantPorts = 1
+			}
+			f.mu.Lock()
+			defer f.mu.Unlock()
+			if len(f.ports) != wantPorts {
+				t.Fatalf("failed preparation changed port ownership: %v", f.ports)
+			}
+			proxy.ports.mu.Lock()
+			defer proxy.ports.mu.Unlock()
+			if len(proxy.ports.creations) != wantPorts || len(proxy.ports.orphans) != 0 {
+				t.Fatalf("failed preparation retained port leases: creations=%d orphans=%v", len(proxy.ports.creations), proxy.ports.orphans)
 			}
 		})
 	}

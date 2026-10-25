@@ -104,36 +104,67 @@ func (m *bindMountManager) prepare(ctx context.Context, host map[string]json.Raw
 	return nil
 }
 
-func (m *bindMountManager) prepareOne(ctx context.Context, request requestedBind) error {
+func (m *bindMountManager) validate(host map[string]json.RawMessage) error {
+	requests, err := requestedBindMounts(host)
+	if err != nil {
+		return err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.closed {
+		return errors.New("validate sbx bind mounts: manager is closed")
+	}
+	for _, request := range requests {
+		if _, err := m.authorize(request); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (m *bindMountManager) authorize(request requestedBind) (resolvedBind, error) {
 	source := filepath.Clean(request.source)
 	if source == dockerSocketPath {
 		// Ryuk and other Docker-aware containers must receive the sandbox's
 		// Docker socket. Mounting the host socket here would escape the runtime.
-		return nil
+		return resolvedBind{}, nil
 	}
 	if !filepath.IsAbs(source) {
-		return fmt.Errorf("sbx bind source %q must be an absolute host path", request.source)
+		return resolvedBind{}, fmt.Errorf("sbx bind source %q must be an absolute host path", request.source)
 	}
 
 	resolved, err := m.resolve(source)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("sbx bind source %q does not exist on the host", source)
+			return resolvedBind{}, fmt.Errorf("sbx bind source %q does not exist on the host", source)
 		}
-		return fmt.Errorf("authorize sbx bind source %q: %w", source, err)
+		return resolvedBind{}, fmt.Errorf("authorize sbx bind source %q: %w", source, err)
 	}
 	info := resolved.info
 	if info.Mode()&os.ModeSocket != 0 {
-		return fmt.Errorf("sbx cannot expose host socket %q; only %s is supported and resolves to the sandbox Docker socket", source, dockerSocketPath)
+		return resolvedBind{}, fmt.Errorf("sbx cannot expose host socket %q; only %s is supported and resolves to the sandbox Docker socket", source, dockerSocketPath)
 	}
 	if !info.IsDir() && !info.Mode().IsRegular() {
-		return fmt.Errorf("sbx bind source %q has unsupported file type %s", source, info.Mode().Type())
+		return resolvedBind{}, fmt.Errorf("sbx bind source %q has unsupported file type %s", source, info.Mode().Type())
 	}
 	if !resolved.visibleWorkspace {
 		if err := verifyBindRoot(resolved.root); err != nil {
-			return fmt.Errorf("verify sbx bind root for source %q: %w", source, err)
+			return resolvedBind{}, fmt.Errorf("verify sbx bind root for source %q: %w", source, err)
 		}
 	}
+	return resolved, nil
+}
+
+func (m *bindMountManager) prepareOne(ctx context.Context, request requestedBind) error {
+	resolved, err := m.authorize(request)
+	if err != nil {
+		return err
+	}
+	source := filepath.Clean(request.source)
+	if source == dockerSocketPath {
+		return nil
+	}
+	info := resolved.info
 
 	if mounted, ok := m.mounted[source]; ok {
 		sameFile := mounted.hostPath == resolved.hostPath && os.SameFile(mounted.info, info)
