@@ -2,6 +2,7 @@ package sbx
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -575,6 +576,89 @@ func TestAmbiguousFixedPortRestartRequiresProofBeforeStart(t *testing.T) {
 		if strings.Contains(step, "--publish") && !strings.Contains(step, "127.0.0.1:39202:39202/tcp4") {
 			t.Fatalf("fixed port reassigned: %v", f.snapshot())
 		}
+	}
+}
+
+func TestUnexpectedRestartPublicationIsReclaimed(t *testing.T) {
+	for _, mode := range []string{"released", "release-fails", "canceled-start"} {
+		t.Run(mode, func(t *testing.T) {
+			f := newFakeSandbox(t)
+			runtime := f.runtime(t)
+			unexpected := portPublication{HostIP: "127.0.0.1", HostPort: 39218, SandboxPort: 39218, Protocol: "tcp4"}
+			wrongPublication := false
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			runtime.run = func(ctx context.Context, args ...string) ([]byte, error) {
+				if wrongPublication && len(args) > 2 && args[2] == "--publish" {
+					f.mu.Lock()
+					f.ports[unexpected.spec()] = unexpected
+					f.mu.Unlock()
+					if mode == "canceled-start" {
+						cancel()
+					}
+					return json.Marshal([]portPublication{unexpected})
+				}
+				return f.run(ctx, args...)
+			}
+			m := &portManager{
+				runtime: runtime, engine: newDockerEngine(runtime.dockerURL, &http.Client{}),
+				creations: map[string]*containerLease{}, containers: map[string]*containerLease{},
+			}
+			prepared, err := m.prepareCreate(context.Background(), portBindings{"80/tcp": {{HostPort: "39217"}}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := m.bindCreate(prepared.Token, "container-1", "sample"); err != nil {
+				t.Fatal(err)
+			}
+			if err := m.beginStop("container-1")(context.Background(), true); err != nil {
+				t.Fatal(err)
+			}
+			wrongPublication = true
+			if mode == "release-fails" {
+				f.unpublishErr = errors.New("unpublish failed")
+			}
+			finish, err := m.beginStart(ctx, "container-1")
+			if err == nil || !strings.Contains(err.Error(), "unexpected binding") || finish != nil {
+				t.Fatalf("unexpected mapping accepted on restart: finish=%v err=%v", finish != nil, err)
+			}
+			if got := m.containers["container-1"].ports[0].desired.HostPort; got != 39217 {
+				t.Fatalf("restart changed the desired port to %d", got)
+			}
+			f.mu.Lock()
+			_, stillPublished := f.ports[unexpected.spec()]
+			f.mu.Unlock()
+			if mode == "release-fails" {
+				if !stillPublished || len(m.orphans) != 1 {
+					t.Fatalf("failed release lost orphan ownership: published=%t orphans=%v", stillPublished, m.orphans)
+				}
+				if _, err := m.prepareCreate(context.Background(), portBindings{"81/tcp": {{HostPort: "39218"}}}); err == nil {
+					t.Fatal("unexpected port was reused before orphan cleanup")
+				}
+				f.unpublishErr = nil
+				if err := m.reconcileOrphans(context.Background()); err != nil {
+					t.Fatal(err)
+				}
+			} else if stillPublished {
+				t.Fatal("failed restart leaked its unexpected publication")
+			}
+			if len(m.orphans) != 0 {
+				t.Fatalf("orphan remained after successful cleanup: %v", m.orphans)
+			}
+			wrongPublication = false
+			finish, err = m.beginStart(context.Background(), "container-1")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := finish(context.Background(), true); err != nil {
+				t.Fatal(err)
+			}
+			f.mu.Lock()
+			defer f.mu.Unlock()
+			if _, ok := f.ports["127.0.0.1:39217:39217/tcp4"]; !ok {
+				t.Fatal("retry did not restore the original endpoint")
+			}
+		})
 	}
 }
 

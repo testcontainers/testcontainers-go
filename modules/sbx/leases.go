@@ -242,6 +242,15 @@ func (m *portManager) abortCreate(ctx context.Context, token string, ambiguous b
 }
 
 func (m *portManager) beginStart(ctx context.Context, containerRef string) (func(context.Context, bool) error, error) {
+	m.allocationMu.Lock()
+	defer m.allocationMu.Unlock()
+	m.mu.Lock()
+	closed := m.closed
+	m.mu.Unlock()
+	if closed {
+		return nil, errors.New("sbx port manager is closed")
+	}
+
 	record, err := m.lockContainer(containerRef)
 	if err != nil {
 		return nil, err
@@ -275,15 +284,22 @@ func (m *portManager) beginStart(ctx context.Context, containerRef string) (func
 		}
 		publication, exact, publishErr := m.publish(ctx, record.token, portPlan{containerPort: lease.containerPort, publication: lease.desired}, nil)
 		if publishErr != nil || publication != lease.desired {
+			var unexpectedErr error
 			if publication.HostPort != 0 && publication == lease.desired {
 				lease.live, lease.orphan, lease.exact = true, true, exact
+			} else if publication.HostPort != 0 {
+				unexpected := &containerLease{token: record.token, ports: []leasedPort{{desired: publication, live: true, exact: exact}}}
+				cleanupCtx, cancel := freshPortOperationContext()
+				unexpectedErr = m.releaseRecord(cleanupCtx, unexpected)
+				cancel()
+				m.retainOrphans(unexpected)
 			}
 			cleanupErr := m.releaseIndices(ctx, record, newlyPublished)
 			record.mu.Unlock()
 			if publishErr == nil {
 				publishErr = fmt.Errorf("sbx changed immutable desired port from %s to %s", lease.desired.spec(), publication.spec())
 			}
-			return nil, errors.Join(fmt.Errorf("sandbox %q container %q port %s: restore before start: %w", m.runtime.name, containerRef, lease.desired.spec(), publishErr), cleanupErr)
+			return nil, errors.Join(fmt.Errorf("sandbox %q container %q port %s: restore before start: %w", m.runtime.name, containerRef, lease.desired.spec(), publishErr), unexpectedErr, cleanupErr)
 		}
 		lease.live, lease.orphan, lease.exact = true, false, true
 		newlyPublished = append(newlyPublished, i)
