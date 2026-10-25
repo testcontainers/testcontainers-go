@@ -129,7 +129,7 @@ func NewDockerCompose(filePaths ...string) (*DockerCompose, error) {
 	return NewDockerComposeWith(WithStackFiles(filePaths...))
 }
 
-func NewDockerComposeWith(opts ...ComposeStackOption) (*DockerCompose, error) {
+func NewDockerComposeWith(opts ...ComposeStackOption) (_ *DockerCompose, err error) {
 	composeOptions := composeStackOptions{
 		Identifier:     uuid.New().String(),
 		temporaryPaths: make(map[string]bool),
@@ -182,6 +182,11 @@ func NewDockerComposeWith(opts ...ComposeStackOption) (*DockerCompose, error) {
 			_ = provider.Close()
 			return nil, fmt.Errorf("new managed compose client: %w", clientErr)
 		}
+		defer func() {
+			if err != nil {
+				_ = composeClient.Close()
+			}
+		}()
 		cliOptions = append(cliOptions, command.WithAPIClient(composeClient))
 	}
 	dockerCli, err := command.NewDockerCli(cliOptions...)
