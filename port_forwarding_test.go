@@ -25,28 +25,14 @@ const (
 func TestExposeHostPorts(t *testing.T) {
 	const numberOfPorts = 3
 
-	servers := make([]*httptest.Server, numberOfPorts)
 	hostPorts := make([]int, numberOfPorts)
-	waitStrategies := make([]wait.Strategy, numberOfPorts)
 
 	for i := range hostPorts {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			fmt.Fprint(w, expectedResponse)
 		}))
 
-		servers[i] = server
 		hostPorts[i] = server.Listener.Addr().(*net.TCPAddr).Port
-
-		waitStrategies[i] = wait.
-			ForExec([]string{"wget", "-q", "-O", "-", fmt.Sprintf("http://%s:%d", testcontainers.HostInternal, hostPorts[i])}).
-			WithExitCodeMatcher(func(code int) bool {
-				return code == 0
-			}).
-			WithResponseMatcher(func(body io.Reader) bool {
-				bs, err := io.ReadAll(body)
-				require.NoError(t, err)
-				return string(bs) == expectedResponse
-			})
 
 		t.Cleanup(server.Close)
 	}
@@ -86,7 +72,36 @@ func TestExposeHostPorts(t *testing.T) {
 	})
 }
 
-func testExposeHostPorts(t *testing.T, hostPorts []int, hasNetwork, hasHostAccess bool) {
+func TestExposeHostPorts_HostStartsAfterCreation(t *testing.T) {
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(w, expectedResponse)
+	}))
+	t.Cleanup(server.Close)
+
+	addr := server.Listener.Addr().String()
+	port := server.Listener.Addr().(*net.TCPAddr).Port
+	// NewUnstartedServer already listens; close it so tunnel setup has no host listener.
+	require.NoError(t, server.Listener.Close())
+
+	testExposeHostPorts(t, []int{port}, false, true,
+		testcontainers.WithLifecycleHooks(testcontainers.ContainerLifecycleHooks{
+			PostCreates: []testcontainers.ContainerHook{
+				func(ctx context.Context, _ testcontainers.Container) error {
+					var config net.ListenConfig
+					listener, err := config.Listen(ctx, "tcp", addr)
+					if err != nil {
+						return err
+					}
+					server.Listener = listener
+					server.Start()
+					return nil
+				},
+			},
+		}),
+	)
+}
+
+func testExposeHostPorts(t *testing.T, hostPorts []int, hasNetwork, hasHostAccess bool, extraOpts ...testcontainers.ContainerCustomizer) {
 	t.Helper()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
@@ -104,6 +119,19 @@ func testExposeHostPorts(t *testing.T, hostPorts []int, hasNetwork, hasHostAcces
 	}
 	// }
 
+	if hasHostAccess {
+		waitStrategies := make([]wait.Strategy, len(hostPorts))
+		for i, port := range hostPorts {
+			waitStrategies[i] = wait.
+				ForExec([]string{"wget", "-q", "-O", "-", "-T", "2", fmt.Sprintf("http://%s:%d", testcontainers.HostInternal, port)}).
+				WithResponseMatcher(func(body io.Reader) bool {
+					bs, err := io.ReadAll(body)
+					return err == nil && string(bs) == expectedResponse
+				})
+		}
+		opts = append(opts, testcontainers.WithWaitStrategy(waitStrategies...))
+	}
+
 	if hasNetwork {
 		nw, err := network.New(ctx)
 		require.NoError(t, err)
@@ -113,6 +141,7 @@ func testExposeHostPorts(t *testing.T, hostPorts []int, hasNetwork, hasHostAcces
 
 	}
 
+	opts = append(opts, extraOpts...)
 	c, err := testcontainers.Run(ctx, "alpine", opts...)
 	testcontainers.CleanupContainer(t, c)
 	require.NoError(t, err)
