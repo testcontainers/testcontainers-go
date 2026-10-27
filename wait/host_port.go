@@ -265,7 +265,11 @@ func externalCheck(ctx context.Context, ipAddress string, port network.Port, tar
 		conn, err := dialer.DialContext(ctx, string(proto), address)
 		if err != nil {
 			if isRetryableDialErr(ctx, err) {
-				time.Sleep(waitInterval)
+				select {
+				case <-ctx.Done():
+					return fmt.Errorf("dial: %w", ctx.Err())
+				case <-time.After(waitInterval):
+				}
 				continue
 			}
 			return fmt.Errorf("dial: %w", err)
