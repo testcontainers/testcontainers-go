@@ -3,6 +3,7 @@ package wait
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -627,4 +628,28 @@ func TestHostPortStrategySucceedsGivenShellIsNotFound(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Contains(t, buf.String(), "Shell not found in container")
+}
+
+type timeoutErr struct{}
+
+func (timeoutErr) Error() string   { return "operation timed out" }
+func (timeoutErr) Timeout() bool   { return true }
+func (timeoutErr) Temporary() bool { return true }
+
+func TestIsRetryableDialErr(t *testing.T) {
+	connTimeout := &net.OpError{Op: "dial", Net: "tcp", Err: timeoutErr{}}
+
+	t.Run("connect-timeout-with-live-context", func(t *testing.T) {
+		require.True(t, isRetryableDialErr(context.Background(), connTimeout))
+	})
+
+	t.Run("connect-timeout-with-expired-context", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		require.False(t, isRetryableDialErr(ctx, connTimeout))
+	})
+
+	t.Run("other-error", func(t *testing.T) {
+		require.False(t, isRetryableDialErr(context.Background(), errors.New("boom")))
+	})
 }

@@ -264,15 +264,9 @@ func externalCheck(ctx context.Context, ipAddress string, port network.Port, tar
 		}
 		conn, err := dialer.DialContext(ctx, string(proto), address)
 		if err != nil {
-			var v *net.OpError
-			if errors.As(err, &v) {
-				var v2 *os.SyscallError
-				if errors.As(v.Err, &v2) {
-					if isConnRefusedErr(v2.Err) {
-						time.Sleep(waitInterval)
-						continue
-					}
-				}
+			if isRetryableDialErr(ctx, err) {
+				time.Sleep(waitInterval)
+				continue
 			}
 			return fmt.Errorf("dial: %w", err)
 		}
@@ -280,6 +274,22 @@ func externalCheck(ctx context.Context, ipAddress string, port network.Port, tar
 		_ = conn.Close()
 		return nil
 	}
+}
+
+// isRetryableDialErr reports whether a failed dial should be retried until the
+// context expires: connection refused, or a connect timeout (e.g. ETIMEDOUT)
+// while the context is still alive.
+func isRetryableDialErr(ctx context.Context, err error) bool {
+	var v *net.OpError
+	if errors.As(err, &v) {
+		var v2 *os.SyscallError
+		if errors.As(v.Err, &v2) && isConnRefusedErr(v2.Err) {
+			return true
+		}
+	}
+
+	var ne net.Error
+	return ctx.Err() == nil && errors.As(err, &ne) && ne.Timeout()
 }
 
 func internalCheck(ctx context.Context, internalPort network.Port, target StrategyTarget) error {
