@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/cpuguy83/dockercfg"
 	"github.com/moby/moby/client"
@@ -111,7 +113,8 @@ func TestRunContainer_authenticated(t *testing.T) {
 		)
 		testcontainers.CleanupContainer(tt, redisC)
 		require.Error(tt, err)
-		require.Contains(tt, err.Error(), "unauthorized: authentication required")
+		msg := strings.ToLower(err.Error())
+		require.True(tt, strings.Contains(msg, "unauthorized: authentication required") || strings.Contains(msg, "401 unauthorized"), "unexpected error: %v", err)
 	})
 
 	t.Run("build image with valid credentials", func(tt *testing.T) {
@@ -268,7 +271,7 @@ func TestRunContainer_wrongData(t *testing.T) {
 	require.Error(t, err)
 
 	msg := strings.ToLower(err.Error())
-	require.True(t, strings.Contains(msg, "manifest unknown") || strings.Contains(msg, "no such image"), "unexpected error: %v", err)
+	require.True(t, strings.Contains(msg, "manifest unknown") || strings.Contains(msg, "no such image") || strings.Contains(msg, registryHost+"/redis:5.0-alpine: not found"), "unexpected error: %v", err)
 }
 
 func TestPullImage_samePlatform(t *testing.T) {
@@ -304,6 +307,71 @@ func TestPullImage_samePlatform(t *testing.T) {
 		require.Equal(t, "linux", imgInspect.Os)
 		require.Equal(t, runtime.GOARCH, imgInspect.Architecture)
 	}
+}
+
+func TestRegistry_PushImage(t *testing.T) {
+	ctx := context.Background()
+	ctr, err := registry.Run(ctx, registry.DefaultImage,
+		registry.WithHtpasswdFile(filepath.Join("testdata", "auth", "htpasswd")),
+	)
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	host, err := ctr.HostAddress(ctx)
+	require.NoError(t, err)
+	setAuthConfig(t, host, "testuser", "testpassword")
+
+	// Build locally so containerd produces an OCI manifest instead of relying
+	// on the Docker schema 2 manifests in the pre-populated registry fixture.
+	buildContext := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(buildContext, "Dockerfile"),
+		[]byte("FROM scratch\nLABEL test=registry-push\nCMD [\"/unused\"]\n"), 0o600))
+	repo := host + "/push-test"
+	imageRef := repo + ":test"
+	imageContainer, err := testcontainers.Run(ctx, "",
+		testcontainers.WithDockerfile(testcontainers.FromDockerfile{
+			Context: buildContext,
+			Repo:    repo,
+			Tag:     "test",
+		}),
+		testcontainers.WithNoStart(),
+	)
+	testcontainers.CleanupContainer(t, imageContainer)
+	require.NoError(t, err)
+
+	t.Run("push and find image", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+		require.NoError(t, ctr.PushImage(ctx, imageRef))
+		require.NoError(t, ctr.ImageExists(ctx, imageRef))
+	})
+
+	t.Run("push with wrong credentials reports the push error", func(t *testing.T) {
+		setAuthConfig(t, host, "testuser", "wrong-password")
+		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+		err := ctr.PushImage(ctx, imageRef)
+		require.ErrorContains(t, err, "push image")
+		require.Contains(t, strings.ToLower(err.Error()), "unauthorized")
+		require.NotErrorIs(t, err, context.DeadlineExceeded, "push errors must not be hidden by a readiness timeout")
+	})
+
+	t.Run("delete image", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+		require.NoError(t, ctr.DeleteImage(ctx, imageRef))
+
+		address, err := ctr.Address(ctx)
+		require.NoError(t, err)
+		req, err := http.NewRequestWithContext(ctx, http.MethodHead, address+"/v2/push-test/manifests/test", nil)
+		require.NoError(t, err)
+		req.SetBasicAuth("testuser", "testpassword")
+		req.Header.Set("Accept", "application/vnd.docker.distribution.manifest.v2+json, application/vnd.oci.image.manifest.v1+json")
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusNotFound, resp.StatusCode)
+	})
 }
 
 // setAuthConfig sets the DOCKER_AUTH_CONFIG environment variable with
