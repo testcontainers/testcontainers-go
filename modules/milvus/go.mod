@@ -2,7 +2,7 @@ module github.com/testcontainers/testcontainers-go/modules/milvus
 
 go 1.26.0
 
-toolchain go1.26.8
+toolchain go1.26.10
 
 require (
 	github.com/milvus-io/milvus/client/v2 v2.6.0

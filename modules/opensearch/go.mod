@@ -2,7 +2,7 @@ module github.com/testcontainers/testcontainers-go/modules/opensearch
 
 go 1.26.0
 
-toolchain go1.26.8
+toolchain go1.26.10
 
 require (
 	github.com/docker/go-units v0.5.0

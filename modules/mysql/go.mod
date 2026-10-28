@@ -2,7 +2,7 @@ module github.com/testcontainers/testcontainers-go/modules/mysql
 
 go 1.26.0
 
-toolchain go1.26.8
+toolchain go1.26.10
 
 require (
 	github.com/go-sql-driver/mysql v1.7.1

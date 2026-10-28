@@ -2,7 +2,7 @@ module github.com/testcontainers/testcontainers-go/modules/nebulagraph
 
 go 1.26.0
 
-toolchain go1.26.8
+toolchain go1.26.10
 
 require (
 	github.com/jolestar/go-commons-pool v2.0.0+incompatible

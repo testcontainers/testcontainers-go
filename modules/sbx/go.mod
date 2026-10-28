@@ -2,7 +2,7 @@ module github.com/testcontainers/testcontainers-go/modules/sbx
 
 go 1.26.0
 
-toolchain go1.26.8
+toolchain go1.26.10
 
 require github.com/testcontainers/testcontainers-go v0.44.0
 

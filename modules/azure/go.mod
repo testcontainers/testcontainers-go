@@ -2,7 +2,7 @@ module github.com/testcontainers/testcontainers-go/modules/azure
 
 go 1.26.0
 
-toolchain go1.26.8
+toolchain go1.26.10
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.22.0

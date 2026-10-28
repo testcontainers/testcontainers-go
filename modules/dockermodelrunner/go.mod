@@ -2,7 +2,7 @@ module github.com/testcontainers/testcontainers-go/modules/dockermodelrunner
 
 go 1.26.0
 
-toolchain go1.26.8
+toolchain go1.26.10
 
 require (
 	github.com/moby/moby/client v0.6.2
