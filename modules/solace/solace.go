@@ -47,18 +47,24 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	// Build wait strategies
+	const (
+		primaryTimeout = 2 * time.Minute
+		serviceTimeout = 30 * time.Second
+	)
+	// The strategies run sequentially, so allow each one its full timeout.
+	startupDeadline := primaryTimeout + time.Duration(len(settings.services))*serviceTimeout
 	waitStrategies := make([]wait.Strategy, len(settings.services)+1)
 	exposedPorts := make([]string, len(settings.services))
 
 	// Primary wait strategy for Solace to be ready
 	waitStrategies[0] = wait.ForExec([]string{"grep", "-q", "Primary Virtual Router is now active", "/usr/sw/jail/logs/system.log"}).
-		WithStartupTimeout(1 * time.Minute).
+		WithStartupTimeout(primaryTimeout).
 		WithPollInterval(1 * time.Second)
 
 	// Add port-based wait strategies for each service
 	for i, service := range settings.services {
 		port := fmt.Sprintf("%d/tcp", service.Port)
-		waitStrategies[i+1] = wait.ForListeningPort(port)
+		waitStrategies[i+1] = wait.ForListeningPort(port).WithStartupTimeout(serviceTimeout)
 		exposedPorts[i] = fmt.Sprintf("%d/tcp", service.Port)
 	}
 
@@ -86,7 +92,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				},
 			}
 		}),
-		testcontainers.WithWaitStrategy(waitStrategies...),
+		testcontainers.WithWaitStrategyAndDeadline(startupDeadline, waitStrategies...),
 	)
 
 	moduleOpts = append(moduleOpts, opts...)
