@@ -11,6 +11,7 @@ import (
 // process-wide provider configuration used by the integration tests.
 func ExampleConfigure() {
 	// configureProvider {
+	// Save the documented example kit as testdata/test-tools/test-tools.yaml first.
 	if err := sbx.Configure(
 		sbx.WithStartupTimeout(8*time.Minute),
 		sbx.WithKits("./testdata/test-tools"),
@@ -65,7 +66,8 @@ func ExampleWithAppName() {
 
 func ExampleWithKits() {
 	// withKits {
-	if err := sbx.Configure(sbx.WithKits("./testdata/test-tools", "docker.io/my-org/another-kit:1.0.0")); err != nil {
+	// Save the documented example kit as testdata/test-tools/test-tools.yaml first.
+	if err := sbx.Configure(sbx.WithKits("./testdata/test-tools")); err != nil {
 		log.Fatal(err)
 	}
 	// }

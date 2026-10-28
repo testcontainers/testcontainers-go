@@ -44,6 +44,8 @@ func Configure(opts ...Option) error
 
 Call it in `TestMain` before `m.Run()` or provider health checks. It does not start a sandbox or select the provider; select sbx through `TESTCONTAINERS_PROVIDER` or the `provider` property. If another provider is selected, the sbx configuration is unused.
 
+Before using this example, save the [local example kit](#local-example-kit) in your test package's `testdata/test-tools` directory.
+
 <!--codeinclude-->
 [Configure the sandbox provider](../../modules/sbx/examples_test.go) inside_block:configureProvider
 <!--/codeinclude-->
@@ -117,6 +119,8 @@ The default is the CLI's default namespace. Call `WithAppName("")` to clear an i
 
 `WithKits(refs ...string)` appends mixin references to the sandbox creation request. No additional kits are installed by default; the required `sbx/docker-tcp:latest` kit is always included. References can be OCI images, local directories, or Git sources. Relative paths resolve against the process working directory at startup, independently of `WithWorkspace`.
 
+This example requires the [local example kit](#local-example-kit). Replace the path if you save it elsewhere.
+
 <!--codeinclude-->
 [WithKits](../../modules/sbx/examples_test.go) inside_block:withKits
 <!--/codeinclude-->
@@ -136,6 +140,16 @@ Kits customize the sandbox environment; installed tools do not automatically app
 <!--/codeinclude-->
 
 Arguments are plain text stored by sbx. Use sbx credentials for secrets.
+
+## Local example kit
+
+The configuration examples use a local v3 mixin that is not installed with the Go module. Save the following file as `testdata/test-tools/test-tools.yaml` relative to the directory containing your test package. `go test` runs each package's tests from that package's directory, so `./testdata/test-tools` resolves there. If you store the kit elsewhere, update the `WithKits` path accordingly.
+
+<!--codeinclude-->
+[test-tools.yaml](../../modules/sbx/testdata/test-tools/test-tools.yaml)
+<!--/codeinclude-->
+
+Local kit builds must be available and allowed by your sbx configuration. The `test-tools.mode` argument sets the contents of `/usr/share/testcontainers/kit-mode` inside the sandbox.
 
 ## Cleanup in TestMain
 
