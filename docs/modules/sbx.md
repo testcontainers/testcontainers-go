@@ -32,12 +32,21 @@ You can instead set `provider=sbx` in `~/.testcontainers.properties`. The enviro
 
 The module creates the sandbox with `--kit sbx/docker-tcp:latest` and base image `docker.io/docker/sbx-kit-shell:1.0.0`. The `sbx` CLI pulls and loads the published Docker TCP kit. After creation, the module runs `sbx run --detach --name <name>` to keep its owned sandbox running until explicit cleanup, then discovers the Docker endpoint.
 
-## Install additional kits
+## Module Reference
 
-Use `sbx.Configure` with provider options before the first Testcontainers operation, typically at the beginning of `TestMain`, before `m.Run()` or provider health checks:
+### Configure function
 
-```go
+The sbx module exposes a function to configure the registered provider before the first Testcontainers operation:
+
+```golang
+func Configure(opts ...Option) error
+```
+
+Call it in `TestMain` before `m.Run()` or provider health checks. It does not start a sandbox or select the provider; select sbx through `TESTCONTAINERS_PROVIDER` or the `provider` property. If another provider is selected, the sbx configuration is unused.
+
+```golang
 if err := sbx.Configure(
+    sbx.WithStartupTimeout(8*time.Minute),
     sbx.WithKits("./testdata/test-tools"),
     sbx.WithKitArgs(map[string]string{
         "test-tools.mode": "integration",
@@ -48,17 +57,96 @@ if err := sbx.Configure(
 }
 ```
 
-Replace the example reference and arguments with your own mixin's settings. `WithKits` accepts multiple references, including OCI images, local directories, and Git sources. Use version tags or digests for reproducible published kits. Relative paths are resolved against the process working directory at initialization, independently of `TESTCONTAINERS_SBX_WORKSPACE`.
+- Each test process shares one configuration. Configure every package's test binary, directly or through a shared test helper.
+- Each call applies all options atomically. Invalid options leave the previous configuration unchanged. Input slices and maps are copied.
+- Explicit settings override environment variables, which are read at initialization. Overridden environment values are not used or validated.
+- Once initialization begins, further calls return `sbx.ErrProviderStarted`, including after failure or cleanup. Check this with `errors.Is`.
 
-`Configure` configures the registered provider without selecting it or starting a sandbox. Continue selecting it through `TESTCONTAINERS_PROVIDER=sbx` or the `provider` property. If another provider is selected, the sbx configuration is unused. Containers still use the usual module `Run` functions and container customizers. Kit options apply to the sandbox environment; tools installed by a kit are not automatically installed inside its child containers.
+### Provider Options
 
-`WithKits` appends references in the supplied order, alongside the required Docker TCP kit. `WithKitArgs` merges arguments, with later values overriding earlier values for the same key. An unqualified argument applies to every selected kit declaring it; `kit-handle.name` targets one kit. Empty values are allowed. Arguments are plain text stored by sbx, so use sbx credentials for secrets.
+Pass the following functional options to `sbx.Configure` or `(*sbx.Provider).Configure`. They configure the sandbox; containers running inside it use their usual container customizers.
 
-The provider passes repeated `--kit` and `--kit-arg` flags to `sbx create`. sbx validates sources, duplicate kit names, declared arguments, dependencies, and compatibility. Include any kits required by your mixins; sbx determines dependency order rather than treating flag order as installation order. Source policies and credentials must already permit unattended use. See [Use kits](https://docs.docker.com/ai/sandboxes/customize/use-kits/) for source formats, kit arguments, and composition rules.
+#### WithBinary
 
-Repeated `Configure` calls compose before initialization. Each call either applies all its options or returns an error without changing the previous configuration. Options copy their input slices and maps. Once initialization begins, configuration is frozen and further calls return `sbx.ErrProviderStarted`, including after initialization fails or the sandbox is cleaned up. Callers can check this with `errors.Is`. Kit creation runs within the startup timeout, configured with `WithStartupTimeout` or `TESTCONTAINERS_SBX_TIMEOUT`; creation errors retain the CLI diagnostic and trigger owned-sandbox cleanup.
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-Each test process shares one kit configuration. Configure every package's test binary, directly or through a shared test helper. Use a separate test process for a different kit combination. V3 sandboxes cannot install additional mixins with `sbx kit add` after creation.
+`WithBinary(binary string)` sets the sbx executable path or name, overriding `TESTCONTAINERS_SBX_BINARY`. The default is `sbx` on `PATH`. The value must be nonempty; the executable is resolved at startup. Later values replace earlier ones.
+
+```golang
+sbx.WithBinary("/usr/local/bin/sbx")
+```
+
+#### WithWorkspace
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+`WithWorkspace(path string)` sets the sandbox workspace, overriding `TESTCONTAINERS_SBX_WORKSPACE`. The default is the process working directory. The value must be nonempty and name an existing directory at startup. Relative paths are resolved against the process working directory at startup. Later values replace earlier ones.
+
+```golang
+sbx.WithWorkspace(".")
+```
+
+#### WithBindRoots
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+`WithBindRoots(paths ...string)` replaces the additional allowed host bind directories, overriding `TESTCONTAINERS_SBX_BIND_ROOTS` and earlier `WithBindRoots` calls. Every path must be absolute and name an existing directory at startup. The environment variable separates paths with the OS path-list separator (`:` on macOS/Linux).
+
+By default, only the workspace is allowed. Call `WithBindRoots()` to clear inherited extra roots; the workspace remains allowed. See [host bind mounts](../system_requirements/using_sbx.md#host-bind-mounts) for symlink restrictions.
+
+```golang
+sbx.WithBindRoots("/opt/test-fixtures", "/srv/shared-fixtures")
+```
+
+#### WithStartupTimeout
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+`WithStartupTimeout(timeout time.Duration)` sets the timeout for sandbox initialization, including kit installation, overriding `TESTCONTAINERS_SBX_TIMEOUT`. The default is `5*time.Minute`. The duration must be positive. Later values replace earlier ones.
+
+```golang
+sbx.WithStartupTimeout(8*time.Minute)
+```
+
+#### WithAppName
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+`WithAppName(name string)` sets the CLI namespace for every sbx command, overriding `TESTCONTAINERS_SBX_APP_NAME`. Names accept up to 20 ASCII letters, digits, hyphens, and underscores. Later values replace earlier ones.
+
+The default is the CLI's default namespace. Call `WithAppName("")` to clear an inherited namespace. Authenticate the chosen namespace before running tests, for example with `sbx --app-name tc-tests login`.
+
+```golang
+sbx.WithAppName("tc-tests")
+```
+
+#### WithKits
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+`WithKits(refs ...string)` appends mixin references to the sandbox creation request. No additional kits are installed by default; the required `sbx/docker-tcp:latest` kit is always included. References can be OCI images, local directories, or Git sources. Relative paths resolve against the process working directory at startup, independently of `WithWorkspace`.
+
+```golang
+sbx.WithKits("./testdata/test-tools", "docker.io/my-org/another-kit:1.0.0")
+```
+
+Use version tags or digests for reproducible published kits. sbx validates duplicate names, dependencies, and compatibility, and determines installation order. Include any required dependency kits explicitly. Source policies and credentials must permit unattended use. See [Use kits](https://docs.docker.com/ai/sandboxes/customize/use-kits/) for source formats and composition rules.
+
+Kits customize the sandbox environment; installed tools do not automatically appear inside child containers. V3 kits are chosen at creation and cannot be added with `sbx kit add` afterward. Use a separate test process for a different kit combination. Creation errors retain the CLI diagnostic and trigger owned-sandbox cleanup.
+
+#### WithKitArgs
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+`WithKitArgs(args map[string]string)` merges kit arguments, with later values overriding earlier values for the same key. By default, no arguments are supplied. An unqualified key applies to every selected kit declaring it; `kit-handle.name` targets one kit. Empty values are allowed. sbx validates declared arguments and their values.
+
+```golang
+sbx.WithKitArgs(map[string]string{
+    "test-tools.mode": "integration",
+})
+```
+
+Arguments are plain text stored by sbx. Use sbx credentials for secrets.
 
 ## Cleanup in TestMain
 
@@ -94,37 +182,7 @@ func TestMain(m *testing.M) {
 
 `Cleanup` removes the sandbox owned by this process and is safe to call when it was never started. If removal fails, it returns an error and can be retried; report that error so the run does not appear successful. Process termination before `TestMain` reaches cleanup can leave a sandbox behind.
 
-## Configuration and behavior
-
-Configure provider settings alongside kits, before the first Testcontainers operation:
-
-```go
-if err := sbx.Configure(
-    sbx.WithBinary("sbx"),
-    sbx.WithWorkspace("."),
-    sbx.WithBindRoots("/opt/test-fixtures"),
-    sbx.WithStartupTimeout(8*time.Minute),
-    sbx.WithAppName("tc-tests"),
-    sbx.WithKits("./testdata/test-tools"),
-); err != nil {
-    fmt.Fprintf(os.Stderr, "sbx configuration: %v\n", err)
-    os.Exit(1)
-}
-```
-
-Explicit options take precedence over environment variables; unset options use the environment and then the defaults below. The provider reads the environment during initialization and does not change it. Later settings override earlier ones, including across `Configure` calls. An overridden environment value is not validated or used, so a valid option can replace an invalid environment setting.
-
-`WithBindRoots` replaces the entire additional-root list, including any environment setting. Call `WithBindRoots()` to allow only the workspace. `WithAppName("")` overrides an inherited namespace with the CLI default. Nonempty app names accept up to 20 letters, digits, hyphens, and underscores. Authenticate the chosen namespace before running tests, for example with `sbx --app-name tc-tests login`.
-
-Binary and workspace options must be nonempty, startup timeouts must be positive, and bind roots must be absolute. Workspace and bind directories are checked at startup, so they may be created after `Configure`. Relative workspaces are resolved against the process working directory at startup. Relative kit sources remain relative to the process working directory, independently of the workspace setting.
-
-| Option | Environment variable | Purpose | Default |
-| --- | --- | --- | --- |
-| `WithBinary(path)` | `TESTCONTAINERS_SBX_BINARY` | Path or name of the `sbx` executable | `sbx` on `PATH` |
-| `WithWorkspace(path)` | `TESTCONTAINERS_SBX_WORKSPACE` | Workspace passed to the sandbox; paths inside it are visible to the sandbox | Current working directory |
-| `WithBindRoots(paths...)` | `TESTCONTAINERS_SBX_BIND_ROOTS` | Additional allowed host bind directories; environment entries use the OS path-list separator (`:` on macOS/Linux) | No additional roots; workspace allowed automatically |
-| `WithStartupTimeout(duration)` | `TESTCONTAINERS_SBX_TIMEOUT` | Sandbox initialization limit, including kit installation; environment values use Go durations such as `5m` | `5m` |
-| `WithAppName(name)` | `TESTCONTAINERS_SBX_APP_NAME` | Optional `sbx --app-name` value for every CLI call | CLI default |
+## Runtime behavior
 
 The provider exposes container TCP and UDP ports on `127.0.0.1`. `Host()` and `MappedPort()` return the local endpoint. A requested host port remains the same while its container runs. Stopping a container releases its forwarding; restarting tries to reclaim that same port and returns an error if another process took it. A fixed port already in use fails when the container is created.
 
