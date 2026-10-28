@@ -184,6 +184,7 @@ func ExampleRun_externalDataStore() {
 		log.Printf("failed to terminate container: %s", err)
 		return
 	}
+	gatewayContainer = nil // already terminated, skip the deferred cleanup
 
 	state, err := pgContainer.State(ctx)
 	if err != nil {
