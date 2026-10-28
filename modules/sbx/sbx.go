@@ -13,9 +13,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -28,6 +30,7 @@ import (
 // Its zero value is ready for use.
 type Provider struct {
 	mu           sync.Mutex
+	options      options
 	started      bool
 	ready        chan struct{}
 	config       testcontainers.RuntimeConfig
@@ -61,7 +64,7 @@ func (p *Provider) Initialize(ctx context.Context) (testcontainers.RuntimeConfig
 	if !p.started {
 		p.started = true
 		p.ready = make(chan struct{})
-		go p.initialize(context.WithoutCancel(ctx))
+		go p.initialize(context.WithoutCancel(ctx), p.options.clone())
 	}
 	ready := p.ready
 	p.mu.Unlock()
@@ -75,7 +78,7 @@ func (p *Provider) Initialize(ctx context.Context) (testcontainers.RuntimeConfig
 	}
 }
 
-func (p *Provider) initialize(parent context.Context) {
+func (p *Provider) initialize(parent context.Context, opts options) {
 	var config testcontainers.RuntimeConfig
 	var err error
 	defer func() {
@@ -116,8 +119,15 @@ func (p *Provider) initialize(parent context.Context) {
 
 	// create rejects existing names, unlike run, and exits after creating a
 	// running sandbox. Its stdout is intentionally ignored.
-	_, err = run(ctx, "create", "--name", name, "--kit", dockerTCPKit,
-		"--publish", fmt.Sprintf("127.0.0.1:%d:2375/tcp", hostPort), baseImage, cfg.workspace)
+	args := []string{"create", "--name", name, "--kit", dockerTCPKit}
+	for _, kit := range opts.kits {
+		args = append(args, "--kit", kit)
+	}
+	for _, key := range slices.Sorted(maps.Keys(opts.kitArgs)) {
+		args = append(args, "--kit-arg", key+"="+opts.kitArgs[key])
+	}
+	args = append(args, "--publish", fmt.Sprintf("127.0.0.1:%d:2375/tcp", hostPort), baseImage, cfg.workspace)
+	_, err = run(ctx, args...)
 	if err != nil {
 		if isCreateCollision(err, name) {
 			// create checks for an existing name before issuing its create call.

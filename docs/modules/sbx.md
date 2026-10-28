@@ -32,6 +32,34 @@ You can instead set `provider=sbx` in `~/.testcontainers.properties`. The enviro
 
 The module creates the sandbox with `--kit sbx/docker-tcp:latest` and base image `docker.io/docker/sbx-kit-shell:1.0.0`. The `sbx` CLI pulls and loads the published Docker TCP kit. After creation, the module runs `sbx run --detach --name <name>` to keep its owned sandbox running until explicit cleanup, then discovers the Docker endpoint.
 
+## Install additional kits
+
+Use `sbx.Configure` with provider options before the first Testcontainers operation, typically at the beginning of `TestMain`, before `m.Run()` or provider health checks:
+
+```go
+if err := sbx.Configure(
+    sbx.WithKits("./testdata/test-tools"),
+    sbx.WithKitArgs(map[string]string{
+        "test-tools.mode": "integration",
+    }),
+); err != nil {
+    fmt.Fprintf(os.Stderr, "sbx configuration: %v\n", err)
+    os.Exit(1)
+}
+```
+
+Replace the example reference and arguments with your own mixin's settings. `WithKits` accepts multiple references, including OCI images, local directories, and Git sources. Use version tags or digests for reproducible published kits. Relative paths are resolved against the process working directory at initialization, independently of `TESTCONTAINERS_SBX_WORKSPACE`.
+
+`Configure` configures the registered provider without selecting it or starting a sandbox. Continue selecting it through `TESTCONTAINERS_PROVIDER=sbx` or the `provider` property. If another provider is selected, the sbx configuration is unused. Containers still use the usual module `Run` functions and container customizers. Kit options apply to the sandbox environment; tools installed by a kit are not automatically installed inside its child containers.
+
+`WithKits` appends references in the supplied order, alongside the required Docker TCP kit. `WithKitArgs` merges arguments, with later values overriding earlier values for the same key. An unqualified argument applies to every selected kit declaring it; `kit-handle.name` targets one kit. Empty values are allowed. Arguments are plain text stored by sbx, so use sbx credentials for secrets.
+
+The provider passes repeated `--kit` and `--kit-arg` flags to `sbx create`. sbx validates sources, duplicate kit names, declared arguments, dependencies, and compatibility. Include any kits required by your mixins; sbx determines dependency order rather than treating flag order as installation order. Source policies and credentials must already permit unattended use. See [Use kits](https://docs.docker.com/ai/sandboxes/customize/use-kits/) for source formats, kit arguments, and composition rules.
+
+Repeated `Configure` calls compose before initialization. Each call either applies all its options or returns an error without changing the previous configuration. Options copy their input slices and maps. Once initialization begins, configuration is frozen and further calls return `sbx.ErrProviderStarted`, including after initialization fails or the sandbox is cleaned up. Callers can check this with `errors.Is`. Kit creation runs within `TESTCONTAINERS_SBX_TIMEOUT`; creation errors retain the CLI diagnostic and trigger owned-sandbox cleanup.
+
+Each test process shares one kit configuration. Configure every package's test binary, directly or through a shared test helper. Use a separate test process for a different kit combination. V3 sandboxes cannot install additional mixins with `sbx kit add` after creation.
+
 ## Cleanup in TestMain
 
 Call `sbx.Cleanup` after `m.Run()` with a fresh, bounded context, then exit with the test result. A named import of `sbx` for `Cleanup` also registers the provider, so a blank import is unnecessary in the same test binary.
@@ -99,7 +127,7 @@ From the repository root, with a supported `sbx` installation and local VM suppo
 
 For verbose test output, run `GOFLAGS=-v ./scripts/test-sbx.sh module`. The harness preserves `GOFLAGS` for its Go commands.
 
-`module` runs the sbx module suite, including a real nginx lifecycle, mapped port, exec, copy, logs, restart, occupied port test, and an idle-lifetime regression that verifies the sandbox stays running for more than 30 seconds.
+`module` runs the sbx module suite, including a real nginx lifecycle, mapped port, exec, copy, logs, restart, occupied port test, and an idle-lifetime regression that verifies the sandbox stays running for more than 30 seconds. A separate test process creates a sandbox with the local v3 mixin in `modules/sbx/testdata/test-tools`, verifies its argument-generated file, and runs an ordinary nginx container. This check requires local kit builds to be available and allowed by the host's sbx configuration.
 
 `core` registers sbx in every root-module test package and runs the complete root Go-module `./...` suite, with retries disabled. Optional nested Go modules are separate; the sbx module suite and native Compose checks supplement the core run. The only sbx capability skips are host-network options, host networking, and `container:<id>` networking: sbx manages forwarding for published ports and does not support those network modes.
 

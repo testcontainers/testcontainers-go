@@ -32,6 +32,15 @@ func TestProviderImportIsLazyAndUnusedCleanupIsSafe(t *testing.T) {
 		if defaultProvider.started {
 			t.Fatal("import initialized default sbx provider")
 		}
+		if err := Configure(WithKits("./unused-kit")); err != nil {
+			t.Fatal(err)
+		}
+		if defaultProvider.started || len(defaultProvider.options.kits) != 1 {
+			t.Fatal("configuration did not update the lazy default provider")
+		}
+		if err := Cleanup(context.Background()); err != nil {
+			t.Fatal(err)
+		}
 		if err := (&Provider{}).Cleanup(context.Background()); err != nil {
 			t.Fatal(err)
 		}

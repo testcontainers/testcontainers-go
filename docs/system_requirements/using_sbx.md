@@ -22,6 +22,8 @@ sbx --app-name "$TESTCONTAINERS_SBX_APP_NAME" login
 
 The provider automatically applies the published `sbx/docker-tcp:latest` kit when it creates the sandbox.
 
+To install additional mixins at creation, call `sbx.Configure(sbx.WithKits(...))` before the first Testcontainers operation. `sbx.WithKitArgs(...)` supplies kit parameters. Configuration stays lazy and applies to the whole test process; it cannot change after provider initialization begins. See [Install additional kits](../modules/sbx.md#install-additional-kits) for a `TestMain` example and composition rules.
+
 The kit exposes the sandbox's Docker API without authentication on a host loopback port. Other local users and processes can access it directly. Run only where all local users and processes are trusted.
 
 ## Register and select the provider
