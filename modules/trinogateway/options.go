@@ -8,24 +8,8 @@ import (
 )
 
 type options struct {
-	postgresImage   string
-	postgresOptions []testcontainers.ContainerCustomizer
-	dataStore       *dataStore
-	config          io.Reader
-}
-
-// dataStore holds the settings of the database used by Trino Gateway as data store.
-type dataStore struct {
-	jdbcURL  string
-	user     string
-	password string
-	driver   string
-}
-
-func defaultOptions() options {
-	return options{
-		postgresImage: defaultPostgresImage,
-	}
+	dataStore DataStoreProvider
+	config    io.Reader
 }
 
 // Satisfy the testcontainers.ContainerCustomizer interface
@@ -40,42 +24,25 @@ func (o Option) Customize(*testcontainers.GenericContainerRequest) error {
 	return nil
 }
 
-// WithPostgres sets the image and options for the PostgreSQL container used as data store.
-// By default, the image is "postgres:17-alpine".
-// This option is ignored when an external data store is configured with WithDataStore.
-func WithPostgres(img string, opts ...testcontainers.ContainerCustomizer) Option {
+// WithDataStore sets the data store of the gateway, see NewManagedPostgresProvider and
+// NewExternalProvider. It is required.
+func WithDataStore(provider DataStoreProvider) Option {
 	return func(o *options) error {
-		o.postgresImage = img
-		o.postgresOptions = opts
+		if provider == nil {
+			return errors.New("data store provider must not be nil")
+		}
+
+		if err := provider.validate(); err != nil {
+			return err
+		}
+
+		o.dataStore = provider
 		return nil
 	}
 }
 
-// WithDataStore configures Trino Gateway to use an external database as data store,
-// instead of starting a PostgreSQL container. The JDBC URL must be reachable from the
-// Trino Gateway container, and the driver is the JDBC driver class, e.g. "org.postgresql.Driver",
-// "com.mysql.cj.jdbc.Driver" or "oracle.jdbc.OracleDriver".
-func WithDataStore(jdbcURL, user, password, driver string) Option {
-	return func(o *options) error {
-		if jdbcURL == "" {
-			return errors.New("data store JDBC URL must not be empty")
-		}
-
-		o.dataStore = &dataStore{
-			jdbcURL:  jdbcURL,
-			user:     user,
-			password: password,
-			driver:   driver,
-		}
-		return nil
-	}
-}
-
-// WithConfig replaces the default configuration file of Trino Gateway with the content
-// of the reader, copying it to the container file at "/etc/trino-gateway/config.yaml".
-// The configuration can reference the data store settings using the environment variables
-// set by the module: "${ENV:DATASTORE_JDBC_URL}", "${ENV:DATASTORE_USER}",
-// "${ENV:DATASTORE_PASSWORD}" and "${ENV:DATASTORE_DRIVER}".
+// WithConfig replaces the default config file of the gateway. The data store settings are in the
+// DATASTORE_JDBC_URL, DATASTORE_USER, DATASTORE_PASSWORD and DATASTORE_DRIVER env vars.
 func WithConfig(r io.Reader) Option {
 	return func(o *options) error {
 		if r == nil {

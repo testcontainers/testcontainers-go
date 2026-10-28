@@ -6,12 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/url"
 	"strings"
 	"time"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -20,27 +18,16 @@ const (
 	// httpPort is the default port exposed by Trino Gateway.
 	httpPort = "8080/tcp"
 
-	// startupTimeout is the time to wait for Trino Gateway to be ready, including the database migrations.
+	// startupTimeout includes the time to run the database migrations.
 	startupTimeout = 3 * time.Minute
 
-	// configPath is the path of the configuration file inside the Trino Gateway container.
+	// configPath is the path of the config file in the container.
 	configPath = "/etc/trino-gateway/config.yaml"
 
-	// aliasGateway is the network alias of the Trino Gateway container.
+	// aliasGateway is the alias for the gateway container in the network.
 	aliasGateway = "trino-gateway"
 
-	// aliasPostgres is the network alias of the PostgreSQL container used as data store.
-	aliasPostgres = "postgres"
-
-	// defaultPostgresImage is the default image of the PostgreSQL container used as data store.
-	defaultPostgresImage = "postgres:17-alpine"
-
-	// postgresDriver is the JDBC driver class for PostgreSQL.
-	postgresDriver = "org.postgresql.Driver"
-
-	// Environment variables referenced by the default configuration file, see config.yaml.
-	// A custom configuration file passed with WithConfig can reference them too, using
-	// the "${ENV:NAME}" syntax supported by Trino Gateway.
+	// Environment variables with the data store settings, referenced by config.yaml.
 	envDataStoreJDBCURL  = "DATASTORE_JDBC_URL"
 	envDataStoreUser     = "DATASTORE_USER"
 	envDataStorePassword = "DATASTORE_PASSWORD"
@@ -53,30 +40,23 @@ var defaultConfig string
 // Container represents the Trino Gateway container type used in the module.
 type Container struct {
 	testcontainers.Container
-	postgres *postgres.PostgresContainer
-	network  *testcontainers.DockerNetwork
+	dataStore DataStoreProvider
+	network   *testcontainers.DockerNetwork
 }
 
 // ConnectionString returns the HTTP connection string for the Trino Gateway,
-// e.g. "http://localhost:8080". Trino clients connect to this URL as if it
-// were a Trino coordinator.
+// e.g. "http://localhost:8080".
 func (c *Container) ConnectionString(ctx context.Context) (string, error) {
 	return c.PortEndpoint(ctx, httpPort, "http")
 }
 
-// Network returns the network the Trino Gateway container is attached to.
-// Trino backends must be attached to this network so the gateway can reach them.
+// Network returns the network created for the gateway. Trino backends must be attached to it.
 func (c *Container) Network() *testcontainers.DockerNetwork {
 	return c.network
 }
 
-// PostgresContainer returns the PostgreSQL container used as data store,
-// or nil if an external data store was configured with WithDataStore.
-func (c *Container) PostgresContainer() *postgres.PostgresContainer {
-	return c.postgres
-}
-
-// Terminate terminates the Trino Gateway container, the PostgreSQL container, and the network to communicate between them.
+// Terminate terminates the gateway container, the resources created by the data store
+// provider, and the network, in this order.
 func (c *Container) Terminate(ctx context.Context, opts ...testcontainers.TerminateOption) error {
 	var errs []error
 
@@ -86,9 +66,9 @@ func (c *Container) Terminate(ctx context.Context, opts ...testcontainers.Termin
 		}
 	}
 
-	if c.postgres != nil {
-		if err := c.postgres.Terminate(ctx, opts...); err != nil {
-			errs = append(errs, fmt.Errorf("terminate postgres container: %w", err))
+	if c.dataStore != nil {
+		if err := c.dataStore.terminate(ctx, opts...); err != nil {
+			errs = append(errs, fmt.Errorf("terminate data store: %w", err))
 		}
 	}
 
@@ -101,13 +81,10 @@ func (c *Container) Terminate(ctx context.Context, opts ...testcontainers.Termin
 	return errors.Join(errs...)
 }
 
-// Run creates an instance of the Trino Gateway container type.
-//
-// Trino Gateway requires a relational database as data store. By default, a PostgreSQL
-// container is started and attached, together with the gateway, to a dedicated network.
-// Use WithPostgres to customise it, or WithDataStore to use an external database instead.
+// Run creates an instance of the Trino Gateway container type. The data store must be
+// selected with WithDataStore.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
-	settings := defaultOptions()
+	var settings options
 	for _, opt := range opts {
 		if o, ok := opt.(Option); ok {
 			if err := o(&settings); err != nil {
@@ -116,36 +93,24 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		}
 	}
 
+	if settings.dataStore == nil {
+		return nil, errors.New("trinogateway: a data store provider is required, use WithDataStore")
+	}
+
 	nw, err := network.New(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("new network: %w", err)
 	}
 
-	// From here on, the container is always returned so the caller can terminate
-	// the resources that were created, even when an error occurs.
+	// From here on, return the container so the caller can terminate what was created.
 	c := &Container{network: nw}
 
-	ds := settings.dataStore
-	if ds == nil {
-		pgOpts := make([]testcontainers.ContainerCustomizer, 0, 2+len(settings.postgresOptions))
-		pgOpts = append(pgOpts,
-			postgres.BasicWaitStrategies(),
-			network.WithNetwork([]string{aliasPostgres}, nw),
-		)
-		pgOpts = append(pgOpts, settings.postgresOptions...)
-
-		// Start the postgres container first: the gateway runs the database migrations on startup.
-		pg, err := postgres.Run(ctx, settings.postgresImage, pgOpts...)
-		c.postgres = pg
-		if err != nil {
-			return c, fmt.Errorf("run postgres: %w", err)
-		}
-
-		ds, err = postgresDataStore(ctx, pg)
-		if err != nil {
-			return c, err
-		}
+	// Start the data store first: the gateway runs the database migrations on startup.
+	ds, err := settings.dataStore.start(ctx, nw)
+	if err != nil {
+		return c, fmt.Errorf("start data store: %w", err)
 	}
+	c.dataStore = settings.dataStore
 
 	var config io.Reader = strings.NewReader(defaultConfig)
 	if settings.config != nil {
@@ -187,28 +152,4 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	}
 
 	return c, nil
-}
-
-// postgresDataStore builds the data store settings for the postgres container,
-// reading the credentials and database name from its connection string and
-// pointing the JDBC URL to the network alias of the container.
-func postgresDataStore(ctx context.Context, pg *postgres.PostgresContainer) (*dataStore, error) {
-	connStr, err := pg.ConnectionString(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("postgres connection string: %w", err)
-	}
-
-	u, err := url.Parse(connStr)
-	if err != nil {
-		return nil, fmt.Errorf("parse postgres connection string: %w", err)
-	}
-
-	password, _ := u.User.Password()
-
-	return &dataStore{
-		jdbcURL:  fmt.Sprintf("jdbc:postgresql://%s:5432%s", aliasPostgres, u.Path),
-		user:     u.User.Username(),
-		password: password,
-		driver:   postgresDriver,
-	}, nil
 }

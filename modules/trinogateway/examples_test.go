@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/modules/trino"
 	"github.com/testcontainers/testcontainers-go/modules/trinogateway"
 	"github.com/testcontainers/testcontainers-go/network"
@@ -21,7 +22,9 @@ func ExampleRun() {
 	// runTrinoGatewayContainer {
 	ctx := context.Background()
 
-	gatewayContainer, err := trinogateway.Run(ctx, "trinodb/trino-gateway:22")
+	gatewayContainer, err := trinogateway.Run(ctx, "trinodb/trino-gateway:22",
+		trinogateway.WithDataStore(trinogateway.NewManagedPostgresProvider("postgres:17-alpine")),
+	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(gatewayContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -48,7 +51,9 @@ func ExampleRun() {
 func ExampleRun_backends() {
 	ctx := context.Background()
 
-	gatewayContainer, err := trinogateway.Run(ctx, "trinodb/trino-gateway:22")
+	gatewayContainer, err := trinogateway.Run(ctx, "trinodb/trino-gateway:22",
+		trinogateway.WithDataStore(trinogateway.NewManagedPostgresProvider("postgres:17-alpine")),
+	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(gatewayContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -60,9 +65,7 @@ func ExampleRun_backends() {
 	}
 
 	// runTrinoBackend {
-	// The Trino container is attached to the gateway network, and configured to process
-	// the forwarded headers set by the gateway, so that the URLs for the next results of
-	// a query point to the gateway instead of the Trino container.
+	// Trino must process the forwarded headers, so that nextUri points to the gateway.
 	trinoContainer, err := trino.Run(ctx, "trinodb/trino:435",
 		network.WithNetwork([]string{"trino"}, gatewayContainer.Network()),
 		testcontainers.WithEnv(map[string]string{"JAVA_TOOL_OPTIONS": "-Dhttp-server.process-forwarded=true"}),
@@ -98,10 +101,7 @@ func ExampleRun_backends() {
 	// }
 
 	// queryThroughGateway {
-	// Any Trino client can be pointed to the gateway's connection string. Here the
-	// Trino REST API is used directly: submit the query, then follow the nextUri links
-	// until the results are complete. Those links point to the gateway, which routes
-	// them to the backend running the query.
+	// Any Trino client can use the connection string, runQuery calls the REST API directly.
 	connectionString, err := gatewayContainer.ConnectionString(ctx)
 	if err != nil {
 		log.Printf("failed to get connection string: %s", err)
@@ -129,10 +129,78 @@ func ExampleRun_backends() {
 	// 1
 }
 
+func ExampleRun_externalDataStore() {
+	ctx := context.Background()
+
+	// runWithExternalDatabase {
+	// The database is owned by the caller, and the gateway joins its network.
+	nw, err := network.New(ctx)
+	if err != nil {
+		log.Printf("failed to create network: %s", err)
+		return
+	}
+	defer func() {
+		if err := nw.Remove(context.Background()); err != nil {
+			log.Printf("failed to remove network: %s", err)
+		}
+	}()
+
+	pgContainer, err := postgres.Run(ctx, "postgres:17-alpine",
+		postgres.WithDatabase("gateway"),
+		postgres.WithUsername("gateway"),
+		postgres.WithPassword("secret"),
+		postgres.BasicWaitStrategies(),
+		network.WithNetwork([]string{"db"}, nw),
+	)
+	defer func() {
+		if err := testcontainers.TerminateContainer(pgContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
+
+	gatewayContainer, err := trinogateway.Run(ctx, "trinodb/trino-gateway:22",
+		trinogateway.WithDataStore(trinogateway.NewExternalProvider(
+			"jdbc:postgresql://db:5432/gateway", "gateway", "secret", "org.postgresql.Driver",
+		)),
+		network.WithNetwork([]string{"gateway"}, nw),
+	)
+	defer func() {
+		if err := testcontainers.TerminateContainer(gatewayContainer); err != nil {
+			log.Printf("failed to terminate container: %s", err)
+		}
+	}()
+	if err != nil {
+		log.Printf("failed to start container: %s", err)
+		return
+	}
+	// }
+
+	// Terminating the gateway leaves the database running.
+	if err := gatewayContainer.Terminate(ctx); err != nil {
+		log.Printf("failed to terminate container: %s", err)
+		return
+	}
+
+	state, err := pgContainer.State(ctx)
+	if err != nil {
+		log.Printf("failed to get container state: %s", err)
+		return
+	}
+
+	fmt.Println(state.Running)
+
+	// Output:
+	// true
+}
+
 // runQuery {
 
-// trinoResult is the subset of the Trino statement response used to fetch the query results.
-// See https://trino.io/docs/current/develop/client-protocol.html
+// trinoResult is part of a Trino client protocol response, see
+// https://trino.io/docs/current/develop/client-protocol.html
 type trinoResult struct {
 	NextURI string  `json:"nextUri"`
 	Data    [][]any `json:"data"`
@@ -141,8 +209,7 @@ type trinoResult struct {
 	} `json:"error"`
 }
 
-// runQuery submits a query to a Trino endpoint and follows the nextUri links
-// until the results are complete, returning the rows.
+// runQuery runs a query and follows the nextUri links until all the rows are fetched.
 func runQuery(ctx context.Context, baseURL, query string) ([][]any, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL+"/v1/statement", strings.NewReader(query))
 	if err != nil {
@@ -170,7 +237,7 @@ func runQuery(ctx context.Context, baseURL, query string) ([][]any, error) {
 	}
 }
 
-// fetchResult sends a request of the Trino client protocol and decodes the response.
+// fetchResult sends a request and decodes the response.
 func fetchResult(req *http.Request) (trinoResult, error) {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

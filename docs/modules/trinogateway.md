@@ -38,6 +38,8 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 - `string`, the Docker image to use.
 - `testcontainers.ContainerCustomizer`, a variadic argument for passing options.
 
+A data store must be selected with the [`WithDataStore`](#withdatastore) option, otherwise `Run` returns an error.
+
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
@@ -45,11 +47,40 @@ In example: `Run(context.Background(), "trinodb/trino-gateway:22")`.
 
 ### Data store
 
-Trino Gateway requires a relational database as data store, where it keeps the registered backends and the query history.
-By default, the module starts a PostgreSQL container, using the `postgres:17-alpine` image, and attaches it together with the gateway to a dedicated Docker network.
-Both containers and the network are removed when the gateway container is terminated.
+Trino Gateway requires a relational database as data store, where it keeps the registered backends and the query history. The database is described by a data store provider, which defines how the gateway gets the database and who owns its lifecycle. The provider must be selected explicitly with the [`WithDataStore`](#withdatastore) option, so that starting a database is always visible at the call site.
 
-Use the [`WithPostgres`](#withpostgres) option to customise the PostgreSQL container, or the [`WithDataStore`](#withdatastore) option to use an external database instead.
+The module creates a Docker network for the gateway, and owns it. Terminating the gateway container terminates, in order: the gateway container, the resources created by the data store provider, and the network. A database owned by the caller is never terminated.
+
+#### Managed PostgreSQL
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+`NewManagedPostgresProvider(img string, opts ...testcontainers.ContainerCustomizer)` returns a provider that starts a PostgreSQL container with the [postgres module](postgres.md), on the network created for the gateway, using the `postgres` network alias. The options are the options of the postgres module, e.g. `postgres.WithPassword("secret")`.
+
+The provider owns the PostgreSQL container: the container is terminated with the gateway, and if it fails to start, the provider removes it before `Run` returns the error. A provider starts a single container, so it cannot be used by two gateways at the same time.
+
+Use the `Container()` method of the provider to access the `*postgres.PostgresContainer`, e.g. to read its connection string. It returns `nil` before the container is started, and after it is terminated.
+
+```golang
+provider := trinogateway.NewManagedPostgresProvider("postgres:17-alpine")
+
+gatewayContainer, err := trinogateway.Run(ctx, "trinodb/trino-gateway:22", trinogateway.WithDataStore(provider))
+// handle the error and terminate the container
+
+pgContainer := provider.Container()
+```
+
+#### External database
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+`NewExternalProvider(jdbcURL, user, password, driver string)` returns a provider for a PostgreSQL, MySQL or Oracle database started by the caller, such as another container or an existing database service. The provider creates no database resources, and never terminates the database.
+
+The caller ensures that the JDBC URL is reachable from the gateway container, e.g. attaching the gateway to the network of the database with `network.WithNetwork`. The driver is the JDBC driver class, e.g. `org.postgresql.Driver`, `com.mysql.cj.jdbc.Driver` or `oracle.jdbc.OracleDriver`.
+
+<!--codeinclude-->
+[Using a database owned by the caller](../../modules/trinogateway/examples_test.go) inside_block:runWithExternalDatabase
+<!--/codeinclude-->
 
 ### Wait strategy
 
@@ -59,26 +90,11 @@ The module waits for the Trino Gateway to be ready by polling two HTTP endpoints
 
 When starting the Trino Gateway container, you can pass options in a variadic way to configure it.
 
-#### WithPostgres
-
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
-
-Use the `WithPostgres(img string, opts ...testcontainers.ContainerCustomizer)` option to set the image and the options of the PostgreSQL container used as data store, e.g. `trinogateway.WithPostgres("postgres:16-alpine", postgres.WithPassword("secret"))`.
-
-The option is ignored when an external data store is configured with `WithDataStore`.
-
 #### WithDataStore
 
 - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-Use the `WithDataStore(jdbcURL, user, password, driver string)` option to configure Trino Gateway to use an external PostgreSQL, MySQL or Oracle database as data store, instead of starting a PostgreSQL container. The JDBC URL must be reachable from the gateway container, so the database typically shares a Docker network with it, and the driver is the JDBC driver class, e.g. `org.postgresql.Driver`, `com.mysql.cj.jdbc.Driver` or `oracle.jdbc.OracleDriver`.
-
-```golang
-gatewayContainer, err := trinogateway.Run(ctx, "trinodb/trino-gateway:22",
-    trinogateway.WithDataStore("jdbc:postgresql://db:5432/gateway", "gateway", "secret", "org.postgresql.Driver"),
-    network.WithNetwork([]string{"gateway"}, nw),
-)
-```
+Use the `WithDataStore(provider DataStoreProvider)` option to select the data store of the gateway: a [managed PostgreSQL container](#managed-postgresql), with `NewManagedPostgresProvider`, or an [external database](#external-database), with `NewExternalProvider`. This option is required.
 
 #### WithConfig
 
@@ -107,7 +123,7 @@ The Trino Gateway container exposes the following methods:
 
 - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-This method returns the HTTP connection string for the Trino Gateway, e.g. `http://localhost:8080`. Trino clients, such as the [Trino Go client](https://github.com/trinodb/trino-go-client), connect to this URL as if it were a Trino coordinator.
+This method returns the HTTP connection string for the Trino Gateway, e.g. `http://localhost:8080`. Trino clients connect to this URL as if it were a Trino coordinator.
 
 ```golang
 connStr, err := gatewayContainer.ConnectionString(ctx)
@@ -117,26 +133,55 @@ connStr, err := gatewayContainer.ConnectionString(ctx)
 
 - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-This method returns the Docker network the gateway container is attached to. Trino backends must be attached to this network, so that the gateway can reach them by their network alias.
+This method returns the Docker network created for the gateway container, which is also used by a managed PostgreSQL data store. Trino backends must be attached to this network, so that the gateway can reach them by their network alias.
 
-#### PostgresContainer
-
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
-
-This method returns the PostgreSQL container used as data store, or `nil` if an external data store was configured with `WithDataStore`.
-
-#### Backends API
+#### AddBackend
 
 - Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
 
-The following methods wrap the [Trino Gateway REST API](https://trinodb.github.io/trino-gateway/gateway-api/) to manage the Trino clusters registered in the gateway:
+`AddBackend(ctx, backend Backend) error` registers a Trino cluster in the gateway, using the [Trino Gateway REST API](https://trinodb.github.io/trino-gateway/gateway-api/). The `ProxyTo` URL must be reachable from the gateway container, e.g. `http://trino:8080` for a Trino container with the `trino` network alias. The backend is registered as active, in the `adhoc` routing group unless `RoutingGroup` is set. Queries are routed to it once the gateway reports it as healthy, see [`WaitForBackendHealthy`](#waitforbackendhealthy).
 
-- `AddBackend(ctx, backend Backend) error` registers a Trino cluster. The `ProxyTo` URL must be reachable from the gateway container, e.g. `http://trino:8080` for a Trino container with the `trino` network alias. The backend is registered as active, in the `adhoc` routing group unless `RoutingGroup` is set.
-- `DeleteBackend(ctx, name string) error` removes a Trino cluster.
-- `ActivateBackend(ctx, name string) error` and `DeactivateBackend(ctx, name string) error` control whether queries are routed to a Trino cluster.
-- `Backends(ctx) ([]Backend, error)` and `ActiveBackends(ctx) ([]Backend, error)` list the registered and the active Trino clusters.
-- `BackendState(ctx, name string) (BackendState, error)` returns the state of a Trino cluster as observed by the gateway's cluster monitor, including its `TrinoStatus`: `HEALTHY`, `UNHEALTHY`, `PENDING` or `UNKNOWN`.
-- `WaitForBackendHealthy(ctx, name string) error` polls the state of a Trino cluster until the gateway reports it as healthy, or the context is done. Queries are routed to a backend only once it is healthy.
+#### DeleteBackend
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+`DeleteBackend(ctx, name string) error` removes a Trino cluster from the gateway.
+
+#### ActivateBackend
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+`ActivateBackend(ctx, name string) error` activates a Trino cluster, so that queries are routed to it.
+
+#### DeactivateBackend
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+`DeactivateBackend(ctx, name string) error` deactivates a Trino cluster, so that no queries are routed to it.
+
+#### Backends
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+`Backends(ctx) ([]Backend, error)` returns all the Trino clusters registered in the gateway.
+
+#### ActiveBackends
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+`ActiveBackends(ctx) ([]Backend, error)` returns the active Trino clusters registered in the gateway.
+
+#### BackendState
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+`BackendState(ctx, name string) (BackendState, error)` returns the state of a Trino cluster as observed by the gateway's cluster monitor, including its `TrinoStatus`: `HEALTHY`, `UNHEALTHY`, `PENDING` or `UNKNOWN`.
+
+#### WaitForBackendHealthy
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+`WaitForBackendHealthy(ctx, name string) error` polls the state of a Trino cluster until the gateway reports it as healthy, or the context is done. The gateway only routes queries to healthy backends.
 
 ### Examples
 

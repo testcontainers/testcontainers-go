@@ -12,49 +12,33 @@ import (
 	"time"
 )
 
-// backendStateHealthy is the status reported by the gateway for a backend
-// whose health check succeeded.
 const backendStateHealthy = "HEALTHY"
 
-// backendStatePollInterval is the interval between two checks of the backend state.
 const backendStatePollInterval = 500 * time.Millisecond
 
-// Backend represents a Trino cluster registered in Trino Gateway.
+// Backend is a Trino cluster registered in the gateway.
 type Backend struct {
-	// Name is the unique name of the backend.
 	Name string `json:"name"`
-	// ProxyTo is the URL of the Trino coordinator, as reachable from the Trino Gateway container,
-	// e.g. "http://trino:8080" when the Trino container has the "trino" network alias.
+	// ProxyTo is the URL of the Trino coordinator, as reachable from the gateway container.
 	ProxyTo string `json:"proxyTo"`
-	// ExternalURL is an optional URL of the Trino coordinator to show in the gateway UI,
-	// when it differs from ProxyTo. It defaults to ProxyTo.
+	// ExternalURL is shown in the gateway UI instead of ProxyTo, if set.
 	ExternalURL string `json:"externalUrl,omitempty"`
-	// Active reports whether the backend receives queries. Backends are always
-	// registered as active, use DeactivateBackend to deactivate them.
-	Active bool `json:"active"`
-	// RoutingGroup is the routing group of the backend. It defaults to "adhoc",
-	// the group used for queries that do not specify one.
-	RoutingGroup string `json:"routingGroup,omitempty"`
-	// Tags are optional tags of the backend.
-	Tags []string `json:"tags,omitempty"`
+	Active      bool   `json:"active"`
+	// RoutingGroup defaults to "adhoc".
+	RoutingGroup string   `json:"routingGroup,omitempty"`
+	Tags         []string `json:"tags,omitempty"`
 }
 
-// BackendState represents the state of a backend as observed by the gateway's cluster monitor.
+// BackendState is the state of a backend, as reported by the gateway.
 type BackendState struct {
-	// TrinoStatus is the health status of the backend: "HEALTHY", "UNHEALTHY", "PENDING" or "UNKNOWN".
-	TrinoStatus string `json:"trinoStatus"`
-	// RunningQueryCount is the number of queries running in the backend.
-	RunningQueryCount int `json:"runningQueryCount"`
-	// QueuedQueryCount is the number of queries queued in the backend.
-	QueuedQueryCount int `json:"queuedQueryCount"`
-	// NumWorkerNodes is the number of worker nodes of the backend.
-	NumWorkerNodes int `json:"numWorkerNodes"`
-	// ProxyTo is the URL of the Trino coordinator.
-	ProxyTo string `json:"proxyTo"`
-	// ExternalURL is the external URL of the Trino coordinator.
-	ExternalURL string `json:"externalUrl"`
-	// RoutingGroup is the routing group of the backend.
-	RoutingGroup string `json:"routingGroup"`
+	// TrinoStatus is "HEALTHY", "UNHEALTHY", "PENDING" or "UNKNOWN".
+	TrinoStatus       string `json:"trinoStatus"`
+	RunningQueryCount int    `json:"runningQueryCount"`
+	QueuedQueryCount  int    `json:"queuedQueryCount"`
+	NumWorkerNodes    int    `json:"numWorkerNodes"`
+	ProxyTo           string `json:"proxyTo"`
+	ExternalURL       string `json:"externalUrl"`
+	RoutingGroup      string `json:"routingGroup"`
 }
 
 // Healthy reports whether the backend passed the gateway's health check.
@@ -62,10 +46,8 @@ func (s BackendState) Healthy() bool {
 	return s.TrinoStatus == backendStateHealthy
 }
 
-// AddBackend registers a Trino cluster in the gateway. The backend is registered
-// as active, regardless of the Active field.
-// Queries are routed to the backend once the gateway's health check succeeds,
-// use WaitForBackendHealthy to wait for it.
+// AddBackend registers a Trino cluster as an active backend. Queries are routed to it
+// once it is healthy, see WaitForBackendHealthy.
 func (c *Container) AddBackend(ctx context.Context, backend Backend) error {
 	backend.Active = true
 
@@ -112,7 +94,7 @@ func (c *Container) ActiveBackends(ctx context.Context) ([]Backend, error) {
 	return backends, nil
 }
 
-// BackendState returns the state of a Trino cluster, as observed by the gateway's cluster monitor.
+// BackendState returns the state of a Trino cluster, as reported by the gateway.
 func (c *Container) BackendState(ctx context.Context, name string) (BackendState, error) {
 	var state BackendState
 	if err := c.doRequest(ctx, http.MethodGet, "/api/public/backends/"+url.PathEscape(name)+"/state", "", nil, &state); err != nil {
@@ -122,9 +104,7 @@ func (c *Container) BackendState(ctx context.Context, name string) (BackendState
 	return state, nil
 }
 
-// WaitForBackendHealthy polls the state of a Trino cluster until the gateway reports it
-// as healthy, or the context is done. The gateway checks the health of the backends
-// every second with the default configuration.
+// WaitForBackendHealthy waits until the gateway reports the backend as healthy, or the context is done.
 func (c *Container) WaitForBackendHealthy(ctx context.Context, name string) error {
 	ticker := time.NewTicker(backendStatePollInterval)
 	defer ticker.Stop()
@@ -147,7 +127,7 @@ func (c *Container) WaitForBackendHealthy(ctx context.Context, name string) erro
 	}
 }
 
-// doRequest performs an HTTP request against the gateway API, decoding a JSON response into out when not nil.
+// doRequest calls the gateway API, decoding the JSON response into out if not nil.
 func (c *Container) doRequest(ctx context.Context, method, path, contentType string, body io.Reader, out any) error {
 	baseURL, err := c.ConnectionString(ctx)
 	if err != nil {
