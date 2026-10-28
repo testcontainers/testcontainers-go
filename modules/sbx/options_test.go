@@ -58,6 +58,17 @@ func TestConfigureRollsBackInvalidOptions(t *testing.T) {
 		{name: "whitespace key", opt: WithKitArgs(map[string]string{"mode\n": "value"})},
 		{name: "NUL key", opt: WithKitArgs(map[string]string{"mode\x00": "value"})},
 		{name: "NUL value", opt: WithKitArgs(map[string]string{"mode": "value\x00"})},
+		{name: "empty-binary", opt: WithBinary("")},
+		{name: "NUL-binary", opt: WithBinary("sbx\x00")},
+		{name: "empty-workspace", opt: WithWorkspace("")},
+		{name: "NUL-workspace", opt: WithWorkspace("/tmp\x00")},
+		{name: "zero-timeout", opt: WithStartupTimeout(0)},
+		{name: "negative-timeout", opt: WithStartupTimeout(-time.Second)},
+		{name: "long-app-name", opt: WithAppName(strings.Repeat("a", 21))},
+		{name: "invalid-app-name", opt: WithAppName("test suite")},
+		{name: "relative-bind-root", opt: WithBindRoots("relative")},
+		{name: "empty-bind-root", opt: WithBindRoots("")},
+		{name: "NUL-bind-root", opt: WithBindRoots("/tmp\x00")},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var p Provider
@@ -65,7 +76,8 @@ func TestConfigureRollsBackInvalidOptions(t *testing.T) {
 				t.Fatal(err)
 			}
 			before := p.options.clone()
-			if err := p.Configure(WithKits("./new"), WithKitArgs(map[string]string{"mode": "new"}), tc.opt); err == nil {
+			if err := p.Configure(WithKits("./new"), WithKitArgs(map[string]string{"mode": "new"}),
+				WithWorkspace("./new"), WithAppName("new"), WithBindRoots(), tc.opt); err == nil {
 				t.Fatal("invalid option accepted")
 			}
 			if !reflect.DeepEqual(p.options, before) {
@@ -134,6 +146,8 @@ func TestKitCreateArgumentsAndFailureCleanup(t *testing.T) {
 	dir := t.TempDir()
 	binary := filepath.Join(dir, "fake-sbx")
 	script := `#!/bin/sh
+[ "$1" = --app-name ] && [ "$2" = kit-tests ] || exit 1
+shift 2
 printf '%s\n' "$1" >> "$TC_SBX_KIT_CALLS"
 case "$1" in
 create)
@@ -151,11 +165,11 @@ esac
 	if err := os.WriteFile(binary, []byte(script), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("TESTCONTAINERS_SBX_BINARY", binary)
-	t.Setenv("TESTCONTAINERS_SBX_WORKSPACE", dir)
-	t.Setenv("TESTCONTAINERS_SBX_BIND_ROOTS", "")
-	t.Setenv("TESTCONTAINERS_SBX_APP_NAME", "")
-	t.Setenv("TESTCONTAINERS_SBX_TIMEOUT", "5s")
+	t.Setenv("TESTCONTAINERS_SBX_BINARY", "does-not-exist")
+	t.Setenv("TESTCONTAINERS_SBX_WORKSPACE", filepath.Join(dir, "missing"))
+	t.Setenv("TESTCONTAINERS_SBX_BIND_ROOTS", "relative")
+	t.Setenv("TESTCONTAINERS_SBX_APP_NAME", "wrong-namespace")
+	t.Setenv("TESTCONTAINERS_SBX_TIMEOUT", "invalid")
 	argsPath, callsPath := filepath.Join(dir, "args"), filepath.Join(dir, "calls")
 	t.Setenv("TC_SBX_KIT_ARGS", argsPath)
 	t.Setenv("TC_SBX_KIT_CALLS", callsPath)
@@ -163,9 +177,12 @@ esac
 	var p Provider
 	gitRef := "git+https://github.com/example/kits.git#ref=abc&dir=tools"
 	value := "spaces = values\n$(not-a-command) `nor-this`"
-	if err := p.Configure(WithKits("./kit with spaces", gitRef, "docker.io/example/tools:1.0"), WithKitArgs(map[string]string{
-		"tools.mode": value, "empty": "",
-	})); err != nil {
+	if err := p.Configure(
+		WithBinary(binary), WithWorkspace(dir), WithBindRoots(),
+		WithAppName("kit-tests"), WithStartupTimeout(5*time.Second),
+		WithKits("./kit with spaces", gitRef, "docker.io/example/tools:1.0"),
+		WithKitArgs(map[string]string{"tools.mode": value, "empty": ""}),
+	); err != nil {
 		t.Fatal(err)
 	}
 	// Concurrent clients must share one create attempt and its error.

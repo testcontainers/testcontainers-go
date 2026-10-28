@@ -22,8 +22,17 @@ type configuration struct {
 	bindRoots []configuredBindRoot
 }
 
-func readConfiguration() (configuration, error) {
+func readConfiguration(opts options) (configuration, error) {
 	cfg := configuration{binary: os.Getenv("TESTCONTAINERS_SBX_BINARY"), workspace: os.Getenv("TESTCONTAINERS_SBX_WORKSPACE"), timeout: 5 * time.Minute, appName: os.Getenv("TESTCONTAINERS_SBX_APP_NAME")}
+	if opts.binary != "" {
+		cfg.binary = opts.binary
+	}
+	if opts.workspace != "" {
+		cfg.workspace = opts.workspace
+	}
+	if opts.appName != nil {
+		cfg.appName = *opts.appName
+	}
 	if cfg.binary == "" {
 		cfg.binary = "sbx"
 	}
@@ -44,19 +53,22 @@ func readConfiguration() (configuration, error) {
 		return cfg, fmt.Errorf("configure sbx workspace: %w", err)
 	}
 	cfg.bindRoots = append(cfg.bindRoots, workspaceRoot)
-	if raw := os.Getenv("TESTCONTAINERS_SBX_BIND_ROOTS"); raw != "" {
-		for _, root := range strings.Split(raw, string(os.PathListSeparator)) {
-			if root == "" {
-				return cfg, errors.New("TESTCONTAINERS_SBX_BIND_ROOTS contains an empty path")
-			}
-			configured, configureErr := configureBindRoot(root, false)
-			if configureErr != nil {
-				return cfg, fmt.Errorf("configure TESTCONTAINERS_SBX_BIND_ROOTS path %q: %w", root, configureErr)
-			}
-			cfg.bindRoots = append(cfg.bindRoots, configured)
+	bindRoots := opts.bindRoots
+	if bindRoots == nil {
+		if raw := os.Getenv("TESTCONTAINERS_SBX_BIND_ROOTS"); raw != "" {
+			bindRoots = strings.Split(raw, string(os.PathListSeparator))
 		}
 	}
-	if raw := os.Getenv("TESTCONTAINERS_SBX_TIMEOUT"); raw != "" {
+	for _, root := range bindRoots {
+		configured, configureErr := configureBindRoot(root, false)
+		if configureErr != nil {
+			return cfg, fmt.Errorf("configure sbx bind root %q: %w", root, configureErr)
+		}
+		cfg.bindRoots = append(cfg.bindRoots, configured)
+	}
+	if opts.timeout > 0 {
+		cfg.timeout = opts.timeout
+	} else if raw := os.Getenv("TESTCONTAINERS_SBX_TIMEOUT"); raw != "" {
 		cfg.timeout, err = time.ParseDuration(raw)
 		if err != nil || cfg.timeout <= 0 {
 			return cfg, fmt.Errorf("TESTCONTAINERS_SBX_TIMEOUT must be a positive Go duration: %q", raw)

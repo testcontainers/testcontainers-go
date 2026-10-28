@@ -53,8 +53,8 @@ func init() {
 
 // Initialize starts a sandbox and returns its runtime configuration.
 // The sbx CLI must already be authenticated with sbx login.
-// Host binds are limited to the workspace and absolute directories listed in
-// TESTCONTAINERS_SBX_BIND_ROOTS, separated by the OS path-list separator.
+// Host binds are limited to the workspace and absolute directories configured
+// with WithBindRoots or TESTCONTAINERS_SBX_BIND_ROOTS.
 // Initialization is attempted once per Provider.
 func (p *Provider) Initialize(ctx context.Context) (testcontainers.RuntimeConfig, error) {
 	if err := ctx.Err(); err != nil {
@@ -87,7 +87,7 @@ func (p *Provider) initialize(parent context.Context, opts options) {
 		close(p.ready)
 		p.mu.Unlock()
 	}()
-	cfg, configErr := readConfiguration()
+	cfg, configErr := readConfiguration(opts)
 	if configErr != nil {
 		err = configErr
 		return

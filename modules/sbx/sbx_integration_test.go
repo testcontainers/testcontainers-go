@@ -264,7 +264,7 @@ func TestRealSandboxExternalSymlinkBind(t *testing.T) {
 	if os.Getenv("TESTCONTAINERS_PROVIDER") != "sbx" {
 		t.Fatal("TESTCONTAINERS_PROVIDER must be sbx for real integration")
 	}
-	configuration, err := readConfiguration()
+	configuration, err := readConfiguration(options{})
 	if err != nil {
 		t.Fatal(err)
 	}

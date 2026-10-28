@@ -20,6 +20,8 @@ export TESTCONTAINERS_SBX_APP_NAME=tc-tests
 sbx --app-name "$TESTCONTAINERS_SBX_APP_NAME" login
 ```
 
+You can configure the namespace in Go with `sbx.Configure(sbx.WithAppName("tc-tests"))` before the first Testcontainers operation. The provider also accepts `WithBinary`, `WithWorkspace`, `WithBindRoots`, and `WithStartupTimeout`. Explicit options override the corresponding environment variables. See [configuration and behavior](../modules/sbx.md#configuration-and-behavior) for examples and defaults.
+
 The provider automatically applies the published `sbx/docker-tcp:latest` kit when it creates the sandbox.
 
 To install additional mixins at creation, call `sbx.Configure(sbx.WithKits(...))` before the first Testcontainers operation. `sbx.WithKitArgs(...)` supplies kit parameters. Configuration stays lazy and applies to the whole test process; it cannot change after provider initialization begins. See [Install additional kits](../modules/sbx.md#install-additional-kits) for a `TestMain` example and composition rules.
@@ -50,7 +52,7 @@ Alternatively, set `provider=sbx` in `~/.testcontainers.properties`. The environ
 
 ## Host bind mounts
 
-The workspace is allowed automatically. External bind sources, including temporary directories and Compose service bind mounts, require an allowed root in `TESTCONTAINERS_SBX_BIND_ROOTS`. Existing tests that bind paths outside the workspace must configure those roots before the provider initializes. For example, to allow fixtures in two existing directories on macOS or Linux:
+The workspace is allowed automatically. External bind sources, including temporary directories and Compose service bind mounts, require an allowed root configured with `sbx.WithBindRoots(...)` or `TESTCONTAINERS_SBX_BIND_ROOTS`. Existing tests that bind paths outside the workspace must configure those roots before the provider initializes. For example, to allow fixtures in two existing directories on macOS or Linux:
 
 ```shell
 export TESTCONTAINERS_SBX_BIND_ROOTS="/opt/test-fixtures:/srv/shared-fixtures"
