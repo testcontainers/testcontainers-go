@@ -44,18 +44,9 @@ func Configure(opts ...Option) error
 
 Call it in `TestMain` before `m.Run()` or provider health checks. It does not start a sandbox or select the provider; select sbx through `TESTCONTAINERS_PROVIDER` or the `provider` property. If another provider is selected, the sbx configuration is unused.
 
-```golang
-if err := sbx.Configure(
-    sbx.WithStartupTimeout(8*time.Minute),
-    sbx.WithKits("./testdata/test-tools"),
-    sbx.WithKitArgs(map[string]string{
-        "test-tools.mode": "integration",
-    }),
-); err != nil {
-    fmt.Fprintf(os.Stderr, "sbx configuration: %v\n", err)
-    os.Exit(1)
-}
-```
+<!--codeinclude-->
+[Configure the sandbox provider](../../modules/sbx/examples_test.go) inside_block:configureProvider
+<!--/codeinclude-->
 
 - Each test process shares one configuration. Configure every package's test binary, directly or through a shared test helper.
 - Each call applies all options atomically. Invalid options leave the previous configuration unchanged. Input slices and maps are copied.
@@ -72,9 +63,9 @@ Pass the following functional options to `sbx.Configure` or `(*sbx.Provider).Con
 
 `WithBinary(binary string)` sets the sbx executable path or name, overriding `TESTCONTAINERS_SBX_BINARY`. The default is `sbx` on `PATH`. The value must be nonempty; the executable is resolved at startup. Later values replace earlier ones.
 
-```golang
-sbx.WithBinary("/usr/local/bin/sbx")
-```
+<!--codeinclude-->
+[WithBinary](../../modules/sbx/examples_test.go) inside_block:withBinary
+<!--/codeinclude-->
 
 #### WithWorkspace
 
@@ -82,9 +73,9 @@ sbx.WithBinary("/usr/local/bin/sbx")
 
 `WithWorkspace(path string)` sets the sandbox workspace, overriding `TESTCONTAINERS_SBX_WORKSPACE`. The default is the process working directory. The value must be nonempty and name an existing directory at startup. Relative paths are resolved against the process working directory at startup. Later values replace earlier ones.
 
-```golang
-sbx.WithWorkspace(".")
-```
+<!--codeinclude-->
+[WithWorkspace](../../modules/sbx/examples_test.go) inside_block:withWorkspace
+<!--/codeinclude-->
 
 #### WithBindRoots
 
@@ -94,9 +85,9 @@ sbx.WithWorkspace(".")
 
 By default, only the workspace is allowed. Call `WithBindRoots()` to clear inherited extra roots; the workspace remains allowed. See [host bind mounts](../system_requirements/using_sbx.md#host-bind-mounts) for symlink restrictions.
 
-```golang
-sbx.WithBindRoots("/opt/test-fixtures", "/srv/shared-fixtures")
-```
+<!--codeinclude-->
+[WithBindRoots](../../modules/sbx/examples_test.go) inside_block:withBindRoots
+<!--/codeinclude-->
 
 #### WithStartupTimeout
 
@@ -104,9 +95,9 @@ sbx.WithBindRoots("/opt/test-fixtures", "/srv/shared-fixtures")
 
 `WithStartupTimeout(timeout time.Duration)` sets the timeout for sandbox initialization, including kit installation, overriding `TESTCONTAINERS_SBX_TIMEOUT`. The default is `5*time.Minute`. The duration must be positive. Later values replace earlier ones.
 
-```golang
-sbx.WithStartupTimeout(8*time.Minute)
-```
+<!--codeinclude-->
+[WithStartupTimeout](../../modules/sbx/examples_test.go) inside_block:withStartupTimeout
+<!--/codeinclude-->
 
 #### WithAppName
 
@@ -116,9 +107,9 @@ sbx.WithStartupTimeout(8*time.Minute)
 
 The default is the CLI's default namespace. Call `WithAppName("")` to clear an inherited namespace. Authenticate the chosen namespace before running tests, for example with `sbx --app-name tc-tests login`.
 
-```golang
-sbx.WithAppName("tc-tests")
-```
+<!--codeinclude-->
+[WithAppName](../../modules/sbx/examples_test.go) inside_block:withAppName
+<!--/codeinclude-->
 
 #### WithKits
 
@@ -126,9 +117,9 @@ sbx.WithAppName("tc-tests")
 
 `WithKits(refs ...string)` appends mixin references to the sandbox creation request. No additional kits are installed by default; the required `sbx/docker-tcp:latest` kit is always included. References can be OCI images, local directories, or Git sources. Relative paths resolve against the process working directory at startup, independently of `WithWorkspace`.
 
-```golang
-sbx.WithKits("./testdata/test-tools", "docker.io/my-org/another-kit:1.0.0")
-```
+<!--codeinclude-->
+[WithKits](../../modules/sbx/examples_test.go) inside_block:withKits
+<!--/codeinclude-->
 
 Use version tags or digests for reproducible published kits. sbx validates duplicate names, dependencies, and compatibility, and determines installation order. Include any required dependency kits explicitly. Source policies and credentials must permit unattended use. See [Use kits](https://docs.docker.com/ai/sandboxes/customize/use-kits/) for source formats and composition rules.
 
@@ -140,11 +131,9 @@ Kits customize the sandbox environment; installed tools do not automatically app
 
 `WithKitArgs(args map[string]string)` merges kit arguments, with later values overriding earlier values for the same key. By default, no arguments are supplied. An unqualified key applies to every selected kit declaring it; `kit-handle.name` targets one kit. Empty values are allowed. sbx validates declared arguments and their values.
 
-```golang
-sbx.WithKitArgs(map[string]string{
-    "test-tools.mode": "integration",
-})
-```
+<!--codeinclude-->
+[WithKitArgs](../../modules/sbx/examples_test.go) inside_block:withKitArgs
+<!--/codeinclude-->
 
 Arguments are plain text stored by sbx. Use sbx credentials for secrets.
 
