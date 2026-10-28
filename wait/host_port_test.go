@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"net/netip"
+	"strconv"
 	"testing"
 	"time"
 
@@ -668,7 +669,7 @@ func closedPort(t *testing.T) network.Port {
 
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
-	port := network.MustParsePort(fmt.Sprint(l.Addr().(*net.TCPAddr).Port))
+	port := network.MustParsePort(strconv.Itoa(l.Addr().(*net.TCPAddr).Port))
 	require.NoError(t, l.Close())
 	return port
 }
