@@ -2,7 +2,7 @@ module github.com/testcontainers/testcontainers-go/modules/redis
 
 go 1.26.0
 
-toolchain go1.26.8
+toolchain go1.26.10
 
 require (
 	github.com/google/uuid v1.6.0

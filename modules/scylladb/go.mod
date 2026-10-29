@@ -2,7 +2,7 @@ module github.com/testcontainers/testcontainers-go/modules/scylladb
 
 go 1.26.0
 
-toolchain go1.26.8
+toolchain go1.26.10
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.47.3

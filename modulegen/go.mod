@@ -2,7 +2,7 @@ module github.com/testcontainers/testcontainers-go/modulegen
 
 go 1.26.0
 
-toolchain go1.26.8
+toolchain go1.26.10
 
 require (
 	github.com/spf13/cobra v1.10.2

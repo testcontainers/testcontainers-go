@@ -2,7 +2,7 @@ module github.com/testcontainers/testcontainers-go/modules/k3s
 
 go 1.26.0
 
-toolchain go1.26.8
+toolchain go1.26.10
 
 require (
 	github.com/containerd/platforms v0.2.1
