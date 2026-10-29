@@ -20,7 +20,11 @@ export TESTCONTAINERS_SBX_APP_NAME=tc-tests
 sbx --app-name "$TESTCONTAINERS_SBX_APP_NAME" login
 ```
 
+You can configure the namespace in Go with `sbx.Configure(sbx.WithAppName("tc-tests"))` before the first Testcontainers operation. The provider also accepts `WithBinary`, `WithWorkspace`, `WithBindRoots`, and `WithStartupTimeout`. Explicit options override the corresponding environment variables. See [Provider Options](../modules/sbx.md#provider-options) for examples and defaults.
+
 The provider automatically applies the published `sbx/docker-tcp:latest` kit when it creates the sandbox.
+
+To install additional mixins at creation, call `sbx.Configure(sbx.WithKits(...))` before the first Testcontainers operation. `sbx.WithKitArgs(...)` supplies kit parameters. Configuration stays lazy and applies to the whole test process; it cannot change after provider initialization begins. See [Configure function](../modules/sbx.md#configure-function) for setup and [WithKits](../modules/sbx.md#withkits) for composition rules.
 
 The kit exposes the sandbox's Docker API without authentication on a host loopback port. Other local users and processes can access it directly. Run only where all local users and processes are trusted.
 
@@ -48,14 +52,14 @@ Alternatively, set `provider=sbx` in `~/.testcontainers.properties`. The environ
 
 ## Host bind mounts
 
-The workspace is allowed automatically. External bind sources, including temporary directories and Compose service bind mounts, require an allowed root in `TESTCONTAINERS_SBX_BIND_ROOTS`. Existing tests that bind paths outside the workspace must configure those roots before the provider initializes. For example, to allow fixtures in two existing directories on macOS or Linux:
+The workspace is allowed automatically. External bind sources, including temporary directories and Compose service bind mounts, require an allowed root configured with `sbx.WithBindRoots(...)` or `TESTCONTAINERS_SBX_BIND_ROOTS`. Existing tests that bind paths outside the workspace must configure those roots before the provider initializes. For example, to allow fixtures in two existing directories on macOS or Linux:
 
 ```shell
 export TESTCONTAINERS_SBX_BIND_ROOTS="/opt/test-fixtures:/srv/shared-fixtures"
 TESTCONTAINERS_PROVIDER=sbx go test ./...
 ```
 
-Each root must be an existing absolute directory. See the [configuration reference](../modules/sbx.md#configuration-and-behavior) for validation rules. Only the requested bind source is mounted into the sandbox. A Compose file outside the workspace or an uploaded build context does not itself require a bind root; service bind sources do.
+Each root must be an existing absolute directory. See the [WithBindRoots reference](../modules/sbx.md#withbindroots) for validation rules. Only the requested bind source is mounted into the sandbox. A Compose file outside the workspace or an uploaded build context does not itself require a bind root; service bind sources do.
 
 Bind source paths must not contain `..` components. Relative symlinks below a root are allowed only when resolution stays within one containing allowed root. Absolute symlinks below a root are rejected, as are relative links that escape to a separate allowed root. With nested roots, a broader containing root can authorize a relative link that stays within it. Keep roots and source paths stable and writable only by trusted users and processes: a host path can still change between provider validation and the external `sbx` mount.
 
@@ -65,7 +69,7 @@ Call `sbx.Cleanup` after `m.Run()` with a fresh, bounded context to remove the o
 
 Ryuk cleans up container resources inside the sandbox; removing the sandbox requires the explicit cleanup call. Process termination before cleanup can leave a sandbox behind.
 
-See [configuration and behavior](../modules/sbx.md#configuration-and-behavior) for runtime options and limitations.
+See [Provider Options](../modules/sbx.md#provider-options) and [Runtime behavior](../modules/sbx.md#runtime-behavior) for runtime settings and limitations.
 
 ## Run the repository tests
 

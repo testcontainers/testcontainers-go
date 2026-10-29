@@ -32,6 +32,15 @@ func TestProviderImportIsLazyAndUnusedCleanupIsSafe(t *testing.T) {
 		if defaultProvider.started {
 			t.Fatal("import initialized default sbx provider")
 		}
+		if err := Configure(WithKits("./unused-kit")); err != nil {
+			t.Fatal(err)
+		}
+		if defaultProvider.started || len(defaultProvider.options.kits) != 1 {
+			t.Fatal("configuration did not update the lazy default provider")
+		}
+		if err := Cleanup(context.Background()); err != nil {
+			t.Fatal(err)
+		}
 		if err := (&Provider{}).Cleanup(context.Background()); err != nil {
 			t.Fatal(err)
 		}
@@ -51,7 +60,7 @@ func TestConfigurationRejectsInvalidTimeout(t *testing.T) {
 	for _, v := range []string{"0", "-1s", "nonsense"} {
 		t.Run(v, func(t *testing.T) {
 			t.Setenv("TESTCONTAINERS_SBX_TIMEOUT", v)
-			if _, err := readConfiguration(); err == nil {
+			if _, err := readConfiguration(options{}); err == nil {
 				t.Fatal("accepted invalid timeout")
 			}
 		})
@@ -72,7 +81,7 @@ func TestConfigurationBindRoots(t *testing.T) {
 	}
 	t.Setenv("TESTCONTAINERS_SBX_WORKSPACE", workspace)
 	t.Setenv("TESTCONTAINERS_SBX_BIND_ROOTS", strings.Join([]string{first, second}, string(os.PathListSeparator)))
-	cfg, err := readConfiguration()
+	cfg, err := readConfiguration(options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +111,7 @@ func TestConfigurationRejectsInvalidBindRoots(t *testing.T) {
 	} {
 		t.Run(value, func(t *testing.T) {
 			t.Setenv("TESTCONTAINERS_SBX_BIND_ROOTS", value)
-			if _, err := readConfiguration(); err == nil {
+			if _, err := readConfiguration(options{}); err == nil {
 				t.Fatalf("accepted invalid bind roots %q", value)
 			}
 		})

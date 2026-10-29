@@ -297,7 +297,7 @@ func (m *bindMountManager) resolve(source string) (resolvedBind, error) {
 		}
 	}
 	if len(candidates) == 0 {
-		return resolvedBind{}, errors.New("path is outside the configured workspace and TESTCONTAINERS_SBX_BIND_ROOTS")
+		return resolvedBind{}, errors.New("path is outside the configured workspace and bind roots (WithBindRoots or TESTCONTAINERS_SBX_BIND_ROOTS)")
 	}
 	slices.SortStableFunc(candidates, func(a, b candidate) int {
 		return len(b.root.canonical) - len(a.root.canonical)

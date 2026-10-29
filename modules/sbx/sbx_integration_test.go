@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -15,6 +16,58 @@ import (
 	testcontainers "github.com/testcontainers/testcontainers-go"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 )
+
+func TestRealSandboxKits(t *testing.T) {
+	if os.Getenv("TESTCONTAINERS_SBX_INTEGRATION") != "1" {
+		t.Skip("real sandbox integration is opt-in")
+	}
+	if os.Getenv("TESTCONTAINERS_PROVIDER") != "sbx" {
+		t.Fatal("TESTCONTAINERS_PROVIDER must be sbx for real integration")
+	}
+	// Use a separate process so other tests cannot initialize the shared provider
+	// before this test configures it. The child's TestMain owns sandbox cleanup.
+	if os.Getenv("TC_SBX_KIT_INTEGRATION_CHILD") != "1" {
+		ctx, cancel := context.WithTimeout(t.Context(), 10*time.Minute)
+		defer cancel()
+		command := exec.CommandContext(ctx, os.Args[0], "-test.run=^TestRealSandboxKits$", "-test.v")
+		command.Env = append(os.Environ(), "TC_SBX_KIT_INTEGRATION_CHILD=1")
+		output, err := command.CombinedOutput()
+		if err != nil {
+			t.Fatalf("isolated kit integration failed: %v\n%s", err, output)
+		}
+		t.Log(string(output))
+		return
+	}
+	if err := Configure(WithKits("./testdata/test-tools"), WithKitArgs(map[string]string{
+		"test-tools.mode": "integration",
+	})); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(t.Context(), 8*time.Minute)
+	defer cancel()
+	ctr, err := testcontainers.Run(ctx, "nginx:alpine")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cleanupCancel()
+		if err := ctr.Terminate(cleanupCtx); err != nil {
+			t.Error(err)
+		}
+	})
+	output, err := defaultProvider.run(ctx, "exec", defaultProvider.name, "--", "cat", "/usr/share/testcontainers/kit-mode")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(output) != "integration" {
+		t.Fatalf("kit argument did not reach the sandbox: %q", output)
+	}
+	code, _, err := ctr.Exec(ctx, []string{"nginx", "-t"})
+	if err != nil || code != 0 {
+		t.Fatalf("container in customized sandbox is not usable: exit=%d err=%v", code, err)
+	}
+}
 
 func TestRealSandboxSurvivesIdleSessionGracePeriod(t *testing.T) {
 	if os.Getenv("TESTCONTAINERS_SBX_INTEGRATION") != "1" {
@@ -211,7 +264,7 @@ func TestRealSandboxExternalSymlinkBind(t *testing.T) {
 	if os.Getenv("TESTCONTAINERS_PROVIDER") != "sbx" {
 		t.Fatal("TESTCONTAINERS_PROVIDER must be sbx for real integration")
 	}
-	configuration, err := readConfiguration()
+	configuration, err := readConfiguration(options{})
 	if err != nil {
 		t.Fatal(err)
 	}
