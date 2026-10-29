@@ -112,10 +112,12 @@ modules=()
 
 # Find all go.mod files in the repository, building a list of all the available modules and examples.
 for modFile in $(find "${ROOT_DIR}/modules" -name "go.mod" -not -path "${ROOT_DIR}/**/testdata/*"); do
-    modules+=("\"modules/$(basename "$(dirname "${modFile}")")\"")
+    module_dir=$(dirname "${modFile#"${ROOT_DIR}/"}")
+    modules+=("\"${module_dir}\"")
 done
 for modFile in $(find "${ROOT_DIR}/examples" -name "go.mod" -not -path "${ROOT_DIR}/**/testdata/*"); do
-    modules+=("\"examples/$(basename "$(dirname "${modFile}")")\"")
+    module_dir=$(dirname "${modFile#"${ROOT_DIR}/"}")
+    modules+=("\"${module_dir}\"")
 done
 
 # sort modules array
@@ -160,15 +162,29 @@ for file in $modified_files; do
         fi
     done
 
-    if [[ $file == modules/* ]]; then
-        module_name=$(echo $file | cut -d'/' -f2)
-        if [[ ! " ${modified_modules[@]} " =~ " ${module_name} " ]]; then
-            modified_modules+=("\"modules/$module_name\"")
+    if [[ $file == modules/* || $file == examples/* ]]; then
+        # Find the innermost existing module, including deleted files in that module.
+        owner=""
+        for module in "${modules[@]}"; do
+            module_path=${module//\"/}
+            if [[ $file == "$module_path/"* && ${#module_path} -gt ${#owner} ]]; then
+                owner=$module_path
+            fi
+        done
+        # A removed parent manifest may leave nested modules with local replacements.
+        # Keep their jobs even when there is no surviving owner for the manifest.
+        if [[ -z $owner && $file == */go.mod ]]; then
+            owner=${file%/go.mod}
         fi
-    elif [[ $file == examples/* ]]; then
-        example_name=$(echo $file | cut -d'/' -f2)
-        if [[ ! " ${modified_modules[@]} " =~ " ${example_name} " ]]; then
-            modified_modules+=("\"examples/$example_name\"")
+        if [[ -n $owner ]]; then
+            modified_modules+=("\"$owner\"")
+            # Nested examples depend on the parent module's implementation.
+            for module in "${modules[@]}"; do
+                module_path=${module//\"/}
+                if [[ $module_path == "$owner/"* ]]; then
+                    modified_modules+=("$module")
+                fi
+            done
         fi
     elif [[ $file == modulegen/* ]]; then
         modified_modules+=("\"modulegen\"")

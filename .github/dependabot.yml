@@ -15,6 +15,7 @@ updates:
         - /examples/*
         - /modulegen
         - /modules/*
+        - /modules/redis/examples
       groups:
         by-dependency:
           group-by: dependency-name
