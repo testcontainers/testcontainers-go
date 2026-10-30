@@ -46,11 +46,12 @@ function bumpVersion() {
   do
     cd "${ROOT_DIR}/${directory}"
 
-    # Redis client examples form a nested module with their own core and Redis requirements.
+    # Client examples form nested modules with their own core and parent module requirements.
     {
-      ls -d */ | grep -v "_template"
+      ls -d */ | grep -v "_template" | grep -Ev "^(testdata|fixture|fixtures)/$"
       if [[ "$directory" == "modules" ]]; then
-        echo "redis/examples/"
+        find . -type d \( -name _template -o -name testdata -o -name fixture -o -name fixtures \) -prune -o \
+          -type f -path "./*/examples/go.mod" -print | sed 's#^./##; s#/go.mod$#/#'
       fi
     } | while read -r module; do
       module="${module%?}" # remove trailing slash
