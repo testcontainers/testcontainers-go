@@ -259,9 +259,9 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 	includes = append(includes, c.GetDockerfile())
 
 	// The archive walker skips an excluded directory unless an "!" pattern
-	// starts with its path, so "!a/**/*.go" can't re-include a/b/c/d.go.
-	// Resolve the patterns here and hand over the paths to archive. The
-	// exclude patterns stay, so a listed directory is not expanded past them.
+	// starts with its path, so "!a/**/*.go" can't re-include a/b/c/d.go
+	// (moby/go-archive v0.3.3, archive.go#L906-L935). Resolve the patterns
+	// here and hand over the paths to archive. The exclude patterns stay.
 	if hasExclusion(excluded) {
 		paths, err := includedPaths(abs, excluded)
 		if err != nil {
@@ -287,7 +287,7 @@ func hasExclusion(patterns []string) bool {
 
 // includedPaths returns the paths under root, relative to it, that the
 // .dockerignore patterns do not exclude. Directories are listed too, so empty
-// ones and directory entries stay in the context as Docker keeps them.
+// ones and directory entries stay in the context (TestGetContext_dockerignoreKeepsDirectories).
 func includedPaths(root string, patterns []string) ([]string, error) {
 	pm, err := patternmatcher.New(patterns)
 	if err != nil {
@@ -300,7 +300,7 @@ func includedPaths(root string, patterns []string) ([]string, error) {
 			return err
 		}
 		if err != nil {
-			// Unreadable entries are skipped, as the archive walker does.
+			// Unreadable entries are skipped, as the archive walker does (moby/go-archive v0.3.3, archive.go#L856-L858).
 			return nil
 		}
 		rel, err := filepath.Rel(root, p)
