@@ -74,6 +74,7 @@ jobs:
       RYUK_CONNECTION_TIMEOUT: "${{ inputs.project-directory == 'modules/compose' && '5m' || '60s' }}"
       RYUK_RECONNECTION_TIMEOUT: "${{ inputs.project-directory == 'modules/compose' && '30s' || '10s' }}"
       SHOULD_RUN_SONAR: "false"
+      GOWORK: "off"
     strategy:
       matrix:
         platform: ${{ fromJSON(inputs.platforms) }}
@@ -238,7 +239,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Decide if Sonar must be run
-        if: ${{ matrix.platform == 'ubuntu-latest' && inputs.runtime == 'docker' }}
+        if: ${{ matrix.platform == 'ubuntu-latest' && inputs.runtime == 'docker' && !(startsWith(inputs.project-directory, 'modules/') && endsWith(inputs.project-directory, '/examples')) }}
         run: |
           if [[ "1.26.x" == "${{ inputs.go-version }}" ]] && \
              [[ "true" != "${{ inputs.rootless-docker }}" ]] && \
@@ -261,8 +262,12 @@ jobs:
           else
             echo "PROJECT_KEY=testcontainers_testcontainers-go_$(echo ${{ inputs.project-directory }} | tr '/' '_')" >> $GITHUB_ENV
             echo "PROJECT_NAME=testcontainers-go-$(echo ${{ inputs.project-directory }} | tr '/' '-')" >> $GITHUB_ENV
-            echo "PROJECT_SRC_EXCLUSIONS=**/*_test.go,**/vendor/**,**/testdata/**" >> $GITHUB_ENV
-            echo "PROJECT_TEST_EXCLUSIONS=**/vendor/**" >> $GITHUB_ENV
+            nested_module_exclusions=""
+            if [ -f "${{ inputs.project-directory }}/examples/go.mod" ]; then
+              nested_module_exclusions=",examples/**"
+            fi
+            echo "PROJECT_SRC_EXCLUSIONS=**/*_test.go,**/vendor/**,**/testdata/**${nested_module_exclusions}" >> "$GITHUB_ENV"
+            echo "PROJECT_TEST_EXCLUSIONS=**/vendor/**${nested_module_exclusions}" >> "$GITHUB_ENV"
           fi
 
       - name: SonarQube Scan

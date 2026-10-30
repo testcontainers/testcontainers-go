@@ -46,7 +46,13 @@ function bumpVersion() {
   do
     cd "${ROOT_DIR}/${directory}"
 
-    ls -d */ | grep -v "_template" | while read -r module; do
+    # Redis client examples form a nested module with their own core and Redis requirements.
+    {
+      ls -d */ | grep -v "_template"
+      if [[ "$directory" == "modules" ]]; then
+        echo "redis/examples/"
+      fi
+    } | while read -r module; do
       module="${module%?}" # remove trailing slash
       module_mod_file="${module}/go.mod" # e.g. modules/mongodb/go.mod
       if [[ "${DRY_RUN}" == "true" ]]; then
