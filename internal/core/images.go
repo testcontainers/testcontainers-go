@@ -50,27 +50,70 @@ func ExtractImagesFromReader(r io.Reader, buildArgs map[string]*string) ([]strin
 
 	images := make([]string, 0, len(lines))
 
+	// Track global ARGs declared before the first FROM
+	globalArgs := make(map[string]string)
+	for k, v := range buildArgs {
+		if v != nil {
+			globalArgs[k] = *v
+		}
+	}
+
+	inGlobalScope := true
+
 	// extract images from dockerfile
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		if !strings.HasPrefix(strings.ToUpper(line), "FROM") {
+		upper := strings.ToUpper(line)
+
+		if strings.HasPrefix(upper, "ARG ") || upper == "ARG" {
+			if inGlobalScope {
+				argRest := strings.TrimSpace(line[3:])
+				name, defaultValue, ok := strings.Cut(argRest, "=")
+				if ok {
+					name = strings.TrimSpace(name)
+					defaultValue = strings.Trim(strings.TrimSpace(defaultValue), "\"'")
+					for k, v := range globalArgs {
+						defaultValue = strings.ReplaceAll(defaultValue, "${"+k+"}", v)
+						defaultValue = strings.ReplaceAll(defaultValue, "$"+k, v)
+					}
+					if override, exists := buildArgs[name]; !exists || override == nil {
+						globalArgs[name] = defaultValue
+					}
+				}
+			}
 			continue
 		}
 
+		if !strings.HasPrefix(upper, "FROM") {
+			continue
+		}
+
+		inGlobalScope = false
+
 		// remove FROM
-		line = strings.TrimPrefix(line, "FROM")
-		parts := strings.Split(strings.TrimSpace(line), " ")
+		line = strings.TrimSpace(line[4:])
+		parts := strings.Fields(line)
 		if len(parts) == 0 {
 			continue
 		}
 
-		// interpolate build args
-		for k, v := range buildArgs {
-			if v != nil {
-				parts[0] = strings.ReplaceAll(parts[0], "${"+k+"}", *v)
-			}
+		// Skip optional FROM flags, e.g. --platform=linux/amd64
+		imageIdx := 0
+		for imageIdx < len(parts) && strings.HasPrefix(parts[imageIdx], "--") {
+			imageIdx++
 		}
-		images = append(images, parts[0])
+		if imageIdx >= len(parts) {
+			continue
+		}
+
+		imageName := parts[imageIdx]
+
+		// interpolate global build args and defaults
+		for k, v := range globalArgs {
+			imageName = strings.ReplaceAll(imageName, "${"+k+"}", v)
+			imageName = strings.ReplaceAll(imageName, "$"+k, v)
+		}
+		images = append(images, imageName)
 	}
 
 	return images, nil
