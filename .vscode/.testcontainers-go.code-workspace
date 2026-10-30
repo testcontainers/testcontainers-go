@@ -338,6 +338,10 @@
             "path": "../modules/trino"
         },
         {
+            "name": "module / trinogateway",
+            "path": "../modules/trinogateway"
+        },
+        {
             "name": "module / typesense",
             "path": "../modules/typesense"
         },
