@@ -20,7 +20,7 @@ go get github.com/testcontainers/testcontainers-go/modules/influxdb
 
 <!--codeinclude--> 
 [Creating an InfluxDB V1 container](../../modules/influxdb/examples_test.go) inside_block:runInfluxContainer
-[Creating an InfluxDB V2 container](../../modules/influxdb/examples_test.go) inside_block:runInfluxV2Container
+[Creating an InfluxDB V2 container](../../modules/influxdb/examples/examples_test.go) inside_block:runInfluxV2Container
 <!--/codeinclude-->
 
 ## Module Reference

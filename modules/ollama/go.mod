@@ -11,7 +11,6 @@ require (
 	github.com/moby/moby/client v0.6.2
 	github.com/stretchr/testify v1.12.1
 	github.com/testcontainers/testcontainers-go v0.44.0
-	github.com/tmc/langchaingo v0.1.5
 )
 
 require (
@@ -25,7 +24,6 @@ require (
 	github.com/containerd/platforms v1.0.0-rc.1 // indirect
 	github.com/cpuguy83/dockercfg v0.3.2 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/dlclark/regexp2 v1.8.1 // indirect
 	github.com/docker/go-connections v0.8.2 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.10.1 // indirect
@@ -45,7 +43,6 @@ require (
 	github.com/moby/term v0.5.2 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
-	github.com/pkoukk/tiktoken-go v0.1.2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/shirou/gopsutil/v4 v4.26.6 // indirect
 	github.com/sirupsen/logrus v1.9.4 // indirect

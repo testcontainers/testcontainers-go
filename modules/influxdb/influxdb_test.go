@@ -1,14 +1,16 @@
 package influxdb_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io"
+	"net/http"
+	"net/url"
 	"path/filepath"
 	"testing"
 	"time"
 
-	influxclient2 "github.com/influxdata/influxdb-client-go/v2"
-	influxclient "github.com/influxdata/influxdb1-client/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -434,24 +436,25 @@ func TestRun_V2WithOptions(t *testing.T) {
 	require.True(t, state.Running)
 
 	// Query the InfluxDB API to verify the setup
-	url, err := influxdbContainer.ConnectionUrl(ctx)
+	endpoint, err := influxdbContainer.ConnectionUrl(ctx)
 	require.NoError(t, err)
 
-	// Initialize a new InfluxDB client
-	client := influxclient2.NewClientWithOptions(url, token, influxclient2.DefaultOptions())
-	defer client.Close()
+	response := influxRequest(t, ctx, http.MethodGet, endpoint+"/api/v2/buckets?name="+url.QueryEscape(bucket), token, nil)
+	defer response.Body.Close()
+	require.Equal(t, http.StatusOK, response.StatusCode)
 
-	// Get the bucket
-	influxBucket, err := client.BucketsAPI().FindBucketByName(ctx, bucket)
-	require.NoError(t, err)
-	require.Equal(t, bucket, influxBucket.Name)
+	var buckets struct {
+		Buckets []struct {
+			Name string `json:"name"`
+		} `json:"buckets"`
+	}
+	require.NoError(t, json.NewDecoder(response.Body).Decode(&buckets))
+	require.Len(t, buckets.Buckets, 1)
+	require.Equal(t, bucket, buckets.Buckets[0].Name)
 
-	// Try to connect without authentication
-	clientWithoutToken := influxclient2.NewClientWithOptions(url, "", influxclient2.DefaultOptions())
-	defer clientWithoutToken.Close()
-
-	_, err = clientWithoutToken.BucketsAPI().CreateBucketWithNameWithID(ctx, org, "example")
-	require.Error(t, err, "Expected error when trying to create a bucket without authentication")
+	response = influxRequest(t, ctx, http.MethodPost, endpoint+"/api/v2/buckets", "", bytes.NewBufferString(`{"orgID":"`+org+`","name":"example","retentionRules":[]}`))
+	defer response.Body.Close()
+	require.GreaterOrEqual(t, response.StatusCode, http.StatusBadRequest, "Expected error when trying to create a bucket without authentication")
 }
 
 func TestWithInitDb(t *testing.T) {
@@ -467,19 +470,28 @@ func TestWithInitDb(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	cli, err := influxclient.NewHTTPClient(influxclient.HTTPConfig{
-		Addr: influxDBContainer.MustConnectionUrl(ctx),
-	})
-	require.NoError(t, err)
-	defer cli.Close()
-
 	expected0 := `[{"statement_id":0,"Series":[{"name":"h2o_feet","tags":{"location":"coyote_creek"},"columns":["time","location","max"],"values":[[1566977040,"coyote_creek",9.964]]},{"name":"h2o_feet","tags":{"location":"santa_monica"},"columns":["time","location","max"],"values":[[1566964440,"santa_monica",7.205]]}],"Messages":null}]`
-	q := influxclient.NewQuery(`select "location", MAX("water_level") from "h2o_feet" group by "location"`, "NOAA_water_database", "s")
-	response, err := cli.Query(q)
-	require.NoError(t, err)
+	query := url.Values{"db": {"NOAA_water_database"}, "epoch": {"s"}, "q": {`select "location", MAX("water_level") from "h2o_feet" group by "location"`}}
+	response := influxRequest(t, ctx, http.MethodGet, influxDBContainer.MustConnectionUrl(ctx)+"/query?"+query.Encode(), "", nil)
+	defer response.Body.Close()
+	require.Equal(t, http.StatusOK, response.StatusCode)
 
-	require.NoError(t, response.Error())
-	testJSON, err := json.Marshal(response.Results)
+	var result struct {
+		Results []struct {
+			StatementID int `json:"statement_id"`
+			// Keep Series and Messages untagged to match the SDK-marshaled expectation.
+			Series   json.RawMessage
+			Messages json.RawMessage
+			Err      string `json:"error,omitempty"`
+		} `json:"results"`
+		Err string `json:"error"`
+	}
+	require.NoError(t, json.NewDecoder(response.Body).Decode(&result))
+	require.Empty(t, result.Err)
+	for _, statement := range result.Results {
+		require.Empty(t, statement.Err)
+	}
+	testJSON, err := json.Marshal(result.Results)
 	require.NoError(t, err)
 
 	assert.JSONEq(t, expected0, string(testJSON))
@@ -499,17 +511,36 @@ func TestWithConfigFile(t *testing.T) {
 		require.NoError(t, err)
 	}
 
+	started := time.Now()
 	/// influxConnectionUrl {
-	cli, err := influxclient.NewHTTPClient(influxclient.HTTPConfig{
-		Addr: influxDBContainer.MustConnectionUrl(context.Background()),
-	})
+	ctx := context.Background()
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, influxDBContainer.MustConnectionUrl(ctx)+"/ping", nil)
+	require.NoError(t, err)
+	response, err := (&http.Client{Timeout: 5 * time.Second}).Do(request)
+	require.NoError(t, err)
+	defer response.Body.Close()
 	// }
-	require.NoError(t, err)
-	defer cli.Close()
+	require.Equal(t, http.StatusNoContent, response.StatusCode)
 
-	ping, version, err := cli.Ping(5 * time.Second)
-	require.NoError(t, err)
+	assert.Equal(t, "1.8.10", response.Header.Get("X-Influxdb-Version"))
+	assert.Greater(t, time.Since(started), time.Duration(0))
+}
 
-	assert.Equal(t, "1.8.10", version)
-	assert.Greater(t, ping, time.Duration(0))
+func influxRequest(t *testing.T, ctx context.Context, method, endpoint, token string, body io.Reader) *http.Response {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	t.Cleanup(cancel)
+
+	req, err := http.NewRequestWithContext(ctx, method, endpoint, body)
+	require.NoError(t, err)
+	if token != "" {
+		req.Header.Set("Authorization", "Token "+token)
+	}
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	response, err := (&http.Client{Timeout: 5 * time.Second}).Do(req)
+	require.NoError(t, err)
+	return response
 }

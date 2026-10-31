@@ -64,7 +64,7 @@ This method returns the Schema and Host for the Weaviate container, using the de
     At the moment, the Weaviate module only supports the HTTP schema.
 
 <!--codeinclude-->
-[HTTP Host Address](../../modules/weaviate/examples_test.go) inside_block:httpHostAddress
+[HTTP Host Address](../../modules/weaviate/examples/examples_test.go) inside_block:httpHostAddress
 <!--/codeinclude-->
 
 #### gRPC Host Address
@@ -74,7 +74,7 @@ This method returns the Schema and Host for the Weaviate container, using the de
 This method returns the Schema and Host for the Weaviate container, using the default `443` port.
 
 <!--codeinclude-->
-[gRPC Host Address](../../modules/weaviate/examples_test.go) inside_block:grpcHostAddress
+[gRPC Host Address](../../modules/weaviate/examples/examples_test.go) inside_block:grpcHostAddress
 <!--/codeinclude-->
 
 ## Examples
@@ -87,13 +87,13 @@ First of all, you need to import the Weaviate client:
 
 ```golang
 import (
-    "github.com/weaviate/weaviate-go-client/v4/weaviate"
+    "github.com/weaviate/weaviate-go-client/v5/weaviate"
 )
 ```
 
 Then, you can create a Weaviate client using the Weaviate module:
 
 <!--codeinclude-->
-[Get the client](../../modules/weaviate/examples_test.go) inside_block:createClientNoModules
-[Get the client And Modules](../../modules/weaviate/examples_test.go) inside_block:createClientAndModules
+[Get the client](../../modules/weaviate/examples/examples_test.go) inside_block:createClientNoModules
+[Get the client And Modules](../../modules/weaviate/examples/examples_test.go) inside_block:createClientAndModules
 <!--/codeinclude-->

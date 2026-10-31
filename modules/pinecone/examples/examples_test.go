@@ -1,4 +1,4 @@
-package pinecone_test
+package examples_test
 
 import (
 	"context"
@@ -42,7 +42,7 @@ func ExampleRun() {
 	// }
 
 	pc, err := pinecone.NewClient(pinecone.NewClientParams{
-		ApiKey: "testcontainers-go", // API key is required, else use headers
+		ApiKey: "testcontainers-go",
 		Host:   host,
 	})
 	if err != nil {
