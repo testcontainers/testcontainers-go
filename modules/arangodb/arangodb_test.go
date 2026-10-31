@@ -2,10 +2,10 @@ package arangodb_test
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
 	"testing"
 
-	"github.com/arangodb/go-driver/v2/arangodb"
-	"github.com/arangodb/go-driver/v2/connection"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -24,16 +24,18 @@ func TestArangoDB(t *testing.T) {
 	httpAddress, err := ctr.HTTPEndpoint(ctx)
 	require.NoError(t, err)
 
-	endpoint := connection.NewRoundRobinEndpoints([]string{httpAddress})
-	conn := connection.NewHttp2Connection(connection.DefaultHTTP2ConfigurationWrapper(endpoint, true))
-
-	auth := connection.NewBasicAuth(ctr.Credentials())
-	err = conn.SetAuthentication(auth)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, httpAddress+"/_api/version", nil)
 	require.NoError(t, err)
-
-	client := arangodb.NewClient(conn)
-
-	versionInfo, err := client.Version(context.Background())
+	username, credentialPassword := ctr.Credentials()
+	req.SetBasicAuth(username, credentialPassword)
+	resp, err := (&http.Client{}).Do(req)
 	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var versionInfo struct {
+		Server string `json:"server"`
+	}
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&versionInfo))
 	require.Equal(t, "arango", versionInfo.Server)
 }

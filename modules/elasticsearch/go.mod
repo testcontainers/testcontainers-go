@@ -5,7 +5,6 @@ go 1.26.0
 toolchain go1.26.10
 
 require (
-	github.com/elastic/go-elasticsearch/v8 v8.12.1
 	github.com/stretchr/testify v1.12.1
 	github.com/testcontainers/testcontainers-go v0.44.0
 	golang.org/x/mod v0.38.0
@@ -26,7 +25,6 @@ require (
 	github.com/docker/go-connections v0.8.2 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.10.1 // indirect
-	github.com/elastic/elastic-transport-go/v8 v8.4.0 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
