@@ -5,7 +5,6 @@ go 1.26.0
 toolchain go1.26.10
 
 require (
-	github.com/bradfitz/gomemcache v0.0.0-20250403215159-8d39553ac7cf
 	github.com/stretchr/testify v1.12.1
 	github.com/testcontainers/testcontainers-go v0.44.0
 )

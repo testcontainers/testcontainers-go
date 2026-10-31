@@ -68,5 +68,5 @@ The Consul container exposes the following method:
 This method returns the connection string to connect to the Consul container API, using the default `8500` port.
 
 <!--codeinclude-->
-[Using ApiEndpoint with the Consul client](../../modules/consul/examples_test.go) inside_block:connectConsul
+[Using ApiEndpoint with the Consul client](../../modules/consul/examples/examples_test.go) inside_block:connectConsul
 <!--/codeinclude-->

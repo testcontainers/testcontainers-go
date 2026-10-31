@@ -9,7 +9,6 @@ require (
 	github.com/mdelapenya/tlscert v0.2.0
 	github.com/stretchr/testify v1.12.1
 	github.com/testcontainers/testcontainers-go v0.44.0
-	github.com/valkey-io/valkey-go v1.0.59
 )
 
 replace github.com/testcontainers/testcontainers-go => ../..
