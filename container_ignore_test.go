@@ -113,3 +113,13 @@ func TestGetContext_dockerignoreSkipsUnreadableExcludedDir(t *testing.T) {
 	})
 	require.ElementsMatch(t, []string{".dockerignore", "Dockerfile", "keep"}, got)
 }
+
+func TestGetContext_dockerignoreInvalidNegationReturnsError(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".dockerignore"), []byte("![\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "Dockerfile"), []byte("FROM scratch\n"), 0o600))
+
+	_, err := (&ContainerRequest{FromDockerfile: FromDockerfile{Context: dir}}).GetContext()
+	require.ErrorIs(t, err, filepath.ErrBadPattern)
+	require.EqualError(t, err, "syntax error in pattern")
+}

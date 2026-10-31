@@ -9,7 +9,6 @@ import (
 	"io/fs"
 	"maps"
 	"os"
-	"path"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -260,14 +259,16 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 
 	// The archive walker skips an excluded directory unless an "!" pattern
 	// starts with its path, so "!a/**/*.go" can't re-include a/b/c/d.go
-	// (moby/go-archive v0.3.3, archive.go#L906-L935). Resolve the patterns
-	// here and hand over the paths to archive. The exclude patterns stay.
+	// (moby/go-archive v0.3.3, archive.go#L928). Add the surviving files as
+	// explicit includes; the "." include still walks everything else.
+	// Archive keeps one seen map across includes (archive.go#L843), so a file
+	// that both walks reach is written once.
 	if hasExclusion(excluded) {
 		paths, err := includedPaths(abs, excluded)
 		if err != nil {
 			return nil, err
 		}
-		includes = append(paths, includes[1:]...)
+		includes = append(includes, paths...)
 	}
 
 	buildContext, err := archive.TarWithOptions(
@@ -285,13 +286,13 @@ func hasExclusion(patterns []string) bool {
 	return slices.ContainsFunc(patterns, func(p string) bool { return strings.HasPrefix(p, "!") })
 }
 
-// includedPaths returns the paths under root, relative to it, that the
-// .dockerignore patterns do not exclude. Directories are listed too, so empty
-// ones and directory entries stay in the context (TestGetContext_dockerignoreKeepsDirectories).
+// includedPaths returns the files under root, relative to it, that the
+// .dockerignore patterns do not exclude. Directories are not listed: the
+// archive walk of "." emits them (TestGetContext_dockerignoreKeepsDirectories).
 func includedPaths(root string, patterns []string) ([]string, error) {
 	pm, err := patternmatcher.New(patterns)
 	if err != nil {
-		return nil, fmt.Errorf("error reading .dockerignore: %w", err)
+		return nil, err
 	}
 
 	var paths []string
@@ -311,44 +312,12 @@ func includedPaths(root string, patterns []string) ([]string, error) {
 		if err != nil {
 			return err
 		}
-		if skip {
-			if d.IsDir() && !canReinclude(pm, rel) {
-				return filepath.SkipDir
-			}
-			return nil
+		if !skip && !d.IsDir() {
+			paths = append(paths, rel)
 		}
-		paths = append(paths, rel)
 		return nil
 	})
 	return paths, err
-}
-
-// canReinclude reports whether a "!" pattern could match something below dir,
-// comparing the pattern's path segments with dir's one by one. Both are
-// compared in slash form, because patterns are cleaned with filepath.Clean
-// (moby/patternmatcher v0.6.1, patternmatcher.go#L52). A segment containing
-// "**" can match any number of segments, so it counts as a possible match
-// (patternmatcher.go#L362-L390).
-func canReinclude(pm *patternmatcher.PatternMatcher, dir string) bool {
-	dirSegs := strings.Split(filepath.ToSlash(dir), "/")
-	return slices.ContainsFunc(pm.Patterns(), func(p *patternmatcher.Pattern) bool {
-		if !p.Exclusion() {
-			return false
-		}
-		patSegs := strings.Split(path.Clean(filepath.ToSlash(p.String())), "/")
-		for i, seg := range dirSegs {
-			if i >= len(patSegs) {
-				return false
-			}
-			if strings.Contains(patSegs[i], "**") {
-				return true
-			}
-			if ok, err := path.Match(patSegs[i], seg); err == nil && !ok {
-				return false
-			}
-		}
-		return true
-	})
 }
 
 // parseDockerIgnore returns if the file exists, the excluded files and an error if any
