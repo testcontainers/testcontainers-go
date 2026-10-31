@@ -30,10 +30,6 @@ github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4
 github.com/docker/go-units v0.5.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
 github.com/ebitengine/purego v0.10.1 h1:dewVBCBT2GaMu1SrNTYxQhgQBethzfhiwvZiLGP/qyY=
 github.com/ebitengine/purego v0.10.1/go.mod h1:iIjxzd6CiRiOG0UyXP+V1+jWqUXVjPKLAI0mRfJZTmQ=
-github.com/elastic/elastic-transport-go/v8 v8.4.0 h1:EKYiH8CHd33BmMna2Bos1rDNMM89+hdgcymI+KzJCGE=
-github.com/elastic/elastic-transport-go/v8 v8.4.0/go.mod h1:YLHer5cj0csTzNFXoNQ8qhtGY1GTvSqPnKWKaqQE3Hk=
-github.com/elastic/go-elasticsearch/v8 v8.12.1 h1:QcuFK5LaZS0pSIj/eAEsxmJWmMo7tUs1aVBbzdIgtnE=
-github.com/elastic/go-elasticsearch/v8 v8.12.1/go.mod h1:wSzJYrrKPZQ8qPuqAqc6KMR4HrBfHnZORvyL+FMFqq0=
 github.com/felixge/httpsnoop v1.1.0 h1:3YtUj32ZZkqZtt3sZZsClsymw/QDuVfpNhoA31zeORc=
 github.com/felixge/httpsnoop v1.1.0/go.mod h1:Zqxgdd+1Rkcz8euOqdr7lqgCRJztwr5hp9vDSi5UZCE=
 github.com/go-logr/logr v1.2.2/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=

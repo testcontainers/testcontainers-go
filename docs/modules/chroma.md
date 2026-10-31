@@ -86,15 +86,15 @@ import (
 Then, you can create a Chroma client using the Chroma module:
 
 <!--codeinclude-->
-[Get the client](../../modules/chroma/examples_test.go) inside_block:getClient
+[Get the client](../../modules/chroma/examples/examples_test.go) inside_block:getClient
 <!--/codeinclude-->
 
 ### Working with Collections
 
 <!--codeinclude-->
-[Create Collection](../../modules/chroma/examples_test.go) inside_block:createCollection
-[List Collections](../../modules/chroma/examples_test.go) inside_block:listCollections
-[Add Data to Collection](../../modules/chroma/examples_test.go) inside_block:addData
-[Query Collection](../../modules/chroma/examples_test.go) inside_block:queryCollection
-[Delete Collection](../../modules/chroma/examples_test.go) inside_block:deleteCollection
+[Create Collection](../../modules/chroma/examples/examples_test.go) inside_block:createCollection
+[List Collections](../../modules/chroma/examples/examples_test.go) inside_block:listCollections
+[Add Data to Collection](../../modules/chroma/examples/examples_test.go) inside_block:addData
+[Query Collection](../../modules/chroma/examples/examples_test.go) inside_block:queryCollection
+[Delete Collection](../../modules/chroma/examples/examples_test.go) inside_block:deleteCollection
 <!--/codeinclude-->
