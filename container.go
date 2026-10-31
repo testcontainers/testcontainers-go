@@ -324,19 +324,23 @@ func includedPaths(root string, patterns []string) ([]string, error) {
 }
 
 // canReinclude reports whether a "!" pattern could match something below dir,
-// comparing the pattern's path segments with dir's one by one.
+// comparing the pattern's path segments with dir's one by one. Both are
+// compared in slash form, because patterns are cleaned with filepath.Clean
+// (moby/patternmatcher v0.6.1, patternmatcher.go#L52). A segment containing
+// "**" can match any number of segments, so it counts as a possible match
+// (patternmatcher.go#L362-L390).
 func canReinclude(pm *patternmatcher.PatternMatcher, dir string) bool {
-	dirSegs := strings.Split(dir, "/")
+	dirSegs := strings.Split(filepath.ToSlash(dir), "/")
 	return slices.ContainsFunc(pm.Patterns(), func(p *patternmatcher.Pattern) bool {
 		if !p.Exclusion() {
 			return false
 		}
-		patSegs := strings.Split(path.Clean(p.String()), "/")
+		patSegs := strings.Split(path.Clean(filepath.ToSlash(p.String())), "/")
 		for i, seg := range dirSegs {
 			if i >= len(patSegs) {
 				return false
 			}
-			if patSegs[i] == "**" {
+			if strings.Contains(patSegs[i], "**") {
 				return true
 			}
 			if ok, err := path.Match(patSegs[i], seg); err == nil && !ok {
