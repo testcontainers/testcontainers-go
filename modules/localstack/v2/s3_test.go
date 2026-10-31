@@ -65,7 +65,7 @@ func s3Client(ctx context.Context, l *localstack.LocalStackContainer) (*s3.Clien
 		return nil, err
 	}
 
-	// reference: https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/endpoints/#with-both
+	// reference: https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-endpoints.html#with-both
 	client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
 		o.BaseEndpoint = aws.String("http://" + net.JoinHostPort(host, mappedPort.Port()))
 		o.EndpointResolverV2 = &resolverV2{}

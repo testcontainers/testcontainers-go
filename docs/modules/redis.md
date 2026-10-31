@@ -67,7 +67,7 @@ By default Redis saves snapshots of the dataset on disk, in a binary file called
 By default Redis produces a log message to the standard Redis log, the format accepts printf-alike specifiers, while level is a string describing the log level to use when emitting the log, and must be one of the following: `LogLevelDebug`, `LogLevelVerbose`, `LogLevelNotice`, `LogLevelWarning`. E.g. `WithLogLevel(LogLevelDebug)`. If the specified log level is invalid, verbose is used by default.
 
 !!!tip
-    Please check [Redis docs on logging](https://redis.io/docs/reference/modules/modules-api-ref/#redismodule_log) for more information.
+    Please check [Redis docs on logging](https://redis.io/docs/latest/develop/reference/modules/modules-api-ref/#redismodule_log) for more information.
 
 #### WithConfigFile
 

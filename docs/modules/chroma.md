@@ -8,7 +8,7 @@ The Testcontainers module for Chroma.
 
 ## Resources
 
-- [Chroma Docs](https://docs.trychroma.com/getting-started) - Chroma official documentation.
+- [Chroma Docs](https://docs.trychroma.com/docs/overview/getting-started) - Chroma official documentation.
 - [Chroma Cookbook](http://cookbook.chromadb.dev) - Community-driven Chroma cookbook.
 
 ## Adding this module to your project dependencies
