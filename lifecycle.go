@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/netip"
 	"reflect"
 	"strings"
 	"time"
@@ -544,6 +545,22 @@ func (p *DockerProvider) preCreateContainerHook(ctx context.Context, req Contain
 
 	dockerInput.ExposedPorts = exposedPortSet
 	hostConfig.PortBindings = mergePortBindings(hostConfig.PortBindings, exposedPortSet)
+
+	// Bind all exposed ports to the requested host IP address.
+	// The binding happens after the port bindings are merged, so it applies to both
+	// the default ephemeral bindings and the ones set by the HostConfigModifier.
+	if req.HostIP != "" {
+		ip, err := netip.ParseAddr(req.HostIP)
+		if err != nil {
+			return fmt.Errorf("invalid host IP %q: %w", req.HostIP, err)
+		}
+
+		for _, bindings := range hostConfig.PortBindings {
+			for i := range bindings {
+				bindings[i].HostIP = ip
+			}
+		}
+	}
 	return nil
 }
 
