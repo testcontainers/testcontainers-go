@@ -1,0 +1,18 @@
+serverConfig:
+  node.environment: custom
+  http-server.http.port: 8080
+
+dataStore:
+  jdbcUrl: "${ENV:DATASTORE_JDBC_URL}"
+  user: "${ENV:DATASTORE_USER}"
+  password: "${ENV:DATASTORE_PASSWORD}"
+  driver: "${ENV:DATASTORE_DRIVER}"
+  queryHistoryHoursRetention: 1
+
+clusterStatsConfiguration:
+  monitorType: INFO_API
+
+monitor:
+  taskDelay: 2s
+
+includeClusterHostInResponse: true
