@@ -95,7 +95,7 @@ For further reference on the SDK v1, please check out the AWS docs [here](https:
 [AWS SDK v2](../../modules/localstack/v2/s3_test.go) inside_block:awsSDKClientV2
 <!--/codeinclude-->
 
-For further reference on the SDK v2, please check out the AWS docs [here](https://aws.github.io/aws-sdk-go-v2/docs/getting-started)
+For further reference on the SDK v2, please check out the AWS docs [here](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/getting-started.html)
 
 ## Testing the module
 
