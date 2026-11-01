@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -19,6 +21,7 @@ import (
 	"github.com/moby/moby/api/types/network"
 	"github.com/moby/moby/api/types/registry"
 	"github.com/moby/moby/client"
+	"github.com/moby/patternmatcher"
 	"github.com/moby/patternmatcher/ignorefile"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
@@ -254,6 +257,20 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 
 	includes = append(includes, c.GetDockerfile())
 
+	// The archive walker skips an excluded directory unless an "!" pattern
+	// starts with its path, so "!a/**/*.go" can't re-include a/b/c/d.go
+	// (moby/go-archive v0.3.3, archive.go#L928). Add the surviving files as
+	// explicit includes; the "." include still walks everything else.
+	// Archive keeps one seen map across includes (archive.go#L843), so a file
+	// that both walks reach is written once.
+	if hasExclusion(excluded) {
+		paths, err := includedPaths(abs, excluded)
+		if err != nil {
+			return nil, err
+		}
+		includes = append(includes, paths...)
+	}
+
 	buildContext, err := archive.TarWithOptions(
 		c.Context,
 		&archive.TarOptions{ExcludePatterns: excluded, IncludeFiles: includes},
@@ -263,6 +280,44 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 	}
 
 	return buildContext, nil
+}
+
+func hasExclusion(patterns []string) bool {
+	return slices.ContainsFunc(patterns, func(p string) bool { return strings.HasPrefix(p, "!") })
+}
+
+// includedPaths returns the files under root, relative to it, that the
+// .dockerignore patterns do not exclude. Directories are not listed: the
+// archive walk of "." emits them (TestGetContext_dockerignoreKeepsDirectories).
+func includedPaths(root string, patterns []string) ([]string, error) {
+	pm, err := patternmatcher.New(patterns)
+	if err != nil {
+		return nil, err
+	}
+
+	var paths []string
+	err = filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
+		if p == root {
+			return err
+		}
+		if err != nil {
+			// Unreadable entries are skipped, as the archive walker does (moby/go-archive v0.3.3, archive.go#L856-L858).
+			return nil
+		}
+		rel, err := filepath.Rel(root, p)
+		if err != nil {
+			return err
+		}
+		skip, err := pm.MatchesOrParentMatches(rel)
+		if err != nil {
+			return err
+		}
+		if !skip && !d.IsDir() {
+			paths = append(paths, rel)
+		}
+		return nil
+	})
+	return paths, err
 }
 
 // parseDockerIgnore returns if the file exists, the excluded files and an error if any
