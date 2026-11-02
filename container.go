@@ -287,8 +287,10 @@ func hasExclusion(patterns []string) bool {
 }
 
 // includedPaths returns the files under root, relative to it, that the
-// .dockerignore patterns do not exclude. Directories are not listed: the
-// archive walk of "." emits them (TestGetContext_dockerignoreKeepsDirectories).
+// .dockerignore patterns do not exclude, and the empty directories among them.
+// The archive walk skips an excluded directory unless a "!" pattern starts with
+// its path (moby/go-archive v0.3.3, archive.go#L928), so an empty directory
+// re-included under an excluded parent is listed here.
 func includedPaths(root string, patterns []string) ([]string, error) {
 	pm, err := patternmatcher.New(patterns)
 	if err != nil {
@@ -312,12 +314,18 @@ func includedPaths(root string, patterns []string) ([]string, error) {
 		if err != nil {
 			return err
 		}
-		if !skip && !d.IsDir() {
+		if !skip && (!d.IsDir() || isEmptyDir(p)) {
 			paths = append(paths, rel)
 		}
 		return nil
 	})
 	return paths, err
+}
+
+// isEmptyDir reports whether dir has no entries. An unreadable dir counts as not empty.
+func isEmptyDir(dir string) bool {
+	entries, err := os.ReadDir(dir)
+	return err == nil && len(entries) == 0
 }
 
 // parseDockerIgnore returns if the file exists, the excluded files and an error if any
