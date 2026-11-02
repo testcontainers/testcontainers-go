@@ -259,8 +259,9 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 
 	// The archive walker skips an excluded directory unless an "!" pattern
 	// starts with its path, so "!a/**/*.go" can't re-include a/b/c/d.go
-	// (moby/go-archive v0.3.3, archive.go#L928). Add the surviving files as
-	// explicit includes; the "." include still walks everything else.
+	// (moby/go-archive v0.3.3, archive.go#L928). Add the surviving files and the
+	// directories the walk would skip as explicit includes; the "." include
+	// still walks everything else.
 	// Archive keeps one seen map across includes (archive.go#L843), so a file
 	// that both walks reach is written once.
 	if hasExclusion(excluded) {
@@ -286,11 +287,12 @@ func hasExclusion(patterns []string) bool {
 	return slices.ContainsFunc(patterns, func(p string) bool { return strings.HasPrefix(p, "!") })
 }
 
-// includedPaths returns the files under root, relative to it, that the
-// .dockerignore patterns do not exclude, and the empty directories among them.
-// The archive walk skips an excluded directory unless a "!" pattern starts with
-// its path (moby/go-archive v0.3.3, archive.go#L928), so an empty directory
-// re-included under an excluded parent is listed here.
+// includedPaths returns the paths under root, relative to it, that the
+// .dockerignore patterns do not exclude: every file, and every directory whose
+// parent is excluded. The archive walk skips an excluded directory unless a "!"
+// pattern starts with its path (moby/go-archive v0.3.3, archive.go#L928), so a
+// re-included directory under an excluded parent is listed here, even when all
+// its contents are excluded. The archive walk still filters those contents.
 func includedPaths(root string, patterns []string) ([]string, error) {
 	pm, err := patternmatcher.New(patterns)
 	if err != nil {
@@ -314,18 +316,27 @@ func includedPaths(root string, patterns []string) ([]string, error) {
 		if err != nil {
 			return err
 		}
-		if !skip && (!d.IsDir() || isEmptyDir(p)) {
-			paths = append(paths, rel)
+		if skip {
+			return nil
 		}
+		if d.IsDir() {
+			// The archive walk (archive.go#L906-L935) reaches a top-level directory, and one whose parent is kept.
+			parent := filepath.Dir(rel)
+			if parent == "." {
+				return nil
+			}
+			parentSkip, err := pm.MatchesOrParentMatches(parent)
+			if err != nil {
+				return err
+			}
+			if !parentSkip {
+				return nil
+			}
+		}
+		paths = append(paths, rel)
 		return nil
 	})
 	return paths, err
-}
-
-// isEmptyDir reports whether dir has no entries. An unreadable dir counts as not empty.
-func isEmptyDir(dir string) bool {
-	entries, err := os.ReadDir(dir)
-	return err == nil && len(entries) == 0
 }
 
 // parseDockerIgnore returns if the file exists, the excluded files and an error if any

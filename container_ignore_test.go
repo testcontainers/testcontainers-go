@@ -105,6 +105,25 @@ func TestGetContext_dockerignoreKeepsEmptyDirUnderExcludedParent(t *testing.T) {
 	require.ElementsMatch(t, []string{".dockerignore", "Dockerfile", "lambda/x/a.go", "lambda/x/empty/"}, got)
 }
 
+func TestGetContext_dockerignoreKeepsReincludedDirWithIgnoredChildren(t *testing.T) {
+	got := tarNames(t, t.TempDir(), map[string]string{
+		".dockerignore":       "*\n!lambda/**/keep\nlambda/**/keep/*\n",
+		"Dockerfile":          "FROM scratch\n",
+		"lambda/x/keep/a.txt": "ignored\n",
+	})
+	require.ElementsMatch(t, []string{".dockerignore", "Dockerfile", "lambda/x/keep/"}, got)
+}
+
+func TestGetContext_dockerignoreKeepsReincludedDirWithIncludedChild(t *testing.T) {
+	got := tarNames(t, t.TempDir(), map[string]string{
+		".dockerignore":       "*\n!lambda/**/keep\nlambda/**/keep/*\n!lambda/**/keep/b.go\n",
+		"Dockerfile":          "FROM scratch\n",
+		"lambda/x/keep/a.txt": "ignored\n",
+		"lambda/x/keep/b.go":  "package x\n",
+	})
+	require.ElementsMatch(t, []string{".dockerignore", "Dockerfile", "lambda/x/keep/", "lambda/x/keep/b.go"}, got)
+}
+
 func TestGetContext_dockerignoreSkipsUnreadableExcludedDir(t *testing.T) {
 	if os.Geteuid() == 0 {
 		t.Skip("root can read any directory")
