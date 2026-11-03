@@ -6,8 +6,10 @@ import (
 	"archive/tar"
 	"errors"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -142,6 +144,28 @@ func TestGetContext_dockerignoreSkipsUnreadableExcludedDir(t *testing.T) {
 	require.ElementsMatch(t, []string{".dockerignore", "Dockerfile", "keep"}, got)
 }
 
+func TestGetContext_dockerignorePrunesExcludedDirWithoutReinclude(t *testing.T) {
+	got := tarNames(t, t.TempDir(), map[string]string{
+		".dockerignore":     "build\n!keep.txt\n",
+		"Dockerfile":        "FROM scratch\n",
+		"keep.txt":          "keep\n",
+		"build/a/b/deep.go": "package b\n",
+		"build/other.txt":   "ignored\n",
+	})
+	require.ElementsMatch(t, []string{".dockerignore", "Dockerfile", "keep.txt"}, got)
+}
+
+func TestGetContext_dockerignoreDoesNotPruneDirWithNestedReinclude(t *testing.T) {
+	got := tarNames(t, t.TempDir(), map[string]string{
+		".dockerignore":     "build\n!build/**/keep.go\n",
+		"Dockerfile":        "FROM scratch\n",
+		"build/a/b/keep.go": "package b\n",
+		"build/a/drop.go":   "package a\n",
+		"build/b/deep/x.go": "package b\n",
+	})
+	require.ElementsMatch(t, []string{".dockerignore", "Dockerfile", "build/a/b/keep.go"}, got)
+}
+
 func TestGetContext_dockerignoreInvalidNegationReturnsError(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, ".dockerignore"), []byte("![\n"), 0o600))
@@ -150,4 +174,32 @@ func TestGetContext_dockerignoreInvalidNegationReturnsError(t *testing.T) {
 	_, err := (&ContainerRequest{FromDockerfile: FromDockerfile{Context: dir}}).GetContext()
 	require.ErrorIs(t, err, filepath.ErrBadPattern)
 	require.EqualError(t, err, "syntax error in pattern")
+}
+
+func TestGetContext_dockerignoreWalkNeverEntersExcludedDirWithoutReinclude(t *testing.T) {
+	orig := walkDir
+	t.Cleanup(func() { walkDir = orig })
+
+	dir := t.TempDir()
+	var visited []string
+	walkDir = func(root string, fn fs.WalkDirFunc) error {
+		return orig(root, func(p string, d fs.DirEntry, err error) error {
+			rel, relErr := filepath.Rel(dir, p)
+			require.NoError(t, relErr)
+			visited = append(visited, filepath.ToSlash(rel))
+			return fn(p, d, err)
+		})
+	}
+
+	got := tarNames(t, dir, map[string]string{
+		".dockerignore":     "build\n!keep.txt\n",
+		"Dockerfile":        "FROM scratch\n",
+		"keep.txt":          "keep\n",
+		"build/a/b/deep.go": "package b\n",
+	})
+	require.ElementsMatch(t, []string{".dockerignore", "Dockerfile", "keep.txt"}, got)
+
+	for _, p := range visited {
+		assert.False(t, strings.HasPrefix(p, "build/"), "walk entered pruned directory: %s", p)
+	}
 }

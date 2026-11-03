@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"maps"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -287,6 +288,9 @@ func hasExclusion(patterns []string) bool {
 	return slices.ContainsFunc(patterns, func(p string) bool { return strings.HasPrefix(p, "!") })
 }
 
+// walkDir is a seam so tests can observe which directories the walk enters.
+var walkDir = filepath.WalkDir
+
 // includedPaths returns the paths under root, relative to it, that the
 // .dockerignore patterns do not exclude: every file, and every directory whose
 // parent is excluded. The archive walk skips an excluded directory unless a "!"
@@ -300,7 +304,7 @@ func includedPaths(root string, patterns []string) ([]string, error) {
 	}
 
 	var paths []string
-	err = filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
+	err = walkDir(root, func(p string, d fs.DirEntry, err error) error {
 		if p == root {
 			return err
 		}
@@ -317,6 +321,10 @@ func includedPaths(root string, patterns []string) ([]string, error) {
 			return err
 		}
 		if skip {
+			if d.IsDir() && !canReinclude(pm, rel) {
+				// No "!" pattern can match below this directory, so do not walk into it.
+				return fs.SkipDir
+			}
 			return nil
 		}
 		if d.IsDir() {
@@ -337,6 +345,31 @@ func includedPaths(root string, patterns []string) ([]string, error) {
 		return nil
 	})
 	return paths, err
+}
+
+// canReinclude reports whether a "!" pattern could match something below dir,
+// so the walk must enter an excluded directory. Patterns are compared segment by
+// segment; "**" in a segment, or a pattern longer than dir, counts as a possible match.
+func canReinclude(pm *patternmatcher.PatternMatcher, dir string) bool {
+	dirSegs := strings.Split(filepath.ToSlash(dir), "/")
+	return slices.ContainsFunc(pm.Patterns(), func(p *patternmatcher.Pattern) bool {
+		if !p.Exclusion() {
+			return false
+		}
+		patSegs := strings.Split(path.Clean(filepath.ToSlash(p.String())), "/")
+		for i, seg := range dirSegs {
+			if i >= len(patSegs) {
+				return false
+			}
+			if strings.Contains(patSegs[i], "**") {
+				return true
+			}
+			if ok, err := path.Match(patSegs[i], seg); err == nil && !ok {
+				return false
+			}
+		}
+		return true
+	})
 }
 
 // parseDockerIgnore returns if the file exists, the excluded files and an error if any
