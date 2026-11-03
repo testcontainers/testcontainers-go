@@ -77,6 +77,29 @@ func tarNames(t *testing.T, dir string, files map[string]string, dirs ...string)
 	return got
 }
 
+// recordWalk swaps the walkDir seam for the rest of the test and returns the
+// slash-form paths, relative to dir, that the walk visits. An entry the walk
+// reports with an error is recorded with a " (err)" suffix.
+func recordWalk(t *testing.T, dir string) *[]string {
+	t.Helper()
+	orig := walkDir
+	t.Cleanup(func() { walkDir = orig })
+	visited := &[]string{}
+	walkDir = func(root string, fn fs.WalkDirFunc) error {
+		return orig(root, func(p string, d fs.DirEntry, err error) error {
+			rel, relErr := filepath.Rel(dir, p)
+			require.NoError(t, relErr)
+			name := filepath.ToSlash(rel)
+			if err != nil {
+				name += " (err)"
+			}
+			*visited = append(*visited, name)
+			return fn(p, d, err)
+		})
+	}
+	return visited
+}
+
 func TestGetContext_dockerignoreReincludesNestedFiles(t *testing.T) {
 	got := tarNames(t, t.TempDir(), map[string]string{
 		".dockerignore":                     "*\n!lambda/**/*.go\n!go.mod\n",
@@ -135,6 +158,7 @@ func TestGetContext_dockerignoreSkipsUnreadableExcludedDir(t *testing.T) {
 	require.NoError(t, os.MkdirAll(secret, 0o755))
 	require.NoError(t, os.Chmod(secret, 0o000))
 	t.Cleanup(func() { _ = os.Chmod(secret, 0o755) })
+	visited := recordWalk(t, dir)
 
 	got := tarNames(t, dir, map[string]string{
 		".dockerignore": "secret\n!keep\n",
@@ -142,10 +166,19 @@ func TestGetContext_dockerignoreSkipsUnreadableExcludedDir(t *testing.T) {
 		"keep":          "k\n",
 	})
 	require.ElementsMatch(t, []string{".dockerignore", "Dockerfile", "keep"}, got)
+	require.Contains(t, *visited, "keep", "walk observer is not live")
+	// A pruned directory is never read, so the walk reports no error for it.
+	for _, p := range *visited {
+		assert.NotContains(t, p, "(err)", "walk tried to read the excluded directory: %s", p)
+		assert.False(t, strings.HasPrefix(p, "secret/"), "walk entered excluded directory: %s", p)
+	}
 }
 
 func TestGetContext_dockerignorePrunesExcludedDirWithoutReinclude(t *testing.T) {
-	got := tarNames(t, t.TempDir(), map[string]string{
+	dir := t.TempDir()
+	visited := recordWalk(t, dir)
+
+	got := tarNames(t, dir, map[string]string{
 		".dockerignore":     "build\n!keep.txt\n",
 		"Dockerfile":        "FROM scratch\n",
 		"keep.txt":          "keep\n",
@@ -153,10 +186,18 @@ func TestGetContext_dockerignorePrunesExcludedDirWithoutReinclude(t *testing.T) 
 		"build/other.txt":   "ignored\n",
 	})
 	require.ElementsMatch(t, []string{".dockerignore", "Dockerfile", "keep.txt"}, got)
+	require.Contains(t, *visited, "keep.txt", "walk observer is not live")
+	require.Contains(t, *visited, "build", "excluded directory should be visited once, then pruned")
+	for _, p := range *visited {
+		assert.False(t, strings.HasPrefix(p, "build/"), "walk entered pruned directory: %s", p)
+	}
 }
 
 func TestGetContext_dockerignoreDoesNotPruneDirWithNestedReinclude(t *testing.T) {
-	got := tarNames(t, t.TempDir(), map[string]string{
+	dir := t.TempDir()
+	visited := recordWalk(t, dir)
+
+	got := tarNames(t, dir, map[string]string{
 		".dockerignore":     "build\n!build/**/keep.go\n",
 		"Dockerfile":        "FROM scratch\n",
 		"build/a/b/keep.go": "package b\n",
@@ -164,6 +205,8 @@ func TestGetContext_dockerignoreDoesNotPruneDirWithNestedReinclude(t *testing.T)
 		"build/b/deep/x.go": "package b\n",
 	})
 	require.ElementsMatch(t, []string{".dockerignore", "Dockerfile", "build/a/b/keep.go"}, got)
+	// The re-include can match below build/a, so the walk must enter it.
+	require.Contains(t, *visited, "build/a/b", "walk must enter a directory that holds a re-included file")
 }
 
 func TestGetContext_dockerignoreInvalidNegationReturnsError(t *testing.T) {
@@ -174,32 +217,4 @@ func TestGetContext_dockerignoreInvalidNegationReturnsError(t *testing.T) {
 	_, err := (&ContainerRequest{FromDockerfile: FromDockerfile{Context: dir}}).GetContext()
 	require.ErrorIs(t, err, filepath.ErrBadPattern)
 	require.EqualError(t, err, "syntax error in pattern")
-}
-
-func TestGetContext_dockerignoreWalkNeverEntersExcludedDirWithoutReinclude(t *testing.T) {
-	orig := walkDir
-	t.Cleanup(func() { walkDir = orig })
-
-	dir := t.TempDir()
-	var visited []string
-	walkDir = func(root string, fn fs.WalkDirFunc) error {
-		return orig(root, func(p string, d fs.DirEntry, err error) error {
-			rel, relErr := filepath.Rel(dir, p)
-			require.NoError(t, relErr)
-			visited = append(visited, filepath.ToSlash(rel))
-			return fn(p, d, err)
-		})
-	}
-
-	got := tarNames(t, dir, map[string]string{
-		".dockerignore":     "build\n!keep.txt\n",
-		"Dockerfile":        "FROM scratch\n",
-		"keep.txt":          "keep\n",
-		"build/a/b/deep.go": "package b\n",
-	})
-	require.ElementsMatch(t, []string{".dockerignore", "Dockerfile", "keep.txt"}, got)
-
-	for _, p := range visited {
-		assert.False(t, strings.HasPrefix(p, "build/"), "walk entered pruned directory: %s", p)
-	}
 }
