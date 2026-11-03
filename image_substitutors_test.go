@@ -2,6 +2,7 @@ package testcontainers
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -121,6 +122,7 @@ func TestSubstituteBuiltImage(t *testing.T) {
 		json, err := c.Inspect(context.Background())
 		require.NoError(t, err)
 
-		require.Equalf(t, "my-registry/my-repo:my-image", json.Config.Image, "expected my-registry/my-repo:my-image, got %s", json.Config.Image)
+		// Podman expands Docker Hub image names when inspecting containers.
+		require.Equal(t, "my-registry/my-repo:my-image", strings.TrimPrefix(json.Config.Image, "docker.io/"))
 	})
 }

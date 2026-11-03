@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 	"testing"
 
@@ -13,7 +12,6 @@ import (
 
 	"github.com/testcontainers/testcontainers-go/modulegen/internal"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/context"
-	"github.com/testcontainers/testcontainers-go/modulegen/internal/dependabot"
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/mkdocs"
 )
 
@@ -252,7 +250,6 @@ func TestGenerate(t *testing.T) {
 	assertGoModContent(t, module, testProject.originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, module, filepath.Join(generatedTemplatesDir, "Makefile"))
 	assertMkdocsNavItems(t, testProject.ctx, module)
-	assertDependabotUpdates(t, testProject.ctx, module)
 }
 
 func TestGenerateModule(t *testing.T) {
@@ -288,7 +285,6 @@ func TestGenerateModule(t *testing.T) {
 	assertGoModContent(t, module, testProject.originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, module, filepath.Join(generatedTemplatesDir, "Makefile"))
 	assertMkdocsNavItems(t, testProject.ctx, module)
-	assertDependabotUpdates(t, testProject.ctx, module)
 }
 
 func TestRefresh(t *testing.T) {
@@ -320,33 +316,7 @@ func TestRefresh(t *testing.T) {
 
 	for _, module := range modulesAndExamples {
 		assertMkdocsNavItems(t, testProject.ctx, module)
-		assertDependabotUpdates(t, testProject.ctx, module)
 	}
-}
-
-// assert content in the Dependabot descriptor file
-func assertDependabotUpdates(t *testing.T, tmpCtx context.Context, module context.TestcontainersModule) {
-	t.Helper()
-	updates, err := dependabot.GetUpdates(tmpCtx.DependabotConfigFile())
-	require.NoError(t, err)
-
-	// first item is the github-actions module, which uses an array of directories
-	require.Len(t, updates[0].Directories, 1)
-	require.Equal(t, "/", updates[0].Directories[0], updates)
-	require.Equal(t, "github-actions", updates[0].PackageEcosystem, "PackageEcosystem should be github-actions")
-
-	// second item is the Go modules
-	require.Equal(t, "gomod", updates[1].PackageEcosystem, "PackageEcosystem should be gomod")
-
-	// modulegen exists as a gomod module
-	require.True(t, slices.Contains(updates[1].Directories, "/modulegen"), "modulegen should exist")
-
-	// the module should be in the dependabot updates in the gomod section
-	directory := "/" + module.ParentDir() + "/" + module.Lower()
-	require.True(t, slices.Contains(updates[1].Directories, directory), "module should exist")
-
-	// third item is the pip module
-	require.Equal(t, "pip", updates[2].PackageEcosystem, "PackageEcosystem should be pip")
 }
 
 // assert content module file in the docs
@@ -571,9 +541,17 @@ func copyInitialProject(t *testing.T) testProject {
 	originalConfig, err := mkdocs.ReadConfig(tmpCtx.MkdocsConfigFile())
 	require.NoError(t, err)
 
-	// .github/dependabot.yml
-	err = dependabot.CopyConfig(ctx.DependabotConfigFile(), tmpCtx.DependabotConfigFile())
+	// Dependabot is maintained manually and must survive generation and refresh unchanged.
+	dependabotConfig, err := os.ReadFile(filepath.Join(ctx.GithubDir(), "dependabot.yml"))
 	require.NoError(t, err)
+	dependabotConfigPath := filepath.Join(tmpCtx.GithubDir(), "dependabot.yml")
+	err = os.WriteFile(dependabotConfigPath, dependabotConfig, 0o644)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		content, err := os.ReadFile(dependabotConfigPath)
+		require.NoError(t, err)
+		require.Equal(t, string(dependabotConfig), string(content), "modulegen must not rewrite the Dependabot config")
+	})
 
 	// go.mod
 	goModFile, err := os.ReadFile(ctx.GoModFile())

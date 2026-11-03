@@ -145,7 +145,10 @@ func Test_LoadImagesWithPlatform(t *testing.T) {
 
 	t.Run("Test load image with wrong architecture", func(t *testing.T) {
 		pullPlatform, _ := platforms.Parse("linux/s390x")
-		img := "nginx:mainline"
+		// A multi-platform index can reuse amd64 content already in containerd's
+		// image store (for example from amd64/nginx), even after an s390x pull.
+		// Use a single-architecture reference so amd64 is never an export target.
+		img := "s390x/nginx:mainline"
 		err = provider.PullImageWithOpts(ctx, img, testcontainers.PullDockerImageWithPlatform(pullPlatform))
 		require.NoError(t, err)
 

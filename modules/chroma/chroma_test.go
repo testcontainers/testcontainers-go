@@ -2,10 +2,10 @@ package chroma_test
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"testing"
 
-	chromago "github.com/amikos-tech/chroma-go/pkg/api/v2"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -33,18 +33,18 @@ func TestChroma(t *testing.T) {
 		require.Equalf(tt, http.StatusOK, resp.StatusCode, "unexpected status code: %d", resp.StatusCode)
 	})
 
-	t.Run("GetClient", func(tt *testing.T) {
-		// restEndpoint {
+	t.Run("Heartbeat", func(tt *testing.T) {
 		endpoint, err := ctr.RESTEndpoint(context.Background())
 		require.NoErrorf(tt, err, "failed to get REST endpoint")
-		chromaClient, err := chromago.NewHTTPClient(chromago.WithBaseURL(endpoint))
-		// }
-		require.NoErrorf(tt, err, "failed to create client")
-		t.Cleanup(func() {
-			defer chromaClient.Close()
-		})
 
-		err = chromaClient.Heartbeat(context.TODO())
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint+"/api/v2/heartbeat", nil)
 		require.NoError(tt, err)
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(tt, err)
+		defer resp.Body.Close()
+		require.Equal(tt, http.StatusOK, resp.StatusCode)
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(tt, err)
+		require.Contains(tt, string(body), "nanosecond heartbeat")
 	})
 }

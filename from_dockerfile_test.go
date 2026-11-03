@@ -90,7 +90,9 @@ func TestBuildImageFromDockerfile_BuildError(t *testing.T) {
 		}),
 	)
 	CleanupContainer(t, ctr)
-	require.EqualError(t, err, `generic container: create container: build image: The command '/bin/sh -c exit 1' returned a non-zero code: 1`)
+	require.ErrorContains(t, err, "generic container: create container: build image:")
+	require.ErrorContains(t, err, "exit 1")
+	require.Regexp(t, `(non-zero code: |exit status )1\s*$`, err.Error())
 }
 
 func TestBuildImageFromDockerfile_NoTag(t *testing.T) {

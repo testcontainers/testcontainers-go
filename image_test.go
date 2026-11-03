@@ -4,9 +4,12 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/containerd/platforms"
+	"github.com/moby/moby/client"
+	"github.com/moby/moby/client/pkg/versions"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/core"
@@ -15,7 +18,7 @@ import (
 func TestImageList(t *testing.T) {
 	t.Setenv("DOCKER_HOST", core.MustExtractDockerHost(context.Background()))
 
-	provider, err := ProviderDocker.GetProvider()
+	provider, err := ProviderDefault.GetProvider()
 	require.NoErrorf(t, err, "failed to get provider")
 
 	defer func() {
@@ -38,7 +41,8 @@ func TestImageList(t *testing.T) {
 
 	// look if the list contains the container image
 	for _, img := range images {
-		if img.Name == req.Image {
+		// Podman reports fully qualified Docker Hub image names.
+		if strings.TrimPrefix(img.Name, "docker.io/library/") == req.Image {
 			return
 		}
 	}
@@ -49,7 +53,7 @@ func TestImageList(t *testing.T) {
 func TestSaveImages(t *testing.T) {
 	t.Setenv("DOCKER_HOST", core.MustExtractDockerHost(context.Background()))
 
-	provider, err := ProviderDocker.GetProvider()
+	provider, err := ProviderDefault.GetProvider()
 	require.NoErrorf(t, err, "failed to get provider")
 
 	defer func() {
@@ -78,13 +82,14 @@ func TestSaveImages(t *testing.T) {
 func TestSaveImagesWithOpts(t *testing.T) {
 	t.Setenv("DOCKER_HOST", core.MustExtractDockerHost(context.Background()))
 
-	provider, err := ProviderDocker.GetProvider()
+	provider, err := ProviderDefault.GetProvider()
 	require.NoErrorf(t, err, "failed to get provider")
-
-	defer func() {
-		err = provider.Close()
-		require.NoError(t, err)
-	}()
+	t.Cleanup(func() { require.NoError(t, provider.Close()) })
+	version, err := provider.(*DockerProvider).client.ServerVersion(t.Context(), client.ServerVersionOptions{})
+	require.NoError(t, err)
+	if versions.LessThan(version.APIVersion, "1.48") {
+		t.Skip("exporting a specific image platform requires Docker API 1.48")
+	}
 
 	req := ContainerRequest{
 		Image:         "redis:latest",

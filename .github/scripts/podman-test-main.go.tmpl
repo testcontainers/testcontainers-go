@@ -1,0 +1,27 @@
+package PACKAGE_test
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"testing"
+
+	"github.com/testcontainers/testcontainers-go/internal/core"
+	_ "github.com/testcontainers/testcontainers-go/modules/podman"
+)
+
+// Importing Podman only registers its factory. Inspect selection after m.Run so
+// this harness cannot hide a test that incorrectly initializes Docker first.
+// Each test binary (including isolated gotestsum reruns) gets this assertion.
+func TestMain(m *testing.M) {
+	code := m.Run()
+	// These subprocesses deliberately select a fake or missing runtime.
+	if os.Getenv("TCGO_RUNTIME_TEST") == "" {
+		cfg, err := core.Runtime(context.Background())
+		if err != nil || cfg.Name != "podman" || !core.HasRegisteredProvider("podman") {
+			fmt.Fprintf(os.Stderr, "Podman CI: selected runtime = %q, registered = %t, error = %v\n", cfg.Name, core.HasRegisteredProvider("podman"), err)
+			code = 1
+		}
+	}
+	os.Exit(code)
+}

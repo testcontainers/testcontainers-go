@@ -118,6 +118,10 @@
             "path": "../modules/forgejo"
         },
         {
+            "name": "module / garage",
+            "path": "../modules/garage"
+        },
+        {
             "name": "module / gcloud",
             "path": "../modules/gcloud"
         },
@@ -242,6 +246,10 @@
             "path": "../modules/pinecone"
         },
         {
+            "name": "module / podman",
+            "path": "../modules/podman"
+        },
+        {
             "name": "module / postgres",
             "path": "../modules/postgres"
         },
@@ -284,6 +292,10 @@
         {
             "name": "module / s3mock",
             "path": "../modules/s3mock"
+        },
+        {
+            "name": "module / sbx",
+            "path": "../modules/sbx"
         },
         {
             "name": "module / scylladb",

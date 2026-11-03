@@ -31,10 +31,11 @@ func SkipIfProviderIsNotHealthy(t *testing.T) {
 	}()
 
 	ctx := context.Background()
-	provider, err := ProviderDocker.GetProvider()
+	provider, err := ProviderDefault.GetProvider()
 	if err != nil {
 		t.Skipf("Docker is not running. Testcontainers can't perform is work without it: %s", err)
 	}
+	t.Cleanup(func() { _ = provider.Close() })
 	err = provider.Health(ctx)
 	if err != nil {
 		t.Skipf("Docker is not running. Testcontainers can't perform is work without it: %s", err)

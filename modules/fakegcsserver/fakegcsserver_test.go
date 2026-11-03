@@ -17,7 +17,7 @@ import (
 func TestFakeGCSServer(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := fakegcsserver.Run(ctx, "fsouza/fake-gcs-server:1.47")
+	ctr, err := fakegcsserver.Run(ctx, "fsouza/fake-gcs-server:1.56.1")
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
@@ -44,7 +44,7 @@ func TestFakeGCSServer(t *testing.T) {
 func TestFakeGCSServerWithHTTPScheme(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := fakegcsserver.Run(ctx, "fsouza/fake-gcs-server:1.47",
+	ctr, err := fakegcsserver.Run(ctx, "fsouza/fake-gcs-server:1.56.1",
 		fakegcsserver.WithScheme("http"),
 	)
 	testcontainers.CleanupContainer(t, ctr)
@@ -61,7 +61,7 @@ func TestFakeGCSServerWithHTTPScheme(t *testing.T) {
 func TestFakeGCSServerWithHTTPSScheme(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := fakegcsserver.Run(ctx, "fsouza/fake-gcs-server:1.47",
+	ctr, err := fakegcsserver.Run(ctx, "fsouza/fake-gcs-server:1.56.1",
 		fakegcsserver.WithScheme("https"),
 	)
 	testcontainers.CleanupContainer(t, ctr)
@@ -78,7 +78,7 @@ func TestFakeGCSServerWithHTTPSScheme(t *testing.T) {
 func TestFakeGCSServerWithBothSchemeRejected(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := fakegcsserver.Run(ctx, "fsouza/fake-gcs-server:1.47",
+	ctr, err := fakegcsserver.Run(ctx, "fsouza/fake-gcs-server:1.56.1",
 		fakegcsserver.WithScheme("both"),
 	)
 	testcontainers.CleanupContainer(t, ctr)
@@ -91,7 +91,7 @@ func TestFakeGCSServerWithBothSchemeRejected(t *testing.T) {
 func TestFakeGCSServerWithInvalidScheme(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := fakegcsserver.Run(ctx, "fsouza/fake-gcs-server:1.47",
+	ctr, err := fakegcsserver.Run(ctx, "fsouza/fake-gcs-server:1.56.1",
 		fakegcsserver.WithScheme("ftp"),
 	)
 	testcontainers.CleanupContainer(t, ctr)

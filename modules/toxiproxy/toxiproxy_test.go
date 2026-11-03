@@ -1,15 +1,20 @@
 package toxiproxy_test
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	_ "embed"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net"
+	"net/http"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
-	toxiproxy "github.com/Shopify/toxiproxy/v2/client"
-	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
@@ -61,34 +66,24 @@ func TestRun_withConfigFile(t *testing.T) {
 	toxiURI, err := toxiproxyContainer.URI(ctx)
 	require.NoError(t, err)
 
-	toxiproxyClient := toxiproxy.NewClient(toxiURI)
-
 	toxiproxyProxyPort, err := toxiproxyContainer.MappedPort(ctx, "8666/tcp")
 	require.NoError(t, err)
 
 	toxiproxyProxyHostIP, err := toxiproxyContainer.Host(ctx)
 	require.NoError(t, err)
 
-	// Create a redis client that connects to the toxiproxy container.
-	// We are defining a read timeout of 2 seconds, because we are adding
-	// a latency toxic of 1 second to the request, +/- 100ms jitter.
-	redisURI := fmt.Sprintf("redis://%s:%s?read_timeout=2s", toxiproxyProxyHostIP, toxiproxyProxyPort.Port())
-
-	options, err := redis.ParseURL(redisURI)
+	redisAddr := net.JoinHostPort(toxiproxyProxyHostIP, toxiproxyProxyPort.Port())
+	conn, err := (&net.Dialer{Timeout: 5 * time.Second}).DialContext(ctx, "tcp", redisAddr)
 	require.NoError(t, err)
-
-	redisCli := redis.NewClient(options)
+	reader := bufio.NewReader(conn)
 	t.Cleanup(func() {
-		require.NoError(t, redisCli.FlushAll(ctx).Err())
+		require.Equal(t, "OK", redisCommand(t, conn, reader, "FLUSHALL"))
+		require.NoError(t, conn.Close())
 	})
 
 	key := fmt.Sprintf("{user.%s}.favoritefood", uuid.NewString())
 	value := "Cabbage Biscuits"
-	ttl, err := time.ParseDuration("2h")
-	require.NoError(t, err)
-
-	err = redisCli.Set(ctx, key, value, ttl).Err()
-	require.NoError(t, err)
+	require.Equal(t, "OK", redisCommand(t, conn, reader, "SET", key, value, "EX", "7200"))
 
 	const (
 		latency = 1_000
@@ -96,24 +91,53 @@ func TestRun_withConfigFile(t *testing.T) {
 	)
 
 	// Add a latency toxic to the proxy
-	toxicOptions := &toxiproxy.ToxicOptions{
-		ProxyName: "redis", // name of the proxy in the config file
-		ToxicName: "latency_down",
-		ToxicType: "latency",
-		Toxicity:  1.0,
-		Stream:    "downstream",
+	type toxic struct {
+		Name       string         `json:"name"`
+		Type       string         `json:"type"`
+		Stream     string         `json:"stream,omitempty"`
+		Toxicity   float32        `json:"toxicity"`
+		Attributes map[string]any `json:"attributes"`
+	}
+	toxicOptions := toxic{
+		Name:     "latency_down",
+		Type:     "latency",
+		Toxicity: 1.0,
+		Stream:   "downstream",
 		Attributes: map[string]any{
 			"latency": latency,
 			"jitter":  jitter,
 		},
 	}
-	_, err = toxiproxyClient.AddToxic(toxicOptions)
+	requestBody, err := json.Marshal(toxicOptions)
 	require.NoError(t, err)
+	// redis is the name of the proxy in the config file.
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, toxiURI+"/proxies/redis/toxics", bytes.NewReader(requestBody))
+	require.NoError(t, err)
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("User-Agent", "toxiproxy-cli")
+	client := &http.Client{Timeout: 30 * time.Second}
+	defer client.CloseIdleConnections()
+	response, err := client.Do(request)
+	require.NoError(t, err)
+	defer response.Body.Close()
+	const maxResponseSize = 1 << 20
+	responseBody, err := io.ReadAll(io.LimitReader(response.Body, maxResponseSize+1))
+	require.NoError(t, err)
+	require.LessOrEqual(t, len(responseBody), maxResponseSize, "toxic response exceeds size limit")
+	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+		var apiError struct {
+			Message string `json:"error"`
+			Status  int    `json:"status"`
+		}
+		require.NoError(t, json.Unmarshal(responseBody, &apiError))
+		t.Fatalf("failed to add toxic to proxy redis: AddToxic: HTTP %d: %s", apiError.Status, apiError.Message)
+	}
+	var addedToxic toxic
+	require.NoError(t, json.Unmarshal(responseBody, &addedToxic))
 
 	start := time.Now()
 	// Get data
-	savedValue, err := redisCli.Get(ctx, key).Result()
-	require.NoError(t, err)
+	savedValue := redisCommand(t, conn, reader, "GET", key)
 
 	duration := time.Since(start)
 
@@ -122,9 +146,40 @@ func TestRun_withConfigFile(t *testing.T) {
 	// The value is retrieved successfully
 	require.Equal(t, value, savedValue)
 
-	// Check that latency is within expected range (900ms-1100ms)
-	// The latency toxic adds 1000ms (1000ms +/- 100ms jitter)
+	// Check that latency is within expected range (800ms-1200ms).
+	// The latency toxic adds 1000ms (1000ms +/- 200ms jitter).
 	minDuration := (latency - jitter) * time.Millisecond
 	maxDuration := (latency + jitter) * time.Millisecond
 	require.True(t, duration >= minDuration && duration <= maxDuration)
+}
+
+func redisCommand(t *testing.T, conn net.Conn, reader *bufio.Reader, args ...string) string {
+	t.Helper()
+	require.NoError(t, conn.SetDeadline(time.Now().Add(3*time.Second)))
+	var request strings.Builder
+	fmt.Fprintf(&request, "*%d\r\n", len(args))
+	for _, arg := range args {
+		fmt.Fprintf(&request, "$%d\r\n%s\r\n", len(arg), arg)
+	}
+	_, err := io.WriteString(conn, request.String())
+	require.NoError(t, err)
+	line, err := reader.ReadString('\n')
+	require.NoError(t, err)
+	require.True(t, strings.HasSuffix(line, "\r\n"), "invalid Redis response: %q", line)
+	switch line[0] {
+	case '+':
+		return strings.TrimSuffix(line[1:], "\r\n")
+	case '$':
+		size, err := strconv.Atoi(strings.TrimSuffix(line[1:], "\r\n"))
+		require.NoError(t, err)
+		require.GreaterOrEqual(t, size, 0, "unexpected nil bulk string")
+		data := make([]byte, size+2)
+		_, err = io.ReadFull(reader, data)
+		require.NoError(t, err)
+		require.Equal(t, "\r\n", string(data[size:]))
+		return string(data[:size])
+	default:
+		t.Fatalf("unexpected Redis response: %q", line)
+		return ""
+	}
 }

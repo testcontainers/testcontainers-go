@@ -3,6 +3,7 @@ package testcontainers_test
 import (
 	"context"
 	"io"
+	"sync"
 	"testing"
 	"time"
 
@@ -75,12 +76,21 @@ func TestOverrideContainerRequest(t *testing.T) {
 }
 
 type msgsLogConsumer struct {
+	mu   sync.Mutex
 	msgs []string
 }
 
-// Accept prints the log to stdout
+// Accept records log messages for assertions.
 func (lc *msgsLogConsumer) Accept(l testcontainers.Log) {
+	lc.mu.Lock()
+	defer lc.mu.Unlock()
 	lc.msgs = append(lc.msgs, string(l.Content))
+}
+
+func (lc *msgsLogConsumer) count() int {
+	lc.mu.Lock()
+	defer lc.mu.Unlock()
+	return len(lc.msgs)
 }
 
 func TestWithLogConsumers(t *testing.T) {
@@ -96,7 +106,7 @@ func TestWithLogConsumers(t *testing.T) {
 	// we expect an error because the MySQL environment variables are not set
 	// but this is expected because we just want to test the log consumer
 	require.ErrorContains(t, err, "container exited with code 1")
-	require.NotEmpty(t, lc.msgs)
+	require.Eventually(t, func() bool { return lc.count() > 0 }, 5*time.Second, 100*time.Millisecond)
 }
 
 func TestWithLogConsumerConfig(t *testing.T) {
@@ -1026,8 +1036,12 @@ func TestWithEndpointSettingsModifier(t *testing.T) {
 
 		ctrInspect, err := c.Inspect(t.Context())
 		require.NoError(t, err)
-		require.Equal(t, []string{"web", "api"}, ctrInspect.NetworkSettings.Networks[net1.Name].Aliases)
-		require.Equal(t, []string{"web", "api"}, ctrInspect.NetworkSettings.Networks[net2.Name].Aliases)
+		aliases := []string{"web", "api"}
+		if testcontainers.ProviderDefault.UnderlyingProviderType() == testcontainers.ProviderPodman {
+			aliases = append(aliases, c.GetContainerID()[:12])
+		}
+		require.ElementsMatch(t, aliases, ctrInspect.NetworkSettings.Networks[net1.Name].Aliases)
+		require.ElementsMatch(t, aliases, ctrInspect.NetworkSettings.Networks[net2.Name].Aliases)
 	})
 
 	t.Run("sequential", func(t *testing.T) {
@@ -1054,6 +1068,10 @@ func TestWithEndpointSettingsModifier(t *testing.T) {
 
 		ctrInspect, err := c.Inspect(t.Context())
 		require.NoError(t, err)
-		require.Equal(t, []string{"web", "api"}, ctrInspect.NetworkSettings.Networks[net1.Name].Aliases)
+		aliases := []string{"web", "api"}
+		if testcontainers.ProviderDefault.UnderlyingProviderType() == testcontainers.ProviderPodman {
+			aliases = append(aliases, c.GetContainerID()[:12])
+		}
+		require.ElementsMatch(t, aliases, ctrInspect.NetworkSettings.Networks[net1.Name].Aliases)
 	})
 }
