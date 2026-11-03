@@ -1,12 +1,15 @@
 package consul_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"io"
 	"net/http"
 	"path/filepath"
 	"testing"
+	"time"
 
-	capi "github.com/hashicorp/consul/api"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -48,25 +51,53 @@ func TestConsul(t *testing.T) {
 			require.NoError(t, err)
 			require.NotEmpty(t, host)
 
-			res, err := http.Get("http://" + host)
-			require.NoError(t, err)
-			require.Equal(t, http.StatusOK, res.StatusCode)
+			client := &http.Client{Timeout: 5 * time.Second}
+			t.Cleanup(client.CloseIdleConnections)
+			endpoint := "http://" + host
+			consulRequest(t, ctx, client, http.MethodGet, endpoint, nil)
 
-			cfg := capi.DefaultConfig()
-			cfg.Address = host
-
-			reg := &capi.AgentServiceRegistration{ID: "abcd", Name: test.name}
-
-			client, err := capi.NewClient(cfg)
+			registration, err := json.Marshal(map[string]string{"ID": "abcd", "Name": test.name})
 			require.NoError(t, err)
 
-			// Register / Unregister service
-			s := client.Agent()
-			err = s.ServiceRegister(reg)
-			require.NoError(t, err)
+			// Register / Unregister service and verify the agent's service list.
+			consulRequest(t, ctx, client, http.MethodPut, endpoint+"/v1/agent/service/register", registration)
+			services := consulServices(t, ctx, client, endpoint)
+			require.Contains(t, services, "abcd")
+			require.Equal(t, "abcd", services["abcd"].ID)
+			require.Equal(t, test.name, services["abcd"].Service)
 
-			err = s.ServiceDeregister("abcd")
-			require.NoError(t, err)
+			consulRequest(t, ctx, client, http.MethodPut, endpoint+"/v1/agent/service/deregister/abcd", nil)
+			require.NotContains(t, consulServices(t, ctx, client, endpoint), "abcd")
 		})
 	}
+}
+
+func consulRequest(t *testing.T, ctx context.Context, client *http.Client, method, endpoint string, body []byte) []byte {
+	t.Helper()
+
+	req, err := http.NewRequestWithContext(ctx, method, endpoint, bytes.NewReader(body))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	responseBody, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode, "%s", responseBody)
+	return responseBody
+}
+
+type consulService struct {
+	ID      string
+	Service string
+}
+
+func consulServices(t *testing.T, ctx context.Context, client *http.Client, endpoint string) map[string]consulService {
+	t.Helper()
+
+	body := consulRequest(t, ctx, client, http.MethodGet, endpoint+"/v1/agent/services", nil)
+	var services map[string]consulService
+	require.NoError(t, json.Unmarshal(body, &services))
+	return services
 }

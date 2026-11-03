@@ -29,6 +29,12 @@ const (
 
 	// DefaultImage is the default image used by the Registry container.
 	DefaultImage = "registry:2.8.3"
+
+	// Accept both Docker and OCI manifests, including multi-platform images.
+	manifestMediaTypes = "application/vnd.docker.distribution.manifest.v2+json, " +
+		"application/vnd.docker.distribution.manifest.list.v2+json, " +
+		"application/vnd.oci.image.manifest.v1+json, " +
+		"application/vnd.oci.image.index.v1+json"
 )
 
 // RegistryContainer represents the Registry container type used in the module
@@ -122,7 +128,7 @@ func (c *RegistryContainer) DeleteImage(ctx context.Context, imageRef string) er
 	err = wait.ForHTTP(endpoint).
 		WithMethod(http.MethodHead).
 		WithBasicAuth(imageAuth.Username, imageAuth.Password).
-		WithHeaders(map[string]string{"Accept": "application/vnd.docker.distribution.manifest.v2+json"}).
+		WithHeaders(map[string]string{"Accept": manifestMediaTypes}).
 		WithStatusCodeMatcher(func(statusCode int) bool {
 			return statusCode == http.StatusOK
 		}).
@@ -162,7 +168,7 @@ func (c *RegistryContainer) ImageExists(ctx context.Context, imageRef string) er
 	return wait.ForHTTP(endpoint).
 		WithMethod(http.MethodHead).
 		WithBasicAuth(imageAuth.Username, imageAuth.Password).
-		WithHeaders(map[string]string{"Accept": "application/vnd.docker.distribution.manifest.v2+json"}).
+		WithHeaders(map[string]string{"Accept": manifestMediaTypes}).
 		WithForcedIPv4LocalHost().
 		WithStatusCodeMatcher(func(statusCode int) bool {
 			return statusCode == http.StatusOK
@@ -192,11 +198,16 @@ func (c *RegistryContainer) PushImage(ctx context.Context, ref string) error {
 		return fmt.Errorf("failed to encode image auth: %w", err)
 	}
 
-	_, err = dockerCli.ImagePush(ctx, ref, client.ImagePushOptions{
+	output, err := dockerCli.ImagePush(ctx, ref, client.ImagePushOptions{
 		All:          true,
 		RegistryAuth: encodedAuth,
 	})
 	if err != nil {
+		return fmt.Errorf("push image %q: %w", ref, err)
+	}
+	defer output.Close()
+
+	if err := output.Wait(ctx); err != nil {
 		return fmt.Errorf("push image %q: %w", ref, err)
 	}
 

@@ -45,7 +45,7 @@ Use the second argument in the `Run` function to set a valid Docker image.
 In example: `Run(context.Background(), "rabbitmq:3.7.25-management-alpine")`.
 
 !!!warning
-    From [https://hub.docker.com/_/rabbitmq](https://hub.docker.com/_/rabbitmq): "As of RabbitMQ 3.9, all of the docker-specific variables listed below are deprecated and no longer used. Please use a configuration file instead; visit [rabbitmq.com/configure](https://rabbitmq.com/configure) to learn more about the configuration file. For a starting point, the 3.8 images will print out the config file it generated from supplied environment variables."
+    From [https://hub.docker.com/_/rabbitmq](https://hub.docker.com/_/rabbitmq): "As of RabbitMQ 3.9, all of the docker-specific variables listed below are deprecated and no longer used. Please use a configuration file instead; visit [rabbitmq.com/configure](https://www.rabbitmq.com/docs/configure) to learn more about the configuration file. For a starting point, the 3.8 images will print out the config file it generated from supplied environment variables."
 
     - RABBITMQ_DEFAULT_PASS_FILE
     - RABBITMQ_DEFAULT_USER_FILE

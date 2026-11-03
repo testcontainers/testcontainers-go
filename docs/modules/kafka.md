@@ -69,6 +69,22 @@ The Kafka container will be started using a custom shell script:
 
 When starting the Kafka container, you can pass options in a variadic way to configure it.
 
+#### WithTLS
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+If you need to test clients against a TLS-secured broker, you can use the `kafka.WithTLS()` option.
+
+When enabled, the container will:
+
+- Generate a self-signed CA and a server certificate signed by it, valid for the host the container is reachable at
+- Configure Kafka with a PKCS12 keystore holding the server certificate
+- Expose an additional SSL listener on port `9095`, keeping the PLAINTEXT one on port `9093`
+
+If you override `KAFKA_LISTENERS` or `KAFKA_LISTENER_SECURITY_PROTOCOL_MAP`, the SSL listener is still added. If you define it yourself, it must listen on port `9095` and use the `SSL` protocol, otherwise `Run` returns an error.
+
+Use the `BrokersTLS(ctx)` method to get the SSL endpoint and the `TLSConfig()` method to get the `*tls.Config` for client connections.
+
 {% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
@@ -83,4 +99,20 @@ The `Brokers(ctx)` method returns the Kafka brokers as a string slice, containin
 
 <!--codeinclude-->
 [Get Kafka brokers](../../modules/kafka/kafka_test.go) inside_block:getBrokers
+<!--/codeinclude-->
+
+#### BrokersTLS
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The `BrokersTLS(ctx)` method returns the Kafka brokers of the SSL listener as a string slice, containing the host and the random port defined by Kafka's SSL port (`9095/tcp`). It can only be used when the container was created with the `WithTLS()` option. Returns an error if TLS was not enabled.
+
+#### TLSConfig
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The `TLSConfig()` method returns the TLS configuration trusting the CA that signed the broker certificate. It can only be used when the container was created with the `WithTLS()` option. Returns an error if TLS was not enabled.
+
+<!--codeinclude-->
+[Get Kafka TLS brokers and config](../../modules/kafka/kafka_test.go) inside_block:getBrokersTLS
 <!--/codeinclude-->

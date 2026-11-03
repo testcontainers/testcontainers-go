@@ -330,5 +330,5 @@ func TestWaitForLogRetriesLogsErrorOnRunningContainer(t *testing.T) {
 
 // readCloser returns an io.ReadCloser that reads from s.
 func readCloser(s string) io.ReadCloser {
-	return io.NopCloser(strings.NewReader((s)))
+	return io.NopCloser(strings.NewReader(s))
 }

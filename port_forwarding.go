@@ -38,7 +38,7 @@ var sshPassword = uuid.NewString()
 // At least one port must be provided to expose.
 // The steps are:
 // 1. Create a new SSHD container.
-// 2. Expose the host ports to the container after the container is ready.
+// 2. Set up host port forwarding before the target container is created.
 // 3. Close the SSH sessions before killing the container.
 func exposeHostPorts(ctx context.Context, req *ContainerRequest, ports ...int) (sshdConnectHook ContainerLifecycleHooks, err error) {
 	if len(ports) == 0 {
@@ -158,11 +158,11 @@ func exposeHostPorts(ctx context.Context, req *ContainerRequest, ports ...int) (
 		},
 	}
 
-	// after the container is ready, create the SSH tunnel
+	// before the container is created, create the SSH tunnel
 	// for each exposed port from the host.
 	sshdConnectHook = ContainerLifecycleHooks{
-		PostReadies: []ContainerHook{
-			func(ctx context.Context, _ Container) error {
+		PreCreates: []ContainerRequestHook{
+			func(ctx context.Context, req ContainerRequest) error {
 				return sshdContainer.exposeHostPort(ctx, req.HostAccessPorts...)
 			},
 		},

@@ -59,7 +59,7 @@ func (ms *AnyMultiStrategy) String() string {
 
 	var strategies []string
 	for _, strategy := range ms.Strategies {
-		if strategy == nil || reflect.ValueOf(strategy).IsNil() {
+		if isNilStrategy(strategy) {
 			continue
 		}
 		if s, ok := strategy.(fmt.Stringer); ok {
@@ -91,7 +91,7 @@ func (ms *AnyMultiStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	var valid int
 
 	for _, strategy := range ms.Strategies {
-		if strategy == nil || reflect.ValueOf(strategy).IsNil() {
+		if isNilStrategy(strategy) {
 			// A module could be appending strategies after part of the container initialization,
 			// and use wait.ForAny on a not initialized strategy.
 			// In this case, we just skip the nil strategy.
@@ -114,15 +114,25 @@ func (ms *AnyMultiStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		return nil
 	}
 
-	for {
-		select {
-		case err := <-resCh:
-			if err != nil {
-				return err
-			}
-			return nil
-		case <-ctx.Done():
-			return fmt.Errorf("timed out waiting for strategies: %w", ctx.Err())
-		}
+	select {
+	case err := <-resCh:
+		return err
+	case <-ctx.Done():
+		return fmt.Errorf("timed out waiting for strategies: %w", ctx.Err())
+	}
+}
+
+// isNilStrategy reports whether the strategy is nil, or a typed nil of a
+// nil-capable kind. Non-pointer implementations (e.g. structs) are never nil.
+func isNilStrategy(strategy Strategy) bool {
+	if strategy == nil {
+		return true
+	}
+
+	switch v := reflect.ValueOf(strategy); v.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice, reflect.UnsafePointer:
+		return v.IsNil()
+	default:
+		return false
 	}
 }

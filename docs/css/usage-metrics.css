@@ -133,6 +133,49 @@ body:has(.stats-grid) .md-content__inner > article {
     margin-bottom: 10px;
 }
 
+.chart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.chart-header .chart-title {
+    margin-bottom: 0;
+}
+
+.granularity-toggle {
+    display: inline-flex;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.granularity-button {
+    background: white;
+    border: none;
+    padding: 6px 14px;
+    font-size: 0.9rem;
+    color: #666;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.granularity-button + .granularity-button {
+    border-left: 2px solid #e0e0e0;
+}
+
+.granularity-button:hover {
+    background: #f5f5f5;
+}
+
+.granularity-button.active {
+    background: #667eea;
+    color: white;
+}
+
 .metrics-info {
     text-align: center;
     margin-top: 40px;

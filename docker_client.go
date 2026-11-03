@@ -133,6 +133,11 @@ func NewDockerClientWithOpts(ctx context.Context, opt ...client.Opt) (*DockerCli
 	}
 
 	if _, err = tcClient.Info(ctx, client.InfoOptions{}); err != nil {
+		runtime, runtimeErr := core.Runtime(ctx)
+		if runtimeErr != nil || runtime.DockerHost != "" {
+			_ = tcClient.Close()
+			return nil, fmt.Errorf("connect to selected provider: %w", err)
+		}
 		// Fallback to environment, including the original options
 		if len(opt) == 0 {
 			opt = []client.Opt{client.FromEnv}

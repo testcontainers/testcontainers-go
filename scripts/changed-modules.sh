@@ -71,7 +71,7 @@ set -euxo pipefail
 readonly ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 # define an array of modules that won't be included in the list
-readonly excluded_modules=(".devcontainer" ".vscode" "docs")
+readonly excluded_modules=(".devcontainer" ".vscode" "docs" "docs-site")
 
 # define an array of files that won't be included in the list
 readonly excluded_files=(
@@ -88,6 +88,7 @@ readonly excluded_files=(
     ".github/workflows/sonar-*.yml"
     ".github/workflows/usage-metrics.yml"
     ".github/workflows/usage-metrics-modules.yml"
+    ".github/workflows/github-clones.yml"
     "scripts/bump-*.sh"
     "scripts/check_environment.sh"
     "scripts/*release.sh"
@@ -95,13 +96,12 @@ readonly excluded_files=(
     "CONTRIBUTING.md"
     "LICENSE"
     "mkdocs.yml"
-    "Pipfile*"
+    "netlify.toml"
     "README.md"
     "RELEASING.md"
-    "requirements.txt"
-    "runtime.txt"
     "docs/usage-metrics/core.csv"
     "docs/usage-metrics/modules.csv"
+    "docs/usage-metrics/clones.csv"
 )
 
 # define an array of modules that won't be part of the build
@@ -112,10 +112,12 @@ modules=()
 
 # Find all go.mod files in the repository, building a list of all the available modules and examples.
 for modFile in $(find "${ROOT_DIR}/modules" -name "go.mod" -not -path "${ROOT_DIR}/**/testdata/*"); do
-    modules+=("\"modules/$(basename "$(dirname "${modFile}")")\"")
+    module_dir=$(dirname "${modFile#"${ROOT_DIR}/"}")
+    modules+=("\"${module_dir}\"")
 done
 for modFile in $(find "${ROOT_DIR}/examples" -name "go.mod" -not -path "${ROOT_DIR}/**/testdata/*"); do
-    modules+=("\"examples/$(basename "$(dirname "${modFile}")")\"")
+    module_dir=$(dirname "${modFile#"${ROOT_DIR}/"}")
+    modules+=("\"${module_dir}\"")
 done
 
 # sort modules array
@@ -160,15 +162,29 @@ for file in $modified_files; do
         fi
     done
 
-    if [[ $file == modules/* ]]; then
-        module_name=$(echo $file | cut -d'/' -f2)
-        if [[ ! " ${modified_modules[@]} " =~ " ${module_name} " ]]; then
-            modified_modules+=("\"modules/$module_name\"")
+    if [[ $file == modules/* || $file == examples/* ]]; then
+        # Find the innermost existing module, including deleted files in that module.
+        owner=""
+        for module in "${modules[@]}"; do
+            module_path=${module//\"/}
+            if [[ $file == "$module_path/"* && ${#module_path} -gt ${#owner} ]]; then
+                owner=$module_path
+            fi
+        done
+        # A removed parent manifest may leave nested modules with local replacements.
+        # Keep their jobs even when there is no surviving owner for the manifest.
+        if [[ -z $owner && $file == */go.mod ]]; then
+            owner=${file%/go.mod}
         fi
-    elif [[ $file == examples/* ]]; then
-        example_name=$(echo $file | cut -d'/' -f2)
-        if [[ ! " ${modified_modules[@]} " =~ " ${example_name} " ]]; then
-            modified_modules+=("\"examples/$example_name\"")
+        if [[ -n $owner ]]; then
+            modified_modules+=("\"$owner\"")
+            # Nested examples depend on the parent module's implementation.
+            for module in "${modules[@]}"; do
+                module_path=${module//\"/}
+                if [[ $module_path == "$owner/"* ]]; then
+                    modified_modules+=("$module")
+                fi
+            done
         fi
     elif [[ $file == modulegen/* ]]; then
         modified_modules+=("\"modulegen\"")
@@ -200,6 +216,11 @@ sorted_unique_modules=($(echo "${modified_modules[@]}" | tr ' ' '\n' | sort -u |
 # remove modules that won't be part of the build from the list
 filtered_modules=()
 for module in "${sorted_unique_modules[@]}"; do
+    # Deleted modules and the old side of a moved module have no build target.
+    module_path=${module//\"/}
+    if [[ ! -f "${ROOT_DIR}/${module_path}/go.mod" ]]; then
+        continue
+    fi
     skip=false
     for no_build_module in "${no_build_modules[@]}"; do
         if [[ ${module} == \"${no_build_module}\" ]]; then

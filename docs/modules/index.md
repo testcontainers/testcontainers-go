@@ -493,11 +493,12 @@ $ go run . refresh
 This command recreates all the project files for the modules and examples, including:
 
 - the mkdocs.yml file, including all the modules and examples, excluding the `compose` module, as it has its own docs page.
-- the dependabot config file, including all the modules, the examples and the modulegen module.
 - the VSCode project file, including all the modules, the examples and the modulegen module.
 - the Sonar properties file, including all the modules, the examples and the modulegen module.
 
 Executing this command in a well-known state of the project, must not produce any changes in the project files.
+
+The Dependabot config is maintained manually. Its directory globs automatically cover new modules and examples, and updates to the same dependency are grouped into one pull request across the configured Go modules.
 
 ## Interested in converting an example into a module?
 
