@@ -1,5 +1,6 @@
 package cosmosdb_test
 
+// ExampleRun_connect_imports {
 import (
 	"context"
 	"fmt"
@@ -9,14 +10,17 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/azure/cosmosdb"
+	cosmosdbcontainer "github.com/testcontainers/testcontainers-go/modules/azure/cosmosdb"
+	cosmosdbexample "github.com/testcontainers/testcontainers-go/modules/azure/examples/cosmosdb"
 )
+
+// }
 
 func ExampleRun_connect() {
 	// ExampleRun_connect {
 	ctx := context.Background()
 
-	cosmosdbContainer, err := cosmosdb.Run(ctx, "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview")
+	cosmosdbContainer, err := cosmosdbcontainer.Run(ctx, "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview")
 	defer func() {
 		if err := testcontainers.TerminateContainer(cosmosdbContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -33,7 +37,7 @@ func ExampleRun_connect() {
 		return
 	}
 
-	p, err := cosmosdb.NewContainerPolicy(ctx, cosmosdbContainer)
+	p, err := cosmosdbexample.NewContainerPolicy(ctx, cosmosdbContainer)
 	if err != nil {
 		log.Printf("failed to create policy: %s", err)
 		return

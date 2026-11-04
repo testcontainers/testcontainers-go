@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/azure
 The Azure module retains `github.com/microsoft/go-mssqldb`: SQL Edge tests use it
 to verify generated connection strings, and Service Bus depends on the MSSQL
 module, which also requires the driver. This dependency remains in the parent
-module alongside the [Cosmos DB SDK dependency](#cosmosdb).
+module.
 
 ## Usage example
 
@@ -363,9 +363,32 @@ In the following example, inspired by the [Azure Event Hubs Go SDK](https://lear
 
 ## CosmosDB
 
-The Azure module retains the Azure Cosmos DB SDK dependency because `ContainerPolicy.Do(*policy.Request)`
-and `ContainerPolicy.ClientOptions() *azcosmos.ClientOptions` expose SDK types in the public API.
-The policy keeps SDK requests directed to the emulator container endpoint.
+!!! warning "Breaking change: Cosmos SDK adapter moved"
+    `ContainerPolicy` and `NewContainerPolicy` have moved from
+    `github.com/testcontainers/testcontainers-go/modules/azure/cosmosdb` to
+    `github.com/testcontainers/testcontainers-go/modules/azure/examples/cosmosdb`.
+    The old exports have been removed. Update imports and any explicit `ContainerPolicy`
+    type references to the examples package. Its `Do(*policy.Request)` and
+    `ClientOptions() *azcosmos.ClientOptions` methods retain their SDK signatures and behavior,
+    but the exported type now belongs to the new import path.
+
+The adapter is example support in the existing `modules/azure/examples` module and
+brings the Azure Cosmos DB SDK dependency when imported. The parent Azure module no
+longer requires that SDK. `Run`, `Container`, and `ConnectionString` remain in
+`github.com/testcontainers/testcontainers-go/modules/azure/cosmosdb` with unchanged APIs.
+The adapter's constructor still accepts that parent package's `*Container`.
+
+To obtain the adapter from an unreleased local checkout, add a replacement in your
+consumer module and then add the package (substitute your checkout's absolute path):
+
+```sh
+go mod edit -replace=github.com/testcontainers/testcontainers-go/modules/azure/examples=/path/to/testcontainers-go/modules/azure/examples
+go get github.com/testcontainers/testcontainers-go/modules/azure/examples/cosmosdb
+```
+
+Within this repository, the shared `modules/azure/examples/go.mod` uses relative
+local replacements for the parent Azure, Testcontainers, and MSSQL modules. Run
+the SDK examples and tests from `modules/azure/examples`.
 
 ### Run function
 
@@ -406,7 +429,12 @@ Returns the connection string to connect to the CosmosDB container and an error,
 
 #### Connect and Create database
 
+Import the container and adapter with distinct aliases, then pass the adapter's
+`ClientOptions()` to the SDK client. The policy keeps each request's host and URL
+directed to the emulator container endpoint and runs as an SDK per-retry policy.
+
 <!--codeinclude-->
+[Imports](../../modules/azure/examples/cosmosdb/examples_test.go) inside_block:ExampleRun_connect_imports
 [Connect_CreateDatabase](../../modules/azure/examples/cosmosdb/examples_test.go) inside_block:ExampleRun_connect
 <!--/codeinclude-->
 
