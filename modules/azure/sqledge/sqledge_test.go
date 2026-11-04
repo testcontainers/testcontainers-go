@@ -3,7 +3,6 @@ package sqledge_test
 import (
 	"context"
 	"database/sql"
-	"os"
 	"testing"
 
 	_ "github.com/microsoft/go-mssqldb"
@@ -14,9 +13,6 @@ import (
 )
 
 func TestAzureSQLEdge(t *testing.T) {
-	// Azure SQL Edge may generate certificates with negative serial numbers.
-	t.Setenv("GODEBUG", os.Getenv("GODEBUG")+",x509negativeserial=1")
-
 	ctx := context.Background()
 
 	ctr, err := sqledge.Run(ctx,
@@ -48,9 +44,6 @@ func TestAzureSQLEdgeWithMissingEULA(t *testing.T) {
 }
 
 func TestAzureSQLEdgeWithCustomPassword(t *testing.T) {
-	// Azure SQL Edge may generate certificates with negative serial numbers.
-	t.Setenv("GODEBUG", os.Getenv("GODEBUG")+",x509negativeserial=1")
-
 	ctx := context.Background()
 
 	ctr, err := sqledge.Run(ctx,
@@ -74,9 +67,6 @@ func TestAzureSQLEdgeWithCustomPassword(t *testing.T) {
 }
 
 func TestAzureSQLEdgeWithConnectionStringParameters(t *testing.T) {
-	// Azure SQL Edge may generate certificates with negative serial numbers.
-	t.Setenv("GODEBUG", os.Getenv("GODEBUG")+",x509negativeserial=1")
-
 	ctx := context.Background()
 
 	ctr, err := sqledge.Run(ctx,
