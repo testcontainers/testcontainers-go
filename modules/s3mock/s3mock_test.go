@@ -2,56 +2,18 @@ package s3mock_test
 
 import (
 	"context"
+	"encoding/xml"
 	"io"
+	"net/http"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-	smithyendpoints "github.com/aws/smithy-go/endpoints"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/s3mock"
 )
-
-// s3EndpointResolver routes all S3 calls to the S3Mock container endpoint.
-// endpointResolver {
-type s3EndpointResolver struct {
-	endpointURL string
-}
-
-// ResolveEndpoint routes the S3 API call to the S3Mock container endpoint URL.
-func (r *s3EndpointResolver) ResolveEndpoint(ctx context.Context, params s3.EndpointParameters) (smithyendpoints.Endpoint, error) {
-	params.Endpoint = aws.String(r.endpointURL)
-	return s3.NewDefaultEndpointResolverV2().ResolveEndpoint(ctx, params)
-}
-
-// }
-
-func newS3Client(ctx context.Context, ctr *s3mock.Container) (*s3.Client, error) {
-	endpointURL, err := ctr.EndpointURL(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	awsCfg, err := config.LoadDefaultConfig(ctx,
-		config.WithRegion("us-east-1"),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("test", "test", "")),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
-		o.EndpointResolverV2 = &s3EndpointResolver{endpointURL: endpointURL}
-		o.UsePathStyle = true
-	})
-
-	return client, nil
-}
 
 // TestS3Mock verifies that an S3Mock container starts correctly and that
 // EndpointURL, HTTPSEndpointURL, and basic S3 operations all work as expected.
@@ -81,36 +43,17 @@ func TestS3Mock(t *testing.T) {
 	})
 
 	t.Run("S3 operations", func(t *testing.T) {
-		client, err := newS3Client(ctx, ctr)
+		endpointURL, err := ctr.EndpointURL(ctx)
 		require.NoError(t, err)
+		bucketURL := endpointURL + "/testcontainers-s3mock"
 
-		bucketName := "testcontainers-s3mock"
+		// S3Mock 3.9.1 documents unsigned PUT/GET requests; no signer is needed.
+		s3Request(t, ctx, http.MethodPut, bucketURL, nil)
 
-		// Create bucket
-		_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(bucketName),
-		})
-		require.NoError(t, err)
-
-		// Put object
 		const content = "hello from testcontainers"
-		_, err = client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("hello.txt"),
-			Body:   strings.NewReader(content),
-		})
-		require.NoError(t, err)
+		s3Request(t, ctx, http.MethodPut, bucketURL+"/hello.txt", strings.NewReader(content))
 
-		// Get object and verify content
-		getOutput, err := client.GetObject(ctx, &s3.GetObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String("hello.txt"),
-		})
-		require.NoError(t, err)
-		defer getOutput.Body.Close()
-
-		got, err := io.ReadAll(getOutput.Body)
-		require.NoError(t, err)
+		got := s3Request(t, ctx, http.MethodGet, bucketURL+"/hello.txt", nil)
 		require.Equal(t, content, string(got))
 	})
 }
@@ -128,17 +71,7 @@ func TestS3MockWithInitialBuckets(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	client, err := newS3Client(ctx, ctr)
-	require.NoError(t, err)
-
-	// Verify the pre-created buckets exist
-	out, err := client.ListBuckets(ctx, &s3.ListBucketsInput{})
-	require.NoError(t, err)
-
-	bucketNames := make([]string, 0, len(out.Buckets))
-	for _, b := range out.Buckets {
-		bucketNames = append(bucketNames, aws.ToString(b.Name))
-	}
+	bucketNames := listBuckets(t, ctx, ctr)
 
 	require.Contains(t, bucketNames, "bucket1")
 	require.Contains(t, bucketNames, "bucket2")
@@ -156,10 +89,46 @@ func TestS3MockWithInitialBucketsEmpty(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	client, err := newS3Client(ctx, ctr)
-	require.NoError(t, err)
+	bucketNames := listBuckets(t, ctx, ctr)
+	require.Empty(t, bucketNames, "expected no pre-created buckets when WithInitialBuckets is called with no arguments")
+}
 
-	out, err := client.ListBuckets(ctx, &s3.ListBucketsInput{})
+// s3Request bounds both the request duration and response body at the public endpoint.
+func s3Request(t *testing.T, ctx context.Context, method, endpoint string, body io.Reader) []byte {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, method, endpoint, body)
 	require.NoError(t, err)
-	require.Empty(t, out.Buckets, "expected no pre-created buckets when WithInitialBuckets is called with no arguments")
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	const maxResponseBytes = 1 << 20
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes+1))
+	require.NoError(t, err)
+	require.LessOrEqual(t, len(data), maxResponseBytes, "response exceeds limit")
+	require.Equal(t, http.StatusOK, resp.StatusCode, "%s %s: %s", method, endpoint, data)
+	return data
+}
+
+func listBuckets(t *testing.T, ctx context.Context, ctr *s3mock.Container) []string {
+	t.Helper()
+	endpointURL, err := ctr.EndpointURL(ctx)
+	require.NoError(t, err)
+	data := s3Request(t, ctx, http.MethodGet, endpointURL+"/", nil)
+	var result struct {
+		XMLName xml.Name `xml:"ListAllMyBucketsResult"`
+		Buckets []struct {
+			Name string `xml:"Name"`
+		} `xml:"Buckets>Bucket"`
+	}
+	require.NoError(t, xml.Unmarshal(data, &result))
+	bucketNames := make([]string, 0, len(result.Buckets))
+	for _, bucket := range result.Buckets {
+		bucketNames = append(bucketNames, bucket.Name)
+	}
+	return bucketNames
 }
