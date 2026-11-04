@@ -4,6 +4,7 @@ let isClonesInitialized = false;
 let clonesGranularity = 'day';
 const CLONES_COLOR = '#667eea';
 const UNIQUES_COLOR = '#764ba2';
+const CUMULATIVE_COLOR = '#218739';
 
 // Load and parse CSV data
 async function loadClonesData() {
@@ -210,6 +211,23 @@ function renderClonesChart(processed) {
         };
     }
 
+    let totalClones = 0;
+    const cumulative = (isDay ? processed.daily : buckets).map(item => {
+        totalClones += item.count;
+        return isDay ? { x: item.date, y: totalClones } : totalClones;
+    });
+    data.datasets.push({
+        type: 'line',
+        label: 'Cumulative clones',
+        data: cumulative,
+        borderColor: CUMULATIVE_COLOR,
+        backgroundColor: CUMULATIVE_COLOR,
+        yAxisID: 'cumulative',
+        fill: false,
+        tension: 0,
+        order: -1
+    });
+
     clonesChartInstances.main = new Chart(canvas.getContext('2d'), {
         type: isDay ? 'line' : 'bar',
         data,
@@ -225,6 +243,13 @@ function renderClonesChart(processed) {
                 y: {
                     beginAtZero: true,
                     title: { display: true, text: 'Clones' }
+                },
+                cumulative: {
+                    type: 'linear',
+                    position: 'right',
+                    beginAtZero: true,
+                    title: { display: true, text: 'Cumulative clones' },
+                    grid: { drawOnChartArea: false }
                 }
             }
         }

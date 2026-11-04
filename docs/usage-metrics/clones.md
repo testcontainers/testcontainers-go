@@ -4,6 +4,8 @@ Daily clone traffic for the `testcontainers/testcontainers-go` repository, as re
 
 GitHub keeps only the last 14 days of clone traffic, so a scheduled workflow collects it every day and stores it in this repository. History starts on 2026-09-16; older data is not recoverable.
 
+The **Cumulative clones** line uses the right-hand axis and shows the running total since tracking began. In the weekly, monthly, and yearly views, each point includes all recorded clones through that period; the total does not reset between periods.
+
 <div id="loading" class="loading">Loading metrics data...</div>
 <div id="error" class="error" style="display: none;"></div>
 
