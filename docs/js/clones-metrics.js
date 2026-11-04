@@ -5,6 +5,7 @@ let clonesGranularity = 'day';
 const CLONES_COLOR = '#667eea';
 const UNIQUES_COLOR = '#764ba2';
 const CUMULATIVE_COLOR = '#218739';
+const CUMULATIVE_UNIQUES_COLOR = '#b86516';
 
 // Load and parse CSV data
 async function loadClonesData() {
@@ -211,21 +212,26 @@ function renderClonesChart(processed) {
         };
     }
 
-    let totalClones = 0;
-    const cumulative = (isDay ? processed.daily : buckets).map(item => {
-        totalClones += item.count;
-        return isDay ? { x: item.date, y: totalClones } : totalClones;
-    });
-    data.datasets.push({
-        type: 'line',
-        label: 'Cumulative clones',
-        data: cumulative,
-        borderColor: CUMULATIVE_COLOR,
-        backgroundColor: CUMULATIVE_COLOR,
-        yAxisID: 'cumulative',
-        fill: false,
-        tension: 0,
-        order: -1
+    [
+        { field: 'count', label: 'Cumulative clones', color: CUMULATIVE_COLOR },
+        { field: 'uniques', label: 'Cumulative unique cloners (daily sum)', color: CUMULATIVE_UNIQUES_COLOR }
+    ].forEach(({ field, label, color }) => {
+        let total = 0;
+        const cumulative = (isDay ? processed.daily : buckets).map(item => {
+            total += item[field] || 0;
+            return isDay ? { x: item.date, y: total } : total;
+        });
+        data.datasets.push({
+            type: 'line',
+            label,
+            data: cumulative,
+            borderColor: color,
+            backgroundColor: color,
+            yAxisID: 'cumulative',
+            fill: false,
+            tension: 0,
+            order: -1
+        });
     });
 
     clonesChartInstances.main = new Chart(canvas.getContext('2d'), {
@@ -248,7 +254,7 @@ function renderClonesChart(processed) {
                     type: 'linear',
                     position: 'right',
                     beginAtZero: true,
-                    title: { display: true, text: 'Cumulative clones' },
+                    title: { display: true, text: 'Cumulative total' },
                     grid: { drawOnChartArea: false }
                 }
             }
