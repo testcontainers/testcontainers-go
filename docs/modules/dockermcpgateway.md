@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/dockermcpgateway
 ## Usage example
 
 <!--codeinclude-->
-[Creating a DockerMCPGateway container](../../modules/dockermcpgateway/examples_test.go) inside_block:run_mcp_gateway
+[Creating a DockerMCPGateway container](../../modules/dockermcpgateway/examples/examples_test.go) inside_block:run_mcp_gateway
 <!--/codeinclude-->
 
 ## Module Reference
@@ -101,8 +101,8 @@ endpoint := ctr.GatewayEndpoint()
 This example shows the usage of the MCP Gateway module to connect with an [MCP client](https://github.com/modelcontextprotocol/go-sdk).
 
 <!--codeinclude-->
-[Run the MCP Gateway](../../modules/dockermcpgateway/examples_test.go) inside_block:run_mcp_gateway
-[Get MCP Gateway's endpoint](../../modules/dockermcpgateway/examples_test.go) inside_block:get_gateway
-[Connect with an MCP client](../../modules/dockermcpgateway/examples_test.go) inside_block:connect_mcp_client
-[List tools](../../modules/dockermcpgateway/examples_test.go) inside_block:list_tools
+[Run the MCP Gateway](../../modules/dockermcpgateway/examples/examples_test.go) inside_block:run_mcp_gateway
+[Get MCP Gateway's endpoint](../../modules/dockermcpgateway/examples/examples_test.go) inside_block:get_gateway
+[Connect with an MCP client](../../modules/dockermcpgateway/examples/examples_test.go) inside_block:connect_mcp_client
+[List tools](../../modules/dockermcpgateway/examples/examples_test.go) inside_block:list_tools
 <!--/codeinclude-->

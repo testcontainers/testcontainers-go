@@ -106,8 +106,8 @@ The `hostAddress` is obtained from the container instance. Please see [here](#ht
 Add Vault Client module to your Go dependencies:
 
 ```
-go get -u github.com/hashicorp/vault-client-go
+go get github.com/hashicorp/vault-client-go@v0.4.3
 ```
 <!--codeinclude-->
-[Use library to read data](../../modules/vault/vault_test.go) inside_block:clientLibRead
+[Use library to read data](../../modules/vault/examples/examples_test.go) inside_block:clientLibRead
 <!--/codeinclude-->

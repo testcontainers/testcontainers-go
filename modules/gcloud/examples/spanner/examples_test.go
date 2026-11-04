@@ -60,7 +60,6 @@ func ExampleRun() {
 		return
 	}
 	defer instanceAdmin.Close()
-	// }
 
 	instanceOp, err := instanceAdmin.CreateInstance(ctx, &instancepb.CreateInstanceRequest{
 		Parent:     "projects/" + projectID,
@@ -80,6 +79,8 @@ func ExampleRun() {
 		return
 	}
 
+	// }
+
 	// spannerDBAdminClient {
 	c, err := database.NewDatabaseAdminClient(ctx, options...)
 	if err != nil {
@@ -87,7 +88,6 @@ func ExampleRun() {
 		return
 	}
 	defer c.Close()
-	// }
 
 	databaseOp, err := c.CreateDatabase(ctx, &databasepb.CreateDatabaseRequest{
 		Parent:          fmt.Sprintf("projects/%s/instances/%s", projectID, instanceID),
@@ -105,6 +105,8 @@ func ExampleRun() {
 		log.Printf("failed to wait for database creation: %v", err)
 		return
 	}
+
+	// }
 
 	db := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectID, instanceID, databaseName)
 	client, err := spanner.NewClient(ctx, db, options...)

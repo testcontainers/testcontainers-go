@@ -88,5 +88,5 @@ It returns a string with the format `mongodb://<host>:<port>`.
 It can be used to configure a MongoDB client (`go.mongodb.org/mongo-driver/mongo`), e.g.:
 
 <!--codeinclude-->
-[Using ConnectionString with the MongoDB client](../../modules/mongodb/examples_test.go) inside_block:connectToMongo
+[Using ConnectionString with the MongoDB client](../../modules/mongodb/examples/examples_test.go) inside_block:connectToMongo
 <!--/codeinclude-->

@@ -8,14 +8,9 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.22.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1
 	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos v1.5.0
-	github.com/Azure/azure-sdk-for-go/sdk/data/aztables v1.3.0
-	github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs v1.3.0
-	github.com/Azure/azure-sdk-for-go/sdk/messaging/azservicebus v1.8.0
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azcertificates v1.4.0
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azkeys v1.4.0
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets v1.5.0
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.8.0
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue v1.0.0
 	github.com/microsoft/go-mssqldb v1.7.0
 	github.com/moby/moby/api v1.56.1
 	github.com/stretchr/testify v1.12.1
@@ -28,7 +23,6 @@ require (
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.12.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/internal v1.2.0 // indirect
-	github.com/Azure/go-amqp v1.3.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20261006220739-8c912ac31dd4 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.7.2 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect

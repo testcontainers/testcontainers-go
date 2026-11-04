@@ -15,6 +15,7 @@ import (
 	tcfirestore "github.com/testcontainers/testcontainers-go/modules/gcloud/firestore"
 )
 
+// emulatorCredentials {
 type emulatorCreds struct{}
 
 func (ec emulatorCreds) GetRequestMetadata(_ context.Context, _ ...string) (map[string]string, error) {
@@ -24,6 +25,8 @@ func (ec emulatorCreds) GetRequestMetadata(_ context.Context, _ ...string) (map[
 func (ec emulatorCreds) RequireTransportSecurity() bool {
 	return false
 }
+
+// }
 
 func ExampleRun() {
 	// runFirestoreContainer {

@@ -2,13 +2,13 @@ package vault_test
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
-	vaultClient "github.com/hashicorp/vault-client-go"
-	"github.com/hashicorp/vault-client-go/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
@@ -48,7 +48,6 @@ func TestVault(t *testing.T) {
 
 			// containerCliRead {
 			exec, reader, err := vaultContainer.Exec(ctx, []string{"vault", "kv", "get", "-format=json", "secret/test1"})
-			// }
 			require.NoError(t, err)
 			require.Zero(t, exec)
 
@@ -56,66 +55,74 @@ func TestVault(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, "bar1", gjson.Get(string(bytes), "data.data.foo1").String())
+			// }
 		})
 
 		t.Run("From HTTP request", func(t *testing.T) {
 			// httpRead {
-			request, _ := http.NewRequest(http.MethodGet, hostAddress+"/v1/secret/data/test1", nil)
-			request.Header.Add("X-Vault-Token", token)
+			request, err := http.NewRequestWithContext(ctx, http.MethodGet, hostAddress+"/v1/secret/data/test1", nil)
+			require.NoError(t, err)
+			request.Header.Set("X-Vault-Token", token)
 
-			response, err := http.DefaultClient.Do(request)
-			// }
+			client := &http.Client{Timeout: 30 * time.Second}
+			response, err := client.Do(request)
 			require.NoError(t, err)
 			defer response.Body.Close()
 
-			body, err := io.ReadAll(response.Body)
+			const maxBody = 1 << 20
+			body, err := io.ReadAll(io.LimitReader(response.Body, maxBody+1))
 			require.NoError(t, err)
+			require.LessOrEqual(t, len(body), maxBody, "Vault response exceeds limit")
+			require.Equal(t, http.StatusOK, response.StatusCode, "%s", body)
 
 			assert.Equal(t, "bar1", gjson.Get(string(body), "data.data.foo1").String())
+			// }
 		})
 
-		t.Run("From vault client library", func(t *testing.T) {
-			ctx := context.Background()
-
-			// clientLibRead {
-			client, err := vaultClient.New(
-				vaultClient.WithAddress(hostAddress),
-				vaultClient.WithRequestTimeout(30*time.Second),
-			)
-			require.NoError(t, err)
-
-			err = client.SetToken(token)
-			require.NoError(t, err)
-
-			s, err := client.Secrets.KvV2Read(ctx, "test1", vaultClient.WithMountPath("secret"))
-			// }
-			require.NoError(t, err)
-			assert.Equal(t, "bar1", s.Data.Data["foo1"])
+		t.Run("From KV-v2 HTTP request", func(t *testing.T) {
+			data := kvV2Request(t, ctx, hostAddress, http.MethodGet, "test1", nil)
+			assert.Equal(t, "bar1", data["foo1"])
 		})
 	})
 
 	t.Run("Write secret", func(t *testing.T) {
-		t.Run("From vault client library", func(t *testing.T) {
-			client, err := vaultClient.New(
-				vaultClient.WithAddress(hostAddress),
-				vaultClient.WithRequestTimeout(30*time.Second),
-			)
-			require.NoError(t, err)
+		t.Run("From KV-v2 HTTP request", func(t *testing.T) {
+			kvV2Request(t, ctx, hostAddress, http.MethodPost, "test3", strings.NewReader(`{"data":{"foo":"bar"}}`))
 
-			err = client.SetToken(token)
-			require.NoError(t, err)
-
-			_, err = client.Secrets.KvV2Write(ctx, "test3", schema.KvV2WriteRequest{
-				Data: map[string]any{
-					"foo": "bar",
-				},
-			},
-				vaultClient.WithMountPath("secret"))
-			require.NoError(t, err)
-
-			s, err := client.Secrets.KvV2Read(ctx, "test3", vaultClient.WithMountPath("secret"))
-			require.NoError(t, err)
-			assert.Equal(t, "bar", s.Data.Data["foo"])
+			data := kvV2Request(t, ctx, hostAddress, http.MethodGet, "test3", nil)
+			assert.Equal(t, "bar", data["foo"])
 		})
 	})
+}
+
+// kvV2Request exercises the KV-v2 data API used by vault-client-go v0.4.3.
+func kvV2Request(t *testing.T, ctx context.Context, hostAddress, method, path string, body io.Reader) map[string]any {
+	t.Helper()
+	request, err := http.NewRequestWithContext(ctx, method, hostAddress+"/v1/secret/data/"+path, body)
+	require.NoError(t, err)
+	request.Header.Set("X-Vault-Token", token)
+	if body != nil {
+		request.Header.Set("Content-Type", "application/json")
+	}
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	response, err := client.Do(request)
+	require.NoError(t, err)
+	defer response.Body.Close()
+
+	const maxBody = 1 << 20
+	responseBody, err := io.ReadAll(io.LimitReader(response.Body, maxBody+1))
+	require.NoError(t, err)
+	require.LessOrEqual(t, len(responseBody), maxBody, "Vault response exceeds limit")
+	require.Equal(t, http.StatusOK, response.StatusCode, "%s", responseBody)
+
+	var result struct {
+		Data struct {
+			Data map[string]any `json:"data"`
+		} `json:"data"`
+		Errors []string `json:"errors"`
+	}
+	require.NoError(t, json.Unmarshal(responseBody, &result))
+	require.Empty(t, result.Errors)
+	return result.Data.Data
 }

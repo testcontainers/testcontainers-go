@@ -112,14 +112,14 @@ In the following example, we will create a container with Azurite and perform so
 credentials, we will create an Azurite container, upload a blob to it, list the blobs, and download the blob. Finally, we will remove the created blob and container.
 
 <!--codeinclude-->
-[Create Container](../../modules/azure/azurite/examples_test.go) inside_block:runForBlobOperations
-[Create Shared Key Credential](../../modules/azure/azurite/examples_test.go) inside_block:createSharedKeyCredential
-[Create Client](../../modules/azure/azurite/examples_test.go) inside_block:createClient
-[Create Container](../../modules/azure/azurite/examples_test.go) inside_block:createContainer
-[Upload and Download Blob](../../modules/azure/azurite/examples_test.go) inside_block:uploadDownloadBlob
-[List Blobs](../../modules/azure/azurite/examples_test.go) inside_block:listBlobs
-[Delete Blob](../../modules/azure/azurite/examples_test.go) inside_block:deleteBlob
-[Delete Container](../../modules/azure/azurite/examples_test.go) inside_block:deleteContainer
+[Create Container](../../modules/azure/examples/azurite/examples_test.go) inside_block:runForBlobOperations
+[Create Shared Key Credential](../../modules/azure/examples/azurite/examples_test.go) inside_block:createSharedKeyCredential
+[Create Client](../../modules/azure/examples/azurite/examples_test.go) inside_block:createClient
+[Create Container](../../modules/azure/examples/azurite/examples_test.go) inside_block:createContainer
+[Upload and Download Blob](../../modules/azure/examples/azurite/examples_test.go) inside_block:uploadDownloadBlob
+[List Blobs](../../modules/azure/examples/azurite/examples_test.go) inside_block:listBlobs
+[Delete Blob](../../modules/azure/examples/azurite/examples_test.go) inside_block:deleteBlob
+[Delete Container](../../modules/azure/examples/azurite/examples_test.go) inside_block:deleteContainer
 <!--/codeinclude-->
 
 #### Queue Operations
@@ -128,12 +128,12 @@ In the following example, we will create an Azurite container and perform some q
 credentials, we will create a queue, list the queues, and finally we will remove the created queue.
 
 <!--codeinclude-->
-[Run Azurite Container](../../modules/azure/azurite/examples_test.go) inside_block:runForQueueOperations
-[Create Shared Key Credential](../../modules/azure/azurite/examples_test.go) inside_block:queueOperations_createSharedKeyCredential
-[Create Client](../../modules/azure/azurite/examples_test.go) inside_block:queueOperations_createClient
-[Create Queue](../../modules/azure/azurite/examples_test.go) inside_block:createQueue
-[List Queues](../../modules/azure/azurite/examples_test.go) inside_block:listQueues
-[Delete Queue](../../modules/azure/azurite/examples_test.go) inside_block:deleteQueue
+[Run Azurite Container](../../modules/azure/examples/azurite/examples_test.go) inside_block:runForQueueOperations
+[Create Shared Key Credential](../../modules/azure/examples/azurite/examples_test.go) inside_block:queueOperations_createSharedKeyCredential
+[Create Client](../../modules/azure/examples/azurite/examples_test.go) inside_block:queueOperations_createClient
+[Create Queue](../../modules/azure/examples/azurite/examples_test.go) inside_block:createQueue
+[List Queues](../../modules/azure/examples/azurite/examples_test.go) inside_block:listQueues
+[Delete Queue](../../modules/azure/examples/azurite/examples_test.go) inside_block:deleteQueue
 <!--/codeinclude-->
 
 #### Table Operations
@@ -142,12 +142,12 @@ In the following example, we will create an Azurite container and perform some t
 credentials, we will create a table, list the tables, and finally we will remove the created table.
 
 <!--codeinclude-->
-[Run Azurite Container](../../modules/azure/azurite/examples_test.go) inside_block:runForTableOperations
-[Create Shared Key Credential](../../modules/azure/azurite/examples_test.go) inside_block:tableOperations_createSharedKeyCredential
-[Create Client](../../modules/azure/azurite/examples_test.go) inside_block:tableOperations_createClient
-[Create Table](../../modules/azure/azurite/examples_test.go) inside_block:createTable
-[List Tables](../../modules/azure/azurite/examples_test.go) inside_block:listTables
-[Delete Table](../../modules/azure/azurite/examples_test.go) inside_block:deleteTable
+[Run Azurite Container](../../modules/azure/examples/azurite/examples_test.go) inside_block:runForTableOperations
+[Create Shared Key Credential](../../modules/azure/examples/azurite/examples_test.go) inside_block:tableOperations_createSharedKeyCredential
+[Create Client](../../modules/azure/examples/azurite/examples_test.go) inside_block:tableOperations_createClient
+[Create Table](../../modules/azure/examples/azurite/examples_test.go) inside_block:createTable
+[List Tables](../../modules/azure/examples/azurite/examples_test.go) inside_block:listTables
+[Delete Table](../../modules/azure/examples/azurite/examples_test.go) inside_block:deleteTable
 <!--/codeinclude-->
 
 ## EventHubs
@@ -258,12 +258,12 @@ Returns the connection string to connect to the EventHubs container and an error
 In the following example, inspired by the [Azure Event Hubs Go SDK](https://learn.microsoft.com/en-us/azure/event-hubs/event-hubs-go-get-started-send), we are creating an EventHubs container and sending events to it.
 
 <!--codeinclude-->
-[EventHubs Config](../../modules/azure/eventhubs/examples_test.go) inside_block:cfg
-[Run EventHubs Container](../../modules/azure/eventhubs/examples_test.go) inside_block:runEventHubsContainer
-[Create Producer Client](../../modules/azure/eventhubs/examples_test.go) inside_block:createProducerClient
-[Create Sample Events](../../modules/azure/eventhubs/examples_test.go) inside_block:createSampleEvents
-[Create Batch](../../modules/azure/eventhubs/examples_test.go) inside_block:createBatch
-[Send Event Data Batch to the EventHub](../../modules/azure/eventhubs/examples_test.go) inside_block:sendEventDataBatch
+[EventHubs Config](../../modules/azure/examples/eventhubs/examples_test.go) inside_block:cfg
+[Run EventHubs Container](../../modules/azure/examples/eventhubs/examples_test.go) inside_block:runEventHubsContainer
+[Create Producer Client](../../modules/azure/examples/eventhubs/examples_test.go) inside_block:createProducerClient
+[Create Sample Events](../../modules/azure/examples/eventhubs/examples_test.go) inside_block:createSampleEvents
+[Create Batch](../../modules/azure/examples/eventhubs/examples_test.go) inside_block:createBatch
+[Send Event Data Batch to the EventHub](../../modules/azure/examples/eventhubs/examples_test.go) inside_block:sendEventDataBatch
 <!--/codeinclude-->
 
 #### Build a typed config with NewConfig
@@ -349,11 +349,11 @@ Returns the connection string to connect to the ServiceBus container and an erro
 In the following example, inspired by the [Azure Event Hubs Go SDK](https://learn.microsoft.com/en-us/azure/event-hubs/event-hubs-go-get-started-send), we are creating an EventHubs container and sending events to it.
 
 <!--codeinclude-->
-[ServiceBus Config](../../modules/azure/servicebus/examples_test.go) inside_block:cfg
-[Run ServiceBus Container](../../modules/azure/servicebus/examples_test.go) inside_block:runServiceBusContainer
-[Create Client](../../modules/azure/servicebus/examples_test.go) inside_block:createClient
-[Send messages to a Queue](../../modules/azure/servicebus/examples_test.go) inside_block:sendMessages
-[Receive messages from a Queue](../../modules/azure/servicebus/examples_test.go) inside_block:receiveMessages
+[ServiceBus Config](../../modules/azure/examples/servicebus/examples_test.go) inside_block:cfg
+[Run ServiceBus Container](../../modules/azure/examples/servicebus/examples_test.go) inside_block:runServiceBusContainer
+[Create Client](../../modules/azure/examples/servicebus/examples_test.go) inside_block:createClient
+[Send messages to a Queue](../../modules/azure/examples/servicebus/examples_test.go) inside_block:sendMessages
+[Receive messages from a Queue](../../modules/azure/examples/servicebus/examples_test.go) inside_block:receiveMessages
 <!--/codeinclude-->
 
 ## CosmosDB
@@ -398,7 +398,7 @@ Returns the connection string to connect to the CosmosDB container and an error,
 #### Connect and Create database
 
 <!--codeinclude-->
-[Connect_CreateDatabase](../../modules/azure/cosmosdb/examples_test.go) inside_block:ExampleRun_connect
+[Connect_CreateDatabase](../../modules/azure/examples/cosmosdb/examples_test.go) inside_block:ExampleRun_connect
 <!--/codeinclude-->
 
 ## Lowkey Vault
@@ -494,9 +494,9 @@ uses a self-signed certificate by default.
 In the following example, we are starting the Lowkey Vault container in Local mode, set a secret and retrieve it using the Key Vault Secrets API.
 
 <!--codeinclude-->
-[Run Lowkey Vault Container in Local mode](../../modules/azure/lowkeyvault/examples_test.go) inside_block:createContainerWithLocalMode
-[Create Client](../../modules/azure/lowkeyvault/examples_test.go) inside_block:prepareTheSecretClient
-[Set and get a secret](../../modules/azure/lowkeyvault/examples_test.go) inside_block:setAndFetchTheSecret
+[Run Lowkey Vault Container in Local mode](../../modules/azure/examples/lowkeyvault/examples_test.go) inside_block:createContainerWithLocalMode
+[Create Client](../../modules/azure/examples/lowkeyvault/examples_test.go) inside_block:prepareTheSecretClient
+[Set and get a secret](../../modules/azure/examples/lowkeyvault/examples_test.go) inside_block:setAndFetchTheSecret
 <!--/codeinclude-->
 
 #### Use the Keys API in Local mode
@@ -504,11 +504,11 @@ In the following example, we are starting the Lowkey Vault container in Local mo
 In the following example, we are starting the Lowkey Vault container in Local mode, create a key and encrypt and decrypt a message with it.
 
 <!--codeinclude-->
-[Run Lowkey Vault Container in Local mode](../../modules/azure/lowkeyvault/examples_test.go) inside_block:createContainerWithLocalMode
-[Create Client](../../modules/azure/lowkeyvault/examples_test.go) inside_block:prepareTheKeyClient
-[Create a key](../../modules/azure/lowkeyvault/examples_test.go) inside_block:createKey
-[Encrypt a message with the key](../../modules/azure/lowkeyvault/examples_test.go) inside_block:encryptMessage
-[Decrypt cipher text with the key](../../modules/azure/lowkeyvault/examples_test.go) inside_block:decryptCipherText
+[Run Lowkey Vault Container in Local mode](../../modules/azure/examples/lowkeyvault/examples_test.go) inside_block:createContainerWithLocalMode
+[Create Client](../../modules/azure/examples/lowkeyvault/examples_test.go) inside_block:prepareTheKeyClient
+[Create a key](../../modules/azure/examples/lowkeyvault/examples_test.go) inside_block:createKey
+[Encrypt a message with the key](../../modules/azure/examples/lowkeyvault/examples_test.go) inside_block:encryptMessage
+[Decrypt cipher text with the key](../../modules/azure/examples/lowkeyvault/examples_test.go) inside_block:decryptCipherText
 <!--/codeinclude-->
 
 #### Use the Certificates API in Local mode
@@ -517,11 +517,11 @@ In the following example, we are starting the Lowkey Vault container in Local mo
 API, and fetch the content of the certificate as a PKCS12 store using the Key Vault Secrets API.
 
 <!--codeinclude-->
-[Run Lowkey Vault Container in Local mode](../../modules/azure/lowkeyvault/examples_test.go) inside_block:createContainerWithLocalMode
-[Create Certificate Client](../../modules/azure/lowkeyvault/examples_test.go) inside_block:prepareTheCertClient
-[Create a certificate](../../modules/azure/lowkeyvault/examples_test.go) inside_block:createCertificate
-[Create Secret Client](../../modules/azure/lowkeyvault/examples_test.go) inside_block:prepareTheSecretClient
-[Fetch the certificate details](../../modules/azure/lowkeyvault/examples_test.go) inside_block:fetchCertDetails
+[Run Lowkey Vault Container in Local mode](../../modules/azure/examples/lowkeyvault/examples_test.go) inside_block:createContainerWithLocalMode
+[Create Certificate Client](../../modules/azure/examples/lowkeyvault/examples_test.go) inside_block:prepareTheCertClient
+[Create a certificate](../../modules/azure/examples/lowkeyvault/examples_test.go) inside_block:createCertificate
+[Create Secret Client](../../modules/azure/examples/lowkeyvault/examples_test.go) inside_block:prepareTheCertificateSecretClient
+[Fetch the certificate details](../../modules/azure/examples/lowkeyvault/examples_test.go) inside_block:fetchCertDetails
 <!--/codeinclude-->
 
 #### Use the Secrets API in Network mode
