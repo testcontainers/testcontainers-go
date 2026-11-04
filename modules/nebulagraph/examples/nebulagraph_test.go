@@ -32,7 +32,9 @@ func TestNebulaGraphContainer(t *testing.T) {
 		defaultMetadImage, []testcontainers.ContainerCustomizer{},
 	)
 	require.NoError(t, err)
-	t.Cleanup(func() { _ = container.Terminate(ctx) })
+	t.Cleanup(func() {
+		require.NoError(t, container.Terminate(context.WithoutCancel(ctx)))
+	})
 
 	conn, err := container.ConnectionString(ctx)
 	require.NoError(t, err)
