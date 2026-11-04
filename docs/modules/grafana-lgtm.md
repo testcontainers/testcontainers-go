@@ -109,7 +109,5 @@ The example demonstrates how to set up the Otel SDK and run the Grafana LGTM mod
 configuring the Otel library to send data to Grafana LGTM thanks to the endpoints provided by the Grafana LGTM container.
 
 <!--codeinclude-->
-[App sending Otel data](../../modules/grafana-lgtm/examples_test.go) inside_block:rollDiceApp
-[Setup Otel SDK](../../modules/grafana-lgtm/examples_test.go) inside_block:setupOTelSDK
-[Run the Grafana LGTM container](../../modules/grafana-lgtm/examples_test.go) inside_block:ExampleRun_otelCollector
+[Complete OpenTelemetry example](../../modules/grafana-lgtm/examples/examples_test.go)
 <!--/codeinclude-->

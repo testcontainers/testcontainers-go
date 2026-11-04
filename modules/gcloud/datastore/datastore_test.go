@@ -2,17 +2,17 @@ package datastore_test
 
 import (
 	"context"
-	"log"
+	"encoding/json"
+	"net/http"
+	"net/url"
 	"testing"
+	"time"
 
-	"cloud.google.com/go/datastore"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/api/option"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/testcontainers/testcontainers-go"
 	tcdatastore "github.com/testcontainers/testcontainers-go/modules/gcloud/datastore"
+	"github.com/testcontainers/testcontainers-go/modules/gcloud/internal/testrest"
 )
 
 func TestRun(t *testing.T) {
@@ -28,33 +28,51 @@ func TestRun(t *testing.T) {
 
 	projectID := datastoreContainer.ProjectID()
 
-	options := []option.ClientOption{
-		option.WithEndpoint(datastoreContainer.URI()),
-		option.WithoutAuthentication(),
-		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
+	requestCtx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
+	client := &http.Client{Timeout: 30 * time.Second}
+	defer client.CloseIdleConnections()
+	endpoint := "http://" + datastoreContainer.URI() + "/v1/projects/" + url.PathEscape(projectID)
+
+	// NameKey("Task", "sample", nil), with the same upsert as Client.Put.
+	key := map[string]any{
+		"partitionId": map[string]string{"projectId": projectID},
+		"path":        []any{map[string]string{"kind": "Task", "name": "sample"}},
 	}
-
-	dsClient, err := datastore.NewClient(ctx, projectID, options...)
-	if err != nil {
-		log.Printf("failed to create client: %v", err)
-		return
+	entity := map[string]any{
+		"key": key,
+		"properties": map[string]any{
+			"Description": map[string]string{"stringValue": "my description"},
+		},
 	}
-	defer dsClient.Close()
+	require.NoError(t, testrest.Do(requestCtx, client, http.MethodPost, endpoint+":commit", map[string]any{
+		"mode":      "NON_TRANSACTIONAL",
+		"mutations": []any{map[string]any{"upsert": entity}},
+	}, nil))
 
-	type Task struct {
-		Description string
+	type lookupResult struct {
+		Found []struct {
+			Entity struct {
+				Properties map[string]struct {
+					StringValue string `json:"stringValue"`
+				} `json:"properties"`
+			} `json:"entity"`
+		} `json:"found"`
+		Missing  []json.RawMessage `json:"missing"`
+		Deferred []json.RawMessage `json:"deferred"`
 	}
-
-	k := datastore.NameKey("Task", "sample", nil)
-	data := Task{
-		Description: "my description",
+	keys := any([]any{key})
+	var saved lookupResult
+	for {
+		require.NoError(t, requestCtx.Err())
+		saved = lookupResult{}
+		require.NoError(t, testrest.Do(requestCtx, client, http.MethodPost, endpoint+":lookup", map[string]any{"keys": keys}, &saved))
+		require.Empty(t, saved.Missing)
+		if len(saved.Deferred) == 0 {
+			break
+		}
+		keys = saved.Deferred
 	}
-	_, err = dsClient.Put(ctx, k, &data)
-	require.NoError(t, err)
-
-	saved := Task{}
-	err = dsClient.Get(ctx, k, &saved)
-	require.NoError(t, err)
-
-	require.Equal(t, "my description", saved.Description)
+	require.Len(t, saved.Found, 1)
+	require.Equal(t, "my description", saved.Found[0].Entity.Properties["Description"].StringValue)
 }

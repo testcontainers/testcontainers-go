@@ -53,7 +53,6 @@ func ExampleRun() {
 		return
 	}
 	defer adminClient.Close()
-	// }
 
 	err = adminClient.CreateTable(ctx, tableName)
 	if err != nil {
@@ -65,6 +64,8 @@ func ExampleRun() {
 		log.Printf("failed to create column family: %v", err)
 		return
 	}
+
+	// }
 
 	// bigTableClient {
 	client, err := bigtable.NewClient(ctx, projectID, instanceID, options...)
