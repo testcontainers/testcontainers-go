@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -497,4 +498,48 @@ func testDockerConfigHome(t *testing.T, dirs ...string) {
 	t.Setenv("DOCKER_CONFIG", "")
 	t.Setenv("HOME", dir)
 	t.Setenv("USERPROFILE", dir) // Windows
+}
+
+func Test_configKey(t *testing.T) {
+	cfg := &dockercfg.Config{
+		AuthConfigs: map[string]dockercfg.AuthConfig{exampleRegistry: {Username: "user", Password: "pass"}},
+	}
+
+	t.Run("stable", func(t *testing.T) {
+		key1, err := configKey(cfg)
+		require.NoError(t, err)
+		require.NotEmpty(t, key1)
+
+		key2, err := configKey(cfg)
+		require.NoError(t, err)
+		require.Equal(t, key1, key2)
+	})
+
+	t.Run("changes-with-config", func(t *testing.T) {
+		key1, err := configKey(cfg)
+		require.NoError(t, err)
+
+		key2, err := configKey(&dockercfg.Config{
+			AuthConfigs: map[string]dockercfg.AuthConfig{exampleRegistry: {Username: "other", Password: "pass"}},
+		})
+		require.NoError(t, err)
+		require.NotEqual(t, key1, key2)
+	})
+
+	// configKey must work when the test binary runs in FIPS 140-only mode,
+	// otherwise DockerImageAuth fails and image pulls fall back to empty credentials.
+	// GODEBUG=fips140 is read at startup, so run this check in a child process.
+	t.Run("fips140-only", func(t *testing.T) {
+		if os.Getenv("TESTCONTAINERS_TEST_FIPS140_CHILD") == "1" {
+			key, err := configKey(cfg)
+			require.NoError(t, err)
+			require.NotEmpty(t, key)
+			return
+		}
+
+		cmd := exec.Command(os.Args[0], "-test.run=^Test_configKey$/^fips140-only$", "-test.count=1")
+		cmd.Env = append(os.Environ(), "TESTCONTAINERS_TEST_FIPS140_CHILD=1", "GODEBUG=fips140=only")
+		out, err := cmd.CombinedOutput()
+		require.NoError(t, err, "configKey failed in fips140=only mode:\n%s", out)
+	})
 }
