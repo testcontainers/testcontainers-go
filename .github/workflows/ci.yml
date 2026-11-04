@@ -84,6 +84,7 @@ jobs:
         exclude:
           # The Quay MinIO image requires credentials not available in CI.
           - module: modules/minio
+          - module: modules/minio/examples
     permissions:
       contents: read  # for actions/checkout to fetch code
       pull-requests: read  # for sonarsource/sonarcloud-github-action to determine which PR to decorate
@@ -229,7 +230,7 @@ jobs:
           if jq -e 'length > 0' <<< "$MODULES" > /dev/null; then
             required+=(lint)
           fi
-          if jq -e 'any(.[]; . != "modules/minio")' <<< "$MODULES" > /dev/null; then
+          if jq -e 'any(.[]; . != "modules/minio" and . != "modules/minio/examples")' <<< "$MODULES" > /dev/null; then
             required+=(test)
           fi
           if jq -e 'index("") != null' <<< "$MODULES" > /dev/null; then
