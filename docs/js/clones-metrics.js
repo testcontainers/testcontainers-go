@@ -239,9 +239,9 @@ function renderClonesChart(processed) {
         data,
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             plugins: {
-                legend: { position: 'top' },
+                legend: { display: false },
                 tooltip
             },
             scales: {
@@ -259,6 +259,31 @@ function renderClonesChart(processed) {
                 }
             }
         }
+    });
+    renderClonesLegend(clonesChartInstances.main);
+}
+
+function renderClonesLegend(chart) {
+    const legend = document.getElementById('clones-legend');
+    if (!legend) return;
+    legend.replaceChildren();
+    chart.data.datasets.forEach((dataset, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.setAttribute('aria-pressed', String(chart.isDatasetVisible(index)));
+        const swatch = document.createElement('span');
+        swatch.className = 'clones-legend-swatch';
+        swatch.style.backgroundColor = dataset.borderColor || dataset.backgroundColor;
+        swatch.setAttribute('aria-hidden', 'true');
+        const label = document.createElement('span');
+        label.textContent = dataset.label;
+        button.append(swatch, label);
+        button.addEventListener('click', () => {
+            chart.setDatasetVisibility(index, !chart.isDatasetVisible(index));
+            button.setAttribute('aria-pressed', String(chart.isDatasetVisible(index)));
+            chart.update();
+        });
+        legend.append(button);
     });
 }
 

@@ -24,7 +24,10 @@ The **Cumulative clones** and **Cumulative unique cloners (daily sum)** lines us
                 <button type="button" class="granularity-button" data-granularity="year">Year</button>
             </div>
         </div>
-        <canvas id="clonesChart"></canvas>
+        <div id="clones-legend" class="clones-legend" role="group" aria-label="Show or hide clone metrics"></div>
+        <div class="clones-chart-plot">
+            <canvas id="clonesChart"></canvas>
+        </div>
     </div>
 
     <div class="chart-container">
