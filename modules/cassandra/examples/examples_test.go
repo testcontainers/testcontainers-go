@@ -1,4 +1,4 @@
-package cassandra_test
+package examples_test
 
 import (
 	"context"
@@ -12,14 +12,14 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/cassandra"
 )
 
-func ExampleRun() {
+func Example_run() {
 	// runCassandraContainer {
 	ctx := context.Background()
 
 	cassandraContainer, err := cassandra.Run(ctx,
 		"cassandra:4.1.3",
-		cassandra.WithInitScripts(filepath.Join("testdata", "init.cql")),
-		cassandra.WithConfigFile(filepath.Join("testdata", "config.yaml")),
+		cassandra.WithInitScripts(filepath.Join("..", "testdata", "init.cql")),
+		cassandra.WithConfigFile(filepath.Join("..", "testdata", "config.yaml")),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(cassandraContainer); err != nil {
@@ -68,7 +68,7 @@ func ExampleRun() {
 	// 4.1.3
 }
 
-func ExampleRun_withTLS() {
+func Example_withTLS() {
 	// runCassandraContainerWithTLS {
 	ctx := context.Background()
 
