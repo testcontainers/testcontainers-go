@@ -3,14 +3,18 @@ package mssql_test
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	_ "embed"
+	"encoding/json"
+	"io"
+	"net/url"
+	"strings"
 	"testing"
+	"time"
 
-	_ "github.com/microsoft/go-mssqldb"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/modules/mssql"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -29,19 +33,12 @@ func TestMSSQLServer(t *testing.T) {
 	connectionString, err := ctr.ConnectionString(ctx)
 	require.NoError(t, err)
 
-	db, err := sql.Open("sqlserver", connectionString)
-	require.NoError(t, err)
-	defer db.Close()
-
-	err = db.Ping()
-	require.NoError(t, err)
-
-	_, err = db.Exec("CREATE TABLE a_table ( " +
-		" [col_1] NVARCHAR(128) NOT NULL, " +
-		" [col_2] NVARCHAR(128) NOT NULL, " +
-		" PRIMARY KEY ([col_1], [col_2]) " +
+	assertConnectionString(t, connectionString)
+	runSQL(t, ctx, ctr, "CREATE TABLE a_table ("+
+		" [col_1] NVARCHAR(128) NOT NULL, "+
+		" [col_2] NVARCHAR(128) NOT NULL, "+
+		" PRIMARY KEY ([col_1], [col_2]) "+
 		")")
-	require.NoError(t, err)
 }
 
 func TestMSSQLServerWithMissingEulaOption(t *testing.T) {
@@ -83,20 +80,14 @@ func TestMSSQLServerWithConnectionStringParameters(t *testing.T) {
 	connectionString, err := ctr.ConnectionString(ctx, "encrypt=false", "TrustServerCertificate=true")
 	require.NoError(t, err)
 
-	db, err := sql.Open("sqlserver", connectionString)
-	require.NoError(t, err)
-
-	defer db.Close()
-
-	err = db.Ping()
-	require.NoError(t, err)
-
-	_, err = db.Exec("CREATE TABLE a_table ( " +
-		" [col_1] NVARCHAR(128) NOT NULL, " +
-		" [col_2] NVARCHAR(128) NOT NULL, " +
-		" PRIMARY KEY ([col_1], [col_2]) " +
+	parsed := assertConnectionString(t, connectionString)
+	require.Equal(t, "false", parsed.Query().Get("encrypt"))
+	require.Equal(t, "true", parsed.Query().Get("TrustServerCertificate"))
+	runSQL(t, ctx, ctr, "CREATE TABLE a_table ("+
+		" [col_1] NVARCHAR(128) NOT NULL, "+
+		" [col_2] NVARCHAR(128) NOT NULL, "+
+		" PRIMARY KEY ([col_1], [col_2]) "+
 		")")
-	require.NoError(t, err)
 }
 
 func TestMSSQLServerWithCustomStrongPassword(t *testing.T) {
@@ -114,12 +105,11 @@ func TestMSSQLServerWithCustomStrongPassword(t *testing.T) {
 	connectionString, err := ctr.ConnectionString(ctx)
 	require.NoError(t, err)
 
-	db, err := sql.Open("sqlserver", connectionString)
-	require.NoError(t, err)
-	defer db.Close()
-
-	err = db.Ping()
-	require.NoError(t, err)
+	parsed := assertConnectionString(t, connectionString)
+	password, ok := parsed.User.Password()
+	require.True(t, ok)
+	require.Equal(t, "Strong@Passw0rd", password)
+	require.JSONEq(t, `[{"connected":1}]`, runSQL(t, ctx, ctr, "SELECT 1 AS connected FOR JSON PATH"))
 }
 
 // tests that a weak password is not accepted by the container due to Microsoft's password strength policy
@@ -158,37 +148,19 @@ func TestMSSQLServerWithScriptsDDL(t *testing.T) {
 		connectionString, err := ctr.ConnectionString(ctx)
 		require.NoError(t, err)
 
-		db, err := sql.Open("sqlserver", connectionString)
-		require.NoError(t, err)
-		defer db.Close()
-
-		err = db.PingContext(ctx)
-		require.NoError(t, err)
-
-		rows, err := db.QueryContext(ctx, "SELECT * FROM pizza_palace.pizzas")
-		require.NoError(t, err)
-		defer rows.Close()
-
-		type Pizza struct {
-			ID            int
-			ToppingName   string
-			Deliciousness string
+		assertConnectionString(t, connectionString)
+		result := runSQL(t, ctx, ctr, "SELECT ID AS id, ToppingName AS topping_name, Deliciousness AS deliciousness FROM pizza_palace.pizzas ORDER BY ID FOR JSON PATH")
+		type pizza struct {
+			ID            int    `json:"id"`
+			ToppingName   string `json:"topping_name"`
+			Deliciousness string `json:"deliciousness"`
 		}
-
-		want := []Pizza{
+		var got []pizza
+		require.NoError(t, json.Unmarshal([]byte(result), &got))
+		require.Equal(t, []pizza{
 			{1, "Pineapple", "Controversial but tasty"},
 			{2, "Pepperoni", "Classic never fails"},
-		}
-		got := make([]Pizza, 0, len(want))
-
-		for rows.Next() {
-			var p Pizza
-			err := rows.Scan(&p.ID, &p.ToppingName, &p.Deliciousness)
-			require.NoError(t, err)
-			got = append(got, p)
-		}
-
-		require.Equal(t, want, got)
+		}, got)
 	}
 
 	ctx := context.Background()
@@ -216,4 +188,37 @@ func TestMSSQLServerWithScriptsDDL(t *testing.T) {
 			mssql.WithInitSQL(bytes.NewReader(seedSQLContent)),
 		)
 	})
+}
+
+// runSQL uses the official sqlcmd supplied by either supported image. -C trusts
+// the image's self-signed certificate with both ODBC tool generations.
+func runSQL(t *testing.T, ctx context.Context, ctr *mssql.MSSQLServerContainer, query string) string {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
+	code, output, err := ctr.Exec(ctx, []string{
+		"/bin/sh", "-c",
+		`if [ -x /opt/mssql-tools18/bin/sqlcmd ]; then exec /opt/mssql-tools18/bin/sqlcmd "$@"; else exec /opt/mssql-tools/bin/sqlcmd "$@"; fi`,
+		"sqlcmd", "-S", "localhost", "-U", "sa", "-P", ctr.Password(),
+		"-C", "-b", "-l", "30", "-t", "30", "-h", "-1", "-w", "65535",
+		"-Q", "SET NOCOUNT ON; " + query,
+	}, exec.Multiplexed())
+	require.NoError(t, err)
+	const maxResponse = 1 << 20
+	result, err := io.ReadAll(io.LimitReader(output, maxResponse+1))
+	require.NoError(t, err)
+	require.LessOrEqual(t, len(result), maxResponse)
+	require.Zero(t, code, "%s", result)
+	return strings.TrimSpace(string(result))
+}
+
+func assertConnectionString(t *testing.T, connectionString string) *url.URL {
+	t.Helper()
+	parsed, err := url.Parse(connectionString)
+	require.NoError(t, err)
+	require.Equal(t, "sqlserver", parsed.Scheme)
+	require.NotEmpty(t, parsed.Hostname())
+	require.NotEmpty(t, parsed.Port())
+	require.Equal(t, "sa", parsed.User.Username())
+	return parsed
 }

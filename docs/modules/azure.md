@@ -15,8 +15,7 @@ go get github.com/testcontainers/testcontainers-go/modules/azure
 ```
 
 The Azure module retains `github.com/microsoft/go-mssqldb`: SQL Edge tests use it
-to verify generated connection strings, and Service Bus depends on the MSSQL
-module, which also requires the driver. This dependency remains in the parent
+to verify generated connection strings. This dependency remains in the parent
 module.
 
 ## Usage example

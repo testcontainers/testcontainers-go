@@ -20,6 +20,8 @@ go get github.com/testcontainers/testcontainers-go/modules/databend
 [Creating a Databend container](../../modules/databend/examples_test.go) inside_block:runDatabendContainer
 <!--/codeinclude-->
 
+For a complete example using the Databend driver, see the [client examples](https://github.com/testcontainers/testcontainers-go/blob/main/modules/databend/examples/examples_test.go).
+
 ## Module Reference
 
 ### Run function
