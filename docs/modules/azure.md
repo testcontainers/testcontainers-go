@@ -14,6 +14,11 @@ Please run the following command to add the Azure module to your Go dependencies
 go get github.com/testcontainers/testcontainers-go/modules/azure
 ```
 
+The Azure module retains `github.com/microsoft/go-mssqldb`: SQL Edge tests use it
+to verify generated connection strings, and Service Bus depends on the MSSQL
+module, which also requires the driver. This dependency remains in the parent
+module alongside the [Cosmos DB SDK dependency](#cosmosdb).
+
 ## Usage example
 
 The Azure module exposes the following Go packages:
@@ -357,6 +362,10 @@ In the following example, inspired by the [Azure Event Hubs Go SDK](https://lear
 <!--/codeinclude-->
 
 ## CosmosDB
+
+The Azure module retains the Azure Cosmos DB SDK dependency because `ContainerPolicy.Do(*policy.Request)`
+and `ContainerPolicy.ClientOptions() *azcosmos.ClientOptions` expose SDK types in the public API.
+The policy keeps SDK requests directed to the emulator container endpoint.
 
 ### Run function
 
