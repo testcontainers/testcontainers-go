@@ -90,6 +90,7 @@ nav:
         - modules/couchbase.md
         - modules/couchdb.md
         - modules/cratedb.md
+        - modules/cubrid.md
         - modules/databend.md
         - modules/dex.md
         - modules/dind.md
