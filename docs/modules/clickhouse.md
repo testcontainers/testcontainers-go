@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/clickhouse
 ## Usage example
 
 <!--codeinclude-->
-[Test for a ClickHouse container](../../modules/clickhouse/examples_test.go) inside_block:runClickHouseContainer
+[Test for a ClickHouse container](../../modules/clickhouse/examples/examples_test.go) inside_block:runClickHouseContainer
 <!--/codeinclude-->
 
 ## Module Reference
@@ -140,3 +140,5 @@ e.g. `clickhouse://default:pass@localhost:9000?dial_timeout=300ms&skip_verify=fa
 <!--codeinclude-->
 [Get connection string](../../modules/clickhouse/clickhouse_test.go) inside_block:connectionString
 <!--/codeinclude-->
+
+The native client scenarios run from the separate `modules/clickhouse/examples` module with `make test`.

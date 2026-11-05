@@ -16,8 +16,16 @@ go get github.com/testcontainers/testcontainers-go/modules/dolt
 
 ## Usage example
 
+Dolt initializes its database and users through `database/sql`. Consuming applications must register the MySQL driver, as in the [runnable examples](https://github.com/testcontainers/testcontainers-go/blob/main/modules/dolt/examples/examples_test.go):
+
+```go
+import _ "github.com/go-sql-driver/mysql"
+```
+
+This is the existing driver-registration requirement. The examples run from the separate `modules/dolt/examples` module with `make test`.
+
 <!--codeinclude-->
-[Creating a Dolt container](../../modules/dolt/examples_test.go) inside_block:runDoltContainer
+[Creating a Dolt container](../../modules/dolt/examples/examples_test.go) inside_block:runDoltContainer
 <!--/codeinclude-->
 
 ## Module Reference

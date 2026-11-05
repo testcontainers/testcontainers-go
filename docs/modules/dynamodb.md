@@ -71,7 +71,7 @@ The `ConnectionString` method returns the connection string to the DynamoDB cont
 using the AWS SDK or any other DynamoDB client of your choice.
 
 <!--codeinclude-->
-[Creating a client](../../modules/dynamodb/dynamodb_test.go) inside_block:createClient
+[Creating a client](../../modules/dynamodb/examples/dynamodb_test.go) inside_block:createClient
 <!--/codeinclude-->
 
 The above example uses `github.com/aws/aws-sdk-go-v2/service/dynamodb` to create a client and connect to the DynamoDB container.

@@ -85,7 +85,7 @@ The `GetKubeConfig` method returns the K3s cluster's `kubeconfig`, including the
 to the Kubernetes Rest Client API using a Kubernetes client. It'll be returned in the format of `[]bytes`.
 
 <!--codeinclude-->
-[Get KubeConfig](../../modules/k3s/k3s_example_test.go) inside_block:GetKubeConfig
+[Get KubeConfig](../../modules/k3s/k3s_test.go) inside_block:GetKubeConfig
 <!--/codeinclude-->
 
 #### LoadImages
@@ -198,3 +198,7 @@ if err := k3sContainer.LoadImagesWithOpts(
     // handle error
 }
 ```
+
+## Client examples
+
+The [Kubernetes client example](https://github.com/testcontainers/testcontainers-go/blob/main/modules/k3s/examples/k3s_example_test.go) lists the cluster's nodes. Client and pod tests run separately from `modules/k3s/examples` with `make test`.
