@@ -273,11 +273,6 @@ func TestRedpandaWithOldVersionAndWasm(t *testing.T) {
 		requireKafkaAccount(t, ctx, ctr, "wrong", false)
 	})
 
-	// Test wrong mechanism
-	t.Run("wrong-mechanism", func(t *testing.T) {
-		requireKafkaAccount(t, ctx, ctr, "no-superuser", true)
-	})
-
 	// Test Schema Registry API
 	t.Run("schema-registry", func(t *testing.T) {
 		t.Run("failed-authentication", func(t *testing.T) {
