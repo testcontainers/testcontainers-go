@@ -252,15 +252,7 @@ default grants: the admin protobuf has no `grant_types`; use static
 `WithClient` for non-default grants.
 
 The adapter and OAuth/OIDC examples are optional support in a separate child
-module. Starting with this breaking release, the release script tags and
-publishes the parent and adapter modules at the same version. Set `VERSION`
-to the released version you are upgrading to and install both:
-
-```sh
-go get github.com/testcontainers/testcontainers-go/modules/dex@"${VERSION}" github.com/testcontainers/testcontainers-go/modules/dex/examples@"${VERSION}"
-```
-
-For an unreleased local checkout, replace both modules in your
+module. For a local checkout, replace both modules in your
 consumer (substitute your checkout path), then add the adapter:
 
 ```sh

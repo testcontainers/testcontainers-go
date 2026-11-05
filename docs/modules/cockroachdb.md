@@ -182,16 +182,8 @@ startup timeout or caller context expires. This replaces the external pgx SQL
 probe; applications still own connectivity from their process to the mapped
 endpoint.
 
-The adapter is optional example support in a separate Go module. Starting with
-this breaking release, the release script tags and publishes the parent and
-adapter modules at the same version. Set `VERSION` to the released version you
-are upgrading to and install both:
-
-```sh
-go get github.com/testcontainers/testcontainers-go/modules/cockroachdb@"${VERSION}" github.com/testcontainers/testcontainers-go/modules/cockroachdb/examples@"${VERSION}"
-```
-
-To consume an unreleased local checkout, add replacements for both modules (substitute
+The adapter is optional example support in a separate Go module. To consume
+a local checkout, add replacements for both modules (substitute
 your checkout path), then add the adapter:
 
 ```sh
