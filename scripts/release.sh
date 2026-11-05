@@ -22,6 +22,8 @@ readonly VERSION_FILE="${ROOT_DIR}/internal/version.go"
 
 readonly REPOSITORY="github.com/testcontainers/testcontainers-go"
 readonly DIRECTORIES=(examples modules)
+# These nested modules provide public replacements for removed parent APIs.
+readonly ADAPTER_MODULES=(modules/cockroachdb/examples modules/dex/examples)
 
 function main() {
   local version="$(extractCurrentVersion)"
@@ -49,6 +51,10 @@ function main() {
       module_tag="${directory}/${module}/${vVersion}" # e.g. modules/mongodb/v0.0.1
       tagModule "${module_tag}"
     done
+  done
+
+  for module in "${ADAPTER_MODULES[@]}"; do
+    tagModule "${module}/${vVersion}"
   done
 
   echo "Producing a ${BUMP_TYPE} bump of the version, from ${version} to ${newVersion}"
@@ -81,6 +87,10 @@ function main() {
       module_path="${REPOSITORY}/${directory}/${module}"
       curlGolangProxy "${module_path}" "${vVersion}" # e.g. github.com/testcontainers/testcontainers-go/modules/mongodb/@v/v0.0.1.info
     done
+  done
+
+  for module in "${ADAPTER_MODULES[@]}"; do
+    curlGolangProxy "${REPOSITORY}/${module}" "${vVersion}"
   done
 }
 
