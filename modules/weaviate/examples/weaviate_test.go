@@ -21,13 +21,13 @@ func TestWeaviate(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("GrpcHostAddress", func(t *testing.T) {
-		host, err := ctr.GrpcHostAddress(ctx)
+		grpcHost, err := ctr.GrpcHostAddress(ctx)
 		require.NoError(t, err)
 
 		// grpcHealthCheck {
 		opts := make([]grpc.DialOption, 0, 1)
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		conn, err := grpc.NewClient(host, opts...)
+		conn, err := grpc.NewClient(grpcHost, opts...)
 		require.NoErrorf(t, err, "failed to dial connection")
 		defer conn.Close()
 		client := grpc_health_v1.NewHealthClient(conn)

@@ -14,9 +14,9 @@ Please run the following command to add the Azure module to your Go dependencies
 go get github.com/testcontainers/testcontainers-go/modules/azure
 ```
 
-The Azure module retains `github.com/microsoft/go-mssqldb`: SQL Edge tests use it
-to verify generated connection strings. This dependency remains in the parent
-module.
+The SQL Edge client tests use `github.com/microsoft/go-mssqldb` in the separate
+`modules/azure/examples` Go module to verify generated connection strings.
+The parent Azure module does not require this driver.
 
 ## Usage example
 
