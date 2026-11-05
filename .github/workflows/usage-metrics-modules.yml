@@ -41,12 +41,12 @@ jobs:
           MODULE_FLAGS=()
           MODULES="$MODULES_INPUT"
           if [ -z "$MODULES" ]; then
-            # Discover parent and nested modules, excluding test fixtures.
+            # Discover all modules by listing subdirectories under modules/ that contain a go.mod file
             while IFS= read -r go_mod_path; do
               module="${go_mod_path#../modules/}"
               module="${module%/go.mod}"
               [ -n "$module" ] && MODULE_FLAGS+=("-module" "$module")
-            done < <(find ../modules -name go.mod -not -path '*/testdata/*' | sort)
+            done < <(find ../modules -mindepth 2 -maxdepth 2 -name go.mod | sort)
           else
             IFS=',' read -ra MODULE_ARRAY <<< "$MODULES"
             for module in "${MODULE_ARRAY[@]}"; do
