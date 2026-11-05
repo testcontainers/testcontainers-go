@@ -1,6 +1,7 @@
-package kafka_test
+package examples_test
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/IBM/sarama"
@@ -23,8 +24,9 @@ func NewTestKafkaConsumer(t *testing.T) (*TestKafkaConsumer, <-chan bool, <-chan
 		done:   make(chan bool, 1),
 		cancel: make(chan bool, 1),
 	}
+	var once sync.Once
 	return kc, kc.ready, kc.done, func() {
-		kc.cancel <- true
+		once.Do(func() { close(kc.cancel) })
 	}
 }
 
@@ -38,13 +40,28 @@ func (k *TestKafkaConsumer) Cleanup(_ sarama.ConsumerGroupSession) error {
 
 // ConsumeClaim is called by the Kafka client library when a message is received
 func (k *TestKafkaConsumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-	k.ready <- true
+	select {
+	case k.ready <- true:
+	case <-session.Context().Done():
+		return nil
+	case <-k.cancel:
+		return nil
+	}
 	for {
 		select {
-		case message := <-claim.Messages():
+		case message, ok := <-claim.Messages():
+			if !ok {
+				return nil
+			}
 			k.message = message
 			session.MarkMessage(message, "")
-			k.done <- true
+			select {
+			case k.done <- true:
+			case <-session.Context().Done():
+				return nil
+			case <-k.cancel:
+				return nil
+			}
 
 		case <-k.cancel:
 			return nil

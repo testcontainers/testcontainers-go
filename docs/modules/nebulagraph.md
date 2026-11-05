@@ -20,6 +20,10 @@ go get github.com/testcontainers/testcontainers-go/modules/nebulagraph
 [Creating a NebulaGraph container](../../modules/nebulagraph/nebulagraph_test.go) inside_block:TestNebulaGraphContainer
 <!--/codeinclude-->
 
+<!--codeinclude-->
+[Authenticating and querying NebulaGraph](../../modules/nebulagraph/examples/nebulagraph_test.go) inside_block:TestNebulaGraphContainer
+<!--/codeinclude-->
+
 ## Module Reference
 
 ### RunCluster function

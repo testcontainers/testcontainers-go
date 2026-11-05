@@ -56,7 +56,7 @@ If you need to set different credentials, you can use `WithUsername` and `WithPa
 options. By default, the username, the password are not set. To establish the connection with the NATS container:
 
 <!--codeinclude-->
-[Connect using the credentials](../../modules/nats/examples_test.go) inside_block:natsConnect
+[Connect using the credentials](../../modules/nats/examples/examples_test.go) inside_block:natsConnect
 <!--/codeinclude-->
 
 #### Cmd Arguments
@@ -70,7 +70,7 @@ These arguments are passed to the NATS server when it starts, as part of the com
     Arguments do not need to be prefixed with `--`: the NATS container will add them automatically.
 
 <!--codeinclude-->
-[Passing arguments](../../modules/nats/examples_test.go) inside_block:withArguments
+[Passing arguments](../../modules/nats/examples/examples_test.go) inside_block:withArguments
 <!--/codeinclude-->
 
 #### Custom configuration file
@@ -109,5 +109,5 @@ Exactly like `ConnectionString`, but it panics if an error occurs, returning jus
 ### NATS Cluster
 
 <!--codeinclude-->
-[NATS Cluster](../../modules/nats/examples_test.go) inside_block:cluster
+[NATS Cluster](../../modules/nats/examples/examples_test.go) inside_block:cluster
 <!--/codeinclude-->

@@ -1,4 +1,4 @@
-package garage_test
+package examples_test
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 )
 
 // ExampleRun connects an AWS SDK client to the initial Garage bucket.
-func ExampleRun() {
+func Example_run() {
 	ctx := context.Background()
 	garageContainer, err := garage.Run(ctx, "dxflrs/garage:v2.4.1")
 	defer func() {
