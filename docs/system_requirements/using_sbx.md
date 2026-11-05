@@ -73,6 +73,14 @@ See [Provider Options](../modules/sbx.md#provider-options) and [Runtime behavior
 
 ## Run the repository tests
 
+Initialize a network policy in the same namespace before running tests. Choose `allow-all`, `balanced`, or `deny-all` according to your network requirements. For example, to allow network access in the default namespace:
+
+```shell
+sbx policy init allow-all
+```
+
+If `TESTCONTAINERS_SBX_APP_NAME` is configured, use `sbx --app-name "$TESTCONTAINERS_SBX_APP_NAME" policy init allow-all` instead. The provider does not initialize or change your network policy.
+
 From the repository root on a host configured as above, run:
 
 ```shell
@@ -104,8 +112,6 @@ Initialize a network policy in the same namespace before creating sandboxes. Rep
 ```shell
 sbx --app-name "$TESTCONTAINERS_SBX_APP_NAME" policy init allow-all
 ```
-
-For local use, choose `allow-all`, `balanced`, or `deny-all` according to your network requirements; omit `--app-name` when using the default namespace. The provider does not initialize or change your network policy.
 
 Repository CI authenticates each sbx job with these secrets, initializes its network policy before running tests, and logs out afterward.
 
