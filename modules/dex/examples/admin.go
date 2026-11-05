@@ -1,4 +1,5 @@
-package dex
+// Package dexexamples provides optional Dex gRPC administration adapters.
+package dexexamples
 
 import (
 	"context"
@@ -6,10 +7,23 @@ import (
 	"fmt"
 
 	"github.com/dexidp/dex/api/v2"
-	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/testcontainers/testcontainers-go/modules/dex"
 )
+
+// AdminClient administers a running Dex container via its plaintext gRPC API.
+// Each operation opens and closes its own connection. Provisioning and static
+// registration remain in the parent dex package. Not safe for concurrent use.
+type AdminClient struct {
+	container *dex.Container
+}
+
+// NewAdminClient creates an admin adapter. It does not open a connection.
+func NewAdminClient(c *dex.Container) *AdminClient {
+	return &AdminClient{container: c}
+}
 
 // AddClient creates a client via Dex's gRPC admin API.
 //
@@ -18,8 +32,8 @@ import (
 // custom grants, register the client pre-start via WithClient.
 //
 // Not safe for concurrent use.
-func (c *Container) AddClient(ctx context.Context, cl Client) error {
-	target, err := c.GRPCEndpoint(ctx)
+func (c *AdminClient) AddClient(ctx context.Context, cl dex.Client) error {
+	target, err := c.container.GRPCEndpoint(ctx)
 	if err != nil {
 		return err
 	}
@@ -29,20 +43,21 @@ func (c *Container) AddClient(ctx context.Context, cl Client) error {
 	}
 	defer conn.Close()
 
+	registration := cl.Registration()
 	resp, err := api.NewDexClient(conn).CreateClient(ctx, &api.CreateClientReq{
 		Client: &api.Client{
-			Id:           cl.id,
-			Secret:       cl.secret,
-			RedirectUris: cl.redirectURIs,
-			Name:         cl.name,
-			Public:       cl.public,
+			Id:           registration.ID,
+			Secret:       registration.Secret,
+			RedirectUris: registration.RedirectURIs,
+			Name:         registration.Name,
+			Public:       registration.Public,
 		},
 	})
 	if err != nil {
 		return fmt.Errorf("dex: create client: %w", err)
 	}
 	if resp.AlreadyExists {
-		return fmt.Errorf("%w: %q", ErrClientExists, cl.id)
+		return fmt.Errorf("%w: %q", dex.ErrClientExists, registration.ID)
 	}
 	return nil
 }
@@ -50,8 +65,8 @@ func (c *Container) AddClient(ctx context.Context, cl Client) error {
 // RemoveClient deletes a client by ID.
 //
 // Not safe for concurrent use.
-func (c *Container) RemoveClient(ctx context.Context, id string) error {
-	target, err := c.GRPCEndpoint(ctx)
+func (c *AdminClient) RemoveClient(ctx context.Context, id string) error {
+	target, err := c.container.GRPCEndpoint(ctx)
 	if err != nil {
 		return err
 	}
@@ -66,7 +81,7 @@ func (c *Container) RemoveClient(ctx context.Context, id string) error {
 		return fmt.Errorf("dex: delete client: %w", err)
 	}
 	if resp.NotFound {
-		return fmt.Errorf("%w: %q", ErrClientNotFound, id)
+		return fmt.Errorf("%w: %q", dex.ErrClientNotFound, id)
 	}
 	return nil
 }
@@ -74,8 +89,8 @@ func (c *Container) RemoveClient(ctx context.Context, id string) error {
 // AddUser registers a user in Dex's password DB via gRPC.
 //
 // Not safe for concurrent use.
-func (c *Container) AddUser(ctx context.Context, u User) error {
-	target, err := c.GRPCEndpoint(ctx)
+func (c *AdminClient) AddUser(ctx context.Context, u dex.User) error {
+	target, err := c.container.GRPCEndpoint(ctx)
 	if err != nil {
 		return err
 	}
@@ -85,32 +100,24 @@ func (c *Container) AddUser(ctx context.Context, u User) error {
 	}
 	defer conn.Close()
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(u.password), testBcryptCost)
+	registration, err := u.PasswordRegistration()
 	if err != nil {
-		return fmt.Errorf("dex: bcrypt: %w", err)
-	}
-	userID := u.userID
-	if userID == "" {
-		uid, uidErr := newUUIDv4()
-		if uidErr != nil {
-			return fmt.Errorf("dex: generate user id: %w", uidErr)
-		}
-		userID = uid
+		return err
 	}
 
 	resp, err := api.NewDexClient(conn).CreatePassword(ctx, &api.CreatePasswordReq{
 		Password: &api.Password{
-			Email:    u.email,
-			Hash:     hash,
-			Username: u.username,
-			UserId:   userID,
+			Email:    registration.Email,
+			Hash:     registration.Hash,
+			Username: registration.Username,
+			UserId:   registration.UserID,
 		},
 	})
 	if err != nil {
 		return fmt.Errorf("dex: create password: %w", err)
 	}
 	if resp.AlreadyExists {
-		return fmt.Errorf("%w: %q", ErrUserExists, u.email)
+		return fmt.Errorf("%w: %q", dex.ErrUserExists, registration.Email)
 	}
 	return nil
 }
@@ -118,8 +125,8 @@ func (c *Container) AddUser(ctx context.Context, u User) error {
 // RemoveUser deletes a user by email.
 //
 // Not safe for concurrent use.
-func (c *Container) RemoveUser(ctx context.Context, email string) error {
-	target, err := c.GRPCEndpoint(ctx)
+func (c *AdminClient) RemoveUser(ctx context.Context, email string) error {
+	target, err := c.container.GRPCEndpoint(ctx)
 	if err != nil {
 		return err
 	}
@@ -134,7 +141,7 @@ func (c *Container) RemoveUser(ctx context.Context, email string) error {
 		return fmt.Errorf("dex: delete password: %w", err)
 	}
 	if resp.NotFound {
-		return fmt.Errorf("%w: %q", ErrUserNotFound, email)
+		return fmt.Errorf("%w: %q", dex.ErrUserNotFound, email)
 	}
 	return nil
 }

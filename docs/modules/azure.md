@@ -14,9 +14,9 @@ Please run the following command to add the Azure module to your Go dependencies
 go get github.com/testcontainers/testcontainers-go/modules/azure
 ```
 
-The Azure module retains `github.com/microsoft/go-mssqldb`: SQL Edge tests use it
-to verify generated connection strings. This dependency remains in the parent
-module.
+The SQL Edge client tests use `github.com/microsoft/go-mssqldb` in the separate
+`modules/azure/examples` Go module to verify generated connection strings.
+The parent Azure module does not require this driver.
 
 ## Usage example
 
@@ -636,4 +636,10 @@ connectionString, err := container.ConnectionString(ctx, "encrypt=false", "Trust
 
 <!--codeinclude-->
 [Creating an Azure SQL Edge container](../../modules/azure/sqledge/examples_test.go) inside_block:runSQLEdgeContainer
+<!--/codeinclude-->
+
+To connect with `database/sql`, register the SQL Server driver with a blank import of `github.com/microsoft/go-mssqldb`. The driver-backed tests live in the separate `modules/azure/examples` Go module, under `sqledge`, so the parent Azure module does not require the driver.
+
+<!--codeinclude-->
+[Connecting with the SQL Server driver](../../modules/azure/examples/sqledge/sqledge_test.go) inside_block:sqlEdgeConnection
 <!--/codeinclude-->

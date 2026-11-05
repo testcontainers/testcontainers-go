@@ -6,8 +6,6 @@ import (
 	"log"
 	"strings"
 
-	"github.com/gocql/gocql"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/scylladb"
 )
@@ -39,14 +37,9 @@ func ExampleRun_withCustomCommands() {
 
 	fmt.Println(state.Running)
 
-	connectionHost, err := scyllaContainer.NonShardAwareConnectionHost(ctx)
+	_, err = scyllaContainer.NonShardAwareConnectionHost(ctx)
 	if err != nil {
 		log.Printf("failed to get connection host: %s", err)
-		return
-	}
-
-	if err := runGoCQLExampleTest(connectionHost); err != nil {
-		log.Printf("failed to run Go CQL example test: %s", err)
 		return
 	}
 
@@ -123,15 +116,10 @@ func ExampleRun_withShardAwareness() {
 	fmt.Println(state.Running)
 
 	// scyllaDbShardAwareConnectionHost {
-	connectionHost, err := scyllaContainer.ShardAwareConnectionHost(ctx)
+	_, err = scyllaContainer.ShardAwareConnectionHost(ctx)
 	// }
 	if err != nil {
 		log.Printf("failed to get connection host: %s", err)
-		return
-	}
-
-	if err := runGoCQLExampleTest(connectionHost); err != nil {
-		log.Printf("failed to run Go CQL example test: %s", err)
 		return
 	}
 
@@ -187,7 +175,6 @@ enable_tablets: true
 		log.Printf("failed to start container: %s", err)
 		return
 	}
-	// }
 
 	state, err := scyllaContainer.State(ctx)
 	if err != nil {
@@ -197,14 +184,9 @@ enable_tablets: true
 
 	fmt.Println(state.Running)
 
-	connectionHost, err := scyllaContainer.NonShardAwareConnectionHost(ctx)
+	_, err = scyllaContainer.NonShardAwareConnectionHost(ctx)
 	if err != nil {
 		log.Printf("failed to get connection host: %s", err)
-		return
-	}
-
-	if err := runGoCQLExampleTest(connectionHost); err != nil {
-		log.Printf("failed to run Go CQL example test: %s", err)
 		return
 	}
 
@@ -240,35 +222,13 @@ func ExampleRun() {
 	fmt.Println(state.Running)
 
 	// scyllaDbNonShardAwareConnectionHost {
-	connectionHost, err := scyllaContainer.NonShardAwareConnectionHost(ctx)
+	_, err = scyllaContainer.NonShardAwareConnectionHost(ctx)
 	// }
 	if err != nil {
 		log.Printf("failed to get connection host: %s", err)
 		return
 	}
 
-	if err := runGoCQLExampleTest(connectionHost); err != nil {
-		log.Printf("failed to run Go CQL example test: %s", err)
-		return
-	}
-
 	// Output:
 	// true
-}
-
-func runGoCQLExampleTest(connectionHost string) error {
-	cluster := gocql.NewCluster(connectionHost)
-	session, err := cluster.CreateSession()
-	if err != nil {
-		return fmt.Errorf("create cluster session: %w", err)
-	}
-	defer session.Close()
-
-	var driver string
-	err = session.Query("SELECT driver_name FROM system.clients").Scan(&driver)
-	if err != nil {
-		return fmt.Errorf("session query: %w", err)
-	}
-
-	return nil
 }

@@ -2,22 +2,15 @@ package garage_test
 
 import (
 	"context"
-	"io"
-	"net/http"
-	"strings"
 	"testing"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/garage"
 )
 
-// TestGarage exercises bootstrap and authenticated S3 operations across supported versions and custom settings.
+// TestGarage exercises bootstrap and endpoint configuration across supported versions and custom settings.
 func TestGarage(t *testing.T) {
 	for _, tt := range []struct {
 		name                                 string
@@ -40,44 +33,7 @@ func TestGarage(t *testing.T) {
 			require.Equal(t, tt.region, ctr.Region())
 			endpoint, err := ctr.ConnectionString(ctx)
 			require.NoError(t, err)
-			client := s3.New(s3.Options{
-				BaseEndpoint: aws.String(endpoint), Region: ctr.Region(), UsePathStyle: true,
-				Credentials: credentials.NewStaticCredentialsProvider(ctr.AccessKey(), ctr.SecretKey(), ""),
-			})
-			_, err = client.HeadBucket(ctx, &s3.HeadBucketInput{Bucket: aws.String(ctr.Bucket())})
-			require.NoError(t, err)
-			_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("another-bucket"), CreateBucketConfiguration: &types.CreateBucketConfiguration{LocationConstraint: types.BucketLocationConstraint(ctr.Region())}})
-			require.NoError(t, err)
-			for _, bucket := range []string{ctr.Bucket(), "another-bucket"} {
-				_, err = client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(bucket), Key: aws.String("hello.txt"), Body: strings.NewReader("hello Garage")})
-				require.NoError(t, err)
-				object, err := client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String("hello.txt")})
-				require.NoError(t, err)
-				content, err := io.ReadAll(object.Body)
-				require.NoError(t, object.Body.Close())
-				require.NoError(t, err)
-				require.Equal(t, "hello Garage", string(content))
-				listed, err := client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String(bucket)})
-				require.NoError(t, err)
-				require.Len(t, listed.Contents, 1)
-				require.Equal(t, "hello.txt", aws.ToString(listed.Contents[0].Key))
-				signed, err := s3.NewPresignClient(client).PresignGetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String("hello.txt")})
-				require.NoError(t, err)
-				req, err := http.NewRequestWithContext(ctx, http.MethodGet, signed.URL, nil)
-				require.NoError(t, err)
-				resp, err := http.DefaultClient.Do(req)
-				require.NoError(t, err)
-				content, err = io.ReadAll(resp.Body)
-				require.NoError(t, resp.Body.Close())
-				require.NoError(t, err)
-				require.Equal(t, http.StatusOK, resp.StatusCode)
-				require.Equal(t, "hello Garage", string(content))
-				_, err = client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String("hello.txt")})
-				require.NoError(t, err)
-				listed, err = client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String(bucket)})
-				require.NoError(t, err)
-				require.Empty(t, listed.Contents)
-			}
+			require.NotEmpty(t, endpoint)
 		})
 	}
 }

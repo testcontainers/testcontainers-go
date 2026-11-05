@@ -4,13 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/weaviate"
@@ -43,14 +41,14 @@ func TestWeaviate(t *testing.T) {
 		// }
 		require.NoError(t, err)
 
-		opts := make([]grpc.DialOption, 0, 1)
-		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		conn, err := grpc.NewClient(host, opts...)
-		require.NoErrorf(t, err, "failed to dial connection")
-		client := grpc_health_v1.NewHealthClient(conn)
-		check, err := client.Check(context.TODO(), &grpc_health_v1.HealthCheckRequest{})
-		require.NoErrorf(t, err, "failed to get a health check")
-		require.Equalf(t, grpc_health_v1.HealthCheckResponse_SERVING.Enum().Number(), check.Status.Number(), "unexpected status code: %d", check.Status.Number())
+		endpointHost, endpointPort, err := net.SplitHostPort(host)
+		require.NoError(t, err)
+		containerHost, err := ctr.Host(ctx)
+		require.NoError(t, err)
+		mappedPort, err := ctr.MappedPort(ctx, "50051/tcp")
+		require.NoError(t, err)
+		require.Equal(t, containerHost, endpointHost)
+		require.Equal(t, mappedPort.Port(), endpointPort)
 	})
 
 	t.Run("Meta endpoint", func(tt *testing.T) {

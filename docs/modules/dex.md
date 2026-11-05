@@ -79,7 +79,7 @@ c, err := dex.Run(ctx, "dexidp/dex:v2.45.1", dex.WithClient(app))
 Additional client options: `WithClientPublic()` marks the client as public
 (PKCE, no secret).
 
-Clients added at runtime via `AddClient` inherit Dex's defaults
+Clients added at runtime via the child adapter's `AddClient` inherit Dex's defaults
 (`authorization_code` + `refresh_token`) because Dex's gRPC `api.Client`
 proto has no `grant_types` field. Clients needing other grants must be
 declared pre-start via `WithClient`.
@@ -211,35 +211,62 @@ call fails.
 target, err := c.GRPCEndpoint(ctx)
 ```
 
-#### AddClient
+### Breaking change: admin adapter moved
 
-- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
+!!! warning "Combined CockroachDB and Dex SDK extraction"
+    `AddClient`, `RemoveClient`, `AddUser`, and `RemoveUser` have been removed
+    from `*dex.Container` in `github.com/testcontainers/testcontainers-go/modules/dex`.
+    They now belong to `*dexexamples.AdminClient` in the importable child
+    package `github.com/testcontainers/testcontainers-go/modules/dex/examples`.
+    This change ships together with the [CockroachDB pgx adapter move](cockroachdb.md#breaking-change-pgx-adapter-moved).
 
-Registers a client at runtime via Dex's gRPC admin API. Returns
-`ErrClientExists` when the ID is already registered. Not safe for
-concurrent use.
+```go
+import dexexamples "github.com/testcontainers/testcontainers-go/modules/dex/examples"
 
-#### RemoveClient
+admin := dexexamples.NewAdminClient(c)
+// Before: err := c.AddUser(ctx, user)
+err := admin.AddUser(ctx, user)
+// Likewise: admin.AddClient(ctx, client), admin.RemoveClient(ctx, id),
+// and admin.RemoveUser(ctx, email).
+```
 
-- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
+Update method expressions, interfaces and stored function references that
+previously required those methods on `*dex.Container`. The adapter accepts the
+same parent `dex.Client` and `dex.User` arguments. It preserves per-operation
+plaintext gRPC connection/close behavior, context handling, error wrapping,
+and `errors.Is` identity for `dex.ErrClientExists`, `dex.ErrClientNotFound`,
+`dex.ErrUserExists`, and `dex.ErrUserNotFound`. The constructor opens no
+connection; no adapter-wide Close is required. Operations remain unsafe for
+concurrent use. Callers own the parent container's lifetime and access to its
+admin endpoint.
 
-Deletes a client by ID. Returns a plain error containing `"not found"` for
-unknown IDs. Not safe for concurrent use.
+The parent retains `Run`, static `WithClient`/`WithUser`, constructors,
+validation, endpoints, options, YAML/bcrypt policy and logging without Dex
+protobuf, gRPC, OAuth2 or OIDC client dependencies. The new SDK-free
+`Client.Registration()` returns copied ID/secret/name/redirect URIs/public
+fields; treat its secret as credentials. `User.PasswordRegistration()`
+returns email/username/user ID and a freshly generated bcrypt hash at cost 10.
+Each call generates a UUIDv4 unless `WithUserID` pins the ID. Returned slices
+are independent of the original model. Runtime clients still inherit Dex's
+default grants: the admin protobuf has no `grant_types`; use static
+`WithClient` for non-default grants.
 
-#### AddUser
+The adapter and OAuth/OIDC examples are optional support in a separate child
+module. For a local checkout, replace both modules in your
+consumer (substitute your checkout path), then add the adapter:
 
-- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
+```sh
+go mod edit -replace=github.com/testcontainers/testcontainers-go/modules/dex=/path/to/testcontainers-go/modules/dex
+go mod edit -replace=github.com/testcontainers/testcontainers-go/modules/dex/examples=/path/to/testcontainers-go/modules/dex/examples
+go get github.com/testcontainers/testcontainers-go/modules/dex/examples
+```
 
-Registers a user in Dex's password DB at runtime via gRPC. Returns
-`ErrUserExists` when the email is already registered. Not safe for
-concurrent use.
-
-#### RemoveUser
-
-- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.43.0"><span class="tc-version">:material-tag: v0.43.0</span></a>
-
-Deletes a user by email. Returns a plain error containing `"not found"` for
-unknown emails. Not safe for concurrent use.
+Run the full RPC and OAuth/OIDC matrix and both runnable client examples from
+`modules/dex/examples`. Run the parent configuration, endpoint and log suite
+from `modules/dex`; parent `go test ./...` does not traverse the nested module.
+The child preserves Dex API/v2 `v2.4.0`, gRPC `v1.83.2`, go-oidc/v3 `v3.18.0`,
+and oauth2 `v0.36.0`. The floating-master feature-flag test retains its existing
+`DEX_TEST_MASTER=1` opt-in.
 
 ### ID token claims
 

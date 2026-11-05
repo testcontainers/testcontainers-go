@@ -19,7 +19,7 @@ go get github.com/testcontainers/testcontainers-go/modules/garage
 ## Usage example
 
 <!--codeinclude-->
-[Creating a Garage container](../../modules/garage/examples_test.go) inside_block:ExampleRun
+[Creating a Garage container](../../modules/garage/examples/examples_test.go) inside_block:Example_run
 <!--/codeinclude-->
 
 ## Module Reference

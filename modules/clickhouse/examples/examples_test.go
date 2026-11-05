@@ -26,8 +26,8 @@ func ExampleRun() {
 		clickhouse.WithUsername(user),
 		clickhouse.WithPassword(password),
 		clickhouse.WithDatabase(dbname),
-		clickhouse.WithInitScripts(filepath.Join("testdata", "init-db.sh")),
-		clickhouse.WithConfigFile(filepath.Join("testdata", "config.xml")),
+		clickhouse.WithInitScripts(filepath.Join("..", "testdata", "init-db.sh")),
+		clickhouse.WithConfigFile(filepath.Join("..", "testdata", "config.xml")),
 	)
 	defer func() {
 		if err := testcontainers.TerminateContainer(clickHouseContainer); err != nil {

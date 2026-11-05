@@ -18,7 +18,7 @@ go get github.com/testcontainers/testcontainers-go/modules/scylladb
 ## Usage example
 
 <!--codeinclude-->
-[Creating a ScyllaDB container](../../modules/scylladb/examples_test.go) inside_block:ExampleRun
+[Creating a ScyllaDB container](../../modules/scylladb/examples/examples_test.go) inside_block:Example_run
 <!--/codeinclude-->
 
 ## Module Reference
