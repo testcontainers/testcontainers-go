@@ -160,6 +160,12 @@ jobs:
           fi
           printf '%s\n' "$token" | sbx --app-name "$TESTCONTAINERS_SBX_APP_NAME" login --username "$username" --password-stdin
 
+      - name: Initialize sbx CI network policy
+        if: ${{ inputs.runtime == 'sbx' }}
+        # Each job uses a fresh namespace. Tests need network access to fetch
+        # images and dependencies before they can exercise the runtime.
+        run: sbx --app-name "$TESTCONTAINERS_SBX_APP_NAME" policy init allow-all
+
       # Setup Testcontainers Cloud Client right before your Testcontainers tests
       - name: Setup Testcontainers Cloud Client
         if: ${{ inputs.testcontainers-cloud }}

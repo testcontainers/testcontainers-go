@@ -73,6 +73,14 @@ See [Provider Options](../modules/sbx.md#provider-options) and [Runtime behavior
 
 ## Run the repository tests
 
+Initialize a network policy in the same namespace before running tests. Choose `allow-all`, `balanced`, or `deny-all` according to your network requirements. For example, to allow network access in the default namespace:
+
+```shell
+sbx policy init allow-all
+```
+
+If `TESTCONTAINERS_SBX_APP_NAME` is configured, use `sbx --app-name "$TESTCONTAINERS_SBX_APP_NAME" policy init allow-all` instead. The provider does not initialize or change your network policy.
+
 From the repository root on a host configured as above, run:
 
 ```shell
@@ -99,6 +107,12 @@ If `TESTCONTAINERS_SBX_APP_NAME` is configured, use the same namespace for login
 printf '%s\n' "$DOCKERHUB_TOKEN" | sbx --app-name "$TESTCONTAINERS_SBX_APP_NAME" login --username "$DOCKERHUB_USERNAME" --password-stdin
 ```
 
-Repository CI authenticates each sbx job with these secrets before running tests and logs out afterward.
+Initialize a network policy in the same namespace before creating sandboxes. Repository CI uses `allow-all` in its disposable per-job namespace so tests can fetch images and dependencies:
+
+```shell
+sbx --app-name "$TESTCONTAINERS_SBX_APP_NAME" policy init allow-all
+```
+
+Repository CI authenticates each sbx job with these secrets, initializes its network policy before running tests, and logs out afterward.
 
 For relevant changes, live sbx runs only on pushes to `main` and same-repository pull requests. Fork pull requests retain normal unit and lint checks without live sbx or its secrets.
