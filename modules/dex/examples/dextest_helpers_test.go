@@ -1,4 +1,4 @@
-package dex_test
+package dexexamples_test
 
 import (
 	"context"

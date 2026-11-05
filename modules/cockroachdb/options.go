@@ -125,7 +125,7 @@ func WithInsecure() testcontainers.CustomizeRequestOption {
 // wait strategies to match the options.
 // This option must be called after all the options have been applied, in order to extract
 // the credentials from the environment variables and the TLS strategy from the wait strategy.
-func (c *CockroachDBContainer) configure() testcontainers.CustomizeRequestOption {
+func (c *CockroachDBContainer) configure(sqlCommand []string) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		// refresh the credentials from the environment variables
 		c.user = req.Env[envUser]
@@ -160,6 +160,18 @@ func (c *CockroachDBContainer) configure() testcontainers.CustomizeRequestOption
 		}); err != nil {
 			return fmt.Errorf("walk strategies: %w", err)
 		}
+
+		// Use the same database/user/password as external clients. The CLI reads
+		// certificates inside the container, after the TLS wait has completed.
+		u := c.connectionURL("127.0.0.1", strings.TrimSuffix(defaultSQLPort, "/tcp"), !insecure)
+		if !insecure {
+			params := u.Query()
+			params.Set("sslrootcert", fileCACert)
+			params.Set("sslcert", certsDir+"/client."+c.user+".crt")
+			params.Set("sslkey", certsDir+"/client."+c.user+".key")
+			u.RawQuery = params.Encode()
+		}
+		sqlCommand[3] = u.String()
 
 		return nil
 	}
