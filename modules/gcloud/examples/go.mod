@@ -11,8 +11,8 @@ require (
 	cloud.google.com/go/firestore v1.21.0
 	cloud.google.com/go/pubsub/v2 v2.0.0
 	cloud.google.com/go/spanner v1.87.0
-	github.com/testcontainers/testcontainers-go v0.44.0
-	github.com/testcontainers/testcontainers-go/modules/gcloud v0.44.0
+	github.com/testcontainers/testcontainers-go v0.45.0
+	github.com/testcontainers/testcontainers-go/modules/gcloud v0.45.0
 	google.golang.org/api v0.264.0
 	google.golang.org/grpc v1.83.2
 )

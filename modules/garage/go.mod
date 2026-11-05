@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/pelletier/go-toml/v2 v2.4.1
 	github.com/stretchr/testify v1.12.1
-	github.com/testcontainers/testcontainers-go v0.44.0
+	github.com/testcontainers/testcontainers-go v0.45.0
 )
 
 require (

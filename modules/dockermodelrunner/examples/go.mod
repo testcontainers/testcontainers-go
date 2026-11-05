@@ -8,8 +8,8 @@ require (
 	github.com/moby/moby/client v0.6.2
 	github.com/openai/openai-go v0.1.0-beta.9
 	github.com/stretchr/testify v1.12.1 // indirect
-	github.com/testcontainers/testcontainers-go v0.44.0
-	github.com/testcontainers/testcontainers-go/modules/socat v0.44.0 // indirect
+	github.com/testcontainers/testcontainers-go v0.45.0
+	github.com/testcontainers/testcontainers-go/modules/socat v0.45.0 // indirect
 	github.com/tmc/langchaingo v0.1.13
 )
 
@@ -72,6 +72,6 @@ replace github.com/testcontainers/testcontainers-go => ../../..
 
 replace github.com/testcontainers/testcontainers-go/modules/socat => ../../socat
 
-require github.com/testcontainers/testcontainers-go/modules/dockermodelrunner v0.44.0
+require github.com/testcontainers/testcontainers-go/modules/dockermodelrunner v0.45.0
 
 replace github.com/testcontainers/testcontainers-go/modules/dockermodelrunner => ..

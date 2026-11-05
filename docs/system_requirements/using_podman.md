@@ -4,7 +4,7 @@ _Testcontainers for Go_ supports the use of Podman (rootless or rootful) instead
 
 ## Using the Podman module
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.45.0"><span class="tc-version">:material-tag: v0.45.0</span></a>
 
 Use the [Podman module](../modules/podman.md) to register Podman as a runtime provider.
 Podman must already be installed and running; the module does not install or start it.

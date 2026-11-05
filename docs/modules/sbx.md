@@ -1,6 +1,6 @@
 # Docker Sandboxes (sbx)
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.45.0"><span class="tc-version">:material-tag: v0.45.0</span></a>
 
 The sbx module runs Testcontainers for Go inside a [Docker Sandbox](https://docs.docker.com/ai/sandboxes/). It registers an optional runtime provider. The first operation that needs a Docker client starts one sandbox for the test process, before client discovery and Ryuk. Containers and native Compose stacks in that process use the same sandbox.
 
@@ -61,7 +61,7 @@ Pass the following functional options to `sbx.Configure` or `(*sbx.Provider).Con
 
 #### WithBinary
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.45.0"><span class="tc-version">:material-tag: v0.45.0</span></a>
 
 `WithBinary(binary string)` sets the sbx executable path or name, overriding `TESTCONTAINERS_SBX_BINARY`. The default is `sbx` on `PATH`. The value must be nonempty; the executable is resolved at startup. Later values replace earlier ones.
 
@@ -71,7 +71,7 @@ Pass the following functional options to `sbx.Configure` or `(*sbx.Provider).Con
 
 #### WithWorkspace
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.45.0"><span class="tc-version">:material-tag: v0.45.0</span></a>
 
 `WithWorkspace(path string)` sets the sandbox workspace, overriding `TESTCONTAINERS_SBX_WORKSPACE`. The default is the process working directory. The value must be nonempty and name an existing directory at startup. Relative paths are resolved against the process working directory at startup. Later values replace earlier ones.
 
@@ -81,7 +81,7 @@ Pass the following functional options to `sbx.Configure` or `(*sbx.Provider).Con
 
 #### WithBindRoots
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.45.0"><span class="tc-version">:material-tag: v0.45.0</span></a>
 
 `WithBindRoots(paths ...string)` replaces the additional allowed host bind directories, overriding `TESTCONTAINERS_SBX_BIND_ROOTS` and earlier `WithBindRoots` calls. Every path must be absolute and name an existing directory at startup. The environment variable separates paths with the OS path-list separator (`:` on macOS/Linux).
 
@@ -93,7 +93,7 @@ By default, only the workspace is allowed. Call `WithBindRoots()` to clear inher
 
 #### WithStartupTimeout
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.45.0"><span class="tc-version">:material-tag: v0.45.0</span></a>
 
 `WithStartupTimeout(timeout time.Duration)` sets the timeout for sandbox initialization, including kit installation, overriding `TESTCONTAINERS_SBX_TIMEOUT`. The default is `5*time.Minute`. The duration must be positive. Later values replace earlier ones.
 
@@ -103,7 +103,7 @@ By default, only the workspace is allowed. Call `WithBindRoots()` to clear inher
 
 #### WithAppName
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.45.0"><span class="tc-version">:material-tag: v0.45.0</span></a>
 
 `WithAppName(name string)` sets the CLI namespace for every sbx command, overriding `TESTCONTAINERS_SBX_APP_NAME`. Names accept up to 20 ASCII letters, digits, hyphens, and underscores. Later values replace earlier ones.
 
@@ -115,7 +115,7 @@ The default is the CLI's default namespace. Call `WithAppName("")` to clear an i
 
 #### WithKits
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.45.0"><span class="tc-version">:material-tag: v0.45.0</span></a>
 
 `WithKits(refs ...string)` appends mixin references to the sandbox creation request. No additional kits are installed by default; the required `sbx/docker-tcp:latest` kit is always included. References can be OCI images, local directories, or Git sources. Relative paths resolve against the process working directory at startup, independently of `WithWorkspace`.
 
@@ -131,7 +131,7 @@ Kits customize the sandbox environment; installed tools do not automatically app
 
 #### WithKitArgs
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.45.0"><span class="tc-version">:material-tag: v0.45.0</span></a>
 
 `WithKitArgs(args map[string]string)` merges kit arguments, with later values overriding earlier values for the same key. By default, no arguments are supplied. An unqualified key applies to every selected kit declaring it; `kit-handle.name` targets one kit. Empty values are allowed. sbx validates declared arguments and their values.
 
