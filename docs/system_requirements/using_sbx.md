@@ -99,6 +99,14 @@ If `TESTCONTAINERS_SBX_APP_NAME` is configured, use the same namespace for login
 printf '%s\n' "$DOCKERHUB_TOKEN" | sbx --app-name "$TESTCONTAINERS_SBX_APP_NAME" login --username "$DOCKERHUB_USERNAME" --password-stdin
 ```
 
-Repository CI authenticates each sbx job with these secrets before running tests and logs out afterward.
+Initialize a network policy in the same namespace before creating sandboxes. Repository CI uses `allow-all` in its disposable per-job namespace so tests can fetch images and dependencies:
+
+```shell
+sbx --app-name "$TESTCONTAINERS_SBX_APP_NAME" policy init allow-all
+```
+
+For local use, choose `allow-all`, `balanced`, or `deny-all` according to your network requirements; omit `--app-name` when using the default namespace. The provider does not initialize or change your network policy.
+
+Repository CI authenticates each sbx job with these secrets, initializes its network policy before running tests, and logs out afterward.
 
 For relevant changes, live sbx runs only on pushes to `main` and same-repository pull requests. Fork pull requests retain normal unit and lint checks without live sbx or its secrets.
