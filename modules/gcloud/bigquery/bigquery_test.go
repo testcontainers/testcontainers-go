@@ -4,19 +4,18 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
-	"errors"
+	"encoding/json"
+	"net/http"
+	"net/url"
+	"strconv"
 	"testing"
+	"time"
 
-	"cloud.google.com/go/bigquery"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/api/iterator"
-	"google.golang.org/api/option"
-	"google.golang.org/api/option/internaloption"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/testcontainers/testcontainers-go"
 	tcbigquery "github.com/testcontainers/testcontainers-go/modules/gcloud/bigquery"
+	"github.com/testcontainers/testcontainers-go/modules/gcloud/internal/testrest"
 )
 
 //go:embed testdata/data.yaml
@@ -37,34 +36,69 @@ func TestBigQueryWithDataYAML(t *testing.T) {
 
 		projectID := bigQueryContainer.ProjectID()
 
-		opts := []option.ClientOption{
-			option.WithEndpoint(bigQueryContainer.URI()),
-			option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
-			option.WithoutAuthentication(),
-			internaloption.SkipDialSettingsValidation(),
+		queryCtx, cancel := context.WithTimeout(ctx, time.Minute)
+		defer cancel()
+		client := &http.Client{Timeout: 30 * time.Second}
+		defer client.CloseIdleConnections()
+
+		// The emulator serves the BigQuery v2 REST API on its generated URI.
+		endpoint := bigQueryContainer.URI() + "/bigquery/v2/projects/" + url.PathEscape(projectID) + "/queries"
+		request := map[string]any{
+			"query":         "SELECT * FROM dataset1.table_a where name = @name",
+			"useLegacySql":  false,
+			"parameterMode": "NAMED",
+			"queryParameters": []any{map[string]any{
+				"name":           "name",
+				"parameterType":  map[string]string{"type": "STRING"},
+				"parameterValue": map[string]string{"value": "bob"},
+			}},
 		}
-
-		client, err := bigquery.NewClient(ctx, projectID, opts...)
-		require.NoError(t, err)
-		defer client.Close()
-
-		selectQuery := client.Query("SELECT * FROM dataset1.table_a where name = @name")
-		selectQuery.Parameters = []bigquery.QueryParameter{
-			{Name: "name", Value: "bob"},
+		type queryResult struct {
+			JobComplete  bool              `json:"jobComplete"`
+			Errors       []json.RawMessage `json:"errors"`
+			PageToken    string            `json:"pageToken"`
+			JobReference struct {
+				JobID    string `json:"jobId"`
+				Location string `json:"location"`
+			} `json:"jobReference"`
+			Rows []struct {
+				Fields []struct {
+					Value string `json:"v"`
+				} `json:"f"`
+			} `json:"rows"`
 		}
-		it, err := selectQuery.Read(ctx)
-		require.NoError(t, err)
-
-		var val []bigquery.Value
+		var result queryResult
+		require.NoError(t, testrest.Do(queryCtx, client, http.MethodPost, endpoint, request, &result))
+		jobID, location := result.JobReference.JobID, result.JobReference.Location
+		var val int64
+		readRow := false
 		for {
-			err := it.Next(&val)
-			if errors.Is(err, iterator.Done) {
-				break
+			require.Empty(t, result.Errors)
+			if result.JobComplete {
+				for _, row := range result.Rows {
+					require.NotEmpty(t, row.Fields)
+					val, err = strconv.ParseInt(row.Fields[0].Value, 10, 64)
+					require.NoError(t, err)
+					readRow = true
+				}
+				if result.PageToken == "" {
+					break
+				}
 			}
-			require.NoError(t, err)
+			require.NotEmpty(t, jobID)
+			require.NoError(t, queryCtx.Err())
+			params := url.Values{"timeoutMs": {"10000"}}
+			if result.PageToken != "" {
+				params.Set("pageToken", result.PageToken)
+			}
+			if location != "" {
+				params.Set("location", location)
+			}
+			result = queryResult{}
+			require.NoError(t, testrest.Do(queryCtx, client, http.MethodGet, endpoint+"/"+url.PathEscape(jobID)+"?"+params.Encode(), nil, &result))
 		}
-
-		require.Equal(t, int64(30), val[0])
+		require.True(t, readRow)
+		require.Equal(t, int64(30), val)
 	})
 
 	t.Run("multi-value-set", func(t *testing.T) {

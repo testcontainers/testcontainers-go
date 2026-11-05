@@ -10,10 +10,6 @@ import (
 	"net"
 	"net/url"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/stdlib"
-	"github.com/moby/moby/api/types/network"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -94,40 +90,50 @@ func (c *CockroachDBContainer) MustConnectionString(ctx context.Context) string 
 	return addr
 }
 
-// ConnectionString returns a connection string to open a new connection to CockroachDB.
-// The returned string is suitable for use by [sql.Open] but is not compatible with
-// [pgx.ParseConfig], so if you want to call [pgx.ConnectConfig] use the
-// [CockroachDBContainer.ConnectionConfig] method instead.
-func (c *CockroachDBContainer) ConnectionString(ctx context.Context) (string, error) {
-	cfg, err := c.ConnectionConfig(ctx)
-	if err != nil {
-		return "", fmt.Errorf("connection config: %w", err)
-	}
-
-	return stdlib.RegisterConnConfig(cfg), nil
+// ConnectionInfo contains a portable PostgreSQL URL and its in-memory TLS settings.
+// URL alone does not include the container's CA or client certificate.
+type ConnectionInfo struct {
+	URL       string
+	TLSConfig *tls.Config
 }
 
-// ConnectionConfig returns a [pgx.ConnConfig] for the CockroachDB container.
-// This can be passed to [pgx.ConnectConfig] to open a new connection.
-func (c *CockroachDBContainer) ConnectionConfig(ctx context.Context) (*pgx.ConnConfig, error) {
+// ConnectionString returns a PostgreSQL URL, not a registered pgx stdlib handle.
+// For secure connections, use ConnectionInfo to also obtain the CA and client
+// certificate, or use the pgx adapter in the examples child module.
+func (c *CockroachDBContainer) ConnectionString(ctx context.Context) (string, error) {
+	info, err := c.ConnectionInfo(ctx)
+	if err != nil {
+		return "", fmt.Errorf("connection info: %w", err)
+	}
+	return info.URL, nil
+}
+
+// ConnectionInfo returns the connection URL and a clone of the TLS config.
+// TLSConfig is nil in insecure mode. Callers must apply it to their client;
+// the URL cannot encode the in-memory CA and client certificate.
+func (c *CockroachDBContainer) ConnectionInfo(ctx context.Context) (ConnectionInfo, error) {
 	port, err := c.MappedPort(ctx, defaultSQLPort)
 	if err != nil {
-		return nil, fmt.Errorf("mapped port: %w", err)
+		return ConnectionInfo{}, fmt.Errorf("mapped port: %w", err)
 	}
-
 	host, err := c.Host(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("host: %w", err)
+		return ConnectionInfo{}, fmt.Errorf("host: %w", err)
 	}
-
-	return c.connConfig(host, port)
+	var cfg *tls.Config
+	if original := c.tlsStrategy.TLSConfig(); original != nil {
+		cfg = original.Clone()
+		if cfg.RootCAs != nil {
+			cfg.RootCAs = cfg.RootCAs.Clone()
+		}
+	}
+	return ConnectionInfo{URL: c.connectionURL(host, port.Port(), cfg != nil).String(), TLSConfig: cfg}, nil
 }
 
 // TLSConfig returns config necessary to connect to CockroachDB over TLS.
 // Returns [ErrTLSNotEnabled] if TLS is not enabled.
 //
-// Deprecated: use [CockroachDBContainer.ConnectionString] or
-// [CockroachDBContainer.ConnectionConfig] instead.
+// Deprecated: use [CockroachDBContainer.ConnectionInfo] instead.
 func (c *CockroachDBContainer) TLSConfig() (*tls.Config, error) {
 	if cfg := c.tlsStrategy.TLSConfig(); cfg != nil {
 		return cfg, nil
@@ -175,6 +181,9 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 		},
 	}
 
+	// The URL is filled after options are applied; ForExec retains this slice.
+	sqlCommand := []string{"cockroach", "sql", "--url", "", "--execute", "SELECT 1"}
+
 	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 5+len(opts)+1)
 	moduleOpts = append(moduleOpts,
 		testcontainers.WithCmd(
@@ -199,13 +208,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 				certsDir+"/client."+defaultUser+".crt",
 				certsDir+"/client."+defaultUser+".key",
 			).WithRootCAs(fileCACert).WithServerName("127.0.0.1"),
-			wait.ForSQL(defaultSQLPort, "pgx/v5", func(host string, port network.Port) string {
-				connStr, err := ctr.connString(host, port)
-				if err != nil {
-					panic(err)
-				}
-				return connStr
-			}),
+			wait.ForExec(sqlCommand),
 		),
 	)
 
@@ -213,7 +216,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 
 	// configure the wait strategy after all the options have been applied
 	// It extracts the TLS strategy from the wait strategy and sets it on the container.
-	moduleOpts = append(moduleOpts, ctr.configure())
+	moduleOpts = append(moduleOpts, ctr.configure(sqlCommand))
 
 	var err error
 	ctr.Container, err = testcontainers.Run(ctx, img, moduleOpts...)
@@ -224,53 +227,21 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	return ctr, nil
 }
 
-// connString returns a connection string for the given host, port and options.
-func (c *CockroachDBContainer) connString(host string, port network.Port) (string, error) {
-	cfg, err := c.connConfig(host, port)
-	if err != nil {
-		return "", fmt.Errorf("connection config: %w", err)
-	}
-
-	return stdlib.RegisterConnConfig(cfg), nil
-}
-
-// connConfig returns a [pgx.ConnConfig] for the given host, port and options.
-func (c *CockroachDBContainer) connConfig(host string, port network.Port) (*pgx.ConnConfig, error) {
-	var user *url.Userinfo
+// connectionURL builds a URL without depending on a SQL driver.
+func (c *CockroachDBContainer) connectionURL(host string, port string, secure bool) *url.URL {
+	user := url.User(c.user)
 	if c.password != "" {
 		user = url.UserPassword(c.user, c.password)
-	} else {
-		user = url.User(c.user)
 	}
-
 	sslMode := "disable"
-
-	var tlsConfig *tls.Config
-	if c.tlsStrategy != nil {
-		tlsConfig = c.tlsStrategy.TLSConfig()
-	}
-
-	if tlsConfig != nil {
+	if secure {
 		sslMode = "verify-full"
 	}
-	params := url.Values{
-		"sslmode": []string{sslMode},
-	}
-
-	u := url.URL{
+	return &url.URL{
 		Scheme:   "postgres",
 		User:     user,
-		Host:     net.JoinHostPort(host, port.Port()),
-		Path:     c.database,
-		RawQuery: params.Encode(),
+		Host:     net.JoinHostPort(host, port),
+		Path:     "/" + c.database,
+		RawQuery: url.Values{"sslmode": {sslMode}}.Encode(),
 	}
-
-	cfg, err := pgx.ParseConfig(u.String())
-	if err != nil {
-		return nil, fmt.Errorf("parse config: %w", err)
-	}
-
-	cfg.TLSConfig = tlsConfig
-
-	return cfg, nil
 }

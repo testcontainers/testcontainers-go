@@ -2,12 +2,9 @@ package minio_test
 
 import (
 	"context"
-	"io"
-	"strings"
+	"net"
 	"testing"
 
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -29,34 +26,11 @@ func TestMinio(t *testing.T) {
 	// }
 	require.NoError(t, err)
 
-	minioClient, err := minio.New(url, &minio.Options{
-		Creds:  credentials.NewStaticV4(ctr.Username, ctr.Password, ""),
-		Secure: false,
-	})
+	require.Equal(t, "thisismyuser", ctr.Username)
+	require.Equal(t, "thisismypassword", ctr.Password)
+	host, port, err := net.SplitHostPort(url)
 	require.NoError(t, err)
-
-	bucketName := "testcontainers"
-	location := "eu-west-2"
-
-	// create bucket
-	err = minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{Region: location})
-	require.NoError(t, err)
-
-	objectName := "testdata"
-	contentType := "application/octet-stream"
-	content := strings.Repeat("this is some text\n", 1048576) // (16 chars) * 1MB
-	contentLength := int64(len(content))
-
-	uploadInfo, err := minioClient.PutObject(ctx, bucketName, objectName, strings.NewReader(content), contentLength, minio.PutObjectOptions{ContentType: contentType})
-	require.NoError(t, err)
-
-	// object is a readSeekCloser
-	object, err := minioClient.GetObject(ctx, uploadInfo.Bucket, uploadInfo.Key, minio.GetObjectOptions{})
-	require.NoError(t, err)
-
-	defer object.Close()
-
-	n, err := io.Copy(io.Discard, object)
-	require.NoError(t, err)
-	require.Equal(t, contentLength, n)
+	require.NotEmpty(t, host)
+	require.NotEmpty(t, port)
+	// SDK bucket creation and full object upload/read coverage live in examples/minio_test.go.
 }

@@ -6,8 +6,8 @@ toolchain go1.26.10
 
 require (
 	github.com/qdrant/go-client v1.7.0
-	github.com/testcontainers/testcontainers-go v0.44.0
-	github.com/testcontainers/testcontainers-go/modules/qdrant v0.44.0
+	github.com/testcontainers/testcontainers-go v0.45.0
+	github.com/testcontainers/testcontainers-go/modules/qdrant v0.45.0
 	google.golang.org/grpc v1.83.2
 )
 

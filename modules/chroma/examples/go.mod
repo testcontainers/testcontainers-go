@@ -6,8 +6,8 @@ toolchain go1.26.10
 
 require (
 	github.com/amikos-tech/chroma-go v0.3.2
-	github.com/testcontainers/testcontainers-go v0.44.0
-	github.com/testcontainers/testcontainers-go/modules/chroma v0.44.0
+	github.com/testcontainers/testcontainers-go v0.45.0
+	github.com/testcontainers/testcontainers-go/modules/chroma v0.45.0
 )
 
 require (

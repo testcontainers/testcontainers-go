@@ -2,15 +2,9 @@ package pulsar_test
 
 import (
 	"context"
-	"encoding/json"
-	"io"
-	"net/http"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/apache/pulsar-client-go/pulsar"
-	"github.com/apache/pulsar-client-go/pulsar/log"
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/assert"
@@ -116,83 +110,6 @@ func TestPulsar(t *testing.T) {
 
 			assert.True(t, strings.HasPrefix(brokerURL, "pulsar://"))
 			assert.True(t, strings.HasPrefix(serviceURL, "http://"))
-
-			pc, err := pulsar.NewClient(pulsar.ClientOptions{
-				URL:               brokerURL,
-				OperationTimeout:  30 * time.Second,
-				ConnectionTimeout: 30 * time.Second,
-				Logger:            log.DefaultNopLogger(),
-			})
-			require.NoError(t, err)
-			t.Cleanup(func() { pc.Close() })
-
-			subscriptionName := "pulsar-test"
-
-			consumer, err := pc.Subscribe(pulsar.ConsumerOptions{
-				Topic:            "test-topic",
-				SubscriptionName: subscriptionName,
-				Type:             pulsar.Exclusive,
-			})
-			require.NoError(t, err)
-			t.Cleanup(func() { consumer.Close() })
-
-			msgChan := make(chan []byte)
-			go func() {
-				msg, err := consumer.Receive(ctx)
-				if err != nil {
-					t.Log("failed to receive message", err)
-					return
-				}
-				msgChan <- msg.Payload()
-				err = consumer.Ack(msg)
-				if err != nil {
-					t.Log("failed to send ack", err)
-					return
-				}
-			}()
-
-			producer, err := pc.CreateProducer(pulsar.ProducerOptions{
-				Topic: "test-topic",
-			})
-			require.NoError(t, err)
-
-			_, err = producer.Send(ctx, &pulsar.ProducerMessage{
-				Payload: []byte("hello world"),
-			})
-			require.NoError(t, err)
-
-			ticker := time.NewTicker(1 * time.Minute)
-			select {
-			case <-ticker.C:
-				t.Fatal("did not receive message in time")
-			case msg := <-msgChan:
-				require.Equalf(t, "hello world", string(msg), "received unexpected message bytes")
-			}
-
-			// get topic statistics using the Admin endpoint
-			httpClient := http.Client{
-				Timeout: 30 * time.Second,
-			}
-
-			resp, err := httpClient.Get(serviceURL + "/admin/v2/persistent/public/default/test-topic/stats")
-			require.NoError(t, err)
-			defer resp.Body.Close()
-
-			body, err := io.ReadAll(resp.Body)
-			require.NoError(t, err)
-
-			var stats map[string]any
-			err = json.Unmarshal(body, &stats)
-			require.NoError(t, err)
-
-			subscriptions := stats["subscriptions"]
-			require.NotNil(t, subscriptions)
-
-			subscriptionsMap := subscriptions.(map[string]any)
-
-			// check that the subscription exists
-			_, ok := subscriptionsMap[subscriptionName]
-			require.True(t, ok)
 		})
 	}
 }

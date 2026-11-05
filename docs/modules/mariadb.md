@@ -20,6 +20,14 @@ go get github.com/testcontainers/testcontainers-go/modules/mariadb
 [Creating a MariaDB container](../../modules/mariadb/examples_test.go) inside_block:runMariaDBContainer
 <!--/codeinclude-->
 
+The [client examples](https://github.com/testcontainers/testcontainers-go/tree/main/modules/mariadb/examples) use `database/sql` with the
+`github.com/go-sql-driver/mysql` driver, registered with a blank import. Run them
+from `modules/mariadb/examples`; their fixture paths refer to `../testdata`.
+
+<!--codeinclude-->
+[Connecting with the Go SQL driver](../../modules/mariadb/examples/examples_test.go) inside_block:connectMariaDB
+<!--/codeinclude-->
+
 ## Module Reference
 
 ### Run function

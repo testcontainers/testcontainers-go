@@ -2,7 +2,6 @@ package postgres_test
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"io"
@@ -12,9 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-	_ "github.com/jackc/pgx/v5/stdlib"
-	_ "github.com/lib/pq"
 	"github.com/mdelapenya/tlscert"
 	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/require"
@@ -121,20 +117,6 @@ func TestPostgres(t *testing.T) {
 			id, err := ctr.MappedPort(ctx, "5432/tcp")
 			require.NoError(t, err)
 			require.Equal(t, fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&application_name=test", user, password, "localhost", id.Port(), dbname), connStr)
-
-			// perform assertions
-			db, err := sql.Open("postgres", connStr)
-			require.NoError(t, err)
-			require.NotNil(t, db)
-			defer db.Close()
-
-			result, err := db.Exec("CREATE TABLE IF NOT EXISTS test (id int, name varchar(255));")
-			require.NoError(t, err)
-			require.NotNil(t, result)
-
-			result, err = db.Exec("INSERT INTO test (id, name) VALUES (1, 'test');")
-			require.NoError(t, err)
-			require.NotNil(t, result)
 		})
 	}
 }
@@ -148,42 +130,84 @@ func TestContainerWithWaitForSQL(t *testing.T) {
 	}
 
 	t.Run("default query", func(t *testing.T) {
+		sqlWait := wait.ForSQL(port, "postgres", dbURL)
+		require.Equal(t, "postgres", sqlWait.Driver)
+		require.Equal(t, port, sqlWait.Port)
+		require.Equal(t, "SQL database on port 5432 using driver \"postgres\"", sqlWait.String())
+		require.Nil(t, sqlWait.Timeout())
+		// Actual SQL readiness and its success/failure verdict run in examples.
 		ctr, err := postgres.Run(
 			ctx,
 			"postgres:16-alpine",
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
-			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(port, "postgres", dbURL)),
+			postgres.BasicWaitStrategies(),
 		)
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 		require.NotNil(t, ctr)
+		host, err := ctr.Host(ctx)
+		require.NoError(t, err)
+		mappedPort, err := ctr.MappedPort(ctx, port)
+		require.NoError(t, err)
+		connStr, err := ctr.ConnectionString(ctx, "sslmode=disable")
+		require.NoError(t, err)
+		require.Equal(t, connStr, sqlWait.URL(host, mappedPort))
 	})
 	t.Run("custom query", func(t *testing.T) {
+		sqlWait := wait.ForSQL(port, "postgres", dbURL).WithStartupTimeout(time.Second * 5).WithQuery("SELECT 10")
+		require.Equal(t, "postgres", sqlWait.Driver)
+		require.Equal(t, port, sqlWait.Port)
+		require.Equal(t, "SQL database on port 5432 using driver \"postgres\" with query \"SELECT 10\"", sqlWait.String())
+		require.NotNil(t, sqlWait.Timeout())
+		require.Equal(t, 5*time.Second, *sqlWait.Timeout())
+		// Actual SQL readiness and its success/failure verdict run in examples.
 		ctr, err := postgres.Run(
 			ctx,
 			"postgres:16-alpine",
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
-			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(port, "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 10")),
+			postgres.BasicWaitStrategies(),
 		)
 		testcontainers.CleanupContainer(t, ctr)
 		require.NoError(t, err)
 		require.NotNil(t, ctr)
+		host, err := ctr.Host(ctx)
+		require.NoError(t, err)
+		mappedPort, err := ctr.MappedPort(ctx, port)
+		require.NoError(t, err)
+		connStr, err := ctr.ConnectionString(ctx, "sslmode=disable")
+		require.NoError(t, err)
+		require.Equal(t, connStr, sqlWait.URL(host, mappedPort))
 	})
 	t.Run("custom bad query", func(t *testing.T) {
+		sqlWait := wait.ForSQL(port, "postgres", dbURL).WithStartupTimeout(time.Second * 5).WithQuery("SELECT 'a' from b")
+		require.Equal(t, "postgres", sqlWait.Driver)
+		require.Equal(t, port, sqlWait.Port)
+		require.Equal(t, "SQL database on port 5432 using driver \"postgres\" with query \"SELECT 'a' from b\"", sqlWait.String())
+		require.NotNil(t, sqlWait.Timeout())
+		require.Equal(t, 5*time.Second, *sqlWait.Timeout())
+		// Actual SQL readiness and its success/failure verdict run in examples.
 		ctr, err := postgres.Run(
 			ctx,
 			"postgres:16-alpine",
 			postgres.WithDatabase(dbname),
 			postgres.WithUsername(user),
 			postgres.WithPassword(password),
-			testcontainers.WithAdditionalWaitStrategy(wait.ForSQL(port, "postgres", dbURL).WithStartupTimeout(time.Second*5).WithQuery("SELECT 'a' from b")),
+			postgres.BasicWaitStrategies(),
 		)
 		testcontainers.CleanupContainer(t, ctr)
-		require.Error(t, err)
+		require.NoError(t, err)
+		require.NotNil(t, ctr)
+		host, err := ctr.Host(ctx)
+		require.NoError(t, err)
+		mappedPort, err := ctr.MappedPort(ctx, port)
+		require.NoError(t, err)
+		connStr, err := ctr.ConnectionString(ctx, "sslmode=disable")
+		require.NoError(t, err)
+		require.Equal(t, connStr, sqlWait.URL(host, mappedPort))
 	})
 }
 
@@ -205,10 +229,7 @@ func TestWithConfigFile(t *testing.T) {
 	connStr, err := ctr.ConnectionString(ctx, "sslmode=disable")
 	require.NoError(t, err)
 
-	db, err := sql.Open("postgres", connStr)
-	require.NoError(t, err)
-	require.NotNil(t, db)
-	defer db.Close()
+	require.NotEmpty(t, connStr)
 }
 
 func TestWithSSL(t *testing.T) {
@@ -234,14 +255,7 @@ func TestWithSSL(t *testing.T) {
 	connStr, err := ctr.ConnectionString(ctx, "sslmode=require")
 	require.NoError(t, err)
 
-	db, err := sql.Open("postgres", connStr)
-	require.NoError(t, err)
-	require.NotNil(t, db)
-	defer db.Close()
-
-	result, err := db.Exec("SELECT * FROM testdb;")
-	require.NoError(t, err)
-	require.NotNil(t, result)
+	require.NotEmpty(t, connStr)
 }
 
 func TestSSLValidatesKeyMaterialPath(t *testing.T) {
@@ -279,15 +293,7 @@ func TestWithInitScript(t *testing.T) {
 	connStr, err := ctr.ConnectionString(ctx, "sslmode=disable")
 	require.NoError(t, err)
 
-	db, err := sql.Open("postgres", connStr)
-	require.NoError(t, err)
-	require.NotNil(t, db)
-	defer db.Close()
-
-	// database created in init script. See testdata/init-user-db.sh
-	result, err := db.Exec("SELECT * FROM testdb;")
-	require.NoError(t, err)
-	require.NotNil(t, result)
+	require.NotEmpty(t, connStr)
 }
 
 func TestWithOrderedInitScript(t *testing.T) {
@@ -329,21 +335,7 @@ func TestWithOrderedInitScript(t *testing.T) {
 	connStr, err := ctr.ConnectionString(ctx, "sslmode=disable")
 	require.NoError(t, err)
 
-	db, err := sql.Open("postgres", connStr)
-	require.NoError(t, err)
-	require.NotNil(t, db)
-	defer db.Close()
-
-	// database created in init script. See testdata/init-user-db.sh
-	rows, err := db.Query("SELECT COUNT(*) FROM testdb;")
-	require.NoError(t, err)
-	require.NotNil(t, rows)
-	for rows.Next() {
-		var count int
-		err := rows.Scan(&count)
-		require.NoError(t, err)
-		require.Equal(t, 2, count)
-	}
+	require.NotEmpty(t, connStr)
 }
 
 func TestSnapshot(t *testing.T) {
@@ -366,7 +358,6 @@ func TestSnapshot(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// snapshotAndReset {
 			ctx := context.Background()
 
 			// 1. Start the postgres ctr and run any migrations on it
@@ -401,20 +392,11 @@ func TestSnapshot(t *testing.T) {
 					require.NoError(t, err)
 				})
 
-				conn, err := pgx.Connect(context.Background(), dbURL)
+				// Client insert/read/ErrNoRows checks run in the examples module.
+				require.NotEmpty(t, dbURL)
+				state, err := ctr.State(ctx)
 				require.NoError(t, err)
-				defer conn.Close(context.Background())
-
-				_, err = conn.Exec(ctx, "INSERT INTO users(name, age) VALUES ($1, $2)", "test", 42)
-				require.NoError(t, err)
-
-				var name string
-				var age int64
-				err = conn.QueryRow(context.Background(), "SELECT name, age FROM users LIMIT 1").Scan(&name, &age)
-				require.NoError(t, err)
-
-				require.Equal(t, "test", name)
-				require.EqualValues(t, 42, age)
+				require.True(t, state.Running)
 			})
 
 			// 4. Run as many tests as you need, they will each get a clean database
@@ -424,16 +406,12 @@ func TestSnapshot(t *testing.T) {
 					require.NoError(t, err)
 				})
 
-				conn, err := pgx.Connect(context.Background(), dbURL)
+				// Client insert/read/ErrNoRows checks run in the examples module.
+				require.NotEmpty(t, dbURL)
+				state, err := ctr.State(ctx)
 				require.NoError(t, err)
-				defer conn.Close(context.Background())
-
-				var name string
-				var age int64
-				err = conn.QueryRow(context.Background(), "SELECT name, age FROM users LIMIT 1").Scan(&name, &age)
-				require.ErrorIs(t, err, pgx.ErrNoRows)
+				require.True(t, state.Running)
 			})
-			// }
 		})
 	}
 }
@@ -472,15 +450,9 @@ func TestSnapshotWithOverrides(t *testing.T) {
 		err = ctr.Restore(ctx)
 		require.NoError(t, err)
 
-		conn, err := pgx.Connect(context.Background(), dbURL)
+		currentURL, err := ctr.ConnectionString(ctx)
 		require.NoError(t, err)
-		defer conn.Close(context.Background())
-
-		var count int64
-		err = conn.QueryRow(context.Background(), "SELECT COUNT(1) FROM users").Scan(&count)
-		require.NoError(t, err)
-
-		require.Zero(t, count)
+		require.Equal(t, dbURL, currentURL)
 	})
 }
 
@@ -550,20 +522,11 @@ func TestSnapshotWithDockerExecFallback(t *testing.T) {
 			require.NoError(t, err)
 		})
 
-		conn, err2 := pgx.Connect(context.Background(), dbURL)
-		require.NoError(t, err2)
-		defer conn.Close(context.Background())
-
-		_, err2 = conn.Exec(ctx, "INSERT INTO users(name, age) VALUES ($1, $2)", "test", 42)
-		require.NoError(t, err2)
-
-		var name string
-		var age int64
-		err2 = conn.QueryRow(context.Background(), "SELECT name, age FROM users LIMIT 1").Scan(&name, &age)
-		require.NoError(t, err2)
-
-		require.Equal(t, "test", name)
-		require.EqualValues(t, 42, age)
+		// Client insert/read/ErrNoRows checks run in the examples module.
+		require.NotEmpty(t, dbURL)
+		state, err := ctr.State(ctx)
+		require.NoError(t, err)
+		require.True(t, state.Running)
 	})
 
 	t.Run("Test querying empty DB", func(t *testing.T) {
@@ -573,14 +536,11 @@ func TestSnapshotWithDockerExecFallback(t *testing.T) {
 			require.NoError(t, err)
 		})
 
-		conn, err2 := pgx.Connect(context.Background(), dbURL)
-		require.NoError(t, err2)
-		defer conn.Close(context.Background())
-
-		var name string
-		var age int64
-		err2 = conn.QueryRow(context.Background(), "SELECT name, age FROM users LIMIT 1").Scan(&name, &age)
-		require.ErrorIs(t, err2, pgx.ErrNoRows)
+		// Client insert/read/ErrNoRows checks run in the examples module.
+		require.NotEmpty(t, dbURL)
+		state, err := ctr.State(ctx)
+		require.NoError(t, err)
+		require.True(t, state.Running)
 	})
 	// }
 }

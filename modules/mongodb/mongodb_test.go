@@ -7,12 +7,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/v2/bson"
-	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/mongodb"
+	"github.com/testcontainers/testcontainers-go/modules/mongodb/internal/mongotest"
 )
 
 func TestMongoDB(t *testing.T) {
@@ -121,48 +119,56 @@ func TestMongoDB(t *testing.T) {
 			ctx := context.Background()
 
 			mongodbContainer, err := mongodb.Run(ctx, tc.img, tc.opts...)
-			testcontainers.CleanupContainer(t, mongodbContainer)
+			testcontainers.CleanupContainer(tt, mongodbContainer)
 			require.NoError(tt, err)
 
 			endpoint, err := mongodbContainer.ConnectionString(ctx)
 			require.NoError(tt, err)
 
-			// Force direct connection to the container.
-			mongoClient, err := mongo.Connect(options.Client().ApplyURI(endpoint).SetDirect(true))
+			shell := mongotest.New(tt, ctx, endpoint)
+			var basic struct {
+				Ping         int
+				Database     string
+				Acknowledged bool
+			}
+			err = shell.Run(ctx, `
+const ping = commandWorked(db.getSiblingDB('admin').runCommand({ping:1}));
+const database = db.getSiblingDB('test').getName();
+const inserted = acknowledged(db.getSiblingDB('testcontainer').getCollection('test').insertOne({}));
+return {ping:ping.ok, database, acknowledged:inserted.acknowledged};
+`, &basic)
 			require.NoError(tt, err)
+			require.Equal(tt, 1, basic.Ping)
+			require.Equal(tt, "test", basic.Database)
+			require.True(tt, basic.Acknowledged)
 
-			err = mongoClient.Ping(ctx, nil)
+			// Establish the stream before inserting, through the same mapped endpoint.
+			hasReplica, err := hasReplicaSet(endpoint)
 			require.NoError(tt, err)
-			require.Equal(tt, "test", mongoClient.Database("test").Name())
-
-			// Basic insert test.
-			_, err = mongoClient.Database("testcontainer").Collection("test").InsertOne(ctx, bson.M{})
-			require.NoError(tt, err)
-
-			// If the container is configured with a replica set, run the change stream test.
-			if hasReplica, _ := hasReplicaSet(endpoint); hasReplica {
-				coll := mongoClient.Database("test").Collection("changes")
-				stream, err := coll.Watch(
-					ctx,
-					mongo.Pipeline{},
-					options.ChangeStream().SetFullDocument(options.UpdateLookup))
-				require.NoError(tt, err)
-				defer stream.Close(ctx)
-
-				doc := bson.M{"message": "hello change streams"}
-				_, err = coll.InsertOne(ctx, doc)
-				require.NoError(tt, err)
-
-				require.True(tt, stream.Next(ctx))
-				var changeEvent struct {
-					OperationType string `bson:"operationType"`
-					FullDocument  bson.M `bson:"fullDocument"`
+			if hasReplica {
+				var change struct {
+					Acknowledged  bool
+					OperationType string
+					Message       string
 				}
-				err = stream.Decode(&changeEvent)
+				err = shell.Run(ctx, `
+const coll = db.getSiblingDB('test').getCollection('changes');
+const stream = coll.watch([], {fullDocument:'updateLookup', maxAwaitTimeMS:500});
+try {
+  // watch() is lazy in mongosh; this call opens the cursor before the write.
+  if (stream.tryNext() !== null) throw new Error('unexpected pre-insert change');
+  const inserted = acknowledged(coll.insertOne({message:'hello change streams'}));
+  const deadline = Date.now() + 30000;
+  let event = null;
+  while (event === null && Date.now() < deadline) event = stream.tryNext();
+  if (event === null) throw new Error('no change stream event');
+  return {acknowledged:inserted.acknowledged, operationType:event.operationType, message:event.fullDocument.message};
+} finally { stream.close(); }
+`, &change)
 				require.NoError(tt, err)
-
-				require.Equal(tt, "insert", changeEvent.OperationType, "Expected operationType to be 'insert")
-				require.Equal(tt, "hello change streams", changeEvent.FullDocument["message"])
+				require.True(tt, change.Acknowledged)
+				require.Equal(tt, "insert", change.OperationType, "Expected operationType to be 'insert'")
+				require.Equal(tt, "hello change streams", change.Message)
 			}
 		})
 	}

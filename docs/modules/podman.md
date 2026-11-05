@@ -1,6 +1,6 @@
 # Podman
 
-Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.45.0"><span class="tc-version">:material-tag: v0.45.0</span></a>
 
 The Podman module registers Podman as a runtime provider for Testcontainers for Go.
 It uses Podman's Docker-compatible API and its `podman` default bridge network.

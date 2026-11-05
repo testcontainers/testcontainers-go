@@ -71,10 +71,16 @@ This method returns the Schema and Host for the Weaviate container, using the de
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
 
-This method returns the Schema and Host for the Weaviate container, using the default `443` port.
+This method returns the host and mapped port for the Weaviate container's `50051/tcp` gRPC port.
 
 <!--codeinclude-->
 [gRPC Host Address](../../modules/weaviate/examples/examples_test.go) inside_block:grpcHostAddress
+<!--/codeinclude-->
+
+The gRPC health RPC is tested in the separate `modules/weaviate/examples` Go module, which keeps the gRPC client dependency out of the parent's direct requirements.
+
+<!--codeinclude-->
+[Checking gRPC health](../../modules/weaviate/examples/weaviate_test.go) inside_block:grpcHealthCheck
 <!--/codeinclude-->
 
 ## Examples
