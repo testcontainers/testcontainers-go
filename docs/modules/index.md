@@ -61,8 +61,9 @@ We have provided a command line tool to generate the scaffolding for the code of
         - the options for creating the container.
     - a section for the container methods.
 - a new Nav entry for the module in the docs site, adding it to the `mkdocs.yml` file located at the root directory of the project.
-- a GitHub workflow file in the .github/workflows directory to run the tests for the example.
 - an entry in the VSCode workspace file, in order to include the new module in the project's workspace.
+
+The shared CI workflows automatically discover new modules with a `go.mod` and Makefile. No per-module workflow file is generated.
 
 !!!info
     If you are hosting the module under your own GitHub account, please move the generated files to the new repository. Discard the following files and directories: `mkdocs.yml`, VSCode workspace, Sonarqube properties, and the `.github/workflows` directory, as they are specific to the `testcontainers-go` repository. You can use them as reference to create your own CI/CD pipeline.
@@ -80,6 +81,7 @@ We have provided a command line tool to generate the scaffolding for the code of
 
 - If the module name or title does not contain alphanumerical characters, it will exit the generation.
 - If the module already exists, it will exit without updating the existing files.
+- The tool creates the parent module skeleton, including a driver-free `examples_test.go`. It does not generate a nested SDK examples module; add that module manually as described below.
 
 ### How to run the tool
 
@@ -98,12 +100,50 @@ go run . new module --name ${NAME_OF_YOUR_MODULE} --image "${REGISTRY}/${MODULE}
 
 ### Technology modules: client/SDK dependency policy
 
-Production modules and images should remain **driver-agnostic**.
+Keep technology modules **driver-agnostic**. Put service SDKs, database drivers, and client libraries used for protocol assertions in a separate `modules/<name>/examples/go.mod`, including when only integration tests use them. An SDK import in a parent `_test.go`, or an `examples` directory without its own `go.mod`, still adds that dependency to the parent module.
 
-- Do not bundle client SDKs (database/message broker/storage drivers, etc.) **in production modules or images.**  
-  Examples: `yugabyte/gocql`, etc.
-- If you need to show how to connect to a given technology, provide bootstrap code as helpers and keep those dependencies in **tests/examples** only.
-- Prefer small helpers that read container state and build a client config. Reference those helpers from examples and tests.
+Keep container lifecycle, configuration, endpoint, and error tests in the parent, along with driver-free examples. Move SDK connection, query, message, and health RPC assertions into active child tests or testable examples, preserving their assertions, output, fixtures, and cleanup. If a parent test only had SDK assertions, retain it with meaningful provisioning or public endpoint assertions. Prefer small driver-free helpers that expose connection details from container state.
+
+#### Separate SDK examples modules
+
+Reuse the existing `modules/<name>/examples` module, or create it manually with its own `go.mod`, `go.sum`, and Makefile. Use the module path `github.com/testcontainers/testcontainers-go/modules/<name>/examples`. For parents with multiple services, share one examples module with service subpackages, such as `modules/azure/examples/sqledge`; do not create a Go module for each service.
+
+In the child `go.mod`:
+
+- Match the repository's Go version (`go 1.26.0` currently) and follow its toolchain directive where present (`toolchain go1.26.10` currently).
+- Require the current released core and parent module versions, and pin the SDK versions. When extracting existing tests, preserve their SDK pins and connection options.
+- Add local replacements for both core and parent. Replacements in the parent's `go.mod` do not apply to the child; add replacements for other local modules the child needs as well.
+
+```gomod
+replace github.com/testcontainers/testcontainers-go => ../../..
+
+replace github.com/testcontainers/testcontainers-go/modules/<name> => ..
+```
+
+For a complete manifest, see [`modules/redis/examples/go.mod`]({{repo_url}}/blob/main/modules/redis/examples/go.mod). The child's Makefile must include the shared rules one level deeper than the parent:
+
+```makefile
+include ../../../commons-test.mk
+
+.PHONY: test
+test:
+	$(MAKE) test-<name>-examples
+```
+
+Preserve any test environment settings, such as `GODEBUG`, that the moved tests need. Keep shared helpers or fixture copies narrow, and resolve fixture paths relative to the child test package.
+
+Run checks in **both** modules from the repository root:
+
+```shell
+make -C modules/<name> generate tidy lint test
+make -C modules/<name>/examples generate tidy lint test
+```
+
+Go's `./...` does not cross a nested `go.mod`, so testing the parent does not run the child. Root `make test-all` runs the core tests only. `make -C modules tidy-modules` and `make -C modules lint-modules` discover nested Makefiles recursively; run each affected module's tests separately.
+
+Update documentation `codeinclude` paths when moving snippets and preserve their marker names. For example, a client snippet moves from `../../modules/<name>/examples_test.go` to `../../modules/<name>/examples/examples_test.go`, while a driver-free container snippet can stay in the parent. Include the service subpackage in the path for shared examples modules.
+
+Shared CI discovers child `go.mod` files automatically, selects the innermost module owning a changed file, and also selects children when their parent changes. Children are linted and tested independently, subject to the shared workflow's exclusions; no new per-child workflow is needed. Dependabot's directory globs already cover these children, and the release scripts update their core and parent requirements. This nested layout is distinct from the standalone `examples/<name>` modules created by `go run . new example`.
 
 ### Adding types and methods to the module
 
@@ -477,9 +517,10 @@ In order to simplify the creation of the container for a given module, `Testcont
 To update the Go dependencies in the modules, please run:
 
 ```shell
-$ cd modules
-$ make tidy-examples
+make -C modules tidy-modules
 ```
+
+This discovers nested examples Makefiles as well. To tidy the core, standalone examples, and technology modules together, run `make tidy-all` from the repository root.
 
 ## Refreshing the modules
 

@@ -637,3 +637,9 @@ connectionString, err := container.ConnectionString(ctx, "encrypt=false", "Trust
 <!--codeinclude-->
 [Creating an Azure SQL Edge container](../../modules/azure/sqledge/examples_test.go) inside_block:runSQLEdgeContainer
 <!--/codeinclude-->
+
+To connect with `database/sql`, register the SQL Server driver with a blank import of `github.com/microsoft/go-mssqldb`. The driver-backed tests live in the separate `modules/azure/examples` Go module, under `sqledge`, so the parent Azure module does not require the driver.
+
+<!--codeinclude-->
+[Connecting with the SQL Server driver](../../modules/azure/examples/sqledge/sqledge_test.go) inside_block:sqlEdgeConnection
+<!--/codeinclude-->
