@@ -984,6 +984,46 @@ func Test_NewReaperReplacedWhenPortNotPublished(t *testing.T) {
 	require.NotEqual(t, hide.id, reaper.container.GetContainerID(), "expected a new reaper container")
 }
 
+// Test_NewReaperUsesProviderHost tests that a reaper is reached at the host
+// its provider has resolved, as the provider's other containers are, even if
+// the host would now resolve differently.
+func Test_NewReaperUsesProviderHost(t *testing.T) {
+	reaperDisable(t, false)
+
+	SkipIfProviderIsNotHealthy(t)
+
+	provider, err := NewDockerProvider()
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, provider.Close()) })
+
+	t.Setenv("TESTCONTAINERS_HOST_OVERRIDE", "127.0.0.1")
+	host, err := provider.DaemonHost(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, "127.0.0.1", host)
+
+	// An address nothing listens on, see RFC 5737.
+	t.Setenv("TESTCONTAINERS_HOST_OVERRIDE", "203.0.113.1")
+
+	sessionID := testSessionID + "-provider-host"
+	t.Cleanup(func() {
+		_, err := provider.Client().ContainerRemove(context.Background(), reaperContainerNameFromSessionID(sessionID), client.ContainerRemoveOptions{Force: true})
+		require.True(t, isCleanupSafe(err), "remove reaper: %v", err)
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
+	spawner := newReaperSpawner()
+	spawner.readyTimeout = time.Second * 3
+	reaper, err := spawner.reaper(context.WithValue(ctx, core.DockerHostContextKey, provider.host), sessionID, provider)
+	cleanupReaper(t, reaper, spawner)
+	require.NoError(t, err, "creating the Reaper should not error")
+
+	endpointHost, _, err := net.SplitHostPort(reaper.Endpoint)
+	require.NoError(t, err)
+	require.Equal(t, host, endpointHost, "the reaper should be reached at the provider's host")
+}
+
 // slowInspectClient is an APIClient whose container inspects take delay, like
 // those of a slow daemon.
 type slowInspectClient struct {
@@ -2102,17 +2142,20 @@ func Test_RunReaperReportsAbandonedFailure(t *testing.T) {
 	require.Empty(t, callerLogger.Lines(), "the caller's logger should not be used after it returned")
 }
 
-// cancellingLogger is a recordingLogger that calls cancel when the first
-// line is logged.
+// cancellingLogger is a recordingLogger that calls cancel when it first logs
+// a line containing trigger.
 type cancellingLogger struct {
 	recordingLogger
-	once   sync.Once
-	cancel context.CancelFunc
+	trigger string
+	once    sync.Once
+	cancel  context.CancelFunc
 }
 
 func (l *cancellingLogger) Printf(format string, v ...any) {
 	l.recordingLogger.Printf(format, v...)
-	l.once.Do(l.cancel)
+	if strings.Contains(fmt.Sprintf(format, v...), l.trigger) {
+		l.once.Do(l.cancel)
+	}
 }
 
 // Test_NewReaperDetachesCallerLogger tests that a reaper run that outlives
@@ -2123,17 +2166,11 @@ func Test_NewReaperDetachesCallerLogger(t *testing.T) {
 
 	SkipIfProviderIsNotHealthy(t)
 
-	// The image is pulled beforehand, so the first line logged is from the
-	// run, not the pull, and cancels the caller while the run is under way.
-	setup, err := NewDockerProvider()
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, setup.Close()) })
-	require.NoError(t, setup.PullImage(context.Background(), config.ReaperDefaultImage))
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	logger := &cancellingLogger{cancel: cancel}
+	// Cancels the caller once the run is creating the reaper container.
+	logger := &cancellingLogger{trigger: "Creating container", cancel: cancel}
 	provider, err := NewDockerProvider(WithLogger(logger))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, provider.Close()) })

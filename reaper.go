@@ -920,8 +920,12 @@ func (r *reaperSpawner) newReaper(ctx context.Context, sessionID string, provide
 			return nil, fmt.Errorf("new provider: %w", err)
 		}
 
-		// Run on the caller's daemon, which may have been set with SetClient.
+		// Run on the caller's daemon, which may have been set with SetClient,
+		// reached at the same host as its other containers.
 		dp.SetClient(p.client)
+		if dp.hostCache, err = p.DaemonHost(ctx); err != nil {
+			return nil, fmt.Errorf("daemon host: %w", err)
+		}
 		runProvider = dp
 	}
 
