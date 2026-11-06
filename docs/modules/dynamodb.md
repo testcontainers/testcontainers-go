@@ -57,6 +57,12 @@ The `WithSharedDB` option tells the DynamoDB container to use a single database 
 
 You can turn off telemetry when starting the DynamoDB container, using the option `WithDisableTelemetry`.
 
+#### WithInMemory
+
+- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+The `WithInMemory` option tells DynamoDB local to keep its data in memory instead of writing it to a database file. The data is lost when the container stops.
+
 {% include "../features/common_functional_options_list.md" %}
 
 ### Container Methods
