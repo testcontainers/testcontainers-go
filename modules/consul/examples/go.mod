@@ -6,8 +6,8 @@ toolchain go1.26.10
 
 require (
 	github.com/hashicorp/consul/api v1.27.0
-	github.com/testcontainers/testcontainers-go v0.44.0
-	github.com/testcontainers/testcontainers-go/modules/consul v0.44.0
+	github.com/testcontainers/testcontainers-go v0.45.0
+	github.com/testcontainers/testcontainers-go/modules/consul v0.45.0
 )
 
 require (

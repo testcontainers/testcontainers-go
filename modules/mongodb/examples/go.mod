@@ -5,8 +5,8 @@ go 1.26.0
 toolchain go1.26.10
 
 require (
-	github.com/testcontainers/testcontainers-go v0.44.0
-	github.com/testcontainers/testcontainers-go/modules/mongodb v0.44.0
+	github.com/testcontainers/testcontainers-go v0.45.0
+	github.com/testcontainers/testcontainers-go/modules/mongodb v0.45.0
 	go.mongodb.org/mongo-driver/v2 v2.4.2
 )
 

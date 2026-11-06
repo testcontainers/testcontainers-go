@@ -6,7 +6,7 @@ toolchain go1.26.10
 
 require (
 	github.com/BraspagDevelopers/mock-server-client v0.2.2
-	github.com/testcontainers/testcontainers-go v0.44.0
+	github.com/testcontainers/testcontainers-go v0.45.0
 )
 
 require (
@@ -65,6 +65,6 @@ require (
 
 replace github.com/testcontainers/testcontainers-go => ../../..
 
-require github.com/testcontainers/testcontainers-go/modules/mockserver v0.44.0
+require github.com/testcontainers/testcontainers-go/modules/mockserver v0.45.0
 
 replace github.com/testcontainers/testcontainers-go/modules/mockserver => ..

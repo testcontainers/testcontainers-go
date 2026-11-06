@@ -6,8 +6,8 @@ toolchain go1.26.10
 
 require (
 	github.com/pinecone-io/go-pinecone/v2 v2.2.0
-	github.com/testcontainers/testcontainers-go v0.44.0
-	github.com/testcontainers/testcontainers-go/modules/pinecone v0.44.0
+	github.com/testcontainers/testcontainers-go v0.45.0
+	github.com/testcontainers/testcontainers-go/modules/pinecone v0.45.0
 )
 
 require (

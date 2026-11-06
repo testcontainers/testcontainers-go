@@ -7,7 +7,7 @@ toolchain go1.26.10
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/stretchr/testify v1.12.1
-	github.com/testcontainers/testcontainers-go v0.44.0
+	github.com/testcontainers/testcontainers-go v0.45.0
 	github.com/tidwall/gjson v1.17.1
 )
 

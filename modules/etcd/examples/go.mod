@@ -5,8 +5,8 @@ go 1.26.0
 toolchain go1.26.10
 
 require (
-	github.com/testcontainers/testcontainers-go v0.44.0
-	github.com/testcontainers/testcontainers-go/modules/etcd v0.44.0
+	github.com/testcontainers/testcontainers-go v0.45.0
+	github.com/testcontainers/testcontainers-go/modules/etcd v0.45.0
 	go.etcd.io/etcd/client/v3 v3.5.16
 )
 

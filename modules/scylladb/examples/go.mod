@@ -12,8 +12,8 @@ require (
 	github.com/aws/smithy-go v1.28.5
 	github.com/gocql/gocql v1.7.0
 	github.com/stretchr/testify v1.12.1
-	github.com/testcontainers/testcontainers-go v0.44.0
-	github.com/testcontainers/testcontainers-go/modules/scylladb v0.44.0
+	github.com/testcontainers/testcontainers-go v0.45.0
+	github.com/testcontainers/testcontainers-go/modules/scylladb v0.45.0
 )
 
 require (

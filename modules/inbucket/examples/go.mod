@@ -6,8 +6,8 @@ toolchain go1.26.10
 
 require (
 	github.com/inbucket/inbucket v2.0.0+incompatible
-	github.com/testcontainers/testcontainers-go v0.44.0
-	github.com/testcontainers/testcontainers-go/modules/inbucket v0.44.0
+	github.com/testcontainers/testcontainers-go v0.45.0
+	github.com/testcontainers/testcontainers-go/modules/inbucket v0.45.0
 )
 
 require (

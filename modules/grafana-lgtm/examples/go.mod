@@ -6,7 +6,7 @@ toolchain go1.26.10
 
 require (
 	github.com/stretchr/testify v1.12.1 // indirect
-	github.com/testcontainers/testcontainers-go v0.44.0
+	github.com/testcontainers/testcontainers-go v0.45.0
 	go.opentelemetry.io/contrib/bridges/otelslog v0.20.0
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.53.0
 	go.opentelemetry.io/otel v1.45.0
@@ -88,6 +88,6 @@ require (
 
 replace github.com/testcontainers/testcontainers-go => ../../..
 
-require github.com/testcontainers/testcontainers-go/modules/grafana-lgtm v0.44.0
+require github.com/testcontainers/testcontainers-go/modules/grafana-lgtm v0.45.0
 
 replace github.com/testcontainers/testcontainers-go/modules/grafana-lgtm => ..

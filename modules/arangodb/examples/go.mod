@@ -6,8 +6,8 @@ toolchain go1.26.10
 
 require (
 	github.com/arangodb/go-driver/v2 v2.3.1
-	github.com/testcontainers/testcontainers-go v0.44.0
-	github.com/testcontainers/testcontainers-go/modules/arangodb v0.44.0
+	github.com/testcontainers/testcontainers-go v0.45.0
+	github.com/testcontainers/testcontainers-go/modules/arangodb v0.45.0
 )
 
 require (

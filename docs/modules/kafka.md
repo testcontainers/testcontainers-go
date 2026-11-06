@@ -71,7 +71,7 @@ When starting the Kafka container, you can pass options in a variadic way to con
 
 #### WithTLS
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.45.0"><span class="tc-version">:material-tag: v0.45.0</span></a>
 
 If you need to test clients against a TLS-secured broker, you can use the `kafka.WithTLS()` option.
 
@@ -103,13 +103,13 @@ The `Brokers(ctx)` method returns the Kafka brokers as a string slice, containin
 
 #### BrokersTLS
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.45.0"><span class="tc-version">:material-tag: v0.45.0</span></a>
 
 The `BrokersTLS(ctx)` method returns the Kafka brokers of the SSL listener as a string slice, containing the host and the random port defined by Kafka's SSL port (`9095/tcp`). It can only be used when the container was created with the `WithTLS()` option. Returns an error if TLS was not enabled.
 
 #### TLSConfig
 
-- Not available until the next release <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+- Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.45.0"><span class="tc-version">:material-tag: v0.45.0</span></a>
 
 The `TLSConfig()` method returns the TLS configuration trusting the CA that signed the broker certificate. It can only be used when the container was created with the `WithTLS()` option. Returns an error if TLS was not enabled.
 

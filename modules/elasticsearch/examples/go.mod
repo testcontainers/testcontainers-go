@@ -6,8 +6,8 @@ toolchain go1.26.10
 
 require (
 	github.com/elastic/go-elasticsearch/v8 v8.12.1
-	github.com/testcontainers/testcontainers-go v0.44.0
-	github.com/testcontainers/testcontainers-go/modules/elasticsearch v0.44.0
+	github.com/testcontainers/testcontainers-go v0.45.0
+	github.com/testcontainers/testcontainers-go/modules/elasticsearch v0.45.0
 )
 
 require (

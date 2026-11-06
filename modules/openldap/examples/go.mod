@@ -7,8 +7,8 @@ toolchain go1.26.10
 require (
 	github.com/go-ldap/ldap/v3 v3.4.6
 	github.com/stretchr/testify v1.12.1
-	github.com/testcontainers/testcontainers-go v0.44.0
-	github.com/testcontainers/testcontainers-go/modules/openldap v0.44.0
+	github.com/testcontainers/testcontainers-go v0.45.0
+	github.com/testcontainers/testcontainers-go/modules/openldap v0.45.0
 )
 
 require (
