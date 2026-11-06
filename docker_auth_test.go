@@ -1,6 +1,7 @@
 package testcontainers
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
 	"encoding/base64"
@@ -540,6 +541,11 @@ func Test_configKey(t *testing.T) {
 		cmd := exec.Command(os.Args[0], "-test.run=^Test_configKey$/^fips140-only$", "-test.count=1")
 		cmd.Env = append(os.Environ(), "TESTCONTAINERS_TEST_FIPS140_CHILD=1", "GODEBUG=fips140=only")
 		out, err := cmd.CombinedOutput()
+		// Go panics at startup with this prefix when FIPS 140-3 mode can't be
+		// enabled at all (e.g. openbsd, aix, windows/386, wasm, ASAN builds).
+		if err != nil && bytes.Contains(out, []byte("fips140: FIPS 140-3 mode is")) {
+			t.Skipf("FIPS 140-3 mode is not available here:\n%s", out)
+		}
 		require.NoError(t, err, "configKey failed in fips140=only mode:\n%s", out)
 	})
 }
