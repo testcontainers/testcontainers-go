@@ -8,7 +8,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -21,6 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go/internal/config"
+	"github.com/testcontainers/testcontainers-go/internal/core"
 	"github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -219,9 +219,70 @@ func Test_MultipleLogConsumers(t *testing.T) {
 	require.Equal(t, expected, second.Msgs())
 }
 
+// waitLogsQuiet waits until the consumer has received no new log messages for
+// quiet, returning the count observed. It fails the test if the stream is
+// still producing new messages after timeout.
+func waitLogsQuiet(t *testing.T, c *TestLogConsumer, quiet, timeout time.Duration) int {
+	t.Helper()
+
+	count := len(c.Msgs())
+	lastChange := time.Now()
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		if n := len(c.Msgs()); n != count {
+			count = n
+			lastChange = time.Now()
+		} else if time.Since(lastChange) >= quiet {
+			return count
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	t.Fatalf("log stream still producing new messages after %v", timeout)
+	return 0
+}
+
+// requireNewMsgs waits until at least want new log messages (beyond existing)
+// have been consumed, lets the stream settle so unexpected extra lines still
+// surface, and then asserts the exact count. It returns the new total count.
+func requireNewMsgs(t *testing.T, c *TestLogConsumer, existing, want int, hint string) int {
+	t.Helper()
+
+	require.Eventuallyf(t, func() bool {
+		return len(c.Msgs())-existing >= want
+	}, time.Minute, 50*time.Millisecond, "%s: expected %d new log message(s)", hint, want)
+
+	count := waitLogsQuiet(t, c, time.Second, 10*time.Second)
+	msgs := c.Msgs()
+	require.Equalf(t, want, count-existing, "%s: expected exactly %d new log message(s), instead has:\n%v", hint, want, msgs[existing:])
+	return count
+}
+
+func isRootlessDockerHost(host string) bool {
+	return strings.HasPrefix(host, "unix:///run/user/")
+}
+
+func TestIsRootlessDockerHost(t *testing.T) {
+	tests := []struct {
+		name string
+		host string
+		want bool
+	}{
+		{name: "rootful socket", host: "unix:///var/run/docker.sock"},
+		{name: "rootless socket", host: "unix:///run/user/1000/docker.sock", want: true},
+		{name: "remote Docker host", host: "tcp://localhost:2375"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, isRootlessDockerHost(tt.host))
+		})
+	}
+}
+
 func TestContainerLogWithErrClosed(t *testing.T) {
-	if os.Getenv("GITHUB_RUN_ID") != "" {
-		t.Skip("Skipping as flaky on GitHub Actions, Please see https://github.com/testcontainers/testcontainers-go/issues/1924")
+	ctx := context.Background()
+	if dockerHost, err := core.ExtractDockerHost(ctx); err == nil && isRootlessDockerHost(dockerHost) {
+		t.Skip("Docker-in-Docker does not work with rootless Docker")
 	}
 
 	t.Cleanup(func() {
@@ -234,8 +295,6 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	// First spin up a docker-in-docker container, then spin up an inner container within that dind container
 	// Logs are being read from the inner container via the dind container's tcp port, which can be briefly
 	// closed to test behaviour in connection-closed situations.
-	ctx := context.Background()
-
 	dind, err := Run(
 		ctx, "docker:dind",
 		WithExposedPorts("2375/tcp"),
@@ -304,9 +363,9 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	port, err := nginx.MappedPort(ctx, "80/tcp")
 	require.NoError(t, err)
 
-	// Gather the initial container logs
-	time.Sleep(time.Second * 1)
-	existingLogs := len(consumer.Msgs())
+	// Wait for the initial nginx startup logs to drain so the baseline count
+	// is stable before asserting on new messages.
+	existingLogs := waitLogsQuiet(t, &consumer, time.Second, 30*time.Second)
 
 	hitNginx := func() {
 		i, _, err := dind.Exec(ctx, []string{"wget", "--spider", net.JoinHostPort("localhost", port.Port())})
@@ -315,10 +374,7 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	}
 
 	hitNginx()
-	time.Sleep(time.Second * 1)
-	msgs := consumer.Msgs()
-	require.Equalf(t, 1, len(msgs)-existingLogs, "logConsumer should have 1 new log message, instead has: %v", msgs[existingLogs:])
-	existingLogs = len(consumer.Msgs())
+	existingLogs = requireNewMsgs(t, &consumer, existingLogs, 1, "logConsumer should have 1 new log message")
 
 	iptableArgs := []string{
 		"INPUT", "-p", "tcp", "--dport", "2375",
@@ -331,16 +387,14 @@ func TestContainerLogWithErrClosed(t *testing.T) {
 	i, _, err = dind.Exec(ctx, append([]string{"iptables", "-D"}, iptableArgs...))
 	require.NoErrorf(t, err, "Failed to re-open connection to dind daemon: i(%d), err %v", i, err)
 	require.Zerof(t, i, "Failed to re-open connection to dind daemon: i(%d), err %v", i, err)
+	// Deliberate fixed wait (not an assertion race): give the log producer
+	// time to observe the TCP reset and restart its log stream.
 	time.Sleep(time.Second * 3)
 
 	hitNginx()
 	hitNginx()
-	time.Sleep(time.Second * 1)
-	msgs = consumer.Msgs()
-	require.Equalf(t, 2, len(msgs)-existingLogs,
-		"LogConsumer should have 2 new log messages after detecting closed connection and"+
-			" re-requesting logs. Instead has:\n%s", msgs[existingLogs:],
-	)
+	requireNewMsgs(t, &consumer, existingLogs, 2,
+		"LogConsumer should have 2 new log messages after detecting closed connection and re-requesting logs")
 }
 
 func TestContainerLogsShouldBeWithoutStreamHeader(t *testing.T) {
