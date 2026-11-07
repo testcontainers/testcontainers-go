@@ -70,6 +70,10 @@
             "path": "../modules/cratedb"
         },
         {
+            "name": "module / cubrid",
+            "path": "../modules/cubrid"
+        },
+        {
             "name": "module / databend",
             "path": "../modules/databend"
         },
