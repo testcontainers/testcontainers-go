@@ -219,19 +219,12 @@ func (r *reaperSpawner) cleanupLocked() error {
 // for one that may still become ready. It returns errReaperNotFound if there
 // is no reaper container, or if the existing one will never become ready, in
 // which case it is removed so a new one can be created.
-func (r *reaperSpawner) lookupContainer(ctx context.Context, sessionID string) (*DockerContainer, error) {
-	dockerClient, err := NewDockerClientWithOpts(ctx)
+func (r *reaperSpawner) lookupContainer(ctx context.Context, sessionID string, provider ReaperProvider) (*DockerContainer, error) {
+	p, release, err := lookupProvider(ctx, provider)
 	if err != nil {
-		return nil, fmt.Errorf("new client: %w", err)
+		return nil, err
 	}
-	defer dockerClient.Close()
-
-	provider, err := NewDockerProvider()
-	if err != nil {
-		return nil, fmt.Errorf("new provider: %w", err)
-	}
-
-	provider.SetClient(dockerClient)
+	defer release()
 
 	opts := client.ContainerListOptions{
 		All: true,
@@ -243,11 +236,15 @@ func (r *reaperSpawner) lookupContainer(ctx context.Context, sessionID string) (
 	}
 
 	// Use the underlying client, as DockerClient.Info caches its result.
-	daemonNow := daemonClock(ctx, dockerClient.Client)
+	var system client.SystemAPIClient = p.client
+	if dc, ok := p.client.(*DockerClient); ok {
+		system = dc.Client
+	}
+	daemonNow := daemonClock(ctx, system)
 
 	return backoff.RetryWithData(
 		func() (*DockerContainer, error) {
-			resp, err := dockerClient.ContainerList(ctx, opts)
+			resp, err := p.client.ContainerList(ctx, opts)
 			if err != nil {
 				return nil, fmt.Errorf("container list: %w", err)
 			}
@@ -269,14 +266,14 @@ func (r *reaperSpawner) lookupContainer(ctx context.Context, sessionID string) (
 					return nil, err
 				}
 
-				if err := removeStaleReaper(ctx, dockerClient, item.ID); err != nil {
+				if err := removeStaleReaper(ctx, p.client, item.ID); err != nil {
 					return nil, err
 				}
 
 				return nil, backoff.Permanent(errReaperNotFound)
 			}
 
-			ctr, err := provider.ContainerFromType(ctx, item)
+			ctr, err := p.ContainerFromType(ctx, item)
 			if err != nil {
 				return nil, fmt.Errorf("from docker: %w", err)
 			}
@@ -290,6 +287,28 @@ func (r *reaperSpawner) lookupContainer(ctx context.Context, sessionID string) (
 		},
 		backoff.WithContext(r.backoff(), ctx),
 	)
+}
+
+// lookupProvider returns provider if it's a *DockerProvider, otherwise a new
+// DockerProvider for the Docker host in ctx, with a function that releases it.
+func lookupProvider(ctx context.Context, provider ReaperProvider) (*DockerProvider, func(), error) {
+	if p, ok := provider.(*DockerProvider); ok {
+		return p, func() {}, nil
+	}
+
+	cli, err := NewDockerClientWithOpts(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("new client: %w", err)
+	}
+
+	p, err := NewDockerProvider()
+	if err != nil {
+		return nil, nil, errors.Join(fmt.Errorf("new provider: %w", err), cli.Close())
+	}
+
+	p.SetClient(cli)
+
+	return p, func() { _ = p.Close() }, nil
 }
 
 // checkStale returns nil if the reaper container is stale, so will never
@@ -476,7 +495,7 @@ func (r *reaperSpawner) reuseOrCreate(ctx context.Context, sessionID string, pro
 
 	// Look for an existing reaper created in the same test session but in a
 	// different test process execution e.g. when running tests in parallel.
-	container, err := r.lookupContainer(ctx, sessionID)
+	container, err := r.lookupContainer(ctx, sessionID, provider)
 	if err != nil {
 		if !errors.Is(err, errReaperNotFound) {
 			return nil, fmt.Errorf("look up container: %w", err)
@@ -522,17 +541,11 @@ func (r *reaperSpawner) fromContainer(ctx context.Context, sessionID string, pro
 		return nil, fmt.Errorf("wait for reaper %s: %w", dockerContainer.ID[:8], err)
 	}
 
-	endpoint, err := dockerContainer.Endpoint(ctx, "")
-	if err != nil {
-		return nil, fmt.Errorf("port endpoint: %w", err)
-	}
-
 	log.Printf("🔥 Reaper obtained from Docker for this test session %s", dockerContainer.ID[:8])
 
 	reaper := &Reaper{
 		Provider:  provider,
 		SessionID: sessionID,
-		Endpoint:  endpoint,
 		container: dockerContainer,
 	}
 	if err := reaper.keep(conn); err != nil {
@@ -616,8 +629,9 @@ func (s *ryukHandshake) handshake(ctx context.Context, target wait.StrategyTarge
 	ctx, cancel := context.WithTimeout(ctx, s.attemptTimeout)
 	defer cancel()
 
+	endpoint := net.JoinHostPort(host, hostPort)
 	var d net.Dialer
-	conn, err := d.DialContext(ctx, "tcp", net.JoinHostPort(host, hostPort))
+	conn, err := d.DialContext(ctx, "tcp", endpoint)
 	if err != nil {
 		return fmt.Errorf("dial: %w", err)
 	}
@@ -627,7 +641,7 @@ func (s *ryukHandshake) handshake(ctx context.Context, target wait.StrategyTarge
 		return err
 	}
 
-	s.conn.set(conn)
+	s.conn.set(conn, endpoint)
 
 	return nil
 }
@@ -667,14 +681,17 @@ func (s *ryukHandshake) String() string {
 }
 
 // reaperConn holds a connection a reaper has acknowledged a session's filters
-// on, until it is taken or closed. It is safe for concurrent use.
+// on, and the endpoint it was made to, until it is taken or closed. It is safe
+// for concurrent use.
 type reaperConn struct {
-	mtx  sync.Mutex
-	conn net.Conn
+	mtx      sync.Mutex
+	conn     net.Conn
+	endpoint string
 }
 
-// set makes conn the held connection, closing any it replaces.
-func (c *reaperConn) set(conn net.Conn) {
+// set makes conn, made to endpoint, the held connection, closing any it
+// replaces.
+func (c *reaperConn) set(conn net.Conn, endpoint string) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
@@ -683,23 +700,24 @@ func (c *reaperConn) set(conn net.Conn) {
 	}
 
 	c.conn = conn
+	c.endpoint = endpoint
 }
 
-// take returns the held connection, or nil if there isn't one, which the
-// caller is then responsible for closing.
-func (c *reaperConn) take() net.Conn {
+// take returns the held connection and its endpoint, or nil if there isn't
+// one. The caller is then responsible for closing the connection.
+func (c *reaperConn) take() (net.Conn, string) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
-	conn := c.conn
-	c.conn = nil
+	conn, endpoint := c.conn, c.endpoint
+	c.conn, c.endpoint = nil, ""
 
-	return conn
+	return conn, endpoint
 }
 
 // Close closes the held connection, if there is one.
 func (c *reaperConn) Close() error {
-	if conn := c.take(); conn != nil {
+	if conn, _ := c.take(); conn != nil {
 		return conn.Close()
 	}
 
@@ -939,15 +957,9 @@ func (r *reaperSpawner) newReaper(ctx context.Context, sessionID string, provide
 		return nil, fmt.Errorf("run container: %w", err)
 	}
 
-	endpoint, err := c.PortEndpoint(ctx, port.String(), "")
-	if err != nil {
-		return nil, fmt.Errorf("port endpoint: %w", err)
-	}
-
 	reaper = &Reaper{
 		Provider:  provider,
 		SessionID: sessionID,
-		Endpoint:  endpoint,
 		container: c,
 	}
 	if err = reaper.keep(conn); err != nil {
@@ -1057,14 +1069,15 @@ func (r *Reaper) connect(ctx context.Context) (chan bool, error) {
 }
 
 // keep makes the connection held by conn, on which the reaper acknowledged
-// r's filters, the connection Connect returns. It returns an error if conn
-// holds no connection.
+// r's filters, the connection Connect returns, and its endpoint r's. It
+// returns an error if conn holds no connection.
 func (r *Reaper) keep(conn *reaperConn) error {
-	c := conn.take()
+	c, endpoint := conn.take()
 	if c == nil {
 		return errors.New("reaper acknowledged no connection")
 	}
 
+	r.Endpoint = endpoint
 	r.setOrSignal(hold(c))
 
 	return nil

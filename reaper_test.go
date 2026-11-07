@@ -129,9 +129,13 @@ func testContainerStart(t *testing.T) {
 func testReaperRunning(t *testing.T) {
 	t.Helper()
 
+	provider, err := NewDockerProvider()
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, provider.Close()) })
+
 	ctx := context.Background()
 	sessionID := config.Read().SessionID
-	reaperContainer, err := spawner.lookupContainer(ctx, sessionID)
+	reaperContainer, err := spawner.lookupContainer(ctx, sessionID, provider)
 	require.NoError(t, err)
 	require.NotNil(t, reaperContainer)
 }
@@ -512,7 +516,7 @@ func Test_LookupReaperKeepsPausedContainer(t *testing.T) {
 	defer cancel()
 
 	spawner := newReaperSpawner()
-	_, err = spawner.lookupContainer(context.WithValue(timeout, core.DockerHostContextKey, provider.host), testSessionID)
+	_, err = spawner.lookupContainer(context.WithValue(timeout, core.DockerHostContextKey, provider.host), testSessionID, provider)
 	require.Error(t, err, "a paused reaper should not be reused")
 	require.NotErrorIs(t, err, errReaperNotFound, "a paused reaper should not be replaced")
 
@@ -1130,7 +1134,7 @@ func Test_ReaperCreatedNotStarted(t *testing.T) {
 		defer cancel()
 
 		spawner := newReaperSpawner()
-		_, err := spawner.lookupContainer(context.WithValue(timeout, core.DockerHostContextKey, provider.host), testSessionID)
+		_, err := spawner.lookupContainer(context.WithValue(timeout, core.DockerHostContextKey, provider.host), testSessionID, provider)
 		require.Error(t, err, "a created reaper should not be reused")
 		require.NotErrorIs(t, err, errReaperNotFound, "a recently created reaper should not be replaced")
 
@@ -1462,7 +1466,7 @@ func Test_RunReaperClosesConn(t *testing.T) {
 		t.Cleanup(func() { require.NoError(t, remote.Close()) })
 
 		held := &reaperConn{}
-		held.set(local)
+		held.set(local, "127.0.0.1:8080")
 		t.Cleanup(func() { require.NoError(t, held.Close()) })
 
 		ctx, cancelCtx := context.WithCancel(context.Background())
@@ -1521,7 +1525,7 @@ func Test_RunReaperClosesConn(t *testing.T) {
 		held, _, err := run(t, nil, false)
 		require.NoError(t, err)
 
-		conn := held.take()
+		conn, _ := held.take()
 		require.NotNil(t, conn, "the connection should be kept for the caller")
 		require.NoError(t, conn.Close())
 	})
@@ -1809,8 +1813,9 @@ func serveTCP(t *testing.T, handle func(conn net.Conn)) uint16 {
 // to accept connections, which the docker-proxy does whether or not ryuk is
 // listening.
 func Test_RyukHandshake(t *testing.T) {
-	// waitUntilReady waits for target and returns the connection kept, if any.
-	waitUntilReady := func(t *testing.T, target wait.StrategyTarget) (net.Conn, error) {
+	// waitUntilReady waits for target and returns the connection kept, if any,
+	// and its endpoint.
+	waitUntilReady := func(t *testing.T, target wait.StrategyTarget) (net.Conn, string, error) {
 		t.Helper()
 
 		s := newReaperSpawner()
@@ -1818,12 +1823,12 @@ func Test_RyukHandshake(t *testing.T) {
 		held := &reaperConn{}
 		err := s.defaultWaitStrategy(testSessionID, held).WaitUntilReady(context.Background(), target)
 
-		conn := held.take()
+		conn, endpoint := held.take()
 		if conn != nil {
 			t.Cleanup(func() { require.NoError(t, conn.Close()) })
 		}
 
-		return conn, err
+		return conn, endpoint, err
 	}
 
 	t.Run("ack", func(t *testing.T) {
@@ -1844,8 +1849,9 @@ func Test_RyukHandshake(t *testing.T) {
 		})
 
 		target := &strategyTarget{port: port}
-		conn, err := waitUntilReady(t, target)
+		conn, endpoint, err := waitUntilReady(t, target)
 		require.NoError(t, err)
+		require.Equal(t, net.JoinHostPort("127.0.0.1", strconv.Itoa(int(port))), endpoint, "the endpoint acknowledged on should be kept")
 		require.Equal(t, int32(1), target.inspects.Load(), "an attempt should inspect the container once")
 
 		select {
@@ -1872,7 +1878,7 @@ func Test_RyukHandshake(t *testing.T) {
 		// Like the docker-proxy with nothing listening behind it.
 		port := serveTCP(t, func(net.Conn) {})
 
-		conn, err := waitUntilReady(t, &strategyTarget{port: port})
+		conn, _, err := waitUntilReady(t, &strategyTarget{port: port})
 		require.ErrorIs(t, err, context.DeadlineExceeded)
 		require.Nil(t, conn, "no connection should be kept")
 	})
@@ -1882,7 +1888,7 @@ func Test_RyukHandshake(t *testing.T) {
 			_, _ = io.Copy(io.Discard, conn)
 		})
 
-		conn, err := waitUntilReady(t, &strategyTarget{port: port})
+		conn, _, err := waitUntilReady(t, &strategyTarget{port: port})
 		require.ErrorIs(t, err, context.DeadlineExceeded)
 		require.Nil(t, conn, "no connection should be kept")
 	})
@@ -1918,7 +1924,7 @@ func Test_RyukHandshake(t *testing.T) {
 		require.NoError(t, strategy.WaitUntilReady(context.Background(), &strategyTarget{port: port}))
 		require.GreaterOrEqual(t, connections.Load(), int32(2), "a second attempt should have been made")
 
-		conn := held.take()
+		conn, _ := held.take()
 		require.NotNil(t, conn, "the acknowledged connection should be kept")
 		defer conn.Close()
 
@@ -1934,7 +1940,7 @@ func Test_RyukHandshake(t *testing.T) {
 			_, _ = conn.Write([]byte("NAK\n"))
 		})
 
-		conn, err := waitUntilReady(t, &strategyTarget{port: port})
+		conn, _, err := waitUntilReady(t, &strategyTarget{port: port})
 		require.ErrorContains(t, err, "unexpected reaper response")
 		require.Nil(t, conn, "no connection should be kept")
 	})
@@ -1946,7 +1952,7 @@ func Test_RyukHandshake(t *testing.T) {
 		})
 
 		start := time.Now()
-		conn, err := waitUntilReady(t, &strategyTarget{port: port, stopped: true})
+		conn, _, err := waitUntilReady(t, &strategyTarget{port: port, stopped: true})
 		require.Nil(t, conn, "no connection should be kept")
 		require.Less(t, time.Since(start), time.Millisecond*400, "a stopped reaper should fail straight away")
 		require.True(t, errdefs.IsNotFound(err), "expected a not found error, got: %v", err)
@@ -1955,7 +1961,7 @@ func Test_RyukHandshake(t *testing.T) {
 
 	t.Run("not-published", func(t *testing.T) {
 		start := time.Now()
-		conn, err := waitUntilReady(t, &strategyTarget{unpublished: true})
+		conn, _, err := waitUntilReady(t, &strategyTarget{unpublished: true})
 		require.Nil(t, conn, "no connection should be kept")
 		require.Less(t, time.Since(start), time.Millisecond*400, "a reaper whose port isn't published should fail straight away")
 		require.ErrorIs(t, err, errReaperPortNotPublished)
@@ -2035,7 +2041,7 @@ func Test_ReaperCleanupClosesConn(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, remote.Close()) })
 
 	held := &reaperConn{}
-	held.set(local)
+	held.set(local, "127.0.0.1:8080")
 
 	ctr := &terminateRecorder{terminated: make(chan struct{})}
 	reaper := &Reaper{SessionID: testSessionID, container: ctr}
@@ -2079,11 +2085,13 @@ func Test_ReaperKeep(t *testing.T) {
 		t.Cleanup(func() { require.NoError(t, remote.Close()) })
 
 		held := &reaperConn{}
-		held.set(local)
+		held.set(local, "127.0.0.1:8080")
 
 		reaper := &Reaper{SessionID: testSessionID}
 		require.NoError(t, reaper.keep(held))
-		require.Nil(t, held.take(), "the connection should have been taken")
+		require.Equal(t, "127.0.0.1:8080", reaper.Endpoint, "the connection's endpoint should be the Reaper's")
+		conn, _ := held.take()
+		require.Nil(t, conn, "the connection should have been taken")
 
 		termSignal := reaper.useTermSignal()
 		require.NotNil(t, termSignal, "the connection should be the Reaper's")
