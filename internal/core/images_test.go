@@ -2,6 +2,7 @@ package core
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,7 +41,7 @@ func TestExtractImagesFromDockerfile(t *testing.T) {
 			name:       "Single Image",
 			dockerfile: filepath.Join("testdata", "Dockerfile"),
 			buildArgs:  nil,
-			expected:   []string{"nginx:${tag}"},
+			expected:   []string{"nginx:latest"},
 		},
 		{
 			name:       "Multiple Images",
@@ -72,6 +73,81 @@ func TestExtractImagesFromDockerfile(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, tt.expected, images)
 			}
+		})
+	}
+}
+
+func TestExtractImagesFromReader_BuildArgsAndScope(t *testing.T) {
+	customHost := "custom.registry.com"
+	nilHost := (*string)(nil)
+
+	tests := []struct {
+		name       string
+		dockerfile string
+		buildArgs  map[string]*string
+		expected   []string
+	}{
+		{
+			name: "Dockerfile ARG defaults applied when buildArgs is nil",
+			dockerfile: `
+ARG REGISTRY_HOST=privatereg.example.com
+ARG TAG=2.0.0
+FROM ${REGISTRY_HOST}/my-image:${TAG}
+`,
+			buildArgs: nil,
+			expected:  []string{"privatereg.example.com/my-image:2.0.0"},
+		},
+		{
+			name: "Explicit BuildArgs override takes precedence over ARG default",
+			dockerfile: `
+ARG REGISTRY_HOST=privatereg.example.com
+ARG TAG=2.0.0
+FROM ${REGISTRY_HOST}/my-image:${TAG}
+`,
+			buildArgs: map[string]*string{
+				"REGISTRY_HOST": &customHost,
+			},
+			expected: []string{"custom.registry.com/my-image:2.0.0"},
+		},
+		{
+			name: "Nil BuildArgs entry falls back to Dockerfile ARG default",
+			dockerfile: `
+ARG REGISTRY_HOST=privatereg.example.com
+ARG TAG=2.0.0
+FROM ${REGISTRY_HOST}/my-image:${TAG}
+`,
+			buildArgs: map[string]*string{
+				"REGISTRY_HOST": nilHost,
+			},
+			expected: []string{"privatereg.example.com/my-image:2.0.0"},
+		},
+		{
+			name: "Argument scope: stage-scoped ARGs do not leak into FROM instructions",
+			dockerfile: `
+ARG GLOBAL_TAG=1.0.0
+FROM base:${GLOBAL_TAG} AS builder
+ARG STAGE_TAG=2.0.0
+FROM app:${STAGE_TAG}
+`,
+			buildArgs: nil,
+			expected:  []string{"base:1.0.0", "app:${STAGE_TAG}"},
+		},
+		{
+			name: "FROM instruction with flags like --platform",
+			dockerfile: `
+ARG REGISTRY=myregistry.example.com
+FROM --platform=linux/amd64 ${REGISTRY}/app:1.0.0
+`,
+			buildArgs: nil,
+			expected:  []string{"myregistry.example.com/app:1.0.0"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			images, err := ExtractImagesFromReader(strings.NewReader(tt.dockerfile), tt.buildArgs)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, images)
 		})
 	}
 }

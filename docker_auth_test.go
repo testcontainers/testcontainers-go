@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -465,6 +466,169 @@ func Test_getDockerAuthConfigs(t *testing.T) {
 		require.ErrorContains(t, err, "json: cannot unmarshal array")
 		require.Nil(t, cfg)
 	})
+
+	t.Run("filter-registries-ignores-unused-failures", func(t *testing.T) {
+		testDockerConfigHome(t, "testdata", "not-exist")
+
+		creds.reset()
+		old := getRegistryCredentials
+		t.Cleanup(func() {
+			getRegistryCredentials = old
+			creds.reset()
+		})
+
+		getRegistryCredentials = func(hostname string) (string, string, error) {
+			if hostname == privateRegistry {
+				return "", "", errors.New("failing unused credential helper")
+			}
+			return "user", "pass", nil
+		}
+		t.Setenv("DOCKER_AUTH_CONFIG", dockerConfig)
+
+		// Without filter, error from privateRegistry fails getDockerAuthConfigs
+		_, err := getDockerAuthConfigs()
+		require.ErrorContains(t, err, "failing unused credential helper")
+
+		// With filter for exampleRegistry, privateRegistry is skipped and call succeeds
+		authConfigs, err := getDockerAuthConfigs(exampleRegistry)
+		require.NoError(t, err)
+		require.Contains(t, authConfigs, exampleRegistry)
+		require.NotContains(t, authConfigs, privateRegistry)
+	})
+
+	t.Run("filter-registries-mixed-case-scheme", func(t *testing.T) {
+		testDockerConfigHome(t, "testdata", "not-exist")
+		const mixedCaseConfig = `{
+			"auths": {
+				"HTTPS://example.com": {
+					"auth": "dXNlcjpwYXNz",
+					"username": "user",
+					"password": "pass"
+				},
+				"http://unrelated.registry.net/v1/": {
+					"auth": "dXNlcjpwYXNz",
+					"username": "user",
+					"password": "pass"
+				}
+			}
+		}`
+		t.Setenv("DOCKER_AUTH_CONFIG", mixedCaseConfig)
+
+		authConfigs, err := getDockerAuthConfigs("example.com")
+		require.NoError(t, err)
+		require.Contains(t, authConfigs, "HTTPS://example.com")
+		require.NotContains(t, authConfigs, "http://unrelated.registry.net/v1/")
+
+		// Verify getRegistryAuth resolves credentials using the shared normalized host
+		cfg, ok := getRegistryAuth("example.com", authConfigs)
+		require.True(t, ok)
+		require.Equal(t, "dXNlcjpwYXNz", cfg.Auth)
+	})
+
+	t.Run("filter-registries-credHelpers", func(t *testing.T) {
+		testDockerConfigHome(t, "testdata", "not-exist")
+
+		creds.reset()
+		old := getRegistryCredentials
+		t.Cleanup(func() {
+			getRegistryCredentials = old
+			creds.reset()
+		})
+
+		getRegistryCredentials = func(hostname string) (string, string, error) {
+			if hostname == "unrelated.registry.net" {
+				return "", "", errors.New("unrelated helper should never be called")
+			}
+			if hostname == "example.com" {
+				return "user", "pass", nil
+			}
+			return "", "", errors.New("unexpected helper called")
+		}
+
+		const credHelpersConfig = `{
+			"auths": {},
+			"credHelpers": {
+				"example.com": "target-helper",
+				"unrelated.registry.net": "failing-helper"
+			}
+		}`
+		t.Setenv("DOCKER_AUTH_CONFIG", credHelpersConfig)
+
+		// Unfiltered resolution executes all registered helpers and fails on unrelated helper
+		_, err := getDockerAuthConfigs()
+		require.ErrorContains(t, err, "unrelated helper should never be called")
+
+		// Scoped resolution only invokes the helper for example.com; unrelated helper is never called
+		authConfigs, err := getDockerAuthConfigs("example.com")
+		require.NoError(t, err)
+		require.Contains(t, authConfigs, "example.com")
+		require.Equal(t, "user", authConfigs["example.com"].Username)
+		require.Equal(t, "pass", authConfigs["example.com"].Password)
+		require.NotContains(t, authConfigs, "unrelated.registry.net")
+	})
+
+	t.Run("getAuthConfigsFromDockerfile scratch image", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		err := os.WriteFile(filepath.Join(tmpDir, "Dockerfile"), []byte("FROM scratch\nCOPY foo /bar\n"), 0o600)
+		require.NoError(t, err)
+
+		req := &ContainerRequest{
+			FromDockerfile: FromDockerfile{
+				Context: tmpDir,
+			},
+		}
+		authConfigs, err := getAuthConfigsFromDockerfile(req)
+		require.NoError(t, err)
+		require.Empty(t, authConfigs)
+	})
+}
+
+func Test_resolveAuthRegistry(t *testing.T) {
+	const defaultReg = "https://index.docker.io/v1/"
+
+	tests := []struct {
+		name     string
+		image    string
+		expected string
+	}{
+		{
+			name:     "docker hub library image",
+			image:    "nginx:latest",
+			expected: defaultReg,
+		},
+		{
+			name:     "docker.io image",
+			image:    "docker.io/library/nginx:latest",
+			expected: defaultReg,
+		},
+		{
+			name:     "registry.hub.docker.com image",
+			image:    "registry.hub.docker.com/library/nginx:latest",
+			expected: defaultReg,
+		},
+		{
+			name:     "registry-1.docker.io image",
+			image:    "registry-1.docker.io/library/nginx:latest",
+			expected: defaultReg,
+		},
+		{
+			name:     "custom registry",
+			image:    "my.private.registry/my-image:latest",
+			expected: "my.private.registry",
+		},
+		{
+			name:     "custom registry with port",
+			image:    "localhost:5000/my-image:latest",
+			expected: "localhost:5000",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := resolveAuthRegistry(tt.image, defaultReg)
+			require.Equal(t, tt.expected, actual)
+		})
+	}
 }
 
 // requireValidAuthConfig checks that the given authConfigs map contains the expected keys.
