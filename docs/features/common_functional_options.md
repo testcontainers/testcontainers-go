@@ -393,6 +393,23 @@ If you need an advanced configuration for the container, modifying the container
 
 This option can be called multiple times; each modifier is chained and applied in order, with the last call applied last.
 
+##### WithHostIP
+
+- Since <a href="https://github.com/testcontainers/testcontainers-go"><span class="tc-version">:material-tag: main</span></a>
+
+By default, the exposed ports of a container are bound to all interfaces of the host (`0.0.0.0`). If you need to restrict the port bindings to a specific IP address, for example to make the container only reachable from `localhost`, you can use the `testcontainers.WithHostIP` option:
+
+```golang
+ctr, err = mymodule.Run(ctx, "docker.io/myservice:1.2.3",
+	testcontainers.WithHostIP("127.0.0.1"),
+)
+```
+
+It is also available as the `HostIP` field of the `ContainerRequest`.
+
+!!!note
+    The host IP is applied to all the exposed ports of the container. It overrides the per-port `HostIP` set with `WithHostConfigModifier`.
+
 ##### WithEndpointSettingsModifier
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
