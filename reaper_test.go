@@ -1024,6 +1024,42 @@ func Test_NewReaperUsesProviderHost(t *testing.T) {
 	require.Equal(t, host, endpointHost, "the reaper should be reached at the provider's host")
 }
 
+// removedContainer is a Container that Podman removed while it was being
+// inspected, so its inspects fail with an internal error rather than not
+// found.
+type removedContainer struct {
+	Container
+}
+
+func (removedContainer) GetContainerID() string {
+	return "removed-container"
+}
+
+func (removedContainer) State(context.Context) (*container.State, error) {
+	return nil, errPodmanRemovedDuringInspect
+}
+
+func (removedContainer) Terminate(context.Context, ...TerminateOption) error {
+	return errPodmanRemovedDuringInspect
+}
+
+// Test_ReaperRecreatedWhenRemovedDuringInspect tests that a reaper that
+// Podman removes while it's being inspected, e.g. automatically once it
+// exits, is recreated rather than failing permanently.
+func Test_ReaperRecreatedWhenRemovedDuringInspect(t *testing.T) {
+	reaperDisable(t, false)
+
+	spawner := newReaperSpawner()
+	spawner.instance = &Reaper{SessionID: testSessionID, container: removedContainer{}}
+
+	_, err := spawner.retryLocked(context.Background(), testSessionID, newMockReaperProvider(config.Config{}))()
+	require.ErrorIs(t, err, errPodmanRemovedDuringInspect)
+
+	var permanent *backoff.PermanentError
+	require.NotErrorAs(t, err, &permanent, "error should be retryable")
+	require.Nil(t, spawner.instance, "the removed reaper should be forgotten")
+}
+
 // slowInspectClient is an APIClient whose container inspects take delay, like
 // those of a slow daemon.
 type slowInspectClient struct {
