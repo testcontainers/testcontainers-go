@@ -988,6 +988,51 @@ func Test_NewReaperReplacedWhenPortNotPublished(t *testing.T) {
 	require.NotEqual(t, hide.id, reaper.container.GetContainerID(), "expected a new reaper container")
 }
 
+// networkListCounter is an APIClient that counts its network lists.
+type networkListCounter struct {
+	client.APIClient
+	lists atomic.Int32
+}
+
+func (c *networkListCounter) NetworkList(ctx context.Context, options client.NetworkListOptions) (client.NetworkListResult, error) {
+	c.lists.Add(1)
+	return c.APIClient.NetworkList(ctx, options)
+}
+
+// Test_NewReaperUsesProviderNetwork tests that a reaper is created on the
+// default network its provider has found, without finding it again.
+func Test_NewReaperUsesProviderNetwork(t *testing.T) {
+	reaperDisable(t, false)
+
+	SkipIfProviderIsNotHealthy(t)
+
+	provider, err := NewDockerProvider()
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, provider.Close()) })
+
+	counter := &networkListCounter{APIClient: provider.Client()}
+	provider.SetClient(counter)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
+	_, err = provider.ensureDefaultNetwork(ctx)
+	require.NoError(t, err)
+	counter.lists.Store(0)
+
+	sessionID := testSessionID + "-provider-network"
+	t.Cleanup(func() {
+		_, err := provider.Client().ContainerRemove(context.Background(), reaperContainerNameFromSessionID(sessionID), client.ContainerRemoveOptions{Force: true})
+		require.True(t, isCleanupSafe(err), "remove reaper: %v", err)
+	})
+
+	spawner := newReaperSpawner()
+	reaper, err := spawner.newReaper(context.WithValue(ctx, core.DockerHostContextKey, provider.host), sessionID, provider)
+	cleanupReaper(t, reaper, spawner)
+	require.NoError(t, err, "creating the Reaper should not error")
+	require.Zero(t, counter.lists.Load(), "the provider's default network should be used")
+}
+
 // Test_NewReaperUsesProviderHost tests that a reaper is reached at the host
 // its provider has resolved, as the provider's other containers are, even if
 // the host would now resolve differently.
