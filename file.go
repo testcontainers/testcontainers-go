@@ -10,6 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/testcontainers/testcontainers-go/log"
 )
@@ -113,7 +114,7 @@ func tarDir(src string, fileMode int64) (*bytes.Buffer, error) {
 }
 
 // tarFile compress a single file using tar + gzip algorithms
-func tarFile(basePath string, fileContent func(tw io.Writer) error, fileContentSize int64, fileMode int64) (*bytes.Buffer, error) {
+func tarFile(basePath string, fileContent func(tw io.Writer) error, fileContentSize int64, fileMode int64, modTime time.Time) (*bytes.Buffer, error) {
 	buffer := &bytes.Buffer{}
 
 	archivePath := path.Clean(basePath)
@@ -130,9 +131,15 @@ func tarFile(basePath string, fileContent func(tw io.Writer) error, fileContentS
 	tw := tar.NewWriter(zr)
 
 	hdr := &tar.Header{
-		Name: archivePath,
-		Mode: fileMode,
-		Size: fileContentSize,
+		Name:    archivePath,
+		Mode:    fileMode,
+		Size:    fileContentSize,
+		ModTime: modTime,
+	}
+	if !modTime.IsZero() {
+		// PAX keeps the sub-second part of the modification time,
+		// the default format rounds it to whole seconds.
+		hdr.Format = tar.FormatPAX
 	}
 	if err := tw.WriteHeader(hdr); err != nil {
 		return buffer, err
