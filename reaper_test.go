@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"testing"
@@ -69,6 +72,34 @@ func (m *mockReaperProvider) Config() TestcontainersConfig {
 	return m.config
 }
 
+func (m *mockReaperProvider) ReaperDockerProvider() *DockerProvider {
+	return nil
+}
+
+type noCloseDockerClient struct {
+	client.APIClient
+}
+
+func (noCloseDockerClient) Close() error { return nil }
+
+type wrappingReaperProvider struct {
+	inner     *DockerProvider
+	runCalled bool
+}
+
+func (w *wrappingReaperProvider) RunContainer(ctx context.Context, req ContainerRequest) (Container, error) {
+	w.runCalled = true
+	return w.inner.RunContainer(ctx, req)
+}
+
+func (w *wrappingReaperProvider) Config() TestcontainersConfig {
+	return w.inner.Config()
+}
+
+func (w *wrappingReaperProvider) ReaperDockerProvider() *DockerProvider {
+	return w.inner
+}
+
 // expectedReaperRequest creates the expected reaper container request with the given customizations.
 func expectedReaperRequest(customize ...func(*ContainerRequest)) ContainerRequest {
 	req := ContainerRequest{
@@ -121,7 +152,11 @@ func testReaperRunning(t *testing.T) {
 
 	ctx := context.Background()
 	sessionID := config.Read().SessionID
-	reaperContainer, err := spawner.lookupContainer(ctx, sessionID)
+	provider, err := ProviderDefault.GetProvider()
+	require.NoError(t, err)
+	dockerProvider, ok := provider.(*DockerProvider)
+	require.True(t, ok)
+	reaperContainer, err := spawner.lookupContainer(ctx, sessionID, dockerProvider)
 	require.NoError(t, err)
 	require.NotNil(t, reaperContainer)
 }
@@ -543,6 +578,161 @@ func reaperConnect(t *testing.T, reaper *Reaper) {
 	defer conn.Close()
 	err = reaper.handshake(conn)
 	require.NoError(t, err, "Reaper handshake should be successful")
+}
+
+func TestDockerProviderForReaperLookup(t *testing.T) {
+	t.Run("direct docker provider", func(t *testing.T) {
+		caller := &DockerProvider{}
+		dp, lookup, err := dockerProviderForReaperLookup(t.Context(), caller)
+		require.NoError(t, err)
+		require.True(t, lookup)
+		require.Same(t, caller, dp)
+	})
+
+	t.Run("wrapper exposes backing provider", func(t *testing.T) {
+		inner := &DockerProvider{
+			DockerProviderOptions: &DockerProviderOptions{
+				defaultBridgeNetworkName: Bridge,
+			},
+		}
+		wrapper := &wrappingReaperProvider{inner: inner}
+		dp, lookup, err := dockerProviderForReaperLookup(t.Context(), wrapper)
+		require.NoError(t, err)
+		require.True(t, lookup)
+		require.Same(t, inner, dp)
+	})
+
+	t.Run("mock provider skips lookup", func(t *testing.T) {
+		mock := newMockReaperProvider(config.Config{})
+		_, lookup, err := dockerProviderForReaperLookup(t.Context(), mock)
+		require.NoError(t, err)
+		require.False(t, lookup)
+	})
+}
+
+func TestReaperLookupContainerUsesCallerProvider(t *testing.T) {
+	reaperDisable(t, false)
+
+	const containerID = "abc123deadbeef"
+	listBody := fmt.Sprintf(`[{"Id":"%s","Image":"%s","State":"running","Labels":{"%s":"%s","%s":"true","%s":"true"},"Ports":[{"PrivatePort":8080,"PublicPort":49152,"Type":"tcp"}],"Names":["/reaper_%s"]}]`,
+		containerID,
+		config.ReaperDefaultImage,
+		core.LabelSessionID,
+		testSessionID,
+		core.LabelReaper,
+		core.LabelRyuk,
+		testSessionID,
+	)
+	inspectBody := fmt.Sprintf(`{"Id":"%s","State":{"Status":"running"},"NetworkSettings":{"Ports":{"8080/tcp":[{"HostIp":"0.0.0.0","HostPort":"49152"}]}}}`,
+		containerID,
+	)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/containers/json"):
+			_, _ = w.Write([]byte(listBody))
+		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/containers/") && strings.HasSuffix(r.URL.Path, "/json"):
+			_, _ = w.Write([]byte(inspectBody))
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/networks"):
+			_, _ = w.Write([]byte(`[{"Name":"bridge"},{"Name":"reaper_default"}]`))
+		default:
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusBadRequest)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	cli, err := client.New(client.WithHost(server.URL), client.WithAPIVersion("1.41"))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = cli.Close() })
+
+	callerProvider := &DockerProvider{
+		DockerProviderOptions: &DockerProviderOptions{
+			GenericProviderOptions:   &GenericProviderOptions{},
+			defaultBridgeNetworkName: Bridge,
+		},
+		client: &DockerClient{Client: cli},
+		config: config.Config{RyukDisabled: true},
+	}
+
+	found, err := spawner.lookupContainer(t.Context(), testSessionID, callerProvider)
+	require.NoError(t, err)
+	require.Same(t, callerProvider, found.provider, "lookupContainer must reuse the caller provider for host resolution")
+
+	network, err := found.provider.ensureDefaultNetwork(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, Bridge, network)
+}
+
+func TestReuseOrCreateLookupViaWrappedProvider(t *testing.T) {
+	reaperDisable(t, false)
+
+	const containerID = "feedfacecafebabe"
+	listBody := fmt.Sprintf(`[{"Id":"%s","Image":"%s","State":"running","Labels":{"%s":"%s","%s":"true","%s":"true"},"Ports":[{"PrivatePort":8080,"PublicPort":49152,"Type":"tcp"}],"Names":["/reaper_%s"]}]`,
+		containerID,
+		config.ReaperDefaultImage,
+		core.LabelSessionID,
+		testSessionID,
+		core.LabelReaper,
+		core.LabelRyuk,
+		testSessionID,
+	)
+	inspectBody := fmt.Sprintf(`{"Id":"%s","State":{"Status":"running","Running":true},"Config":{"Tty":true},"HostConfig":{"NetworkMode":"bridge"},"NetworkSettings":{"Ports":{"8080/tcp":[{"HostIp":"0.0.0.0","HostPort":"49152"}]}}}`,
+		containerID,
+	)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/containers/json"):
+			_, _ = w.Write([]byte(listBody))
+		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/containers/") && strings.HasSuffix(r.URL.Path, "/json"):
+			_, _ = w.Write([]byte(inspectBody))
+		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/containers/") && strings.HasSuffix(r.URL.Path, "/logs"):
+			w.Header().Set("Content-Type", "text/plain")
+			_, _ = w.Write([]byte("Started\n"))
+		default:
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusBadRequest)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	cli, err := client.New(client.WithHost(server.URL), client.WithAPIVersion("1.41"))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = cli.Close() })
+
+	inner := &DockerProvider{
+		DockerProviderOptions: &DockerProviderOptions{
+			GenericProviderOptions:   &GenericProviderOptions{},
+			defaultBridgeNetworkName: Bridge,
+		},
+		client: noCloseDockerClient{APIClient: cli},
+		config: config.Config{RyukDisabled: true},
+	}
+	wrapper := &wrappingReaperProvider{inner: inner}
+
+	ln, err := net.Listen("tcp", "127.0.0.1:49152")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = ln.Close() })
+	go func() {
+		for {
+			conn, acceptErr := ln.Accept()
+			if acceptErr != nil {
+				return
+			}
+			_ = conn.Close()
+		}
+	}()
+
+	localSpawner := &reaperSpawner{}
+	reaper, err := localSpawner.reuseOrCreate(t.Context(), testSessionID, wrapper)
+	require.NoError(t, err)
+	require.NotNil(t, reaper)
+	require.False(t, wrapper.runCalled, "reuseOrCreate must discover the existing reaper without calling RunContainer on the wrapper")
+	require.Equal(t, containerID, reaper.container.GetContainerID())
+	require.NotEmpty(t, reaper.Endpoint)
 }
 
 func TestSpawnerBackoff(t *testing.T) {
