@@ -1109,6 +1109,54 @@ func Test_ReaperRecreatedWhenRemovedDuringInspect(t *testing.T) {
 	require.Nil(t, spawner.instance, "the removed reaper should be forgotten")
 }
 
+// runningContainer is a Container that is running, and records when it is
+// terminated.
+type runningContainer struct {
+	Container
+	terminated atomic.Bool
+}
+
+func (*runningContainer) GetContainerID() string {
+	return "running-container"
+}
+
+func (*runningContainer) State(context.Context) (*container.State, error) {
+	return &container.State{Status: container.StateRunning, Running: true}, nil
+}
+
+func (c *runningContainer) Terminate(context.Context, ...TerminateOption) error {
+	c.terminated.Store(true)
+	return nil
+}
+
+// Test_ReaperRecreatedWhenNotAcknowledging tests that a running reaper that
+// closes connections without acknowledging them, e.g. as ryuk shuts down
+// after its reconnection timeout, is terminated and recreated rather than
+// failing permanently.
+func Test_ReaperRecreatedWhenNotAcknowledging(t *testing.T) {
+	reaperDisable(t, false)
+
+	// Reads the filters, then closes without acknowledging them.
+	port := serveTCP(t, func(conn net.Conn) {
+		_, _ = bufio.NewReader(conn).ReadString('\n')
+	})
+	ctr := &runningContainer{}
+	spawner := newReaperSpawner()
+	spawner.instance = &Reaper{
+		SessionID: testSessionID,
+		Endpoint:  net.JoinHostPort("127.0.0.1", strconv.Itoa(int(port))),
+		container: ctr,
+	}
+
+	_, err := spawner.retryLocked(context.Background(), testSessionID, newMockReaperProvider(config.Config{}))()
+	require.ErrorIs(t, err, io.EOF)
+
+	var permanent *backoff.PermanentError
+	require.NotErrorAs(t, err, &permanent, "error should be retryable")
+	require.Nil(t, spawner.instance, "the reaper should be forgotten")
+	require.True(t, ctr.terminated.Load(), "the reaper should be terminated")
+}
+
 // slowInspectClient is an APIClient whose container inspects take delay, like
 // those of a slow daemon.
 type slowInspectClient struct {
@@ -2634,6 +2682,11 @@ func TestSpawnerRetryError(t *testing.T) {
 		{
 			name:      "syscall.ETIMEDOUT",
 			err:       fmt.Errorf("foo: %w", syscall.ETIMEDOUT),
+			permanent: false,
+		},
+		{
+			name:      "io.EOF",
+			err:       fmt.Errorf("connect: handshake: read ack: %w", io.EOF),
 			permanent: false,
 		},
 		{
