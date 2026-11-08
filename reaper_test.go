@@ -2519,7 +2519,12 @@ func TestReaper_reuseItFromOtherTestProgramUsingDocker(t *testing.T) {
 func TestReaper_ReuseRunning(t *testing.T) {
 	reaperDisable(t, false)
 
-	const concurrency = 64
+	concurrency := 64
+	if core.ConfiguredProviderName() == "sbx" {
+		// The sbx proxy publishes ports for each create, including those that
+		// fail on the reaper's name, one at a time, see #4096.
+		concurrency = 32
+	}
 
 	timeout, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
