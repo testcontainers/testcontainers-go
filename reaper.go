@@ -426,6 +426,8 @@ func (r *reaperSpawner) retryError(err error) error {
 		errors.Is(err, syscall.ECONNRESET),
 		errors.Is(err, syscall.ECONNABORTED),
 		errors.Is(err, syscall.ETIMEDOUT),
+		errors.Is(err, io.EOF),
+		errors.Is(err, io.ErrUnexpectedEOF),
 		errors.Is(err, os.ErrDeadlineExceeded),
 		errors.As(err, &timeout) && timeout.Timeout(),
 		errors.Is(err, context.DeadlineExceeded),
