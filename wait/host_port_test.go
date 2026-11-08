@@ -3,11 +3,13 @@ package wait
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net"
 	"net/netip"
+	"strconv"
 	"testing"
 	"time"
 
@@ -627,4 +629,100 @@ func TestHostPortStrategySucceedsGivenShellIsNotFound(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Contains(t, buf.String(), "Shell not found in container")
+}
+
+type timeoutErr struct{}
+
+func (timeoutErr) Error() string   { return "operation timed out" }
+func (timeoutErr) Timeout() bool   { return true }
+func (timeoutErr) Temporary() bool { return true }
+
+func TestIsRetryableDialErr(t *testing.T) {
+	connTimeout := &net.OpError{Op: "dial", Net: "tcp", Err: timeoutErr{}}
+
+	t.Run("connect-timeout-with-live-context", func(t *testing.T) {
+		require.True(t, isRetryableDialErr(context.Background(), connTimeout))
+	})
+
+	t.Run("connect-timeout-with-expired-context", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		require.False(t, isRetryableDialErr(ctx, connTimeout))
+	})
+
+	t.Run("other-error", func(t *testing.T) {
+		require.False(t, isRetryableDialErr(context.Background(), errors.New("boom")))
+	})
+}
+
+func newRunningMockTarget() *MockStrategyTarget {
+	return &MockStrategyTarget{
+		StateImpl: func(_ context.Context) (*container.State, error) {
+			return &container.State{Running: true}, nil
+		},
+	}
+}
+
+// closedPort returns a loopback port that refuses connections.
+func closedPort(t *testing.T) network.Port {
+	t.Helper()
+
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	port := network.MustParsePort(strconv.Itoa(l.Addr().(*net.TCPAddr).Port))
+	require.NoError(t, l.Close())
+	return port
+}
+
+func TestExternalCheckRetriesUntilPortOpens(t *testing.T) {
+	port := closedPort(t)
+
+	done := make(chan error, 1)
+	go func() {
+		done <- externalCheck(context.Background(), "127.0.0.1", port, newRunningMockTarget(), 20*time.Millisecond)
+	}()
+
+	// let a few attempts hit the closed port before opening it
+	time.Sleep(150 * time.Millisecond)
+	select {
+	case err := <-done:
+		t.Fatalf("externalCheck returned before the port was open: %v", err)
+	default:
+	}
+
+	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port.Num()))
+	if err != nil {
+		t.Skipf("could not re-bind port %d: %v", port.Num(), err)
+	}
+	t.Cleanup(func() { _ = l.Close() })
+
+	select {
+	case err := <-done:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("externalCheck did not succeed after the port opened")
+	}
+}
+
+func TestExternalCheckStopsWaitingWhenContextExpiresDuringPollInterval(t *testing.T) {
+	port := closedPort(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+
+	// The poll interval is far longer than the context, so a plain
+	// time.Sleep would block for an hour instead of returning at the deadline.
+	start := time.Now()
+	done := make(chan error, 1)
+	go func() {
+		done <- externalCheck(ctx, "127.0.0.1", port, newRunningMockTarget(), time.Hour)
+	}()
+
+	select {
+	case err := <-done:
+		require.ErrorIs(t, err, context.DeadlineExceeded)
+		require.Less(t, time.Since(start), 5*time.Second)
+	case <-time.After(10 * time.Second):
+		t.Fatal("externalCheck kept sleeping after the context expired")
+	}
 }

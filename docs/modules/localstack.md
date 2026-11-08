@@ -83,7 +83,7 @@ You can use the AWS SDK for Go to create a client for the LocalStack container. 
 ### AWS SDK v1
 
 <!--codeinclude-->
-[AWS SDK v1](../../modules/localstack/v1/s3_test.go) inside_block:awsSDKClientV1
+[AWS SDK v1](../../modules/localstack/examples/v1/s3_test.go) inside_block:awsSDKClientV1
 <!--/codeinclude-->
 
 For further reference on the SDK v1, please check out the AWS docs [here](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/setting-up.html).
@@ -91,11 +91,11 @@ For further reference on the SDK v1, please check out the AWS docs [here](https:
 ### AWS SDK v2
 
 <!--codeinclude-->
-[EndpointResolver](../../modules/localstack/v2/s3_test.go) inside_block:awsResolverV2
-[AWS SDK v2](../../modules/localstack/v2/s3_test.go) inside_block:awsSDKClientV2
+[EndpointResolver](../../modules/localstack/examples/v2/s3_test.go) inside_block:awsResolverV2
+[AWS SDK v2](../../modules/localstack/examples/v2/s3_test.go) inside_block:awsSDKClientV2
 <!--/codeinclude-->
 
-For further reference on the SDK v2, please check out the AWS docs [here](https://aws.github.io/aws-sdk-go-v2/docs/getting-started)
+For further reference on the SDK v2, please check out the AWS docs [here](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/getting-started.html)
 
 ## Testing the module
 
@@ -106,6 +106,9 @@ cd modules/localstack
 make test
 ```
 
-!!!info
-	At this moment, the tests for the module include tests for the S3 service, only. They live in two different Go packages of the LocalStack module,
-    `v1` and `v2`, where it'll be easier to add more examples for the rest of services.
+The AWS SDK integration tests live in the separate `examples` module, in the `v1` and `v2` packages:
+
+```sh
+cd modules/localstack/examples
+make test
+```

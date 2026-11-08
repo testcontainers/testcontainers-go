@@ -47,8 +47,9 @@ Please just be sure to:
     * For linting just the modules: `make -C modules lint-modules`
     * For linting just the examples: `make -C examples lint-examples`
     * For linting just the modulegen: `make -C modulegen lint`
-* verify all tests are passing. Build and test the project with `make test-all` to do this.
+* verify tests are passing in each affected Go module. Root `make test-all` builds and tests the core module; it does not traverse nested `go.mod` files.
     * For a given module or example, go to the module or example directory and run `make test`.
+    * For a technology module with SDK examples, run both `make -C modules/<name> test` and `make -C modules/<name>/examples test` from the repository root.
     * If you find an `ld warning` message on MacOS, you can ignore it. It is indeed a warning: https://github.com/golang/go/issues/61229
 > === Errors
 > ld: warning: '/private/var/folders/3y/8hbf585d4yl6f8j5yzqx6wz80000gn/T/go-link-2319589277/000018.o' has malformed LC_DYSYMTAB, expected 98 undefined symbols to start at index 1626, found 95 undefined symbols starting at index 1626
@@ -58,6 +59,7 @@ Please just be sure to:
 ### Module contribution 
 
 For detailed policies on module development and contributions, please refer to the [Module Index page](./modules/index.md).
+Service SDKs and SDK-backed tests belong in a [separate examples Go module](./modules/index.md#separate-sdk-examples-modules), with container and configuration tests kept in the parent.
 
 ## Documentation contributions
 
@@ -105,6 +107,7 @@ in the snippet, and each `targeting_expression` would be:
 - `inside_block:someString`
 
 Please refer to the [codeinclude plugin documentation](https://github.com/rnorth/mkdocs-codeinclude-plugin) for more information.
+When moving SDK snippets, preserve their markers and update their paths to the [nested examples module](./modules/index.md#separate-sdk-examples-modules).
 
 ### Previewing rendered content
 

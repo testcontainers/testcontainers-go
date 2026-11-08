@@ -28,10 +28,14 @@ func TestReaperReapsOrphans(t *testing.T) {
 	}
 
 	ctx := t.Context()
+	session := uuid.NewString()
+	childEnv := sharedDaemonChildEnv(t,
+		"TCGO_REAPER_CHILD=1",
+		"TESTCONTAINERS_SESSION_ID="+session,
+	)
 	cli, err := NewDockerClientWithOpts(ctx)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = cli.Close() })
-	session := uuid.NewString()
 	filters := make(client.Filters).Add("label", core.LabelSessionID+"="+session)
 	t.Cleanup(func() {
 		// Collect evidence before fallback cleanup, including Ryuk's logs.
@@ -73,7 +77,7 @@ func TestReaperReapsOrphans(t *testing.T) {
 	childCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
 	cmd := exec.CommandContext(childCtx, binary, "-test.run=^TestReaperReapsOrphans$", "-test.v")
-	cmd.Env = append(os.Environ(), "TCGO_REAPER_CHILD=1", "TESTCONTAINERS_SESSION_ID="+session)
+	cmd.Env = childEnv
 	output, err := cmd.CombinedOutput()
 	require.NoError(t, err, "orphan child: %s", output)
 

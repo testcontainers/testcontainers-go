@@ -171,7 +171,7 @@ tests very modular, since they always run on a brand-new database.
     not work if the database for the container is set to `"postgres"`.
 
 <!--codeinclude-->
-[Test with a reusable Postgres container](../../modules/postgres/postgres_test.go) inside_block:snapshotAndReset
+[Test with a reusable Postgres container](../../modules/postgres/examples/postgres_test.go) inside_block:snapshotAndReset
 <!--/codeinclude-->
 
 ### Snapshot/Restore with custom driver
@@ -198,5 +198,6 @@ import (
 The above code snippet is importing the `pgx` driver and the _Testcontainers for Go_ Postgres module.
 
 <!--codeinclude-->
-[Snapshot/Restore with custom driver](../../modules/postgres/postgres_test.go) inside_block:snapshotAndReset
+[Snapshot/Restore with custom driver](../../modules/postgres/examples/postgres_test.go) inside_block:snapshotAndReset
 <!--/codeinclude-->
+Client queries, SQL readiness, and registered-driver snapshot tests run from the separate `modules/postgres/examples` module with `make test`.

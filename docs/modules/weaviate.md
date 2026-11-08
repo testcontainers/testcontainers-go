@@ -64,17 +64,23 @@ This method returns the Schema and Host for the Weaviate container, using the de
     At the moment, the Weaviate module only supports the HTTP schema.
 
 <!--codeinclude-->
-[HTTP Host Address](../../modules/weaviate/examples_test.go) inside_block:httpHostAddress
+[HTTP Host Address](../../modules/weaviate/examples/examples_test.go) inside_block:httpHostAddress
 <!--/codeinclude-->
 
 #### gRPC Host Address
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.30.0"><span class="tc-version">:material-tag: v0.30.0</span></a>
 
-This method returns the Schema and Host for the Weaviate container, using the default `443` port.
+This method returns the host and mapped port for the Weaviate container's `50051/tcp` gRPC port.
 
 <!--codeinclude-->
-[gRPC Host Address](../../modules/weaviate/examples_test.go) inside_block:grpcHostAddress
+[gRPC Host Address](../../modules/weaviate/examples/examples_test.go) inside_block:grpcHostAddress
+<!--/codeinclude-->
+
+The gRPC health RPC is tested in the separate `modules/weaviate/examples` Go module, which keeps the gRPC client dependency out of the parent's direct requirements.
+
+<!--codeinclude-->
+[Checking gRPC health](../../modules/weaviate/examples/weaviate_test.go) inside_block:grpcHealthCheck
 <!--/codeinclude-->
 
 ## Examples
@@ -87,13 +93,13 @@ First of all, you need to import the Weaviate client:
 
 ```golang
 import (
-    "github.com/weaviate/weaviate-go-client/v4/weaviate"
+    "github.com/weaviate/weaviate-go-client/v5/weaviate"
 )
 ```
 
 Then, you can create a Weaviate client using the Weaviate module:
 
 <!--codeinclude-->
-[Get the client](../../modules/weaviate/examples_test.go) inside_block:createClientNoModules
-[Get the client And Modules](../../modules/weaviate/examples_test.go) inside_block:createClientAndModules
+[Get the client](../../modules/weaviate/examples/examples_test.go) inside_block:createClientNoModules
+[Get the client And Modules](../../modules/weaviate/examples/examples_test.go) inside_block:createClientAndModules
 <!--/codeinclude-->

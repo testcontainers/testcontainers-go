@@ -178,3 +178,12 @@ type nilWaitStrategy struct{}
 func (s *nilWaitStrategy) WaitUntilReady(_ context.Context, _ StrategyTarget) error {
 	return nil
 }
+
+func TestMultiStrategy_ValueStrategy(t *testing.T) {
+	strategy := ForAll(valueStrategy{})
+
+	require.NotPanics(t, func() {
+		require.Contains(t, strategy.String(), "valueStrategy")
+		require.NoError(t, strategy.WaitUntilReady(context.Background(), NopStrategyTarget{}))
+	})
+}

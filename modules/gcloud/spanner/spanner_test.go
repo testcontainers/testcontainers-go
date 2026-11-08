@@ -2,23 +2,19 @@ package spanner_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"log"
+	"net"
+	"net/http"
 	"testing"
+	"time"
 
-	"cloud.google.com/go/spanner"
-	database "cloud.google.com/go/spanner/admin/database/apiv1"
-	databasepb "cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
-	instance "cloud.google.com/go/spanner/admin/instance/apiv1"
-	instancepb "cloud.google.com/go/spanner/admin/instance/apiv1/instancepb"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/api/option"
-	"google.golang.org/api/option/internaloption"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/gcloud/internal/testrest"
 	tcspanner "github.com/testcontainers/testcontainers-go/modules/gcloud/spanner"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func TestRun(t *testing.T) {
@@ -28,6 +24,9 @@ func TestRun(t *testing.T) {
 		ctx,
 		"gcr.io/cloud-spanner-emulator/emulator:1.5.40",
 		tcspanner.WithProjectID("spanner-project"),
+		// The image runs a REST gateway on 9020 in addition to gRPC on 9010.
+		testcontainers.WithExposedPorts("9020/tcp"),
+		testcontainers.WithAdditionalWaitStrategy(wait.ForListeningPort("9020/tcp")),
 	)
 	testcontainers.CleanupContainer(t, spannerContainer)
 	require.NoError(t, err)
@@ -39,67 +38,106 @@ func TestRun(t *testing.T) {
 		databaseName = "test-db"
 	)
 
-	options := []option.ClientOption{
-		option.WithEndpoint(spannerContainer.URI()),
-		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
-		option.WithoutAuthentication(),
-		internaloption.SkipDialSettingsValidation(),
+	requestCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+	// Keep coverage of the public gRPC URI alongside the REST operations below.
+	host, err := spannerContainer.Host(requestCtx)
+	require.NoError(t, err)
+	port, err := spannerContainer.MappedPort(requestCtx, "9010/tcp")
+	require.NoError(t, err)
+	require.Equal(t, net.JoinHostPort(host, port.Port()), spannerContainer.URI())
+	conn, err := (&net.Dialer{Timeout: 5 * time.Second}).DialContext(requestCtx, "tcp", spannerContainer.URI())
+	require.NoError(t, err)
+	require.NoError(t, conn.Close())
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	defer client.CloseIdleConnections()
+	endpoint, err := spannerContainer.PortEndpoint(requestCtx, "9020/tcp", "http")
+	require.NoError(t, err)
+	endpoint += "/v1/"
+
+	type operation struct {
+		Name  string `json:"name"`
+		Done  bool   `json:"done"`
+		Error *struct {
+			Code    int    `json:"code"`
+			Message string `json:"message"`
+		} `json:"error"`
+		Response json.RawMessage `json:"response"`
 	}
-
-	instanceAdmin, err := instance.NewInstanceAdminClient(ctx, options...)
-	if err != nil {
-		log.Printf("failed to create instance admin client: %v", err)
-		return
+	// Both admin calls return long-running operations. Poll their returned
+	// resource names and check errors just as Operation.Wait does.
+	waitOperation := func(op operation) {
+		t.Helper()
+		require.NotEmpty(t, op.Name)
+		operationName := op.Name
+		for !op.Done {
+			select {
+			case <-requestCtx.Done():
+				t.Fatalf("wait for %s: %v", operationName, requestCtx.Err())
+			case <-time.After(100 * time.Millisecond):
+			}
+			op = operation{}
+			require.NoError(t, testrest.Do(requestCtx, client, http.MethodGet, endpoint+operationName, nil, &op))
+		}
+		require.Nil(t, op.Error, "operation %s failed: %+v", operationName, op.Error)
+		require.NotEmpty(t, op.Response)
 	}
-	defer instanceAdmin.Close()
+	var instanceOp operation
+	require.NoError(t, testrest.Do(requestCtx, client, http.MethodPost, endpoint+"projects/"+projectID+"/instances", map[string]any{
+		"instanceId": instanceID,
+		"instance":   map[string]string{"displayName": instanceID},
+	}, &instanceOp))
+	waitOperation(instanceOp)
 
-	instanceOp, err := instanceAdmin.CreateInstance(ctx, &instancepb.CreateInstanceRequest{
-		Parent:     "projects/" + projectID,
-		InstanceId: instanceID,
-		Instance: &instancepb.Instance{
-			DisplayName: instanceID,
-		},
-	})
-	require.NoError(t, err)
+	instanceName := fmt.Sprintf("projects/%s/instances/%s", projectID, instanceID)
+	var databaseOp operation
+	require.NoError(t, testrest.Do(requestCtx, client, http.MethodPost, endpoint+instanceName+"/databases", map[string]any{
+		"createStatement": fmt.Sprintf("CREATE DATABASE `%s`", databaseName),
+		"extraStatements": []string{"CREATE TABLE Languages (Language STRING(MAX), Mascot STRING(MAX)) PRIMARY KEY (Language)"},
+	}, &databaseOp))
+	waitOperation(databaseOp)
 
-	_, err = instanceOp.Wait(ctx)
-	require.NoError(t, err)
+	db := instanceName + "/databases/" + databaseName
+	var session struct {
+		Name string `json:"name"`
+	}
+	require.NoError(t, testrest.Do(requestCtx, client, http.MethodPost, endpoint+db+"/sessions", map[string]any{}, &session))
+	require.NotEmpty(t, session.Name)
+	defer func() {
+		cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cleanupCancel()
+		require.NoError(t, testrest.Do(cleanupCtx, client, http.MethodDelete, endpoint+session.Name, nil, nil))
+	}()
 
-	c, err := database.NewDatabaseAdminClient(ctx, options...)
-	require.NoError(t, err)
-	defer c.Close()
+	require.NoError(t, testrest.Do(requestCtx, client, http.MethodPost, endpoint+session.Name+":commit", map[string]any{
+		"singleUseTransaction": map[string]any{"readWrite": map[string]any{}},
+		"mutations": []any{map[string]any{"insert": map[string]any{
+			"table":   "Languages",
+			"columns": []string{"language", "mascot"},
+			"values":  [][]string{{"Go", "Gopher"}},
+		}}},
+	}, nil))
 
-	databaseOp, err := c.CreateDatabase(ctx, &databasepb.CreateDatabaseRequest{
-		Parent:          fmt.Sprintf("projects/%s/instances/%s", projectID, instanceID),
-		CreateStatement: fmt.Sprintf("CREATE DATABASE `%s`", databaseName),
-		ExtraStatements: []string{
-			"CREATE TABLE Languages (Language STRING(MAX), Mascot STRING(MAX)) PRIMARY KEY (Language)",
-		},
-	})
-	require.NoError(t, err)
-
-	_, err = databaseOp.Wait(ctx)
-	require.NoError(t, err)
-
-	db := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectID, instanceID, databaseName)
-	client, err := spanner.NewClient(ctx, db, options...)
-	require.NoError(t, err)
-	defer client.Close()
-
-	_, err = client.Apply(ctx, []*spanner.Mutation{
-		spanner.Insert("Languages",
-			[]string{"language", "mascot"},
-			[]any{"Go", "Gopher"}),
-	})
-	require.NoError(t, err)
-
-	row, err := client.Single().ReadRow(ctx, "Languages",
-		spanner.Key{"Go"}, []string{"mascot"})
-	require.NoError(t, err)
-
-	var mascot string
-	err = row.ColumnByName("Mascot", &mascot)
-	require.NoError(t, err)
-
-	require.Equal(t, "Gopher", mascot)
+	var result struct {
+		Metadata struct {
+			RowType struct {
+				Fields []struct {
+					Name string `json:"name"`
+				} `json:"fields"`
+			} `json:"rowType"`
+		} `json:"metadata"`
+		Rows [][]string `json:"rows"`
+	}
+	require.NoError(t, testrest.Do(requestCtx, client, http.MethodPost, endpoint+session.Name+":read", map[string]any{
+		"table":       "Languages",
+		"columns":     []string{"mascot"},
+		"keySet":      map[string]any{"keys": [][]string{{"Go"}}},
+		"transaction": map[string]any{"singleUse": map[string]any{"readOnly": map[string]bool{"strong": true}}},
+	}, &result))
+	require.Len(t, result.Metadata.RowType.Fields, 1)
+	require.Equal(t, "Mascot", result.Metadata.RowType.Fields[0].Name)
+	require.Len(t, result.Rows, 1)
+	require.Len(t, result.Rows[0], 1)
+	require.Equal(t, "Gopher", result.Rows[0][0])
 }

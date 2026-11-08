@@ -72,6 +72,40 @@ func TestWalk(t *testing.T) {
 		require.Zero(t, matched)
 	})
 
+	t.Run("any", func(t *testing.T) {
+		req := testcontainers.ContainerRequest{
+			WaitingFor: wait.ForAny(
+				wait.ForFile("/tmp/file"),
+				wait.ForHTTP("/health"),
+				wait.ForAny(
+					wait.ForFile("/tmp/other"),
+				),
+			),
+		}
+
+		var count, matched int
+		err := wait.Walk(&req.WaitingFor, func(s wait.Strategy) error {
+			count++
+			if _, ok := s.(*wait.FileStrategy); ok {
+				matched++
+				return wait.ErrVisitRemove
+			}
+
+			return nil
+		})
+		require.NoError(t, err)
+		require.Equal(t, 5, count)
+		require.Equal(t, 2, matched)
+
+		count = 0
+		err = wait.Walk(&req.WaitingFor, func(_ wait.Strategy) error {
+			count++
+			return nil
+		})
+		require.NoError(t, err)
+		require.Equal(t, 3, count)
+	})
+
 	t.Run("remove-stop", func(t *testing.T) {
 		req := testcontainers.ContainerRequest{
 			WaitingFor: wait.ForAll(

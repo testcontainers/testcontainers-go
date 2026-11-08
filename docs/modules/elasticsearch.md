@@ -91,5 +91,5 @@ In the case you configured the Elasticsearch container to set up a password, you
 First, you must install the Elasticsearch Go client, so please read their [install guide](https://www.elastic.co/guide/en/elasticsearch/client/go-api/current/installation.html) for more information.
 
 <!--codeinclude-->
-[Create an Elasticsearch client](../../modules/elasticsearch/examples_test.go) inside_block:elasticsearchClient
+[Create an Elasticsearch client](../../modules/elasticsearch/examples/examples_test.go) inside_block:elasticsearchClient
 <!--/codeinclude-->

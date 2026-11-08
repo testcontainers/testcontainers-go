@@ -88,7 +88,7 @@ The Valkey container exposes the following methods:
 This method returns the connection string to connect to the Valkey container, using the default `6379` port.
 
 <!--codeinclude-->
-[Get connection string](../../modules/valkey/valkey_test.go) inside_block:connectionString
+[Get connection string](../../modules/valkey/examples/examples_test.go) inside_block:connectionString
 <!--/codeinclude-->
 
 #### TLSConfig
@@ -98,7 +98,7 @@ This method returns the connection string to connect to the Valkey container, us
 This method returns the TLS configuration for the Valkey container, nil if TLS is not enabled.
 
 <!--codeinclude-->
-[Get TLS config](../../modules/valkey/valkey_test.go) inside_block:tlsConfig
+[Get TLS config](../../modules/valkey/examples/examples_test.go) inside_block:tlsConfig
 <!--/codeinclude-->
 
 In the above example, the options are used to configure a Valkey client with TLS enabled.

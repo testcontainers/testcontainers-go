@@ -20,6 +20,20 @@ go get github.com/testcontainers/testcontainers-go/modules/inbucket
 [Creating an Inbucket container](../../modules/inbucket/examples_test.go) inside_block:runInbucketContainer
 <!--/codeinclude-->
 
+### Send and list messages with the Inbucket client
+
+Install the client used by this example:
+
+```sh
+go get github.com/inbucket/inbucket@v2.0.0+incompatible
+```
+
+The example lists an empty mailbox, delivers a message over SMTP, and lists the mailbox again.
+
+<!--codeinclude-->
+[Send and list messages](../../modules/inbucket/examples/examples_test.go) inside_block:mailboxDelivery
+<!--/codeinclude-->
+
 ## Module Reference
 
 ### Run function

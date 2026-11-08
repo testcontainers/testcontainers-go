@@ -20,6 +20,14 @@ go get github.com/testcontainers/testcontainers-go/modules/mysql
 [Creating a MySQL container](../../modules/mysql/examples_test.go) inside_block:runMySQLContainer
 <!--/codeinclude-->
 
+The [client examples](https://github.com/testcontainers/testcontainers-go/tree/main/modules/mysql/examples) use `database/sql` with the
+`github.com/go-sql-driver/mysql` driver, registered with a blank import. Run them
+from `modules/mysql/examples`; their fixture paths refer to `../testdata`.
+
+<!--codeinclude-->
+[Connecting with the Go SQL driver](../../modules/mysql/examples/examples_test.go) inside_block:connectMySQL
+<!--/codeinclude-->
+
 ## Module Reference
 
 ### Run function

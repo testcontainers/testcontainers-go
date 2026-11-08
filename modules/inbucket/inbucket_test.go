@@ -2,10 +2,14 @@ package inbucket
 
 import (
 	"context"
+	"encoding/json"
+	"io"
+	"net/http"
 	"net/smtp"
+	"net/url"
 	"testing"
+	"time"
 
-	"github.com/inbucket/inbucket/pkg/rest/client"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -27,11 +31,33 @@ func TestInbucket(t *testing.T) {
 	webInterfaceURL, err := ctr.WebInterface(ctx)
 	// }
 	require.NoError(t, err)
-	restClient, err := client.New(webInterfaceURL)
-	require.NoError(t, err)
+	httpClient := &http.Client{Timeout: 30 * time.Second}
+	listMailbox := func() []struct {
+		ID string `json:"id"`
+	} {
+		t.Helper()
+		request, err := http.NewRequestWithContext(ctx, http.MethodGet,
+			webInterfaceURL+"/api/v1/mailbox/"+url.QueryEscape("to@example.org"), nil)
+		require.NoError(t, err)
 
-	headers, err := restClient.ListMailbox("to@example.org")
-	require.NoError(t, err)
+		response, err := httpClient.Do(request)
+		require.NoError(t, err)
+		defer response.Body.Close()
+
+		const maxBody = 1 << 20
+		body, err := io.ReadAll(io.LimitReader(response.Body, maxBody+1))
+		require.NoError(t, err)
+		require.LessOrEqual(t, len(body), maxBody, "mailbox response exceeds limit")
+		require.Equal(t, http.StatusOK, response.StatusCode, "%s", body)
+
+		var headers []struct {
+			ID string `json:"id"`
+		}
+		require.NoError(t, json.Unmarshal(body, &headers))
+		return headers
+	}
+
+	headers := listMailbox()
 	require.Empty(t, headers)
 
 	msg := []byte("To: to@example.org\r\n" +
@@ -41,7 +67,6 @@ func TestInbucket(t *testing.T) {
 	err = smtp.SendMail(smtpURL, nil, "from@example.org", []string{"to@example.org"}, msg)
 	require.NoError(t, err)
 
-	headers, err = restClient.ListMailbox("to@example.org")
-	require.NoError(t, err)
+	headers = listMailbox()
 	require.Len(t, headers, 1)
 }

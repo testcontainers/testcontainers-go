@@ -44,8 +44,4 @@ func TestSolace(t *testing.T) {
 	origin, err := ctr.BrokerURLFor(ctx, sc.ServiceAMQP)
 	require.NoError(t, err)
 	require.Contains(t, origin, "amqp://")
-
-	// Test message publishing and consumption using Solace SDK
-	err = testMessagePublishAndConsume(ctr, queueName, topicName)
-	require.NoError(t, err, "Message publish and consume test should pass")
 }

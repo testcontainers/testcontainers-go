@@ -50,6 +50,9 @@ func init() {
 }
 
 func TestContainerWithHostNetworkOptions(t *testing.T) {
+	if core.ConfiguredProviderName() == "sbx" {
+		t.Skip("sbx does not support host network mode; managed port forwarding requires published ports")
+	}
 	if os.Getenv("XDG_RUNTIME_DIR") != "" {
 		t.Skip("Skipping test that requires host network access when running in a container")
 	}
@@ -110,6 +113,9 @@ func TestContainerWithHostNetworkOptions_UseExposePortsFromImageConfigs(t *testi
 }
 
 func TestContainerWithHostNetwork(t *testing.T) {
+	if core.ConfiguredProviderName() == "sbx" {
+		t.Skip("sbx does not support host network mode; managed port forwarding requires published ports")
+	}
 	if os.Getenv("XDG_RUNTIME_DIR") != "" {
 		t.Skip("Skipping test that requires host network access when running in a container")
 	}
@@ -1513,6 +1519,9 @@ func TestGetGatewayIP(t *testing.T) {
 }
 
 func TestNetworkModeWithContainerReference(t *testing.T) {
+	if core.ConfiguredProviderName() == "sbx" {
+		t.Skip("sbx does not support container network mode; managed port forwarding requires published ports")
+	}
 	ctx := context.Background()
 	nginxA, err := Run(ctx, nginxAlpineImage)
 	CleanupContainer(t, nginxA)

@@ -1,17 +1,17 @@
 # Tekton
 
-To enable access to Docker in Tekton, a dind sidecar needs to be added. An example of it can be found 
-[here](https://github.com/tektoncd/pipeline/blob/main/examples/v1beta1/taskruns/dind-sidecar.yaml)
+To enable access to Docker in Tekton, a dind sidecar needs to be added. An example of it can be found in the
+[Tekton dind-sidecar example](https://github.com/tektoncd/pipeline/blob/main/examples/v1/taskruns/dind-sidecar.yaml).
 
 This is an example
 
 ```yaml
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: run-tests
-  description: Run Tests
 spec:
+  description: Run Tests
   workspaces:
     - name: source
   steps:
@@ -38,7 +38,7 @@ spec:
     - name: dind-socket
       emptyDir: { }
 ---
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
   name: testcontainers-demo
@@ -72,7 +72,7 @@ spec:
         - name: source
           workspace: shared-data
 ---
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   name: testcontainers-demo-run
