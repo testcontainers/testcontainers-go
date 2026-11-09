@@ -649,7 +649,7 @@ func mergePortBindings(configPortMap network.PortMap, exposedPortSet network.Por
 	return exposedPortMap
 }
 
-// defaultHostConfigModifier provides a default modifier including the deprecated fields
+// defaultConfigModifier applies Hostname, WorkingDir, and User from the container request.
 func defaultConfigModifier(req ContainerRequest) func(config *container.Config) {
 	return func(config *container.Config) {
 		config.Hostname = req.Hostname
