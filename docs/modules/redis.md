@@ -16,6 +16,8 @@ go get github.com/testcontainers/testcontainers-go/modules/redis
 
 ## Usage example
 
+Start Redis with its default configuration; no local configuration file is required.
+
 <!--codeinclude-->
 [Creating a Redis container](../../modules/redis/examples_test.go) inside_block:runRedisContainer
 <!--/codeinclude-->
@@ -74,6 +76,14 @@ By default Redis produces a log message to the standard Redis log, the format ac
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 In the case you have a custom config file for Redis, it's possible to copy that file into the container before it's started. E.g. `WithConfigFile(filepath.Join("testdata", "redis7.conf"))`.
+
+The configuration file must exist on the host. For example, the following uses
+[`testdata/redis7.conf`](https://github.com/testcontainers/testcontainers-go/blob/main/modules/redis/testdata/redis7.conf)
+from this repository, together with optional snapshotting and log settings:
+
+<!--codeinclude-->
+[Creating a Redis container with a configuration file](../../modules/redis/examples_test.go) inside_block:configuredRedisContainer
+<!--/codeinclude-->
 
 #### WithTLS
 
