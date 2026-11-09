@@ -4,7 +4,7 @@ The log-following functionality follows a producer-consumer model: the container
 So if you wish to follow container logs, you have to do two things:
 
 1. set up log consumers.
-2. configure the log production of the container (e.g. timeout for the logs).
+2. optionally configure the log production of the container.
 
 As logs are written to either `stdout`, or `stderr` (`stdin` is not supported) they will be forwarded (produced) to any associated log consumer.
 
@@ -39,7 +39,7 @@ Please check that it's possible to configure the log production with a slice of 
 type LogProductionOption func(*DockerContainer)
 ```
 
-At the moment, _Testcontainers for Go_ exposes an option to set log production timeout, using the `WithLogProductionTimeout` function.
+The `WithLogProductionTimeout` option is deprecated and has no effect: the log stream is followed until the container stops, and if the connection fails it resumes from the timestamp of the last log entry received, skipping the entries already delivered. This relies on the container runtime adding timestamps to log entries when asked, as Docker and Podman do.
 
 _Testcontainers for Go_ will read this log producer/consumer configuration to automatically start producing logs if and only if the consumers slice contains at least one valid `LogConsumer`.
 
@@ -102,39 +102,14 @@ The production of logs is automatically stopped in `c.Terminate()`, so you don't
 
 ## Listening to errors
 
-When the log production fails to start within given timeout (causing a context deadline) or there's an error returned while closing the reader it will no longer panic, but instead will return an error over a channel. You can listen to it using `DockerContainer.GetLogProductionErrorChannel()` method:
+The log production doesn't panic on errors. If reading the log stream fails, it is retried automatically, resuming from the timestamp of the last log entry received, so there is no need to restart the log production.
+
+To find out why the log production stopped, use the `GetLogProductionErrorChannel()` method. The channel receives the cause once the log production's context is done, and is then closed. The cause is `context.Canceled` once the container has stopped and all its logs have been delivered, an error saying the log production was stopped if `Stop` or `Terminate` had to cut it short, or the cause of the context passed to `Start` if that is done first. Only in the first case have the consumers finished processing every entry when the cause is received; otherwise a consumer may still be processing one. If the log production hasn't been started, the channel is `nil`.
 
 ```go
-func (c *DockerContainer) GetLogProductionErrorChannel() <-chan error {
-	return c.producerError
-}
-```
-
-This allows you to, for example, retry restarting the log production if it fails to start the first time.
-
-For example, you would start the log production normally, defining the log production configuration at the `ContainerRequest` struct, and then:
-
-```go
-// start log production normally, using the ContainerRequest struct, or
-// using the deprecated c.StartLogProducer method.
-// err = container.StartLogProducer(ctx, WithLogProductionTimeout(10*time.Second))
-
-// listen to errors in a detached goroutine
-go func(done chan struct{}, timeout time.Duration) {
-	for {
-		select {
-		case logErr := <-container.GetLogProductionErrorChannel():
-			if logErr != nil {
-				// do something with error
-				// for example, retry starting the log production 
-				// (here we retry it once, in real life you might want to retry it more times)
-				startErr := container.StartLogProducer(ctx, timeout)
-				if startErr != nil {
-					return 
-				}
-		case <-done:
-			return
-		}
+go func() {
+	if err := <-container.GetLogProductionErrorChannel(); err != nil {
+		log.Printf("log production stopped: %v", err)
 	}
-}(cons.logListeningDone, time.Duration(10*time.Second))
+}()
 ```
