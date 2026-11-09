@@ -1,6 +1,7 @@
 package testcontainers
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -543,6 +544,115 @@ func reaperConnect(t *testing.T, reaper *Reaper) {
 	defer conn.Close()
 	err = reaper.handshake(conn)
 	require.NoError(t, err, "Reaper handshake should be successful")
+}
+
+// Test_Reaper_Connect_KeepsConnectionAlive asserts that the connection is kept
+// alive: after the initial handshake the client keeps re-sending the labels on
+// the same connection, which re-arms the reaper's reconnection timeout. Without
+// that, a runtime that silently drops idle TCP connections would let the reaper
+// reap the containers of a still-running session (see #3936).
+func Test_Reaper_Connect_KeepsConnectionAlive(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer listener.Close()
+
+	received := make(chan struct{}, 16)
+	go func() {
+		for {
+			conn, err := listener.Accept()
+			if err != nil {
+				return
+			}
+			go func(conn net.Conn) {
+				defer conn.Close()
+				scanner := bufio.NewScanner(conn)
+				for scanner.Scan() {
+					if _, err := conn.Write(reaperAck); err != nil {
+						return
+					}
+					received <- struct{}{}
+				}
+			}(conn)
+		}
+	}()
+
+	reaper := &Reaper{SessionID: "keep-alive", Endpoint: listener.Addr().String()}
+
+	terminationSignal, err := reaper.connectWithKeepAlive(context.Background(), 20*time.Millisecond)
+	require.NoError(t, err)
+
+	// The initial handshake plus at least one keep-alive message must reach the
+	// reaper, because it is that repeated message which re-arms the timeout.
+	for range 2 {
+		select {
+		case <-received:
+		case <-time.After(2 * time.Second):
+			t.Fatal("timed out waiting for a keep-alive message from the reaper client")
+		}
+	}
+
+	terminationSignal <- true
+}
+
+// Test_Reaper_Connect_TerminationUnblocksStalledHandshake asserts that
+// terminating the connection does not block when the reaper has stopped
+// acknowledging the periodic handshake. A peer that ACKs the initial handshake
+// but never acknowledges the keep-alive filters leaves the client blocked on
+// the ACK read; termination must still be able to unblock and stop the loop so
+// that cleanup cannot be stalled.
+func Test_Reaper_Connect_TerminationUnblocksStalledHandshake(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer listener.Close()
+
+	secondReceived := make(chan struct{})
+	go func() {
+		conn, err := listener.Accept()
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+		scanner := bufio.NewScanner(conn)
+		// ACK the initial handshake, then silently swallow any keep-alive
+		// filters without acknowledging them, leaving the client blocked on
+		// the ACK read.
+		for i := 0; scanner.Scan(); i++ {
+			if i == 0 {
+				if _, err := conn.Write(reaperAck); err != nil {
+					return
+				}
+				continue
+			}
+			select {
+			case secondReceived <- struct{}{}:
+			default:
+			}
+		}
+	}()
+
+	reaper := &Reaper{SessionID: "stalled-handshake", Endpoint: listener.Addr().String()}
+	terminationSignal, err := reaper.connectWithKeepAlive(context.Background(), 20*time.Millisecond)
+	require.NoError(t, err)
+
+	select {
+	case <-secondReceived:
+	case <-time.After(2 * time.Second):
+		t.Fatal("reaper client did not send a keep-alive filter")
+	}
+
+	// Termination must not block even though the client is waiting for an ACK
+	// that never arrives.
+	done := make(chan struct{})
+	go func() {
+		terminationSignal <- true
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("termination blocked on a stalled handshake")
+	}
 }
 
 func TestSpawnerBackoff(t *testing.T) {
