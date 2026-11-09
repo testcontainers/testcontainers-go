@@ -18,6 +18,11 @@ import (
 // removal that is already in progress.
 var errAlreadyInProgress = regexp.MustCompile(`removal of container .* is already in progress`)
 
+// errRemovedDuringRequest is a regular expression that matches the internal
+// error Podman returns for a container removed while a request for it was
+// being handled, e.g. one automatically removed once it exits.
+var errRemovedDuringRequest = regexp.MustCompile(`no container with ID .* found in database: no such container`)
+
 // SkipIfProviderIsNotHealthy is a utility function capable of skipping tests
 // if the provider is not healthy, or running at all.
 // This is a function designed to be used in your test, when Docker is not mandatory for CI/CD.
@@ -150,6 +155,7 @@ type unwrapErrs interface {
 // following, so can safely be ignored:
 //   - nil
 //   - not found
+//   - removed while the request was being handled
 //   - already in progress
 func isCleanupSafe(err error) bool {
 	if err == nil {
@@ -160,6 +166,8 @@ func isCleanupSafe(err error) bool {
 	switch {
 	case errdefs.IsNotFound(err):
 		return true
+	case errdefs.IsInternal(err):
+		return errRemovedDuringRequest.MatchString(err.Error())
 	case errdefs.IsConflict(err):
 		// Terminating a container that is already terminating.
 		if errAlreadyInProgress.MatchString(err.Error()) {
