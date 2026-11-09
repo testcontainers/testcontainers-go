@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net/netip"
 	"path"
 	"time"
 
@@ -118,6 +119,19 @@ func WithHostConfigModifier(modifier func(hostConfig *container.HostConfig)) Cus
 			}
 		}
 
+		return nil
+	}
+}
+
+// WithHostIP allows to set the IP address to which the exposed ports will be bound on the host.
+// By default, the exposed ports are bound to all interfaces (0.0.0.0).
+func WithHostIP(ip string) CustomizeRequestOption {
+	return func(req *GenericContainerRequest) error {
+		addr, err := netip.ParseAddr(ip)
+		if err != nil {
+			return fmt.Errorf("invalid host IP %q: %w", ip, err)
+		}
+		req.HostIP = addr.String()
 		return nil
 	}
 }
