@@ -23,6 +23,16 @@ type ContainerCustomizer interface {
 	Customize(req *GenericContainerRequest) error
 }
 
+// NoopCustomizer implements [ContainerCustomizer] without modifying the request.
+// Embed it in customizer structs whose options are handled by a module rather
+// than applied to the generic container request. Its zero value is ready to use.
+type NoopCustomizer struct{}
+
+// Customize leaves the request unchanged and returns nil.
+func (NoopCustomizer) Customize(*GenericContainerRequest) error {
+	return nil
+}
+
 // CustomizeRequestOption is a type that can be used to configure the Testcontainers container request.
 // The passed request will be merged with the default one.
 type CustomizeRequestOption func(req *GenericContainerRequest) error
