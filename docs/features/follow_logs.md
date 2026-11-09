@@ -102,39 +102,14 @@ The production of logs is automatically stopped in `c.Terminate()`, so you don't
 
 ## Listening to errors
 
-When the log production fails or there's an error returned while closing the reader it will no longer panic, but instead will return an error over a channel. You can listen to it using `DockerContainer.GetLogProductionErrorChannel()` method:
+The log production doesn't panic on errors. If reading the log stream fails, it is retried automatically, resuming from the last log entry received, so there is no need to restart the log production.
+
+To find out when the log production has stopped, and why, use the `GetLogProductionErrorChannel()` method. The channel receives the cause once the log production stops, and is then closed. The cause is `context.Canceled` once the container has stopped and all its logs have been delivered, an error saying the log production was stopped if `Stop` or `Terminate` had to cut it short, or the cause of the context passed to `Start` if that is done first. If the log production hasn't been started, the channel is `nil`.
 
 ```go
-func (c *DockerContainer) GetLogProductionErrorChannel() <-chan error {
-	return c.producerError
-}
-```
-
-This allows you to, for example, retry restarting the log production if it fails to start the first time.
-
-For example, you would start the log production normally, defining the log production configuration at the `ContainerRequest` struct, and then:
-
-```go
-// start log production normally, using the ContainerRequest struct, or
-// using the deprecated c.StartLogProducer method.
-// err = container.StartLogProducer(ctx)
-
-// listen to errors in a detached goroutine
-go func(done chan struct{}, timeout time.Duration) {
-	for {
-		select {
-		case logErr := <-container.GetLogProductionErrorChannel():
-			if logErr != nil {
-				// do something with error
-				// for example, retry starting the log production 
-				// (here we retry it once, in real life you might want to retry it more times)
-				startErr := container.StartLogProducer(ctx, timeout)
-				if startErr != nil {
-					return 
-				}
-		case <-done:
-			return
-		}
+go func() {
+	if err := <-container.GetLogProductionErrorChannel(); err != nil {
+		log.Printf("log production stopped: %v", err)
 	}
-}(cons.logListeningDone, time.Duration(10*time.Second))
+}()
 ```
