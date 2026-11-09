@@ -4,7 +4,7 @@ The log-following functionality follows a producer-consumer model: the container
 So if you wish to follow container logs, you have to do two things:
 
 1. set up log consumers.
-2. configure the log production of the container (e.g. timeout for the logs).
+2. optionally configure the log production of the container.
 
 As logs are written to either `stdout`, or `stderr` (`stdin` is not supported) they will be forwarded (produced) to any associated log consumer.
 
@@ -39,7 +39,7 @@ Please check that it's possible to configure the log production with a slice of 
 type LogProductionOption func(*DockerContainer)
 ```
 
-At the moment, _Testcontainers for Go_ exposes an option to set log production timeout, using the `WithLogProductionTimeout` function.
+The `WithLogProductionTimeout` option is deprecated and has no effect: the log stream is followed until the container stops, and if the connection fails it resumes from the last log entry received, so no entries are lost or repeated.
 
 _Testcontainers for Go_ will read this log producer/consumer configuration to automatically start producing logs if and only if the consumers slice contains at least one valid `LogConsumer`.
 
@@ -102,7 +102,7 @@ The production of logs is automatically stopped in `c.Terminate()`, so you don't
 
 ## Listening to errors
 
-When the log production fails to start within given timeout (causing a context deadline) or there's an error returned while closing the reader it will no longer panic, but instead will return an error over a channel. You can listen to it using `DockerContainer.GetLogProductionErrorChannel()` method:
+When the log production fails or there's an error returned while closing the reader it will no longer panic, but instead will return an error over a channel. You can listen to it using `DockerContainer.GetLogProductionErrorChannel()` method:
 
 ```go
 func (c *DockerContainer) GetLogProductionErrorChannel() <-chan error {
@@ -117,7 +117,7 @@ For example, you would start the log production normally, defining the log produ
 ```go
 // start log production normally, using the ContainerRequest struct, or
 // using the deprecated c.StartLogProducer method.
-// err = container.StartLogProducer(ctx, WithLogProductionTimeout(10*time.Second))
+// err = container.StartLogProducer(ctx)
 
 // listen to errors in a detached goroutine
 go func(done chan struct{}, timeout time.Duration) {

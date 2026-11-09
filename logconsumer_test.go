@@ -27,6 +27,17 @@ import (
 
 const lastMessage = "DONE"
 
+// waitForLog waits for a consumer acknowledgement and fails rather than hanging the test.
+func waitForLog(t *testing.T, received <-chan struct{}, message string) {
+	t.Helper()
+
+	select {
+	case <-received:
+	case <-time.After(5 * time.Second):
+		t.Fatal(message)
+	}
+}
+
 type TestLogConsumer struct {
 	mtx  sync.Mutex
 	msgs []string
@@ -105,11 +116,7 @@ func Test_LogConsumerGetsCalled(t *testing.T) {
 	_, err = http.Get(ep + "/stdout?echo=" + lastMessage)
 	require.NoError(t, err)
 
-	select {
-	case <-g.Done:
-	case <-time.After(5 * time.Second):
-		t.Fatal("never received final log message")
-	}
+	waitForLog(t, g.Done, "never received final log message")
 
 	require.Equal(t, []string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs())
 }
@@ -164,7 +171,11 @@ func Test_ShouldRecognizeLogTypes(t *testing.T) {
 	_, err = http.Get(ep + "/stdout?echo=" + lastMessage)
 	require.NoError(t, err)
 
-	<-g.Ack
+	select {
+	case <-g.Ack:
+	case <-time.After(5 * time.Second):
+		t.Fatal("never received final log message")
+	}
 
 	assert.Equal(t, map[string]string{
 		StdoutLog: "echo this-is-stdout\n",
@@ -211,8 +222,8 @@ func Test_MultipleLogConsumers(t *testing.T) {
 	_, err = http.Get(ep + "/stdout?echo=" + lastMessage)
 	require.NoError(t, err)
 
-	<-first.Done
-	<-second.Done
+	waitForLog(t, first.Done, "first consumer never received final log message")
+	waitForLog(t, second.Done, "second consumer never received final log message")
 
 	expected := []string{"ready\n", "echo mlem\n"}
 	require.Equal(t, expected, first.Msgs())
@@ -402,7 +413,6 @@ func TestContainerLogsEnableAtStart(t *testing.T) {
 		WithExposedPorts("8080/tcp"),
 		WithWaitStrategy(wait.ForLog("ready")),
 		WithLogConsumerConfig(&LogConsumerConfig{
-			Opts:      []LogProductionOption{WithLogProductionTimeout(10 * time.Second)},
 			Consumers: []LogConsumer{&g},
 		}),
 	)
@@ -428,63 +438,6 @@ func TestContainerLogsEnableAtStart(t *testing.T) {
 		t.Fatal("never received final log message")
 	}
 	require.Equal(t, []string{"ready\n", "echo hello\n", "echo there\n"}, g.Msgs())
-}
-
-func Test_StartLogProductionStillStartsWithTooLowTimeout(t *testing.T) {
-	ctx := context.Background()
-
-	g := TestLogConsumer{
-		msgs:     []string{},
-		Done:     make(chan struct{}),
-		Accepted: devNullAcceptorChan(),
-	}
-
-	opts := []ContainerCustomizer{
-		WithDockerfile(FromDockerfile{
-			Context:    filepath.Join(".", "testdata"),
-			Dockerfile: "echoserver.Dockerfile",
-		}),
-		WithExposedPorts("8080/tcp"),
-		WithWaitStrategy(wait.ForLog("ready")),
-		WithLogConsumerConfig(&LogConsumerConfig{
-			Opts:      []LogProductionOption{WithLogProductionTimeout(4 * time.Second)},
-			Consumers: []LogConsumer{&g},
-		}),
-	}
-
-	c, err := Run(ctx, "", opts...)
-	CleanupContainer(t, c)
-	require.NoError(t, err)
-}
-
-func Test_StartLogProductionStillStartsWithTooHighTimeout(t *testing.T) {
-	ctx := context.Background()
-
-	g := TestLogConsumer{
-		msgs:     []string{},
-		Done:     make(chan struct{}),
-		Accepted: devNullAcceptorChan(),
-	}
-
-	opts := []ContainerCustomizer{
-		WithDockerfile(FromDockerfile{
-			Context:    filepath.Join(".", "testdata"),
-			Dockerfile: "echoserver.Dockerfile",
-		}),
-		WithExposedPorts("8080/tcp"),
-		WithWaitStrategy(wait.ForLog("ready")),
-		WithLogConsumerConfig(&LogConsumerConfig{
-			Opts:      []LogProductionOption{WithLogProductionTimeout(61 * time.Second)},
-			Consumers: []LogConsumer{&g},
-		}),
-	}
-
-	c, err := Run(ctx, "", opts...)
-	CleanupContainer(t, c)
-	require.NoError(t, err)
-	require.NotNil(t, c)
-
-	require.NoError(t, c.stopLogProduction())
 }
 
 // bufLogger is a Logging implementation that writes to a bytes.Buffer.
