@@ -8,7 +8,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.18.0
 	github.com/dexidp/dex/api/v2 v2.4.0
 	github.com/stretchr/testify v1.12.1
-	github.com/testcontainers/testcontainers-go v0.44.0
+	github.com/testcontainers/testcontainers-go v0.45.0
 	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/oauth2 v0.36.0
 	google.golang.org/grpc v1.83.2
@@ -71,6 +71,6 @@ require (
 
 replace github.com/testcontainers/testcontainers-go => ../../..
 
-require github.com/testcontainers/testcontainers-go/modules/dex v0.44.0
+require github.com/testcontainers/testcontainers-go/modules/dex v0.45.0
 
 replace github.com/testcontainers/testcontainers-go/modules/dex => ..

@@ -8,9 +8,9 @@ require (
 	github.com/Shopify/toxiproxy/v2 v2.12.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.6.0
-	github.com/testcontainers/testcontainers-go v0.44.0
-	github.com/testcontainers/testcontainers-go/modules/redis v0.44.0
-	github.com/testcontainers/testcontainers-go/modules/toxiproxy v0.44.0
+	github.com/testcontainers/testcontainers-go v0.45.0
+	github.com/testcontainers/testcontainers-go/modules/redis v0.45.0
+	github.com/testcontainers/testcontainers-go/modules/toxiproxy v0.45.0
 )
 
 require (

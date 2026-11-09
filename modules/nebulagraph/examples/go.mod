@@ -8,8 +8,8 @@ require (
 	github.com/jolestar/go-commons-pool v2.0.0+incompatible
 	github.com/nebula-contrib/nebula-sirius v1.0.0-rc2
 	github.com/stretchr/testify v1.12.1
-	github.com/testcontainers/testcontainers-go v0.44.0
-	github.com/testcontainers/testcontainers-go/modules/nebulagraph v0.44.0
+	github.com/testcontainers/testcontainers-go v0.45.0
+	github.com/testcontainers/testcontainers-go/modules/nebulagraph v0.45.0
 )
 
 require (

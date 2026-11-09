@@ -8,7 +8,7 @@ require (
 	github.com/moby/moby/api v1.56.1 // indirect
 	github.com/modelcontextprotocol/go-sdk v1.4.1
 	github.com/stretchr/testify v1.12.1 // indirect
-	github.com/testcontainers/testcontainers-go v0.44.0
+	github.com/testcontainers/testcontainers-go v0.45.0
 )
 
 require (
@@ -67,6 +67,6 @@ require (
 
 replace github.com/testcontainers/testcontainers-go => ../../..
 
-require github.com/testcontainers/testcontainers-go/modules/dockermcpgateway v0.44.0
+require github.com/testcontainers/testcontainers-go/modules/dockermcpgateway v0.45.0
 
 replace github.com/testcontainers/testcontainers-go/modules/dockermcpgateway => ..

@@ -6,8 +6,8 @@ toolchain go1.26.10
 
 require (
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
-	github.com/testcontainers/testcontainers-go v0.44.0
-	github.com/testcontainers/testcontainers-go/modules/influxdb v0.44.0
+	github.com/testcontainers/testcontainers-go v0.45.0
+	github.com/testcontainers/testcontainers-go/modules/influxdb v0.45.0
 )
 
 require (

@@ -7,8 +7,8 @@ toolchain go1.26.10
 require (
 	github.com/lib/pq v1.10.9
 	github.com/stretchr/testify v1.12.1
-	github.com/testcontainers/testcontainers-go v0.44.0
-	github.com/testcontainers/testcontainers-go/modules/yugabytedb v0.44.0
+	github.com/testcontainers/testcontainers-go v0.45.0
+	github.com/testcontainers/testcontainers-go/modules/yugabytedb v0.45.0
 	github.com/yugabyte/gocql v1.6.0-yb-1
 )
 
