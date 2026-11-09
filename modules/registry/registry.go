@@ -211,7 +211,16 @@ func (c *RegistryContainer) PushImage(ctx context.Context, ref string) error {
 		return fmt.Errorf("push image %q: %w", ref, err)
 	}
 
-	return c.ImageExists(ctx, ref)
+	for m, err := range output.JSONMessages(ctx) {
+		if err != nil {
+			return fmt.Errorf("push image %q: %w", ref, err)
+		}
+		if err := m.Error; err != nil {
+			return fmt.Errorf("push image %q: %w", ref, err)
+		}
+	}
+
+	return nil
 }
 
 // PullImage pulls an image from an external registry into the local Docker daemon.
