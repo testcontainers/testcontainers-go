@@ -23,7 +23,8 @@ func (notFoundError) Error() string {
 
 // errPodmanRemovedDuringInspect is the error Podman returns when a container
 // is removed, e.g. automatically once it exits, while it is being inspected.
-var errPodmanRemovedDuringInspect = errdefs.ErrInternal.WithMessage("Error response from daemon: no container with ID 59aa8a92feaa found in database: no such container")
+// The message always includes the container's ID, which can be any.
+var errPodmanRemovedDuringInspect = errdefs.ErrInternal.WithMessage("Error response from daemon: no container with ID abc123 found in database: no such container")
 
 func Test_isNotFound(t *testing.T) {
 	tests := map[string]struct {
