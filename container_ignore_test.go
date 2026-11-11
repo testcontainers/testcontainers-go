@@ -218,3 +218,35 @@ func TestGetContext_dockerignoreInvalidNegationReturnsError(t *testing.T) {
 	require.ErrorIs(t, err, filepath.ErrBadPattern)
 	require.EqualError(t, err, "syntax error in pattern")
 }
+
+func TestGetContext_dockerignoreFinalPlainRuleWinsOverReinclude(t *testing.T) {
+	dir := t.TempDir()
+	visited := recordWalk(t, dir)
+
+	got := tarNames(t, dir, map[string]string{
+		".dockerignore":               "node_modules\n!**/*.go\nnode_modules\n",
+		"Dockerfile":                  "FROM scratch\n",
+		"app.go":                      "package main\n",
+		"node_modules/a/b/ignored.go": "package b\n",
+	})
+	require.ElementsMatch(t, []string{".dockerignore", "Dockerfile", "app.go"}, got)
+	require.Contains(t, *visited, "app.go", "walk observer is not live")
+	require.Contains(t, *visited, "node_modules")
+	for _, p := range *visited {
+		assert.False(t, strings.HasPrefix(p, "node_modules/"), "walk entered an excluded directory: %s", p)
+	}
+}
+
+func TestGetContext_dockerignoreReincludeUnderExcludedDirWithoutFinalRule(t *testing.T) {
+	dir := t.TempDir()
+	visited := recordWalk(t, dir)
+
+	got := tarNames(t, dir, map[string]string{
+		".dockerignore":               "node_modules\n!**/*.go\n",
+		"Dockerfile":                  "FROM scratch\n",
+		"app.go":                      "package main\n",
+		"node_modules/a/b/ignored.go": "package b\n",
+	})
+	require.Contains(t, got, "node_modules/a/b/ignored.go")
+	require.Contains(t, *visited, "node_modules/a/b", "walk must enter the re-included subtree")
+}

@@ -386,25 +386,48 @@ func realDir(root, rel string, memo map[string]bool) bool {
 // canReinclude reports whether a "!" pattern could match something below dir,
 // so the walk must enter an excluded directory. Patterns are compared segment by
 // segment; "**" in a segment, or a pattern longer than dir, counts as a possible match.
+// The last matching pattern decides, so a "!" pattern counts only if no later
+// plain pattern matches dir or one of its parents.
 func canReinclude(pm *patternmatcher.PatternMatcher, dir string) bool {
 	dirSegs := strings.Split(filepath.ToSlash(dir), "/")
-	return slices.ContainsFunc(pm.Patterns(), func(p *patternmatcher.Pattern) bool {
-		if !p.Exclusion() {
-			return false
-		}
-		patSegs := strings.Split(path.Clean(filepath.ToSlash(p.String())), "/")
-		for i, seg := range dirSegs {
-			if i >= len(patSegs) {
-				return false
-			}
-			if strings.Contains(patSegs[i], "**") {
-				return true
-			}
-			if ok, err := path.Match(patSegs[i], seg); err == nil && !ok {
-				return false
-			}
+	pats := pm.Patterns()
+	for i, p := range pats {
+		if !p.Exclusion() || !canMatchBelow(p, dirSegs) || excludedLater(pats[i+1:], dir) {
+			continue
 		}
 		return true
+	}
+	return false
+}
+
+// canMatchBelow reports whether the "!" pattern p could match a path below the
+// directory whose segments are dirSegs.
+func canMatchBelow(p *patternmatcher.Pattern, dirSegs []string) bool {
+	patSegs := strings.Split(path.Clean(filepath.ToSlash(p.String())), "/")
+	for i, seg := range dirSegs {
+		if i >= len(patSegs) {
+			return false
+		}
+		if strings.Contains(patSegs[i], "**") {
+			return true
+		}
+		if ok, err := path.Match(patSegs[i], seg); err == nil && !ok {
+			return false
+		}
+	}
+	return true
+}
+
+// excludedLater reports whether a plain pattern in later matches dir or one of
+// its parents, which excludes everything below dir after an earlier "!" pattern.
+// A pattern that fails to compile does not count, so the walk stays conservative.
+func excludedLater(later []*patternmatcher.Pattern, dir string) bool {
+	return slices.ContainsFunc(later, func(q *patternmatcher.Pattern) bool {
+		if q.Exclusion() {
+			return false
+		}
+		ok, err := patternmatcher.MatchesOrParentMatches(dir, []string{q.String()})
+		return err == nil && ok
 	})
 }
 
