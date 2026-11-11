@@ -260,9 +260,9 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 
 	// The archive walker skips an excluded directory unless an "!" pattern
 	// starts with its path, so "!a/**/*.go" can't re-include a/b/c/d.go
-	// (moby/go-archive v0.3.3, archive.go#L928). Add the surviving files and the
-	// directories the walk would skip as explicit includes; the "." include
-	// still walks everything else.
+	// (moby/go-archive v0.3.3, archive.go#L928). Add the surviving paths under an
+	// excluded directory as explicit includes; the "." include still walks
+	// everything else.
 	// Each listed path is kept only while its ancestor directories are still real
 	// directories (keepRealDirs), so a directory swapped for a symlink after the
 	// pre-scan cannot pull an outside file into the context.
@@ -295,11 +295,13 @@ func hasExclusion(patterns []string) bool {
 var walkDir = filepath.WalkDir
 
 // includedPaths returns the paths under root, relative to it, that the
-// .dockerignore patterns do not exclude: every file, and every directory whose
-// parent is excluded. The archive walk skips an excluded directory unless a "!"
-// pattern starts with its path (moby/go-archive v0.3.3, archive.go#L928), so a
-// re-included directory under an excluded parent is listed here, even when all
-// its contents are excluded. The archive walk still filters those contents.
+// .dockerignore patterns keep although an ancestor directory is excluded. The
+// archive walk skips an excluded directory unless a "!" pattern starts with its
+// path (moby/go-archive v0.3.3, archive.go#L928), so these paths are listed
+// here, even when the directory's other contents are excluded. The archive walk
+// still filters the contents of each listed directory. Paths whose ancestors
+// are all kept are left to the walk: listing them as well would let an include
+// resolve through a symlink swapped in after this walk.
 func includedPaths(root string, patterns []string) ([]string, error) {
 	pm, err := patternmatcher.New(patterns)
 	if err != nil {
@@ -307,6 +309,8 @@ func includedPaths(root string, patterns []string) ([]string, error) {
 	}
 
 	var paths []string
+	// hidden maps a directory's relative path to whether it, or an ancestor, is excluded.
+	hidden := map[string]bool{}
 	err = walkDir(root, func(p string, d fs.DirEntry, err error) error {
 		if p == root {
 			return err
@@ -323,6 +327,10 @@ func includedPaths(root string, patterns []string) ([]string, error) {
 		if err != nil {
 			return err
 		}
+		underExcluded := hidden[filepath.Dir(rel)]
+		if d.IsDir() {
+			hidden[rel] = underExcluded || skip
+		}
 		if skip {
 			if d.IsDir() && !canReinclude(pm, rel) {
 				// No "!" pattern can match below this directory, so do not walk into it.
@@ -330,19 +338,9 @@ func includedPaths(root string, patterns []string) ([]string, error) {
 			}
 			return nil
 		}
-		if d.IsDir() {
-			// The archive walk (archive.go#L906-L935) reaches a top-level directory, and one whose parent is kept.
-			parent := filepath.Dir(rel)
-			if parent == "." {
-				return nil
-			}
-			parentSkip, err := pm.MatchesOrParentMatches(parent)
-			if err != nil {
-				return err
-			}
-			if !parentSkip {
-				return nil
-			}
+		if !underExcluded {
+			// The archive walk reaches this path through its kept ancestors.
+			return nil
 		}
 		paths = append(paths, rel)
 		return nil
