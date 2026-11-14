@@ -122,6 +122,14 @@ type Config struct {
 	// Environment variable: RYUK_CONNECTION_TIMEOUT
 	RyukConnectionTimeout time.Duration `properties:"ryuk.connection.timeout,default=1m"`
 
+	// RyukRequestTimeout is the timeout for each Docker request the Garbage Collector makes,
+	// such as listing and removing resources. Raise it when the Docker daemon is slow to answer,
+	// for example with a large image store: a listing that times out leaves its resources behind.
+	// Zero keeps the Garbage Collector's own default.
+	//
+	// Environment variable: RYUK_REQUEST_TIMEOUT
+	RyukRequestTimeout time.Duration `properties:"ryuk.request.timeout,default=0s"`
+
 	// RyukVerbose is a flag to enable or disable verbose logging for the Garbage Collector.
 	//
 	// Environment variable: RYUK_VERBOSE
@@ -205,6 +213,11 @@ func read() Config {
 		ryukConnectionTimeoutEnv := readTestcontainersEnv("RYUK_CONNECTION_TIMEOUT")
 		if timeout, err := time.ParseDuration(ryukConnectionTimeoutEnv); err == nil {
 			config.RyukConnectionTimeout = timeout
+		}
+
+		ryukRequestTimeoutEnv := readTestcontainersEnv("RYUK_REQUEST_TIMEOUT")
+		if timeout, err := time.ParseDuration(ryukRequestTimeoutEnv); err == nil {
+			config.RyukRequestTimeout = timeout
 		}
 
 		providerEnv := os.Getenv("TESTCONTAINERS_PROVIDER")
