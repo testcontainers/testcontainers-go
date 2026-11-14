@@ -263,6 +263,9 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 	// (moby/go-archive v0.3.3, archive.go#L928). Add the surviving files and the
 	// directories the walk would skip as explicit includes; the "." include
 	// still walks everything else.
+	// Each listed path is kept only while its ancestor directories are still real
+	// directories (keepRealDirs), so a directory swapped for a symlink after the
+	// pre-scan cannot pull an outside file into the context.
 	// Archive keeps one seen map across includes (archive.go#L843), so a file
 	// that both walks reach is written once.
 	if hasExclusion(excluded) {
@@ -270,7 +273,7 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 		if err != nil {
 			return nil, err
 		}
-		includes = append(includes, paths...)
+		includes = append(includes, keepRealDirs(abs, paths)...)
 	}
 
 	buildContext, err := archive.TarWithOptions(
@@ -345,6 +348,39 @@ func includedPaths(root string, patterns []string) ([]string, error) {
 		return nil
 	})
 	return paths, err
+}
+
+// keepRealDirs drops each listed path whose ancestor directories under root are
+// no longer all real directories. A directory swapped for a symlink after the
+// pre-scan would make the archiver resolve the listed path outside the context,
+// so the path is omitted instead; Lstat does not follow the link. A swap between
+// this check and the archiver's open is still a race window, the same class as
+// any path-based tar, so this narrows that window rather than closing it.
+func keepRealDirs(root string, paths []string) []string {
+	memo := map[string]bool{}
+	var kept []string
+	for _, rel := range paths {
+		if realDir(root, filepath.Dir(rel), memo) {
+			kept = append(kept, rel)
+		}
+	}
+	return kept
+}
+
+// realDir reports whether rel, a directory under root, and every directory above
+// it are real directories (not symlinks, not files). Results are memoized per
+// directory so each ancestor is checked once.
+func realDir(root, rel string, memo map[string]bool) bool {
+	if rel == "." {
+		return true
+	}
+	if ok, seen := memo[rel]; seen {
+		return ok
+	}
+	fi, err := os.Lstat(filepath.Join(root, rel))
+	ok := err == nil && fi.IsDir() && realDir(root, filepath.Dir(rel), memo)
+	memo[rel] = ok
+	return ok
 }
 
 // canReinclude reports whether a "!" pattern could match something below dir,
