@@ -30,18 +30,23 @@ func TestGetContext_dockerignoreSymlinkSwapAfterPrescan(t *testing.T) {
 	orig := walkDir
 	t.Cleanup(func() { walkDir = orig })
 	fired := false
+	var setupErr error
 	walkDir = func(r string, fn fs.WalkDirFunc) error {
 		if err := orig(r, fn); err != nil {
 			return err
 		}
-		fired = true
-		if err := os.Rename(src, filepath.Join(root, "src-backup")); err != nil {
-			return err
+		if setupErr = os.Rename(src, filepath.Join(root, "src-backup")); setupErr != nil {
+			return setupErr
 		}
-		return os.Symlink(outside, src)
+		if setupErr = os.Symlink(outside, src); setupErr != nil {
+			return setupErr
+		}
+		fired = true
+		return nil
 	}
 
 	r, err := (&ContainerRequest{FromDockerfile: FromDockerfile{Context: root}}).GetContext()
+	require.NoError(t, setupErr, "symlink swap setup failed; the test is not exercising the race")
 	require.True(t, fired, "swap hook never ran; the test is not exercising the race")
 	if err != nil {
 		t.Logf("outcome: error: %v", err)
@@ -87,18 +92,23 @@ func TestGetContext_dockerignoreExcludedDirSwapAfterPrescan(t *testing.T) {
 	orig := walkDir
 	t.Cleanup(func() { walkDir = orig })
 	fired := false
+	var setupErr error
 	walkDir = func(r string, fn fs.WalkDirFunc) error {
 		if err := orig(r, fn); err != nil {
 			return err
 		}
-		fired = true
-		if err := os.Rename(src, filepath.Join(root, "src-backup")); err != nil {
-			return err
+		if setupErr = os.Rename(src, filepath.Join(root, "src-backup")); setupErr != nil {
+			return setupErr
 		}
-		return os.Symlink(outside, src)
+		if setupErr = os.Symlink(outside, src); setupErr != nil {
+			return setupErr
+		}
+		fired = true
+		return nil
 	}
 
 	r, err := (&ContainerRequest{FromDockerfile: FromDockerfile{Context: root}}).GetContext()
+	require.NoError(t, setupErr, "symlink swap setup failed; the test is not exercising the race")
 	require.True(t, fired, "swap hook never ran; the test is not exercising the race")
 	if err != nil {
 		t.Logf("outcome: error: %v", err)
