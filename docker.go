@@ -98,6 +98,11 @@ type DockerContainer struct {
 	healthStatus container.HealthStatus // container health status, will default to healthStatusNone if no healthcheck is present
 }
 
+// Logger returns the logger for the container.
+func (c *DockerContainer) Logger() log.Logger {
+	return c.logger
+}
+
 // SetLogger sets the logger for the container
 func (c *DockerContainer) SetLogger(logger log.Logger) {
 	c.logger = logger
