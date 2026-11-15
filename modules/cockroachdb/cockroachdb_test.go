@@ -2,10 +2,10 @@ package cockroachdb_test
 
 import (
 	"context"
-	"database/sql"
+	"net"
+	"net/url"
 	"testing"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -15,11 +15,11 @@ import (
 const testImage = "cockroachdb/cockroach:latest-v23.1"
 
 func TestRun(t *testing.T) {
-	testContainer(t)
+	testContainer(t, false)
 }
 
 func TestRun_WithAllOptions(t *testing.T) {
-	testContainer(t,
+	testContainer(t, false,
 		cockroachdb.WithDatabase("testDatabase"),
 		cockroachdb.WithStoreSize("50%"),
 		cockroachdb.WithUser("testUser"),
@@ -32,7 +32,7 @@ func TestRun_WithAllOptions(t *testing.T) {
 
 func TestRun_WithInsecure(t *testing.T) {
 	t.Run("valid", func(t *testing.T) {
-		testContainer(t, cockroachdb.WithInsecure())
+		testContainer(t, true, cockroachdb.WithInsecure())
 	})
 
 	t.Run("invalid-password-insecure", func(t *testing.T) {
@@ -53,7 +53,7 @@ func TestRun_WithInsecure(t *testing.T) {
 }
 
 // testContainer runs a CockroachDB container and validates its functionality.
-func testContainer(t *testing.T, opts ...testcontainers.ContainerCustomizer) {
+func testContainer(t *testing.T, insecure bool, opts ...testcontainers.ContainerCustomizer) {
 	t.Helper()
 
 	ctx := context.Background()
@@ -62,34 +62,30 @@ func testContainer(t *testing.T, opts ...testcontainers.ContainerCustomizer) {
 	require.NoError(t, err)
 	require.NotNil(t, ctr)
 
-	// Check a raw connection with a ping.
-	cfg, err := ctr.ConnectionConfig(ctx)
+	info, err := ctr.ConnectionInfo(ctx)
 	require.NoError(t, err)
-
-	conn, err := pgx.ConnectConfig(ctx, cfg)
+	u, err := url.Parse(info.URL)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		require.NoError(t, conn.Close(ctx))
-	})
-
-	err = conn.Ping(ctx)
+	require.Equal(t, "postgres", u.Scheme)
+	host, err := ctr.Host(ctx)
 	require.NoError(t, err)
-
-	// Check an SQL connection with a queries.
+	port, err := ctr.MappedPort(ctx, "26257/tcp")
+	require.NoError(t, err)
+	require.Equal(t, net.JoinHostPort(host, port.Port()), u.Host)
+	if insecure {
+		require.Equal(t, "disable", u.Query().Get("sslmode"))
+		require.Nil(t, info.TLSConfig)
+		_, err := ctr.TLSConfig()
+		require.ErrorIs(t, err, cockroachdb.ErrTLSNotEnabled)
+	} else {
+		require.Equal(t, "verify-full", u.Query().Get("sslmode"))
+		require.NotNil(t, info.TLSConfig)
+		require.Equal(t, "127.0.0.1", info.TLSConfig.ServerName)
+		require.NotNil(t, info.TLSConfig.RootCAs)
+		require.Len(t, info.TLSConfig.Certificates, 1)
+	}
 	addr, err := ctr.ConnectionString(ctx)
 	require.NoError(t, err)
-
-	db, err := sql.Open("pgx/v5", addr)
-	require.NoError(t, err)
-
-	_, err = db.ExecContext(ctx, "CREATE TABLE test (id INT PRIMARY KEY)")
-	require.NoError(t, err)
-
-	_, err = db.ExecContext(ctx, "INSERT INTO test (id) VALUES (523123)")
-	require.NoError(t, err)
-
-	var id int
-	err = db.QueryRowContext(ctx, "SELECT id FROM test").Scan(&id)
-	require.NoError(t, err)
-	require.Equal(t, 523123, id)
+	require.Equal(t, info.URL, addr)
+	require.Equal(t, addr, ctr.MustConnectionString(ctx))
 }

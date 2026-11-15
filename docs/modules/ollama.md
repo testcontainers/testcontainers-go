@@ -20,7 +20,7 @@ The module allows you to run the Ollama container or the local Ollama binary.
 
 <!--codeinclude-->
 [Creating an Ollama container](../../modules/ollama/examples_test.go) inside_block:runOllamaContainer
-[Running the local Ollama binary](../../modules/ollama/examples_test.go) inside_block:localOllama
+[Running the local Ollama binary](../../modules/ollama/examples/examples_test.go) inside_block:localOllama
 <!--/codeinclude-->
 
 If the local Ollama binary fails to execute, the module will fall back to the container version of Ollama.
@@ -139,5 +139,5 @@ The following examples use the `llama2` model to connect to the Ollama container
 
 <!--codeinclude-->
 [Using HTTP](../../modules/ollama/examples_test.go) inside_block:withHTTPModelLlama2
-[Using Langchaingo](../../modules/ollama/examples_test.go) inside_block:withLangchainModelLlama2
+[Using Langchaingo](../../modules/ollama/examples/examples_test.go) inside_block:withLangchainModelLlama2
 <!--/codeinclude-->

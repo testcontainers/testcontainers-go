@@ -3,17 +3,14 @@ package pubsub_test
 import (
 	"context"
 	"fmt"
-	"log"
+	"net/http"
 	"testing"
+	"time"
 
-	"cloud.google.com/go/pubsub/v2"
-	pubsubpb "cloud.google.com/go/pubsub/v2/apiv1/pubsubpb"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/api/option"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/gcloud/internal/testrest"
 	tcpubsub "github.com/testcontainers/testcontainers-go/modules/gcloud/pubsub"
 )
 
@@ -30,43 +27,51 @@ func TestRun(t *testing.T) {
 
 	projectID := pubsubContainer.ProjectID()
 
-	conn, err := grpc.NewClient(pubsubContainer.URI(), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Printf("failed to dial: %v", err)
-		return
+	requestCtx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
+	client := &http.Client{Timeout: 30 * time.Second}
+	defer client.CloseIdleConnections()
+	endpoint := "http://" + pubsubContainer.URI() + "/v1/"
+	topicName := fmt.Sprintf("projects/%s/topics/%s", projectID, "greetings")
+	var topic struct {
+		Name string `json:"name"`
 	}
+	require.NoError(t, testrest.Do(requestCtx, client, http.MethodPut, endpoint+topicName, map[string]any{}, &topic))
+	require.Equal(t, topicName, topic.Name)
 
-	options := []option.ClientOption{option.WithGRPCConn(conn)}
-	client, err := pubsub.NewClient(ctx, projectID, options...)
-	require.NoError(t, err)
-	defer client.Close()
+	subName := fmt.Sprintf("projects/%s/subscriptions/%s", projectID, "subscription")
+	var subscription struct {
+		Name string `json:"name"`
+	}
+	require.NoError(t, testrest.Do(requestCtx, client, http.MethodPut, endpoint+subName, map[string]string{"topic": topic.Name}, &subscription))
+	require.Equal(t, subName, subscription.Name)
 
-	topicProto, err := client.TopicAdminClient.CreateTopic(ctx, &pubsubpb.Topic{
-		Name: fmt.Sprintf("projects/%s/topics/%s", projectID, "greetings"),
-	})
-	require.NoError(t, err)
+	var published struct {
+		MessageIDs []string `json:"messageIds"`
+	}
+	// encoding/json encodes []byte as the API's base64 message data.
+	require.NoError(t, testrest.Do(requestCtx, client, http.MethodPost, endpoint+topic.Name+":publish", map[string]any{
+		"messages": []any{map[string]any{"data": []byte("Hello World")}},
+	}, &published))
+	require.Len(t, published.MessageIDs, 1)
+	require.NotEmpty(t, published.MessageIDs[0])
 
-	subProto, err := client.SubscriptionAdminClient.CreateSubscription(ctx, &pubsubpb.Subscription{
-		Name:  fmt.Sprintf("projects/%s/subscriptions/%s", projectID, "subscription"),
-		Topic: topicProto.GetName(),
-	})
-	require.NoError(t, err)
-
-	publisher := client.Publisher(topicProto.GetName())
-	defer publisher.Stop()
-	result := publisher.Publish(ctx, &pubsub.Message{Data: []byte("Hello World")})
-	_, err = result.Get(ctx)
-	require.NoError(t, err)
-
-	sub := client.Subscriber(subProto.GetName())
-	var data []byte
-	cctx, cancel := context.WithCancel(ctx)
-	err = sub.Receive(cctx, func(_ context.Context, m *pubsub.Message) {
-		data = m.Data
-		m.Ack()
-		defer cancel()
-	})
-	require.NoError(t, err)
-
-	require.Equal(t, "Hello World", string(data))
+	type pullResult struct {
+		ReceivedMessages []struct {
+			AckID   string `json:"ackId"`
+			Message struct {
+				Data []byte `json:"data"`
+			} `json:"message"`
+		} `json:"receivedMessages"`
+	}
+	var received pullResult
+	for len(received.ReceivedMessages) == 0 {
+		require.NoError(t, requestCtx.Err())
+		require.NoError(t, testrest.Do(requestCtx, client, http.MethodPost, endpoint+subscription.Name+":pull", map[string]any{"maxMessages": 1}, &received))
+	}
+	require.Len(t, received.ReceivedMessages, 1)
+	message := received.ReceivedMessages[0]
+	require.NotEmpty(t, message.AckID)
+	require.NoError(t, testrest.Do(requestCtx, client, http.MethodPost, endpoint+subscription.Name+":acknowledge", map[string]any{"ackIds": []string{message.AckID}}, nil))
+	require.Equal(t, "Hello World", string(message.Message.Data))
 }

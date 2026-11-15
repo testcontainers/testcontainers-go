@@ -71,5 +71,5 @@ This method returns the connection string to connect to the Milvus container, us
 This example shows the usage of the Milvus module to create and retrieve collections.
 
 <!--codeinclude-->
-[Create collections](../../modules/milvus/examples_test.go) inside_block:createCollections
+[Create collections](../../modules/milvus/examples/examples_test.go) inside_block:createCollections
 <!--/codeinclude-->

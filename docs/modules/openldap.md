@@ -20,6 +20,12 @@ go get github.com/testcontainers/testcontainers-go/modules/openldap
 [Creating a OpenLDAP container](../../modules/openldap/examples_test.go) inside_block:runOpenLDAPContainer
 <!--/codeinclude-->
 
+The LDAP client example lives in a separate Go module under `modules/openldap/examples`:
+
+<!--codeinclude-->
+[Connect, bind and search with the LDAP client](../../modules/openldap/examples/examples_test.go) inside_block:connectToOpenLdap
+<!--/codeinclude-->
+
 ## Module Reference
 
 ### Run function

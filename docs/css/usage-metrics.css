@@ -71,6 +71,48 @@ body:has(.stats-grid) .md-content__inner > article {
     max-height: 400px;
 }
 
+.clones-chart-plot {
+    position: relative;
+    height: 360px;
+}
+
+.clones-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 16px;
+    margin-bottom: 16px;
+}
+
+.clones-legend button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    border: 0;
+    padding: 4px;
+    background: transparent;
+    color: #666;
+    font: inherit;
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.clones-legend button[aria-pressed="false"] {
+    text-decoration: line-through;
+}
+
+.clones-legend button:focus-visible {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
+
+.clones-legend-swatch {
+    flex: 0 0 16px;
+    height: 3px;
+}
+
 .loading {
     text-align: center;
     padding: 40px;

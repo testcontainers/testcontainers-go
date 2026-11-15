@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/pinecone
 ## Usage example
 
 <!--codeinclude-->
-[Creating a Pinecone container](../../modules/pinecone/examples_test.go) inside_block:ExampleRun
+[Creating a Pinecone container](../../modules/pinecone/examples/examples_test.go) inside_block:ExampleRun
 <!--/codeinclude-->
 
 ## Module Reference
@@ -62,5 +62,5 @@ The `HttpEndpoint` method returns the location where the Pinecone container is l
 It returns a string with the format `http://<host>:<port>`.
 
 <!--codeinclude-->
-[Connecting using HTTP](../../modules/pinecone/examples_test.go) inside_block:httpConnection
+[Connecting using HTTP](../../modules/pinecone/examples/examples_test.go) inside_block:httpConnection
 <!--/codeinclude-->

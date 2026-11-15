@@ -2,10 +2,9 @@ package tidb_test
 
 import (
 	"context"
-	"database/sql"
+	"net"
 	"testing"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -27,21 +26,10 @@ func TestTiDB(t *testing.T) {
 	mustConnectionString := ctr.MustConnectionString(ctx)
 	require.Equal(t, connectionString, mustConnectionString)
 
-	db, err := sql.Open("mysql", connectionString)
-	require.NoError(t, err)
-	defer db.Close()
-
-	err = db.Ping()
-	require.NoError(t, err)
-
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS a_table ( \n" +
-		" `col_1` VARCHAR(128) NOT NULL, \n" +
-		" `col_2` VARCHAR(128) NOT NULL, \n" +
-		" PRIMARY KEY (`col_1`, `col_2`) \n" +
-		")")
-	require.NoError(t, err)
+	assertConnectionString(t, ctx, ctr, connectionString)
 }
 
+// TestTiDBWithDDLAndDML checks the endpoint used by the SQL test in examples/tidb_test.go.
 func TestTiDBWithDDLAndDML(t *testing.T) {
 	ctx := context.Background()
 
@@ -52,34 +40,10 @@ func TestTiDBWithDDLAndDML(t *testing.T) {
 	connectionString, err := ctr.ConnectionString(ctx)
 	require.NoError(t, err)
 
-	db, err := sql.Open("mysql", connectionString)
-	require.NoError(t, err)
-	defer db.Close()
-
-	err = db.Ping()
-	require.NoError(t, err)
-
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS profile ( " +
-		" id MEDIUMINT NOT NULL AUTO_INCREMENT, " +
-		" name VARCHAR(30) NOT NULL, " +
-		" PRIMARY KEY (id) " +
-		")")
-	require.NoError(t, err)
-
-	_, err = db.Exec("INSERT INTO profile (name) VALUES ('profile 1')")
-	require.NoError(t, err)
-
-	stmt, err := db.Prepare("SELECT name FROM profile")
-	require.NoError(t, err)
-	defer stmt.Close()
-
-	row := stmt.QueryRow()
-	var name string
-	err = row.Scan(&name)
-	require.NoError(t, err)
-	require.Equal(t, "profile 1", name)
+	assertConnectionString(t, ctx, ctr, connectionString)
 }
 
+// TestTiDBSelect1 checks the endpoint used by the SQL test in examples/tidb_test.go.
 func TestTiDBSelect1(t *testing.T) {
 	ctx := context.Background()
 
@@ -90,13 +54,17 @@ func TestTiDBSelect1(t *testing.T) {
 	connectionString, err := ctr.ConnectionString(ctx)
 	require.NoError(t, err)
 
-	db, err := sql.Open("mysql", connectionString)
-	require.NoError(t, err)
-	defer db.Close()
+	assertConnectionString(t, ctx, ctr, connectionString)
+}
 
-	row := db.QueryRow("SELECT 1")
-	var result int
-	err = row.Scan(&result)
+func assertConnectionString(t *testing.T, ctx context.Context, ctr *tidb.Container, connectionString string) {
+	t.Helper()
+
+	endpoint, err := ctr.PortEndpoint(ctx, "4000/tcp", "")
 	require.NoError(t, err)
-	require.Equal(t, 1, result)
+	host, port, err := net.SplitHostPort(endpoint)
+	require.NoError(t, err)
+	require.NotEmpty(t, host)
+	require.NotEmpty(t, port)
+	require.Equal(t, "root:@tcp("+endpoint+")/test", connectionString)
 }

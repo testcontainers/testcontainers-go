@@ -79,7 +79,7 @@ The connection string can then be used to connect to the yugabyteDB container us
 a standard PostgreSQL client.
 
 <!--codeinclude-->
-[Create a postgres client using the connection string](../../modules/yugabytedb/examples_test.go) block:ExampleContainer_YSQLConnectionString
+[Create a postgres client using the connection string](../../modules/yugabytedb/examples/examples_test.go) block:Example_ysqlConnectionString
 <!--/codeinclude-->
 
 ### Usage examples
@@ -96,5 +96,5 @@ you can use the `GetHost` and `GetMappedPort` methods on the Container struct.
 See the examples below:
 
 <!--codeinclude-->
-[Create a yugabyteDB client using the cluster configuration](../../modules/yugabytedb/yugabytedb_test.go) block:TestYugabyteDB_YCQL
+[Create a yugabyteDB client using the cluster configuration](../../modules/yugabytedb/examples/examples_test.go) block:Example_newCluster
 <!--/codeinclude-->

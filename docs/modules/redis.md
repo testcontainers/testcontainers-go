@@ -16,6 +16,8 @@ go get github.com/testcontainers/testcontainers-go/modules/redis
 
 ## Usage example
 
+Start Redis with its default configuration; no local configuration file is required.
+
 <!--codeinclude-->
 [Creating a Redis container](../../modules/redis/examples_test.go) inside_block:runRedisContainer
 <!--/codeinclude-->
@@ -67,13 +69,21 @@ By default Redis saves snapshots of the dataset on disk, in a binary file called
 By default Redis produces a log message to the standard Redis log, the format accepts printf-alike specifiers, while level is a string describing the log level to use when emitting the log, and must be one of the following: `LogLevelDebug`, `LogLevelVerbose`, `LogLevelNotice`, `LogLevelWarning`. E.g. `WithLogLevel(LogLevelDebug)`. If the specified log level is invalid, verbose is used by default.
 
 !!!tip
-    Please check [Redis docs on logging](https://redis.io/docs/reference/modules/modules-api-ref/#redismodule_log) for more information.
+    Please check [Redis docs on logging](https://redis.io/docs/latest/develop/reference/modules/modules-api-ref/#redismodule_log) for more information.
 
 #### WithConfigFile
 
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.20.0"><span class="tc-version">:material-tag: v0.20.0</span></a>
 
 In the case you have a custom config file for Redis, it's possible to copy that file into the container before it's started. E.g. `WithConfigFile(filepath.Join("testdata", "redis7.conf"))`.
+
+The configuration file must exist on the host. For example, the following uses
+[`testdata/redis7.conf`](https://github.com/testcontainers/testcontainers-go/blob/main/modules/redis/testdata/redis7.conf)
+from this repository, together with optional snapshotting and log settings:
+
+<!--codeinclude-->
+[Creating a Redis container with a configuration file](../../modules/redis/examples_test.go) inside_block:configuredRedisContainer
+<!--/codeinclude-->
 
 #### WithTLS
 
@@ -97,7 +107,7 @@ The module automatically generates three certificates, a CA certificate, a clien
 This method returns the connection string to connect to the Redis container, using the default `6379` port, and `redis` schema.
 
 <!--codeinclude-->
-[Get connection string](../../modules/redis/redis_test.go) inside_block:connectionString
+[Get connection string](../../modules/redis/examples/examples_test.go) inside_block:connectionString
 <!--/codeinclude-->
 
 If the container is started with TLS enabled, the connection string is `rediss://host:port`, using the `rediss` schema.
@@ -109,7 +119,7 @@ If the container is started with TLS enabled, the connection string is `rediss:/
 This method returns the TLS configuration for the Redis container, nil if TLS is not enabled.
 
 <!--codeinclude-->
-[Get TLS config](../../modules/redis/redis_test.go) inside_block:tlsConfig
+[Get TLS config](../../modules/redis/examples/examples_test.go) inside_block:tlsConfig
 <!--/codeinclude-->
 
 In the above example, the options are used to configure a Redis client with TLS enabled.

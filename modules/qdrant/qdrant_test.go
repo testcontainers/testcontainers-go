@@ -2,12 +2,12 @@ package qdrant_test
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/qdrant"
@@ -40,7 +40,8 @@ func TestQdrant(t *testing.T) {
 		// }
 		require.NoError(t, err)
 
-		conn, err := grpc.NewClient(grpcEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		dialer := net.Dialer{Timeout: 5 * time.Second}
+		conn, err := dialer.DialContext(ctx, "tcp", grpcEndpoint)
 		require.NoError(t, err)
 		defer conn.Close()
 	})

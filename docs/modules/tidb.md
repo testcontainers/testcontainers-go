@@ -20,6 +20,8 @@ go get github.com/testcontainers/testcontainers-go/modules/tidb
 [Creating a TiDB container](../../modules/tidb/examples_test.go) inside_block:runTiDBContainer
 <!--/codeinclude-->
 
+For a complete example using the MySQL driver, see the [client examples](https://github.com/testcontainers/testcontainers-go/blob/main/modules/tidb/examples/examples_test.go).
+
 ## Module Reference
 
 ### Run function

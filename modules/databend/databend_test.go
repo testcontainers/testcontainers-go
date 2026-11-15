@@ -2,10 +2,9 @@ package databend_test
 
 import (
 	"context"
-	"database/sql"
+	"net/url"
 	"testing"
 
-	_ "github.com/datafuselabs/databend-go"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -28,18 +27,7 @@ func TestDatabend(t *testing.T) {
 	mustConnectionString := ctr.MustConnectionString(ctx, "sslmode=disable")
 	require.Equal(t, connectionString, mustConnectionString)
 
-	db, err := sql.Open("databend", connectionString)
-	require.NoError(t, err)
-	defer db.Close()
-
-	err = db.Ping()
-	require.NoError(t, err)
-
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS a_table ( \n" +
-		" `col_1` VARCHAR(128) NOT NULL, \n" +
-		" `col_2` VARCHAR(128) NOT NULL \n" +
-		")")
-	require.NoError(t, err)
+	assertConnectionString(t, ctx, ctr, connectionString)
 }
 
 func TestDatabendWithDefaultUserAndPassword(t *testing.T) {
@@ -55,22 +43,7 @@ func TestDatabendWithDefaultUserAndPassword(t *testing.T) {
 	connectionString, err := ctr.ConnectionString(ctx, "sslmode=disable")
 	require.NoError(t, err)
 
-	db, err := sql.Open("databend", connectionString)
-	require.NoError(t, err)
-	defer db.Close()
-	err = db.Ping()
-	require.NoError(t, err)
-
-	var i int
-	row := db.QueryRow("select 1")
-	err = row.Scan(&i)
-	require.NoError(t, err)
-
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS a_table ( \n" +
-		" `col_1` VARCHAR(128) NOT NULL, \n" +
-		" `col_2` VARCHAR(128) NOT NULL \n" +
-		")")
-	require.NoError(t, err)
+	assertConnectionString(t, ctx, ctr, connectionString)
 }
 
 func TestDatabendWithEmptyCredentials(t *testing.T) {
@@ -82,4 +55,24 @@ func TestDatabendWithEmptyCredentials(t *testing.T) {
 		databend.WithPassword(""))
 	testcontainers.CleanupContainer(t, ctr)
 	require.Error(t, err)
+}
+
+func assertConnectionString(t *testing.T, ctx context.Context, ctr *databend.DatabendContainer, connectionString string) {
+	t.Helper()
+
+	endpoint, err := ctr.PortEndpoint(ctx, "8000/tcp", "")
+	require.NoError(t, err)
+	dsn, err := url.Parse(connectionString)
+	require.NoError(t, err)
+	require.Equal(t, "databend", dsn.Scheme)
+	require.Equal(t, endpoint, dsn.Host)
+	require.NotEmpty(t, dsn.Hostname())
+	require.NotEmpty(t, dsn.Port())
+	require.NotNil(t, dsn.User)
+	require.Equal(t, "databend", dsn.User.Username())
+	password, ok := dsn.User.Password()
+	require.True(t, ok)
+	require.Equal(t, "databend", password)
+	require.Equal(t, "/default", dsn.Path)
+	require.Equal(t, "disable", dsn.Query().Get("sslmode"))
 }

@@ -3,11 +3,10 @@ package artemis_test
 import (
 	"context"
 	"encoding/json"
+	"net"
 	"net/http"
 	"testing"
-	"time"
 
-	"github.com/go-stomp/stomp/v3"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -91,30 +90,11 @@ func TestArtemis(t *testing.T) {
 			// }
 			require.NoError(t, err)
 
-			var opt []func(*stomp.Conn) error
-			if test.user != "" || test.pass != "" {
-				opt = append(opt, stomp.ConnOpt.Login(test.user, test.pass))
-			}
-
-			conn, err := stomp.Dial("tcp", host, opt...)
-			require.NoError(t, err, "failed to connect")
-			t.Cleanup(func() { require.NoError(t, conn.Disconnect()) })
-
-			sub, err := conn.Subscribe("test", stomp.AckAuto)
-			require.NoError(t, err, "failed to subscribe")
-			t.Cleanup(func() { require.NoError(t, sub.Unsubscribe()) })
-
-			err = conn.Send("test", "", []byte("test"))
-			require.NoError(t, err, "failed to send")
-
-			ticker := time.NewTicker(10 * time.Second)
-			defer ticker.Stop()
-			select {
-			case <-ticker.C:
-				t.Fatal("timed out waiting for message")
-			case msg := <-sub.C:
-				require.Equal(t, "test", string(msg.Body), "received unexpected message")
-			}
+			endpointHost, endpointPort, err := net.SplitHostPort(host)
+			require.NoError(t, err)
+			require.NotEmpty(t, endpointHost)
+			require.NotEmpty(t, endpointPort)
+			// The four-case STOMP auth/pubsub matrix lives in examples/artemis_test.go.
 
 			if test.hook != nil {
 				test.hook(t, ctr)

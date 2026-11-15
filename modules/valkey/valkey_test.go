@@ -1,15 +1,21 @@
 package valkey_test
 
 import (
+	"bufio"
 	"context"
+	"crypto/tls"
 	"fmt"
+	"io"
+	"net"
+	"net/url"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-	"github.com/valkey-io/valkey-go"
 
 	"github.com/testcontainers/testcontainers-go"
 	tcvalkey "github.com/testcontainers/testcontainers-go/modules/valkey"
@@ -102,62 +108,80 @@ func TestRedisWithTLS(t *testing.T) {
 
 func assertSetsGets(t *testing.T, ctx context.Context, valkeyContainer *tcvalkey.ValkeyContainer, keyCount int) {
 	t.Helper()
-	// connectionString {
 	uri, err := valkeyContainer.ConnectionString(ctx)
-	// }
+	require.NoError(t, err)
+	endpoint, err := url.Parse(uri)
 	require.NoError(t, err)
 
-	// You will likely want to wrap your Valkey package of choice in an
-	// interface to aid in unit testing and limit lock-in throughout your
-	// codebase but that's out of scope for this example
-	options, err := valkey.ParseURL(uri)
+	dialer := &net.Dialer{Timeout: 10 * time.Second}
+	var conn net.Conn
+	if config := valkeyContainer.TLSConfig(); config != nil {
+		require.Equal(t, "rediss", endpoint.Scheme)
+		conn, err = (&tls.Dialer{NetDialer: dialer, Config: config}).DialContext(ctx, "tcp", endpoint.Host)
+	} else {
+		require.Equal(t, "redis", endpoint.Scheme)
+		conn, err = dialer.DialContext(ctx, "tcp", endpoint.Host)
+	}
 	require.NoError(t, err)
-
-	// tlsConfig {
-	options.TLSConfig = valkeyContainer.TLSConfig()
-	// }
-
-	client, err := valkey.NewClient(options)
-	require.NoError(t, err)
-	defer func(t *testing.T, ctx context.Context, client *valkey.Client) {
-		t.Helper()
-		require.NoError(t, flushValkey(ctx, *client))
-	}(t, ctx, &client)
+	reader := bufio.NewReader(conn)
+	t.Cleanup(func() {
+		defer func() { require.NoError(t, conn.Close()) }()
+		require.Equal(t, "OK", valkeyCommand(t, conn, reader, "FLUSHALL"))
+	})
 
 	t.Log("pinging valkey")
-	res := client.Do(ctx, client.B().Ping().Build())
-	require.NoError(t, res.Error())
-
+	pong := valkeyCommand(t, conn, reader, "PING")
 	t.Log("received response from valkey")
-
-	msg, err := res.ToString()
-	require.NoError(t, err)
-
-	require.Equalf(t, "PONG", msg, "received unexpected response from valkey: %s", res.String())
+	require.Equalf(t, "PONG", pong, "received unexpected response from valkey: %s", pong)
 
 	for i := 0; i < keyCount; i++ {
-		// Set data
 		key := fmt.Sprintf("{user.%s}.favoritefood.%d", uuid.NewString(), i)
 		value := fmt.Sprintf("Cabbage Biscuits %d", i)
+		ttl := 2 * time.Hour
 
-		ttl, _ := time.ParseDuration("2h")
-
-		err = client.Do(ctx, client.B().Set().Key(key).Value(value).Exat(time.Now().Add(ttl)).Build()).Error()
-		require.NoError(t, err)
-
-		err = client.Do(ctx, client.B().Expire().Key(key).Seconds(int64(ttl.Seconds())).Build()).Error()
-		require.NoError(t, err)
-
-		// Get data
-		resp := client.Do(ctx, client.B().Get().Key(key).Build())
-		require.NoError(t, resp.Error())
-
-		retVal, err := resp.ToString()
-		require.NoError(t, err)
-		require.Equal(t, retVal, value)
+		require.Equal(t, "OK", valkeyCommand(t, conn, reader, "SET", key, value, "EXAT", strconv.FormatInt(time.Now().Add(ttl).Unix(), 10)))
+		require.Equal(t, int64(1), valkeyCommand(t, conn, reader, "EXPIRE", key, strconv.FormatInt(int64(ttl.Seconds()), 10)))
+		require.Equal(t, value, valkeyCommand(t, conn, reader, "GET", key))
 	}
 }
 
-func flushValkey(ctx context.Context, client valkey.Client) error {
-	return client.Do(ctx, client.B().Flushall().Build()).Error()
+// valkeyCommand handles only the simple string, integer and bulk string replies
+// used by these tests, with bounded response sizes and read/write deadlines.
+func valkeyCommand(t *testing.T, conn net.Conn, reader *bufio.Reader, args ...string) any {
+	t.Helper()
+	require.NoError(t, conn.SetDeadline(time.Now().Add(10*time.Second)))
+
+	var request strings.Builder
+	fmt.Fprintf(&request, "*%d\r\n", len(args))
+	for _, arg := range args {
+		fmt.Fprintf(&request, "$%d\r\n%s\r\n", len(arg), arg)
+	}
+	_, err := io.WriteString(conn, request.String())
+	require.NoError(t, err)
+	line, err := reader.ReadSlice('\n')
+	require.NoError(t, err)
+	require.GreaterOrEqual(t, len(line), 3, "invalid Valkey response: %q", line)
+	require.True(t, strings.HasSuffix(string(line), "\r\n"), "invalid Valkey response: %q", line)
+	payload := string(line[1 : len(line)-2])
+	switch line[0] {
+	case '+':
+		return payload
+	case ':':
+		value, err := strconv.ParseInt(payload, 10, 64)
+		require.NoError(t, err)
+		return value
+	case '$':
+		size, err := strconv.Atoi(payload)
+		require.NoError(t, err)
+		require.GreaterOrEqual(t, size, 0, "unexpected nil bulk string")
+		require.LessOrEqual(t, size, 1<<20, "unexpected large bulk string")
+		data := make([]byte, size+2)
+		_, err = io.ReadFull(reader, data)
+		require.NoError(t, err)
+		require.Equal(t, "\r\n", string(data[size:]))
+		return string(data[:size])
+	default:
+		t.Fatalf("unexpected Valkey response: %q", line)
+		return nil
+	}
 }

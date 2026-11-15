@@ -168,7 +168,7 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 }
 
 // WithLogLevel sets the log level for the valkey server process
-// See https://redis.io/docs/reference/modules/modules-api-ref/#redismodule_log for more information.
+// See https://redis.io/docs/latest/develop/reference/modules/modules-api-ref/#redismodule_log for more information.
 func WithLogLevel(level LogLevel) testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {
 		return testcontainers.WithCmdArgs("--loglevel", string(level))(req)

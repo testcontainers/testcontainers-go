@@ -93,7 +93,7 @@ func WithClientRedirectURIs(uris ...string) ClientOption {
 // authorization_code, refresh_token, client_credentials, password.
 //
 // Only takes effect for clients registered via WithClient (YAML). Clients
-// added at runtime via AddClient inherit Dex's defaults because the gRPC
+// added at runtime via the examples admin adapter inherit Dex's defaults because the gRPC
 // api.Client proto has no grant_types field.
 func WithClientGrantTypes(grants ...string) ClientOption {
 	return func(c *Client) error {
@@ -173,7 +173,7 @@ type ConnectorType string
 
 const (
 	// ConnectorPassword enables Dex's built-in static password connector.
-	// Users must be registered via WithUser or AddUser.
+	// Users must be registered via WithUser or the examples admin adapter.
 	ConnectorPassword ConnectorType = "password"
 	// ConnectorMock enables Dex's mockCallback connector — a test-only
 	// connector that bypasses the login form and returns a fixed user.

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -115,11 +116,21 @@ func tarDir(src string, fileMode int64) (*bytes.Buffer, error) {
 func tarFile(basePath string, fileContent func(tw io.Writer) error, fileContentSize int64, fileMode int64) (*bytes.Buffer, error) {
 	buffer := &bytes.Buffer{}
 
+	archivePath := path.Clean(basePath)
+	if archivePath == "." || archivePath == "/" {
+		return buffer, fmt.Errorf("invalid container file path %q", basePath)
+	}
+	if path.IsAbs(archivePath) {
+		archivePath = strings.TrimPrefix(archivePath, "/")
+	} else if archivePath == ".." || strings.HasPrefix(archivePath, "../") {
+		return buffer, fmt.Errorf("container file path %q escapes the archive root", basePath)
+	}
+
 	zr := gzip.NewWriter(buffer)
 	tw := tar.NewWriter(zr)
 
 	hdr := &tar.Header{
-		Name: basePath,
+		Name: archivePath,
 		Mode: fileMode,
 		Size: fileContentSize,
 	}

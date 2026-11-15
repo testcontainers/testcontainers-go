@@ -72,8 +72,8 @@ An example of a `data.yaml` file that seeds the BigQuery instance with datasets 
 ### Examples
 
 <!--codeinclude-->
-[Creating a BigQuery container](../../modules/gcloud/bigquery/examples_test.go) inside_block:runBigQueryContainer
-[Obtaining a BigQuery client](../../modules/gcloud/bigquery/examples_test.go) inside_block:bigQueryClient
+[Creating a BigQuery container](../../modules/gcloud/examples/bigquery/examples_test.go) inside_block:runBigQueryContainer
+[Obtaining a BigQuery client](../../modules/gcloud/examples/bigquery/examples_test.go) inside_block:bigQueryClient
 <!--/codeinclude-->
 
 It's important to set the `option.WithEndpoint()` option using the container's URI, as shown in the client example above.
@@ -110,9 +110,9 @@ When starting the BigTable container, you can pass options in a variadic way to 
 ### Examples
 
 <!--codeinclude-->
-[Creating a BigTable container](../../modules/gcloud/bigtable/examples_test.go) inside_block:runBigTableContainer
-[Obtaining a BigTable Admin client](../../modules/gcloud/bigtable/examples_test.go) inside_block:bigTableAdminClient
-[Obtaining a BigTable client](../../modules/gcloud/bigtable/examples_test.go) inside_block:bigTableClient
+[Creating a BigTable container](../../modules/gcloud/examples/bigtable/examples_test.go) inside_block:runBigTableContainer
+[Obtaining a BigTable Admin client](../../modules/gcloud/examples/bigtable/examples_test.go) inside_block:bigTableAdminClient
+[Obtaining a BigTable client](../../modules/gcloud/examples/bigtable/examples_test.go) inside_block:bigTableClient
 <!--/codeinclude-->
 
 It's important to set the `option.WithEndpoint()` option using the container's URI, as shown in the Admin client example above.
@@ -149,8 +149,8 @@ When starting the Datastore container, you can pass options in a variadic way to
 ### Examples
 
 <!--codeinclude-->
-[Creating a Datastore container](../../modules/gcloud/datastore/examples_test.go) inside_block:runDatastoreContainer
-[Obtaining a Datastore client](../../modules/gcloud/datastore/examples_test.go) inside_block:datastoreClient
+[Creating a Datastore container](../../modules/gcloud/examples/datastore/examples_test.go) inside_block:runDatastoreContainer
+[Obtaining a Datastore client](../../modules/gcloud/examples/datastore/examples_test.go) inside_block:datastoreClient
 <!--/codeinclude-->
 
 It's important to set the `option.WithEndpoint()` option using the container's URI, as shown in the client example above.
@@ -195,8 +195,9 @@ Requires `cloud-sdk:465.0.0` or higher
 ### Examples
 
 <!--codeinclude-->
-[Creating a Firestore container](../../modules/gcloud/firestore/examples_test.go) inside_block:runFirestoreContainer
-[Obtaining a Firestore client](../../modules/gcloud/firestore/examples_test.go) inside_block:firestoreClient
+[Emulator credentials](../../modules/gcloud/examples/firestore/examples_test.go) inside_block:emulatorCredentials
+[Creating a Firestore container](../../modules/gcloud/examples/firestore/examples_test.go) inside_block:runFirestoreContainer
+[Obtaining a Firestore client](../../modules/gcloud/examples/firestore/examples_test.go) inside_block:firestoreClient
 <!--/codeinclude-->
 
 It's important to set the target string of the `grpc.NewClient` method using the container's URI, as shown in the client example above.
@@ -233,8 +234,8 @@ When starting the Pubsub container, you can pass options in a variadic way to co
 ### Examples
 
 <!--codeinclude-->
-[Creating a Pubsub container](../../modules/gcloud/pubsub/examples_test.go) inside_block:runPubsubContainer
-[Obtaining a Pubsub client](../../modules/gcloud/pubsub/examples_test.go) inside_block:pubsubClient
+[Creating a Pubsub container](../../modules/gcloud/examples/pubsub/examples_test.go) inside_block:runPubsubContainer
+[Obtaining a Pubsub client](../../modules/gcloud/examples/pubsub/examples_test.go) inside_block:pubsubClient
 <!--/codeinclude-->
 
 It's important to set the target string of the `grpc.NewClient` method using the container's URI, as shown in the client example above.
@@ -271,9 +272,9 @@ When starting the Spanner container, you can pass options in a variadic way to c
 ### Examples
 
 <!--codeinclude-->
-[Creating a Spanner container](../../modules/gcloud/spanner/examples_test.go) inside_block:runSpannerContainer
-[Obtaining a Spanner Admin client](../../modules/gcloud/spanner/examples_test.go) inside_block:spannerAdminClient
-[Obtaining a Spanner Database Admin client](../../modules/gcloud/spanner/examples_test.go) inside_block:spannerDBAdminClient
+[Creating a Spanner container](../../modules/gcloud/examples/spanner/examples_test.go) inside_block:runSpannerContainer
+[Obtaining a Spanner Admin client](../../modules/gcloud/examples/spanner/examples_test.go) inside_block:spannerAdminClient
+[Obtaining a Spanner Database Admin client](../../modules/gcloud/examples/spanner/examples_test.go) inside_block:spannerDBAdminClient
 <!--/codeinclude-->
 
 It's important to set the `option.WithEndpoint()` option using the container's URI, as shown in the Admin client example above.

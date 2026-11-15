@@ -9,6 +9,8 @@ import (
 	"testing"
 	"testing/synctest"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestAnyMultiStrategy_WaitsForAny(t *testing.T) {
@@ -252,5 +254,19 @@ func TestAnyMultiStrategy_handleNils(t *testing.T) {
 		}); err != nil {
 			t.Fatal(err)
 		}
+	})
+}
+
+// valueStrategy is a non-pointer Strategy implementation.
+type valueStrategy struct{}
+
+func (valueStrategy) WaitUntilReady(context.Context, StrategyTarget) error { return nil }
+
+func TestAnyMultiStrategy_ValueStrategy(t *testing.T) {
+	strategy := ForAny(valueStrategy{})
+
+	require.NotPanics(t, func() {
+		require.Contains(t, strategy.String(), "valueStrategy")
+		require.NoError(t, strategy.WaitUntilReady(context.Background(), NopStrategyTarget{}))
 	})
 }
