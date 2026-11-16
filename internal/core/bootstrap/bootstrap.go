@@ -55,18 +55,8 @@ func init() {
 		fallbackCwd = os.TempDir()
 	}
 
-	processes, err := process.Processes()
-	if err != nil {
-		sessionID = uuid.New().String()
-		projectPath = fallbackCwd
-		return
-	}
-
-	for _, p := range processes {
-		if int(p.Pid) != parentPid {
-			continue
-		}
-
+	p, err := process.NewProcess(int32(parentPid))
+	if err == nil {
 		cwd, err := p.Cwd()
 		if err != nil {
 			cwd = fallbackCwd
@@ -80,7 +70,6 @@ func init() {
 		}
 
 		createTime = t
-		break
 	}
 
 	hasher := sha256.New()
