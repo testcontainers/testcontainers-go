@@ -31,6 +31,7 @@ func resetTestEnv(t *testing.T) {
 	t.Setenv("RYUK_RECONNECTION_TIMEOUT", "")
 	t.Setenv("RYUK_CONNECTION_TIMEOUT", "")
 	t.Setenv("RYUK_REQUEST_TIMEOUT", "")
+	t.Setenv("TESTCONTAINERS_RYUK_REQUEST_TIMEOUT", "")
 	t.Setenv("TESTCONTAINERS_PROVIDER", "")
 }
 
