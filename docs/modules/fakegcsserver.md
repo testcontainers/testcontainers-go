@@ -49,7 +49,16 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 #### Image
 
 Use the second argument in the `Run` function to set a valid Docker image.
-In example: `Run(context.Background(), "fsouza/fake-gcs-server:1.47")`.
+In example: `Run(context.Background(), "fsouza/fake-gcs-server:1.56.1")`.
+
+!!! note "Image compatibility on AMD64"
+
+    Use `fsouza/fake-gcs-server:1.56.1`, which includes a native AMD64 binary.
+    The `1.47` image ships a 32-bit binary in its AMD64 variant. On Docker 29.4.2,
+    the default seccomp profile blocks the `socketcall` syscall used by that binary,
+    causing startup to fail with `socket: function not implemented`.
+    Updating the image avoids this issue; upgrading Docker to 29.4.3 or later also
+    restores support for the syscall. See the [runner image issue](https://github.com/actions/runner-images/issues/14790) for details.
 
 ### Container Options
 
@@ -62,7 +71,7 @@ When starting the FakeGCSServer container, you can pass options in a variadic wa
 Sets the HTTP scheme used by the fake-gcs-server. Valid values are `"http"` (default) and `"https"`.
 
 ```golang
-fakegcsserver.Run(ctx, "fsouza/fake-gcs-server:1.47",
+fakegcsserver.Run(ctx, "fsouza/fake-gcs-server:1.56.1",
     fakegcsserver.WithScheme("https"),
 )
 ```

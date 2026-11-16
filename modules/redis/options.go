@@ -17,7 +17,7 @@ type options struct {
 }
 
 // Compiler check to ensure that Option implements the testcontainers.ContainerCustomizer interface.
-var _ testcontainers.ContainerCustomizer = (Option)(nil)
+var _ testcontainers.ContainerCustomizer = Option(nil)
 
 // Option is an option for the Redis container.
 type Option func(*options) error
@@ -59,7 +59,7 @@ func WithConfigFile(configFile string) testcontainers.CustomizeRequestOption {
 // WithLogLevel sets the log level for the redis server process
 // See "[RedisModule_Log]" for more information.
 //
-// [RedisModule_Log]: https://redis.io/docs/reference/modules/modules-api-ref/#redismodule_log
+// [RedisModule_Log]: https://redis.io/docs/latest/develop/reference/modules/modules-api-ref/#redismodule_log
 func WithLogLevel(level LogLevel) testcontainers.CustomizeRequestOption {
 	return testcontainers.WithCmdArgs("--loglevel", string(level))
 }

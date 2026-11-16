@@ -250,6 +250,12 @@ func TestCreateContainerWithVolume(t *testing.T) {
 }
 
 func TestMountsReceiveRyukLabels(t *testing.T) {
+	provider, err := testcontainers.NewDockerProvider()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = provider.Close() })
+	if provider.RuntimeConfig().Name == "podman" {
+		t.Skip("Podman's Docker-compatible API ignores Mount.VolumeOptions.Labels; explicit volume labels are covered by TestReaperReapsOrphans")
+	}
 	volumeName := "app-data"
 	ctx := context.Background()
 

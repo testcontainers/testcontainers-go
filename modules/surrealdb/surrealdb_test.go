@@ -2,11 +2,15 @@ package surrealdb
 
 import (
 	"context"
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
-	"github.com/surrealdb/surrealdb.go"
 
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -21,31 +25,7 @@ func TestSurrealDBSelect(t *testing.T) {
 	url, err := ctr.URL(ctx)
 	require.NoError(t, err)
 
-	db, err := surrealdb.New(url)
-	require.NoError(t, err)
-	defer db.Close()
-
-	_, err = db.Use("test", "test")
-	require.NoError(t, err)
-
-	_, err = db.Create("person.tobie", map[string]any{
-		"title": "Founder & CEO",
-		"name": map[string]string{
-			"first": "Tobie",
-			"last":  "Morgan Hitchcock",
-		},
-		"marketing": true,
-	})
-	require.NoError(t, err)
-
-	result, err := db.Select("person.tobie")
-	require.NoError(t, err)
-
-	resultData := result.([]any)[0].(map[string]any)
-	require.Equal(t, "Founder & CEO", resultData["title"])
-	require.Equal(t, "Tobie", resultData["name"].(map[string]any)["first"])
-	require.Equal(t, "Morgan Hitchcock", resultData["name"].(map[string]any)["last"])
-	require.Equal(t, true, resultData["marketing"])
+	assertHTTPDocument(t, ctx, url, false)
 }
 
 func TestSurrealDBWithAuth(t *testing.T) {
@@ -60,34 +40,7 @@ func TestSurrealDBWithAuth(t *testing.T) {
 	// }
 	require.NoError(t, err)
 
-	db, err := surrealdb.New(url)
-	require.NoError(t, err)
-	defer db.Close()
-
-	_, err = db.Signin(map[string]string{"user": "root", "pass": "root"})
-	require.NoError(t, err)
-
-	_, err = db.Use("test", "test")
-	require.NoError(t, err)
-
-	_, err = db.Create("person.tobie", map[string]any{
-		"title": "Founder & CEO",
-		"name": map[string]string{
-			"first": "Tobie",
-			"last":  "Morgan Hitchcock",
-		},
-		"marketing": true,
-	})
-	require.NoError(t, err)
-
-	result, err := db.Select("person.tobie")
-	require.NoError(t, err)
-
-	resultData := result.([]any)[0].(map[string]any)
-	require.Equal(t, "Founder & CEO", resultData["title"])
-	require.Equal(t, "Tobie", resultData["name"].(map[string]any)["first"])
-	require.Equal(t, "Morgan Hitchcock", resultData["name"].(map[string]any)["last"])
-	require.Equal(t, true, resultData["marketing"])
+	assertHTTPDocument(t, ctx, url, true)
 }
 
 func TestSurrealDBWithAllowAllCaps(t *testing.T) {
@@ -106,4 +59,58 @@ func TestSurrealDBWithAllowAllCaps(t *testing.T) {
 			break
 		}
 	}
+}
+
+// The HTTP endpoint is derived from the public WebSocket endpoint; the child
+// examples module separately retains the original WebSocket SDK operations.
+func assertHTTPDocument(t *testing.T, ctx context.Context, websocketURL string, authenticated bool) {
+	t.Helper()
+	endpoint, err := url.Parse(websocketURL)
+	require.NoError(t, err)
+	require.Equal(t, "ws", endpoint.Scheme)
+	require.Equal(t, "/rpc", endpoint.Path)
+	require.NotEmpty(t, endpoint.Hostname())
+	require.NotEmpty(t, endpoint.Port())
+	endpoint.Scheme = "http"
+	endpoint.Path = "/sql"
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint.String(), strings.NewReader(`
+CREATE person:tobie CONTENT {title: "Founder & CEO", name: {first: "Tobie", last: "Morgan Hitchcock"}, marketing: true};
+SELECT * FROM person:tobie;
+`))
+	require.NoError(t, err)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("NS", "test")
+	req.Header.Set("DB", "test")
+	if authenticated {
+		req.SetBasicAuth("root", "root")
+	}
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	const maxResponse = 1 << 20
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponse+1))
+	require.NoError(t, err)
+	require.LessOrEqual(t, len(body), maxResponse)
+	require.Equal(t, http.StatusOK, resp.StatusCode, "%s", body)
+	var statements []struct {
+		Status string          `json:"status"`
+		Result json.RawMessage `json:"result"`
+	}
+	require.NoError(t, json.Unmarshal(body, &statements))
+	require.Len(t, statements, 2)
+	for _, statement := range statements {
+		require.Equal(t, "OK", statement.Status, "%s", statement.Result)
+	}
+	var result []map[string]any
+	require.NoError(t, json.Unmarshal(statements[1].Result, &result))
+	require.Len(t, result, 1)
+	resultData := result[0]
+	require.Equal(t, "Founder & CEO", resultData["title"])
+	require.Equal(t, "Tobie", resultData["name"].(map[string]any)["first"])
+	require.Equal(t, "Morgan Hitchcock", resultData["name"].(map[string]any)["last"])
+	require.Equal(t, true, resultData["marketing"])
 }

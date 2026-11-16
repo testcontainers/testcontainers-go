@@ -1059,6 +1059,7 @@ func (n *DockerNetwork) SetTerminationSignal(signal chan bool) {
 // DockerProvider implements the ContainerProvider interface
 type DockerProvider struct {
 	*DockerProviderOptions
+	runtime   RuntimeConfig
 	client    client.APIClient
 	host      string
 	hostCache string
@@ -1069,6 +1070,12 @@ type DockerProvider struct {
 // Client gets the docker client used by the provider
 func (p *DockerProvider) Client() client.APIClient {
 	return p.client
+}
+
+// RuntimeConfig returns the selected runtime's connection settings. Modules that
+// construct additional Docker clients must use its endpoint when DockerHost is set.
+func (p *DockerProvider) RuntimeConfig() RuntimeConfig {
+	return p.runtime
 }
 
 // Close closes the docker client used by the provider
@@ -1170,8 +1177,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		return nil, err
 	}
 
-	// always append the hub substitutor after the user-defined ones
-	req.ImageSubstitutors = append(req.ImageSubstitutors, newPrependHubRegistry(p.config.HubImageNamePrefix))
+	req.ImageSubstitutors = p.imageSubstitutors(req)
 
 	var platform *specs.Platform
 
@@ -1199,16 +1205,9 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 			return nil, err
 		}
 	} else {
-		for _, is := range req.ImageSubstitutors {
-			modifiedTag, err := is.Substitute(imageName)
-			if err != nil {
-				return nil, fmt.Errorf("failed to substitute image %s with %s: %w", imageName, is.Description(), err)
-			}
-
-			if modifiedTag != imageName {
-				p.Logger.Printf("✍🏼 Replacing image with %s. From: %s to %s\n", is.Description(), imageName, modifiedTag)
-				imageName = modifiedTag
-			}
+		imageName, err = p.substituteImage(imageName, req.ImageSubstitutors)
+		if err != nil {
+			return nil, err
 		}
 
 		if req.ImagePlatform != "" {
@@ -1374,6 +1373,29 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	return ctr, nil
+}
+
+// imageSubstitutors returns the image substitutors applied to req's image,
+// which are req's own followed by the hub registry prefix.
+func (p *DockerProvider) imageSubstitutors(req ContainerRequest) []ImageSubstitutor {
+	return append(req.ImageSubstitutors, newPrependHubRegistry(p.config.HubImageNamePrefix))
+}
+
+// substituteImage returns image with substitutors applied in order.
+func (p *DockerProvider) substituteImage(image string, substitutors []ImageSubstitutor) (string, error) {
+	for _, is := range substitutors {
+		modifiedTag, err := is.Substitute(image)
+		if err != nil {
+			return "", fmt.Errorf("failed to substitute image %s with %s: %w", image, is.Description(), err)
+		}
+
+		if modifiedTag != image {
+			p.Logger.Printf("✍🏼 Replacing image with %s. From: %s to %s\n", is.Description(), image, modifiedTag)
+			image = modifiedTag
+		}
+	}
+
+	return image, nil
 }
 
 func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (*container.Summary, error) {
@@ -1614,6 +1636,9 @@ func (p *DockerProvider) DaemonHost(ctx context.Context) (string, error) {
 }
 
 func (p *DockerProvider) daemonHostLocked(ctx context.Context) (string, error) {
+	if p.runtime.PublishedHost != "" {
+		return p.runtime.PublishedHost, nil
+	}
 	if p.hostCache != "" {
 		return p.hostCache, nil
 	}
@@ -1786,17 +1811,31 @@ func (p *DockerProvider) ensureDefaultNetworkLocked(ctx context.Context) (string
 	// TODO: remove once we have docker context support via #2810
 	// Prefer the default bridge network if it exists.
 	// This makes the results stable as network list order is not guaranteed.
+	var fallbackNetwork string
 	for _, nw := range networkResources.Items {
 		switch nw.Name {
 		case p.defaultBridgeNetworkName:
 			p.defaultNetwork = p.defaultBridgeNetworkName
 			return p.defaultNetwork, nil
 		case ReaperDefault:
-			p.defaultNetwork = ReaperDefault
+			fallbackNetwork = ReaperDefault
 		}
 	}
 
-	if p.defaultNetwork != "" {
+	// A compatible runtime may list the default network under an alias: Podman
+	// lists "bridge", but container creation requires its native name "podman".
+	// Inspect the configured name before choosing or creating a fallback.
+	if p.defaultBridgeNetworkName != Bridge {
+		if _, err := p.client.NetworkInspect(ctx, p.defaultBridgeNetworkName, client.NetworkInspectOptions{}); err == nil {
+			p.defaultNetwork = p.defaultBridgeNetworkName
+			return p.defaultNetwork, nil
+		} else if !errdefs.IsNotFound(err) {
+			return "", fmt.Errorf("inspect default network: %w", err)
+		}
+	}
+
+	if fallbackNetwork != "" {
+		p.defaultNetwork = fallbackNetwork
 		return p.defaultNetwork, nil
 	}
 

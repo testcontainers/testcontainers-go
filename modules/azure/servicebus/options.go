@@ -24,7 +24,7 @@ func defaultOptions() options {
 }
 
 // Satisfy the testcontainers.ContainerCustomizer interface
-var _ testcontainers.ContainerCustomizer = (Option)(nil)
+var _ testcontainers.ContainerCustomizer = Option(nil)
 
 // Option is an option for the ServiceBus container.
 type Option func(*options) error

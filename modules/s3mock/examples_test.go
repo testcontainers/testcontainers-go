@@ -5,16 +5,12 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/s3mock"
 )
 
-// ExampleRun demonstrates how to start an S3Mock container with a pre-created
-// bucket and configure the AWS SDK v2 client to point at the container endpoint.
+// ExampleRun demonstrates how to start an S3Mock container with a pre-created bucket.
+// See examples/ for AWS SDK client usage.
 func ExampleRun() {
 	// runS3MockContainer {
 	ctx := context.Background()
@@ -36,36 +32,14 @@ func ExampleRun() {
 	}
 	// }
 
-	// awsClientSetup {
-	endpointURL, err := s3mockContainer.EndpointURL(ctx)
+	state, err := s3mockContainer.State(ctx)
 	if err != nil {
-		log.Printf("failed to get endpoint URL: %s", err)
+		log.Printf("failed to get container state: %s", err)
 		return
 	}
 
-	awsCfg, err := config.LoadDefaultConfig(ctx,
-		config.WithRegion("us-east-1"),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("test", "test", "")),
-	)
-	if err != nil {
-		log.Printf("failed to load AWS config: %s", err)
-		return
-	}
-
-	client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
-		o.EndpointResolverV2 = &s3EndpointResolver{endpointURL: endpointURL}
-		o.UsePathStyle = true
-	})
-	// }
-
-	out, err := client.ListBuckets(ctx, &s3.ListBucketsInput{})
-	if err != nil {
-		log.Printf("failed to list buckets: %s", err)
-		return
-	}
-
-	fmt.Println(len(out.Buckets))
+	fmt.Println(state.Running)
 
 	// Output:
-	// 1
+	// true
 }

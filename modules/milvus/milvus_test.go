@@ -3,7 +3,6 @@ package milvus_test
 import (
 	"testing"
 
-	"github.com/milvus-io/milvus/client/v2/milvusclient"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -15,23 +14,13 @@ func TestMilvus(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	t.Run("Connect to Milvus with gRPC", func(tt *testing.T) {
+	t.Run("Connection endpoint", func(tt *testing.T) {
 		// connectionString {
 		ctx := tt.Context()
 		connectionStr, err := ctr.ConnectionString(ctx)
 		// }
-		require.NoError(t, err)
+		require.NoError(tt, err)
 
-		milvusClient, err := milvusclient.New(ctx, &milvusclient.ClientConfig{
-			Address: connectionStr,
-		})
-		require.NoError(t, err)
-
-		defer milvusClient.Close(ctx)
-
-		v, err := milvusClient.GetServerVersion(ctx, milvusclient.NewGetServerVersionOption())
-		require.NoError(t, err)
-
-		tt.Logf("Milvus version: %s", v)
+		require.NotEmpty(tt, connectionStr)
 	})
 }

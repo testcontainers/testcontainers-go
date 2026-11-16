@@ -5,21 +5,18 @@ import (
 	"io"
 	"math/rand/v2"
 	"net"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/v2/bson"
-	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
-	"go.mongodb.org/mongo-driver/v2/x/mongo/driver/connstring"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/modules/mongodb/atlaslocal"
+	"github.com/testcontainers/testcontainers-go/modules/mongodb/internal/mongotest"
 )
 
 const latestImage = "mongodb/mongodb-atlas-local:latest"
@@ -31,11 +28,11 @@ func TestMongoDBAtlasLocal(t *testing.T) {
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 
-	client, td := newMongoClient(t, ctx, ctr)
-	defer td()
-
-	err = client.Ping(ctx, nil)
+	client := newMongoClient(t, ctx, ctr)
+	var ping int
+	err = client.Run(ctx, `return commandWorked(db.getSiblingDB("admin").runCommand({ping:1})).ok;`, &ping)
 	require.NoError(t, err)
+	require.Equal(t, 1, ping)
 }
 
 func TestSCRAMAuth(t *testing.T) {
@@ -213,15 +210,12 @@ func TestSCRAMAuth(t *testing.T) {
 				requireEnvVar(t, ctr, "MONGODB_INITDB_ROOT_PASSWORD_FILE", "/run/secrets/mongo-root-password")
 			}
 
-			client, td := newMongoClient(t, context.Background(), ctr)
-			defer td()
-
-			// Execute an insert operation to verify the connection and
-			// authentication.
-			coll := client.Database("test").Collection("foo")
-
-			_, err = coll.InsertOne(context.Background(), bson.D{{Key: "test", Value: "value"}})
+			client := newMongoClient(t, context.Background(), ctr)
+			// Execute the original authenticated write through the generated endpoint.
+			var acknowledged bool
+			err = client.Run(context.Background(), `return acknowledged(db.getSiblingDB('test').getCollection('foo').insertOne({test:'value'})).acknowledged;`, &acknowledged)
 			require.NoError(t, err, "Failed to insert document with authentication")
+			require.True(t, acknowledged)
 		})
 	}
 }
@@ -366,48 +360,47 @@ func TestWithInitDatabase(t *testing.T) {
 	requireInitScriptsExist(t, ctr, initScripts)
 	requireEnvVar(t, ctr, "MONGODB_INITDB_DATABASE", "mydb")
 
-	client, td := newMongoClient(t, context.Background(), ctr)
-	defer td()
-
-	coll := client.Database("mydb").Collection("foo")
-
-	seed := bson.D{{Key: "_id", Value: int32(1)}, {Key: "seeded", Value: true}}
-
-	res := coll.FindOne(context.Background(), seed)
-	require.NoError(t, res.Err())
-
-	var doc bson.D
-	require.NoError(t, res.Decode(&doc), "Failed to decode seeded document")
+	client := newMongoClient(t, context.Background(), ctr)
+	seed := `{"_id":{"$numberInt":"1"},"seeded":true}`
+	var raw string
+	err = client.Run(context.Background(), `
+const doc = db.getSiblingDB('mydb').getCollection('foo').findOne(EJSON.parse('{"_id":{"$numberInt":"1"},"seeded":true}', {relaxed:false}), {}, {promoteValues:false, promoteLongs:false});
+if (doc === null) throw new Error('seeded document not found');
+return EJSON.stringify(doc, null, 0, {relaxed:false});
+`, &raw)
+	require.NoError(t, err)
+	doc, err := mongotest.CanonicalDocument(raw)
+	require.NoError(t, err, "Failed to decode seeded document")
 	require.Equal(t, seed, doc, "Seeded document does not match expected values")
 }
 
 func TestWithInitScripts(t *testing.T) {
-	seed1 := bson.D{{Key: "_id", Value: int32(1)}, {Key: "seeded", Value: true}}
-	seed2 := bson.D{{Key: "_id", Value: int32(2)}, {Key: "seeded", Value: true}}
+	seed1 := `{"_id":{"$numberInt":"1"},"seeded":true}`
+	seed2 := `{"_id":{"$numberInt":"2"},"seeded":true}`
 
 	cases := []struct {
 		name        string
 		initScripts map[string]string // filename -> content
-		want        []bson.D
+		want        []string
 	}{
 		{
 			name:        "no scripts",
 			initScripts: map[string]string{},
-			want:        []bson.D{},
+			want:        []string{},
 		},
 		{
 			name: "single shell script",
 			initScripts: map[string]string{
 				"01-seed.sh": `mongosh --eval 'db.foo.insertOne({ _id: 1, seeded: true })'`,
 			},
-			want: []bson.D{seed1},
+			want: []string{seed1},
 		},
 		{
 			name: "single js script",
 			initScripts: map[string]string{
 				"01-seed.js": `db.foo.insertOne({ _id: 1, seeded: true });`,
 			},
-			want: []bson.D{seed1},
+			want: []string{seed1},
 		},
 		{
 			name: "mixed shell and js scripts",
@@ -415,7 +408,7 @@ func TestWithInitScripts(t *testing.T) {
 				"01-seed.sh": `mongosh --eval 'db.foo.insertOne({ _id: 1, seeded: true })'`,
 				"02-seed.js": `db.foo.insertOne({ _id: 2, seeded: true });`,
 			},
-			want: []bson.D{seed1, seed2},
+			want: []string{seed1, seed2},
 		},
 		{
 			name: "mixed ordered shell",
@@ -423,7 +416,7 @@ func TestWithInitScripts(t *testing.T) {
 				"01-seed.sh": `mongosh --eval 'db.foo.insertOne({ _id: 1, seeded: true })'`,
 				"02-seed.sh": `mongosh --eval 'db.foo.deleteOne({ _id: 1, seeded: true })'`,
 			},
-			want: []bson.D{},
+			want: []string{},
 		},
 	}
 
@@ -442,18 +435,20 @@ func TestWithInitScripts(t *testing.T) {
 
 			requireInitScriptsExist(t, ctr, tc.initScripts)
 
-			// Connect to the server.
-			client, td := newMongoClient(t, context.Background(), ctr)
-			defer td()
-
-			// Fetch the seeded data.
-			coll := client.Database("test").Collection("foo")
-
-			cur, err := coll.Find(context.Background(), bson.D{})
+			client := newMongoClient(t, context.Background(), ctr)
+			var raw []string
+			err = client.Run(context.Background(), `
+const cursor = db.getSiblingDB('test').getCollection('foo').find({}, {}, {promoteValues:false, promoteLongs:false});
+try { return cursor.toArray().map(doc => EJSON.stringify(doc, null, 0, {relaxed:false})); }
+finally { cursor.close(); }
+`, &raw)
 			require.NoError(t, err)
-
-			var results []bson.D
-			require.NoError(t, cur.All(context.Background(), &results))
+			results := make([]string, 0, len(raw))
+			for _, doc := range raw {
+				canonical, err := mongotest.CanonicalDocument(doc)
+				require.NoError(t, err)
+				results = append(results, canonical)
+			}
 
 			require.ElementsMatch(t, results, tc.want, "Seeded documents do not match expected values")
 		})
@@ -539,19 +534,20 @@ func TestConnectionString(t *testing.T) {
 			csRaw, err := ctr.ConnectionString(context.Background())
 			require.NoError(t, err)
 
-			connString, err := connstring.ParseAndValidate(csRaw)
+			connString, err := url.Parse(csRaw)
 			require.NoError(t, err, "Failed to parse connection string")
 
 			require.Equal(t, "mongodb", connString.Scheme)
-			host, port, err := net.SplitHostPort(connString.Hosts[0])
+			host, port, err := net.SplitHostPort(connString.Host)
 			require.NoError(t, err, "Invalid host:port")
 			require.NotEmpty(t, host)
 			require.NotEmpty(t, port)
 
-			require.Equal(t, tc.wantUsername, connString.Username)
-			require.Equal(t, tc.wantPassword, connString.Password)
-			require.Equal(t, tc.wantDatabase, connString.Database)
-			require.True(t, connString.DirectConnection)
+			require.Equal(t, tc.wantUsername, connString.User.Username())
+			password, _ := connString.User.Password()
+			require.Equal(t, tc.wantPassword, password)
+			require.Equal(t, tc.wantDatabase, strings.TrimPrefix(connString.Path, "/"))
+			require.Equal(t, "true", connString.Query().Get("directConnection"))
 		})
 	}
 }
@@ -623,82 +619,38 @@ func requireNoRunnerLogs(t *testing.T, ctr testcontainers.Container) {
 	}
 }
 
-// createSearchIndex creates a search index with the given name on the provided
-// collection and waits for it to be acknowledged server-side.
-func createSearchIndex(t *testing.T, ctx context.Context, coll *mongo.Collection, indexName string) {
-	t.Helper()
-
-	// Create the default definition for search index
-	definition := bson.D{{Key: "mappings", Value: bson.D{{Key: "dynamic", Value: true}}}}
-	indexModel := mongo.SearchIndexModel{
-		Definition: definition,
-		Options:    options.SearchIndexes().SetName(indexName),
-	}
-
-	_, err := coll.SearchIndexes().CreateOne(ctx, indexModel)
-	require.NoError(t, err)
-}
-
-// executeAggregation connects to the MongoDB Atlas Local instance, creates a
-// collection with a search index, inserts a document, and performs an
-// aggregation using the search index.
+// executeAggregation preserves the original collection/index/write/search traffic.
+// Iterating the lazy shell cursor forces the aggregation command to execute.
 func executeAggregation(t *testing.T, ctr testcontainers.Container) {
 	t.Helper()
-
-	client, td := newMongoClient(t, context.Background(), ctr)
-	defer td()
-
-	err := client.Database("test").CreateCollection(context.Background(), "search")
+	client := newMongoClient(t, context.Background(), ctr)
+	var result struct {
+		Collection, Index, Aggregation bool
+		Acknowledged                   bool
+	}
+	err := client.Run(context.Background(), `
+const database = db.getSiblingDB('test');
+commandWorked(database.createCollection('search'));
+commandWorked(database.runCommand({createSearchIndexes:'search', indexes:[{name:'test_search_index', definition:{mappings:{dynamic:true}}}]}));
+const coll = database.getCollection('search');
+const inserted = acknowledged(coll.insertOne({txt:'hello'}));
+const cursor = coll.aggregate([{$search:{text:{query:'hello', path:'txt'}}}], {maxTimeMS:90000});
+try { cursor.toArray(); }
+finally { cursor.close(); }
+return {collection:true, index:true, acknowledged:inserted.acknowledged, aggregation:true};
+`, &result)
 	require.NoError(t, err)
-
-	coll := client.Database("test").Collection("search")
-
-	siCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
-
-	// Create a search index on the collection.
-	createSearchIndex(t, siCtx, coll, "test_search_index")
-
-	// Insert a document into the collection and aggregate it using the search
-	// index which should log the operation to the mongot log file.
-	_, err = coll.InsertOne(context.Background(), bson.D{{Key: "txt", Value: "hello"}})
-	require.NoError(t, err)
-
-	pipeline := mongo.Pipeline{{
-		{Key: "$search", Value: bson.D{
-			{Key: "text", Value: bson.D{{Key: "query", Value: "hello"}, {Key: "path", Value: "txt"}}},
-		}},
-	}}
-
-	cur, err := coll.Aggregate(context.Background(), pipeline)
-	require.NoError(t, err)
-
-	err = cur.Close(context.Background())
-	require.NoError(t, err)
+	require.True(t, result.Collection)
+	require.True(t, result.Index)
+	require.True(t, result.Acknowledged)
+	require.True(t, result.Aggregation)
 }
 
-func newMongoClient(
-	t *testing.T,
-	ctx context.Context,
-	ctr testcontainers.Container,
-	opts ...*options.ClientOptions,
-) (*mongo.Client, func()) {
+func newMongoClient(t *testing.T, ctx context.Context, ctr testcontainers.Container) *mongotest.Shell {
 	t.Helper()
-
 	connString, err := ctr.(*atlaslocal.Container).ConnectionString(ctx)
 	require.NoError(t, err)
-
-	copts := make([]*options.ClientOptions, 0, 1+len(opts))
-	copts = append(copts, options.Client().ApplyURI(connString))
-	copts = append(copts, opts...)
-
-	client, err := mongo.Connect(copts...)
-	require.NoError(t, err)
-
-	return client, func() {
-		err := client.Disconnect(context.Background())
-		require.NoError(t, err, "Failed to disconnect MongoDB client")
-	}
+	return mongotest.New(t, ctx, connString)
 }
 
 func createInitScripts(t *testing.T, scripts map[string]string) string {

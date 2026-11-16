@@ -52,5 +52,5 @@ When starting the Aerospike container, you can pass options in a variadic way to
 ### Aerospike Client
 
 <!--codeinclude-->
-[Aerospike Client](../../modules/aerospike/examples_test.go) inside_block:usingClient
+[Aerospike Client](../../modules/aerospike/examples/examples_test.go) inside_block:usingClient
 <!--/codeinclude-->

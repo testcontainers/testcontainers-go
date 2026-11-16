@@ -17,7 +17,7 @@ func ExampleRun() {
 	// runFakeGCSServerContainer {
 	ctx := context.Background()
 
-	fakegcsserverContainer, err := fakegcsserver.Run(ctx, "fsouza/fake-gcs-server:1.47")
+	fakegcsserverContainer, err := fakegcsserver.Run(ctx, "fsouza/fake-gcs-server:1.56.1")
 	defer func() {
 		if err := testcontainers.TerminateContainer(fakegcsserverContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)

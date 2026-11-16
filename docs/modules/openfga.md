@@ -61,7 +61,7 @@ The OpenFGA container exposes the following methods:
 This method returns the HTTP endpoint to connect to the OpenFGA container, using the `8080` port.
 
 <!--codeinclude-->
-[Get HTTP endpoint](../../modules/openfga/examples_test.go) inside_block:httpEndpoint
+[Get HTTP endpoint](../../modules/openfga/examples/examples_test.go) inside_block:httpEndpoint
 <!--/codeinclude-->
 
 #### GrpcEndpoint
@@ -88,7 +88,7 @@ In case you want to interact with the openfga playground, please use the `Playgr
 The following example shows how to write an OpenFGA model using the OpenFGA container.
 
 <!--codeinclude-->
-[Write a Model](../../modules/openfga/examples_test.go) inside_block:openFGAwriteModel
+[Write a Model](../../modules/openfga/examples/examples_test.go) inside_block:openFGAwriteModel
 <!--/codeinclude-->
 
 ### Running OpenFGA with Playground enabled

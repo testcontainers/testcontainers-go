@@ -1,14 +1,20 @@
 package redis_test
 
 import (
+	"bufio"
 	"context"
+	"crypto/tls"
 	"fmt"
+	"io"
+	"net"
+	"net/url"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -73,7 +79,7 @@ func TestRedisWithSnapshotting(t *testing.T) {
 func TestRedisWithTLS(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("mtls-disabled", func(t *testing.T) {
+	t.Run("mtls-enabled", func(t *testing.T) {
 		redisContainer, err := tcredis.Run(ctx, "redis:7", tcredis.WithTLS())
 		testcontainers.CleanupContainer(t, redisContainer)
 		require.NoError(t, err)
@@ -81,7 +87,7 @@ func TestRedisWithTLS(t *testing.T) {
 		assertSetsGets(t, ctx, redisContainer, 1)
 	})
 
-	t.Run("mtls-enabled", func(t *testing.T) {
+	t.Run("mtls-disabled", func(t *testing.T) {
 		redisContainer, err := tcredis.Run(ctx, "redis:7", tcredis.WithTLS(), testcontainers.WithCmdArgs("--tls-auth-clients", "no"))
 		testcontainers.CleanupContainer(t, redisContainer)
 		require.NoError(t, err)
@@ -93,52 +99,70 @@ func TestRedisWithTLS(t *testing.T) {
 func assertSetsGets(t *testing.T, ctx context.Context, redisContainer *tcredis.RedisContainer, keyCount int) {
 	t.Helper()
 
-	// connectionString {
 	uri, err := redisContainer.ConnectionString(ctx)
-	// }
+	require.NoError(t, err)
+	endpoint, err := url.Parse(uri)
 	require.NoError(t, err)
 
-	// You will likely want to wrap your Redis package of choice in an
-	// interface to aid in unit testing and limit lock-in throughout your
-	// codebase but that's out of scope for this example
-	options, err := redis.ParseURL(uri)
+	dialer := &net.Dialer{Timeout: 10 * time.Second}
+	var conn net.Conn
+	if config := redisContainer.TLSConfig(); config != nil {
+		require.Equal(t, "rediss", endpoint.Scheme)
+		conn, err = (&tls.Dialer{NetDialer: dialer, Config: config}).DialContext(ctx, "tcp", endpoint.Host)
+	} else {
+		require.Equal(t, "redis", endpoint.Scheme)
+		conn, err = dialer.DialContext(ctx, "tcp", endpoint.Host)
+	}
 	require.NoError(t, err)
-
-	// tlsConfig {
-	options.TLSConfig = redisContainer.TLSConfig()
-	// }
-
-	client := redis.NewClient(options)
-	defer func(t *testing.T, ctx context.Context, client *redis.Client) {
-		t.Helper()
-		require.NoError(t, flushRedis(ctx, *client))
-	}(t, ctx, client)
+	reader := bufio.NewReader(conn)
+	t.Cleanup(func() {
+		defer func() { require.NoError(t, conn.Close()) }()
+		require.Equal(t, "OK", redisCommand(t, conn, reader, "FLUSHALL"))
+	})
 
 	t.Log("pinging redis")
-	pong, err := client.Ping(ctx).Result()
-	require.NoError(t, err)
-
+	pong := redisCommand(t, conn, reader, "PING")
 	t.Log("received response from redis")
-
 	require.Equalf(t, "PONG", pong, "received unexpected response from redis: %s", pong)
 
 	for i := 0; i < keyCount; i++ {
-		// Set data
 		key := fmt.Sprintf("{user.%s}.favoritefood.%d", uuid.NewString(), i)
 		value := fmt.Sprintf("Cabbage Biscuits %d", i)
-
-		ttl, _ := time.ParseDuration("2h")
-		err = client.Set(ctx, key, value, ttl).Err()
-		require.NoError(t, err)
-
-		// Get data
-		savedValue, err := client.Get(ctx, key).Result()
-		require.NoError(t, err)
-
-		require.Equal(t, savedValue, value)
+		require.Equal(t, "OK", redisCommand(t, conn, reader, "SET", key, value, "EX", "7200"))
+		savedValue := redisCommand(t, conn, reader, "GET", key)
+		require.Equal(t, value, savedValue)
 	}
 }
 
-func flushRedis(ctx context.Context, client redis.Client) error {
-	return client.FlushAll(ctx).Err()
+// redisCommand handles only the simple and bulk string replies used by these tests.
+func redisCommand(t *testing.T, conn net.Conn, reader *bufio.Reader, args ...string) string {
+	t.Helper()
+	require.NoError(t, conn.SetDeadline(time.Now().Add(10*time.Second)))
+
+	var request strings.Builder
+	fmt.Fprintf(&request, "*%d\r\n", len(args))
+	for _, arg := range args {
+		fmt.Fprintf(&request, "$%d\r\n%s\r\n", len(arg), arg)
+	}
+	_, err := io.WriteString(conn, request.String())
+	require.NoError(t, err)
+	line, err := reader.ReadString('\n')
+	require.NoError(t, err)
+	require.True(t, strings.HasSuffix(line, "\r\n"), "invalid Redis response: %q", line)
+	switch line[0] {
+	case '+':
+		return strings.TrimSuffix(line[1:], "\r\n")
+	case '$':
+		size, err := strconv.Atoi(strings.TrimSuffix(line[1:], "\r\n"))
+		require.NoError(t, err)
+		require.GreaterOrEqual(t, size, 0, "unexpected nil bulk string")
+		data := make([]byte, size+2)
+		_, err = io.ReadFull(reader, data)
+		require.NoError(t, err)
+		require.Equal(t, "\r\n", string(data[size:]))
+		return string(data[:size])
+	default:
+		t.Fatalf("unexpected Redis response: %q", line)
+		return ""
+	}
 }

@@ -22,6 +22,9 @@ Running Neo4j as a single-instance server, with the [APOC plugin](https://neo4j.
 [Creating a Neo4j container](../../modules/neo4j/examples_test.go) inside_block:runNeo4jContainer
 <!--/codeinclude-->
 
+For Bolt connectivity and APOC queries using the official Go driver, see the
+[SDK integration tests](https://github.com/testcontainers/testcontainers-go/blob/main/modules/neo4j/examples/neo4j_test.go) in the separate examples module.
+
 ## Module Reference
 
 ### Run function
@@ -127,5 +130,5 @@ The `BoltURL` method returns the connection string to connect to the Neo4j conta
 It returns a string with the format `neo4j://<host>:<port>`.
 
 <!--codeinclude-->
-[Connect to Neo4j](../../modules/neo4j/neo4j_test.go) inside_block:boltURL
+[Get the Bolt URL](../../modules/neo4j/neo4j_test.go) inside_block:boltURL
 <!--/codeinclude-->

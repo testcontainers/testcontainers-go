@@ -104,22 +104,60 @@ func Test_TarDir(t *testing.T) {
 }
 
 func Test_TarFile(t *testing.T) {
+	t.Setenv("GODEBUG", os.Getenv("GODEBUG")+",tarinsecurepath=0")
+
 	b, err := os.ReadFile(filepath.Join(".", "testdata", "Dockerfile"))
 	require.NoError(t, err)
 
-	buff, err := tarFile("Docker.file", func(tw io.Writer) error {
-		_, err := tw.Write(b)
-		return err
-	}, int64(len(b)), 0o755)
-	require.NoError(t, err)
+	tests := []struct {
+		name     string
+		path     string
+		wantName string
+		wantErr  string
+	}{
+		{name: "relative", path: "Docker.file", wantName: "Docker.file"},
+		{name: "relative nested", path: "test/Docker.file", wantName: "test/Docker.file"},
+		{name: "absolute nested", path: "/test/Docker.file", wantName: "test/Docker.file"},
+		{name: "clean absolute", path: "/test/../tmp/./Docker.file", wantName: "tmp/Docker.file"},
+		{name: "clean relative", path: "test/../tmp/./Docker.file", wantName: "tmp/Docker.file"},
+		{name: "empty", path: "", wantErr: "invalid container file path"},
+		{name: "dot", path: ".", wantErr: "invalid container file path"},
+		{name: "clean dot", path: "test/..", wantErr: "invalid container file path"},
+		{name: "root", path: "/", wantErr: "invalid container file path"},
+		{name: "parent", path: "..", wantErr: "escapes the archive root"},
+		{name: "parent prefix", path: "../Docker.file", wantErr: "escapes the archive root"},
+		{name: "clean traversal", path: "test/../../Docker.file", wantErr: "escapes the archive root"},
+	}
 
-	tmpDir := t.TempDir()
-	err = untar(tmpDir, bytes.NewReader(buff.Bytes()))
-	require.NoError(t, err)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			buff, err := tarFile(test.path, func(tw io.Writer) error {
+				_, err := tw.Write(b)
+				return err
+			}, int64(len(b)), 0o755)
+			if test.wantErr != "" {
+				require.ErrorContains(t, err, test.wantErr)
+				return
+			}
+			require.NoError(t, err)
 
-	untarBytes, err := os.ReadFile(filepath.Join(tmpDir, "Docker.file"))
-	require.NoError(t, err)
-	assert.Equal(t, b, untarBytes)
+			gzr, err := gzip.NewReader(bytes.NewReader(buff.Bytes()))
+			require.NoError(t, err)
+			t.Cleanup(func() { require.NoError(t, gzr.Close()) })
+			tr := tar.NewReader(gzr)
+
+			header, err := tr.Next()
+			require.NoError(t, err)
+			require.Equal(t, test.wantName, header.Name)
+			require.Equal(t, int64(len(b)), header.Size)
+			require.Equal(t, int64(0o755), header.Mode)
+			got, err := io.ReadAll(tr)
+			require.NoError(t, err)
+			require.Equal(t, b, got)
+			_, err = tr.Next()
+			require.ErrorIs(t, err, io.EOF)
+		})
+	}
 }
 
 // untar takes a destination path and a reader; a tar reader loops over the tarfile

@@ -21,7 +21,7 @@ go get github.com/testcontainers/testcontainers-go/modules/artemis
 <!--/codeinclude-->
 
 <!--codeinclude-->
-[Connecting to an Artemis container](../../modules/artemis/examples_test.go) inside_block:connectToArtemisContainer
+[Connecting to an Artemis container](../../modules/artemis/examples/examples_test.go) inside_block:connectToArtemisContainer
 <!--/codeinclude-->
 
 ## Module Reference
@@ -100,7 +100,7 @@ The Artemis container exposes the following methods:
 User returns the administrator username.
 
 <!--codeinclude-->
-[Retrieving the Administrator User](../../modules/artemis/examples_test.go) inside_block:containerUser
+[Retrieving the Administrator User](../../modules/artemis/examples/examples_test.go) inside_block:containerUser
 <!--/codeinclude-->
 
 #### Password
@@ -110,7 +110,7 @@ User returns the administrator username.
 Password returns the administrator password.
 
 <!--codeinclude-->
-[Retrieving the Administrator Password](../../modules/artemis/examples_test.go) inside_block:containerPassword
+[Retrieving the Administrator Password](../../modules/artemis/examples/examples_test.go) inside_block:containerPassword
 <!--/codeinclude-->
 
 #### BrokerEndpoint

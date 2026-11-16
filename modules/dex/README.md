@@ -149,13 +149,47 @@ when a human-readable identifier is needed.
 
 ### Runtime mutation (gRPC)
 
-`AddClient`, `RemoveClient`, `AddUser`, `RemoveUser`. Not safe for concurrent
-use.
+Runtime administration moved from `*dex.Container` to the optional
+`*dexexamples.AdminClient` in
+`github.com/testcontainers/testcontainers-go/modules/dex/examples` as part of
+the combined CockroachDB and Dex breaking SDK extraction. All four parent
+methods (`AddClient`, `RemoveClient`, `AddUser`, `RemoveUser`) are removed.
 
-- `AddClient` returns `ErrClientExists` when the ID is already registered.
-- `AddUser` returns `ErrUserExists` when the email is already registered.
-- `RemoveClient` wraps `ErrClientNotFound` when the ID is absent.
-- `RemoveUser` wraps `ErrUserNotFound` when the email is absent.
+```go
+import dexexamples "github.com/testcontainers/testcontainers-go/modules/dex/examples"
+
+admin := dexexamples.NewAdminClient(c)
+// Before: c.AddUser(ctx, user)
+err := admin.AddUser(ctx, user)
+// Also use admin.AddClient, admin.RemoveClient and admin.RemoveUser.
+```
+
+The same `dex.Client`/`dex.User` arguments and `errors.Is` sentinels
+(`dex.ErrClientExists`, `dex.ErrClientNotFound`, `dex.ErrUserExists`,
+`dex.ErrUserNotFound`) apply. Each call opens/closes a plaintext gRPC connection;
+no adapter Close is needed. Calls remain unsafe for concurrent use. Callers own
+container lifetime and endpoint reachability. Update method/interface references
+that required admin methods on `*dex.Container`.
+
+Static configuration, constructors, endpoint getters, logging and validation
+remain in the parent. `Client.Registration()` provides an independent snapshot
+of runtime fields (including the secret); `User.PasswordRegistration()` supplies
+fresh cost-10 bcrypt data and a generated UUIDv4 unless `WithUserID` pins it.
+Runtime grants still inherit Dex defaults; use static `WithClient` for other grants.
+
+For local unreleased consumers, replace both parent and child modules with this
+checkout; replacements declared by dependencies are not inherited. See the
+[complete migration instructions](../../docs/modules/dex.md#breaking-change-admin-adapter-moved).
+
+## OAuth2 and OIDC client examples
+
+The [active client suite](examples/dex_test.go) and
+[runnable auth-code and password-grant examples](examples/examples_test.go)
+are in the `modules/dex/examples` child module. Run `go test ./...` there to
+exercise the SDK integrations; run it from `modules/dex` for the independent
+parent suite. Child pins remain Dex API/v2 v2.4.0, grpc v1.83.2,
+go-oidc/v3 v3.18.0 and oauth2 v0.36.0. The existing floating-master scenario
+requires `DEX_TEST_MASTER=1`.
 
 ## Known limitations
 

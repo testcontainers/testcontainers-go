@@ -105,8 +105,8 @@ func (c *Container) ProxiedEndpoint(port int) (string, string, error)
 ```
 
 <!--codeinclude-->
-[Get Proxied Endpoint](../../modules/toxiproxy/examples_test.go) inside_block:getProxiedEndpoint
-[Read Proxied Endpoint](../../modules/toxiproxy/examples_test.go) inside_block:readProxiedEndpoint
+[Get Proxied Endpoint](../../modules/toxiproxy/examples/examples_test.go) inside_block:getProxiedEndpoint
+[Read Proxied Endpoint](../../modules/toxiproxy/examples/examples_test.go) inside_block:readProxiedEndpoint
 <!--/codeinclude-->
 
 The above examples show how to get the proxied endpoint and use it to create a new connection to the proxied service, in this case a Redis client.
@@ -122,7 +122,7 @@ func (c *Container) URI() string
 ```
 
 <!--codeinclude-->
-[Creating a Toxiproxy client](../../modules/toxiproxy/examples_test.go) inside_block:createToxiproxyClient
+[Creating a Toxiproxy client](../../modules/toxiproxy/examples/examples_test.go) inside_block:createToxiproxyClient
 <!--/codeinclude-->
 
 - the `toxiproxy` package comes from the `github.com/Shopify/toxiproxy/v2/client` package.
@@ -133,9 +133,9 @@ func (c *Container) URI() string
 #### Programmatically create a proxy
 
 <!--codeinclude-->
-[Expose port manually](../../modules/toxiproxy/examples_test.go) inside_block:defineContainerExposingPort
-[Creating a proxy](../../modules/toxiproxy/examples_test.go) inside_block:createProxy
-[Creating a Redis client](../../modules/toxiproxy/examples_test.go) inside_block:createRedisClient
-[Adding a latency toxic](../../modules/toxiproxy/examples_test.go) inside_block:addLatencyToxic
+[Expose port manually](../../modules/toxiproxy/examples/examples_test.go) inside_block:defineContainerExposingPort
+[Creating a proxy](../../modules/toxiproxy/examples/examples_test.go) inside_block:createProxy
+[Creating a Redis client](../../modules/toxiproxy/examples/examples_test.go) inside_block:createRedisClient
+[Adding a latency toxic](../../modules/toxiproxy/examples/examples_test.go) inside_block:addLatencyToxic
 
 <!--/codeinclude-->

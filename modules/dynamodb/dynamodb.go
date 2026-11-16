@@ -65,6 +65,14 @@ func WithSharedDB() testcontainers.CustomizeRequestOption {
 	}
 }
 
+// WithInMemory makes DynamoDB local keep its data in memory instead of writing it to a database file.
+// The data is lost when the container stops.
+func WithInMemory() testcontainers.CustomizeRequestOption {
+	return func(req *testcontainers.GenericContainerRequest) error {
+		return testcontainers.WithCmdArgs("-inMemory")(req)
+	}
+}
+
 // WithDisableTelemetry - DynamoDB local will not send any telemetry
 func WithDisableTelemetry() testcontainers.CustomizeRequestOption {
 	return func(req *testcontainers.GenericContainerRequest) error {

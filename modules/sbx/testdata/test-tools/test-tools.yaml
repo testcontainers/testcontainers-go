@@ -1,0 +1,19 @@
+# syntax=docker/sandbox-kit:3
+schemaVersion: "3"
+kind: mixin
+displayName: Testcontainers kit fixture
+provides: ["testcontainers-test-tools"]
+
+args:
+  mode:
+    default: default
+    pattern: "^[a-z]+$"
+    buildArg: TEST_MODE
+
+build: |
+  FROM busybox:1.37 AS build
+  ARG TEST_MODE
+  RUN mkdir -p /out/usr/share/testcontainers && printf '%s' "$TEST_MODE" > /out/usr/share/testcontainers/kit-mode
+
+  FROM scratch
+  COPY --from=build /out/ /

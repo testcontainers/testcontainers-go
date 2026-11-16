@@ -42,6 +42,15 @@ Note: This stricter check in Go 1.23+ is a security hardening. Prefer using imag
 
     Please see the [`microsoft-mssql-server` image documentation](https://hub.docker.com/_/microsoft-mssql-server#environment-variables) for a link to the EULA document.
 
+The client example lives in a separate Go module under `modules/mssql/examples` so
+applications can choose their own client dependency.
+
+Import `database/sql` and register the driver with `_ "github.com/microsoft/go-mssqldb"`.
+
+<!--codeinclude-->
+[Connecting with the Microsoft SQL Server client](../../modules/mssql/examples/examples_test.go) inside_block:connectWithSQLClient
+<!--/codeinclude-->
+
 ## Module Reference
 
 ### Run function

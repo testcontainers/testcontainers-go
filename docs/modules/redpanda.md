@@ -207,3 +207,7 @@ is an HTTP-based API and thus the returned format will be: http://host:port.
 <!--codeinclude-->
 [Get HTTP Proxy address](../../modules/redpanda/redpanda_test.go) inside_block:httpProxyAddress
 <!--/codeinclude-->
+
+## Client examples
+
+[Kafka client tests](https://github.com/testcontainers/testcontainers-go/blob/main/modules/redpanda/examples/redpanda_test.go) use Franz-go to exercise metadata, topic creation, authentication and TLS. Run them from the separate `modules/redpanda/examples` module with `make test`.

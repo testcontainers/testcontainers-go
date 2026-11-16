@@ -26,6 +26,7 @@ extra_javascript:
     - https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js
     - js/usage-metrics.js
     - js/modules-usage-metrics.js
+    - js/clones-metrics.js
 repo_name: testcontainers-go
 repo_url: https://github.com/testcontainers/testcontainers-go
 markdown_extensions:
@@ -75,7 +76,6 @@ nav:
         - features/tls.md
     - Modules:
         - modules/index.md
-        - modules/fakegcsserver.md
         - modules/activemq.md
         - modules/aerospike.md
         - modules/arangodb.md
@@ -99,8 +99,10 @@ nav:
         - modules/dynamodb.md
         - modules/elasticsearch.md
         - modules/etcd.md
+        - modules/fakegcsserver.md
         - modules/firebird.md
         - modules/forgejo.md
+        - modules/garage.md
         - modules/gcloud.md
         - modules/grafana-lgtm.md
         - modules/inbucket.md
@@ -133,6 +135,7 @@ nav:
         - modules/orientdb.md
         - modules/papercutsmtp.md
         - modules/pinecone.md
+        - modules/podman.md
         - modules/postgres.md
         - modules/presto.md
         - modules/pulsar.md
@@ -144,6 +147,7 @@ nav:
         - modules/redpanda.md
         - modules/registry.md
         - modules/s3mock.md
+        - modules/sbx.md
         - modules/scylladb.md
         - modules/sftp.md
         - modules/socat.md
@@ -178,13 +182,15 @@ nav:
             - system_requirements/ci/travis.md
         - system_requirements/using_colima.md
         - system_requirements/using_podman.md
+        - system_requirements/using_sbx.md
         - system_requirements/rancher.md
     - Usage Metrics:
         - Core Library: usage-metrics/index.md
         - Modules: usage-metrics/modules.md
+        - GitHub Clones: usage-metrics/clones.md
     - Dependabot: dependabot.md
     - Contributing: contributing.md
     - Getting help: getting_help.md
 edit_uri: edit/main/docs/
 extra:
-    latest_version: v0.44.0
+    latest_version: v0.45.0

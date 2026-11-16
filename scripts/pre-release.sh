@@ -46,7 +46,14 @@ function bumpVersion() {
   do
     cd "${ROOT_DIR}/${directory}"
 
-    ls -d */ | grep -v "_template" | while read -r module; do
+    # Client examples form nested modules with their own core and parent module requirements.
+    {
+      ls -d */ | grep -v "_template" | grep -Ev "^(testdata|fixture|fixtures)/$"
+      if [[ "$directory" == "modules" ]]; then
+        find . -type d \( -name _template -o -name testdata -o -name fixture -o -name fixtures \) -prune -o \
+          -type f -path "./*/examples/go.mod" -print | sed 's#^./##; s#/go.mod$#/#'
+      fi
+    } | while read -r module; do
       module="${module%?}" # remove trailing slash
       module_mod_file="${module}/go.mod" # e.g. modules/mongodb/go.mod
       if [[ "${DRY_RUN}" == "true" ]]; then

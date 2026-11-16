@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/containerd/errdefs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,6 +20,11 @@ func (notFoundError) NotFound() {}
 func (notFoundError) Error() string {
 	return "not found"
 }
+
+// errPodmanRemovedDuringInspect is the error Podman returns when a container
+// is removed, e.g. automatically once it exits, while it is being inspected.
+// The message always includes the container's ID, which can be any.
+var errPodmanRemovedDuringInspect = errdefs.ErrInternal.WithMessage("Error response from daemon: no container with ID abc123 found in database: no such container")
 
 func Test_isNotFound(t *testing.T) {
 	tests := map[string]struct {
@@ -76,6 +82,14 @@ func Test_isNotFound(t *testing.T) {
 		"multi-join-not-found-nil": {
 			err:  errors.Join(nil, fmt.Errorf("wrap: %w", errors.Join(notFoundError{}, nil))),
 			want: true,
+		},
+		"podman-removed-during-inspect": {
+			err:  fmt.Errorf("container state: %w", errPodmanRemovedDuringInspect),
+			want: true,
+		},
+		"internal-other": {
+			err:  errdefs.ErrInternal.WithMessage("database is locked"),
+			want: false,
 		},
 	}
 	for name, tc := range tests {

@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/couchbase/gocb/v2"
-
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/couchbase"
 )
@@ -47,32 +45,6 @@ func ExampleRun() {
 
 	fmt.Println(state.Running)
 
-	connectionString, err := couchbaseContainer.ConnectionString(ctx)
-	if err != nil {
-		log.Printf("failed to get connection string: %s", err)
-		return
-	}
-
-	cluster, err := gocb.Connect(connectionString, gocb.ClusterOptions{
-		Username: couchbaseContainer.Username(),
-		Password: couchbaseContainer.Password(),
-	})
-	if err != nil {
-		log.Printf("failed to connect to cluster: %s", err)
-		return
-	}
-
-	buckets, err := cluster.Buckets().GetAllBuckets(nil)
-	if err != nil {
-		log.Printf("failed to get buckets: %s", err)
-		return
-	}
-
-	fmt.Println(len(buckets))
-	fmt.Println(buckets[bucketName].Name)
-
 	// Output:
 	// true
-	// 1
-	// testBucket
 }

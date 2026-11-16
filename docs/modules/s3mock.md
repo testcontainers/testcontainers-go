@@ -27,13 +27,13 @@ S3Mock fully implements the AWS S3 API. Point the AWS SDK v2 at the container's 
 First implement a custom `EndpointResolverV2` that routes all S3 calls to the container:
 
 <!--codeinclude-->
-[Endpoint resolver](../../modules/s3mock/s3mock_test.go) inside_block:endpointResolver
+[Endpoint resolver](../../modules/s3mock/examples/s3mock_test.go) inside_block:endpointResolver
 <!--/codeinclude-->
 
 Then create the S3 client:
 
 <!--codeinclude-->
-[AWS SDK v2 client setup](../../modules/s3mock/examples_test.go) inside_block:awsClientSetup
+[AWS SDK v2 client setup](../../modules/s3mock/examples/examples_test.go) inside_block:awsClientSetup
 <!--/codeinclude-->
 
 ## Module Reference

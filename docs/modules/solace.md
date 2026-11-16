@@ -140,3 +140,7 @@ if err != nil {
 - Since <a href="https://github.com/testcontainers/testcontainers-go/releases/tag/v0.39.0"><span class="tc-version">:material-tag: v0.39.0</span></a>
 
 `VPN() string` - returns the configured VPN name
+
+## Client examples
+
+The [SMF publish and consume example](https://github.com/testcontainers/testcontainers-go/blob/main/modules/solace/examples/examples_test.go) uses the Solace Go messaging SDK. Run it from the separate `modules/solace/examples` module with `make test`.

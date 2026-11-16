@@ -3,19 +3,18 @@ package bigtable_test
 import (
 	"context"
 	"testing"
+	"time"
 
-	"cloud.google.com/go/bigtable"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/api/option"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/testcontainers/testcontainers-go"
 	tcbigtable "github.com/testcontainers/testcontainers-go/modules/gcloud/bigtable"
+	"github.com/testcontainers/testcontainers-go/modules/gcloud/internal/testcbt"
 )
 
 func TestRun(t *testing.T) {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
 
 	bigTableContainer, err := tcbigtable.Run(
 		ctx,
@@ -32,35 +31,39 @@ func TestRun(t *testing.T) {
 		tableName  = "test-table"
 	)
 
-	options := []option.ClientOption{
-		option.WithEndpoint(bigTableContainer.URI()),
-		option.WithoutAuthentication(),
-		option.WithGRPCDialOption(grpc.WithTransportCredentials(insecure.NewCredentials())),
-	}
-	adminClient, err := bigtable.NewAdminClient(ctx, projectID, instanceID, options...)
+	// WithHostPortAccess forwards localhost ports. This fixed relay retains
+	// the actual generated host as well as its mapped port, even for remote Docker.
+	relay, err := testcbt.NewRelay(bigTableContainer.URI())
 	require.NoError(t, err)
-	defer adminClient.Close()
+	t.Cleanup(relay.Close)
+	t.Logf("cbt relay upstream: %s", bigTableContainer.URI())
 
-	err = adminClient.CreateTable(ctx, tableName)
+	helper, err := testcontainers.Run(ctx, testcbt.Image,
+		testcontainers.WithEntrypoint("/bin/sleep"),
+		testcontainers.WithCmd("180"),
+		testcontainers.WithHostPortAccess(relay.Port()),
+	)
+	testcontainers.CleanupContainer(t, helper)
 	require.NoError(t, err)
+	endpoint := testcbt.Endpoint(relay.Port())
 
-	err = adminClient.CreateColumnFamily(ctx, tableName, "name")
-	require.NoError(t, err)
-
-	client, err := bigtable.NewClient(ctx, projectID, instanceID, options...)
-	require.NoError(t, err)
-	defer client.Close()
-
-	tbl := client.Open(tableName)
-
-	mut := bigtable.NewMutation()
-	mut.Set("name", "firstName", bigtable.Now(), []byte("Gopher"))
-
-	err = tbl.Apply(ctx, "1", mut)
+	_, err = testcbt.Run(ctx, helper, endpoint, projectID, instanceID, "createtable", tableName)
 	require.NoError(t, err)
 
-	row, err := tbl.ReadRow(ctx, "1", bigtable.RowFilter(bigtable.FamilyFilter("name")))
+	_, err = testcbt.Run(ctx, helper, endpoint, projectID, instanceID, "createfamily", tableName, "name")
 	require.NoError(t, err)
 
-	require.Equal(t, "Gopher", string(row["name"][0].Value))
+	// Omitting @timestamp selects cbt's client-current bigtable.Now().
+	_, err = testcbt.Run(ctx, helper, endpoint, projectID, instanceID, "set", tableName, "1", "name:firstName=Gopher")
+	require.NoError(t, err)
+
+	// The trailing colon preserves FamilyFilter("name") without adding a qualifier filter.
+	output, err := testcbt.Run(ctx, helper, endpoint, projectID, instanceID, "lookup", tableName, "1", "columns=name:")
+	require.NoError(t, err)
+
+	row, column, value, err := testcbt.LookupCell(output)
+	require.NoError(t, err)
+	require.Equal(t, "1", row)
+	require.Equal(t, "name:firstName", column)
+	require.Equal(t, "Gopher", value)
 }

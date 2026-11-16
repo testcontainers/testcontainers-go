@@ -20,6 +20,15 @@ go get github.com/testcontainers/testcontainers-go/modules/surrealdb
 [Creating a SurrealDB container](../../modules/surrealdb/examples_test.go) inside_block:runSurrealDBContainer
 <!--/codeinclude-->
 
+The client example lives in a separate Go module under `modules/surrealdb/examples` so
+applications can choose their own client dependency.
+
+The example imports the SDK as `client "github.com/surrealdb/surrealdb.go"`.
+
+<!--codeinclude-->
+[Connecting with the SurrealDB WebSocket client](../../modules/surrealdb/examples/examples_test.go) inside_block:connectWithWebSocketClient
+<!--/codeinclude-->
+
 ## Module Reference
 
 ### Run function

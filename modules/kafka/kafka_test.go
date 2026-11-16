@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -13,8 +12,6 @@ import (
 )
 
 func TestKafka(t *testing.T) {
-	topic := "some-topic"
-
 	ctx := context.Background()
 
 	kafkaContainer, err := kafka.Run(ctx, "confluentinc/confluent-local:7.5.0", kafka.WithClusterID("kraftCluster"))
@@ -30,40 +27,50 @@ func TestKafka(t *testing.T) {
 	// }
 	require.NoError(t, err)
 
-	config := sarama.NewConfig()
-	client, err := sarama.NewConsumerGroup(brokers, "groupName", config)
+	require.NotEmpty(t, brokers)
+
+	_, err = kafkaContainer.BrokersTLS(ctx)
+	require.Error(t, err)
+
+	_, err = kafkaContainer.TLSConfig()
+	require.Error(t, err)
+}
+
+// TestKafka_withTLS checks that TLS and PLAINTEXT broker endpoints and TLS configuration are available.
+func TestKafka_withTLS(t *testing.T) {
+	ctx := context.Background()
+
+	kafkaContainer, err := kafka.Run(ctx, "confluentinc/confluent-local:7.5.0", kafka.WithTLS())
+	testcontainers.CleanupContainer(t, kafkaContainer)
 	require.NoError(t, err)
 
-	consumer, ready, done, cancel := NewTestKafkaConsumer(t)
-	defer cancel()
-	go func() {
-		if err := client.Consume(context.Background(), []string{topic}, consumer); err != nil {
-			cancel()
-		}
-	}()
-
-	// wait for the consumer to be ready
-	<-ready
-
-	// perform assertions
-
-	// set config to true because successfully delivered messages will be returned on the Successes channel
-	config.Producer.Return.Successes = true
-
-	producer, err := sarama.NewSyncProducer(brokers, config)
+	// getBrokersTLS {
+	brokers, err := kafkaContainer.BrokersTLS(ctx)
 	require.NoError(t, err)
 
-	_, _, err = producer.SendMessage(&sarama.ProducerMessage{
-		Topic: topic,
-		Key:   sarama.StringEncoder("key"),
-		Value: sarama.StringEncoder("value"),
-	})
+	tlsConfig, err := kafkaContainer.TLSConfig()
 	require.NoError(t, err)
+	require.NotNil(t, tlsConfig)
+	// }
 
-	<-done
+	plainBrokers, err := kafkaContainer.Brokers(ctx)
+	require.NoError(t, err)
+	require.NotEqual(t, brokers, plainBrokers)
+}
 
-	require.Truef(t, strings.EqualFold(string(consumer.message.Key), "key"), "expected key to be %s, got %s", "key", string(consumer.message.Key))
-	require.Truef(t, strings.EqualFold(string(consumer.message.Value), "value"), "expected value to be %s, got %s", "value", string(consumer.message.Value))
+// TestKafka_withTLSInvalidListener checks that Run fails when the user defines
+// an SSL listener on a port other than the one exposed by the module.
+func TestKafka_withTLSInvalidListener(t *testing.T) {
+	ctx := context.Background()
+
+	ctr, err := kafka.Run(ctx, "confluentinc/confluent-local:7.5.0",
+		kafka.WithTLS(),
+		testcontainers.WithEnv(map[string]string{
+			"KAFKA_LISTENERS": "PLAINTEXT://0.0.0.0:9093,BROKER://0.0.0.0:9092,CONTROLLER://0.0.0.0:9094,SSL://0.0.0.0:9096",
+		}),
+	)
+	testcontainers.CleanupContainer(t, ctr)
+	require.ErrorContains(t, err, "requires it to listen on port 9095")
 }
 
 func TestKafka_invalidVersion(t *testing.T) {

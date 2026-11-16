@@ -1,20 +1,21 @@
 package lowkeyvault_test
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"encoding/base64"
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/url"
+	"os"
+	"regexp"
+	"strings"
 	"testing"
+	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/tracing"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
-	"github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azcertificates"
-	"github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azkeys"
-	"github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets"
 	"github.com/stretchr/testify/require"
 	"software.sslmate.com/src/go-pkcs12"
 
@@ -103,35 +104,35 @@ func TestRun_secretOperations(t *testing.T) {
 	httpClient, err := lowkeyVaultContainer.Client(ctx)
 	require.NoError(t, err)
 
-	cred, err := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
-	require.NoError(t, err)
-	secretClient, err := azsecrets.NewClient(connURL,
-		cred,
-		&azsecrets.ClientOptions{ClientOptions: struct {
-			APIVersion                      string
-			Cloud                           cloud.Configuration
-			InsecureAllowCredentialWithHTTP bool
-			Logging                         policy.LogOptions
-			Retry                           policy.RetryOptions
-			Telemetry                       policy.TelemetryOptions
-			TracingProvider                 tracing.Provider
-			Transport                       policy.Transporter
-			PerCallPolicies                 []policy.Policy
-			PerRetryPolicies                []policy.Policy
-		}{Transport: &httpClient}, DisableChallengeResourceVerification: true})
-	require.NoError(t, err)
+	httpClient.Timeout = 30 * time.Second
+	var token string
 
 	secretName := "secret-name"
 	secretValue := "a secret value"
-	created, err := secretClient.SetSecret(ctx, secretName, azsecrets.SetSecretParameters{Value: &secretValue}, nil)
+	var created struct {
+		ID    string  `json:"id"`
+		Value *string `json:"value"`
+	}
+	response := keyVaultRequest(t, ctx, &httpClient, &token, http.MethodPut,
+		connURL+"/secrets/"+url.PathEscape(secretName)+"?api-version=2025-07-01",
+		map[string]string{"value": secretValue}, http.StatusOK)
+	require.NoError(t, json.Unmarshal(response, &created))
+	require.NotEmpty(t, created.ID)
+	createdURL, err := url.Parse(created.ID)
 	require.NoError(t, err)
-	require.NotNil(t, created)
+	idParts := strings.Split(strings.Trim(createdURL.Path, "/"), "/")
+	require.Len(t, idParts, 3)
+	require.NotEmpty(t, idParts[2])
 
-	fetched, err := secretClient.GetSecret(ctx, secretName, created.ID.Version(), nil)
-	require.NoError(t, err)
-	require.NotNil(t, fetched)
+	var fetched struct {
+		Value *string `json:"value"`
+	}
+	response = keyVaultRequest(t, ctx, &httpClient, &token, http.MethodGet,
+		connURL+"/secrets/"+url.PathEscape(secretName)+"/"+url.PathEscape(idParts[2])+"?api-version=2025-07-01",
+		nil, http.StatusOK)
+	require.NoError(t, json.Unmarshal(response, &fetched))
+	require.NotNil(t, fetched.Value)
 	fetchedValue := *fetched.Value
-
 	require.Equal(t, secretValue, fetchedValue)
 }
 
@@ -154,58 +155,60 @@ func TestRun_keyOperations(t *testing.T) {
 	httpClient, err := lowkeyVaultContainer.Client(ctx)
 	require.NoError(t, err)
 
-	cred, err := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
-	require.NoError(t, err)
-	keyClient, err := azkeys.NewClient(connURL,
-		cred,
-		&azkeys.ClientOptions{ClientOptions: struct {
-			APIVersion                      string
-			Cloud                           cloud.Configuration
-			InsecureAllowCredentialWithHTTP bool
-			Logging                         policy.LogOptions
-			Retry                           policy.RetryOptions
-			Telemetry                       policy.TelemetryOptions
-			TracingProvider                 tracing.Provider
-			Transport                       policy.Transporter
-			PerCallPolicies                 []policy.Policy
-			PerRetryPolicies                []policy.Policy
-		}{Transport: &httpClient}, DisableChallengeResourceVerification: true})
-	require.NoError(t, err)
+	httpClient.Timeout = 30 * time.Second
+	var token string
 
 	keyName := "rsa-key"
-	rsaKeyParams := azkeys.CreateKeyParameters{
-		Kty:     to.Ptr(azkeys.KeyTypeRSA),
-		KeySize: to.Ptr(int32(2048)),
-		KeyOps: []*azkeys.KeyOperation{
-			to.Ptr(azkeys.KeyOperationDecrypt),
-			to.Ptr(azkeys.KeyOperationEncrypt),
-			to.Ptr(azkeys.KeyOperationUnwrapKey),
-			to.Ptr(azkeys.KeyOperationWrapKey),
-		},
+	rsaKeyParams := map[string]any{
+		"kty":      "RSA",
+		"key_size": 2048,
+		"key_ops":  []string{"decrypt", "encrypt", "unwrapKey", "wrapKey"},
 	}
-	createdKey, err := keyClient.CreateKey(ctx, keyName, rsaKeyParams, nil)
+	var createdKey struct {
+		Key *struct {
+			KID string `json:"kid"`
+		} `json:"key"`
+	}
+	response := keyVaultRequest(t, ctx, &httpClient, &token, http.MethodPost,
+		connURL+"/keys/"+url.PathEscape(keyName)+"/create?api-version=7.6", rsaKeyParams, http.StatusOK)
+	require.NoError(t, json.Unmarshal(response, &createdKey))
+	require.NotNil(t, createdKey.Key)
+	require.NotEmpty(t, createdKey.Key.KID)
+	keyURL, err := url.Parse(createdKey.Key.KID)
 	require.NoError(t, err)
-	require.NotNil(t, createdKey)
+	idParts := strings.Split(strings.Trim(keyURL.Path, "/"), "/")
+	require.Len(t, idParts, 3)
+	require.NotEmpty(t, idParts[2])
+	keyEndpoint := connURL + "/keys/" + url.PathEscape(keyName) + "/" + url.PathEscape(idParts[2])
 
 	secretMessage := "a secret message"
-	encryptionParameters := azkeys.KeyOperationParameters{
-		Value:     []byte(secretMessage),
-		Algorithm: to.Ptr(azkeys.EncryptionAlgorithmRSAOAEP256),
+	encryptionParameters := map[string]string{
+		"value": base64.RawURLEncoding.EncodeToString([]byte(secretMessage)),
+		"alg":   "RSA-OAEP-256",
 	}
-	encrResp, err := keyClient.Encrypt(ctx, keyName, createdKey.Key.KID.Version(), encryptionParameters, nil)
-	require.NoError(t, err)
-	require.NotNil(t, encrResp)
-	cipherText := encrResp.Result
-
-	decryptionParameters := azkeys.KeyOperationParameters{
-		Value:     cipherText,
-		Algorithm: to.Ptr(azkeys.EncryptionAlgorithmRSAOAEP256),
+	var encrResp struct {
+		Value string `json:"value"`
 	}
-	decrResp, err := keyClient.Decrypt(ctx, keyName, createdKey.Key.KID.Version(), decryptionParameters, nil)
+	response = keyVaultRequest(t, ctx, &httpClient, &token, http.MethodPost,
+		keyEndpoint+"/encrypt?api-version=7.6", encryptionParameters, http.StatusOK)
+	require.NoError(t, json.Unmarshal(response, &encrResp))
+	cipherText, err := base64.RawURLEncoding.DecodeString(encrResp.Value)
 	require.NoError(t, err)
-	require.NotNil(t, decrResp)
-	decryptedMessage := string(decrResp.Result)
+	require.NotEmpty(t, cipherText)
 
+	decryptionParameters := map[string]string{
+		"value": base64.RawURLEncoding.EncodeToString(cipherText),
+		"alg":   "RSA-OAEP-256",
+	}
+	var decrResp struct {
+		Value string `json:"value"`
+	}
+	response = keyVaultRequest(t, ctx, &httpClient, &token, http.MethodPost,
+		keyEndpoint+"/decrypt?api-version=7.6", decryptionParameters, http.StatusOK)
+	require.NoError(t, json.Unmarshal(response, &decrResp))
+	plainText, err := base64.RawURLEncoding.DecodeString(decrResp.Value)
+	require.NoError(t, err)
+	decryptedMessage := string(plainText)
 	require.Equal(t, secretMessage, decryptedMessage)
 }
 
@@ -228,79 +231,121 @@ func TestRun_certificateOperations(t *testing.T) {
 	httpClient, err := lowkeyVaultContainer.Client(ctx)
 	require.NoError(t, err)
 
-	cred, err := azidentity.NewDefaultAzureCredential(nil) // Will use Managed Identity via the Assumed Identity container
-	require.NoError(t, err)
-	certClient, err := azcertificates.NewClient(connURL,
-		cred,
-		&azcertificates.ClientOptions{ClientOptions: struct {
-			APIVersion                      string
-			Cloud                           cloud.Configuration
-			InsecureAllowCredentialWithHTTP bool
-			Logging                         policy.LogOptions
-			Retry                           policy.RetryOptions
-			Telemetry                       policy.TelemetryOptions
-			TracingProvider                 tracing.Provider
-			Transport                       policy.Transporter
-			PerCallPolicies                 []policy.Policy
-			PerRetryPolicies                []policy.Policy
-		}{Transport: &httpClient}, DisableChallengeResourceVerification: true})
-	require.NoError(t, err)
+	httpClient.Timeout = 30 * time.Second
+	var token string
 
 	certName := "ec-cert"
 	subject := "CN=example.com"
-	created, err := certClient.CreateCertificate(ctx, certName, azcertificates.CreateCertificateParameters{
-		CertificatePolicy: &azcertificates.CertificatePolicy{
-			IssuerParameters: &azcertificates.IssuerParameters{
-				Name: to.Ptr("Self"),
-			},
-			KeyProperties: &azcertificates.KeyProperties{
-				Curve:    to.Ptr(azcertificates.CurveNameP256),
-				KeyType:  to.Ptr(azcertificates.KeyTypeEC),
-				ReuseKey: to.Ptr(true),
-			},
-			SecretProperties: &azcertificates.SecretProperties{
-				ContentType: to.Ptr("application/x-pkcs12"),
-			},
-			X509CertificateProperties: &azcertificates.X509CertificateProperties{
-				Subject: &subject,
-				SubjectAlternativeNames: &azcertificates.SubjectAlternativeNames{
-					DNSNames: []*string{to.Ptr("localhost")},
-				},
-				ValidityInMonths: to.Ptr(int32(12)),
+	certificateParameters := map[string]any{
+		"policy": map[string]any{
+			"issuer":       map[string]string{"name": "Self"},
+			"key_props":    map[string]any{"crv": "P-256", "kty": "EC", "reuse_key": true},
+			"secret_props": map[string]string{"contentType": "application/x-pkcs12"},
+			"x509_props": map[string]any{
+				"subject":         subject,
+				"sans":            map[string][]string{"dns_names": {"localhost"}},
+				"validity_months": 12,
 			},
 		},
-	}, nil)
-	require.NoError(t, err)
+	}
+	response := keyVaultRequest(t, ctx, &httpClient, &token, http.MethodPost,
+		connURL+"/certificates/"+url.PathEscape(certName)+"/create?api-version=7.6",
+		certificateParameters, http.StatusAccepted)
+	var created map[string]any
+	require.NoError(t, json.Unmarshal(response, &created))
 	require.NotNil(t, created)
 
-	secretClient, err := azsecrets.NewClient(connURL,
-		cred,
-		&azsecrets.ClientOptions{ClientOptions: struct {
-			APIVersion                      string
-			Cloud                           cloud.Configuration
-			InsecureAllowCredentialWithHTTP bool
-			Logging                         policy.LogOptions
-			Retry                           policy.RetryOptions
-			Telemetry                       policy.TelemetryOptions
-			TracingProvider                 tracing.Provider
-			Transport                       policy.Transporter
-			PerCallPolicies                 []policy.Policy
-			PerRetryPolicies                []policy.Policy
-		}{Transport: &httpClient}, DisableChallengeResourceVerification: true})
-	require.NoError(t, err)
-
-	base64Secret, err := secretClient.GetSecret(ctx, certName, "", nil)
-	require.NoError(t, err)
-	require.NotNil(t, base64Secret)
+	var base64Secret struct {
+		Value *string `json:"value"`
+	}
+	response = keyVaultRequest(t, ctx, &httpClient, &token, http.MethodGet,
+		connURL+"/secrets/"+url.PathEscape(certName)+"/?api-version=2025-07-01", nil, http.StatusOK)
+	require.NoError(t, json.Unmarshal(response, &base64Secret))
+	require.NotNil(t, base64Secret.Value)
 	base64Value := *base64Secret.Value
 	bytes, err := base64.StdEncoding.DecodeString(base64Value)
 	require.NoError(t, err)
-	// use SSLMate library to decode the certificate store as the x/crypto
-	// library is not fully compatible with the Java PKCS12 format
+	// use SSLMate to decode the certificate store because x/crypto
+	// is not fully compatible with the Java PKCS12 format.
 	key, cert, err := pkcs12.Decode(bytes, "")
 	require.NoError(t, err)
 	ecKey := key.(*ecdsa.PrivateKey)
 
 	require.Equal(t, subject, cert.Subject.String())
 	require.Equal(t, elliptic.P256(), ecKey.Curve)
+}
+
+// keyVaultRequest shares only HTTP transport and managed identity authentication;
+// each TestRun function supplies its operations, API versions, and assertions.
+func keyVaultRequest(t *testing.T, ctx context.Context, client *http.Client, token *string, method, endpoint string, payload any, status int) []byte {
+	t.Helper()
+	var body []byte
+	if payload != nil {
+		var err error
+		body, err = json.Marshal(payload)
+		require.NoError(t, err)
+	}
+	request, err := http.NewRequestWithContext(ctx, method, endpoint, bytes.NewReader(body))
+	require.NoError(t, err)
+	request.Header.Set("Accept", "application/json")
+	if payload != nil {
+		request.Header.Set("Content-Type", "application/json")
+	}
+	if *token == "" {
+		// Like the SDK challenge policy, elicit the challenge without sending the body.
+		probe := request.Clone(ctx)
+		probe.Body = nil
+		probe.GetBody = nil
+		probe.ContentLength = 0
+		probe.Header.Del("Content-Type")
+		challenge, err := client.Do(probe)
+		require.NoError(t, err)
+		readKeyVaultResponse(t, challenge, http.StatusUnauthorized)
+
+		// The SDK prefers scope over resource and removes /.default for managed identity.
+		authHeader := challenge.Header.Get("WWW-Authenticate")
+		require.True(t, strings.HasPrefix(authHeader, "Bearer "), "missing Bearer challenge")
+		resource := ""
+		for _, field := range []string{"scope", "resource"} {
+			match := regexp.MustCompile(`(?:^|[ ,])` + field + `="([^"]+)"`).FindStringSubmatch(authHeader)
+			if len(match) == 2 {
+				resource = strings.TrimSuffix(match[1], "/.default")
+				break
+			}
+		}
+		require.NotEmpty(t, resource, "missing challenge resource")
+		// The existing emulator SDK options disable challenge resource verification.
+		identityURL, err := url.Parse(os.Getenv("IDENTITY_ENDPOINT"))
+		require.NoError(t, err)
+		query := identityURL.Query()
+		query.Set("api-version", "2019-08-01")
+		query.Set("resource", resource)
+		identityURL.RawQuery = query.Encode()
+		identityRequest, err := http.NewRequestWithContext(ctx, http.MethodGet, identityURL.String(), nil)
+		require.NoError(t, err)
+		identityRequest.Header.Set("X-IDENTITY-HEADER", os.Getenv("IDENTITY_HEADER"))
+		identityResponse, err := client.Do(identityRequest)
+		require.NoError(t, err)
+		var credential struct {
+			AccessToken string `json:"access_token"`
+		}
+		require.NoError(t, json.Unmarshal(readKeyVaultResponse(t, identityResponse, http.StatusOK), &credential))
+		require.NotEmpty(t, credential.AccessToken)
+		*token = credential.AccessToken
+	}
+	request.Header.Set("Authorization", "Bearer "+*token)
+	response, err := client.Do(request)
+	require.NoError(t, err)
+	return readKeyVaultResponse(t, response, status)
+}
+
+func readKeyVaultResponse(t *testing.T, response *http.Response, status int) []byte {
+	t.Helper()
+	defer response.Body.Close()
+	const maxBody = 1 << 20
+	body, err := io.ReadAll(io.LimitReader(response.Body, maxBody+1))
+	require.NoError(t, err)
+	require.LessOrEqual(t, len(body), maxBody, "Key Vault response exceeds limit")
+	require.Equal(t, status, response.StatusCode, "%s", body)
+	return body
 }

@@ -1,12 +1,16 @@
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 GOBIN= $(GOPATH)/bin
+TEST_RERUN_FAILS ?= 5
+TEST_REPORT ?= TEST-unit.xml
+TEST_COVERAGE ?= coverage.out
+GO_TEST_FLAGS ?=
 
 define go_install
     go install $(1)
 endef
 
 $(GOBIN)/golangci-lint:
-	$(call go_install,github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.9.0)
+	$(call go_install,github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0)
 
 $(GOBIN)/gotestsum:
 	$(call go_install,gotest.tools/gotestsum@latest)
@@ -45,14 +49,14 @@ test-%: $(GOBIN)/gotestsum
 	@echo "Running $* tests..."
 	gotestsum \
 		--format short-verbose \
-		--rerun-fails=5 \
+		--rerun-fails=$(TEST_RERUN_FAILS) \
 		--packages="./..." \
-		--junitfile TEST-unit.xml \
+		--junitfile $(TEST_REPORT) \
 		-- \
 		-v \
-		-coverprofile=coverage.out \
+		-coverprofile=$(TEST_COVERAGE) \
 		-timeout=30m \
-		-race
+		-race $(GO_TEST_FLAGS)
 
 .PHONY: tools
 tools:

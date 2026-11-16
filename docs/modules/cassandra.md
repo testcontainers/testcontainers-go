@@ -17,7 +17,7 @@ go get github.com/testcontainers/testcontainers-go/modules/cassandra
 ## Usage example
 
 <!--codeinclude-->
-[Creating a Cassandra container](../../modules/cassandra/examples_test.go) inside_block:runCassandraContainer
+[Creating a Cassandra container](../../modules/cassandra/examples/examples_test.go) inside_block:runCassandraContainer
 <!--/codeinclude-->
 
 ## Module Reference
@@ -84,8 +84,8 @@ When enabled, the container will:
 Use the `TLSConfig()` method on the returned container to get the `*tls.Config` for client connections. The method returns an error if TLS was not enabled via `WithTLS()`.
 
 <!--codeinclude-->
-[Creating a Cassandra container with TLS](../../modules/cassandra/examples_test.go) inside_block:runCassandraContainerWithTLS
-[Getting TLS connection configuration](../../modules/cassandra/examples_test.go) inside_block:getTLSConnectionHost
+[Creating a Cassandra container with TLS](../../modules/cassandra/examples/examples_test.go) inside_block:runCassandraContainerWithTLS
+[Getting TLS connection configuration](../../modules/cassandra/examples/examples_test.go) inside_block:getTLSConnectionHost
 <!--/codeinclude-->
 
 {% include "../features/common_functional_options_list.md" %}

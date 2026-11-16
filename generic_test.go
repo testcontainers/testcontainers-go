@@ -108,6 +108,7 @@ func TestGenericContainerShouldReturnRefOnError(t *testing.T) {
 }
 
 func TestGenericReusableContainerInSubprocess(t *testing.T) {
+	childEnv := sharedDaemonChildEnv(t, "GO_WANT_HELPER_PROCESS=1")
 	wg := sync.WaitGroup{}
 	wg.Add(10)
 	for range 10 {
@@ -115,7 +116,7 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 			defer wg.Done()
 
 			// create containers in subprocesses, as "go test ./..." does.
-			output := createReuseContainerInSubprocess(t)
+			output := createReuseContainerInSubprocess(t, childEnv)
 
 			t.Log(output)
 			// check is reuse container with WaitingFor work correctly.
@@ -146,11 +147,11 @@ func TestGenericReusableContainerInSubprocess(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func createReuseContainerInSubprocess(t *testing.T) string {
+func createReuseContainerInSubprocess(t *testing.T, env []string) string {
 	t.Helper()
 	// force verbosity in subprocesses, so that the output is printed
 	cmd := exec.Command(os.Args[0], "-test.run=TestHelperContainerStarterProcess", "-test.v=true")
-	cmd.Env = append(os.Environ(), "GO_WANT_HELPER_PROCESS=1")
+	cmd.Env = env
 
 	output, err := cmd.CombinedOutput()
 	require.NoError(t, err, string(output))

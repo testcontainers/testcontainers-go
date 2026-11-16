@@ -2,16 +2,13 @@ package weaviate_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	wvt "github.com/weaviate/weaviate-go-client/v5/weaviate"
-	wvtgrpc "github.com/weaviate/weaviate-go-client/v5/weaviate/grpc"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/weaviate"
@@ -44,28 +41,32 @@ func TestWeaviate(t *testing.T) {
 		// }
 		require.NoError(t, err)
 
-		opts := make([]grpc.DialOption, 0, 1)
-		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		conn, err := grpc.NewClient(host, opts...)
-		require.NoErrorf(t, err, "failed to dial connection")
-		client := grpc_health_v1.NewHealthClient(conn)
-		check, err := client.Check(context.TODO(), &grpc_health_v1.HealthCheckRequest{})
-		require.NoErrorf(t, err, "failed to get a health check")
-		require.Equalf(t, grpc_health_v1.HealthCheckResponse_SERVING.Enum().Number(), check.Status.Number(), "unexpected status code: %d", check.Status.Number())
+		endpointHost, endpointPort, err := net.SplitHostPort(host)
+		require.NoError(t, err)
+		containerHost, err := ctr.Host(ctx)
+		require.NoError(t, err)
+		mappedPort, err := ctr.MappedPort(ctx, "50051/tcp")
+		require.NoError(t, err)
+		require.Equal(t, containerHost, endpointHost)
+		require.Equal(t, mappedPort.Port(), endpointPort)
 	})
 
-	t.Run("Weaviate client", func(tt *testing.T) {
+	t.Run("Meta endpoint", func(tt *testing.T) {
 		httpScheme, httpHost, err := ctr.HttpHostAddress(ctx)
 		require.NoError(tt, err)
-		grpcHost, err := ctr.GrpcHostAddress(ctx)
-		require.NoError(tt, err)
-		config := wvt.Config{Scheme: httpScheme, Host: httpHost, GrpcConfig: &wvtgrpc.Config{Host: grpcHost}}
-		client, err := wvt.NewClient(config)
-		require.NoError(tt, err)
-		meta, err := client.Misc().MetaGetter().Do(ctx)
-		require.NoError(tt, err)
 
-		require.NotNilf(tt, meta, "failed to get /v1/meta response")
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s://%s/v1/meta", httpScheme, httpHost), nil)
+		require.NoError(tt, err)
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(tt, err)
+		defer resp.Body.Close()
+		require.Equal(tt, http.StatusOK, resp.StatusCode)
+
+		var meta struct {
+			Version string `json:"version"`
+		}
+		require.NoError(tt, json.NewDecoder(resp.Body).Decode(&meta))
+
 		require.NotEmptyf(tt, meta.Version, "failed to get /v1/meta response")
 	})
 }

@@ -64,5 +64,5 @@ It returns a string with the format `http://<host>:<port>`.
 It can be used to configure a MockServer client (`github.com/BraspagDevelopers/mock-server-client`), e.g.:
 
 <!--codeinclude-->
-[Using URL with the MockServer client](../../modules/mockserver/examples_test.go) inside_block:connectToMockServer
+[Using URL with the MockServer client](../../modules/mockserver/examples/examples_test.go) inside_block:connectToMockServer
 <!--/codeinclude-->

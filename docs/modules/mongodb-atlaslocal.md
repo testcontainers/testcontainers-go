@@ -162,7 +162,7 @@ It returns a string with the format `mongodb://<host>:<port>[/<db>]/?directConne
 It can be used to configure a MongoDB client (`go.mongodb.org/mongo-driver/v2/mongo`), e.g.:
 
 <!--codeinclude-->
-[Using ConnectionString with the MongoDB client](../../modules/mongodb/atlaslocal/examples_test.go) inside_block:connectToMongo
+[Using ConnectionString with the MongoDB client](../../modules/mongodb/examples/atlaslocal/examples_test.go) inside_block:connectToMongo
 <!--/codeinclude-->
 
 #### ReadMongotLogs
@@ -173,7 +173,7 @@ The `ReadMongotLogs` returns a reader for the log solution specified when constr
 
 
 <!--codeinclude-->
-[Using ReadMongotLogs with the MongoDB client](../../modules/mongodb/atlaslocal/examples_test.go) inside_block:mongotLogsRead
+[Using ReadMongotLogs with the MongoDB client](../../modules/mongodb/examples/atlaslocal/examples_test.go) inside_block:mongotLogsRead
 <!--/codeinclude-->
 
 #### ReadRunnerLogs
@@ -184,5 +184,5 @@ The `ReadRunnerLogs` returns a reader for the log solution specified when constr
 
 
 <!--codeinclude-->
-[Using ReadRunnerLogs with the MongoDB client](../../modules/mongodb/atlaslocal/examples_test.go) inside_block:runnerLogsRead
+[Using ReadRunnerLogs with the MongoDB client](../../modules/mongodb/examples/atlaslocal/examples_test.go) inside_block:runnerLogsRead
 <!--/codeinclude-->
