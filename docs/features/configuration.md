@@ -100,7 +100,7 @@ _Testcontainers for Go_ will attempt to detect the Docker socket path and config
 However, sometimes customization is required. _Testcontainers for Go_ will respect the following order:
 
 1. Read the **tc.host** property in the `~/.testcontainers.properties` file. E.g. `tc.host=tcp://my.docker.host:1234`. If this property is set, the returned Docker socket path
-will be the default Docker socket path: `/var/run/docker.sock`.
+will be the default Docker socket path: `/var/run/docker.sock`, or the `//var/run/docker.sock` UNC Path on Windows.
 
 2. Read the **TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE** environment variable.
 Path to Docker's socket. Used by Ryuk, Docker Compose, and a few other containers that need to perform Docker actions.  
@@ -113,6 +113,6 @@ Path to Docker's socket. Used by Ryuk, Docker Compose, and a few other container
 
 5. If the socket contains the unix schema, the schema is removed (e.g. `unix:///var/run/docker.sock` -> `/var/run/docker.sock`)
 
-6. Else, the default location of the docker socket is used: `/var/run/docker.sock`
+6. Else, the default location of the docker socket is used: `/var/run/docker.sock`, or the `//var/run/docker.sock` UNC Path on Windows
 
 The library panics if the Docker host cannot be discovered.

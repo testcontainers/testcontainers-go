@@ -118,7 +118,7 @@ func ExtractDockerHost(ctx context.Context) (string, error) {
 //  3. Using a Docker client, check if the Info().OperatingSystem is "Docker Desktop" and return the default docker socket path for rootless docker.
 //  4. Else, Get the current Docker Host from the existing strategies: see MustExtractDockerHost.
 //  5. If the socket contains the unix schema, the schema is removed (e.g. unix:///var/run/docker.sock -> /var/run/docker.sock)
-//  6. Else, the default location of the docker socket is used (/var/run/docker.sock)
+//  6. Else, the default location of the docker socket is used (/var/run/docker.sock, or the //var/run/docker.sock UNC path on Windows)
 //
 // It panics if a Docker client cannot be created, or the Docker host cannot be discovered.
 func MustExtractDockerSocket(ctx context.Context) string {
@@ -195,8 +195,14 @@ func extractDockerSocket(ctx context.Context) string {
 func extractDockerSocketFromClient(ctx context.Context, cli client.APIClient) string {
 	// check that the socket is not a tcp or unix socket
 	checkDockerSocketFn := func(socket string) string {
-		// this use case will cover the case when the docker host is a tcp socket
+		// this use case will cover the case when the docker host is a tcp socket.
+		// The socket lives on the engine's host, so on Windows return the UNC path of
+		// the engine's socket: DockerSocketPath is the client's named pipe there.
 		if strings.HasPrefix(socket, TCPSchema) {
+			if IsWindows() {
+				return WindowsDockerSocketPath
+			}
+
 			return DockerSocketPath
 		}
 
