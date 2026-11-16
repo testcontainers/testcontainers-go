@@ -52,6 +52,7 @@ but does not allow starting privileged containers, you can turn off the Ryuk con
 `TESTCONTAINERS_RYUK_DISABLED` **environment variable** , or the  `ryuk.disabled` **property** to `true`.
 1. You can specify the connection timeout for Ryuk by setting the `RYUK_CONNECTION_TIMEOUT` **environment variable**, or the `ryuk.connection.timeout` **property**. The default value is 1 minute.
 1. You can specify the reconnection timeout for Ryuk by setting the `RYUK_RECONNECTION_TIMEOUT` **environment variable**, or the `ryuk.reconnection.timeout` **property**. The default value is 10 seconds.
+1. You can specify the timeout for each Docker request Ryuk makes by setting the `RYUK_REQUEST_TIMEOUT` **environment variable**, or the `ryuk.request.timeout` **property**. When unset, Ryuk uses its own default of 10 seconds. Increase it when the Docker daemon is slow to answer, for example with a large image store: a listing that times out leaves the session's resources behind.
 1. You can configure Ryuk to run in verbose mode by setting any of the `ryuk.verbose` **property** or the `RYUK_VERBOSE` **environment variable**. The default value is `false`.
 
 !!!info

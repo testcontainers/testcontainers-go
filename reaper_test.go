@@ -251,12 +251,14 @@ func Test_NewReaper(t *testing.T) {
 				RyukPrivileged:          true,
 				RyukConnectionTimeout:   2 * time.Minute,
 				RyukReconnectionTimeout: 20 * time.Second,
+				RyukRequestTimeout:      time.Minute,
 			},
 			expectedReaperRequest(func(req *ContainerRequest) {
 				req.Env = map[string]string{
 					"RYUK_PORT":                 "8080",
 					"RYUK_CONNECTION_TIMEOUT":   "2m0s",
 					"RYUK_RECONNECTION_TIMEOUT": "20s",
+					"RYUK_REQUEST_TIMEOUT":      "1m0s",
 				}
 			}),
 			true,
