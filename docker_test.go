@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -1707,6 +1708,11 @@ type fakeStreamResult struct {
 func (e fakeStreamResult) Read(p []byte) (int, error) { return e.ReadCloser.Read(p) }
 func (e fakeStreamResult) Close() error               { return e.ReadCloser.Close() }
 
+func (e fakeStreamResult) Wait(context.Context) error {
+	_, err := io.Copy(io.Discard, e.ReadCloser)
+	return err
+}
+
 func (f *errMockCli) ImageBuild(_ context.Context, _ io.Reader, _ client.ImageBuildOptions) (client.ImageBuildResult, error) {
 	f.imageBuildCount++
 	return client.ImageBuildResult{Body: io.NopCloser(&bytes.Buffer{})}, f.err
@@ -1849,6 +1855,137 @@ func TestDockerProvider_waitContainerCreation_retries(t *testing.T) {
 
 			require.Positive(t, m.containerListCount)
 			require.Equal(t, tt.shouldRetry, m.containerListCount > 1)
+		})
+	}
+}
+
+func TestDockerProvider_PullImage_stream(t *testing.T) {
+	t.Setenv("DOCKER_AUTH_CONFIG", `{"auths":{}}`)
+	origDefaultRegistryFn := defaultRegistryFn
+	t.Cleanup(func() { defaultRegistryFn = origDefaultRegistryFn })
+	defaultRegistryFn = func(context.Context) string { return core.IndexDockerIO }
+
+	for _, tt := range []struct {
+		name         string
+		body         string
+		wantErr      string
+		wantNotFound bool
+	}{
+		{name: "success", body: `{"status":"Pull complete"}`},
+		{name: "error detail with code", body: `{"errorDetail":{"code":502,"message":"registry unavailable"}}`, wantErr: "registry unavailable"},
+		{name: "not found", body: `{"errorDetail":{"code":404,"message":"manifest unknown"}}`, wantErr: "manifest unknown", wantNotFound: true},
+		{name: "error detail without code", body: `{"errorDetail":{"message":"registry unavailable"}}`, wantErr: "registry unavailable"},
+		{name: "error detail and legacy error", body: `{"errorDetail":{"message":"registry unavailable"},"error":"registry unavailable"}`, wantErr: "registry unavailable"},
+		{name: "malformed response", body: `{"status":`, wantErr: "unexpected EOF"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			for _, withOpts := range []bool{false, true} {
+				name := "PullImage"
+				if withOpts {
+					name = "PullImageWithOpts"
+				}
+				t.Run(name, func(t *testing.T) {
+					pulls := 0
+					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						if r.Method != http.MethodPost || r.URL.Path != "/v1.54/images/create" {
+							http.Error(w, "unexpected request", http.StatusBadRequest)
+							return
+						}
+						pulls++
+						w.Header().Set("Content-Type", "application/json")
+						_, _ = fmt.Fprintln(w, `{"status":"Pulling manifest"}`)
+						_, _ = fmt.Fprintln(w, tt.body)
+					}))
+					t.Cleanup(server.Close)
+					cli, err := client.New(client.WithHost(server.URL), client.WithAPIVersion("1.54"))
+					require.NoError(t, err)
+					t.Cleanup(func() { require.NoError(t, cli.Close()) })
+					p := &DockerProvider{
+						DockerProviderOptions: &DockerProviderOptions{
+							GenericProviderOptions: &GenericProviderOptions{Logger: log.Default()},
+						},
+						client: cli,
+					}
+					if withOpts {
+						err = p.PullImageWithOpts(context.Background(), "nginx:mainline")
+					} else {
+						err = p.PullImage(context.Background(), "nginx:mainline")
+					}
+					if tt.wantErr == "" {
+						require.NoError(t, err)
+					} else {
+						require.ErrorContains(t, err, tt.wantErr)
+						require.ErrorContains(t, err, "pull image nginx:mainline:")
+					}
+					require.Equal(t, tt.wantNotFound, errdefs.IsNotFound(err))
+					require.Equal(t, 1, pulls)
+				})
+			}
+		})
+	}
+}
+
+// TestDockerProvider_CreateContainer_pullStreamError verifies failed pulls stop
+// container creation even when a stale image is available locally.
+func TestDockerProvider_CreateContainer_pullStreamError(t *testing.T) {
+	t.Setenv("DOCKER_AUTH_CONFIG", `{"auths":{}}`)
+	origDefaultRegistryFn := defaultRegistryFn
+	t.Cleanup(func() { defaultRegistryFn = origDefaultRegistryFn })
+	defaultRegistryFn = func(context.Context) string { return core.IndexDockerIO }
+
+	for _, alwaysPull := range []bool{false, true} {
+		name := "image missing locally"
+		if alwaysPull {
+			name = "always pull with image present locally"
+		}
+		t.Run(name, func(t *testing.T) {
+			var requests []string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				request := r.Method + " " + r.URL.Path
+				requests = append(requests, request)
+				w.Header().Set("Content-Type", "application/json")
+				switch request {
+				case "GET /v1.54/images/nginx:mainline/json":
+					if alwaysPull {
+						_, _ = fmt.Fprint(w, `{"Id":"sha256:0123","Config":{}}`)
+					} else {
+						http.Error(w, `{"message":"No such image"}`, http.StatusNotFound)
+					}
+				case "POST /v1.54/images/create":
+					_, _ = fmt.Fprintln(w, `{"status":"Pulling manifest"}`)
+					_, _ = fmt.Fprintln(w, `{"errorDetail":{"code":404,"message":"manifest unknown"}}`)
+				default:
+					t.Errorf("unexpected request: %s", request)
+					http.Error(w, "unexpected request", http.StatusBadRequest)
+				}
+			}))
+			t.Cleanup(server.Close)
+			cli, err := client.New(client.WithHost(server.URL), client.WithAPIVersion("1.54"))
+			require.NoError(t, err)
+			t.Cleanup(func() { require.NoError(t, cli.Close()) })
+			p := &DockerProvider{
+				DockerProviderOptions: &DockerProviderOptions{
+					defaultBridgeNetworkName: Bridge,
+					GenericProviderOptions: &GenericProviderOptions{
+						Logger:         log.Default(),
+						defaultNetwork: Bridge, // Avoid querying networks on the fake daemon.
+					},
+				},
+				client: cli,
+			}
+			ctr, err := p.CreateContainer(context.Background(), ContainerRequest{
+				Image:           "nginx:mainline",
+				AlwaysPullImage: alwaysPull,
+			})
+			require.Nil(t, ctr)
+			require.ErrorContains(t, err, "pull image nginx:mainline:")
+			require.ErrorContains(t, err, "manifest unknown")
+			require.True(t, errdefs.IsNotFound(err))
+			wantRequests := []string{"POST /v1.54/images/create"}
+			if !alwaysPull {
+				wantRequests = append([]string{"GET /v1.54/images/nginx:mainline/json"}, wantRequests...)
+			}
+			require.Equal(t, wantRequests, requests)
 		})
 	}
 }
