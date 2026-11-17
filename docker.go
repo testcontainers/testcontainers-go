@@ -1561,7 +1561,10 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 	defer pull.Close()
 
 	// Wait for completion and propagate errors reported in the JSON stream.
-	return pull.Wait(ctx)
+	if err := pull.Wait(ctx); err != nil {
+		return fmt.Errorf("pull image %s: %w", tag, err)
+	}
+	return nil
 }
 
 // Health measure the healthiness of the provider. Right now we leverage the
