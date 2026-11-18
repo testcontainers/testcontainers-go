@@ -80,6 +80,7 @@ nav:
         - modules/aerospike.md
         - modules/arangodb.md
         - modules/artemis.md
+        - modules/aws.md
         - modules/azure.md
         - modules/azurite.md
         - modules/cassandra.md
