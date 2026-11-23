@@ -2,14 +2,17 @@ package testcontainers_test
 
 import (
 	"context"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -71,6 +74,33 @@ func TestCopyFileToRunningContainer(t *testing.T) {
 	// Give some time to the wait script to catch the hello script being created
 	err = wait.ForLog("done").WithStartupTimeout(2*time.Second).WaitUntilReady(ctx, ctr)
 	require.NoError(t, err)
+}
+
+func TestCopyFileToRunningContainerPreservesModTime(t *testing.T) {
+	ctx, cnl := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cnl()
+
+	hostPath := filepath.Join(t.TempDir(), "hello.txt")
+	require.NoError(t, os.WriteFile(hostPath, []byte("hello"), 0o600))
+	modTime := time.Date(2024, time.March, 14, 15, 9, 26, 500_000_000, time.UTC)
+	require.NoError(t, os.Chtimes(hostPath, modTime, modTime))
+
+	ctr, err := testcontainers.Run(ctx, testBashImage,
+		testcontainers.WithEntrypoint("tail", "-f", "/dev/null"),
+	)
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	err = ctr.CopyFileToContainer(ctx, hostPath, "/tmp/hello.txt", 0o644)
+	require.NoError(t, err)
+
+	code, reader, err := ctr.Exec(ctx, []string{"stat", "-c", "%y", "/tmp/hello.txt"}, exec.Multiplexed())
+	require.NoError(t, err)
+	require.Zero(t, code)
+
+	out, err := io.ReadAll(reader)
+	require.NoError(t, err)
+	require.Equal(t, modTime.Format("2006-01-02 15:04:05.000000000 -0700"), strings.TrimSpace(string(out)))
 }
 
 func TestCopyDirectoryToContainer(t *testing.T) {
