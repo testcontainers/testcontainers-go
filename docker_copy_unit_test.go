@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/moby/moby/client"
 	"github.com/stretchr/testify/require"
@@ -26,10 +27,12 @@ func TestDockerContainerCopyToContainerUsesStrictSafeArchivePath(t *testing.T) {
 		fileMode            = int64(0o640)
 	)
 	payload := []byte("copied through the Engine API")
+	hostModTime := time.Date(2024, time.March, 14, 15, 9, 26, 500_000_000, time.UTC)
 
 	tests := []struct {
-		name string
-		copy func(t *testing.T, container *DockerContainer) error
+		name        string
+		copy        func(t *testing.T, container *DockerContainer) error
+		wantModTime time.Time
 	}{
 		{
 			name: "CopyToContainer absolute destination",
@@ -37,6 +40,7 @@ func TestDockerContainerCopyToContainerUsesStrictSafeArchivePath(t *testing.T) {
 				t.Helper()
 				return container.CopyToContainer(t.Context(), payload, absoluteDestination, fileMode)
 			},
+			wantModTime: time.Unix(0, 0),
 		},
 		{
 			name: "CopyFileToContainer relative destination",
@@ -44,8 +48,10 @@ func TestDockerContainerCopyToContainerUsesStrictSafeArchivePath(t *testing.T) {
 				t.Helper()
 				hostPath := filepath.Join(t.TempDir(), "copied.txt")
 				require.NoError(t, os.WriteFile(hostPath, payload, 0o600))
+				require.NoError(t, os.Chtimes(hostPath, hostModTime, hostModTime))
 				return container.CopyFileToContainer(t.Context(), hostPath, relativeDestination, fileMode)
 			},
+			wantModTime: hostModTime,
 		},
 	}
 
@@ -107,6 +113,7 @@ func TestDockerContainerCopyToContainerUsesStrictSafeArchivePath(t *testing.T) {
 			require.Equal(t, int64(len(payload)), got.header.Size)
 			require.Equal(t, fileMode, got.header.Mode)
 			require.Equal(t, byte(tar.TypeReg), got.header.Typeflag)
+			require.WithinDuration(t, test.wantModTime, got.header.ModTime, 0)
 			require.Equal(t, payload, got.payload)
 		})
 	}
