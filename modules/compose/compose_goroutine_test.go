@@ -38,8 +38,9 @@ func TestDockerComposeGoroutineLeak(t *testing.T) {
 		goleak.VerifyNone(t,
 			ignoreExisting,
 			// TODO(#2008): Remove this ignore when the Reaper goroutine leak is fixed.
-			// This references an internal anonymous closure that may change if Reaper is refactored.
-			goleak.IgnoreTopFunction("github.com/testcontainers/testcontainers-go.(*Reaper).connect.func1"),
+			// This references the internal closure holding a Reaper connection open,
+			// which may change if Reaper is refactored.
+			goleak.IgnoreTopFunction("github.com/testcontainers/testcontainers-go.hold.func1"),
 		)
 	})
 

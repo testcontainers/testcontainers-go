@@ -15,7 +15,7 @@ require (
 	github.com/stretchr/testify v1.12.1
 	github.com/testcontainers/testcontainers-go v0.45.0
 	github.com/testcontainers/testcontainers-go/modules/localstack v0.45.0
-	golang.org/x/mod v0.37.0 // indirect
+	golang.org/x/mod v0.43.0 // indirect
 )
 
 require (

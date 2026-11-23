@@ -26,6 +26,10 @@
             "path": "../modules/artemis"
         },
         {
+            "name": "module / aws",
+            "path": "../modules/aws"
+        },
+        {
             "name": "module / azure",
             "path": "../modules/azure"
         },
