@@ -746,7 +746,7 @@ func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostFilePath 
 		}
 		_, err := io.Copy(tw, f)
 		return err
-	}, info.Size(), containerFilePath, fileMode)
+	}, info.Size(), containerFilePath, fileMode, info.ModTime())
 }
 
 // CopyToContainer copies fileContent data to a file in container
@@ -754,11 +754,11 @@ func (c *DockerContainer) CopyToContainer(ctx context.Context, fileContent []byt
 	return c.copyToContainer(ctx, func(tw io.Writer) error {
 		_, err := tw.Write(fileContent)
 		return err
-	}, int64(len(fileContent)), containerFilePath, fileMode)
+	}, int64(len(fileContent)), containerFilePath, fileMode, time.Time{})
 }
 
-func (c *DockerContainer) copyToContainer(ctx context.Context, fileContent func(tw io.Writer) error, fileContentSize int64, containerFilePath string, fileMode int64) error {
-	buffer, err := tarFile(containerFilePath, fileContent, fileContentSize, fileMode)
+func (c *DockerContainer) copyToContainer(ctx context.Context, fileContent func(tw io.Writer) error, fileContentSize int64, containerFilePath string, fileMode int64, modTime time.Time) error {
+	buffer, err := tarFile(containerFilePath, fileContent, fileContentSize, fileMode, modTime)
 	if err != nil {
 		return err
 	}
