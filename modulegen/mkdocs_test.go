@@ -47,31 +47,4 @@ func TestReadMkDocsConfig(t *testing.T) {
 	require.Equal(t, "index.md", nav[0].Home)
 	require.NotEmpty(t, nav[2].Features)
 	require.NotEmpty(t, nav[3].Modules)
-	require.NotEmpty(t, nav[4].Examples)
-}
-
-func TestNavItems(t *testing.T) {
-	testProject := copyInitialProject(t)
-
-	examples, err := testProject.ctx.GetExamples()
-	require.NoError(t, err)
-	examplesDocs, err := testProject.ctx.GetExamplesDocs()
-	require.NoError(t, err)
-
-	// we have to remove the index.md file from the examples docs
-	require.Len(t, examples, len(examplesDocs)-1)
-
-	// all example modules exist in the documentation
-	for _, example := range examples {
-		found := false
-		for _, exampleDoc := range examplesDocs {
-			markdownName := example + ".md"
-
-			if markdownName == exampleDoc {
-				found = true
-				continue
-			}
-		}
-		require.True(t, found, "example %s is not present in the docs", example)
-	}
 }

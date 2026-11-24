@@ -41,9 +41,9 @@ Think of GitHub workflows, release notes, etc. Although it sounds great, which i
 
 ## Creating a new module
 
-We have provided a command line tool to generate the scaffolding for the code of the example you are interested in. This tool will generate:
+We have provided a command line tool to generate the scaffolding for the module you are interested in. This tool will generate:
 
-- a Go module for the example, including:
+- a Go module, including:
     - go.mod and go.sum files, including the current version of _Testcontainer for Go_.
     - a Go package named after the module, in lowercase
     - a Go file for the creation of the container.
@@ -91,13 +91,6 @@ From the [`modulegen` directory]({{repo_url}}/tree/main/modulegen), please run:
 go run . new module --name ${NAME_OF_YOUR_MODULE} --image "${REGISTRY}/${MODULE}:${TAG}" --title ${TITLE_OF_YOUR_MODULE}
 ```
 
-!!!info
-    In the case you just want to create [an example module](../examples/index.md), with no public API, please run:
-
-    ```shell
-    go run . new example --name ${NAME_OF_YOUR_MODULE} --image "${REGISTRY}/${MODULE}:${TAG}" --title ${TITLE_OF_YOUR_MODULE}
-    ```
-
 ### Technology modules: client/SDK dependency policy
 
 Keep technology modules **driver-agnostic**. Put service SDKs, database drivers, and client libraries used for protocol assertions in a separate `modules/<name>/examples/go.mod`, including when only integration tests use them. An SDK import in a parent `_test.go`, or an `examples` directory without its own `go.mod`, still adds that dependency to the parent module.
@@ -143,7 +136,7 @@ Go's `./...` does not cross a nested `go.mod`, so testing the parent does not ru
 
 Update documentation `codeinclude` paths when moving snippets and preserve their marker names. For example, a client snippet moves from `../../modules/<name>/examples_test.go` to `../../modules/<name>/examples/examples_test.go`, while a driver-free container snippet can stay in the parent. Include the service subpackage in the path for shared examples modules.
 
-Shared CI discovers child `go.mod` files automatically, selects the innermost module owning a changed file, and also selects children when their parent changes. Children are linted and tested independently, subject to the shared workflow's exclusions; no new per-child workflow is needed. Dependabot's directory globs already cover these children, and the release scripts update their core and parent requirements. This nested layout is distinct from the standalone `examples/<name>` modules created by `go run . new example`.
+Shared CI discovers child `go.mod` files automatically, selects the innermost module owning a changed file, and also selects children when their parent changes. Children are linted and tested independently, subject to the shared workflow's exclusions; no new per-child workflow is needed. Dependabot's directory globs already cover these children, and the release scripts update their core and parent requirements.
 
 ### Adding types and methods to the module
 
@@ -520,7 +513,7 @@ To update the Go dependencies in the modules, please run:
 make -C modules tidy-modules
 ```
 
-This discovers nested examples Makefiles as well. To tidy the core, standalone examples, and technology modules together, run `make tidy-all` from the repository root.
+This discovers nested examples Makefiles as well. To tidy the core and technology modules together, run `make tidy-all` from the repository root.
 
 ## Refreshing the modules
 
@@ -531,22 +524,11 @@ $ cd modulegen
 $ go run . refresh
 ```
 
-This command recreates all the project files for the modules and examples, including:
+This command recreates the project files for the modules, including:
 
-- the mkdocs.yml file, including all the modules and examples, excluding the `compose` module, as it has its own docs page.
-- the VSCode project file, including all the modules, the examples and the modulegen module.
-- the Sonar properties file, including all the modules, the examples and the modulegen module.
+- the mkdocs.yml file, including all the modules, excluding the `compose` module, as it has its own docs page.
+- the VSCode project file, including all the modules and the modulegen module.
 
 Executing this command in a well-known state of the project, must not produce any changes in the project files.
 
 The Dependabot config is maintained manually. Its directory globs automatically cover new modules and examples, and updates to the same dependency are grouped into one pull request across the configured Go modules.
-
-## Interested in converting an example into a module?
-
-The steps to convert an existing example, aka `${THE_EXAMPLE}`, into a module are the following:
-
-1. Rename the module path at the `go.mod` file for your example.
-1. Move the `examples/${THE_EXAMPLE}` directory to `modules/${THE_EXAMPLE}`.
-1. In the `mkdocs.yml` file, move the entry for `${THE_EXAMPLE}` from examples to modules.
-1. Move `docs/examples${THE_EXAMPLE}.md` file to `docs/modules/${THE_EXAMPLE}`, updating the references to the source code paths.
-1. Update the GitHub workflow for `${THE_EXAMPLE}`, modifying names and paths.

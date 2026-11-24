@@ -17,7 +17,7 @@ readonly MKDOCS_FILE="${ROOT_DIR}/mkdocs.yml"
 readonly VERSION_FILE="${ROOT_DIR}/internal/version.go"
 
 readonly REPOSITORY="github.com/testcontainers/testcontainers-go"
-readonly DIRECTORIES=(examples modules)
+readonly DIRECTORIES=(modules)
 
 function main() {
   readonly version="$(extractCurrentVersion)"

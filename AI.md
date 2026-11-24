@@ -7,7 +7,6 @@ This document provides guidelines for AI coding agents working on the Testcontai
 This is a **Go monorepo** containing:
 - **Core library**: Root directory contains the main testcontainers-go library
 - **Modules**: `./modules/` directory with 50+ technology-specific modules (postgres, redis, kafka, etc.)
-- **Examples**: `./examples/` directory with example implementations
 - **Module generator**: `./modulegen/` directory with tools to generate new modules
 - **Documentation**: `./docs/` directory with MkDocs-based documentation
 

@@ -1,4 +1,4 @@
-# Maintained manually; directory globs automatically include new modules and examples.
+# Maintained manually; directory globs automatically include new technology modules and nested SDK examples.
 version: 2
 updates:
     - package-ecosystem: github-actions
@@ -12,7 +12,6 @@ updates:
     - package-ecosystem: gomod
       directories:
         - /
-        - /examples/*
         - /modulegen
         - /modules/*
         - /modules/**/examples
