@@ -19,13 +19,11 @@ trap 'unset SONAR_TOKEN' EXIT
 #
 # Project name format:
 #   - For modules: modules_<module-name>
-#   - For examples: examples_<example-name>
 #   - For modulegen: modulegen
 #
 # Examples:
 #   ./.github/scripts/sonar-manager.sh -a create -p modulegen
 #   ./.github/scripts/sonar-manager.sh -a create -p modules_mysql
-#   ./.github/scripts/sonar-manager.sh -a create -p examples_redis
 #   ./.github/scripts/sonar-manager.sh -a delete -p modules_mysql
 #   ./.github/scripts/sonar-manager.sh -a createAll
 #   ./.github/scripts/sonar-manager.sh -a deleteAll
@@ -36,21 +34,16 @@ trap 'unset SONAR_TOKEN' EXIT
 SONAR_TOKEN=${SONAR_TOKEN:-}
 ORGANIZATION="testcontainers"
 
-# list all directories in the modules and examples directories
-EXAMPLES=$(ls -1d examples/*/ | cut -d'/' -f2)
+# list all directories in the modules directory
 MODULES=$(ls -1d modules/*/ | cut -d'/' -f2)
 
 # Delete all the projects in SonarCloud, starting with the modulegen module.
-# Modules and examples need a prefix with the module type (module or example).
+# Modules need the modules_ prefix.
 deleteAll() {
     delete "modulegen"
 
     for MODULE in $MODULES; do
         delete "modules_$MODULE"
-    done
-
-    for EXAMPLE in $EXAMPLES; do
-        delete "examples_$EXAMPLE"
     done
 }
 
@@ -95,16 +88,12 @@ delete() {
 }
 
 # Create all the projects in SonarCloud, starting with the modulegen module.
-# Modules and examples need a prefix with the module type (module or example).
+# Modules need the modules_ prefix.
 createAll() {
     create "modulegen"
 
     for MODULE in $MODULES; do
         create "modules_$MODULE"
-    done
-
-    for EXAMPLE in $EXAMPLES; do
-        create "examples_$EXAMPLE"
     done
 }
 
@@ -120,16 +109,12 @@ create() {
 }
 
 # Rename all the main branches to the new name, starting with the modulegen module.
-# Modules and examples need a prefix with the module type (module or example).
+# Modules need the modules_ prefix.
 renameAllMainBranches() {
     rename_main_branch "modulegen"
 
     for MODULE in $MODULES; do
         rename_main_branch "modules_$MODULE"
-    done
-
-    for EXAMPLE in $EXAMPLES; do
-        rename_main_branch "examples_$EXAMPLE"
     done
 }
 

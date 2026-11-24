@@ -26,7 +26,6 @@ func TestModule(t *testing.T) {
 			name: "Module with title",
 			module: context.TestcontainersModule{
 				Name:      "mongoDB",
-				IsModule:  true,
 				Image:     "mongodb:latest",
 				TitleName: "MongoDB",
 			},
@@ -36,33 +35,10 @@ func TestModule(t *testing.T) {
 		{
 			name: "Module without title",
 			module: context.TestcontainersModule{
-				Name:     "mongoDB",
-				IsModule: true,
-				Image:    "mongodb:latest",
+				Name:  "mongoDB",
+				Image: "mongodb:latest",
 			},
 			expectedEntrypoint: "Run",
-			expectedTitle:      "Mongodb",
-		},
-		{
-			name: "Example with title",
-			module: context.TestcontainersModule{
-				Name:      "mongoDB",
-				IsModule:  false,
-				Image:     "mongodb:latest",
-				TitleName: "MongoDB",
-			},
-			expectedEntrypoint: "run",
-			expectedTitle:      "MongoDB",
-		},
-		{
-			name: "Example without title",
-			module: context.TestcontainersModule{
-				Name:     "mongoDB",
-				IsModule: false,
-				Image:    "mongodb:latest",
-			},
-
-			expectedEntrypoint: "run",
 			expectedTitle:      "Mongodb",
 		},
 	}
@@ -217,48 +193,12 @@ func TestGenerateWrongModuleTitle(t *testing.T) {
 	}
 }
 
-func TestGenerate(t *testing.T) {
+func TestGenerateModule(t *testing.T) {
 	testProject := copyInitialProject(t)
 
 	module := context.TestcontainersModule{
 		Name:      "foodb4tw",
 		TitleName: "FooDB4TheWin",
-		IsModule:  false,
-		Image:     "example/foodb:latest",
-	}
-	moduleNameLower := module.Lower()
-
-	err := internal.GenerateFiles(testProject.ctx, module)
-	require.NoError(t, err)
-
-	moduleDirPath := filepath.Join(testProject.ctx.ExamplesDir(), moduleNameLower)
-
-	moduleDirFileInfo, err := os.Stat(moduleDirPath)
-	require.NoError(t, err) // error nil implies the file exist
-	require.True(t, moduleDirFileInfo.IsDir())
-
-	moduleDocFile := filepath.Join(testProject.ctx.ExamplesDocsDir(), moduleNameLower+".md")
-	_, err = os.Stat(moduleDocFile)
-	require.NoError(t, err) // error nil implies the file exist
-
-	assertModuleDocContent(t, module, moduleDocFile)
-
-	generatedTemplatesDir := filepath.Join(testProject.ctx.ExamplesDir(), moduleNameLower)
-	// do not generate examples_test.go for examples
-	assertModuleTestContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+"_test.go"))
-	assertModuleContent(t, module, filepath.Join(generatedTemplatesDir, moduleNameLower+".go"))
-	assertGoModContent(t, module, testProject.originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
-	assertMakefileContent(t, module, filepath.Join(generatedTemplatesDir, "Makefile"))
-	assertMkdocsNavItems(t, testProject.ctx, module)
-}
-
-func TestGenerateModule(t *testing.T) {
-	testProject := copyInitialProject(t)
-
-	module := context.TestcontainersModule{
-		Name:      "foodb",
-		TitleName: "FooDB",
-		IsModule:  true,
 		Image:     "example/foodb:latest",
 	}
 	moduleNameLower := module.Lower()
@@ -285,6 +225,8 @@ func TestGenerateModule(t *testing.T) {
 	assertGoModContent(t, module, testProject.originalConfig.Extra.LatestVersion, filepath.Join(generatedTemplatesDir, "go.mod"))
 	assertMakefileContent(t, module, filepath.Join(generatedTemplatesDir, "Makefile"))
 	assertMkdocsNavItems(t, testProject.ctx, module)
+	require.NoDirExists(t, filepath.Join(testProject.ctx.RootDir, "examples"))
+	require.NoDirExists(t, filepath.Join(testProject.ctx.DocsDir(), "examples"))
 }
 
 func TestRefresh(t *testing.T) {
@@ -293,30 +235,29 @@ func TestRefresh(t *testing.T) {
 	err := internal.Refresh(testProject.ctx)
 	require.NoError(t, err)
 
-	examples, err := testProject.ctx.GetExamples()
-	require.NoError(t, err)
 	modules, err := testProject.ctx.GetModules()
 	require.NoError(t, err)
-
-	modulesAndExamples := make([]context.TestcontainersModule, 0, len(examples)+len(modules))
-
-	for _, example := range examples {
-		modulesAndExamples = append(modulesAndExamples, context.TestcontainersModule{
-			Name:     example,
-			IsModule: false,
-		})
-	}
-
-	for _, module := range modules {
-		modulesAndExamples = append(modulesAndExamples, context.TestcontainersModule{
-			Name:     module,
-			IsModule: true,
-		})
-	}
-
-	for _, module := range modulesAndExamples {
+	for _, name := range modules {
+		module := context.TestcontainersModule{Name: name}
 		assertMkdocsNavItems(t, testProject.ctx, module)
 	}
+	require.NoDirExists(t, filepath.Join(testProject.ctx.RootDir, "examples"))
+	require.NoDirExists(t, filepath.Join(testProject.ctx.DocsDir(), "examples"))
+	config, err := os.ReadFile(testProject.ctx.MkdocsConfigFile())
+	require.NoError(t, err)
+	require.NotContains(t, string(config), "Examples:")
+	workspace, err := os.ReadFile(testProject.ctx.VSCodeWorkspaceFile())
+	require.NoError(t, err)
+	require.NotContains(t, string(workspace), "../examples/")
+
+	// Refreshing the resulting project again must leave its configuration unchanged.
+	require.NoError(t, internal.Refresh(testProject.ctx))
+	refreshedConfig, err := os.ReadFile(testProject.ctx.MkdocsConfigFile())
+	require.NoError(t, err)
+	require.Equal(t, config, refreshedConfig)
+	refreshedWorkspace, err := os.ReadFile(testProject.ctx.VSCodeWorkspaceFile())
+	require.NoError(t, err)
+	require.Equal(t, workspace, refreshedWorkspace)
 }
 
 // assert content module file in the docs
@@ -437,10 +378,7 @@ func assertMkdocsNavItems(t *testing.T, ctx context.Context, module context.Test
 
 	parentDir := module.ParentDir()
 
-	navItems := config.Nav[4].Examples
-	if module.IsModule {
-		navItems = config.Nav[3].Modules
-	}
+	navItems := config.Nav[3].Modules
 
 	// the module should be in the nav
 	found := false
@@ -489,8 +427,8 @@ func copyInitialProject(t *testing.T) testProject {
 	// as the modulegen tool lives in the root of the project.
 	ctx := context.New(filepath.Dir(current))
 
-	// examples and modules
-	moduleTypes := []string{"examples", "modules"}
+	// Technology modules
+	moduleTypes := []string{"modules"}
 	for _, moduleType := range moduleTypes {
 		moduleTypeDir := filepath.Join(tmpCtx.RootDir, moduleType)
 		err := os.MkdirAll(moduleTypeDir, 0o777)

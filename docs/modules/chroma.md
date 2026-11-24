@@ -91,6 +91,12 @@ Then, you can create a Chroma client using the Chroma module:
 
 ### Working with Collections
 
+The Chroma Go client's default embedding function needs the ONNX Runtime native library.
+To run these examples locally, run `.github/scripts/modules/chroma/examples/install-dependencies.sh`
+from the repository root and execute the `export CHROMAGO_ONNX_RUNTIME_PATH=...` command it prints.
+The script requires Python 3 with pip and downloads ONNX Runtime 1.22.0 from PyPI.
+CI runs this setup automatically before testing the examples.
+
 <!--codeinclude-->
 [Create Collection](../../modules/chroma/examples/examples_test.go) inside_block:createCollection
 [List Collections](../../modules/chroma/examples/examples_test.go) inside_block:listCollections

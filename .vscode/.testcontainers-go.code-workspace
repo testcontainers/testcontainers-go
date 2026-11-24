@@ -6,10 +6,6 @@
             "path": "../"
         },
         {
-            "name": "example / nginx",
-            "path": "../examples/nginx"
-        },
-        {
             "name": "module / activemq",
             "path": "../modules/activemq"
         },

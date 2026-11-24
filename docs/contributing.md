@@ -45,7 +45,6 @@ Please just be sure to:
 * unless necessary, please try to **avoid pushing --force** to the published branch you submitted a PR from, as it makes it harder to review the changes from a given previous state.
 * apply format running `make lint-all`. It will run `golangci-lint` for the core and modules with the configuration set in the root directory of the project. Please be aware that the lint stage on CI could fail if this is not done.
     * For linting just the modules: `make -C modules lint-modules`
-    * For linting just the examples: `make -C examples lint-examples`
     * For linting just the modulegen: `make -C modulegen lint`
 * verify tests are passing in each affected Go module. Root `make test-all` builds and tests the core module; it does not traverse nested `go.mod` files.
     * For a given module or example, go to the module or example directory and run `make test`.

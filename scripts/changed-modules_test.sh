@@ -4,9 +4,9 @@ set -euo pipefail
 
 fixture=$(mktemp -d)
 trap 'rm -rf "$fixture"' EXIT
-mkdir -p "$fixture"/{scripts,modules/{podman,redis/examples,k6},examples/nginx,modulegen,usage-metrics}
+mkdir -p "$fixture"/{scripts,modules/{podman,redis/examples,k6,nginx},modulegen,usage-metrics}
 cp "$(dirname "${BASH_SOURCE[0]}")/changed-modules.sh" "$fixture/scripts/"
-for module in '' modules/podman modules/redis modules/redis/examples modules/k6 examples/nginx modulegen usage-metrics; do
+for module in '' modules/podman modules/redis modules/redis/examples modules/k6 modules/nginx modulegen usage-metrics; do
     touch "$fixture/$module/go.mod"
 done
 
@@ -19,7 +19,7 @@ check() {
     fi
 }
 
-all='["", "examples/nginx", "modulegen", "modules/podman", "modules/redis", "modules/redis/examples", "usage-metrics"]'
+all='["", "modules/nginx", "modulegen", "modules/podman", "modules/redis", "modules/redis/examples", "usage-metrics"]'
 check 'modules/podman/podman.go' '["modules/podman"]'
 check 'modules/podman/go.mod modules/podman/README.md' '["modules/podman"]'
 check 'modules/podman/deleted_test.go' '["modules/podman"]'
@@ -28,7 +28,7 @@ check 'modules/podman/old.go modules/redis/new.go' '["modules/podman", "modules/
 check 'modules/redis/redis.go' '["modules/redis", "modules/redis/examples"]'
 check 'modules/redis/examples/examples_test.go' '["modules/redis/examples"]'
 check 'modules/redis/examples/deleted_test.go' '["modules/redis/examples"]'
-check 'modules/redis/examples/old.go examples/nginx/new.go' '["modules/redis/examples", "examples/nginx"]'
+check 'modules/redis/examples/old.go modules/nginx/new.go' '["modules/redis/examples", "modules/nginx"]'
 check 'docker.go' "$all"
 check 'deleted_core.go' "$all"
 check '.github/workflows/ci-test-go.yml' "$all"
@@ -58,7 +58,7 @@ rm "$fixture/modules/redis/sibling/go.mod"
 # A removed nested module has no job, but its parent remains buildable.
 rm "$fixture/modules/redis/examples/go.mod"
 check 'modules/redis/examples/go.mod modules/redis/examples/examples_test.go' '["modules/redis"]'
-check 'modules/redis/examples/old.go examples/nginx/new.go' '["modules/redis", "examples/nginx"]'
+check 'modules/redis/examples/old.go modules/nginx/new.go' '["modules/redis", "modules/nginx"]'
 # Removing the entire parent module and its descendants leaves no build target.
 rm "$fixture/modules/redis/go.mod"
 check 'modules/redis/go.mod modules/redis/examples/go.mod' '[]'

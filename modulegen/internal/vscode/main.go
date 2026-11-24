@@ -8,6 +8,6 @@ import (
 type Generator struct{}
 
 // Generate updates the workspace for vscode
-func (g Generator) Generate(ctx context.Context, examples []string, modules []string) error {
-	return writeConfig(ctx.VSCodeWorkspaceFile(), newConfig(examples, modules))
+func (g Generator) Generate(ctx context.Context, modules []string) error {
+	return writeConfig(ctx.VSCodeWorkspaceFile(), newConfig(modules))
 }

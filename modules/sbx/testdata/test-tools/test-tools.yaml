@@ -1,6 +1,7 @@
 # syntax=docker/sandbox-kit:3
 schemaVersion: "3"
 kind: mixin
+version: "1.0.0"
 displayName: Testcontainers kit fixture
 provides: ["testcontainers-test-tools"]
 
