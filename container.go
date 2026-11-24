@@ -70,6 +70,7 @@ type Container interface {
 	CopyDirToContainer(ctx context.Context, hostDirPath string, containerParentPath string, fileMode int64) error
 	CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error
 	CopyFileFromContainer(ctx context.Context, filePath string) (io.ReadCloser, error)
+	CopyDirFromContainer(ctx context.Context, containerDirPath string, hostDirPath string) error
 	GetLogProductionErrorChannel() <-chan error
 }
 
