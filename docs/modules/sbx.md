@@ -30,7 +30,7 @@ TESTCONTAINERS_PROVIDER=sbx go test ./...
 
 You can instead set `provider=sbx` in `~/.testcontainers.properties`. The environment variable takes precedence over the properties file. Select sbx for the test process before any Testcontainers operation.
 
-The module creates the sandbox with `--kit sbx/docker-tcp:latest` and base image `docker.io/docker/sbx-kit-shell:1.0.0`. The `sbx` CLI pulls and loads the published Docker TCP kit. After creation, the module runs `sbx run --detach --name <name>` to keep its owned sandbox running until explicit cleanup, then discovers the Docker endpoint.
+The module creates the sandbox with `--kit sbx/docker-tcp:latest` and base image `sbx/shell:1.0.0`. The `sbx` CLI pulls and loads the published Docker TCP kit. After creation, the module runs `sbx run --detach --name <name>` to keep its owned sandbox running until explicit cleanup, then discovers the Docker endpoint.
 
 ## Module Reference
 
