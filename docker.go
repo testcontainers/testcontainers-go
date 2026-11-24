@@ -681,6 +681,32 @@ func (c *DockerContainer) CopyFileFromContainer(ctx context.Context, filePath st
 	return ret, nil
 }
 
+// CopyDirFromContainer copies a directory from the container to a host path
+func (c *DockerContainer) CopyDirFromContainer(ctx context.Context, containerDirPath, hostDirPath string) error {
+	if err := os.MkdirAll(hostDirPath, 0o755); err != nil {
+		return fmt.Errorf("error creating host path %s: %w", hostDirPath, err)
+	}
+
+	res, err := c.provider.client.CopyFromContainer(ctx, c.ID, client.CopyFromContainerOptions{
+		SourcePath: containerDirPath,
+	})
+	if err != nil {
+		return err
+	}
+	defer c.provider.Close()
+	defer res.Content.Close()
+
+	if !res.Stat.Mode.IsDir() {
+		return fmt.Errorf("%s is not a directory", res.Stat.Name)
+	}
+
+	if err := extractTar(hostDirPath, res.Content); err != nil {
+		return fmt.Errorf("error extracting directory from container: %w", err)
+	}
+
+	return nil
+}
+
 // CopyDirToContainer copies the contents of a directory to a parent path in the container. This parent path must exist in the container first
 // as we cannot create it
 func (c *DockerContainer) CopyDirToContainer(ctx context.Context, hostDirPath string, containerParentPath string, fileMode int64) error {
