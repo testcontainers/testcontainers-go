@@ -263,8 +263,8 @@ jobs:
           if [ "${{ inputs.project-directory }}" == "" ]; then
             echo "PROJECT_KEY=testcontainers_testcontainers-go" >> $GITHUB_ENV
             echo "PROJECT_NAME=testcontainers-go" >> $GITHUB_ENV
-            echo "PROJECT_SRC_EXCLUSIONS=**/*_test.go,**/vendor/**,**/testdata/**,modules/**,examples/**,modulegen/**" >> $GITHUB_ENV
-            echo "PROJECT_TEST_EXCLUSIONS=**/vendor/**,modules/**,examples/**,modulegen/**" >> $GITHUB_ENV
+            echo "PROJECT_SRC_EXCLUSIONS=**/*_test.go,**/vendor/**,**/testdata/**,modules/**,modulegen/**" >> $GITHUB_ENV
+            echo "PROJECT_TEST_EXCLUSIONS=**/vendor/**,modules/**,modulegen/**" >> $GITHUB_ENV
           else
             echo "PROJECT_KEY=testcontainers_testcontainers-go_$(echo ${{ inputs.project-directory }} | tr '/' '_')" >> $GITHUB_ENV
             echo "PROJECT_NAME=testcontainers-go-$(echo ${{ inputs.project-directory }} | tr '/' '-')" >> $GITHUB_ENV

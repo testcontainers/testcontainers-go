@@ -19,12 +19,12 @@ Once the remote is properly set, please follow these steps:
 
 - Run the [pre-release.sh](./scripts/pre-release.sh) shell script to run it in dry-run mode.
 - You can use the `DRY_RUN` variable to enable or disable the dry-run mode. By default, it's enabled.
-- To prepare for a release, updating the _Testcontainers for Go_ dependency for all the modules and examples, without performing any Git operation:
+- To prepare for a release, updating the _Testcontainers for Go_ dependency for all technology modules and their nested SDK examples, without performing any Git operation:
 
         DRY_RUN="false" ./scripts/pre-release.sh
 
 - The script will update the [mkdocs.yml](./mkdocks.yml) file, updating the `latest_version` field to the current version.
-- The script will update the `go.mod` files for each Go modules and example modules under the examples and modules directories, updating the version of the testcontainers-go dependency to the recently created tag.
+- The script will update the `go.mod` files for technology modules and their nested SDK examples under the `modules` directory, updating the version of the testcontainers-go dependency to the recently created tag.
 - The script will modify the docs for the each Go module **that was not released yet**, updating the version of _Testcontainers for Go_ where it was added to the recently created tag.
 
 An example execution, with dry-run mode enabled:
@@ -129,9 +129,9 @@ Once you are satisfied with the modified files in the git state:
 - The script will commit the current state of the git repository, if the `DRY_RUN` variable is set to `false`. The modified files are the ones modified by the `pre-release.sh` script.
 - The script will create a git tag with the current value of the [version.go](./internal/version.go) file, starting with `v`: e.g. `v0.18.0`, for the following Go modules:
     - the root module, representing the Testcontainers for Go library.
-    - all the Go modules living in both the `examples` and `modules` directory. The git tag value for these Go modules will be created using this name convention:
+    - all the Go modules living in the `modules` directory. The git tag value for these Go modules will be created using this name convention:
 
-             "${directory}/${module_name}/${version}", e.g. "examples/mysql/v0.18.0", "modules/compose/v0.18.0"
+             "${directory}/${module_name}/${version}", e.g. "modules/mysql/v0.18.0", "modules/compose/v0.18.0"
 
 - The script will update the [version.go](./internal/version.go) file, setting the next development version to the value defined in the `BUMP_TYPE` environment variable. For example, if the current version is `v0.18.0`, the script will update the [version.go](./internal/version.go) file with the next development version `v0.19.0`.
 - The script will create a commit in the **main** branch if the `DRY_RUN` variable is set to `false`.
@@ -145,18 +145,9 @@ $ ./scripts/release.sh
 Current version: v0.20.1
 git add /Users/mdelapenya/sourcecode/src/github.com/testcontainers/testcontainers-go/internal/version.go
 git add /Users/mdelapenya/sourcecode/src/github.com/testcontainers/testcontainers-go/mkdocs.yml
-git add examples/**/go.*
 git add modules/**/go.*
-git commit -m chore: use new version (v0.20.1) in modules and examples
+git commit -m chore: use new version (v0.20.1) in Go modules
 git tag v0.20.1
-git tag examples/bigtable/v0.20.1
-git tag examples/datastore/v0.20.1
-git tag examples/firestore/v0.20.1
-git tag examples/mongodb/v0.20.1
-git tag examples/nginx/v0.20.1
-git tag examples/pubsub/v0.20.1
-git tag examples/spanner/v0.20.1
-git tag examples/toxiproxy/v0.20.1
 git tag modules/cockroachdb/v0.20.1
 git tag modules/compose/v0.20.1
 git tag modules/couchbase/v0.20.1
@@ -176,14 +167,6 @@ git add /Users/mdelapenya/sourcecode/src/github.com/testcontainers/testcontainer
 git commit -m chore: prepare for next minor development cycle (0.21.0)
 git push origin main --tags
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/@v/v0.20.1.info
-curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/bigtable/@v/v0.20.1.info
-curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/datastore/@v/v0.20.1.info
-curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/firestore/@v/v0.20.1.info
-curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/mongodb/@v/v0.20.1.info
-curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/nginx/@v/v0.20.1.info
-curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/pubsub/@v/v0.20.1.info
-curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/spanner/@v/v0.20.1.info
-curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/examples/toxiproxy/@v/v0.20.1.info
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/modules/cockroachdb/@v/v0.20.1.info
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/modules/compose/@v/v0.20.1.info
 curl https://proxy.golang.org/github.com/testcontainers/testcontainers-go/modules/couchbase/@v/v0.20.1.info

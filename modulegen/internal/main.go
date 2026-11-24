@@ -12,10 +12,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/modulegen/internal/vscode"
 )
 
-// Generate generates all the files for a module or example,
+// Generate generates all the files for a module,
 // running the `go mod tidy`, `go vet` and `make lint` commands
 // in the given directory.
-func Generate(moduleVar context.TestcontainersModuleVar, isModule bool) error {
+func Generate(moduleVar context.TestcontainersModuleVar) error {
 	ctx, err := context.GetRootContext()
 	if err != nil {
 		return fmt.Errorf("get root context: %w", err)
@@ -23,7 +23,6 @@ func Generate(moduleVar context.TestcontainersModuleVar, isModule bool) error {
 
 	tcModule := context.TestcontainersModule{
 		Image:     moduleVar.Image,
-		IsModule:  isModule,
 		Name:      moduleVar.Name,
 		TitleName: moduleVar.NameTitle,
 	}
@@ -54,25 +53,20 @@ func Generate(moduleVar context.TestcontainersModuleVar, isModule bool) error {
 	return nil
 }
 
-// Refresh refreshes the modules and examples, returning an error if something goes wrong.
+// Refresh refreshes the modules, returning an error if something goes wrong.
 func Refresh(ctx context.Context) error {
 	modules, err := ctx.GetModules()
 	if err != nil {
 		return fmt.Errorf("get modules: %w", err)
 	}
 
-	examples, err := ctx.GetExamples()
-	if err != nil {
-		return fmt.Errorf("get examples: %w", err)
-	}
-
 	generators := []ProjectGenerator{
-		mkdocs.Generator{}, // update examples in mkdocs
+		mkdocs.Generator{}, // update modules in mkdocs
 		vscode.Generator{}, // update vscode workspace
 	}
 
 	for _, generator := range generators {
-		err := generator.Generate(ctx, examples, modules)
+		err := generator.Generate(ctx, modules)
 		if err != nil {
 			return fmt.Errorf("refresh modules: %w", err)
 		}
@@ -85,7 +79,7 @@ func Refresh(ctx context.Context) error {
 // a context and for each module in the context, adds it to the project files,
 // returning an error if something goes wrong.
 type ProjectGenerator interface {
-	Generate(ctx context.Context, examples []string, modules []string) error
+	Generate(ctx context.Context, modules []string) error
 }
 
 // FileGenerator is the interface for the file generators, which takes
@@ -102,7 +96,7 @@ func GenerateFiles(ctx context.Context, tcModule context.TestcontainersModule) e
 	fileGenerators := []FileGenerator{
 		make.Generator{},   // creates Makefile for module
 		module.Generator{}, // creates go.mod for module
-		mkdocs.Generator{}, // update examples in mkdocs
+		mkdocs.Generator{}, // update modules in mkdocs
 	}
 
 	for _, generator := range fileGenerators {
@@ -119,17 +113,13 @@ func GenerateFiles(ctx context.Context, tcModule context.TestcontainersModule) e
 		vscode.Generator{}, // update vscode workspace
 	}
 
-	examples, err := ctx.GetExamples()
-	if err != nil {
-		return fmt.Errorf("get examples: %w", err)
-	}
 	modules, err := ctx.GetModules()
 	if err != nil {
 		return fmt.Errorf("get modules: %w", err)
 	}
 
 	for _, generator := range projectGenerators {
-		err := generator.Generate(ctx, examples, modules)
+		err := generator.Generate(ctx, modules)
 		if err != nil {
 			return fmt.Errorf("generate project: %w", err)
 		}

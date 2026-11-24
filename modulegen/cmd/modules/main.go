@@ -13,14 +13,14 @@ var tcModuleVar = context.TestcontainersModuleVar{}
 
 var NewCmd = &cobra.Command{
 	Use:   "new",
-	Short: "Create a new Example or Module",
-	Long:  "Create a new Example or Module",
+	Short: "Create a new Module",
+	Long:  "Create a new Module",
 }
 
 var RefreshModulesCmd = &cobra.Command{
 	Use:   "refresh",
-	Short: "Refresh the module and example files",
-	Long:  "Refresh the module and example files, including the mkdocs config, vscode settings and makefiles for all the modules and examples",
+	Short: "Refresh the module files",
+	Long:  "Refresh the module files, including the mkdocs config, vscode settings and makefiles for all the modules",
 	RunE: func(_ *cobra.Command, _ []string) error {
 		ctx, err := context.GetRootContext()
 		if err != nil {
@@ -31,7 +31,7 @@ var RefreshModulesCmd = &cobra.Command{
 			return fmt.Errorf(">> could not refresh the modules: %w", err)
 		}
 
-		fmt.Println("Modules and examples refreshed.")
+		fmt.Println("Modules refreshed.")
 		fmt.Println("🙏 Commit the modified files and submit a pull request to include them into the project.")
 		fmt.Println("Thanks!")
 		return nil
@@ -39,6 +39,5 @@ var RefreshModulesCmd = &cobra.Command{
 }
 
 func init() {
-	NewCmd.AddCommand(newExampleCmd)
 	NewCmd.AddCommand(newModuleCmd)
 }
