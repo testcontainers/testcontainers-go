@@ -59,6 +59,11 @@ func mockCallbackCheck(t *testing.T, fn func(_ context.Context, _ string) error)
 }
 
 func TestExtractDockerHost(t *testing.T) {
+	// These tests mock Docker discovery and replace HOME, which also hides any
+	// sbx login and network policy. Keep the real runtime out of these fixtures.
+	isolateRuntimeRegistry(t)
+	require.NoError(t, SelectRuntime("docker"))
+
 	setupDockerHostNotFound(t)
 	// do not mess with local .testcontainers.properties
 	tmpDir := t.TempDir()
