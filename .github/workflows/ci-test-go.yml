@@ -183,6 +183,9 @@ jobs:
         if: ${{ inputs.runtime == 'docker' }}
         working-directory: ./${{ inputs.project-directory }}
         timeout-minutes: 30
+        env:
+          # The Chroma tokenizer downloader queries GitHub releases.
+          GITHUB_TOKEN: ${{ inputs.project-directory == 'modules/chroma/examples' && github.token || '' }}
         run: make test-unit
 
       - name: Test core with Podman and its compatibility path
