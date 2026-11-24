@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/google/uuid"
-	"github.com/shirou/gopsutil/v4/process"
 )
 
 // sessionID returns a unique session ID for the current test session. Because each Go package
@@ -55,18 +54,14 @@ func init() {
 		fallbackCwd = os.TempDir()
 	}
 
-	processes, err := process.Processes()
+	p, err := findParent(parentPid)
 	if err != nil {
 		sessionID = uuid.New().String()
 		projectPath = fallbackCwd
 		return
 	}
 
-	for _, p := range processes {
-		if int(p.Pid) != parentPid {
-			continue
-		}
-
+	if p != nil {
 		cwd, err := p.Cwd()
 		if err != nil {
 			cwd = fallbackCwd
@@ -80,7 +75,6 @@ func init() {
 		}
 
 		createTime = t
-		break
 	}
 
 	hasher := sha256.New()
