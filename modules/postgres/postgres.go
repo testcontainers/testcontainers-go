@@ -277,12 +277,12 @@ func (c *PostgresContainer) Snapshot(ctx context.Context, opts ...SnapshotOption
 		// Update pg_database to remove the template flag, then drop the database if it exists.
 		// This is needed because dropping a template database will fail.
 		// https://www.postgresql.org/docs/current/manage-ag-templatedbs.html
-		fmt.Sprintf(`UPDATE pg_database SET datistemplate = FALSE WHERE datname = '%s'`, snapshotName),
-		fmt.Sprintf(`DROP DATABASE IF EXISTS "%s"`, snapshotName),
+		"UPDATE pg_database SET datistemplate = FALSE WHERE datname = "+quoteLiteral(snapshotName),
+		"DROP DATABASE IF EXISTS "+quoteIdentifier(snapshotName),
 		// Create a copy of the database to another database to use as a template now that it was fully migrated
-		fmt.Sprintf(`CREATE DATABASE "%s" WITH TEMPLATE "%s" OWNER "%s"`, snapshotName, c.dbName, c.user),
+		fmt.Sprintf(`CREATE DATABASE %s WITH TEMPLATE %s OWNER %s`, quoteIdentifier(snapshotName), quoteIdentifier(c.dbName), quoteIdentifier(c.user)),
 		// Snapshot the template database so we can restore it onto our original database going forward
-		fmt.Sprintf(`ALTER DATABASE "%s" WITH is_template = TRUE`, snapshotName),
+		fmt.Sprintf(`ALTER DATABASE %s WITH is_template = TRUE`, quoteIdentifier(snapshotName)),
 	); err != nil {
 		return err
 	}
@@ -303,12 +303,27 @@ func (c *PostgresContainer) Restore(ctx context.Context, opts ...SnapshotOption)
 	return c.execCommandsSQL(ctx,
 		// Terminate all connections to the template database explicitly as the forced drop below will sometimes
 		// not terminate them and then fail to drop the database.
-		fmt.Sprintf(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '%s' AND pid <> pg_backend_pid()`, snapshotName),
+		fmt.Sprintf(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = %s AND pid <> pg_backend_pid()`, quoteLiteral(snapshotName)),
 		// Drop the database if it exists
-		fmt.Sprintf(`DROP DATABASE IF EXISTS "%s" with (FORCE)`, c.dbName),
+		fmt.Sprintf(`DROP DATABASE IF EXISTS %s with (FORCE)`, quoteIdentifier(c.dbName)),
 		// Then restore the previous snapshot
-		fmt.Sprintf(`CREATE DATABASE "%s" WITH TEMPLATE "%s" OWNER "%s"`, c.dbName, snapshotName, c.user),
+		fmt.Sprintf(`CREATE DATABASE %s WITH TEMPLATE %s OWNER %s`, quoteIdentifier(c.dbName), quoteIdentifier(snapshotName), quoteIdentifier(c.user)),
 	)
+}
+
+// quoteIdentifier quotes a PostgreSQL identifier, including embedded double quotes.
+func quoteIdentifier(s string) string {
+	return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
+}
+
+// quoteLiteral quotes a PostgreSQL string literal independently of the server's
+// standard_conforming_strings setting.
+func quoteLiteral(s string) string {
+	s = strings.ReplaceAll(s, `'`, `''`)
+	if strings.Contains(s, `\`) {
+		return `E'` + strings.ReplaceAll(s, `\`, `\\`) + `'`
+	}
+	return `'` + s + `'`
 }
 
 func (c *PostgresContainer) checkSnapshotConfig(opts []SnapshotOption) (string, error) {
