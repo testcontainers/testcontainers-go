@@ -6,7 +6,7 @@ toolchain go1.26.10
 
 require (
 	github.com/jackc/pgx/v5 v5.9.2
-	github.com/moby/moby/api v1.56.1 // indirect
+	github.com/moby/moby/api v1.57.0 // indirect
 	github.com/stretchr/testify v1.12.1
 	github.com/testcontainers/testcontainers-go v0.45.0
 )
