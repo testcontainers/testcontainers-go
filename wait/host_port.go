@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"github.com/moby/moby/api/types/network"
-
-	"github.com/testcontainers/testcontainers-go/log"
 )
 
 const (
@@ -162,6 +160,8 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 		timeout = *hp.timeout
 	}
 
+	logger := targetLogger(target)
+
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
@@ -217,7 +217,7 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 			}
 			port, err = target.MappedPort(ctx, internalPort.String())
 			if err != nil {
-				log.Printf("mapped port: retries: %d, port: %q, err: %s\n", i, port, err)
+				logger.Printf("mapped port: retries: %d, port: %q, err: %s\n", i, port, err)
 			}
 		}
 	}
@@ -240,10 +240,10 @@ func (hp *HostPortStrategy) WaitUntilReady(ctx context.Context, target StrategyT
 	if err = internalCheck(ctx, internalPort, target); err != nil {
 		switch {
 		case errors.Is(err, errShellNotExecutable):
-			log.Printf("Shell not executable in container, only external port validated")
+			logger.Printf("Shell not executable in container, only external port validated")
 			return nil
 		case errors.Is(err, errShellNotFound):
-			log.Printf("Shell not found in container")
+			logger.Printf("Shell not found in container")
 			return nil
 		default:
 			return fmt.Errorf("internal check: %w", err)
