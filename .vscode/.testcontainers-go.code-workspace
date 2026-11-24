@@ -114,6 +114,10 @@
             "path": "../modules/fakegcsserver"
         },
         {
+            "name": "module / fakesnow",
+            "path": "../modules/fakesnow"
+        },
+        {
             "name": "module / firebird",
             "path": "../modules/firebird"
         },
