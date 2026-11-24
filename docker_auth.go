@@ -2,7 +2,7 @@ package testcontainers
 
 import (
 	"context"
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -170,7 +170,7 @@ func (c *credentialsCache) get(hostname, configKey string) (string, string, erro
 // configKey returns a key to use for caching credentials based on
 // the contents of the currently active config.
 func configKey(cfg *dockercfg.Config) (string, error) {
-	h := md5.New()
+	h := sha256.New()
 	if err := json.NewEncoder(h).Encode(cfg); err != nil {
 		return "", fmt.Errorf("encode config: %w", err)
 	}
