@@ -2028,13 +2028,18 @@ func Test_RyukHandshake(t *testing.T) {
 	})
 
 	t.Run("unexpected-response", func(t *testing.T) {
+		var responses atomic.Int32
 		port := serveTCP(t, func(conn net.Conn) {
 			_, _ = bufio.NewReader(conn).ReadString('\n')
-			_, _ = conn.Write([]byte("NAK\n"))
+			if _, err := conn.Write([]byte("NAK\n")); err == nil {
+				responses.Add(1)
+			}
 		})
 
 		conn, _, err := waitUntilReady(t, &strategyTarget{port: port})
-		require.ErrorContains(t, err, "unexpected reaper response")
+		// The final attempt may time out dialing after earlier responses were rejected.
+		require.ErrorIs(t, err, context.DeadlineExceeded)
+		require.Positive(t, responses.Load(), "the reaper should have sent an unexpected response")
 		require.Nil(t, conn, "no connection should be kept")
 	})
 
