@@ -41,6 +41,14 @@ var resetSocketOverrideFn = func() {
 	os.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", originalDockerSocketOverride)
 }
 
+// tcpDockerSocketPath is the socket path expected for a tcp:// Docker host on the current platform.
+func tcpDockerSocketPath() string {
+	if IsWindows() {
+		return WindowsDockerSocketPath
+	}
+	return DockerSocketPath
+}
+
 func testCallbackCheckPassing(_ context.Context, _ string) error {
 	return nil
 }
@@ -347,7 +355,7 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 		setupTestcontainersProperties(t, content)
 
 		socket := extractDockerSocketFromClient(context.Background(), mockCli{OS: "foo"})
-		require.Equal(t, DockerSocketPath, socket)
+		require.Equal(t, tcpDockerSocketPath(), socket)
 	})
 
 	t.Run("Docker socket from Testcontainers host takes precedence over TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", func(t *testing.T) {
@@ -359,7 +367,7 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", "/path/to/docker.sock")
 
 		socket := extractDockerSocketFromClient(context.Background(), mockCli{OS: "foo"})
-		require.Equal(t, DockerSocketPath, socket)
+		require.Equal(t, tcpDockerSocketPath(), socket)
 	})
 
 	t.Run("Docker Socket as Testcontainers environment variable", func(t *testing.T) {
@@ -384,7 +392,7 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 
 		t.Setenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", testRemoteHost)
 		host = extractDockerSocketFromClient(context.Background(), mockCli{OS: "foo"})
-		require.Equal(t, DockerSocketPath, host)
+		require.Equal(t, tcpDockerSocketPath(), host)
 	})
 
 	t.Run("Unix Docker Socket is passed as DOCKER_HOST variable (Docker Desktop on non-Windows)", func(t *testing.T) {
@@ -449,7 +457,25 @@ func TestExtractDockerSocketFromClient(t *testing.T) {
 
 		t.Setenv("DOCKER_HOST", testRemoteHost)
 		socket = extractDockerSocketFromClient(ctx, mockCli{OS: "Ubuntu"})
-		require.Equal(t, DockerSocketPath, socket)
+		require.Equal(t, tcpDockerSocketPath(), socket)
+	})
+
+	t.Run("TCP Docker host from a Windows client uses the engine's socket, not the client's named pipe", func(t *testing.T) {
+		// emulate a Windows client: init sets DockerSocketPath from the client's default named pipe
+		t.Setenv("GOOS", "windows")
+		t.Cleanup(func() {
+			DockerSocketPath = originalDockerSocketPath
+		})
+		DockerSocketPath = "//./pipe/docker_engine"
+
+		setupTestcontainersProperties(t, "")
+
+		t.Cleanup(resetSocketOverrideFn)
+		os.Unsetenv("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE")
+
+		t.Setenv("DOCKER_HOST", testRemoteHost)
+		socket := extractDockerSocketFromClient(context.Background(), mockCli{OS: "Ubuntu"})
+		require.Equal(t, WindowsDockerSocketPath, socket)
 	})
 
 	t.Run("Unix Docker Socket is passed as docker.host property", func(t *testing.T) {
