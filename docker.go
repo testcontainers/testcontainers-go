@@ -53,11 +53,8 @@ var (
 	// createContainerFailDueToNameConflictRegex is a regular expression that matches the container is already in use error.
 	createContainerFailDueToNameConflictRegex = regexp.MustCompile("[Tt]he container name .* is already in use by .*")
 
-	// minLogProductionTimeout is the minimum log production timeout.
-	minLogProductionTimeout = time.Duration(5 * time.Second)
-
-	// maxLogProductionTimeout is the maximum log production timeout.
-	maxLogProductionTimeout = time.Duration(60 * time.Second)
+	// logProductionStopTimeout bounds each wait for the log production goroutine when stopping it.
+	logProductionStopTimeout = 5 * time.Second
 
 	// errLogProductionStop is the cause for stopping log production.
 	errLogProductionStop = errors.New("log production stopped")
@@ -91,9 +88,8 @@ type DockerContainer struct {
 	// logProductionDone is closed when the log production goroutine exits.
 	logProductionDone chan struct{}
 
-	logProductionTimeout *time.Duration
-	logger               log.Logger
-	lifecycleHooks       []ContainerLifecycleHooks
+	logger         log.Logger
+	lifecycleHooks []ContainerLifecycleHooks
 
 	healthStatus container.HealthStatus // container health status, will default to healthStatusNone if no healthcheck is present
 }
@@ -800,12 +796,13 @@ func (lw logConsumerWriter) Write(p []byte) (int, error) {
 
 type LogProductionOption func(*DockerContainer)
 
-// WithLogProductionTimeout is a functional option that sets the timeout for the log production.
-// If the timeout is lower than 5s or greater than 60s it will be set to 5s or 60s respectively.
-func WithLogProductionTimeout(timeout time.Duration) LogProductionOption {
-	return func(c *DockerContainer) {
-		c.logProductionTimeout = &timeout
-	}
+// WithLogProductionTimeout is a functional option that used to set how long the log
+// production read the container logs before reconnecting.
+//
+// Deprecated: the log stream is no longer reconnected periodically, so this option has
+// no effect. It will be removed in the next major release.
+func WithLogProductionTimeout(_ time.Duration) LogProductionOption {
+	return func(*DockerContainer) {}
 }
 
 // Deprecated: use the ContainerRequest.LogConsumerConfig field instead.
@@ -815,25 +812,9 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context, opts ...LogProdu
 
 // startLogProduction will start a concurrent process that will continuously read logs
 // from the container and will send them to each added LogConsumer.
-//
-// Default log production timeout is 5s. It is used to set the context timeout
-// which means that each log-reading loop will last at up to the specified timeout.
-//
-// Use functional option WithLogProductionTimeout() to override default timeout. If it's
-// lower than 5s and greater than 60s it will be set to 5s or 60s respectively.
 func (c *DockerContainer) startLogProduction(ctx context.Context, opts ...LogProductionOption) error {
 	for _, opt := range opts {
 		opt(c)
-	}
-
-	// Validate the log production timeout.
-	switch {
-	case c.logProductionTimeout == nil:
-		c.logProductionTimeout = &minLogProductionTimeout
-	case *c.logProductionTimeout < minLogProductionTimeout:
-		c.logProductionTimeout = &minLogProductionTimeout
-	case *c.logProductionTimeout > maxLogProductionTimeout:
-		c.logProductionTimeout = &maxLogProductionTimeout
 	}
 
 	// Setup the log writers.
@@ -861,53 +842,45 @@ func (c *DockerContainer) startLogProduction(ctx context.Context, opts ...LogPro
 	return nil
 }
 
-// logProducer read logs from the container and writes them to stdout, stderr until either:
+// logProducer reads logs from the container and writes them to stdout and stderr until either:
 //   - logProductionCtx is done
-//   - A fatal error occurs
 //   - No more logs are available
+//
+// The log stream is followed until it ends rather than being cut periodically, as each
+// reconnect is slow on some runtimes, such as Podman, and adds a window for delays.
+// If the stream fails, it resumes from the last entry delivered, see logCursor.
 func (c *DockerContainer) logProducer(stdout, stderr io.Writer) {
 	// Clean up idle client connections.
 	defer c.provider.Close()
 
 	// Setup the log options, start from the beginning.
-	options := &client.ContainerLogsOptions{
+	options := client.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
+		Timestamps: true,
 		Follow:     true,
 	}
+	cursor := &logCursor{}
+	stdout = &timestampLogWriter{writer: stdout, cursor: cursor}
+	stderr = &timestampLogWriter{writer: stderr, cursor: cursor}
 
-	// Use a separate method so that timeout cancel function is
-	// called correctly.
-	for c.copyLogsTimeout(stdout, stderr, options) {
+	for {
+		options.Since = cursor.resume()
+		err := c.copyLogs(c.logProductionCtx, stdout, stderr, options)
+		switch {
+		case err == nil:
+			// No more logs available.
+			return
+		case c.logProductionCtx.Err() != nil:
+			// Log production was stopped or caller context is done.
+			return
+		case errors.Is(err, net.ErrClosed):
+			// Client connection closed, retry.
+		default:
+			// Unexpected error, retry.
+			c.logger.Printf("Unexpected error reading logs: %v", err)
+		}
 	}
-}
-
-// copyLogsTimeout copies logs from the container to stdout and stderr with a timeout.
-// It returns true if the log production should be retried, false otherwise.
-func (c *DockerContainer) copyLogsTimeout(stdout, stderr io.Writer, options *client.ContainerLogsOptions) bool {
-	timeoutCtx, cancel := context.WithTimeout(c.logProductionCtx, *c.logProductionTimeout)
-	defer cancel()
-
-	err := c.copyLogs(timeoutCtx, stdout, stderr, *options)
-	switch {
-	case err == nil:
-		// No more logs available.
-		return false
-	case c.logProductionCtx.Err() != nil:
-		// Log production was stopped or caller context is done.
-		return false
-	case timeoutCtx.Err() != nil, errors.Is(err, net.ErrClosed):
-		// Timeout or client connection closed, retry.
-	default:
-		// Unexpected error, retry.
-		c.logger.Printf("Unexpected error reading logs: %v", err)
-	}
-
-	// Retry from the last log received.
-	now := time.Now()
-	options.Since = fmt.Sprintf("%d.%09d", now.Unix(), int64(now.Nanosecond()))
-
-	return true
 }
 
 // copyLogs copies logs from the container to stdout and stderr.
@@ -923,6 +896,84 @@ func (c *DockerContainer) copyLogs(ctx context.Context, stdout, stderr io.Writer
 	}
 
 	return nil
+}
+
+// logCursor tracks the last log entry delivered, so that the log stream can resume
+// from it after a reconnect without losing or repeating entries.
+//
+// Resuming from the cursor's timestamp replays the entries sharing that timestamp,
+// as since is inclusive on Docker and Podman only sends timestamps to the second.
+// Daemons replay entries in their original order, so the first count of those were
+// already delivered and are skipped.
+type logCursor struct {
+	// timestamp is the raw timestamp of the last entry delivered, as sent by the daemon.
+	timestamp []byte
+
+	// count is the number of consecutive entries delivered with timestamp.
+	count int
+
+	// skip is the number of replayed entries with timestamp still to skip.
+	skip int
+}
+
+// resume prepares the cursor for a new log request and returns the since value for it.
+func (c *logCursor) resume() string {
+	c.skip = c.count
+	return string(c.timestamp)
+}
+
+// timestampLogWriter strips the timestamp the daemon prefixes to each log entry,
+// skipping entries replayed after a reconnect and advancing the cursor.
+type timestampLogWriter struct {
+	writer io.Writer
+	cursor *logCursor
+}
+
+// Write forwards the log entry p to the underlying writer without its timestamp.
+// stdcopy.StdCopy calls Write once per entry.
+func (w *timestampLogWriter) Write(p []byte) (int, error) {
+	timestamp, content, ok := splitLogTimestamp(p)
+	if !ok {
+		// The daemon didn't add a timestamp, so pass the entry through unchanged.
+		return w.writer.Write(p)
+	}
+
+	cursor := w.cursor
+	same := bytes.Equal(timestamp, cursor.timestamp)
+	if same && cursor.skip > 0 {
+		cursor.skip--
+		return len(p), nil
+	}
+
+	if _, err := w.writer.Write(content); err != nil {
+		return 0, err
+	}
+
+	if same {
+		cursor.count++
+	} else {
+		cursor.timestamp = append(cursor.timestamp[:0], timestamp...)
+		cursor.count = 1
+		cursor.skip = 0
+	}
+
+	return len(p), nil
+}
+
+// splitLogTimestamp splits a log entry into the RFC 3339 timestamp the daemon
+// prefixed it with and its content. It reports false if p has no such prefix.
+func splitLogTimestamp(p []byte) (timestamp, content []byte, ok bool) {
+	i := bytes.IndexByte(p, ' ')
+	if i < len("2006-01-02T15:04:05Z") {
+		return nil, p, false
+	}
+
+	timestamp = p[:i]
+	if timestamp[4] != '-' || timestamp[7] != '-' || timestamp[10] != 'T' || timestamp[13] != ':' || timestamp[16] != ':' {
+		return nil, p, false
+	}
+
+	return timestamp, p[i+1:], true
 }
 
 // Deprecated: it will be removed in the next major release.
@@ -948,7 +999,7 @@ func (c *DockerContainer) stopLogProduction() error {
 		case <-c.logProductionDone:
 			// Goroutine already finished naturally; nothing more to do.
 			return nil
-		case <-time.After(minLogProductionTimeout):
+		case <-time.After(logProductionStopTimeout):
 			// Timed out waiting for natural exit; force-cancel now.
 		}
 	}
@@ -959,12 +1010,12 @@ func (c *DockerContainer) stopLogProduction() error {
 	// Wait for the goroutine to acknowledge the cancellation. Context
 	// cancellation propagates into the Docker transport and should unblock
 	// stdcopy.StdCopy promptly, but we bound the wait to match
-	// minLogProductionTimeout to guard against stuck kernel socket reads or
+	// logProductionStopTimeout to guard against stuck kernel socket reads or
 	// daemon transport failures that might not honour context cancellation.
 	if c.logProductionDone != nil {
 		select {
 		case <-c.logProductionDone:
-		case <-time.After(minLogProductionTimeout):
+		case <-time.After(logProductionStopTimeout):
 			c.logger.Printf("timeout waiting for log production goroutine to exit; a goroutine may have leaked")
 		}
 	}
