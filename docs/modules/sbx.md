@@ -151,6 +151,13 @@ The configuration examples use a local v3 mixin that is not installed with the G
 
 Local kit builds must be available and allowed by your sbx configuration. The `test-tools.mode` argument sets the contents of `/usr/share/testcontainers/kit-mode` inside the sandbox.
 
+Building a local kit also requires a Buildx builder that supports OCI exports.
+If the default Docker driver does not support them, select a container-based builder:
+
+```shell
+docker buildx create --driver docker-container --use
+```
+
 ## Cleanup in TestMain
 
 Call `sbx.Cleanup` after `m.Run()` with a fresh, bounded context, then exit with the test result. A named import of `sbx` for `Cleanup` also registers the provider, so a blank import is unnecessary in the same test binary.
