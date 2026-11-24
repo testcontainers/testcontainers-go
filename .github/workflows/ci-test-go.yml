@@ -145,6 +145,12 @@ jobs:
             echo "No dependencies script found at $SCRIPT_PATH - skipping installation"
           fi
 
+      - name: Set up OCI-capable builder for sbx kits
+        if: ${{ inputs.runtime == 'sbx' }}
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          driver: docker-container
+
       - name: Sign in to Docker for sbx
         id: sbx-login
         if: ${{ inputs.runtime == 'sbx' }}

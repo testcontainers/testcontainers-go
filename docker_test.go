@@ -753,7 +753,7 @@ func ExampleContainer_Host() {
 		return
 	}
 	// }
-	fmt.Println(ip)
+	fmt.Println("Host is set:", ip != "")
 
 	state, err := nginxC.State(ctx)
 	if err != nil {
@@ -764,7 +764,7 @@ func ExampleContainer_Host() {
 	fmt.Println(state.Running)
 
 	// Output:
-	// localhost
+	// Host is set: true
 	// true
 }
 
