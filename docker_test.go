@@ -1,6 +1,7 @@
 package testcontainers
 
 import (
+	"archive/tar"
 	"bytes"
 	"context"
 	"errors"
@@ -20,6 +21,7 @@ import (
 
 	"github.com/containerd/errdefs"
 	"github.com/containerd/platforms"
+	"github.com/moby/moby/api/types/build"
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/client"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
@@ -1725,6 +1727,128 @@ func (f *errMockCli) ImagePull(_ context.Context, _ string, opts client.ImagePul
 
 func (f *errMockCli) Close() error {
 	return nil
+}
+
+type trackedBuildContext struct {
+	*bytes.Reader
+	closed bool
+}
+
+func (c *trackedBuildContext) Read(p []byte) (int, error) {
+	if c.closed {
+		return 0, io.ErrClosedPipe
+	}
+
+	return c.Reader.Read(p)
+}
+
+func (c *trackedBuildContext) Seek(offset int64, whence int) (int64, error) {
+	if c.closed {
+		return 0, io.ErrClosedPipe
+	}
+
+	return c.Reader.Seek(offset, whence)
+}
+
+func (c *trackedBuildContext) Close() error {
+	c.closed = true
+	return nil
+}
+
+type trackedBuildResponseBody struct {
+	reader     io.Reader
+	beforeRead func() error
+	closed     bool
+}
+
+func (b *trackedBuildResponseBody) Read(p []byte) (int, error) {
+	if b.beforeRead != nil {
+		if err := b.beforeRead(); err != nil {
+			return 0, err
+		}
+	}
+
+	return b.reader.Read(p)
+}
+
+func (b *trackedBuildResponseBody) Close() error {
+	b.closed = true
+	return nil
+}
+
+type buildImageLifetimeClient struct {
+	client.APIClient
+	buildContext *trackedBuildContext
+	options      client.ImageBuildOptions
+	body         *trackedBuildResponseBody
+	contextRead  bool
+	closed       bool
+}
+
+func (c *buildImageLifetimeClient) ImageBuild(_ context.Context, buildContext io.Reader, options client.ImageBuildOptions) (client.ImageBuildResult, error) {
+	var ok bool
+	c.buildContext, ok = buildContext.(*trackedBuildContext)
+	if !ok {
+		return client.ImageBuildResult{}, fmt.Errorf("unexpected build context type %T", buildContext)
+	}
+	c.options = options
+
+	c.body = &trackedBuildResponseBody{
+		reader: strings.NewReader("{\"stream\":\"build complete\\n\"}\n"),
+		beforeRead: func() error {
+			if c.closed {
+				return errors.New("Docker client was closed before the build response was read")
+			}
+			if c.buildContext.closed {
+				return errors.New("build context was closed before the build response was read")
+			}
+			if !c.contextRead {
+				if _, err := io.Copy(io.Discard, c.buildContext); err != nil {
+					return fmt.Errorf("read build context: %w", err)
+				}
+				c.contextRead = true
+			}
+
+			return nil
+		},
+	}
+
+	return client.ImageBuildResult{Body: c.body}, nil
+}
+
+func (c *buildImageLifetimeClient) Close() error {
+	c.closed = true
+	return nil
+}
+
+func TestDockerProvider_BuildImageKeepsContextAndClientOpenUntilResponseDrained(t *testing.T) {
+	var contextArchive bytes.Buffer
+	tarWriter := tar.NewWriter(&contextArchive)
+	require.NoError(t, tarWriter.WriteHeader(&tar.Header{Name: "Dockerfile", Mode: 0o600}))
+	require.NoError(t, tarWriter.Close())
+
+	buildContext := &trackedBuildContext{Reader: bytes.NewReader(contextArchive.Bytes())}
+	apiClient := &buildImageLifetimeClient{}
+	provider := &DockerProvider{client: apiClient}
+
+	tag, err := provider.BuildImage(context.Background(), &ContainerRequest{
+		FromDockerfile: FromDockerfile{
+			ContextArchive: buildContext,
+			Repo:           "test-repo",
+			Tag:            "test-tag",
+			BuildOptionsModifier: func(options *client.ImageBuildOptions) {
+				options.Version = build.BuilderBuildKit
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, "test-repo:test-tag", tag)
+	require.Equal(t, build.BuilderBuildKit, apiClient.options.Version)
+	require.True(t, apiClient.contextRead, "BuildKit should be able to read the context while the response is drained")
+	require.True(t, apiClient.body.closed, "the response body should be closed")
+	require.True(t, buildContext.closed, "the build context should be closed after the response is drained")
+	require.True(t, apiClient.closed, "the Docker client should be closed after the response is drained")
 }
 
 func TestDockerProvider_BuildImage_Retries(t *testing.T) {
