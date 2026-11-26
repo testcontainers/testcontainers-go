@@ -6,9 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"maps"
 	"os"
+	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -19,6 +22,7 @@ import (
 	"github.com/moby/moby/api/types/network"
 	"github.com/moby/moby/api/types/registry"
 	"github.com/moby/moby/client"
+	"github.com/moby/patternmatcher"
 	"github.com/moby/patternmatcher/ignorefile"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
@@ -254,6 +258,24 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 
 	includes = append(includes, c.GetDockerfile())
 
+	// The archive walker skips an excluded directory unless an "!" pattern
+	// starts with its path, so "!a/**/*.go" can't re-include a/b/c/d.go
+	// (moby/go-archive v0.3.3, archive.go#L928). Add the surviving paths under an
+	// excluded directory as explicit includes; the "." include still walks
+	// everything else.
+	// Each listed path is kept only while its ancestor directories are still real
+	// directories (keepRealDirs), so a directory swapped for a symlink after the
+	// pre-scan cannot pull an outside file into the context.
+	// Archive keeps one seen map across includes (archive.go#L843), so a file
+	// that both walks reach is written once.
+	if hasExclusion(excluded) {
+		paths, err := includedPaths(abs, excluded)
+		if err != nil {
+			return nil, err
+		}
+		includes = append(includes, keepRealDirs(abs, paths)...)
+	}
+
 	buildContext, err := archive.TarWithOptions(
 		c.Context,
 		&archive.TarOptions{ExcludePatterns: excluded, IncludeFiles: includes},
@@ -263,6 +285,148 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 	}
 
 	return buildContext, nil
+}
+
+func hasExclusion(patterns []string) bool {
+	return slices.ContainsFunc(patterns, func(p string) bool { return strings.HasPrefix(p, "!") })
+}
+
+// walkDir is a seam so tests can observe which directories the walk enters.
+var walkDir = filepath.WalkDir
+
+// includedPaths returns the paths under root, relative to it, that the
+// .dockerignore patterns keep although an ancestor directory is excluded. The
+// archive walk skips an excluded directory unless a "!" pattern starts with its
+// path (moby/go-archive v0.3.3, archive.go#L928), so these paths are listed
+// here, even when the directory's other contents are excluded. The archive walk
+// still filters the contents of each listed directory. Paths whose ancestors
+// are all kept are left to the walk: listing them as well would let an include
+// resolve through a symlink swapped in after this walk.
+func includedPaths(root string, patterns []string) ([]string, error) {
+	pm, err := patternmatcher.New(patterns)
+	if err != nil {
+		return nil, err
+	}
+
+	var paths []string
+	// hidden maps a directory's relative path to whether it, or an ancestor, is excluded.
+	hidden := map[string]bool{}
+	err = walkDir(root, func(p string, d fs.DirEntry, err error) error {
+		if p == root {
+			return err
+		}
+		if err != nil {
+			// Unreadable entries are skipped, as the archive walker does (moby/go-archive v0.3.3, archive.go#L856-L858).
+			return nil
+		}
+		rel, err := filepath.Rel(root, p)
+		if err != nil {
+			return err
+		}
+		skip, err := pm.MatchesOrParentMatches(rel)
+		if err != nil {
+			return err
+		}
+		underExcluded := hidden[filepath.Dir(rel)]
+		if d.IsDir() {
+			hidden[rel] = underExcluded || skip
+		}
+		if skip {
+			if d.IsDir() && !canReinclude(pm, rel) {
+				// No "!" pattern can match below this directory, so do not walk into it.
+				return fs.SkipDir
+			}
+			return nil
+		}
+		if !underExcluded {
+			// The archive walk reaches this path through its kept ancestors.
+			return nil
+		}
+		paths = append(paths, rel)
+		return nil
+	})
+	return paths, err
+}
+
+// keepRealDirs drops each listed path whose ancestor directories under root are
+// no longer all real directories. A directory swapped for a symlink after the
+// pre-scan would make the archiver resolve the listed path outside the context,
+// so the path is omitted instead; Lstat does not follow the link. A swap between
+// this check and the archiver's open is still a race window, the same class as
+// any path-based tar, so this narrows that window rather than closing it.
+func keepRealDirs(root string, paths []string) []string {
+	memo := map[string]bool{}
+	var kept []string
+	for _, rel := range paths {
+		if realDir(root, filepath.Dir(rel), memo) {
+			kept = append(kept, rel)
+		}
+	}
+	return kept
+}
+
+// realDir reports whether rel, a directory under root, and every directory above
+// it are real directories (not symlinks, not files). Results are memoized per
+// directory so each ancestor is checked once.
+func realDir(root, rel string, memo map[string]bool) bool {
+	if rel == "." {
+		return true
+	}
+	if ok, seen := memo[rel]; seen {
+		return ok
+	}
+	fi, err := os.Lstat(filepath.Join(root, rel))
+	ok := err == nil && fi.IsDir() && realDir(root, filepath.Dir(rel), memo)
+	memo[rel] = ok
+	return ok
+}
+
+// canReinclude reports whether a "!" pattern could match something below dir,
+// so the walk must enter an excluded directory. Patterns are compared segment by
+// segment; "**" in a segment, or a pattern longer than dir, counts as a possible match.
+// The last matching pattern decides, so a "!" pattern counts only if no later
+// plain pattern matches dir or one of its parents.
+func canReinclude(pm *patternmatcher.PatternMatcher, dir string) bool {
+	dirSegs := strings.Split(filepath.ToSlash(dir), "/")
+	pats := pm.Patterns()
+	for i, p := range pats {
+		if !p.Exclusion() || !canMatchBelow(p, dirSegs) || excludedLater(pats[i+1:], dir) {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
+// canMatchBelow reports whether the "!" pattern p could match a path below the
+// directory whose segments are dirSegs.
+func canMatchBelow(p *patternmatcher.Pattern, dirSegs []string) bool {
+	patSegs := strings.Split(path.Clean(filepath.ToSlash(p.String())), "/")
+	for i, seg := range dirSegs {
+		if i >= len(patSegs) {
+			return false
+		}
+		if strings.Contains(patSegs[i], "**") {
+			return true
+		}
+		if ok, err := path.Match(patSegs[i], seg); err == nil && !ok {
+			return false
+		}
+	}
+	return true
+}
+
+// excludedLater reports whether a plain pattern in later matches dir or one of
+// its parents, which excludes everything below dir after an earlier "!" pattern.
+// A pattern that fails to compile does not count, so the walk stays conservative.
+func excludedLater(later []*patternmatcher.Pattern, dir string) bool {
+	return slices.ContainsFunc(later, func(q *patternmatcher.Pattern) bool {
+		if q.Exclusion() {
+			return false
+		}
+		ok, err := patternmatcher.MatchesOrParentMatches(dir, []string{q.String()})
+		return err == nil && ok
+	})
 }
 
 // parseDockerIgnore returns if the file exists, the excluded files and an error if any
