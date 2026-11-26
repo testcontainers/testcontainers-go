@@ -6,10 +6,6 @@
             "path": "../"
         },
         {
-            "name": "example / nginx",
-            "path": "../examples/nginx"
-        },
-        {
             "name": "module / activemq",
             "path": "../modules/activemq"
         },
@@ -24,6 +20,10 @@
         {
             "name": "module / artemis",
             "path": "../modules/artemis"
+        },
+        {
+            "name": "module / aws",
+            "path": "../modules/aws"
         },
         {
             "name": "module / azure",

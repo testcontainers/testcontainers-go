@@ -30,19 +30,18 @@ func (g Generator) AddModule(ctx context.Context, tcModule context.Testcontainer
 	indexMd := filepath.Join(tcModule.ParentDir(), "index.md")
 
 	configFile := ctx.MkdocsConfigFile()
-	isModule := tcModule.IsModule
 
 	config, err := ReadConfig(configFile)
 	if err != nil {
 		return fmt.Errorf("read config: %w", err)
 	}
-	config.addModule(isModule, moduleMd, indexMd)
+	config.addModule(moduleMd, indexMd)
 	return writeConfig(configFile, config)
 }
 
 // Generate refresh the mkdocs config file for all the modules,
 // excluding compose as it has its own page in the docs.
-func (g Generator) Generate(ctx context.Context, examples []string, modules []string) error {
+func (g Generator) Generate(ctx context.Context, modules []string) error {
 	configFile := ctx.MkdocsConfigFile()
 	config, err := ReadConfig(configFile)
 	if err != nil {
@@ -58,14 +57,7 @@ func (g Generator) Generate(ctx context.Context, examples []string, modules []st
 		moduleMd := filepath.Join("modules", strings.ToLower(module)+".md")
 		indexMd := filepath.Join("modules", "index.md")
 
-		config.addModule(true, moduleMd, indexMd)
-	}
-
-	for _, example := range examples {
-		exampleMd := filepath.Join("examples", strings.ToLower(example)+".md")
-		indexMd := filepath.Join("examples", "index.md")
-
-		config.addModule(false, exampleMd, indexMd)
+		config.addModule(moduleMd, indexMd)
 	}
 
 	return writeConfig(configFile, config)

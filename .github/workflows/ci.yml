@@ -69,17 +69,51 @@ jobs:
     with:
       project-directory: "${{ matrix.module }}"
 
-  test:
+  # The test matrix is split by Go version, as a single strategy is limited to
+  # 256 configurations and a change to the core module tests every module.
+  test-oldstable:
     # only run if there are modules to test
     if: ${{ needs.detect-modules.outputs.modules_count > 0  }}
     needs:
       - detect-modules
       - lint
+    name: test
     strategy:
       # We don't want to fail the build the soonest but identify which modules passed and failed.
       fail-fast: false
       matrix:
-        go-version: [1.26.x, 1.27.x]
+        go-version: [1.26.x]
+        module: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
+        exclude:
+          # The Quay MinIO image requires credentials not available in CI.
+          - module: modules/minio
+          - module: modules/minio/examples
+    permissions:
+      contents: read  # for actions/checkout to fetch code
+      pull-requests: read  # for sonarsource/sonarcloud-github-action to determine which PR to decorate
+    uses: ./.github/workflows/ci-test-go.yml
+    with:
+      go-version: ${{ matrix.go-version }}
+      platforms: ${{ matrix.module == 'modulegen' && '["ubuntu-latest", "macos-latest", "windows-latest"]' || '["ubuntu-latest"]' }}
+      project-directory: "${{ matrix.module }}"
+      testcontainers-cloud: false
+      rootless-docker: false
+      ryuk-disabled: false
+    secrets: inherit
+
+  # The job below is a copy of the job above, but using the latest Go version.
+  test-stable:
+    # only run if there are modules to test
+    if: ${{ needs.detect-modules.outputs.modules_count > 0  }}
+    needs:
+      - detect-modules
+      - lint
+    name: test
+    strategy:
+      # We don't want to fail the build the soonest but identify which modules passed and failed.
+      fail-fast: false
+      matrix:
+        go-version: [1.27.x]
         module: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
         exclude:
           # The Quay MinIO image requires credentials not available in CI.
@@ -210,7 +244,8 @@ jobs:
     needs:
       - detect-modules
       - lint
-      - test
+      - test-oldstable
+      - test-stable
       - test-core-podman
       - test-sbx
       - test-testcontainers-cloud
@@ -231,7 +266,7 @@ jobs:
             required+=(lint)
           fi
           if jq -e 'any(.[]; . != "modules/minio" and . != "modules/minio/examples")' <<< "$MODULES" > /dev/null; then
-            required+=(test)
+            required+=(test-oldstable test-stable)
           fi
           if jq -e 'index("") != null' <<< "$MODULES" > /dev/null; then
             required+=(test-testcontainers-cloud test-reaper-off test-rootless-docker)

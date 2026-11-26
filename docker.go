@@ -746,7 +746,7 @@ func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostFilePath 
 		}
 		_, err := io.Copy(tw, f)
 		return err
-	}, info.Size(), containerFilePath, fileMode)
+	}, info.Size(), containerFilePath, fileMode, info.ModTime())
 }
 
 // CopyToContainer copies fileContent data to a file in container
@@ -754,11 +754,11 @@ func (c *DockerContainer) CopyToContainer(ctx context.Context, fileContent []byt
 	return c.copyToContainer(ctx, func(tw io.Writer) error {
 		_, err := tw.Write(fileContent)
 		return err
-	}, int64(len(fileContent)), containerFilePath, fileMode)
+	}, int64(len(fileContent)), containerFilePath, fileMode, time.Time{})
 }
 
-func (c *DockerContainer) copyToContainer(ctx context.Context, fileContent func(tw io.Writer) error, fileContentSize int64, containerFilePath string, fileMode int64) error {
-	buffer, err := tarFile(containerFilePath, fileContent, fileContentSize, fileMode)
+func (c *DockerContainer) copyToContainer(ctx context.Context, fileContent func(tw io.Writer) error, fileContentSize int64, containerFilePath string, fileMode int64, modTime time.Time) error {
+	buffer, err := tarFile(containerFilePath, fileContent, fileContentSize, fileMode, modTime)
 	if err != nil {
 		return err
 	}
@@ -1175,8 +1175,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		return nil, err
 	}
 
-	// always append the hub substitutor after the user-defined ones
-	req.ImageSubstitutors = append(req.ImageSubstitutors, newPrependHubRegistry(p.config.HubImageNamePrefix))
+	req.ImageSubstitutors = p.imageSubstitutors(req)
 
 	var platform *specs.Platform
 
@@ -1204,16 +1203,9 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 			return nil, err
 		}
 	} else {
-		for _, is := range req.ImageSubstitutors {
-			modifiedTag, err := is.Substitute(imageName)
-			if err != nil {
-				return nil, fmt.Errorf("failed to substitute image %s with %s: %w", imageName, is.Description(), err)
-			}
-
-			if modifiedTag != imageName {
-				p.Logger.Printf("✍🏼 Replacing image with %s. From: %s to %s\n", is.Description(), imageName, modifiedTag)
-				imageName = modifiedTag
-			}
+		imageName, err = p.substituteImage(imageName, req.ImageSubstitutors)
+		if err != nil {
+			return nil, err
 		}
 
 		if req.ImagePlatform != "" {
@@ -1379,6 +1371,29 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	return ctr, nil
+}
+
+// imageSubstitutors returns the image substitutors applied to req's image,
+// which are req's own followed by the hub registry prefix.
+func (p *DockerProvider) imageSubstitutors(req ContainerRequest) []ImageSubstitutor {
+	return append(req.ImageSubstitutors, newPrependHubRegistry(p.config.HubImageNamePrefix))
+}
+
+// substituteImage returns image with substitutors applied in order.
+func (p *DockerProvider) substituteImage(image string, substitutors []ImageSubstitutor) (string, error) {
+	for _, is := range substitutors {
+		modifiedTag, err := is.Substitute(image)
+		if err != nil {
+			return "", fmt.Errorf("failed to substitute image %s with %s: %w", image, is.Description(), err)
+		}
+
+		if modifiedTag != image {
+			p.Logger.Printf("✍🏼 Replacing image with %s. From: %s to %s\n", is.Description(), image, modifiedTag)
+			image = modifiedTag
+		}
+	}
+
+	return image, nil
 }
 
 func (p *DockerProvider) findContainerByName(ctx context.Context, name string) (*container.Summary, error) {

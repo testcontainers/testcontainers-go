@@ -105,6 +105,29 @@ func TestRun_shouldStartWithTelemetryDisabled(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestWithInMemory(t *testing.T) {
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Cmd: []string{"-jar", "DynamoDBLocal.jar"},
+		},
+	}
+
+	require.NoError(t, tcdynamodb.WithInMemory().Customize(&req))
+	require.Equal(t, []string{"-jar", "DynamoDBLocal.jar", "-inMemory"}, req.Cmd)
+}
+
+func TestRun_shouldStartWithInMemory(t *testing.T) {
+	ctx := context.Background()
+
+	ctr, err := tcdynamodb.Run(ctx, image2_2_1, tcdynamodb.WithInMemory())
+	testcontainers.CleanupContainer(t, ctr)
+	require.NoError(t, err)
+
+	inspect, err := ctr.Inspect(ctx)
+	require.NoError(t, err)
+	require.Contains(t, inspect.Config.Cmd, "-inMemory")
+}
+
 func TestRun_shouldStartWithSharedDBEnabledAndTelemetryDisabled(t *testing.T) {
 	ctx := context.Background()
 

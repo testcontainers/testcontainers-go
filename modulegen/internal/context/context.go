@@ -7,7 +7,7 @@ import (
 )
 
 // Context is the context for the module generation.
-// It provides the necessary information to generate the module or example,
+// It provides the necessary information to generate the module,
 // such as the different paths to the files and directories.
 type Context struct {
 	RootDir string
@@ -16,16 +16,6 @@ type Context struct {
 // DocsDir returns, from the root directory, the relative path to the docs directory, "/docs".
 func (ctx Context) DocsDir() string {
 	return filepath.Join(ctx.RootDir, "docs")
-}
-
-// ExamplesDir returns, from the root directory, the relative path to the examples directory, "/examples".
-func (ctx Context) ExamplesDir() string {
-	return filepath.Join(ctx.RootDir, "examples")
-}
-
-// ExamplesDocsDir returns, from the docs directory, the relative path to the examples directory, "/docs/examples".
-func (ctx Context) ExamplesDocsDir() string {
-	return filepath.Join(ctx.DocsDir(), "examples")
 }
 
 // ModulesDir returns, from the root directory, the relative path to the modules directory, "/modules".
@@ -53,7 +43,7 @@ func (ctx Context) GoModFile() string {
 	return filepath.Join(ctx.RootDir, "go.mod")
 }
 
-// getModulesByBaseDir returns, from the root directory, the relative paths to the modules or examples,
+// getModulesByBaseDir returns, from the root directory, the relative paths to the modules,
 // depending on the base directory.
 func (ctx Context) getModulesByBaseDir(baseDir string) ([]string, error) {
 	dir := filepath.Join(ctx.RootDir, baseDir)
@@ -95,22 +85,10 @@ func (ctx Context) getMarkdownsFromDir(baseDir string) ([]string, error) {
 	return dirs, nil
 }
 
-// GetExamples returns, from the root directory, a slice with the names of the examples
-// that are located in the "examples" directory.
-func (ctx Context) GetExamples() ([]string, error) {
-	return ctx.getModulesByBaseDir("examples")
-}
-
 // GetModules returns, from the root directory, a slice with the names of the modules
 // that are located in the "modules" directory.
 func (ctx Context) GetModules() ([]string, error) {
 	return ctx.getModulesByBaseDir("modules")
-}
-
-// GetExamplesDocs returns, from the docs directory, a slice with the names of the markdown files
-// that are located in the "docs/examples" directory.
-func (ctx Context) GetExamplesDocs() ([]string, error) {
-	return ctx.getMarkdownsFromDir("examples")
 }
 
 // GetModulesDocs returns, from the docs directory, a slice with the names of the markdown files

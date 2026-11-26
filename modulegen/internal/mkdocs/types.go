@@ -1,9 +1,6 @@
 package mkdocs
 
-import (
-	"slices"
-	"strings"
-)
+import "slices"
 
 type Config struct {
 	SiteName string   `yaml:"site_name"`
@@ -31,7 +28,6 @@ type Config struct {
 		Home               string   `yaml:"Home,omitempty"`
 		Quickstart         string   `yaml:"Quickstart,omitempty"`
 		Features           []any    `yaml:"Features,omitempty"`
-		Examples           []string `yaml:"Examples,omitempty"`
 		Modules            []string `yaml:"Modules,omitempty"`
 		SystemRequirements []any    `yaml:"System Requirements,omitempty"`
 		Dependabot         string   `yaml:"Dependabot,omitempty"`
@@ -45,36 +41,26 @@ type Config struct {
 	} `yaml:"extra"`
 }
 
-func (c *Config) addModule(isModule bool, moduleMd string, indexMd string) {
-	mkdocsNavItems := c.Nav[4].Examples
-	if isModule {
-		mkdocsNavItems = c.Nav[3].Modules
-	}
+func (c *Config) addModule(moduleMd string, indexMd string) {
+	for i := range c.Nav {
+		if c.Nav[i].Modules == nil {
+			continue
+		}
+		navItems := c.Nav[i].Modules
+		if slices.Contains(navItems, moduleMd) {
+			return
+		}
 
-	if !slices.Contains(mkdocsNavItems, moduleMd) {
-
-		// make sure the index.md is the first element in the list of examples in the nav
-		navItems := make([]string, len(mkdocsNavItems)-1)
-		j := 0
-
-		for _, navItem := range mkdocsNavItems {
-			// filter out the index.md file
-			if !strings.HasSuffix(navItem, "index.md") {
-				navItems[j] = navItem
-				j++
+		// Keep the index first and sort the module pages.
+		pages := make([]string, 0, len(navItems)+1)
+		for _, page := range navItems {
+			if page != indexMd {
+				pages = append(pages, page)
 			}
 		}
-
-		navItems = append(navItems, moduleMd)
-		slices.Sort(navItems)
-
-		// prepend the index.md file
-		navItems = append([]string{indexMd}, navItems...)
-
-		if isModule {
-			c.Nav[3].Modules = navItems
-		} else {
-			c.Nav[4].Examples = navItems
-		}
+		pages = append(pages, moduleMd)
+		slices.Sort(pages)
+		c.Nav[i].Modules = append([]string{indexMd}, pages...)
+		return
 	}
 }

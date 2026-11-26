@@ -5,62 +5,58 @@ set -euxo pipefail
 
 # How to test this script, run it with the required environment variables:
 # 1. A Go file from the core module is modified:
-#    ALL_CHANGED_FILES="examples/nginx/go.mod examples/foo/a.txt a/b/c/d/a.go" ./scripts/changed-modules.sh
+#    ALL_CHANGED_FILES="modules/nginx/go.mod modules/foo/a.txt a/b/c/d/a.go" ./scripts/changed-modules.sh
 #    The output should be: all modules.
 #
 # 2. A file from a module in the modules dir is modified:
 #    ALL_CHANGED_FILES="modules/nginx/go.mod" ./scripts/changed-modules.sh
 #    The output should be: just the modules/nginx module.
 #
-# 3. A file from a module in the examples dir is modified:
-#    ALL_CHANGED_FILES="examples/nginx/go.mod" ./scripts/changed-modules.sh
-#    The output should be: just the examples/nginx module.
-#
-# 4. A Go file from the modulegen dir is modified:
+# 3. A Go file from the modulegen dir is modified:
 #    ALL_CHANGED_FILES="modulegen/a.go" ./scripts/changed-modules.sh
 #    The output should be: just the modulegen module.
 #
-# 5. A non-Go file from the core dir is modified:
+# 4. A non-Go file from the core dir is modified:
 #    ALL_CHANGED_FILES="README.md" ./scripts/changed-modules.sh
 #    The output should be: all modules.
 #
-# 6. A file from two modules in the modules dir are modified:
+# 5. A file from two modules in the modules dir are modified:
 #    ALL_CHANGED_FILES="modules/nginx/go.mod modules/localstack/go.mod" ./scripts/changed-modules.sh
 #    The output should be: the modules/nginx and modules/localstack modules.
 #
-# 7. Files from the excluded dirs are modified:
+# 6. Files from the excluded dirs are modified:
 #    ALL_CHANGED_FILES="docs/a.md .vscode/a.json .devcontainer/a.json" ./scripts/changed-modules.sh
 #    The output should be: no modules.
 #
-# 8. Several files in the same module are modified:
+# 7. Several files in the same module are modified:
 #    ALL_CHANGED_FILES="modules/nginx/go.mod modules/nginx/a.txt modules/nginx/b.txt" ./scripts/changed-modules.sh
 #    The output should be: the modules/nginx module.
 #
-# 9. Several files in the core module are modified:
+# 8. Several files in the core module are modified:
 #    ALL_CHANGED_FILES="go.mod a.go b.go" ./scripts/changed-modules.sh
 #    The output should be: all modules.
 #
-# 10. Several files in a build-excluded module are modified:
+# 9. Several files in a build-excluded module are modified:
 #    ALL_CHANGED_FILES="modules/k6/a.go" ./scripts/changed-modules.sh
 #    The output should be: no modules.
 #
-# 11. Several files in different modules, including a build-excluded one, are modified:
+# 10. Several files in different modules, including a build-excluded one, are modified:
 #    ALL_CHANGED_FILES="modules/k6/a.go modules/clickhouse/a.txt" ./scripts/changed-modules.sh
 #    The output should be: the modules/clickhouse module.
 #
-# 12. Several files in the core module are modified:
+# 11. Several files in the core module are modified:
 #    ALL_CHANGED_FILES="go.mod a.go b.go" ./scripts/changed-modules.sh
 #    The output should be: all modules but the build-excluded ones.
 #
-# 13. A excluded module is modified with a file that is excluded:
+# 12. A excluded module is modified with a file that is excluded:
 #    ALL_CHANGED_FILES="modules/k6/a.go mkdocs.yml" ./scripts/changed-modules.sh
 #    The output should be: no modules.
 #
-# 14. A excluded file and a file from the core module are modified:
+# 13. A excluded file and a file from the core module are modified:
 #    ALL_CHANGED_FILES="mkdocs.yml go.mod" ./scripts/changed-modules.sh
 #    The output should be: all modules.
 #
-# 15. Only excluded files are modified:
+# 14. Only excluded files are modified:
 #    ALL_CHANGED_FILES="mkdocs.yml" ./scripts/changed-modules.sh
 #    The output should be: no modules.
 #
@@ -110,12 +106,8 @@ readonly no_build_modules=("modules/k6")
 # modules is an array that will store the paths of all the modules in the repository.
 modules=()
 
-# Find all go.mod files in the repository, building a list of all the available modules and examples.
+# Find all go.mod files in the repository, building a list of all the available modules.
 for modFile in $(find "${ROOT_DIR}/modules" -name "go.mod" -not -path "${ROOT_DIR}/**/testdata/*"); do
-    module_dir=$(dirname "${modFile#"${ROOT_DIR}/"}")
-    modules+=("\"${module_dir}\"")
-done
-for modFile in $(find "${ROOT_DIR}/examples" -name "go.mod" -not -path "${ROOT_DIR}/**/testdata/*"); do
     module_dir=$(dirname "${modFile#"${ROOT_DIR}/"}")
     modules+=("\"${module_dir}\"")
 done
@@ -133,7 +125,7 @@ readonly modulegenModule="\"modulegen\""
 # capture the usage-metrics module
 readonly usageMetricsModule="\"usage-metrics\""
 
-# merge all modules and examples into a single array
+# merge all modules into a single array
 allModules=(${rootModule} ${modulegenModule} ${usageMetricsModule} "${modules[@]}")
 
 # sort allModules array
@@ -150,7 +142,6 @@ modified_modules=()
 # Check the modified files and determine which modules to build, following these rules:
 # - if the modified files contain any file in the root module, include all modules in the list
 # - if the modified files only contain files in one of the modules, include that module in the list
-# - if the modified files only contain files in one of the examples, include that example in the list
 # - if the modified files only contain files in the modulegen module, include only the modulegen module in the list
 for file in $modified_files; do
     # check if the file is in one of the excluded files
@@ -162,7 +153,7 @@ for file in $modified_files; do
         fi
     done
 
-    if [[ $file == modules/* || $file == examples/* ]]; then
+    if [[ $file == modules/* ]]; then
         # Find the innermost existing module, including deleted files in that module.
         owner=""
         for module in "${modules[@]}"; do

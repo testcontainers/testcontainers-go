@@ -50,12 +50,7 @@ func generateGoModFile(ctx context.Context, moduleDir string, tcModule context.T
 
 // GenerateFiles generates the module files from the template files.
 func GenerateFiles(moduleDir string, moduleName string, funcMap template.FuncMap, tcModule any) error {
-	templates := []string{"module_test.go", "module.go"}
-
-	tcModuleCtx := tcModule.(context.TestcontainersModule)
-	if tcModuleCtx.IsModule {
-		templates = append(templates, "examples_test.go")
-	}
+	templates := []string{"module_test.go", "module.go", "examples_test.go"}
 
 	for _, tmpl := range templates {
 		name := tmpl + ".tmpl"

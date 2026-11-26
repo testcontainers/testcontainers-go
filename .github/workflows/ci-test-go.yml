@@ -145,6 +145,12 @@ jobs:
             echo "No dependencies script found at $SCRIPT_PATH - skipping installation"
           fi
 
+      - name: Set up OCI-capable builder for sbx kits
+        if: ${{ inputs.runtime == 'sbx' }}
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          driver: docker-container
+
       - name: Sign in to Docker for sbx
         id: sbx-login
         if: ${{ inputs.runtime == 'sbx' }}
@@ -177,6 +183,9 @@ jobs:
         if: ${{ inputs.runtime == 'docker' }}
         working-directory: ./${{ inputs.project-directory }}
         timeout-minutes: 30
+        env:
+          # The Chroma tokenizer downloader queries GitHub releases.
+          GITHUB_TOKEN: ${{ inputs.project-directory == 'modules/chroma/examples' && github.token || '' }}
         run: make test-unit
 
       - name: Test core with Podman and its compatibility path
@@ -238,7 +247,7 @@ jobs:
 
       - name: Upload sbx test reports
         if: ${{ always() && inputs.runtime == 'sbx' && steps.sbx-tests.outcome != 'skipped' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: test-reports-${{ inputs.runtime }}-${{ inputs.go-version }}-${{ matrix.platform }}
           path: '**/TEST-unit*.xml'
@@ -263,8 +272,8 @@ jobs:
           if [ "${{ inputs.project-directory }}" == "" ]; then
             echo "PROJECT_KEY=testcontainers_testcontainers-go" >> $GITHUB_ENV
             echo "PROJECT_NAME=testcontainers-go" >> $GITHUB_ENV
-            echo "PROJECT_SRC_EXCLUSIONS=**/*_test.go,**/vendor/**,**/testdata/**,modules/**,examples/**,modulegen/**" >> $GITHUB_ENV
-            echo "PROJECT_TEST_EXCLUSIONS=**/vendor/**,modules/**,examples/**,modulegen/**" >> $GITHUB_ENV
+            echo "PROJECT_SRC_EXCLUSIONS=**/*_test.go,**/vendor/**,**/testdata/**,modules/**,modulegen/**" >> $GITHUB_ENV
+            echo "PROJECT_TEST_EXCLUSIONS=**/vendor/**,modules/**,modulegen/**" >> $GITHUB_ENV
           else
             echo "PROJECT_KEY=testcontainers_testcontainers-go_$(echo ${{ inputs.project-directory }} | tr '/' '_')" >> $GITHUB_ENV
             echo "PROJECT_NAME=testcontainers-go-$(echo ${{ inputs.project-directory }} | tr '/' '-')" >> $GITHUB_ENV
@@ -278,7 +287,7 @@ jobs:
 
       - name: SonarQube Scan
         if: ${{ env.SHOULD_RUN_SONAR == 'true' }}
-        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
+        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:

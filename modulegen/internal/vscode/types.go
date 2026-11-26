@@ -15,7 +15,7 @@ type Folder struct {
 	Path string `json:"path"`
 }
 
-func newConfig(examples []string, modules []string) *Config {
+func newConfig(modules []string) *Config {
 	config := Config{
 		Folders: []Folder{
 			{
@@ -23,12 +23,6 @@ func newConfig(examples []string, modules []string) *Config {
 				Name: "modulegen",
 			},
 		},
-	}
-	for _, example := range examples {
-		config.Folders = append(config.Folders, Folder{
-			Path: "../examples/" + example,
-			Name: "example / " + example,
-		})
 	}
 	for _, module := range modules {
 		config.Folders = append(config.Folders, Folder{
