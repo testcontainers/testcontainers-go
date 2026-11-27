@@ -19,7 +19,7 @@ const (
 
 // Run creates an instance of the ministack container type
 // - overrideReq: a function that can be used to override the default container request, usually used to set the image version, environment variables for ministack, etc.
-func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MinistackContainer, error) {
+func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*Container, error) {
 	dockerHost := testcontainers.MustExtractDockerSocket(ctx)
 
 	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 5+len(opts)+1)
@@ -38,10 +38,10 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	// configure the docker host after all the options have been applied
 	moduleOpts = append(moduleOpts, configureDockerHost(ctx, ministackHostEnvVar))
 
-	var c *MinistackContainer
+	var c *Container
 	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)
 	if ctr != nil {
-		c = &MinistackContainer{Container: ctr}
+		c = &Container{Container: ctr}
 	}
 	if err != nil {
 		return c, fmt.Errorf("run ministack: %w", err)

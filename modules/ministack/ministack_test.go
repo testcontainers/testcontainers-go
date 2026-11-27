@@ -94,7 +94,7 @@ func TestRunContainer(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		ctx := context.Background()
+		ctx := t.Context()
 
 		ctr, err := Run(
 			ctx,
@@ -125,7 +125,7 @@ func TestRunContainer(t *testing.T) {
 }
 
 func TestStartWithoutOverride(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctr, err := Run(ctx, ministackImage)
 	testcontainers.CleanupContainer(t, ctr)
@@ -134,7 +134,7 @@ func TestStartWithoutOverride(t *testing.T) {
 }
 
 func TestStartV2WithNetwork(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	nw, err := network.New(ctx)
 	require.NoError(t, err)
