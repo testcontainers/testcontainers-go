@@ -182,6 +182,10 @@
             "path": "../modules/minio"
         },
         {
+            "name": "module / ministack",
+            "path": "../modules/ministack"
+        },
+        {
             "name": "module / mockserver",
             "path": "../modules/mockserver"
         },

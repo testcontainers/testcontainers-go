@@ -119,6 +119,7 @@ nav:
         - modules/memcached.md
         - modules/milvus.md
         - modules/minio.md
+        - modules/ministack.md
         - modules/mockserver.md
         - modules/mongodb-atlaslocal.md
         - modules/mongodb.md
