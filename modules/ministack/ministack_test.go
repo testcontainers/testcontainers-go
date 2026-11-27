@@ -14,6 +14,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+const (
+	ministackImage = "ministackorg/ministack:1.5.45"
+)
+
 func generateContainerRequest() *testcontainers.GenericContainerRequest {
 	return &testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
@@ -124,7 +128,7 @@ func TestRunContainer(t *testing.T) {
 func TestStartWithoutOverride(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := Run(ctx, "ministackorg/ministack:1.5.45")
+	ctr, err := Run(ctx, ministackImage)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 	require.NotNil(t, ctr)
@@ -139,7 +143,7 @@ func TestStartV2WithNetwork(t *testing.T) {
 
 	ministack, err := Run(
 		ctx,
-		"ministackorg/ministack:1.5.45",
+		ministackImage,
 		network.WithNetwork([]string{"ministack"}, nw),
 		testcontainers.WithEnv(map[string]string{"SERVICES": "s3,sqs"}),
 	)

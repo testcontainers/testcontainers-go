@@ -19,10 +19,11 @@ import (
 )
 
 const (
-	accesskey = "a"
-	secretkey = "b"
-	token     = "c"
-	region    = "us-east-1"
+	accesskey      = "a"
+	secretkey      = "b"
+	token          = "c"
+	region         = "us-east-1"
+	ministackImage = "ministackorg/ministack:1.5.45"
 )
 
 // awsSDKClientV1 {
@@ -61,7 +62,7 @@ func awsSession(ctx context.Context, l *ministack.MinistackContainer) (*session.
 func TestS3(t *testing.T) {
 	ctx := context.Background()
 
-	ctr, err := ministack.Run(ctx, "ministackorg/ministack:1.5.45")
+	ctr, err := ministack.Run(ctx, ministackImage)
 	testcontainers.CleanupContainer(t, ctr)
 	require.NoError(t, err)
 

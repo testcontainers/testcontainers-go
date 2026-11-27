@@ -18,11 +18,15 @@ import (
 	"github.com/testcontainers/testcontainers-go/network"
 )
 
+const (
+	ministackImage = "ministackorg/ministack:1.5.45"
+)
+
 func ExampleRun() {
 	// runministackContainer {
 	ctx := context.Background()
 
-	ministackContainer, err := ministack.Run(ctx, "ministackorg/ministack:1.5.45")
+	ministackContainer, err := ministack.Run(ctx, ministackImage)
 	defer func() {
 		if err := testcontainers.TerminateContainer(ministackContainer); err != nil {
 			log.Printf("failed to terminate container: %s", err)
@@ -66,7 +70,7 @@ func ExampleRun_withNetwork() {
 
 	ministackContainer, err := ministack.Run(
 		ctx,
-		"ministackorg/ministack:1.5.45",
+		ministackImage,
 		testcontainers.WithEnv(map[string]string{"SERVICES": "s3,sqs"}),
 		network.WithNetwork([]string{nwName}, newNetwork),
 	)
@@ -111,7 +115,7 @@ func ExampleRun_usingLambdas() {
 
 	// withCustomContainerRequest {
 	ctr, err := ministack.Run(ctx,
-		"ministackorg/ministack:1.5.45",
+		ministackImage,
 		testcontainers.WithEnv(map[string]string{
 			"SERVICES":            "lambda",
 			"LAMBDA_DOCKER_FLAGS": flagsFn(),
