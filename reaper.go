@@ -903,6 +903,9 @@ func (r *reaperSpawner) newReaper(ctx context.Context, sessionID string, provide
 	if to := tcConfig.RyukReconnectionTimeout; to > time.Duration(0) {
 		req.Env["RYUK_RECONNECTION_TIMEOUT"] = to.String()
 	}
+	if to := tcConfig.RyukRequestTimeout; to > time.Duration(0) {
+		req.Env["RYUK_REQUEST_TIMEOUT"] = to.String()
+	}
 	if tcConfig.RyukVerbose {
 		req.Env["RYUK_VERBOSE"] = "true"
 	}

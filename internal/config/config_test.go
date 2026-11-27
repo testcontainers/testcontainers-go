@@ -30,6 +30,8 @@ func resetTestEnv(t *testing.T) {
 	t.Setenv("RYUK_VERBOSE", "")
 	t.Setenv("RYUK_RECONNECTION_TIMEOUT", "")
 	t.Setenv("RYUK_CONNECTION_TIMEOUT", "")
+	t.Setenv("RYUK_REQUEST_TIMEOUT", "")
+	t.Setenv("TESTCONTAINERS_RYUK_REQUEST_TIMEOUT", "")
 	t.Setenv("TESTCONTAINERS_PROVIDER", "")
 }
 
@@ -90,6 +92,7 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED", "true")
 		t.Setenv("RYUK_RECONNECTION_TIMEOUT", "13s")
 		t.Setenv("RYUK_CONNECTION_TIMEOUT", "12s")
+		t.Setenv("RYUK_REQUEST_TIMEOUT", "14s")
 		t.Setenv("TESTCONTAINERS_PROVIDER", "docker")
 
 		config := read()
@@ -102,6 +105,7 @@ func TestReadTCConfig(t *testing.T) {
 			Host:                    "", // docker socket is empty at the properties file
 			RyukReconnectionTimeout: 13 * time.Second,
 			RyukConnectionTimeout:   12 * time.Second,
+			RyukRequestTimeout:      14 * time.Second,
 			Provider:                "docker",
 		}
 
@@ -148,6 +152,7 @@ func TestReadTCConfig(t *testing.T) {
 		t.Setenv("RYUK_VERBOSE", "true")
 		t.Setenv("RYUK_RECONNECTION_TIMEOUT", "13s")
 		t.Setenv("RYUK_CONNECTION_TIMEOUT", "12s")
+		t.Setenv("RYUK_REQUEST_TIMEOUT", "14s")
 
 		config := read()
 		expected := Config{
@@ -158,6 +163,7 @@ func TestReadTCConfig(t *testing.T) {
 			RyukVerbose:             true,
 			RyukReconnectionTimeout: 13 * time.Second,
 			RyukConnectionTimeout:   12 * time.Second,
+			RyukRequestTimeout:      14 * time.Second,
 		}
 
 		assert.Equal(t, expected, config)
@@ -298,12 +304,14 @@ func TestReadTCConfig(t *testing.T) {
 			{
 				"With Ryuk container timeouts configured using properties",
 				`ryuk.connection.timeout=12s
-	ryuk.reconnection.timeout=13s`,
+	ryuk.reconnection.timeout=13s
+	ryuk.request.timeout=14s`,
 				map[string]string{},
 				Config{
 					SessionID:               bootstrap.SessionID(),
 					RyukReconnectionTimeout: 13 * time.Second,
 					RyukConnectionTimeout:   12 * time.Second,
+					RyukRequestTimeout:      14 * time.Second,
 				},
 			},
 			{
@@ -312,25 +320,30 @@ func TestReadTCConfig(t *testing.T) {
 				map[string]string{
 					"RYUK_RECONNECTION_TIMEOUT": "13s",
 					"RYUK_CONNECTION_TIMEOUT":   "12s",
+					"RYUK_REQUEST_TIMEOUT":      "14s",
 				},
 				Config{
 					SessionID:               bootstrap.SessionID(),
 					RyukReconnectionTimeout: 13 * time.Second,
 					RyukConnectionTimeout:   12 * time.Second,
+					RyukRequestTimeout:      14 * time.Second,
 				},
 			},
 			{
 				"With Ryuk container timeouts configured using env vars and properties. Env var wins",
 				`ryuk.connection.timeout=22s
-	ryuk.reconnection.timeout=23s`,
+	ryuk.reconnection.timeout=23s
+	ryuk.request.timeout=24s`,
 				map[string]string{
 					"RYUK_RECONNECTION_TIMEOUT": "13s",
 					"RYUK_CONNECTION_TIMEOUT":   "12s",
+					"RYUK_REQUEST_TIMEOUT":      "14s",
 				},
 				Config{
 					SessionID:               bootstrap.SessionID(),
 					RyukReconnectionTimeout: 13 * time.Second,
 					RyukConnectionTimeout:   12 * time.Second,
+					RyukRequestTimeout:      14 * time.Second,
 				},
 			},
 			{
