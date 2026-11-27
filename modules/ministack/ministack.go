@@ -13,17 +13,14 @@ import (
 )
 
 const (
-	defaultPort            = 4566
-	hostnameExternalEnvVar = "HOSTNAME_EXTERNAL"
-	ministackHostEnvVar    = "MINISTACK_HOST"
+	defaultPort         = 4566
+	ministackHostEnvVar = "MINISTACK_HOST"
 )
 
 // Run creates an instance of the ministack container type
 // - overrideReq: a function that can be used to override the default container request, usually used to set the image version, environment variables for ministack, etc.
 func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustomizer) (*MinistackContainer, error) {
 	dockerHost := testcontainers.MustExtractDockerSocket(ctx)
-
-	envVar := hostnameExternalEnvVar
 
 	moduleOpts := make([]testcontainers.ContainerCustomizer, 0, 5+len(opts)+1)
 	moduleOpts = append(moduleOpts,
@@ -39,7 +36,7 @@ func Run(ctx context.Context, img string, opts ...testcontainers.ContainerCustom
 	moduleOpts = append(moduleOpts, opts...)
 
 	// configure the docker host after all the options have been applied
-	moduleOpts = append(moduleOpts, configureDockerHost(ctx, envVar))
+	moduleOpts = append(moduleOpts, configureDockerHost(ctx, ministackHostEnvVar))
 
 	var c *MinistackContainer
 	ctr, err := testcontainers.Run(ctx, img, moduleOpts...)

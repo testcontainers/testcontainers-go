@@ -31,7 +31,6 @@ func TestSetDockerHost(t *testing.T) {
 	tests := []struct {
 		envVar string
 	}{
-		{hostnameExternalEnvVar},
 		{ministackHostEnvVar},
 	}
 
